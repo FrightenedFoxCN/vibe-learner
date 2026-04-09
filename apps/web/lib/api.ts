@@ -1,4 +1,7 @@
 import type {
+  DocumentPlanningContext,
+  PlanGenerationTrace,
+  DocumentDebugRecord,
   DocumentRecord,
   LearningGoal,
   LearningPlan,
@@ -8,6 +11,34 @@ import type {
 } from "@gal-learner/shared";
 
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
+
+function clientLog(stage: string, payload: Record<string, unknown>) {
+  console.info(`[gal-learner] ${stage}`, payload);
+}
+
+async function request(input: string, init?: RequestInit): Promise<Response> {
+  const method = init?.method ?? "GET";
+  const startedAt = performance.now();
+  clientLog("request:start", { method, input });
+  try {
+    const response = await fetch(input, init);
+    clientLog("request:end", {
+      method,
+      input,
+      status: response.status,
+      durationMs: Math.round(performance.now() - startedAt)
+    });
+    return response;
+  } catch (error) {
+    clientLog("request:error", {
+      method,
+      input,
+      durationMs: Math.round(performance.now() - startedAt),
+      error: String(error)
+    });
+    throw new Error(`Cannot reach AI service at ${AI_BASE_URL}`);
+  }
+}
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -44,6 +75,11 @@ function normalizeDocument(document: any): DocumentRecord {
     ocrStatus: document.ocr_status,
     createdAt: document.created_at,
     updatedAt: document.updated_at,
+    pageCount: document.page_count,
+    chunkCount: document.chunk_count,
+    studyUnitCount: document.study_unit_count,
+    previewExcerpt: document.preview_excerpt,
+    debugReady: document.debug_ready,
     sections: document.sections.map((section: any) => ({
       id: section.id,
       documentId: section.document_id,
@@ -51,6 +87,172 @@ function normalizeDocument(document: any): DocumentRecord {
       pageStart: section.page_start,
       pageEnd: section.page_end,
       level: section.level
+    })),
+    studyUnits: document.study_units.map(normalizeStudyUnit)
+  };
+}
+
+function normalizeStudyUnit(unit: any) {
+  return {
+    id: unit.id,
+    documentId: unit.document_id,
+    title: unit.title,
+    pageStart: unit.page_start,
+    pageEnd: unit.page_end,
+    unitKind: unit.unit_kind,
+    includeInPlan: unit.include_in_plan,
+    sourceSectionIds: unit.source_section_ids,
+    summary: unit.summary ?? "",
+    confidence: unit.confidence
+  };
+}
+
+function normalizeScheduleItem(item: any) {
+  return {
+    id: item.id,
+    unitId: item.unit_id,
+    title: item.title,
+    scheduledDate: item.scheduled_date,
+    focus: item.focus,
+    activityType: item.activity_type,
+    estimatedMinutes: item.estimated_minutes,
+    status: item.status
+  };
+}
+
+function normalizeDebugRecord(record: any): DocumentDebugRecord {
+  return {
+    documentId: record.document_id,
+    parserName: record.parser_name,
+    processedAt: record.processed_at,
+    pageCount: record.page_count,
+    totalCharacters: record.total_characters,
+    extractionMethod: record.extraction_method,
+    ocrApplied: record.ocr_applied,
+    ocrLanguage: record.ocr_language,
+    dominantLanguageHint: record.dominant_language_hint,
+    sections: record.sections.map((section: any) => ({
+      id: section.id,
+      documentId: section.document_id,
+      title: section.title,
+      pageStart: section.page_start,
+      pageEnd: section.page_end,
+      level: section.level
+    })),
+    studyUnits: record.study_units.map(normalizeStudyUnit),
+    pages: record.pages.map((page: any) => ({
+      pageNumber: page.page_number,
+      charCount: page.char_count,
+      wordCount: page.word_count,
+      textPreview: page.text_preview,
+      dominantFontSize: page.dominant_font_size,
+      extractionSource: page.extraction_source,
+      headingCandidates: page.heading_candidates.map((candidate: any) => ({
+        pageNumber: candidate.page_number,
+        text: candidate.text,
+        fontSize: candidate.font_size,
+        confidence: candidate.confidence
+      }))
+    })),
+    chunks: record.chunks.map((chunk: any) => ({
+      id: chunk.id,
+      documentId: chunk.document_id,
+      sectionId: chunk.section_id,
+      pageStart: chunk.page_start,
+      pageEnd: chunk.page_end,
+      charCount: chunk.char_count,
+      textPreview: chunk.text_preview,
+      content: chunk.content ?? ""
+    })),
+    warnings: record.warnings.map((warning: any) => ({
+      code: warning.code,
+      message: warning.message,
+      pageNumber: warning.page_number
+    }))
+  };
+}
+
+function normalizePlanningSection(section: any) {
+  return {
+    sectionId: section.section_id,
+    title: section.title,
+    level: section.level,
+    pageStart: section.page_start,
+    pageEnd: section.page_end
+  };
+}
+
+function normalizePlanningContext(record: any): DocumentPlanningContext {
+  return {
+    documentId: record.document_id,
+    courseOutline: record.course_outline.map((section: any) => ({
+      ...normalizePlanningSection(section),
+      children: (section.children ?? []).map(normalizePlanningSection)
+    })),
+    studyUnits: record.study_units.map((unit: any) => ({
+      unitId: unit.unit_id,
+      title: unit.title,
+      pageStart: unit.page_start,
+      pageEnd: unit.page_end,
+      summary: unit.summary,
+      unitKind: unit.unit_kind,
+      includeInPlan: unit.include_in_plan,
+      subsectionTitles: unit.subsection_titles ?? [],
+      relatedSectionIds: unit.related_section_ids ?? [],
+      detailToolTargetId: unit.detail_tool_target_id
+    })),
+    detailMap: Object.fromEntries(
+      Object.entries(record.detail_map ?? {}).map(([key, value]: [string, any]) => [
+        key,
+        {
+          unitId: value.unit_id,
+          title: value.title,
+          pageStart: value.page_start,
+          pageEnd: value.page_end,
+          summary: value.summary,
+          unitKind: value.unit_kind,
+          includeInPlan: value.include_in_plan,
+          relatedSectionIds: value.related_section_ids ?? [],
+          subsectionTitles: value.subsection_titles ?? [],
+          relatedSections: (value.related_sections ?? []).map(normalizePlanningSection),
+          chunkCount: value.chunk_count,
+          chunkExcerpts: (value.chunk_excerpts ?? []).map((chunk: any) => ({
+            chunkId: chunk.chunk_id,
+            sectionId: chunk.section_id,
+            pageStart: chunk.page_start,
+            pageEnd: chunk.page_end,
+            charCount: chunk.char_count,
+            content: chunk.content ?? ""
+          }))
+        }
+      ])
+    ),
+    availableTools: (record.available_tools ?? []).map((tool: any) => ({
+      name: tool.name,
+      description: tool.description
+    }))
+  };
+}
+
+function normalizePlanningTrace(record: any): PlanGenerationTrace {
+  return {
+    documentId: record.document_id,
+    planId: record.plan_id ?? null,
+    model: record.model,
+    createdAt: record.created_at,
+    rounds: (record.rounds ?? []).map((round: any) => ({
+      roundIndex: round.round_index,
+      finishReason: round.finish_reason ?? "",
+      assistantContent: round.assistant_content ?? "",
+      thinking: round.thinking ?? "",
+      elapsedMs: round.elapsed_ms ?? 0,
+      timeoutSeconds: round.timeout_seconds ?? 0,
+      toolCalls: (round.tool_calls ?? []).map((toolCall: any) => ({
+        toolCallId: toolCall.tool_call_id,
+        toolName: toolCall.tool_name,
+        argumentsJson: toolCall.arguments_json,
+        resultJson: toolCall.result_json
+      }))
     }))
   };
 }
@@ -60,9 +262,14 @@ function normalizePlan(plan: any): LearningPlan {
     id: plan.id,
     documentId: plan.document_id,
     personaId: plan.persona_id,
+    objective: plan.objective,
+    deadline: plan.deadline,
     overview: plan.overview,
     weeklyFocus: plan.weekly_focus,
-    todayTasks: plan.today_tasks
+    todayTasks: plan.today_tasks,
+    studyUnits: plan.study_units.map(normalizeStudyUnit),
+    schedule: plan.schedule.map(normalizeScheduleItem),
+    createdAt: plan.created_at
   };
 }
 
@@ -79,8 +286,42 @@ function normalizeSession(session: any): StudySessionRecord {
 }
 
 export async function listPersonas(): Promise<PersonaProfile[]> {
-  const payload = await readJson<{ items: any[] }>(await fetch(`${AI_BASE_URL}/personas`));
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/personas`)
+  );
   return payload.items.map(normalizePersona);
+}
+
+export async function listDocuments(): Promise<DocumentRecord[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/documents`)
+  );
+  return payload.items.map(normalizeDocument);
+}
+
+export async function getDocumentDebug(documentId: string): Promise<DocumentDebugRecord> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/debug`)
+  );
+  return normalizeDebugRecord(payload);
+}
+
+export async function getDocumentPlanningContext(
+  documentId: string
+): Promise<DocumentPlanningContext> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/planning-context`)
+  );
+  return normalizePlanningContext(payload);
+}
+
+export async function getDocumentPlanningTrace(
+  documentId: string
+): Promise<PlanGenerationTrace> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/planning-trace`)
+  );
+  return normalizePlanningTrace(payload);
 }
 
 export async function uploadAndProcessDocument(file: File): Promise<DocumentRecord> {
@@ -88,7 +329,7 @@ export async function uploadAndProcessDocument(file: File): Promise<DocumentReco
   form.append("file", file);
   const uploaded = normalizeDocument(
     await readJson<any>(
-      await fetch(`${AI_BASE_URL}/documents`, {
+      await request(`${AI_BASE_URL}/documents`, {
         method: "POST",
         body: form
       })
@@ -96,7 +337,7 @@ export async function uploadAndProcessDocument(file: File): Promise<DocumentReco
   );
   const processed = normalizeDocument(
     await readJson<any>(
-      await fetch(`${AI_BASE_URL}/documents/${uploaded.id}/process`, {
+      await request(`${AI_BASE_URL}/documents/${uploaded.id}/process`, {
         method: "POST"
       })
     )
@@ -104,9 +345,96 @@ export async function uploadAndProcessDocument(file: File): Promise<DocumentReco
   return processed;
 }
 
+export async function processDocument(
+  documentId: string,
+  options?: {
+    forceOcr?: boolean;
+  }
+): Promise<DocumentRecord> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/process`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        force_ocr: Boolean(options?.forceOcr)
+      })
+    })
+  );
+  return normalizeDocument(payload);
+}
+
+export async function processDocumentStream(
+  documentId: string,
+  options: {
+    forceOcr?: boolean;
+  },
+  onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
+): Promise<DocumentRecord> {
+  const response = await request(`${AI_BASE_URL}/documents/${documentId}/process/stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      force_ocr: Boolean(options.forceOcr)
+    })
+  });
+  if (!response.ok || !response.body) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalDocument: DocumentRecord | null = null;
+  let streamError: string | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+      const event = JSON.parse(trimmed) as {
+        stage: string;
+        payload?: Record<string, unknown>;
+        document?: any;
+      };
+      onEvent({
+        stage: event.stage,
+        payload: event.payload ?? {}
+      });
+      if (event.stage === "stream_error") {
+        streamError = String(event.payload?.error ?? event.payload?.detail ?? "processing_stream_error");
+      }
+      if (event.document) {
+        finalDocument = normalizeDocument(event.document);
+      }
+    }
+    if (done) {
+      break;
+    }
+  }
+
+  if (streamError) {
+    throw new Error(streamError);
+  }
+  if (!finalDocument) {
+    throw new Error("processing_stream_ended_without_document");
+  }
+  return finalDocument;
+}
+
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
   const payload = await readJson<any>(
-    await fetch(`${AI_BASE_URL}/learning-plans`, {
+    await request(`${AI_BASE_URL}/learning-plans`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -124,13 +452,89 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
   return normalizePlan(payload);
 }
 
+export async function listLearningPlans(): Promise<LearningPlan[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/learning-plans`)
+  );
+  return payload.items.map(normalizePlan);
+}
+
+export async function createLearningPlanStream(
+  goal: LearningGoal,
+  onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
+): Promise<LearningPlan> {
+  const response = await request(`${AI_BASE_URL}/learning-plans/stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      document_id: goal.documentId,
+      persona_id: goal.personaId,
+      objective: goal.objective,
+      deadline: goal.deadline,
+      study_days_per_week: goal.studyDaysPerWeek,
+      session_minutes: goal.sessionMinutes
+    })
+  });
+  if (!response.ok || !response.body) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalPlan: LearningPlan | null = null;
+  let streamError: string | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        continue;
+      }
+      const event = JSON.parse(trimmed) as {
+        stage: string;
+        payload?: Record<string, unknown>;
+        plan?: any;
+      };
+      onEvent({
+        stage: event.stage,
+        payload: event.payload ?? {}
+      });
+      if (event.stage === "stream_error") {
+        streamError = String(event.payload?.detail ?? "learning_plan_stream_error");
+      }
+      if (event.plan) {
+        finalPlan = normalizePlan(event.plan);
+      }
+    }
+    if (done) {
+      break;
+    }
+  }
+
+  if (streamError) {
+    throw new Error(streamError);
+  }
+  if (!finalPlan) {
+    throw new Error("learning_plan_stream_ended_without_plan");
+  }
+  return finalPlan;
+}
+
 export async function createStudySession(input: {
   documentId: string;
   personaId: string;
   sectionId: string;
 }): Promise<StudySessionRecord> {
   const payload = await readJson<any>(
-    await fetch(`${AI_BASE_URL}/study-sessions`, {
+    await request(`${AI_BASE_URL}/study-sessions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -150,7 +554,7 @@ export async function sendStudyMessage(input: {
   message: string;
 }): Promise<StudyChatResponse> {
   const payload = await readJson<any>(
-    await fetch(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat`, {
+    await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

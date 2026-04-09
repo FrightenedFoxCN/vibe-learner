@@ -22,7 +22,7 @@ export function PersonaSelector({
       >
         {personas.map((persona) => (
           <option key={persona.id} value={persona.id}>
-            {persona.name} · {persona.source}
+            {persona.name} · {persona.source === "builtin" ? "内置" : "用户扩展"}
           </option>
         ))}
       </select>

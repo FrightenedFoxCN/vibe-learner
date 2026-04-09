@@ -8,6 +8,7 @@ interface StudyConsoleProps {
   isPending: boolean;
   onAsk: (message: string) => void;
   sectionId: string;
+  sectionTitle?: string;
   session: StudyChatResponse | null;
   disabled?: boolean;
 }
@@ -16,6 +17,7 @@ export function StudyConsole({
   isPending,
   onAsk,
   sectionId,
+  sectionTitle,
   session,
   disabled
 }: StudyConsoleProps) {
@@ -26,7 +28,8 @@ export function StudyConsole({
       <div style={styles.row}>
         <div>
           <p style={styles.sectionLabel}>章节会话</p>
-          <h2 style={styles.title}>{sectionId}</h2>
+          <h2 style={styles.title}>{sectionTitle || "等待创建学习会话"}</h2>
+          {sectionId ? <p style={styles.sectionMeta}>section id: {sectionId}</p> : null}
         </div>
         <button
           style={styles.button}
@@ -46,14 +49,18 @@ export function StudyConsole({
       <div style={styles.responseCard}>
         <p style={styles.responseLabel}>结构化回复</p>
         <p style={styles.responseText}>
-          {session?.reply ?? "回复尚未生成。这里消费的是 reply + citations + characterEvents，而不是纯文本。"}
+          {session?.reply ?? "回复尚未生成。这里会同时展示文本回答和教材引用，角色事件则在右侧角色层消费。"}
         </p>
         <div style={styles.citations}>
-          {(session?.citations ?? []).map((citation) => (
-            <span key={citation.sectionId} style={styles.citation}>
-              {citation.title} · p.{citation.pageStart}-{citation.pageEnd}
-            </span>
-          ))}
+          {(session?.citations ?? []).length ? (
+            session?.citations.map((citation) => (
+              <span key={citation.sectionId} style={styles.citation}>
+                {citation.title} · p.{citation.pageStart}-{citation.pageEnd}
+              </span>
+            ))
+          ) : (
+            <span style={styles.emptyCitation}>暂无教材引用。</span>
+          )}
         </div>
       </div>
     </article>
@@ -85,6 +92,11 @@ const styles: Record<string, CSSProperties> = {
     margin: "8px 0 0",
     fontSize: 28,
     fontFamily: "var(--font-display), sans-serif"
+  },
+  sectionMeta: {
+    margin: "6px 0 0",
+    color: "var(--muted)",
+    fontSize: 13
   },
   button: {
     border: 0,
@@ -130,6 +142,10 @@ const styles: Record<string, CSSProperties> = {
     padding: "8px 12px",
     borderRadius: 999,
     background: "var(--accent-soft)",
+    fontSize: 13
+  },
+  emptyCitation: {
+    color: "var(--muted)",
     fontSize: 13
   }
 };

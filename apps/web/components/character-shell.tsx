@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { CharacterStateEvent, PersonaProfile, StudyChatResponse } from "@gal-learner/shared";
+import type { PersonaProfile, StudyChatResponse } from "@gal-learner/shared";
 
 import { placeholderCharacterRenderer } from "./character-renderer";
 
@@ -22,28 +22,26 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
 
       <div style={styles.metaGrid}>
         <div style={styles.metaCard}>
-          <span style={styles.metaLabel}>Teaching</span>
+          <span style={styles.metaLabel}>教学风格</span>
           <strong>{persona.teachingStyle.join(" / ")}</strong>
         </div>
         <div style={styles.metaCard}>
-          <span style={styles.metaLabel}>Narrative</span>
-          <strong>{persona.narrativeMode}</strong>
+          <span style={styles.metaLabel}>叙事模式</span>
+          <strong>{formatNarrativeMode(persona.narrativeMode)}</strong>
         </div>
         <div style={styles.metaCard}>
-          <span style={styles.metaLabel}>Speech</span>
+          <span style={styles.metaLabel}>说话风格</span>
           <strong>{currentEvent?.speechStyle ?? persona.defaultSpeechStyle}</strong>
         </div>
         <div style={styles.metaCard}>
-          <span style={styles.metaLabel}>Scene</span>
-          <strong>{currentEvent?.sceneHint ?? "persona shell"}</strong>
+          <span style={styles.metaLabel}>场景提示</span>
+          <strong>{currentEvent?.sceneHint ?? "study_session"}</strong>
         </div>
       </div>
 
       <div style={styles.streamBox}>
-        <p style={styles.streamTitle}>Character event stream</p>
-        <pre style={styles.pre}>
-          {JSON.stringify(response?.characterEvents ?? [], null, 2)}
-        </pre>
+        <p style={styles.streamTitle}>角色事件快照</p>
+        <pre style={styles.pre}>{formatEventStream(response)}</pre>
       </div>
     </aside>
   );
@@ -112,3 +110,20 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.6
   }
 };
+
+function formatNarrativeMode(mode: string) {
+  if (mode === "light_story") {
+    return "轻剧情陪伴";
+  }
+  if (mode === "grounded") {
+    return "稳态导学";
+  }
+  return mode;
+}
+
+function formatEventStream(response: StudyChatResponse | null) {
+  if (!response?.characterEvents.length) {
+    return "尚未收到角色事件。\n生成导学回复后，这里会显示 emotion / action / speech_style 等结构化状态。";
+  }
+  return JSON.stringify(response.characterEvents, null, 2);
+}

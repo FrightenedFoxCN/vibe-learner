@@ -45,7 +45,8 @@ export function DocumentSetup({
       <p style={styles.sectionLabel}>教材启动</p>
       <h2 style={styles.title}>上传教材并生成第一版计划</h2>
       <p style={styles.summary}>
-        当前教师人格：{personas.find((persona) => persona.id === selectedPersonaId)?.name ?? "未选择"}
+        当前教师人格：{personas.find((persona) => persona.id === selectedPersonaId)?.name ?? "未选择"}。
+        上传完成后会依次执行教材入库、OCR/文本提取、章节清理与学习计划生成。
       </p>
 
       <div style={styles.formGrid}>
@@ -98,6 +99,11 @@ export function DocumentSetup({
           if (!file) {
             return;
           }
+          console.info("[gal-learner] ui:upload_click", {
+            filename: file.name,
+            sizeBytes: file.size,
+            selectedPersonaId
+          });
           onGenerate({
             file,
             objective,
@@ -109,21 +115,41 @@ export function DocumentSetup({
       >
         {isBusy ? "处理中..." : "上传并生成计划"}
       </button>
+      <p style={styles.hint}>
+        调试提示：打开浏览器控制台和后端终端，可看到上传、解析、建计划、建会话的阶段日志。
+      </p>
 
       <div style={styles.statusGrid}>
         <div style={styles.card}>
-          <strong>Document</strong>
-          <p>{document ? `${document.title} · ${document.status}` : "尚未上传教材"}</p>
+          <strong>教材状态</strong>
+          <p>{document ? formatDocumentSummary(document) : "尚未上传教材。"}</p>
         </div>
         <div style={styles.card}>
-          <strong>Plan</strong>
-          <p>{plan?.overview ?? "尚未生成学习计划"}</p>
+          <strong>计划状态</strong>
+          <p>{plan ? `${plan.todayTasks.length} 条今日任务，${plan.schedule.length} 条日程已生成。` : "尚未生成学习计划。"}</p>
         </div>
         <div style={styles.card}>
-          <strong>Session</strong>
-          <p>{session ? `${session.sectionId} · ${session.status}` : "尚未创建学习会话"}</p>
+          <strong>会话状态</strong>
+          <p>{session ? `已创建章节会话，状态为 ${formatSessionStatus(session.status)}。` : "尚未创建学习会话。"}</p>
         </div>
       </div>
+
+      {document?.studyUnits.length ? (
+        <div style={styles.cleanedSectionBlock}>
+          <strong>学习单元清理结果</strong>
+          <div style={styles.cleanedSectionList}>
+            {document.studyUnits.map((unit) => (
+              <div key={unit.id} style={styles.cleanedSectionItem}>
+                <span>{unit.title}</span>
+                <small>
+                  第 {unit.pageStart}-{unit.pageEnd} 页 · {formatUnitKind(unit.unitKind)}
+                  {unit.includeInPlan ? " · 纳入计划" : " · 已跳过"}
+                </small>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -183,10 +209,89 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
     marginTop: 18
   },
+  hint: {
+    margin: "12px 0 0",
+    fontSize: 13,
+    color: "var(--muted)"
+  },
   card: {
     padding: 16,
     borderRadius: 18,
     background: "rgba(255,255,255,0.76)",
     border: "1px solid var(--border)"
+  },
+  cleanedSectionBlock: {
+    marginTop: 18,
+    display: "grid",
+    gap: 10
+  },
+  cleanedSectionList: {
+    display: "grid",
+    gap: 8
+  },
+  cleanedSectionItem: {
+    padding: 12,
+    borderRadius: 16,
+    background: "rgba(255,255,255,0.72)",
+    border: "1px solid var(--border)",
+    display: "grid",
+    gap: 4
   }
 };
+
+function formatDocumentSummary(document: DocumentRecord) {
+  return [
+    document.title,
+    formatDocumentStatus(document.status),
+    `${document.pageCount} 页`,
+    `${document.chunkCount} 个分段`,
+    `${document.studyUnitCount} 个学习单元`,
+    formatOcrStatus(document.ocrStatus)
+  ].join(" · ");
+}
+
+function formatDocumentStatus(status: string) {
+  if (status === "processed") {
+    return "解析完成";
+  }
+  if (status === "processing") {
+    return "解析中";
+  }
+  if (status === "uploaded") {
+    return "已上传";
+  }
+  return status;
+}
+
+function formatOcrStatus(status: string) {
+  if (status === "fallback_used") {
+    return "已使用 OCR 补救";
+  }
+  if (status === "completed") {
+    return "文本提取完成";
+  }
+  if (status === "pending") {
+    return "等待处理";
+  }
+  return status;
+}
+
+function formatSessionStatus(status: string) {
+  if (status === "active") {
+    return "进行中";
+  }
+  return status;
+}
+
+function formatUnitKind(unitKind: string) {
+  if (unitKind === "chapter") {
+    return "章节";
+  }
+  if (unitKind === "front_matter") {
+    return "前置材料";
+  }
+  if (unitKind === "back_matter") {
+    return "附录或后置材料";
+  }
+  return unitKind;
+}

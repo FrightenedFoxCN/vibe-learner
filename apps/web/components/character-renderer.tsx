@@ -25,9 +25,9 @@ function PlaceholderRenderer({
       </div>
       <div style={styles.badges}>
         <span style={styles.badge}>
-          {pending ? "thinking" : currentEvent?.emotion ?? persona.defaultSpeechStyle}
+          {pending ? "思考中" : currentEvent?.emotion ?? persona.defaultSpeechStyle}
         </span>
-        <span style={styles.badge}>{currentEvent?.action ?? "idle"}</span>
+        <span style={styles.badge}>{currentEvent?.action ?? "待机"}</span>
       </div>
     </div>
   );
