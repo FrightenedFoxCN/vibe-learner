@@ -1,19 +1,34 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 from app.models.api import CreatePersonaRequest
+from app.models.domain import LearningGoalInput
+from app.services.documents import DocumentService
+from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
+from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
+from app.services.study_sessions import StudySessionService
 
 
 class PersonaPipelineTests(unittest.TestCase):
     def setUp(self) -> None:
+        self.temp_dir = TemporaryDirectory()
+        store = LocalJsonStore(Path(self.temp_dir.name))
         self.persona_engine = PersonaEngine()
+        self.document_service = DocumentService(store)
+        self.plan_service = LearningPlanService(store)
+        self.study_session_service = StudySessionService(store)
         self.orchestrator = PedagogyOrchestrator(
             model_provider=MockModelProvider(),
             performance_mapper=PerformanceMapper(),
         )
+
+    def tearDown(self) -> None:
+        self.temp_dir.cleanup()
 
     def test_builtin_personas_are_available(self) -> None:
         personas = self.persona_engine.list_personas()
@@ -60,6 +75,54 @@ class PersonaPipelineTests(unittest.TestCase):
         )
         self.assertLess(short.score, long.score)
         self.assertEqual(long.character_events[0].action, "celebrate")
+
+    def test_plan_and_session_can_be_persisted(self) -> None:
+        from fastapi import UploadFile
+
+        upload = UploadFile(
+            filename="physics-notes.pdf",
+            file=open(__file__, "rb"),
+        )
+        try:
+            document = self.document_service.create_document(upload)
+        finally:
+            upload.file.close()
+
+        processed = self.document_service.process_document(document.id)
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        plan = self.plan_service.create_plan(
+            goal=LearningGoalInput(
+                document_id=processed.id,
+                persona_id=persona.id,
+                objective="掌握第一章",
+                deadline="2026-05-01",
+                study_days_per_week=4,
+                session_minutes=35,
+            ),
+            document=processed,
+            persona_name=persona.name,
+        )
+        session = self.study_session_service.create_session(
+            document_id=processed.id,
+            persona_id=persona.id,
+            section_id=processed.sections[0].id,
+        )
+
+        reply = self.orchestrator.generate_chat_reply(
+            session_id=session.id,
+            persona=persona,
+            message="解释本章核心定义",
+            section_id=processed.sections[0].id,
+        )
+        updated_session = self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="解释本章核心定义",
+            result=reply,
+        )
+
+        self.assertTrue(plan.overview)
+        self.assertEqual(updated_session.turns[0].assistant_reply, reply.reply)
+        self.assertEqual(updated_session.section_id, processed.sections[0].id)
 
 
 if __name__ == "__main__":

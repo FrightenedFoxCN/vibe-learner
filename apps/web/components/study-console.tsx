@@ -9,13 +9,15 @@ interface StudyConsoleProps {
   onAsk: (message: string) => void;
   sectionId: string;
   session: StudyChatResponse | null;
+  disabled?: boolean;
 }
 
 export function StudyConsole({
   isPending,
   onAsk,
   sectionId,
-  session
+  session,
+  disabled
 }: StudyConsoleProps) {
   const [message, setMessage] = useState("请解释这一章的核心概念，并给我一个复述练习。");
 
@@ -26,8 +28,12 @@ export function StudyConsole({
           <p style={styles.sectionLabel}>章节会话</p>
           <h2 style={styles.title}>{sectionId}</h2>
         </div>
-        <button style={styles.button} disabled={isPending} onClick={() => onAsk(message)}>
-          {isPending ? "生成中..." : "发送导学请求"}
+        <button
+          style={styles.button}
+          disabled={isPending || disabled}
+          onClick={() => onAsk(message)}
+        >
+          {isPending ? "生成中..." : disabled ? "先创建学习会话" : "发送导学请求"}
         </button>
       </div>
 

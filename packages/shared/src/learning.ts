@@ -9,6 +9,7 @@ export interface Citation {
 
 export interface LearningGoal {
   documentId: string;
+  personaId: string;
   objective: string;
   deadline: string;
   studyDaysPerWeek: number;
@@ -26,8 +27,6 @@ export interface LearningPlan {
 
 export interface StudyChatRequest {
   message: string;
-  personaId: string;
-  sectionId: string;
 }
 
 export interface StudyChatResponse {
@@ -50,4 +49,35 @@ export interface SubmissionFeedback {
   diagnosis: string[];
   recommendation: string;
   characterEvents: CharacterStateEvent[];
+}
+
+export interface DocumentSection {
+  id: string;
+  documentId: string;
+  title: string;
+  pageStart: number;
+  pageEnd: number;
+  level: number;
+}
+
+export interface DocumentRecord {
+  id: string;
+  title: string;
+  originalFilename: string;
+  storedPath: string;
+  status: string;
+  ocrStatus: string;
+  createdAt: string;
+  updatedAt: string;
+  sections: DocumentSection[];
+}
+
+export interface StudySessionRecord {
+  id: string;
+  documentId: string;
+  personaId: string;
+  sectionId: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }

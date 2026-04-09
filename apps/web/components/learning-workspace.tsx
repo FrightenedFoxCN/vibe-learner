@@ -1,33 +1,82 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useState } from "react";
-import type { LearningPlan, PersonaProfile } from "@gal-learner/shared";
+import { useEffect, useState, useTransition } from "react";
+import type {
+  DocumentRecord,
+  LearningPlan,
+  PersonaProfile,
+  StudyChatResponse,
+  StudySessionRecord
+} from "@gal-learner/shared";
 
 import { CharacterShell } from "./character-shell";
+import { DocumentSetup } from "./document-setup";
 import { PersonaSelector } from "./persona-selector";
 import { StudyConsole } from "./study-console";
-import { useStudySession } from "../lib/use-study-session";
+import {
+  createLearningPlan,
+  createStudySession,
+  listPersonas,
+  sendStudyMessage,
+  uploadAndProcessDocument
+} from "../lib/api";
+import { mockPlan, mockPersonas } from "../lib/mock-data";
 
 interface LearningWorkspaceProps {
-  initialPlan: LearningPlan;
-  personas: PersonaProfile[];
+  initialPlan?: LearningPlan;
+  personas?: PersonaProfile[];
 }
 
-const INITIAL_SECTION_ID = "chapter-1";
-
-export function LearningWorkspace({ initialPlan, personas }: LearningWorkspaceProps) {
-  const [selectedPersonaId, setSelectedPersonaId] = useState(personas[0]?.id ?? "");
-  const { session, isPending, ask } = useStudySession();
+export function LearningWorkspace({
+  initialPlan = mockPlan,
+  personas: initialPersonas = mockPersonas
+}: LearningWorkspaceProps) {
+  const [personas, setPersonas] = useState(initialPersonas);
+  const [selectedPersonaId, setSelectedPersonaId] = useState(initialPersonas[0]?.id ?? "");
+  const [document, setDocument] = useState<DocumentRecord | null>(null);
+  const [plan, setPlan] = useState<LearningPlan | null>(initialPlan);
+  const [studySession, setStudySession] = useState<StudySessionRecord | null>(null);
+  const [response, setResponse] = useState<StudyChatResponse | null>(null);
+  const [notice, setNotice] = useState("服务未连接时会显示内置示例人格。");
+  const [isPending, startTransition] = useTransition();
 
   const selectedPersona =
     personas.find((persona) => persona.id === selectedPersonaId) ?? personas[0];
 
+  useEffect(() => {
+    let active = true;
+    startTransition(async () => {
+      try {
+        const remotePersonas = await listPersonas();
+        if (!active || remotePersonas.length === 0) {
+          return;
+        }
+        setPersonas(remotePersonas);
+        setSelectedPersonaId((current) => current || remotePersonas[0].id);
+        setNotice("当前已连接本地 AI 服务。");
+      } catch {
+        if (active) {
+          setNotice("未连接到本地 AI 服务，当前显示内置示例数据。");
+        }
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleAsk = (message: string) => {
-    ask({
-      message,
-      personaId: selectedPersona.id,
-      sectionId: INITIAL_SECTION_ID
+    if (!studySession) {
+      return;
+    }
+    startTransition(async () => {
+      const next = await sendStudyMessage({
+        sessionId: studySession.id,
+        message
+      });
+      setResponse(next);
     });
   };
 
@@ -40,6 +89,7 @@ export function LearningWorkspace({ initialPlan, personas }: LearningWorkspacePr
           <p style={styles.subtitle}>
             页面左侧负责学习流程，右侧负责教师人格与角色状态。未来接入 Live2D 时，只替换角色渲染器。
           </p>
+          <p style={styles.notice}>{notice}</p>
         </div>
         <PersonaSelector
           personas={personas}
@@ -50,11 +100,42 @@ export function LearningWorkspace({ initialPlan, personas }: LearningWorkspacePr
 
       <section style={styles.grid}>
         <div style={styles.studyColumn}>
+          <DocumentSetup
+            personas={personas}
+            selectedPersonaId={selectedPersona.id}
+            isBusy={isPending}
+            document={document}
+            plan={plan}
+            session={studySession}
+            onGenerate={(input) => {
+              startTransition(async () => {
+                const nextDocument = await uploadAndProcessDocument(input.file);
+                const nextPlan = await createLearningPlan({
+                  documentId: nextDocument.id,
+                  personaId: selectedPersona.id,
+                  objective: input.objective,
+                  deadline: input.deadline,
+                  studyDaysPerWeek: input.studyDaysPerWeek,
+                  sessionMinutes: input.sessionMinutes
+                });
+                const nextSession = await createStudySession({
+                  documentId: nextDocument.id,
+                  personaId: selectedPersona.id,
+                  sectionId: nextDocument.sections[0]?.id ?? `${nextDocument.id}:intro`
+                });
+                setDocument(nextDocument);
+                setPlan(nextPlan);
+                setStudySession(nextSession);
+                setResponse(null);
+              });
+            }}
+          />
+
           <article style={styles.panel}>
             <p style={styles.sectionLabel}>今日计划</p>
-            <h2 style={styles.panelTitle}>{initialPlan.overview}</h2>
+            <h2 style={styles.panelTitle}>{plan?.overview ?? initialPlan.overview}</h2>
             <div style={styles.taskGrid}>
-              {initialPlan.todayTasks.map((task) => (
+              {(plan?.todayTasks ?? initialPlan.todayTasks).map((task) => (
                 <div key={task} style={styles.taskCard}>
                   {task}
                 </div>
@@ -65,14 +146,15 @@ export function LearningWorkspace({ initialPlan, personas }: LearningWorkspacePr
           <StudyConsole
             isPending={isPending}
             onAsk={handleAsk}
-            session={session}
-            sectionId={INITIAL_SECTION_ID}
+            session={response}
+            sectionId={studySession?.sectionId ?? document?.sections[0]?.id ?? "chapter-1"}
+            disabled={!studySession}
           />
         </div>
 
         <CharacterShell
           persona={selectedPersona}
-          response={session}
+          response={response}
           pending={isPending}
         />
       </section>
@@ -113,6 +195,11 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     fontSize: 18,
     lineHeight: 1.6
+  },
+  notice: {
+    margin: "12px 0 0",
+    color: "var(--teal)",
+    fontSize: 14
   },
   grid: {
     display: "grid",

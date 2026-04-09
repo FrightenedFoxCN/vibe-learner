@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 
-from app.models.domain import CharacterStateEvent, Citation, PersonaProfile
+from app.models.domain import (
+    CharacterStateEvent,
+    Citation,
+    DocumentRecord,
+    LearningGoalInput,
+    LearningPlanRecord,
+    PersonaProfile,
+    StudySessionRecord,
+)
 
 
 class CreatePersonaRequest(BaseModel):
@@ -27,10 +35,38 @@ class PersonaAssetsResponse(BaseModel):
     asset_manifest: dict[str, object]
 
 
-class StudyChatRequest(BaseModel):
-    message: str
+class DocumentResponse(DocumentRecord):
+    pass
+
+
+class DocumentListResponse(BaseModel):
+    items: list[DocumentResponse]
+
+
+class DocumentStatusResponse(DocumentRecord):
+    pass
+
+
+class LearningPlanCreateRequest(LearningGoalInput):
+    pass
+
+
+class LearningPlanResponse(LearningPlanRecord):
+    pass
+
+
+class CreateStudySessionRequest(BaseModel):
+    document_id: str
     persona_id: str
     section_id: str
+
+
+class StudySessionResponse(StudySessionRecord):
+    pass
+
+
+class StudyChatRequest(BaseModel):
+    message: str
 
 
 class StudyChatResponse(BaseModel):

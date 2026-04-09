@@ -7,3 +7,5 @@ dist
 coverage
 uv.lock
 .DS_Store
+services/ai/data/uploads
+services/ai/data/*.json

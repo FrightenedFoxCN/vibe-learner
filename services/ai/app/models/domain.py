@@ -33,10 +33,71 @@ class Citation(BaseModel):
     page_end: int
 
 
+class DocumentSection(BaseModel):
+    id: str
+    document_id: str
+    title: str
+    page_start: int
+    page_end: int
+    level: int
+
+
+class DocumentRecord(BaseModel):
+    id: str
+    title: str
+    original_filename: str
+    stored_path: str
+    status: str
+    ocr_status: str
+    created_at: str
+    updated_at: str
+    sections: list[DocumentSection]
+
+
+class LearningGoalInput(BaseModel):
+    document_id: str
+    persona_id: str
+    objective: str
+    deadline: str
+    study_days_per_week: int
+    session_minutes: int
+
+
+class LearningPlanRecord(BaseModel):
+    id: str
+    document_id: str
+    persona_id: str
+    objective: str
+    deadline: str
+    overview: str
+    weekly_focus: list[str]
+    today_tasks: list[str]
+    created_at: str
+
+
 class StudyChatResult(BaseModel):
     reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+
+
+class DialogueTurnRecord(BaseModel):
+    learner_message: str
+    assistant_reply: str
+    citations: list[Citation]
+    character_events: list[CharacterStateEvent]
+    created_at: str
+
+
+class StudySessionRecord(BaseModel):
+    id: str
+    document_id: str
+    persona_id: str
+    section_id: str
+    status: str
+    turns: list[DialogueTurnRecord]
+    created_at: str
+    updated_at: str
 
 
 class ExerciseResult(BaseModel):
