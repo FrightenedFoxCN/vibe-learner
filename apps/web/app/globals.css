@@ -1,0 +1,44 @@
+:root {
+  --font-body: "Avenir Next", "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+  --font-display: "Trebuchet MS", "Avenir Next Condensed", "PingFang SC", sans-serif;
+  --bg: #f4efe3;
+  --panel: rgba(255, 250, 241, 0.82);
+  --panel-strong: rgba(255, 248, 232, 0.95);
+  --border: rgba(78, 53, 37, 0.16);
+  --ink: #2d241f;
+  --muted: #6b5b4f;
+  --accent: #c55c3b;
+  --accent-soft: #f7d3b8;
+  --teal: #3f8c85;
+  --shadow: 0 24px 80px rgba(64, 41, 22, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  color: var(--ink);
+  font-family: var(--font-body);
+  background:
+    radial-gradient(circle at top left, rgba(197, 92, 59, 0.2), transparent 32%),
+    radial-gradient(circle at top right, rgba(63, 140, 133, 0.18), transparent 28%),
+    linear-gradient(180deg, #f8f2e8 0%, #efe4d1 100%);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}

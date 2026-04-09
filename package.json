@@ -1,0 +1,16 @@
+{
+  "name": "gal-learner",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @gal-learner/web run dev",
+    "build:web": "npm --workspace @gal-learner/web run build",
+    "lint:web": "npm --workspace @gal-learner/web run lint",
+    "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/gal-learner-uv-cache uv run python -m unittest discover -s tests",
+    "test": "npm run test:ai"
+  }
+}

@@ -1,0 +1,9 @@
+.next
+.venv
+__pycache__
+*.pyc
+node_modules
+dist
+coverage
+uv.lock
+.DS_Store
