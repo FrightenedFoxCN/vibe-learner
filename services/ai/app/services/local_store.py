@@ -30,3 +30,19 @@ class LocalJsonStore:
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+
+    def load_item(self, category: str, item_id: str, model: type[T]) -> T | None:
+        path = self.root / category / f"{item_id}.json"
+        if not path.exists():
+            return None
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return model.model_validate(payload)
+
+    def save_item(self, category: str, item_id: str, item: BaseModel) -> None:
+        category_root = self.root / category
+        category_root.mkdir(parents=True, exist_ok=True)
+        path = category_root / f"{item_id}.json"
+        path.write_text(
+            json.dumps(item.model_dump(mode="json"), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )

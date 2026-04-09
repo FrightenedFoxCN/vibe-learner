@@ -3,9 +3,13 @@ from pydantic import BaseModel
 from app.models.domain import (
     CharacterStateEvent,
     Citation,
+    DocumentDebugRecord,
     DocumentRecord,
     LearningGoalInput,
     LearningPlanRecord,
+    PlanGenerationTraceRecord,
+    PlanGenerationRoundRecord,
+    PlanToolCallTraceRecord,
     PersonaProfile,
     StudySessionRecord,
 )
@@ -47,12 +51,98 @@ class DocumentStatusResponse(DocumentRecord):
     pass
 
 
+class DocumentDebugResponse(DocumentDebugRecord):
+    pass
+
+
+class PlanningSectionRefResponse(BaseModel):
+    section_id: str
+    title: str
+    level: int
+    page_start: int
+    page_end: int
+
+
+class PlanningOutlineNodeResponse(PlanningSectionRefResponse):
+    children: list[PlanningSectionRefResponse]
+
+
+class PlanningChunkExcerptResponse(BaseModel):
+    chunk_id: str
+    section_id: str
+    page_start: int
+    page_end: int
+    char_count: int
+    content: str
+
+
+class PlanningStudyUnitContextResponse(BaseModel):
+    unit_id: str
+    title: str
+    page_start: int
+    page_end: int
+    summary: str
+    unit_kind: str
+    include_in_plan: bool
+    subsection_titles: list[str]
+    related_section_ids: list[str]
+    detail_tool_target_id: str
+
+
+class StudyUnitPlanningDetailResponse(BaseModel):
+    unit_id: str
+    title: str
+    page_start: int
+    page_end: int
+    summary: str
+    unit_kind: str
+    include_in_plan: bool
+    related_section_ids: list[str]
+    subsection_titles: list[str]
+    related_sections: list[PlanningSectionRefResponse]
+    chunk_count: int
+    chunk_excerpts: list[PlanningChunkExcerptResponse]
+
+
+class PlanningToolSpecResponse(BaseModel):
+    name: str
+    description: str
+
+
+class DocumentPlanningContextResponse(BaseModel):
+    document_id: str
+    course_outline: list[PlanningOutlineNodeResponse]
+    study_units: list[PlanningStudyUnitContextResponse]
+    detail_map: dict[str, StudyUnitPlanningDetailResponse]
+    available_tools: list[PlanningToolSpecResponse]
+
+
+class PlanToolCallTraceResponse(PlanToolCallTraceRecord):
+    pass
+
+
+class PlanGenerationRoundTraceResponse(PlanGenerationRoundRecord):
+    tool_calls: list[PlanToolCallTraceResponse]
+
+
+class DocumentPlanningTraceResponse(PlanGenerationTraceRecord):
+    rounds: list[PlanGenerationRoundTraceResponse]
+
+
+class ProcessDocumentRequest(BaseModel):
+    force_ocr: bool = False
+
+
 class LearningPlanCreateRequest(LearningGoalInput):
     pass
 
 
 class LearningPlanResponse(LearningPlanRecord):
     pass
+
+
+class LearningPlanListResponse(BaseModel):
+    items: list[LearningPlanResponse]
 
 
 class CreateStudySessionRequest(BaseModel):

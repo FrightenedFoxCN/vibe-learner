@@ -42,6 +42,70 @@ class DocumentSection(BaseModel):
     level: int
 
 
+class StudyUnitRecord(BaseModel):
+    id: str
+    document_id: str
+    title: str
+    page_start: int
+    page_end: int
+    unit_kind: str = "chapter"
+    include_in_plan: bool = True
+    source_section_ids: list[str] = []
+    summary: str = ""
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class HeadingCandidate(BaseModel):
+    page_number: int
+    text: str
+    font_size: float
+    confidence: float
+
+
+class DocumentPageRecord(BaseModel):
+    page_number: int
+    char_count: int
+    word_count: int
+    text_preview: str
+    dominant_font_size: float
+    extraction_source: str = "text"
+    heading_candidates: list[HeadingCandidate]
+
+
+class DocumentChunkRecord(BaseModel):
+    id: str
+    document_id: str
+    section_id: str
+    page_start: int
+    page_end: int
+    char_count: int
+    text_preview: str
+    content: str = ""
+
+
+class ParseWarning(BaseModel):
+    code: str
+    message: str
+    page_number: int | None = None
+
+
+class DocumentDebugRecord(BaseModel):
+    document_id: str
+    parser_name: str
+    processed_at: str
+    page_count: int
+    total_characters: int
+    extraction_method: str
+    ocr_applied: bool = False
+    ocr_language: str | None = None
+    pages: list[DocumentPageRecord]
+    sections: list[DocumentSection]
+    study_units: list[StudyUnitRecord] = []
+    chunks: list[DocumentChunkRecord]
+    warnings: list[ParseWarning]
+    dominant_language_hint: str
+
+
 class DocumentRecord(BaseModel):
     id: str
     title: str
@@ -51,7 +115,13 @@ class DocumentRecord(BaseModel):
     ocr_status: str
     created_at: str
     updated_at: str
-    sections: list[DocumentSection]
+    sections: list[DocumentSection] = []
+    study_units: list[StudyUnitRecord] = []
+    study_unit_count: int = 0
+    page_count: int = 0
+    chunk_count: int = 0
+    preview_excerpt: str = ""
+    debug_ready: bool = False
 
 
 class LearningGoalInput(BaseModel):
@@ -63,6 +133,17 @@ class LearningGoalInput(BaseModel):
     session_minutes: int
 
 
+class StudyScheduleRecord(BaseModel):
+    id: str
+    unit_id: str
+    title: str
+    scheduled_date: str
+    focus: str
+    activity_type: str
+    estimated_minutes: int
+    status: str = "planned"
+
+
 class LearningPlanRecord(BaseModel):
     id: str
     document_id: str
@@ -72,7 +153,34 @@ class LearningPlanRecord(BaseModel):
     overview: str
     weekly_focus: list[str]
     today_tasks: list[str]
+    study_units: list[StudyUnitRecord] = []
+    schedule: list[StudyScheduleRecord] = []
     created_at: str
+
+
+class PlanToolCallTraceRecord(BaseModel):
+    tool_call_id: str
+    tool_name: str
+    arguments_json: str
+    result_json: str
+
+
+class PlanGenerationRoundRecord(BaseModel):
+    round_index: int
+    finish_reason: str = ""
+    assistant_content: str = ""
+    thinking: str = ""
+    elapsed_ms: int = 0
+    timeout_seconds: int = 0
+    tool_calls: list[PlanToolCallTraceRecord] = []
+
+
+class PlanGenerationTraceRecord(BaseModel):
+    document_id: str
+    plan_id: str | None = None
+    model: str
+    created_at: str
+    rounds: list[PlanGenerationRoundRecord] = []
 
 
 class StudyChatResult(BaseModel):
