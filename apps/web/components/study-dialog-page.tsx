@@ -1,14 +1,14 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { CharacterShell } from "./character-shell";
+import { useLearningWorkspace } from "./learning-workspace-provider";
 import { PersonaSelector } from "./persona-selector";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
-import { useLearningWorkspaceController } from "../hooks/use-learning-workspace-controller";
-import { mockPersonas } from "../lib/mock-data";
+import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
 
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -19,36 +19,132 @@ export function StudyDialogPage() {
     setSelectedPersonaId,
     activePlan,
     activeDocument,
+    planHistory,
+    planHistoryItems,
     planSections,
-    activeSection,
+    selectPlan,
     studySession,
     response,
     notice,
     isBusy,
     createSessionForActivePlan,
-    handleSwitchSection,
     handleAsk,
-  } = useLearningWorkspaceController({
-    initialPersonas: mockPersonas,
-  });
+    handleAskForSection,
+    handleSwitchSection,
+    handleSubmitQuestionAttempt,
+  } = useLearningWorkspace();
 
-  const [pdfPage, setPdfPage] = useState<number>(1);
+  const [pdfPage, setPdfPage] = useState(1);
+  const [selectedTheme, setSelectedTheme] = useState("");
+
+  const themeOptions = activePlan?.weeklyFocus ?? [];
+  const currentTheme = selectedTheme || themeOptions[0] || "";
+
+  const resolveSectionIdByTheme = useCallback(
+    (theme: string) => {
+      if (!theme) {
+        return "";
+      }
+      const themeIndex = themeOptions.findIndex((item) => item === theme);
+      const exactFocusMatch = activePlan?.schedule.find((item) => {
+        const focus = item.focus?.trim() ?? "";
+        return focus === theme || focus.includes(theme) || theme.includes(focus);
+      });
+      if (exactFocusMatch?.unitId) {
+        return exactFocusMatch.unitId;
+      }
+
+      const chapterScopedUnitIds = (activePlan?.studyUnits ?? [])
+        .filter((unit) => unit.includeInPlan)
+        .map((unit) => unit.id);
+
+      if (themeIndex >= 0 && chapterScopedUnitIds[themeIndex]) {
+        return chapterScopedUnitIds[themeIndex];
+      }
+
+      if (themeIndex >= 0) {
+        // Prefer de-duplicated chapter sequence for stable theme-to-session switching.
+        if (planSections[themeIndex]?.id) {
+          return planSections[themeIndex].id;
+        }
+
+        const uniqueUnitIds = Array.from(
+          new Set((activePlan?.schedule ?? []).map((item) => item.unitId).filter(Boolean))
+        );
+        if (uniqueUnitIds[themeIndex]) {
+          return uniqueUnitIds[themeIndex];
+        }
+      }
+      return planSections[0]?.id ?? "";
+    },
+    [activePlan?.schedule, activePlan?.studyUnits, planSections, themeOptions]
+  );
+
+  const handleThemeChange = useCallback(
+    (theme: string) => {
+      setSelectedTheme(theme);
+      if (!studySession) {
+        return;
+      }
+      const nextSectionId = resolveSectionIdByTheme(theme);
+      if (nextSectionId && nextSectionId !== studySession.sectionId) {
+        void handleSwitchSection(nextSectionId);
+      }
+    },
+    [handleSwitchSection, resolveSectionIdByTheme, studySession]
+  );
+
+  const handleAskByCurrentTheme = useCallback(
+    async (message: string) => {
+      const targetSectionId = resolveSectionIdByTheme(currentTheme);
+      if (targetSectionId) {
+        await handleAskForSection(message, targetSectionId);
+        return;
+      }
+      await handleAsk(message);
+    },
+    [currentTheme, handleAsk, handleAskForSection, resolveSectionIdByTheme]
+  );
 
   useEffect(() => {
-    if (activeSection?.pageStart) {
-      setPdfPage(activeSection.pageStart);
+    if (!themeOptions.length) {
+      setSelectedTheme("");
+      return;
     }
-  }, [activeSection?.id]);
+    if (!selectedTheme || !themeOptions.includes(selectedTheme)) {
+      setSelectedTheme(themeOptions[0]);
+    }
+  }, [activePlan?.id, selectedTheme, themeOptions]);
 
-  const pdfSrc = activeDocument
-    ? `${AI_BASE_URL}/documents/${activeDocument.id}/file#page=${pdfPage}`
-    : "";
+  useEffect(() => {
+    const firstPage = activeDocument?.sections[0]?.pageStart;
+    if (firstPage) {
+      setPdfPage(firstPage);
+    }
+  }, [activeDocument?.id]);
+
+  useEffect(() => {
+    if (!studySession || !currentTheme) {
+      return;
+    }
+    const nextSectionId = resolveSectionIdByTheme(currentTheme);
+    if (nextSectionId && nextSectionId !== studySession.sectionId) {
+      void handleSwitchSection(nextSectionId);
+    }
+  }, [
+    currentTheme,
+    handleSwitchSection,
+    resolveSectionIdByTheme,
+    studySession?.id,
+    studySession?.sectionId,
+  ]);
+
+  const pdfSrc = activeDocument ? `${AI_BASE_URL}/documents/${activeDocument.id}/file#page=${pdfPage}` : "";
 
   return (
     <main className="with-app-nav study-dialog-page" style={styles.page}>
       <TopNav currentPath="/study" />
 
-      {/* 顶栏 */}
       <div style={styles.topbar}>
         <div style={styles.topbarLeft}>
           <span style={styles.topbarTitle}>章节对话</span>
@@ -58,49 +154,63 @@ export function StudyDialogPage() {
               <span style={styles.hint}>尚未创建会话</span>
               <button
                 type="button"
-                style={{
-                  ...styles.inlineBtn,
-                  ...(isBusy || !activePlan || !activeDocument ? styles.inlineBtnDisabled : {})
-                }}
+                style={{ ...styles.inlineBtn, ...(isBusy || !activePlan || !activeDocument ? styles.inlineBtnDisabled : {}) }}
                 disabled={isBusy || !activePlan || !activeDocument}
-                onClick={() => { void createSessionForActivePlan(); }}
+                onClick={() => {
+                  void createSessionForActivePlan();
+                }}
               >
-                {isBusy ? "创建中…" : "创建"}
+                {isBusy ? "创建中…" : "创建会话"}
               </button>
             </>
           ) : null}
         </div>
-        <PersonaSelector
-          personas={personas}
-          selectedPersonaId={selectedPersona.id}
-          onChange={setSelectedPersonaId}
-          compact
-        />
+
+        <div style={styles.topbarRight}>
+          <label style={styles.planSwitchWrap}>
+            <span style={styles.planSwitchLabel}>Weekly Plan</span>
+            <select
+              style={styles.planSwitchSelect}
+              value={activePlan?.id ?? ""}
+              onChange={(event) => selectPlan(event.target.value, PLAN_SWITCH_NOTICE)}
+              disabled={!planHistory.length}
+            >
+              {planHistoryItems.length ? (
+                planHistoryItems.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.courseTitle} · {item.documentTitle}
+                  </option>
+                ))
+              ) : (
+                <option value="">暂无 weekly plan</option>
+              )}
+            </select>
+          </label>
+
+          <PersonaSelector
+            personas={personas}
+            selectedPersonaId={selectedPersona.id}
+            onChange={setSelectedPersonaId}
+            compact
+          />
+        </div>
       </div>
 
-      {/* 主体双栏 */}
       <section className="study-dialog-grid" style={styles.grid}>
         <div style={styles.leftColumn}>
           <StudyConsole
             isPending={isBusy}
-            onAsk={handleAsk}
-            onChangeSection={(sectionId) => {
-              void handleSwitchSection(sectionId);
-              const nextSection = planSections.find((item) => item.id === sectionId);
-              if (nextSection) setPdfPage(nextSection.pageStart);
-            }}
-            onOpenPage={(page) => setPdfPage(page)}
+            onAsk={handleAskByCurrentTheme}
+            onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
+            onChangeTheme={handleThemeChange}
+            onOpenPage={setPdfPage}
+            selectedTheme={currentTheme}
+            weeklyFocus={themeOptions}
+            turns={studySession?.turns ?? []}
             session={response}
-            sectionId={studySession?.sectionId ?? activeSection?.id ?? ""}
-            sectionTitle={activeSection?.title ?? ""}
-            sections={planSections}
             disabled={!studySession}
           />
-          <CharacterShell
-            persona={selectedPersona}
-            response={response}
-            pending={isBusy}
-          />
+          <CharacterShell persona={selectedPersona} response={response} pending={isBusy} />
         </div>
 
         <aside className="study-dialog-pdf-pane" style={styles.pdfPane}>
@@ -109,14 +219,9 @@ export function StudyDialogPage() {
             <span style={styles.pdfPage}>p.{pdfPage}</span>
           </div>
           {activeDocument ? (
-            <iframe
-              title="textbook-pdf"
-              src={pdfSrc}
-              className="study-dialog-pdf-iframe"
-              style={styles.iframe}
-            />
+            <iframe title="textbook-pdf" src={pdfSrc} className="study-dialog-pdf-iframe" style={styles.iframe} />
           ) : (
-            <div style={styles.emptyPdf}>请先在计划页上传教材并生成学习计划。</div>
+            <div style={styles.emptyPdf}>请先在计划页完成教材上传并生成学习计划。</div>
           )}
         </aside>
       </section>
@@ -148,6 +253,13 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
     flexWrap: "wrap"
   },
+  topbarRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+    justifyContent: "flex-end"
+  },
   topbarTitle: {
     fontSize: 16,
     fontWeight: 700,
@@ -175,6 +287,27 @@ const styles: Record<string, CSSProperties> = {
   inlineBtnDisabled: {
     opacity: 0.45,
     cursor: "not-allowed"
+  },
+  planSwitchWrap: {
+    display: "grid",
+    gap: 4
+  },
+  planSwitchLabel: {
+    fontSize: 11,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "var(--muted)"
+  },
+  planSwitchSelect: {
+    minHeight: 30,
+    borderRadius: 3,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    padding: "0 8px",
+    minWidth: 280,
+    maxWidth: 520,
+    width: "100%"
   },
   grid: {
     display: "grid",

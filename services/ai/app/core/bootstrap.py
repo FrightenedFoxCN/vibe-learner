@@ -59,8 +59,15 @@ class Container:
                 chat_model=settings.openai_chat_model,
                 chat_temperature=settings.openai_chat_temperature,
                 chat_max_tokens=settings.openai_chat_max_tokens,
+                chat_history_messages=settings.openai_chat_history_messages,
+                chat_tool_max_rounds=settings.openai_chat_tool_max_rounds,
+                chat_tools_enabled=settings.openai_chat_tools_enabled,
+                chat_multimodal_enabled=settings.openai_chat_model_multimodal,
                 timeout_seconds=settings.openai_timeout_seconds,
                 multimodal_enabled=settings.openai_plan_model_multimodal,
+                plan_tools_enabled=settings.openai_plan_tools_enabled,
+                fallback_plan_model=settings.openai_plan_fallback_model,
+                fallback_disable_tools=settings.openai_plan_fallback_disable_tools,
             )
 
         logger.info("bootstrap.model_provider provider=mock")

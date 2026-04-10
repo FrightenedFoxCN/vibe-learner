@@ -14,8 +14,15 @@ class Settings:
     openai_chat_model: str = "gpt-4.1-mini"
     openai_chat_temperature: float = 0.35
     openai_chat_max_tokens: int = 800
+    openai_chat_history_messages: int = 8
+    openai_chat_tool_max_rounds: int = 4
+    openai_chat_tools_enabled: bool = True
+    openai_chat_model_multimodal: bool = False
     openai_timeout_seconds: int = 30
     openai_plan_model_multimodal: bool = False
+    openai_plan_tools_enabled: bool = True
+    openai_plan_fallback_model: str = ""
+    openai_plan_fallback_disable_tools: bool = True
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -31,10 +38,35 @@ class Settings:
                 default=0.35,
             ),
             openai_chat_max_tokens=_to_int(os.getenv("OPENAI_CHAT_MAX_TOKENS", "800"), default=800),
+            openai_chat_history_messages=_to_int(
+                os.getenv("OPENAI_CHAT_HISTORY_MESSAGES", "8"),
+                default=8,
+            ),
+            openai_chat_tool_max_rounds=_to_int(
+                os.getenv("OPENAI_CHAT_TOOL_MAX_ROUNDS", "4"),
+                default=4,
+            ),
+            openai_chat_tools_enabled=_to_bool(
+                os.getenv("OPENAI_CHAT_TOOLS_ENABLED", "true"),
+                default=True,
+            ),
+            openai_chat_model_multimodal=_to_bool(
+                os.getenv("OPENAI_CHAT_MODEL_MULTIMODAL", "false"),
+                default=False,
+            ),
             openai_timeout_seconds=_to_int(os.getenv("OPENAI_TIMEOUT_SECONDS", "30"), default=30),
             openai_plan_model_multimodal=_to_bool(
                 os.getenv("OPENAI_PLAN_MODEL_MULTIMODAL", "false"),
                 default=False,
+            ),
+            openai_plan_tools_enabled=_to_bool(
+                os.getenv("OPENAI_PLAN_TOOLS_ENABLED", "true"),
+                default=True,
+            ),
+            openai_plan_fallback_model=os.getenv("OPENAI_PLAN_FALLBACK_MODEL", "").strip(),
+            openai_plan_fallback_disable_tools=_to_bool(
+                os.getenv("OPENAI_PLAN_FALLBACK_DISABLE_TOOLS", "true"),
+                default=True,
             ),
         )
 

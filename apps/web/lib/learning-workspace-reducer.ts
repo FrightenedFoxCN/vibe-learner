@@ -2,6 +2,7 @@ import type {
   DocumentRecord,
   LearningPlan,
   PersonaProfile,
+  StudyUnit,
   StudyChatResponse,
   StudySessionRecord
 } from "@gal-learner/shared";
@@ -31,6 +32,7 @@ type LearningWorkspaceAction =
   | { type: "snapshot_refresh_finished" }
   | { type: "busy_started" }
   | { type: "busy_finished" }
+  | { type: "generation_started" }
   | { type: "notice_set"; notice: string }
   | {
       type: "snapshot_applied";
@@ -109,6 +111,13 @@ export function learningWorkspaceReducer(
         ...state,
         isBusy: false
       };
+    case "generation_started":
+      return {
+        ...state,
+        selectedPlanId: "",
+        studySession: null,
+        response: null
+      };
     case "notice_set":
       return {
         ...state,
@@ -143,14 +152,28 @@ export function learningWorkspaceReducer(
         documents: upsertDocumentRecord(state.documents, action.document)
       };
     case "generated_plan_applied":
+      {
+        const nextDocuments = state.documents.map((document) => {
+          if (document.id !== action.plan.documentId) {
+            return document;
+          }
+          return {
+            ...document,
+            studyUnits: action.plan.studyUnits,
+            studyUnitCount: action.plan.studyUnits.length,
+            sections: projectSectionsFromStudyUnits(document, action.plan.studyUnits)
+          };
+        });
       return {
         ...state,
+        documents: nextDocuments,
         planHistory: upsertLearningPlan(state.planHistory, action.plan),
         selectedPlanId: action.plan.id,
         selectedPersonaId: action.plan.personaId,
         studySession: null,
         response: null
       };
+      }
     case "study_session_set":
       return {
         ...state,
@@ -171,4 +194,20 @@ export function learningWorkspaceReducer(
     default:
       return state;
   }
+}
+
+function projectSectionsFromStudyUnits(
+  document: DocumentRecord,
+  studyUnits: StudyUnit[]
+) {
+  return studyUnits
+    .filter((unit) => unit.includeInPlan)
+    .map((unit) => ({
+      id: unit.id,
+      documentId: document.id,
+      title: unit.title,
+      pageStart: unit.pageStart,
+      pageEnd: unit.pageEnd,
+      level: 1
+    }));
 }

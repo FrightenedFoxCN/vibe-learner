@@ -29,7 +29,9 @@ class PedagogyOrchestrator:
         persona: PersonaProfile,
         message: str,
         section_id: str,
+        session_system_prompt: str = "",
         debug_report: DocumentDebugRecord | None = None,
+        document_path: str | None = None,
         previous_turns: list[DialogueTurnRecord] | None = None,
     ) -> StudyChatResult:
         turns = previous_turns or []
@@ -39,8 +41,11 @@ class PedagogyOrchestrator:
             persona=persona,
             section_id=section_id,
             message=message,
+            session_prompt=session_system_prompt,
             section_context=section_context,
             conversation_history=conversation_history,
+            debug_report=debug_report,
+            document_path=document_path,
         )
         citations = _build_grounded_citations(
             debug_report=debug_report,
@@ -62,6 +67,7 @@ class PedagogyOrchestrator:
             reply=raw_reply.text,
             citations=citations,
             character_events=events,
+            interactive_question=raw_reply.interactive_question,
         )
 
     def generate_exercise(

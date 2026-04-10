@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -164,7 +166,7 @@ class LearningPlanRecord(BaseModel):
         )
     )
     weekly_focus: list[str] = Field(
-        description="Ordered weekly study topics. Suitable for a vertical study sequence."
+        description="Ordered main study themes (coarse-grained), suitable for a vertical learning sequence."
     )
     today_tasks: list[str] = Field(
         description="Actionable learner tasks for the current session or day."
@@ -219,6 +221,23 @@ class StudyChatResult(BaseModel):
     reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+    interactive_question: InteractiveQuestion | None = None
+
+
+class InteractiveQuestionOption(BaseModel):
+    key: str
+    text: str
+
+
+class InteractiveQuestion(BaseModel):
+    question_type: str
+    prompt: str
+    difficulty: str = "medium"
+    topic: str = ""
+    options: list[InteractiveQuestionOption] = []
+    answer_key: str | None = None
+    accepted_answers: list[str] = []
+    explanation: str = ""
 
 
 class DialogueTurnRecord(BaseModel):
@@ -226,6 +245,7 @@ class DialogueTurnRecord(BaseModel):
     assistant_reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+    interactive_question: InteractiveQuestion | None = None
     created_at: str
 
 
@@ -234,6 +254,9 @@ class StudySessionRecord(BaseModel):
     document_id: str
     persona_id: str
     section_id: str
+    section_title: str = ""
+    theme_hint: str = ""
+    session_system_prompt: str = ""
     status: str
     turns: list[DialogueTurnRecord]
     created_at: str

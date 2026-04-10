@@ -53,6 +53,7 @@ def build_learning_plan_messages(
         study_units=study_units,
         debug_report=debug_report,
     )
+    segmentation_hints = _build_segmentation_hints(study_units)
     prompt_template = load_learning_plan_prompt_template()
     user_prompt = {
         "persona": {
@@ -67,6 +68,7 @@ def build_learning_plan_messages(
         "learning_goal": {
             "objective": goal.objective,
         },
+        "segmentation_hints": segmentation_hints,
         "study_units": planning_context["study_units"],
         "instructions": prompt_template.user_instructions,
     }
@@ -381,4 +383,25 @@ def _parse_prompt_sections(raw_text: str) -> dict[str, str]:
     return {
         name: "\n".join(lines).strip()
         for name, lines in sections.items()
+    }
+
+
+def _build_segmentation_hints(study_units: list[StudyUnitRecord]) -> dict[str, object]:
+    plannable = [unit for unit in study_units if unit.include_in_plan] or study_units
+    if not plannable:
+        return {
+            "is_coarse_grained": False,
+            "plannable_unit_count": 0,
+            "max_unit_page_span": 0,
+            "recommend_detail_tool_call": False,
+            "recommend_revise_study_units": False,
+        }
+    max_span = max((unit.page_end - unit.page_start + 1) for unit in plannable)
+    coarse = len(plannable) <= 1 or (len(plannable) <= 2 and max_span >= 80)
+    return {
+        "is_coarse_grained": coarse,
+        "plannable_unit_count": len(plannable),
+        "max_unit_page_span": max_span,
+        "recommend_detail_tool_call": coarse,
+        "recommend_revise_study_units": coarse,
     }

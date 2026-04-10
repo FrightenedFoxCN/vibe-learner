@@ -12,6 +12,10 @@ import type {
   StudySessionRecord
 } from "@gal-learner/shared";
 
+export interface StudyChatExchangeResponse extends StudyChatResponse {
+  session: StudySessionRecord;
+}
+
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
@@ -48,6 +52,26 @@ async function readJson<T>(response: Response): Promise<T> {
     throw new Error(text || `HTTP ${response.status}`);
   }
   return (await response.json()) as T;
+}
+
+function formatStreamErrorPayload(
+  payload: Record<string, unknown> | undefined,
+  fallbackCode: string
+): string {
+  const detail = String(payload?.detail ?? payload?.error ?? fallbackCode);
+  const internal = payload?.internal_error_code;
+  const statusCode = payload?.status_code;
+  const suffixParts: string[] = [];
+  if (internal) {
+    suffixParts.push(`internal=${String(internal)}`);
+  }
+  if (statusCode) {
+    suffixParts.push(`status=${String(statusCode)}`);
+  }
+  if (!suffixParts.length) {
+    return detail;
+  }
+  return `${detail} (${suffixParts.join(", ")})`;
 }
 
 function normalizePersona(persona: any): PersonaProfile {
@@ -308,7 +332,31 @@ function normalizeSession(session: any): StudySessionRecord {
     documentId: session.document_id,
     personaId: session.persona_id,
     sectionId: session.section_id,
+    sectionTitle: session.section_title ?? "",
+    themeHint: session.theme_hint ?? "",
+    sessionSystemPrompt: session.session_system_prompt ?? "",
     status: session.status,
+    turns: (session.turns ?? []).map((turn: any) => ({
+      learnerMessage: turn.learner_message,
+      assistantReply: turn.assistant_reply,
+      citations: (turn.citations ?? []).map((citation: any) => ({
+        sectionId: citation.section_id,
+        title: citation.title,
+        pageStart: citation.page_start,
+        pageEnd: citation.page_end
+      })),
+      characterEvents: (turn.character_events ?? []).map((event: any) => ({
+        emotion: event.emotion,
+        action: event.action,
+        intensity: event.intensity,
+        speechStyle: event.speech_style,
+        sceneHint: event.scene_hint,
+        lineSegmentId: event.line_segment_id,
+        timingHint: event.timing_hint
+      })),
+      interactiveQuestion: normalizeInteractiveQuestion(turn.interactive_question),
+      createdAt: turn.created_at
+    })),
     createdAt: session.created_at,
     updatedAt: session.updated_at
   };
@@ -451,7 +499,7 @@ export async function processDocumentStream(
         payload: event.payload ?? {}
       });
       if (event.stage === "stream_error") {
-        streamError = String(event.payload?.error ?? event.payload?.detail ?? "processing_stream_error");
+        streamError = formatStreamErrorPayload(event.payload, "processing_stream_error");
       }
       if (event.document) {
         finalDocument = normalizeDocument(event.document);
@@ -541,7 +589,7 @@ export async function createLearningPlanStream(
         payload: event.payload ?? {}
       });
       if (event.stage === "stream_error") {
-        streamError = String(event.payload?.detail ?? "learning_plan_stream_error");
+        streamError = formatStreamErrorPayload(event.payload, "learning_plan_stream_error");
       }
       if (event.plan) {
         finalPlan = normalizePlan(event.plan);
@@ -565,6 +613,8 @@ export async function createStudySession(input: {
   documentId: string;
   personaId: string;
   sectionId: string;
+  sectionTitle?: string;
+  themeHint?: string;
 }): Promise<StudySessionRecord> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/study-sessions`, {
@@ -575,11 +625,29 @@ export async function createStudySession(input: {
       body: JSON.stringify({
         document_id: input.documentId,
         persona_id: input.personaId,
-        section_id: input.sectionId
+        section_id: input.sectionId,
+        section_title: input.sectionTitle ?? "",
+        theme_hint: input.themeHint ?? ""
       })
     })
   );
   return normalizeSession(payload);
+}
+
+export async function listStudySessions(input: {
+  documentId?: string;
+  personaId?: string;
+  sectionId?: string;
+}): Promise<StudySessionRecord[]> {
+  const query = new URLSearchParams();
+  if (input.documentId) query.set("document_id", input.documentId);
+  if (input.personaId) query.set("persona_id", input.personaId);
+  if (input.sectionId) query.set("section_id", input.sectionId);
+  const suffix = query.toString();
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/study-sessions${suffix ? `?${suffix}` : ""}`)
+  );
+  return payload.items.map(normalizeSession);
 }
 
 export async function updateStudySessionSection(input: {
@@ -603,7 +671,7 @@ export async function updateStudySessionSection(input: {
 export async function sendStudyMessage(input: {
   sessionId: string;
   message: string;
-}): Promise<StudyChatResponse> {
+}): Promise<StudyChatExchangeResponse> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat`, {
       method: "POST",
@@ -632,6 +700,84 @@ export async function sendStudyMessage(input: {
       sceneHint: event.scene_hint,
       lineSegmentId: event.line_segment_id,
       timingHint: event.timing_hint
-    }))
+    })),
+    interactiveQuestion: normalizeInteractiveQuestion(payload.interactive_question),
+    session: normalizeSession(payload.session)
+  };
+}
+
+export async function submitStudyQuestionAttempt(input: {
+  sessionId: string;
+  questionType: "multiple_choice" | "fill_blank";
+  prompt: string;
+  topic: string;
+  difficulty: "easy" | "medium" | "hard";
+  options: Array<{ key: string; text: string }>;
+  answerKey?: string;
+  acceptedAnswers: string[];
+  submittedAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+}): Promise<StudySessionRecord> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/attempt`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        question_type: input.questionType,
+        prompt: input.prompt,
+        topic: input.topic,
+        difficulty: input.difficulty,
+        options: input.options.map((option) => ({ key: option.key, text: option.text })),
+        answer_key: input.answerKey ?? null,
+        accepted_answers: input.acceptedAnswers,
+        submitted_answer: input.submittedAnswer,
+        is_correct: input.isCorrect,
+        explanation: input.explanation
+      })
+    })
+  );
+  return normalizeSession(payload);
+}
+
+function normalizeInteractiveQuestion(raw: any) {
+  if (!raw || typeof raw !== "object") {
+    return undefined;
+  }
+  const questionType = raw.question_type;
+  if (questionType !== "multiple_choice" && questionType !== "fill_blank") {
+    return undefined;
+  }
+  return {
+    questionType,
+    prompt: String(raw.prompt ?? "").trim(),
+    difficulty: (raw.difficulty === "easy" || raw.difficulty === "hard" ? raw.difficulty : "medium") as
+      | "easy"
+      | "medium"
+      | "hard",
+    topic: String(raw.topic ?? "").trim(),
+    options: Array.isArray(raw.options)
+      ? raw.options
+          .map((option: any, index: number) => {
+            const text = String(option?.text ?? option ?? "").trim();
+            if (!text) {
+              return null;
+            }
+            return {
+              key: String(option?.key ?? String.fromCharCode(65 + index)),
+              text
+            };
+          })
+          .filter(Boolean)
+      : [],
+    answerKey: raw.answer_key ? String(raw.answer_key) : undefined,
+    acceptedAnswers: Array.isArray(raw.accepted_answers)
+      ? raw.accepted_answers
+          .map((value: unknown) => String(value ?? "").trim())
+          .filter((value: string) => value.length > 0)
+      : [],
+    explanation: String(raw.explanation ?? "").trim()
   };
 }

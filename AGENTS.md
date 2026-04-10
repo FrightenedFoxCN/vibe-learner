@@ -123,7 +123,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 - `Study Column`: the main left-column flow container on the home page.
 - `Document Setup Panel`: the upload-and-generate block rendered by `apps/web/components/document-setup.tsx`.
 - `Plan History Panel`: the historical plan selection block rendered by `apps/web/components/plan-history.tsx`.
-- `Plan Overview Panel`: the current plan summary block inside `LearningWorkspace`, showing overview, weekly focus, today tasks, and recent schedule.
+- `Plan Overview Panel`: the current plan summary block inside `LearningWorkspace`, showing overview, main themes, and today tasks.
 - `Study Console`: the chapter chat/request block rendered by `apps/web/components/study-console.tsx`.
 - `Character Shell`: the right-column teacher/persona block rendered by `apps/web/components/character-shell.tsx`.
 - `Character Event Snapshot`: the JSON event preview area inside `Character Shell`.

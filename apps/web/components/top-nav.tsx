@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
@@ -53,15 +54,15 @@ export function TopNav({ currentPath }: TopNavProps) {
         {NAV_ITEMS.map((item) => {
           const active = item.href === currentPath;
           return (
-            <a
+            <Link
               key={item.href}
-              href={item.href}
+              href={item.href as never}
               className={active ? "app-nav-link--active" : "app-nav-link"}
               title={collapsed ? item.label : undefined}
             >
               <span style={styles.linkDot}>{active ? "●" : "○"}</span>
               {!collapsed ? <span>{item.label}</span> : null}
-            </a>
+            </Link>
           );
         })}
       </nav>

@@ -204,7 +204,7 @@ This produces a `LearningPlanRecord` shell with:
 - `course_title`
 - `objective`
 - `overview`
-- `weekly_focus`
+- `weekly_focus` (ordered main themes, coarse-grained)
 - `today_tasks`
 - `study_units`
 - `schedule`
@@ -226,7 +226,9 @@ This heuristic result is then refined by the selected model provider.
 Planner tools:
 
 - `get_study_unit_detail`
+- `revise_study_units`
 - `read_page_range_content`
+- `read_page_range_images` (when multimodal is enabled)
 
 Tool backing data:
 
@@ -237,7 +239,7 @@ Model output is parsed into:
 
 - `course_title`
 - `overview`
-- `weekly_focus`
+- `weekly_focus` (ordered main themes, coarse-grained)
 - `today_tasks`
 - `schedule`
 

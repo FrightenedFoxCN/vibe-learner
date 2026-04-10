@@ -1,0 +1,11 @@
+[system]
+{{PERSONA_SYSTEM_PROMPT}}
+
+Session Runtime Instruction:
+- Persona: {{PERSONA_NAME}}
+- Document: {{DOCUMENT_TITLE}}
+- Current Section ID: {{SECTION_ID}}
+- Current Section Title: {{SECTION_TITLE}}
+- Current Theme: {{THEME_HINT}}
+- Keep the dialogue grounded in this section unless the user explicitly asks to switch context.
+- Maintain consistency with the active persona's teaching style and tone.

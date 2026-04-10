@@ -24,7 +24,7 @@ export interface LearningPlan {
   objective: string;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
-  // Ordered weekly study topics for sequential display.
+  // Ordered main themes (coarse-grained) for sequential display.
   weeklyFocus: string[];
   // Actionable learner tasks for the current session/day.
   todayTasks: string[];
@@ -157,6 +157,23 @@ export interface StudyChatResponse {
   reply: string;
   citations: Citation[];
   characterEvents: CharacterStateEvent[];
+  interactiveQuestion?: InteractiveQuestion;
+}
+
+export interface InteractiveQuestionOption {
+  key: string;
+  text: string;
+}
+
+export interface InteractiveQuestion {
+  questionType: "multiple_choice" | "fill_blank";
+  prompt: string;
+  difficulty: "easy" | "medium" | "hard";
+  topic: string;
+  options: InteractiveQuestionOption[];
+  answerKey?: string;
+  acceptedAnswers: string[];
+  explanation: string;
 }
 
 export interface Exercise {
@@ -206,6 +223,15 @@ export interface StudyScheduleItem {
   status: string;
 }
 
+export interface DialogueTurnRecord {
+  learnerMessage: string;
+  assistantReply: string;
+  citations: Citation[];
+  characterEvents: CharacterStateEvent[];
+  interactiveQuestion?: InteractiveQuestion;
+  createdAt: string;
+}
+
 export interface DocumentRecord {
   id: string;
   title: string;
@@ -229,7 +255,11 @@ export interface StudySessionRecord {
   documentId: string;
   personaId: string;
   sectionId: string;
+  sectionTitle?: string;
+  themeHint?: string;
+  sessionSystemPrompt?: string;
   status: string;
+  turns: DialogueTurnRecord[];
   createdAt: string;
   updatedAt: string;
 }

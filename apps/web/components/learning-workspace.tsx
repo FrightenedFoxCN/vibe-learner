@@ -1,25 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import type { CSSProperties } from "react";
-import type { LearningPlan, PersonaProfile } from "@gal-learner/shared";
 
 import { DocumentSetup } from "./document-setup";
 import { PlanOverview } from "./plan-overview";
 import { PersonaSelector } from "./persona-selector";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
-import { mockPersonas } from "../lib/mock-data";
-import { useLearningWorkspaceController } from "../hooks/use-learning-workspace-controller";
+import { useLearningWorkspace } from "./learning-workspace-provider";
 
-interface LearningWorkspaceProps {
-  initialPlan?: LearningPlan;
-  personas?: PersonaProfile[];
-}
-
-export function LearningWorkspace({
-  initialPlan,
-  personas: initialPersonas = mockPersonas
-}: LearningWorkspaceProps) {
+export function LearningWorkspace() {
   const {
     personas,
     selectedPersona,
@@ -36,10 +27,7 @@ export function LearningWorkspace({
     selectPlan,
     createSessionForActivePlan,
     refreshPlanSnapshot
-  } = useLearningWorkspaceController({
-    initialPlan,
-    initialPersonas
-  });
+  } = useLearningWorkspace();
 
   return (
     <main className="with-app-nav" style={styles.page}>
@@ -48,7 +36,7 @@ export function LearningWorkspace({
       {/* 顶栏 */}
       <div style={styles.topbar}>
         <div style={styles.topbarLeft}>
-          <span style={styles.topbarTitle}>学习工作台</span>
+          <span style={styles.topbarTitle}>计划生成页</span>
           {notice ? <span style={styles.notice}>{notice}</span> : null}
         </div>
         <PersonaSelector
@@ -92,7 +80,7 @@ export function LearningWorkspace({
         {/* 章节对话入口 */}
         <div style={styles.entryRow}>
           <span style={styles.entryLabel}>章节对话</span>
-          <a href="/study" style={styles.entryLink}>打开章节对话页 →</a>
+          <Link href="/study" style={styles.entryLink}>前往章节对话页 →</Link>
         </div>
       </div>
     </main>

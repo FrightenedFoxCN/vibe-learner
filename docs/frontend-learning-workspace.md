@@ -1,12 +1,21 @@
-# Frontend Learning Workspace Boundary
+# Frontend Workspace Boundary
 
-This document defines the current frontend boundary for the `Learning Workspace` page in `apps/web`.
+This document defines the current frontend boundary for the split workspace pages in `apps/web`.
 
 ## Goal
 
-The `Learning Workspace` is intentionally split so that rendering, async workflows, state transitions, pure state rules, and UI copy do not collapse back into a single page component.
+The frontend is intentionally split so rendering, async workflows, state transitions, pure state rules, and UI copy do not collapse back into one page component.
 
 When changing this area, preserve the separation below unless there is a clear architectural reason to move it.
+
+## Page Split
+
+- `/` = navigation home
+- `/plan` = `Plan Workspace` (upload, process, generate, history)
+- `/study` = `Chapter Dialogue Workspace` (chat + PDF + chapter switching)
+- `/persona-spectrum` = reserved page for future persona configuration
+
+`/plan` and `/study` share one runtime state source through `LearningWorkspaceProvider`.
 
 ## Boundary Map
 
@@ -14,11 +23,12 @@ When changing this area, preserve the separation below unless there is a clear a
 
 File:
 
-- `apps/web/components/learning-workspace.tsx`
+- `apps/web/components/learning-workspace.tsx` (`/plan`)
+- `apps/web/components/study-dialog-page.tsx` (`/study`)
 
 Responsibilities:
 
-- compose the page from smaller UI blocks
+- compose page-level UI from smaller blocks
 - bind controller state and actions into component props
 - contain page-local layout and presentation styles only
 
@@ -44,6 +54,7 @@ Responsibilities:
   - learning plan generation
   - study session creation
   - study chat send/reply
+  - study session chapter switching
 - translate backend results into reducer actions
 - expose page-ready derived state and actions
 
@@ -117,26 +128,38 @@ Do not scatter workflow notice strings or telemetry prefixes back into the page/
 
 ## Component Inputs
 
-The main `Learning Workspace` page currently renders these blocks:
+The `/plan` page currently renders these blocks:
 
 - `PersonaSelector`
 - `DocumentSetup`
 - `PlanOverview`
+
+The `/study` page currently renders these blocks:
+
+- `PersonaSelector`
 - `StudyConsole`
 - `CharacterShell`
+- embedded PDF pane
 
 Each block should receive already-prepared data via props.
 
 Examples:
 
 - `PlanOverview` receives `items`, `selectedPlanId`, `plan`, `documentTitle`, and actions such as `onSelectPlan`
-- `StudyConsole` receives the active section and current response, but does not decide how sessions are created
+- `StudyConsole` receives the active section list, current response, and handlers for asking/switching/opening textbook pages
+
+Chapter switching rules:
+
+- The chapter source is the active plan directory (`plan.schedule.unitId` mapped to document study units).
+- If schedule-derived units are empty, fallback is document sections.
+- Switching chapter calls `PATCH /study-sessions/{session_id}` and clears stale chat response.
 
 For `Plan Overview`, keep these display rules stable:
 
 - `courseTitle` is the main heading
 - `objective` is supporting goal text, not the heading
-- `weeklyFocus`, `todayTasks`, and `schedule` are sequential content and should render as vertical reading flow, not same-row card grids
+- `weeklyFocus` and `todayTasks` are sequential content and should render as vertical reading flow, not same-row card grids
+- `schedule` remains part of the plan payload but is not currently rendered in `Plan Overview`
 
 ## Design Rule
 

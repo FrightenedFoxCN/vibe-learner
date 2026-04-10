@@ -6,7 +6,7 @@
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
-- `frontend-learning-workspace.md`: frontend responsibility split for the Learning Workspace page
+- `frontend-learning-workspace.md`: frontend responsibility split for `/plan` and `/study` workspace pages
 
 ## Reading Order
 

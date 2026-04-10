@@ -35,7 +35,7 @@ export function PlanOverview({
 }: PlanOverviewProps) {
   const activeCourseTitle = plan
     ? resolveCourseTitle(plan.courseTitle, documentTitle)
-    : "上传教材后，这里会显示当前学习计划。";
+    : "上传教材后，这里会显示当前计划。";
 
   return (
     <div style={styles.wrap}>
@@ -81,7 +81,7 @@ export function PlanOverview({
           {/* 元信息：内联 dl */}
           <dl style={styles.meta}>
             <div style={styles.metaItem}>
-              <dt style={styles.metaKey}>目标</dt>
+              <dt style={styles.metaKey}>学习目标</dt>
               <dd style={styles.metaVal}>{plan.objective || "未填写"}</dd>
             </div>
             <div style={styles.metaItem}>
@@ -89,11 +89,11 @@ export function PlanOverview({
               <dd style={styles.metaVal}>{documentTitle}</dd>
             </div>
             <div style={styles.metaItem}>
-              <dt style={styles.metaKey}>人格</dt>
+              <dt style={styles.metaKey}>教师人格</dt>
               <dd style={styles.metaVal}>{personaName}</dd>
             </div>
             <div style={styles.metaItem}>
-              <dt style={styles.metaKey}>生成</dt>
+              <dt style={styles.metaKey}>生成时间</dt>
               <dd style={styles.metaVal}>{formatDate(plan.createdAt)}</dd>
             </div>
           </dl>
@@ -101,7 +101,7 @@ export function PlanOverview({
           {/* 会话操作 */}
           <div style={styles.actionRow}>
             {hasSession ? (
-              <span style={styles.sessionConnected}>会话已连接</span>
+              <span style={styles.sessionConnected}>章节会话已连接</span>
             ) : (
               <button
                 type="button"
@@ -109,18 +109,18 @@ export function PlanOverview({
                 onClick={onCreateSession}
                 disabled={isBusy}
               >
-                {isBusy ? "创建中…" : "创建学习会话"}
+                {isBusy ? "创建中…" : "创建章节会话"}
               </button>
             )}
           </div>
         </>
       ) : null}
 
-      {/* 本周重点 */}
+      {/* 主线主题 */}
       {plan?.weeklyFocus.length ? (
         <div style={styles.section}>
           <div style={styles.sectionHead}>
-            <span style={styles.sectionLabel}>本周重点</span>
+            <span style={styles.sectionLabel}>主线主题</span>
             <span style={styles.count}>{plan.weeklyFocus.length}</span>
           </div>
           <ol style={styles.list}>
@@ -153,26 +153,6 @@ export function PlanOverview({
         </ol>
       </div>
 
-      {/* 近期安排 */}
-      {plan?.schedule.length ? (
-        <div style={styles.section}>
-          <div style={styles.sectionHead}>
-            <span style={styles.sectionLabel}>近期安排</span>
-            <span style={styles.count}>{Math.min(plan.schedule.length, 6)}</span>
-          </div>
-          <ol style={styles.list}>
-            {plan.schedule.slice(0, 6).map((item) => (
-              <li key={item.id} style={styles.scheduleItem}>
-                <div style={styles.scheduleTop}>
-                  <strong style={styles.scheduleTitle}>{item.title}</strong>
-                  <span style={styles.chip}>{formatActivityType(item.activityType)}</span>
-                </div>
-                <p style={styles.scheduleFocus}>{item.focus}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ) : null}
     </div>
   );
 }

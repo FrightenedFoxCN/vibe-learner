@@ -31,6 +31,9 @@ from app.models.api import (
     PersonaResponse,
     StudyChatRequest,
     StudyChatResponse,
+    StudyChatExchangeResponse,
+    StudyQuestionAttemptRequest,
+    StudySessionListResponse,
     StudySessionResponse,
     UpdateStudySessionRequest,
     SubmissionGradeRequest,
@@ -44,6 +47,7 @@ from app.services.stream_reports import (
 )
 from app.services.plan_prompt import build_learning_plan_context
 from app.services.plan_tool_runtime import get_learning_plan_tool_specs
+from app.services.study_session_prompt import build_study_session_system_prompt
 
 router = APIRouter()
 logger = get_logger("gal_learner.routes")
@@ -363,10 +367,11 @@ def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
     )
 
 
-@router.post("/study-sessions/{session_id}/chat", response_model=StudyChatResponse)
-def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatResponse:
+@router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
+def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeResponse:
     session = container.study_session_service.require_session(session_id)
     persona = container.persona_engine.require_persona(session.persona_id)
+    document = container.document_service.require_document(session.document_id)
     debug_report = None
     try:
         debug_report = container.document_service.require_debug_report(session.document_id)
@@ -379,15 +384,68 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatResponse:
             persona=persona,
             message=payload.message,
             section_id=session.section_id,
+            session_system_prompt=session.session_system_prompt,
             debug_report=debug_report,
+            document_path=document.stored_path,
             previous_turns=session.turns,
         )
     except RuntimeError as exc:
-        raise _map_chat_generation_error(exc) from exc
-    container.study_session_service.append_turn(
+        http_error = _map_chat_generation_error(exc)
+        logger.exception(
+            "study_chat.error session_id=%s public_detail=%s internal_error_code=%s",
+            session_id,
+            http_error.detail,
+            str(exc),
+        )
+        raise http_error from exc
+    session = container.study_session_service.append_turn(
         session_id=session_id, learner_message=payload.message, result=response
     )
-    return _into_response(StudyChatResponse, response)
+    return StudyChatExchangeResponse(
+        **response.model_dump(mode="json"),
+        session=_into_response(StudySessionResponse, session),
+    )
+
+
+@router.get("/study-sessions", response_model=StudySessionListResponse)
+def list_study_sessions(
+    document_id: str | None = None,
+    persona_id: str | None = None,
+    section_id: str | None = None,
+) -> StudySessionListResponse:
+    sessions = container.study_session_service.list_sessions(
+        document_id=document_id,
+        persona_id=persona_id,
+        section_id=section_id,
+    )
+    return StudySessionListResponse(
+        items=[_into_response(StudySessionResponse, session) for session in sessions]
+    )
+
+
+@router.post("/study-sessions/{session_id}/attempt", response_model=StudySessionResponse)
+def record_study_question_attempt(
+    session_id: str,
+    payload: StudyQuestionAttemptRequest,
+) -> StudySessionResponse:
+    answer = payload.submitted_answer.strip()
+    learner_message = (
+        f"[练习作答] {payload.question_type} · {payload.topic or '章节练习'}\n"
+        f"我的答案: {answer or '（空）'}"
+    )
+    verdict = "回答正确" if payload.is_correct else "回答不正确"
+    explanation = payload.explanation.strip()
+    assistant_reply = (
+        f"{verdict}。"
+        if not explanation
+        else f"{verdict}。解析：{explanation}"
+    )
+    session = container.study_session_service.append_attempt_turn(
+        session_id=session_id,
+        learner_message=learner_message,
+        assistant_reply=assistant_reply,
+    )
+    return _into_response(StudySessionResponse, session)
 
 
 @router.patch("/study-sessions/{session_id}", response_model=StudySessionResponse)
@@ -409,12 +467,40 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         payload.persona_id,
         payload.section_id,
     )
+    persona = container.persona_engine.require_persona(payload.persona_id)
+    document = container.document_service.require_document(payload.document_id)
+    section_title = payload.section_title.strip() or _resolve_section_title(
+        document=document,
+        section_id=payload.section_id,
+    )
+    theme_hint = payload.theme_hint.strip()
+    session_system_prompt = build_study_session_system_prompt(
+        persona_name=persona.name,
+        persona_system_prompt=persona.system_prompt,
+        document_title=document.title,
+        section_id=payload.section_id,
+        section_title=section_title,
+        theme_hint=theme_hint,
+    )
     session = container.study_session_service.create_session(
         document_id=payload.document_id,
         persona_id=payload.persona_id,
         section_id=payload.section_id,
+        section_title=section_title,
+        theme_hint=theme_hint,
+        session_system_prompt=session_system_prompt,
     )
     return _into_response(StudySessionResponse, session)
+
+
+def _resolve_section_title(*, document, section_id: str) -> str:
+    for section in document.sections:
+        if section.id == section_id:
+            return section.title
+    for unit in document.study_units:
+        if unit.id == section_id:
+            return unit.title
+    return section_id
 
 
 @router.post("/learning-plans", response_model=LearningPlanResponse)

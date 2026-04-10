@@ -6,42 +6,40 @@ import type {
   DocumentDebugRecord,
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
-  LearningPlan,
-  PersonaProfile,
   DocumentRecord,
   StreamReport
 } from "@gal-learner/shared";
 
 import {
-  createLearningPlanStream,
   getDocumentDebug,
   getDocumentPlanEvents,
   getDocumentPlanningContext,
   getDocumentPlanningTrace,
   getDocumentProcessEvents,
-  listDocuments,
-  listPersonas,
-  processDocumentStream
+  listDocuments
 } from "../lib/api";
+import { useLearningWorkspace } from "./learning-workspace-provider";
 import { TopNav } from "./top-nav";
 
 export function DocumentDebugConsole() {
+  const {
+    processStreamDocumentId: liveProcessDocumentId,
+    planStreamDocumentId: livePlanDocumentId,
+    processStreamEvents: liveProcessStreamEvents,
+    planStreamEvents: livePlanStreamEvents,
+    processStreamStatus: liveProcessStreamStatus,
+    planStreamStatus: livePlanStreamStatus
+  } = useLearningWorkspace();
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [debugRecord, setDebugRecord] = useState<DocumentDebugRecord | null>(null);
   const [planningContext, setPlanningContext] = useState<DocumentPlanningContext | null>(null);
   const [planningTrace, setPlanningTrace] = useState<DocumentPlanningTraceResponse | null>(null);
   const [message, setMessage] = useState("正在加载解析结果...");
-  const [selectedPersonaId, setSelectedPersonaId] = useState("mentor-aurora");
-  const [objective, setObjective] = useState("梳理这本教材的结构并生成第一轮学习安排。");
   const [processStreamEvents, setProcessStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
   const [planStreamEvents, setPlanStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
   const [processStreamStatus, setProcessStreamStatus] = useState("idle");
   const [planStreamStatus, setPlanStreamStatus] = useState("idle");
-  const [latestPlan, setLatestPlan] = useState<LearningPlan | null>(null);
-  const [processBusy, setProcessBusy] = useState(false);
-  const [planBusy, setPlanBusy] = useState(false);
   const selectedDocument = documents.find((document) => document.id === selectedId) ?? null;
   const coarseSections = debugRecord?.sections.filter((section) => section.level === 1) ?? [];
   const fineSections = debugRecord?.sections.filter((section) => section.level === 2) ?? [];
@@ -50,6 +48,26 @@ export function DocumentDebugConsole() {
   const hiddenPageCount = Math.max(0, (debugRecord?.pages.length ?? 0) - visiblePages.length);
   const visibleChunks = debugRecord?.chunks.slice(0, 16) ?? [];
   const hiddenChunkCount = Math.max(0, (debugRecord?.chunks.length ?? 0) - visibleChunks.length);
+  const displayProcessStreamEvents =
+    selectedId && selectedId === liveProcessDocumentId && liveProcessStreamEvents.length
+      ? liveProcessStreamEvents
+      : processStreamEvents;
+  const displayPlanStreamEvents =
+    selectedId && selectedId === livePlanDocumentId && livePlanStreamEvents.length
+      ? livePlanStreamEvents
+      : planStreamEvents;
+  const displayProcessStreamStatus =
+    selectedId && selectedId === liveProcessDocumentId && liveProcessStreamEvents.length
+      ? liveProcessStreamStatus
+      : processStreamStatus;
+  const displayPlanStreamStatus =
+    selectedId && selectedId === livePlanDocumentId && livePlanStreamEvents.length
+      ? livePlanStreamStatus
+      : planStreamStatus;
+  const latestProcessEvent =
+    displayProcessStreamEvents[displayProcessStreamEvents.length - 1] ?? null;
+  const latestPlanEvent =
+    displayPlanStreamEvents[displayPlanStreamEvents.length - 1] ?? null;
 
   const applyStreamReport = (
     report: StreamReport,
@@ -82,13 +100,6 @@ export function DocumentDebugConsole() {
     let active = true;
     const load = async () => {
       try {
-        const remotePersonas = await listPersonas();
-        if (active) {
-          setPersonas(remotePersonas);
-          if (remotePersonas[0]) {
-            setSelectedPersonaId(remotePersonas[0].id);
-          }
-        }
         await refreshDocuments(undefined, active);
       } catch (error) {
         if (active) {
@@ -208,71 +219,6 @@ export function DocumentDebugConsole() {
     }
   };
 
-  const handleReprocess = (forceOcr: boolean) => {
-    if (!selectedId) {
-      return;
-    }
-    const run = async () => {
-      try {
-        setProcessBusy(true);
-        setProcessStreamEvents([]);
-        setProcessStreamStatus("running");
-        setMessage(forceOcr ? "正在执行强制 OCR 解析..." : "正在重新解析文档...");
-        await processDocumentStream(selectedId, { forceOcr }, (event) => {
-          setProcessStreamEvents((current) => [...current.slice(-39), event]);
-          setProcessStreamStatus(resolveStreamStatus(event.stage));
-          setMessage(`处理中: ${event.stage}`);
-        });
-        await refreshDocuments(selectedId, true, true);
-        setMessage(forceOcr ? "强制 OCR 解析完成。" : "重新解析完成。");
-      } catch (error) {
-        setProcessStreamStatus("error");
-        setMessage(`重新解析失败: ${String(error)}`);
-      } finally {
-        setProcessBusy(false);
-      }
-    };
-    void run();
-  };
-
-  const handleGeneratePlan = () => {
-    if (!selectedId) {
-      return;
-    }
-    const run = async () => {
-      try {
-        setPlanBusy(true);
-        setPlanStreamEvents([]);
-        setPlanStreamStatus("running");
-        setLatestPlan(null);
-        setMessage("正在流式生成学习计划...");
-        const plan = await createLearningPlanStream(
-          {
-            documentId: selectedId,
-            personaId: selectedPersonaId,
-            objective
-          },
-          (event) => {
-            setPlanStreamEvents((current) => [...current.slice(-59), event]);
-            setPlanStreamStatus(resolveStreamStatus(event.stage));
-            setMessage(`计划处理中: ${event.stage}`);
-          }
-        );
-        setLatestPlan(plan);
-        await loadStreamReports(selectedId);
-        const trace = await getDocumentPlanningTrace(selectedId);
-        setPlanningTrace(trace);
-        setMessage("学习计划生成完成。");
-      } catch (error) {
-        setPlanStreamStatus("error");
-        setMessage(`计划生成失败: ${String(error)}`);
-      } finally {
-        setPlanBusy(false);
-      }
-    };
-    void run();
-  };
-
   return (
     <main className="with-app-nav" style={styles.page}>
       <TopNav currentPath="/debug" />
@@ -308,26 +254,6 @@ export function DocumentDebugConsole() {
         <section style={styles.content}>
           <article style={styles.summaryCard}>
             <h2 style={styles.sectionTitle}>解析摘要</h2>
-            {selectedDocument ? (
-              <div style={styles.actionRow}>
-                <button
-                  type="button"
-                  style={styles.actionButton}
-                  disabled={processBusy || planBusy}
-                  onClick={() => handleReprocess(false)}
-                >
-                  {processBusy ? "处理中..." : "重新解析"}
-                </button>
-                <button
-                  type="button"
-                  style={styles.actionButtonAccent}
-                  disabled={processBusy || planBusy}
-                  onClick={() => handleReprocess(true)}
-                >
-                  {processBusy ? "处理中..." : "强制 OCR"}
-                </button>
-              </div>
-            ) : null}
             {debugRecord ? (
               <>
                 <div style={styles.summaryGrid}>
@@ -368,77 +294,51 @@ export function DocumentDebugConsole() {
 
           <article style={styles.card}>
             <h2 style={styles.sectionTitle}>流式处理反馈</h2>
-            {processStreamEvents.length ? (
-              <div style={styles.list}>
-                {processStreamEvents.map((event, index) => (
-                  <div key={`${event.stage}-${index}`} style={styles.chunkCard}>
-                    <strong>{event.stage}</strong>
-                    <pre style={styles.pre}>{JSON.stringify(event.payload, null, 2)}</pre>
-                  </div>
-                ))}
-              </div>
+            <div style={styles.streamStatusRow}>
+              <span style={styles.streamStatusLabel}>状态</span>
+              <span style={styles.streamStatusValue}>{displayProcessStreamStatus}</span>
+              <span style={styles.streamStatusLabel}>最近阶段</span>
+              <span style={styles.streamStatusValue}>{latestProcessEvent?.stage ?? "none"}</span>
+            </div>
+            {displayProcessStreamEvents.length ? (
+              <details style={styles.streamDetails}>
+                <summary style={styles.streamSummary}>展开最近 8 条处理事件</summary>
+                <div style={styles.chunkGrid}>
+                  {displayProcessStreamEvents.slice(-8).map((event, index) => (
+                    <div key={`${event.stage}-${index}`} style={styles.chunkCard}>
+                      <strong>{event.stage}</strong>
+                      <pre style={styles.preCompact}>{JSON.stringify(event.payload, null, 2)}</pre>
+                    </div>
+                  ))}
+                </div>
+              </details>
             ) : (
-              <p style={styles.empty}>点击"重新解析"或"强制 OCR"后，这里会实时显示处理阶段。</p>
+              <p style={styles.empty}>暂无处理事件记录。请在计划生成页通过“上传并生成计划”触发完整流程。</p>
             )}
           </article>
 
           <article style={styles.card}>
             <h2 style={styles.sectionTitle}>流式生成学习计划</h2>
-            <div style={styles.formGrid}>
-              <label style={styles.field}>
-                <span>教师人格</span>
-                <select
-                  value={selectedPersonaId}
-                  onChange={(event) => setSelectedPersonaId(event.target.value)}
-                  style={styles.select}
-                >
-                  {personas.map((persona) => (
-                    <option key={persona.id} value={persona.id}>
-                      {persona.name}
-                    </option>
+            <div style={styles.streamStatusRow}>
+              <span style={styles.streamStatusLabel}>状态</span>
+              <span style={styles.streamStatusValue}>{displayPlanStreamStatus}</span>
+              <span style={styles.streamStatusLabel}>最近阶段</span>
+              <span style={styles.streamStatusValue}>{latestPlanEvent?.stage ?? "none"}</span>
+            </div>
+            {displayPlanStreamEvents.length ? (
+              <details style={styles.streamDetails}>
+                <summary style={styles.streamSummary}>展开最近 8 条计划事件</summary>
+                <div style={styles.chunkGrid}>
+                  {displayPlanStreamEvents.slice(-8).map((event, index) => (
+                    <div key={`${event.stage}-${index}`} style={styles.chunkCard}>
+                      <strong>{event.stage}</strong>
+                      <pre style={styles.preCompact}>{JSON.stringify(event.payload, null, 2)}</pre>
+                    </div>
                   ))}
-                </select>
-              </label>
-              <label style={styles.field}>
-                <span>学习目标</span>
-                <textarea
-                  value={objective}
-                  onChange={(event) => setObjective(event.target.value)}
-                  style={styles.textarea}
-                />
-              </label>
-            </div>
-            <div style={styles.actionRow}>
-              <button
-                type="button"
-                style={styles.actionButtonAccent}
-                disabled={!selectedId || processBusy || planBusy}
-                onClick={handleGeneratePlan}
-              >
-                {planBusy ? "生成中..." : "流式生成计划"}
-              </button>
-            </div>
-            {latestPlan ? (
-              <div style={styles.list}>
-                <div style={styles.toolCard}>
-                  <strong>{latestPlan.overview}</strong>
-                  <span>
-                    {latestPlan.todayTasks.length} 条今日任务 · {latestPlan.schedule.length} 条日程
-                  </span>
                 </div>
-              </div>
-            ) : null}
-            {planStreamEvents.length ? (
-              <div style={styles.list}>
-                {planStreamEvents.map((event, index) => (
-                  <div key={`${event.stage}-${index}`} style={styles.chunkCard}>
-                    <strong>{event.stage}</strong>
-                    <pre style={styles.pre}>{JSON.stringify(event.payload, null, 2)}</pre>
-                  </div>
-                ))}
-              </div>
+              </details>
             ) : (
-              <p style={styles.empty}>选择文档后，可以在这里流式观察学习计划生成过程。</p>
+              <p style={styles.empty}>暂无计划流事件记录。请在计划生成页通过“上传并生成计划”触发完整流程。</p>
             )}
           </article>
 
@@ -740,16 +640,6 @@ export function DocumentDebugConsole() {
   );
 }
 
-function resolveStreamStatus(stage: string) {
-  if (stage === "stream_completed") {
-    return "completed";
-  }
-  if (stage === "stream_error") {
-    return "error";
-  }
-  return "running";
-}
-
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
@@ -878,6 +768,33 @@ const styles: Record<string, CSSProperties> = {
     paddingTop: 16,
     paddingBottom: 4,
     borderTop: "1px solid var(--border)"
+  },
+  streamStatusRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+    marginBottom: 10
+  },
+  streamStatusLabel: {
+    fontSize: 11,
+    color: "var(--muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
+  },
+  streamStatusValue: {
+    fontSize: 13,
+    color: "var(--ink)"
+  },
+  streamDetails: {
+    display: "grid",
+    gap: 8
+  },
+  streamSummary: {
+    color: "var(--accent)",
+    cursor: "pointer",
+    fontSize: 13,
+    width: "fit-content"
   },
   formGrid: {
     display: "grid",

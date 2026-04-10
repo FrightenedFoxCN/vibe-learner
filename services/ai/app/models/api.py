@@ -5,6 +5,8 @@ from app.models.domain import (
     Citation,
     DocumentDebugRecord,
     DocumentRecord,
+    InteractiveQuestion,
+    InteractiveQuestionOption,
     LearningGoalInput,
     LearningPlanRecord,
     PlanGenerationTraceRecord,
@@ -172,6 +174,8 @@ class CreateStudySessionRequest(BaseModel):
     document_id: str
     persona_id: str
     section_id: str
+    section_title: str = ""
+    theme_hint: str = ""
 
 
 class UpdateStudySessionRequest(BaseModel):
@@ -182,6 +186,10 @@ class StudySessionResponse(StudySessionRecord):
     pass
 
 
+class StudySessionListResponse(BaseModel):
+    items: list[StudySessionResponse]
+
+
 class StudyChatRequest(BaseModel):
     message: str
 
@@ -190,6 +198,24 @@ class StudyChatResponse(BaseModel):
     reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+    interactive_question: InteractiveQuestion | None = None
+
+
+class StudyChatExchangeResponse(StudyChatResponse):
+    session: StudySessionResponse
+
+
+class StudyQuestionAttemptRequest(BaseModel):
+    question_type: str
+    prompt: str
+    topic: str = ""
+    difficulty: str = "medium"
+    options: list[InteractiveQuestionOption] = []
+    answer_key: str | None = None
+    accepted_answers: list[str] = []
+    submitted_answer: str
+    is_correct: bool
+    explanation: str = ""
 
 
 class ExerciseGenerateRequest(BaseModel):

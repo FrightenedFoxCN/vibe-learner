@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Link from "next/link";
 
 import { TopNav } from "../components/top-nav";
 
@@ -13,18 +14,18 @@ export default function HomePage() {
       </div>
 
       <nav className="home-nav-grid">
-        <a href="/plan" style={styles.navItem}>
+        <Link href="/plan" style={styles.navItem}>
           <span style={styles.navTitle}>计划生成页</span>
           <span style={styles.navDesc}>上传教材、解析章节、生成与刷新学习计划。</span>
-        </a>
-        <a href="/study" style={styles.navItem}>
+        </Link>
+        <Link href="/study" style={styles.navItem}>
           <span style={styles.navTitle}>章节对话页</span>
           <span style={styles.navDesc}>左侧对话，右侧 PDF 联动，按章节进行深入学习。</span>
-        </a>
-        <a href="/persona-spectrum" style={styles.navItem}>
+        </Link>
+        <Link href="/persona-spectrum" style={styles.navItem}>
           <span style={styles.navTitle}>人格色谱页</span>
           <span style={styles.navDesc}>教师人格配置、风格调参与预览。</span>
-        </a>
+        </Link>
       </nav>
     </main>
   );

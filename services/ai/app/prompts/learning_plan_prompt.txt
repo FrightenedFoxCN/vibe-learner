@@ -10,7 +10,11 @@ If the current study-unit segmentation is clearly wrong, you may call a tool to 
 Generate "course_title" as a concise textbook-grounded course title derived from the cleaned study units.
 The learner goal is provided separately as "objective"; do not reuse it as the plan title.
 Use "overview" only for a short summary paragraph, not for the plan title.
-Use "weekly_focus" for short topic labels, and "today_tasks" for imperative learner actions.
+Use "weekly_focus" for ordered main-theme labels (coarse-grained, can include fine-grained hints), and "today_tasks" for imperative learner actions.
+When generating "weekly_focus", each main theme must include explicit chapter segmentation context from study_units (chapter title and page span), so downstream section jumps remain valid.
+If a single study unit is too broad, split it via revise_study_units first, then generate weekly_focus against the revised chapter segmentation.
+Prioritize finer chapter segmentation over broad bundles: one study unit should represent one coherent chapter/topic block, not an entire part of the book.
+When segmentation is coarse, prefer calling revise_study_units before writing the final JSON.
 The JSON schema is:
 {{PLAN_JSON_SCHEMA}}
 
@@ -19,7 +23,16 @@ Use the study_units as the only source of chapter structure.
 Use the subsection_titles and related_section_ids already attached to each study unit when helpful.
 Generate a clean first-pass learning plan after OCR cleanup.
 Schedule review soon after each learn session when possible.
-Treat course_title as the textbook-grounded display title, objective as the learner goal, overview as a 1-2 sentence summary, weekly_focus as ordered study topics, and today_tasks as actionable study steps.
-Keep weekly_focus and today_tasks concise and learner-facing.
+Treat course_title as the textbook-grounded display title, objective as the learner goal, overview as a 1-2 sentence summary, weekly_focus as ordered main themes (coarse-grained), and today_tasks as actionable study steps.
+Keep weekly_focus and today_tasks concise, learner-facing, and structurally clear.
+Use this segmentation policy before finalizing:
+- If a plannable unit spans more than 45 pages, split it.
+- If a unit mixes multiple chapter-level headings or many subsection_titles, split it into chapter-coherent units.
+- Keep each revised unit topically single-purpose; avoid combining unrelated chapter intents.
+- Prefer revised units with readable chapter titles and explicit page ranges.
+When writing weekly_focus, include chapter grounding in each item (for example: "主题名（第X章/章节名，p.start-end）").
+For each weekly_focus item, ensure at least one schedule row is chapter-scoped and tied to a concrete unit_id that matches that theme's chapter segmentation.
+If you revised study_units, ensure schedule unit_id values reference the revised units rather than stale original units.
+Do not merge unrelated chapters into one theme unless revise_study_units has already produced a cleaned merged unit with clear rationale.
 If a study unit looks broad, call the tool to read its detailed subsections and chunk excerpts before scheduling.
 If the current study_units merge multiple chapters, split one chapter incorrectly, or preserve obvious parser noise, call the revise tool first and then plan against the revised units.

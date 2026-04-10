@@ -29,7 +29,7 @@ export function DocumentSetup({
   session
 }: DocumentSetupProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [objective, setObjective] = useState("在两周内掌握这本教材的第一章并完成一次复习。");
+  const [objective, setObjective] = useState("请基于教材结构生成首轮学习计划，先给出主线主题，再拆分为细分学习要点。");
 
   const personaName = personas.find((p) => p.id === selectedPersonaId)?.name ?? "未选择";
 
@@ -37,14 +37,14 @@ export function DocumentSetup({
     <div style={styles.wrap}>
       {/* 标题行 */}
       <div style={styles.headerRow}>
-        <h2 style={styles.title}>上传教材</h2>
-        <span style={styles.persona}>人格：{personaName}</span>
+        <h2 style={styles.title}>上传教材并生成计划</h2>
+        <span style={styles.persona}>教师人格：{personaName}</span>
       </div>
 
       {/* 表单 */}
       <div style={styles.form}>
         <label style={styles.field}>
-          <span style={styles.fieldLabel}>教材 PDF</span>
+          <span style={styles.fieldLabel}>教材文件（PDF）</span>
           <input
             type="file"
             accept=".pdf"
@@ -84,15 +84,15 @@ export function DocumentSetup({
       {/* 状态行 */}
       <div style={styles.statusRow}>
         <span style={styles.statusItem}>
-          <span style={styles.statusKey}>教材</span>
+          <span style={styles.statusKey}>教材状态</span>
           {document ? formatDocumentSummary(document) : "未上传"}
         </span>
         <span style={styles.statusItem}>
-          <span style={styles.statusKey}>计划</span>
+          <span style={styles.statusKey}>计划状态</span>
           {plan ? `${plan.todayTasks.length} 条任务` : "未生成"}
         </span>
         <span style={styles.statusItem}>
-          <span style={styles.statusKey}>会话</span>
+          <span style={styles.statusKey}>会话状态</span>
           {session ? formatSessionStatus(session.status) : "未创建"}
         </span>
       </div>
@@ -100,7 +100,7 @@ export function DocumentSetup({
       {/* 学习单元列表 */}
       {document?.studyUnits.length ? (
         <div style={styles.unitSection}>
-          <span style={styles.unitSectionLabel}>学习单元</span>
+          <span style={styles.unitSectionLabel}>学习单元清单</span>
           <div style={styles.unitList}>
             {document.studyUnits.map((unit) => (
               <div key={unit.id} style={styles.unitItem}>
@@ -236,16 +236,22 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "baseline",
     gap: 12,
-    flexWrap: "wrap"
+    flexWrap: "nowrap"
   },
   unitTitle: {
+    flex: 1,
+    minWidth: 0,
     fontSize: 13,
-    color: "var(--ink)"
+    color: "var(--ink)",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap"
   },
   unitMeta: {
     fontSize: 12,
     color: "var(--muted)",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
+    flexShrink: 0
   }
 };
 

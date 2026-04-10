@@ -49,7 +49,8 @@ class OpenAIPlanRunner:
         max_rounds = 4
         max_empty_response_retries = 1
         empty_response_retries = 0
-        force_json_response = False
+        max_tool_probe_retries = 1
+        tool_probe_retries = 0
         for round_index in range(max_rounds):
             _emit_progress(
                 progress_callback,
@@ -65,7 +66,7 @@ class OpenAIPlanRunner:
                 "messages": current_messages,
                 "temperature": 0.2,
             }
-            if tool_runtime.has_tools() and not force_json_response:
+            if tool_runtime.has_tools():
                 payload["tools"] = tool_runtime.openai_tools()
                 payload["tool_choice"] = "auto"
             else:
@@ -80,7 +81,6 @@ class OpenAIPlanRunner:
             )
             tool_calls = message.get("tool_calls") or []
             if tool_calls:
-                force_json_response = False
                 trace_round = PlanGenerationRoundRecord(
                     round_index=round_index,
                     finish_reason=str(choice.get("finish_reason") or ""),
@@ -142,6 +142,34 @@ class OpenAIPlanRunner:
 
             content = _coerce_text_content(message.get("content"))
             if content.strip():
+                if (
+                    tool_runtime.has_tools()
+                    and tool_probe_retries < max_tool_probe_retries
+                    and _looks_coarse_grained(tool_runtime.current_study_units())
+                    and not _trace_has_tool_calls(trace)
+                ):
+                    tool_probe_retries += 1
+                    _emit_progress(
+                        progress_callback,
+                        "model_recovery_attempt",
+                        {
+                            "round_index": round_index,
+                            "attempt": tool_probe_retries,
+                            "reason": "coarse_units_without_tool_calls",
+                            "strategy": "force_detail_tool_call",
+                        },
+                    )
+                    current_messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "Before finalizing, call at least one tool to inspect details for coarse segmentation. "
+                                "Use get_study_unit_detail for a representative study unit, and call revise_study_units "
+                                "if segmentation is too coarse or mixes multiple chapters. Then return strict JSON only."
+                            ),
+                        }
+                    )
+                    continue
                 trace.rounds.append(
                     PlanGenerationRoundRecord(
                         round_index=round_index,
@@ -180,7 +208,6 @@ class OpenAIPlanRunner:
             )
             if empty_response_retries < max_empty_response_retries:
                 empty_response_retries += 1
-                force_json_response = True
                 _emit_progress(
                     progress_callback,
                     "model_recovery_attempt",
@@ -188,7 +215,7 @@ class OpenAIPlanRunner:
                         "round_index": round_index,
                         "attempt": empty_response_retries,
                         "reason": "plan_model_empty_response",
-                        "strategy": "force_json_without_tools",
+                        "strategy": "retry_with_tools",
                     },
                 )
                 current_messages.append(
@@ -196,7 +223,8 @@ class OpenAIPlanRunner:
                         "role": "user",
                         "content": (
                             "Your previous assistant message was empty. Continue from existing context and "
-                            "return a complete learning-plan JSON object now. Do not return an empty response."
+                            "return a complete learning-plan JSON object now. If study-unit segmentation is wrong, "
+                            "call revise_study_units before finalizing. Do not return an empty response."
                         ),
                     }
                 )
@@ -263,3 +291,28 @@ def _emit_progress(
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _trace_has_tool_calls(trace: PlanGenerationTraceRecord) -> bool:
+    return any(round_record.tool_calls for round_record in trace.rounds)
+
+
+def _looks_coarse_grained(study_units: list[Any]) -> bool:
+    if not study_units:
+        return False
+    plannable = [
+        unit
+        for unit in study_units
+        if bool(getattr(unit, "include_in_plan", True))
+    ] or study_units
+    if len(plannable) <= 1:
+        return True
+    max_span = max(
+        (
+            int(getattr(unit, "page_end", 0))
+            - int(getattr(unit, "page_start", 0))
+            + 1
+        )
+        for unit in plannable
+    )
+    return len(plannable) <= 2 and max_span >= 80
