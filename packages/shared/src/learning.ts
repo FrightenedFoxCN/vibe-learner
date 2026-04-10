@@ -12,9 +12,6 @@ export interface LearningGoal {
   personaId: string;
   // Learner-authored study goal captured at plan creation time.
   objective: string;
-  deadline: string;
-  studyDaysPerWeek: number;
-  sessionMinutes: number;
 }
 
 export interface LearningPlan {
@@ -25,7 +22,6 @@ export interface LearningPlan {
   courseTitle: string;
   // Stable learner-authored study goal captured at plan creation time.
   objective: string;
-  deadline: string;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
   // Ordered weekly study topics for sequential display.
@@ -103,6 +99,7 @@ export interface PlanToolCallTrace {
   toolCallId: string;
   toolName: string;
   argumentsJson: string;
+  resultSummary: string;
   resultJson: string;
 }
 
@@ -122,6 +119,19 @@ export interface PlanGenerationTrace {
   model: string;
   createdAt: string;
   rounds: PlanGenerationRoundTrace[];
+}
+
+export interface PlanGenerationTraceSummary {
+  roundCount: number;
+  toolCallCount: number;
+  latestFinishReason: string;
+}
+
+export interface DocumentPlanningTraceResponse {
+  documentId: string;
+  hasTrace: boolean;
+  summary: PlanGenerationTraceSummary;
+  trace: PlanGenerationTrace | null;
 }
 
 export interface StreamEvent {
@@ -191,10 +201,8 @@ export interface StudyScheduleItem {
   id: string;
   unitId: string;
   title: string;
-  scheduledDate: string;
   focus: string;
   activityType: string;
-  estimatedMinutes: number;
   status: string;
 }
 

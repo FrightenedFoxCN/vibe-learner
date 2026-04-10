@@ -10,13 +10,14 @@ import type {
 } from "@gal-learner/shared";
 
 import {
-  createLearningPlan,
+  createLearningPlanStream,
   createStudySession,
   listDocuments,
   listLearningPlans,
   listPersonas,
+  processDocumentStream,
   sendStudyMessage,
-  uploadAndProcessDocument
+  uploadDocument
 } from "../lib/api";
 import { mockPersonas } from "../lib/mock-data";
 import {
@@ -49,9 +50,6 @@ import {
 export interface GeneratePlanInput {
   file: File;
   objective: string;
-  deadline: string;
-  studyDaysPerWeek: number;
-  sessionMinutes: number;
 }
 
 interface UseLearningWorkspaceControllerOptions {
@@ -196,7 +194,31 @@ export function useLearningWorkspaceController({
         personaId: selectedPersona.id
       });
 
-      const nextDocument = await uploadAndProcessDocument(input.file);
+      const uploadedDocument = await uploadDocument(input.file);
+      dispatch({
+        type: "notice_set",
+        notice: "教材已上传，正在解析内容与章节结构。"
+      });
+      logWorkspaceInfo("workflow:upload:document_uploaded", {
+        documentId: uploadedDocument.id,
+        status: uploadedDocument.status
+      });
+
+      const nextDocument = await processDocumentStream(
+        uploadedDocument.id,
+        {},
+        (event) => {
+          dispatch({
+            type: "notice_set",
+            notice: `教材处理中: ${event.stage}`
+          });
+          logWorkspaceInfo("workflow:upload:process_event", {
+            documentId: uploadedDocument.id,
+            stage: event.stage,
+            ...event.payload
+          });
+        }
+      );
       logWorkspaceInfo("workflow:upload:document_ready", {
         documentId: nextDocument.id,
         pageCount: nextDocument.pageCount,
@@ -205,14 +227,28 @@ export function useLearningWorkspaceController({
       });
       applyGeneratedDocument(nextDocument);
 
-      const nextPlan = await createLearningPlan({
-        documentId: nextDocument.id,
-        personaId: selectedPersona.id,
-        objective: input.objective,
-        deadline: input.deadline,
-        studyDaysPerWeek: input.studyDaysPerWeek,
-        sessionMinutes: input.sessionMinutes
+      dispatch({
+        type: "notice_set",
+        notice: "教材解析完成，正在生成学习计划。"
       });
+      const nextPlan = await createLearningPlanStream(
+        {
+          documentId: nextDocument.id,
+          personaId: selectedPersona.id,
+          objective: input.objective
+        },
+        (event) => {
+          dispatch({
+            type: "notice_set",
+            notice: `学习计划处理中: ${event.stage}`
+          });
+          logWorkspaceInfo("workflow:upload:plan_event", {
+            documentId: nextDocument.id,
+            stage: event.stage,
+            ...event.payload
+          });
+        }
+      );
       logWorkspaceInfo("workflow:upload:plan_ready", {
         planId: nextPlan.id,
         taskCount: nextPlan.todayTasks.length

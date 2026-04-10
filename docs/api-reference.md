@@ -171,12 +171,12 @@ Response fields:
 
 ### `GET /documents/{document_id}/planning-context`
 
-Returns the planner input context after cleanup.
+Returns the debug-facing planning context after cleanup.
 
 Response fields:
 
 - `document_id`
-- `course_outline[]`: coarse level-1 sections plus level-2 children
+- `course_outline[]`: coarse level-1 sections plus level-2 children, kept for `/debug` inspection
 - `study_units[]`: plan-facing unit list with summaries and subsection titles
 - `detail_map`: detailed per-unit structure and chunk excerpts
 - `available_tools[]`: tools the model planner may call
@@ -186,6 +186,19 @@ Response fields:
 Returns stored plan-generation trace data for the document.
 
 Response fields:
+
+- `document_id`
+- `has_trace`
+- `summary`
+- `trace`
+
+`summary` contains:
+
+- `round_count`
+- `tool_call_count`
+- `latest_finish_reason`
+
+When `has_trace=true`, `trace` contains:
 
 - `document_id`
 - `plan_id`
@@ -230,10 +243,7 @@ Request body:
 {
   "document_id": "doc-123",
   "persona_id": "persona-123",
-  "objective": "Prepare for midterm",
-  "deadline": "2026-04-30",
-  "study_days_per_week": 5,
-  "session_minutes": 45
+  "objective": "Prepare for midterm"
 }
 ```
 

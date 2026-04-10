@@ -135,19 +135,14 @@ class LearningGoalInput(BaseModel):
             "not the generated header title or summary."
         )
     )
-    deadline: str
-    study_days_per_week: int
-    session_minutes: int
 
 
 class StudyScheduleRecord(BaseModel):
     id: str
     unit_id: str
     title: str
-    scheduled_date: str
     focus: str
     activity_type: str
-    estimated_minutes: int
     status: str = "planned"
 
 
@@ -163,7 +158,6 @@ class LearningPlanRecord(BaseModel):
             "Learner-authored study goal captured at plan creation time. This is supporting goal text, not the plan header title."
         )
     )
-    deadline: str
     overview: str = Field(
         description=(
             "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."
@@ -184,6 +178,7 @@ class PlanToolCallTraceRecord(BaseModel):
     tool_call_id: str
     tool_name: str
     arguments_json: str
+    result_summary: str = ""
     result_json: str
 
 

@@ -134,12 +134,13 @@ The frontend currently renders a placeholder character adapter. This preserves t
 
 ## Planning Context And Tooling
 
-The planner no longer receives only flat chapter titles. It receives:
+The planner no longer receives only flat chapter titles. Its model-visible core input is:
 
-- `course_outline`
 - cleaned `study_units`
 - a per-unit `detail_map`
 - tool access for deeper reads
+
+The `/debug` planning context still exposes `course_outline` for inspection, but the model prompt itself is intentionally centered on cleaned `study_units`.
 
 Current model tools:
 

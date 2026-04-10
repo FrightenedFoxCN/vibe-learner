@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import base64
 import json
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+
+import fitz
 
 from app.models.domain import (
     DocumentDebugRecord,
@@ -9,6 +15,30 @@ from app.models.domain import (
     PersonaProfile,
     StudyUnitRecord,
 )
+
+PLAN_JSON_SCHEMA = (
+    "{"
+    '"course_title": string, '
+    '"overview": string, '
+    '"weekly_focus": string[], '
+    '"today_tasks": string[], '
+    '"schedule": ['
+    "{"
+    '"unit_id": string, '
+    '"title": string, '
+    '"focus": string, '
+    '"activity_type": "learn" | "review"'
+    "}"
+    "]"
+    "}."
+)
+PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "prompts" / "learning_plan_prompt.txt"
+
+
+@dataclass(frozen=True)
+class LearningPlanPromptTemplate:
+    system_prompt: str
+    user_instructions: list[str]
 
 
 def build_learning_plan_messages(
@@ -23,36 +53,7 @@ def build_learning_plan_messages(
         study_units=study_units,
         debug_report=debug_report,
     )
-    system_prompt = (
-        "You are a pedagogy planner for a textbook study product. "
-        "You must return strict JSON only, with no markdown. "
-        "The plan must stay grounded in the provided study units, section outline, and tool results, and must not invent chapters. "
-        "Prefer clean chapter progression, explicit review spacing, and concise task wording. "
-        "Do not schedule units marked include_in_plan=false unless they are clearly necessary for setup. "
-        "When the outline suggests a unit contains multiple important subsections, reflect that internal structure in the task focus. "
-        "You may call the available tool to inspect a study unit before planning it. "
-        'Generate "course_title" as a concise textbook-grounded course title derived from the cleaned study units and outline. '
-        'The learner goal is provided separately as "objective"; do not reuse it as the plan title. '
-        'Use "overview" only for a short summary paragraph, not for the plan title. '
-        'Use "weekly_focus" for short topic labels, and "today_tasks" for imperative learner actions. '
-        "The JSON schema is: "
-        "{"
-        '"course_title": string, '
-        '"overview": string, '
-        '"weekly_focus": string[], '
-        '"today_tasks": string[], '
-        '"schedule": ['
-        "{"
-        '"unit_id": string, '
-        '"title": string, '
-        '"scheduled_date": string, '
-        '"focus": string, '
-        '"activity_type": "learn" | "review", '
-        '"estimated_minutes": integer'
-        "}"
-        "]"
-        "}."
-    )
+    prompt_template = load_learning_plan_prompt_template()
     user_prompt = {
         "persona": {
             "name": persona.name,
@@ -65,29 +66,35 @@ def build_learning_plan_messages(
         "document_title": document_title,
         "learning_goal": {
             "objective": goal.objective,
-            "deadline": goal.deadline,
-            "study_days_per_week": goal.study_days_per_week,
-            "session_minutes": goal.session_minutes,
         },
-        "course_outline": planning_context["course_outline"],
         "study_units": planning_context["study_units"],
-        "instructions": [
-            "Use the study_units and course_outline as the only source of chapter structure.",
-            "Use course_outline to notice internal chapter structure such as subsections.",
-            "Generate a clean first-pass learning plan after OCR cleanup.",
-            "Schedule review soon after each learn session when possible.",
-            'Treat course_title as the textbook-grounded display title, objective as the learner goal, overview as a 1-2 sentence summary, weekly_focus as ordered study topics, and today_tasks as actionable study steps.',
-            "Keep weekly_focus and today_tasks concise and learner-facing.",
-            "If a study unit looks broad, call the tool to read its detailed subsections and chunk excerpts before scheduling.",
-        ],
+        "instructions": prompt_template.user_instructions,
     }
     return [
-        {"role": "system", "content": system_prompt},
+        {"role": "system", "content": prompt_template.system_prompt},
         {
             "role": "user",
             "content": json.dumps(user_prompt, ensure_ascii=False, indent=2),
         },
     ]
+
+
+@lru_cache(maxsize=1)
+def load_learning_plan_prompt_template() -> LearningPlanPromptTemplate:
+    raw_text = PROMPT_TEMPLATE_PATH.read_text(encoding="utf-8")
+    sections = _parse_prompt_sections(raw_text)
+    system_prompt = sections.get("system", "").strip()
+    if not system_prompt:
+        raise RuntimeError("learning_plan_prompt_missing_system_section")
+    user_instructions = [
+        line.strip()
+        for line in sections.get("user_instructions", "").splitlines()
+        if line.strip()
+    ]
+    return LearningPlanPromptTemplate(
+        system_prompt=system_prompt.replace("{{PLAN_JSON_SCHEMA}}", PLAN_JSON_SCHEMA),
+        user_instructions=user_instructions,
+    )
 
 
 def build_learning_plan_context(
@@ -168,6 +175,48 @@ def read_page_range_content(
         "page_end": page_end,
         "chunk_count": len(matched_chunks),
         "content": "\n\n".join(parts),
+    }
+
+
+def read_page_range_images(
+    *,
+    document_path: str | None,
+    page_start: int,
+    page_end: int,
+    max_images: int = 3,
+) -> dict[str, object]:
+    if not document_path:
+        return {
+            "page_start": page_start,
+            "page_end": page_end,
+            "image_count": 0,
+            "images": [],
+        }
+    requested_pages = list(range(max(1, page_start), max(page_start, page_end) + 1))[: max(1, min(max_images, 4))]
+    images: list[dict[str, object]] = []
+    try:
+        with fitz.open(document_path) as document:
+            for page_number in requested_pages:
+                page_index = page_number - 1
+                if page_index < 0 or page_index >= len(document):
+                    continue
+                page = document.load_page(page_index)
+                pixmap = page.get_pixmap(dpi=144, alpha=False)
+                image_bytes = pixmap.tobytes("png")
+                images.append(
+                    {
+                        "page_number": page_number,
+                        "mime_type": "image/png",
+                        "image_url": f"data:image/png;base64,{base64.b64encode(image_bytes).decode('ascii')}",
+                    }
+                )
+    except Exception:
+        images = []
+    return {
+        "page_start": page_start,
+        "page_end": page_end,
+        "image_count": len(images),
+        "images": images,
     }
 
 
@@ -315,3 +364,21 @@ def _related_chunks_for_unit(
 
 def _ranges_overlap(*, start_a: int, end_a: int, start_b: int, end_b: int) -> bool:
     return max(start_a, start_b) <= min(end_a, end_b)
+
+
+def _parse_prompt_sections(raw_text: str) -> dict[str, str]:
+    sections: dict[str, list[str]] = {}
+    current_section: str | None = None
+    for line in raw_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            current_section = stripped[1:-1].strip().lower()
+            sections.setdefault(current_section, [])
+            continue
+        if current_section is None:
+            continue
+        sections[current_section].append(line)
+    return {
+        name: "\n".join(lines).strip()
+        for name, lines in sections.items()
+    }

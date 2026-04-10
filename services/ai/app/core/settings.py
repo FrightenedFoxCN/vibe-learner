@@ -12,6 +12,7 @@ class Settings:
     openai_base_url: str = "https://api.openai.com/v1"
     openai_plan_model: str = "gpt-4.1-mini"
     openai_timeout_seconds: int = 30
+    openai_plan_model_multimodal: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -22,6 +23,10 @@ class Settings:
             openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
             openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
             openai_timeout_seconds=_to_int(os.getenv("OPENAI_TIMEOUT_SECONDS", "30"), default=30),
+            openai_plan_model_multimodal=_to_bool(
+                os.getenv("OPENAI_PLAN_MODEL_MULTIMODAL", "false"),
+                default=False,
+            ),
         )
 
 
@@ -30,6 +35,15 @@ def _to_int(value: str, *, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _to_bool(value: str, *, default: bool) -> bool:
+    normalized = (value or "").strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
 
 
 def _load_dotenv() -> None:

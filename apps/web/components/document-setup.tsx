@@ -15,9 +15,6 @@ interface DocumentSetupProps {
   onGenerate: (input: {
     file: File;
     objective: string;
-    deadline: string;
-    studyDaysPerWeek: number;
-    sessionMinutes: number;
   }) => void;
   isBusy: boolean;
   document: DocumentRecord | null;
@@ -36,9 +33,6 @@ export function DocumentSetup({
 }: DocumentSetupProps) {
   const [file, setFile] = useState<File | null>(null);
   const [objective, setObjective] = useState("在两周内掌握这本教材的第一章并完成一次复习。");
-  const [deadline, setDeadline] = useState("2026-05-01");
-  const [studyDaysPerWeek, setStudyDaysPerWeek] = useState(4);
-  const [sessionMinutes, setSessionMinutes] = useState(35);
 
   return (
     <article style={styles.panel}>
@@ -66,30 +60,6 @@ export function DocumentSetup({
             style={styles.textarea}
           />
         </label>
-        <label style={styles.field}>
-          <span>截止日期</span>
-          <input type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} />
-        </label>
-        <label style={styles.field}>
-          <span>每周学习天数</span>
-          <input
-            type="number"
-            min={1}
-            max={7}
-            value={studyDaysPerWeek}
-            onChange={(event) => setStudyDaysPerWeek(Number(event.target.value))}
-          />
-        </label>
-        <label style={styles.field}>
-          <span>单次学习分钟数</span>
-          <input
-            type="number"
-            min={10}
-            max={180}
-            value={sessionMinutes}
-            onChange={(event) => setSessionMinutes(Number(event.target.value))}
-          />
-        </label>
       </div>
 
       <button
@@ -106,10 +76,7 @@ export function DocumentSetup({
           });
           onGenerate({
             file,
-            objective,
-            deadline,
-            studyDaysPerWeek,
-            sessionMinutes
+            objective
           });
         }}
       >

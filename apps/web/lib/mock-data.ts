@@ -37,7 +37,6 @@ export const mockPlan: LearningPlan = {
   personaId: "mentor-aurora",
   courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
-  deadline: "2026-04-30",
   overview: "本周完成力学导论与牛顿定律，保留一次错题回看。",
   weeklyFocus: ["力学定义", "惯性与受力分析", "教材例题复述"],
   todayTasks: [
@@ -64,10 +63,8 @@ export const mockPlan: LearningPlan = {
       id: "schedule-1",
       unitId: "doc-1:study-unit:1",
       title: "力学导论 精读",
-      scheduledDate: "2026-04-10",
       focus: "完成力学导论的首轮理解，标出定义、定理与例子。",
       activityType: "learn",
-      estimatedMinutes: 35,
       status: "planned"
     }
   ],

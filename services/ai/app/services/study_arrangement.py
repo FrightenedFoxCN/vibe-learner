@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import re
-from datetime import date, datetime, timedelta
 
 from app.models.domain import (
     DocumentDebugRecord,
@@ -157,19 +156,18 @@ class StudyArrangementService:
         units = document.study_units or self._fallback_units_from_sections(document)
         plannable_units = [unit for unit in units if unit.include_in_plan] or units
         schedule = self._build_schedule(
-            goal=goal,
             units=plannable_units,
         )
         weekly_focus = [unit.title for unit in plannable_units[:4]] or [document.title]
         today_tasks = [
-            f"{item.scheduled_date} · {item.title} · {item.focus}"
+            f"{item.title} · {item.focus}"
             for item in schedule[:3]
         ] or [
             f"阅读 {document.title} 的第一页内容，确认学习目标与术语。",
         ]
         # objective stays as learner-authored goal text; overview/course_title are generated display fields.
         overview = (
-            f"{persona_name} 将带你在 {goal.deadline} 前完成 {document.title} 的"
+            f"{persona_name} 将带你完成 {document.title} 的"
             f" {len(plannable_units)} 个学习单元，先从 {plannable_units[0].title if plannable_units else document.title} 开始。"
         )
         course_title = " / ".join(
@@ -181,7 +179,6 @@ class StudyArrangementService:
             persona_id=goal.persona_id,
             course_title=course_title,
             objective=goal.objective,
-            deadline=goal.deadline,
             overview=overview,
             weekly_focus=weekly_focus,
             today_tasks=today_tasks,
@@ -386,71 +383,32 @@ class StudyArrangementService:
     def _build_schedule(
         self,
         *,
-        goal: LearningGoalInput,
         units: list[StudyUnitRecord],
     ) -> list[StudyScheduleRecord]:
-        study_dates = self._compute_study_dates(
-            deadline=goal.deadline,
-            study_days_per_week=goal.study_days_per_week,
-            minimum_slots=max(len(units), 3),
-        )
         schedule: list[StudyScheduleRecord] = []
-        date_index = 0
 
         for index, unit in enumerate(units, start=1):
-            scheduled_date = study_dates[min(date_index, len(study_dates) - 1)]
-            learn_minutes = max(20, min(goal.session_minutes, 90))
             schedule.append(
                 StudyScheduleRecord(
                     id=f"schedule-{index * 2 - 1}",
                     unit_id=unit.id,
                     title=f"{unit.title} 精读",
-                    scheduled_date=scheduled_date.isoformat(),
                     focus=f"完成 {unit.title} 的首轮理解，标出定义、定理与例子。",
                     activity_type="learn",
-                    estimated_minutes=learn_minutes,
                 )
             )
-            date_index += 1
 
-            review_date = study_dates[min(date_index, len(study_dates) - 1)]
             schedule.append(
                 StudyScheduleRecord(
                     id=f"schedule-{index * 2}",
                     unit_id=unit.id,
                     title=f"{unit.title} 回顾",
-                    scheduled_date=review_date.isoformat(),
                     focus=f"复述 {unit.title}，补一条错因或例题笔记。",
                     activity_type="review",
-                    estimated_minutes=max(15, math.floor(goal.session_minutes * 0.6)),
                 )
             )
-            date_index += 1
 
         return schedule
-
-    def _compute_study_dates(
-        self, *, deadline: str, study_days_per_week: int, minimum_slots: int
-    ) -> list[date]:
-        today = datetime.now().date()
-        deadline_date = date.fromisoformat(deadline)
-        if deadline_date < today:
-            deadline_date = today
-
-        preferred_weekdays = set(range(max(1, min(study_days_per_week, 7))))
-        dates: list[date] = []
-        cursor = today
-        while cursor <= deadline_date:
-            if cursor.weekday() in preferred_weekdays:
-                dates.append(cursor)
-            cursor += timedelta(days=1)
-
-        if not dates:
-            dates.append(today)
-
-        while len(dates) < minimum_slots:
-            dates.append(dates[-1])
-        return dates
 
     def _fallback_units_from_sections(self, document: DocumentRecord) -> list[StudyUnitRecord]:
         if document.study_units:

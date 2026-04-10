@@ -33,13 +33,14 @@ from app.models.api import (
     SubmissionGradeRequest,
     SubmissionGradeResponse,
 )
+from app.models.domain import PlanGenerationTraceRecord
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
     StreamReportRecorder,
 )
-from app.services.model_provider import get_learning_plan_tool_specs
 from app.services.plan_prompt import build_learning_plan_context
+from app.services.plan_tool_runtime import get_learning_plan_tool_specs
 
 router = APIRouter()
 logger = get_logger("gal_learner.routes")
@@ -246,7 +247,13 @@ def get_document_planning_context(document_id: str) -> DocumentPlanningContextRe
         "course_outline": planning_context["course_outline"],
         "study_units": planning_context["study_units"],
         "detail_map": planning_context["detail_map"],
-        "available_tools": get_learning_plan_tool_specs(),
+        "available_tools": get_learning_plan_tool_specs(
+            study_units=study_units,
+            detail_map=planning_context["detail_map"],
+            debug_report=report,
+            document_path=document.stored_path,
+            multimodal_enabled=container.model_provider.supports_page_image_tools(),
+        ),
     }
     return _into_response(DocumentPlanningContextResponse, payload)
 
@@ -256,15 +263,29 @@ def get_document_planning_context(document_id: str) -> DocumentPlanningContextRe
     response_model=DocumentPlanningTraceResponse,
 )
 def get_document_planning_trace(document_id: str) -> DocumentPlanningTraceResponse:
-    trace = container.store.load_item("planning_trace", document_id, DocumentPlanningTraceResponse)
+    trace = container.store.load_item("planning_trace", document_id, PlanGenerationTraceRecord)
     if trace is not None:
-        return trace
+        tool_call_count = sum(len(round_record.tool_calls) for round_record in trace.rounds)
+        latest_finish_reason = trace.rounds[-1].finish_reason if trace.rounds else ""
+        return DocumentPlanningTraceResponse(
+            document_id=document_id,
+            has_trace=True,
+            summary={
+                "round_count": len(trace.rounds),
+                "tool_call_count": tool_call_count,
+                "latest_finish_reason": latest_finish_reason,
+            },
+            trace=trace.model_dump(mode="json"),
+        )
     return DocumentPlanningTraceResponse(
         document_id=document_id,
-        plan_id=None,
-        model="",
-        created_at="",
-        rounds=[],
+        has_trace=False,
+        summary={
+            "round_count": 0,
+            "tool_call_count": 0,
+            "latest_finish_reason": "",
+        },
+        trace=None,
     )
 
 
@@ -348,10 +369,9 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
         stream_kind="learning_plan",
     )
     logger.info(
-        "learning_plans.create document_id=%s persona_id=%s deadline=%s",
+        "learning_plans.create document_id=%s persona_id=%s",
         payload.document_id,
         payload.persona_id,
-        payload.deadline,
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
     document = container.document_service.require_document(payload.document_id)
@@ -365,7 +385,6 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
         {
             "document_id": payload.document_id,
             "persona_id": payload.persona_id,
-            "deadline": payload.deadline,
         },
     )
     try:
@@ -443,7 +462,6 @@ def create_learning_plan_stream(
                 {
                     "document_id": payload.document_id,
                     "persona_id": payload.persona_id,
-                    "deadline": payload.deadline,
                 },
             )
             plan = container.plan_service.create_plan(

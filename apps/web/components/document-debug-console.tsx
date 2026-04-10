@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import type {
   DocumentDebugRecord,
   DocumentPlanningContext,
+  DocumentPlanningTraceResponse,
   LearningPlan,
-  PlanGenerationTrace,
   PersonaProfile,
   DocumentRecord,
   StreamReport
@@ -30,13 +30,10 @@ export function DocumentDebugConsole() {
   const [selectedId, setSelectedId] = useState<string>("");
   const [debugRecord, setDebugRecord] = useState<DocumentDebugRecord | null>(null);
   const [planningContext, setPlanningContext] = useState<DocumentPlanningContext | null>(null);
-  const [planningTrace, setPlanningTrace] = useState<PlanGenerationTrace | null>(null);
+  const [planningTrace, setPlanningTrace] = useState<DocumentPlanningTraceResponse | null>(null);
   const [message, setMessage] = useState("正在加载解析结果...");
   const [selectedPersonaId, setSelectedPersonaId] = useState("mentor-aurora");
   const [objective, setObjective] = useState("梳理这本教材的结构并生成第一轮学习安排。");
-  const [deadline, setDeadline] = useState("2026-05-15");
-  const [studyDaysPerWeek, setStudyDaysPerWeek] = useState(4);
-  const [sessionMinutes, setSessionMinutes] = useState(45);
   const [processStreamEvents, setProcessStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
   const [planStreamEvents, setPlanStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
   const [processStreamStatus, setProcessStreamStatus] = useState("idle");
@@ -47,6 +44,11 @@ export function DocumentDebugConsole() {
   const selectedDocument = documents.find((document) => document.id === selectedId) ?? null;
   const coarseSections = debugRecord?.sections.filter((section) => section.level === 1) ?? [];
   const fineSections = debugRecord?.sections.filter((section) => section.level === 2) ?? [];
+  const planningTraceRecord = planningTrace?.trace ?? null;
+  const visiblePages = debugRecord?.pages.slice(0, 12) ?? [];
+  const hiddenPageCount = Math.max(0, (debugRecord?.pages.length ?? 0) - visiblePages.length);
+  const visibleChunks = debugRecord?.chunks.slice(0, 16) ?? [];
+  const hiddenChunkCount = Math.max(0, (debugRecord?.chunks.length ?? 0) - visibleChunks.length);
 
   const applyStreamReport = (
     report: StreamReport,
@@ -104,16 +106,14 @@ export function DocumentDebugConsole() {
     if (!selectedId) {
       return;
     }
-    const shouldPoll =
+    const hasActiveWork =
       selectedDocument?.status === "processing" ||
       processStreamStatus === "running" ||
       planStreamStatus === "running";
-    if (!shouldPoll) {
-      return;
-    }
+    const pollIntervalMs = hasActiveWork ? 1500 : 4000;
     const timer = window.setInterval(() => {
       void refreshDocuments(selectedId, true, true);
-    }, 1500);
+    }, pollIntervalMs);
     return () => {
       window.clearInterval(timer);
     };
@@ -249,10 +249,7 @@ export function DocumentDebugConsole() {
           {
             documentId: selectedId,
             personaId: selectedPersonaId,
-            objective,
-            deadline,
-            studyDaysPerWeek,
-            sessionMinutes
+            objective
           },
           (event) => {
             setPlanStreamEvents((current) => [...current.slice(-59), event]);
@@ -413,37 +410,6 @@ export function DocumentDebugConsole() {
                   style={styles.textarea}
                 />
               </label>
-              <label style={styles.field}>
-                <span>截止日期</span>
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(event) => setDeadline(event.target.value)}
-                  style={styles.input}
-                />
-              </label>
-              <label style={styles.field}>
-                <span>每周学习天数</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={7}
-                  value={studyDaysPerWeek}
-                  onChange={(event) => setStudyDaysPerWeek(Number(event.target.value))}
-                  style={styles.input}
-                />
-              </label>
-              <label style={styles.field}>
-                <span>单次学习分钟数</span>
-                <input
-                  type="number"
-                  min={10}
-                  max={180}
-                  value={sessionMinutes}
-                  onChange={(event) => setSessionMinutes(Number(event.target.value))}
-                  style={styles.input}
-                />
-              </label>
             </div>
             <div style={styles.actionRow}>
               <button
@@ -557,38 +523,6 @@ export function DocumentDebugConsole() {
           </article>
 
           <article style={styles.card}>
-            <h2 style={styles.sectionTitle}>计划输入目录</h2>
-            {planningContext?.courseOutline.length ? (
-              <div style={styles.list}>
-                {planningContext.courseOutline.map((section) => (
-                  <div key={section.sectionId} style={styles.listItem}>
-                    <div style={styles.sectionMetaRow}>
-                      <strong>{section.title}</strong>
-                      <span style={styles.sectionLevelBadge}>L{section.level}</span>
-                    </div>
-                    <span>
-                      p.{section.pageStart}-{section.pageEnd}
-                    </span>
-                    {section.children.length ? (
-                      <div style={styles.childChipRow}>
-                        {section.children.map((child) => (
-                          <span key={child.sectionId} style={styles.headingTag}>
-                            {child.title} · p.{child.pageStart}-{child.pageEnd}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span style={styles.emptyInline}>无子章节</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={styles.empty}>暂无可供计划模型使用的目录结构。</p>
-            )}
-          </article>
-
-          <article style={styles.card}>
             <h2 style={styles.sectionTitle}>计划工具与章节详情</h2>
             {planningContext ? (
               <div style={styles.list}>
@@ -629,15 +563,20 @@ export function DocumentDebugConsole() {
                           <span>chunk excerpts: {detail.chunkCount}</span>
                           {detail.chunkExcerpts.length ? (
                             <div style={styles.chunkGrid}>
-                              {detail.chunkExcerpts.slice(0, 3).map((chunk) => (
+                              {detail.chunkExcerpts.slice(0, 2).map((chunk) => (
                                 <div key={chunk.chunkId} style={styles.chunkCard}>
                                   <strong>{chunk.chunkId}</strong>
                                   <span>
                                     p.{chunk.pageStart}-{chunk.pageEnd} · {chunk.charCount} chars
                                   </span>
-                                  <pre style={styles.pre}>{chunk.content}</pre>
+                                  <pre style={styles.preCompact}>{truncateText(chunk.content, 220)}</pre>
                                 </div>
                               ))}
+                              {detail.chunkExcerpts.length > 2 ? (
+                                <div style={styles.chunkCardCollapsed}>
+                                  其余 {detail.chunkExcerpts.length - 2} 条 excerpt 已折叠。
+                                </div>
+                              ) : null}
                             </div>
                           ) : (
                             <span style={styles.emptyInline}>暂无可供工具读取的 chunk 内容。</span>
@@ -655,15 +594,18 @@ export function DocumentDebugConsole() {
 
           <article style={styles.card}>
             <h2 style={styles.sectionTitle}>计划模型 Trace</h2>
-            {planningTrace?.rounds.length ? (
+            {planningTraceRecord?.rounds.length ? (
               <div style={styles.list}>
                 <div style={styles.toolCard}>
-                  <strong>{planningTrace.model || "unknown model"}</strong>
+                  <strong>{planningTraceRecord.model || "unknown model"}</strong>
                   <span>
-                    plan id: {planningTrace.planId ?? "未写入"} · created at: {planningTrace.createdAt || "unknown"}
+                    plan id: {planningTraceRecord.planId ?? "未写入"} · created at: {planningTraceRecord.createdAt || "unknown"}
+                  </span>
+                  <span>
+                    rounds: {planningTrace?.summary.roundCount ?? 0} · tool calls: {planningTrace?.summary.toolCallCount ?? 0} · latest finish: {planningTrace?.summary.latestFinishReason || "unknown"}
                   </span>
                 </div>
-                {planningTrace.rounds.map((round) => (
+                {planningTraceRecord.rounds.map((round) => (
                   <div key={round.roundIndex} style={styles.listItem}>
                     <div style={styles.sectionMetaRow}>
                       <strong>Round {round.roundIndex}</strong>
@@ -696,8 +638,11 @@ export function DocumentDebugConsole() {
                             <div key={toolCall.toolCallId} style={styles.chunkCard}>
                               <strong>{toolCall.toolName}</strong>
                               <span>{toolCall.toolCallId}</span>
-                              <pre style={styles.pre}>{toolCall.argumentsJson}</pre>
-                              <pre style={styles.pre}>{toolCall.resultJson}</pre>
+                              {toolCall.resultSummary ? (
+                                <span style={styles.traceSummary}>{toolCall.resultSummary}</span>
+                              ) : null}
+                              <pre style={styles.preCompact}>{toolCall.argumentsJson}</pre>
+                              <pre style={styles.preCompact}>{toolCall.resultJson}</pre>
                             </div>
                           ))}
                         </div>
@@ -734,17 +679,22 @@ export function DocumentDebugConsole() {
 
           <article style={styles.card}>
             <h2 style={styles.sectionTitle}>切块结果</h2>
-            {debugRecord?.chunks.length ? (
+            {visibleChunks.length ? (
               <div style={styles.chunkGrid}>
-                {debugRecord.chunks.map((chunk) => (
+                {visibleChunks.map((chunk) => (
                   <div key={chunk.id} style={styles.chunkCard}>
                     <strong>{chunk.id}</strong>
                     <span>
                       {chunk.sectionId} · p.{chunk.pageStart}-{chunk.pageEnd} · {chunk.charCount} chars
                     </span>
-                    <pre style={styles.pre}>{chunk.textPreview}</pre>
+                    <pre style={styles.preCompact}>{truncateText(chunk.textPreview, 180)}</pre>
                   </div>
                 ))}
+                {hiddenChunkCount ? (
+                  <div style={styles.chunkCardCollapsed}>
+                    仅展示前 {visibleChunks.length} 个 chunk，剩余 {hiddenChunkCount} 个已折叠。
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p style={styles.empty}>暂无 chunks。</p>
@@ -753,9 +703,9 @@ export function DocumentDebugConsole() {
 
           <article style={styles.card}>
             <h2 style={styles.sectionTitle}>逐页抽取</h2>
-            {debugRecord?.pages.length ? (
+            {visiblePages.length ? (
               <div style={styles.pageList}>
-                {debugRecord.pages.map((page) => (
+                {visiblePages.map((page) => (
                   <div key={page.pageNumber} style={styles.pageCard}>
                     <div style={styles.pageMeta}>
                       <strong>Page {page.pageNumber}</strong>
@@ -777,6 +727,11 @@ export function DocumentDebugConsole() {
                     <pre style={styles.pre}>{page.textPreview || "[empty]"}</pre>
                   </div>
                 ))}
+                {hiddenPageCount ? (
+                  <div style={styles.pageCardCollapsed}>
+                    仅展示前 {visiblePages.length} 页的页级抽取结果，剩余 {hiddenPageCount} 页已折叠。
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p style={styles.empty}>暂无页级结果。</p>
@@ -1063,6 +1018,18 @@ const styles: Record<string, CSSProperties> = {
     background: "rgba(255,255,255,0.78)",
     border: "1px solid var(--border)"
   },
+  chunkCardCollapsed: {
+    padding: 16,
+    borderRadius: 18,
+    background: "rgba(255,255,255,0.56)",
+    border: "1px dashed var(--border)",
+    color: "var(--muted)"
+  },
+  traceSummary: {
+    color: "var(--muted)",
+    fontSize: 13,
+    lineHeight: 1.5
+  },
   pageList: {
     display: "grid",
     gap: 12,
@@ -1075,6 +1042,13 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 18,
     background: "rgba(255,255,255,0.78)",
     border: "1px solid var(--border)"
+  },
+  pageCardCollapsed: {
+    padding: 16,
+    borderRadius: 18,
+    background: "rgba(255,255,255,0.56)",
+    border: "1px dashed var(--border)",
+    color: "var(--muted)"
   },
   pageMeta: {
     display: "grid",
@@ -1108,8 +1082,27 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.6,
     overflowX: "auto"
   },
+  preCompact: {
+    margin: 0,
+    padding: 12,
+    borderRadius: 14,
+    background: "rgba(45,36,31,0.92)",
+    color: "#fff6ed",
+    whiteSpace: "pre-wrap",
+    lineHeight: 1.5,
+    overflowX: "auto",
+    fontSize: 13
+  },
   empty: {
     margin: "14px 0 0",
     color: "var(--muted)"
   }
 };
+
+function truncateText(text: string, maxChars: number) {
+  const normalized = (text || "").trim();
+  if (normalized.length <= maxChars) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxChars).trimEnd()}...`;
+}

@@ -8,7 +8,7 @@ from app.services.local_store import LocalJsonStore
 
 DOCUMENT_PROCESS_STREAM_CATEGORY = "document_process_stream"
 LEARNING_PLAN_STREAM_CATEGORY = "learning_plan_stream"
-MAX_STREAM_EVENTS = 200
+MAX_STREAM_EVENTS = 120
 
 
 class StreamReportRecorder:

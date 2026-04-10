@@ -60,7 +60,7 @@ export function PlanHistory({
                   {selected ? <span style={styles.selectedBadge}>当前查看</span> : null}
                 </div>
                 <span>
-                  {item.personaName} · 截止 {item.deadline} · {formatDate(item.createdAt)}
+                  {item.personaName} · {formatDate(item.createdAt)}
                 </span>
                 <p style={styles.overview}>{item.overview}</p>
               </button>

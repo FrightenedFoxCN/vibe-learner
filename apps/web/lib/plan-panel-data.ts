@@ -5,7 +5,6 @@ export interface PlanHistoryItem {
   courseTitle: string;
   documentTitle: string;
   personaName: string;
-  deadline: string;
   createdAt: string;
   overview: string;
 }
@@ -70,7 +69,6 @@ export function buildPlanHistoryItems(input: {
     courseTitle: plan.courseTitle,
     documentTitle: documentTitleById.get(plan.documentId) ?? plan.documentId,
     personaName: personaNameById.get(plan.personaId) ?? plan.personaId,
-    deadline: plan.deadline,
     createdAt: plan.createdAt,
     overview: plan.overview
   }));

@@ -105,10 +105,6 @@ export function PlanOverview({
               <dd style={styles.metaValue}>{personaName}</dd>
             </div>
             <div style={styles.metaItem}>
-              <dt style={styles.metaLabel}>截止日期</dt>
-              <dd style={styles.metaValue}>{plan.deadline || "未设置"}</dd>
-            </div>
-            <div style={styles.metaItem}>
               <dt style={styles.metaLabel}>生成时间</dt>
               <dd style={styles.metaValue}>{formatDate(plan.createdAt)}</dd>
             </div>
@@ -180,10 +176,6 @@ export function PlanOverview({
           <ol style={styles.timeline}>
             {plan.schedule.slice(0, 6).map((item) => (
               <li key={item.id} style={styles.timelineItem}>
-                <div style={styles.timelineDate}>
-                  <strong style={styles.timelineDateText}>{formatShortDate(item.scheduledDate)}</strong>
-                  <span style={styles.timelineMinutes}>{item.estimatedMinutes} 分钟</span>
-                </div>
                 <div style={styles.timelineContent}>
                   <div style={styles.scheduleTopRow}>
                     <strong style={styles.scheduleTitle}>{item.title}</strong>
@@ -479,27 +471,12 @@ const styles: Record<string, CSSProperties> = {
   },
   timelineItem: {
     display: "grid",
-    gridTemplateColumns: "96px minmax(0, 1fr)",
-    gap: 14,
+    gap: 10,
     alignItems: "flex-start",
     padding: 18,
     borderRadius: 20,
     background: "rgba(255,255,255,0.76)",
     border: "1px solid rgba(78, 53, 37, 0.12)"
-  },
-  timelineDate: {
-    display: "grid",
-    gap: 4,
-    paddingTop: 2
-  },
-  timelineDateText: {
-    fontSize: 14,
-    lineHeight: 1.4
-  },
-  timelineMinutes: {
-    color: "var(--muted)",
-    fontSize: 12,
-    lineHeight: 1.4
   },
   timelineContent: {
     display: "grid",
@@ -564,20 +541,6 @@ function formatDate(value: string) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  });
-}
-
-function formatShortDate(value: string) {
-  if (!value) {
-    return "待排期";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleDateString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit"
   });
 }
 

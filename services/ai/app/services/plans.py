@@ -14,6 +14,7 @@ from app.models.domain import (
     LearningPlanRecord,
     PersonaProfile,
     StudyScheduleRecord,
+    StudyUnitRecord,
 )
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import ModelProvider
@@ -89,19 +90,27 @@ class LearningPlanService:
             document_title=document.title,
             goal=goal,
             study_units=plan.study_units,
+            document_path=document.stored_path,
             debug_report=debug_report,
             progress_callback=progress_callback,
         )
+        if model_plan.revised_study_units:
+            plan.study_units = model_plan.revised_study_units
+            document.study_units = model_plan.revised_study_units
+            document.study_unit_count = len(model_plan.revised_study_units)
+            document.sections = _project_sections_from_study_units(model_plan.revised_study_units)
+            if debug_report is not None:
+                debug_report.study_units = model_plan.revised_study_units
+                self.store.save_item("document_debug", document.id, debug_report)
+            self._persist_document(document)
         valid_unit_ids = {unit.id for unit in plan.study_units}
         filtered_schedule = [
             StudyScheduleRecord(
                 id=f"schedule-{index + 1}",
                 unit_id=item.unit_id,
                 title=item.title,
-                scheduled_date=item.scheduled_date,
                 focus=item.focus,
                 activity_type=item.activity_type,
-                estimated_minutes=item.estimated_minutes,
                 status="planned",
             )
             for index, item in enumerate(model_plan.schedule)
@@ -162,6 +171,13 @@ class LearningPlanService:
     def _save_plans(self, plans: list[LearningPlanRecord]) -> None:
         self.store.save_list("plans", plans)
 
+    def _persist_document(self, document: DocumentRecord) -> None:
+        documents = self.store.load_list("documents", DocumentRecord)
+        updated = [item if item.id != document.id else document for item in documents]
+        if not any(item.id == document.id for item in documents):
+            updated.append(document)
+        self.store.save_list("documents", updated)
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -175,3 +191,18 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _project_sections_from_study_units(study_units: list[StudyUnitRecord]) -> list[DocumentSection]:
+    return [
+        DocumentSection(
+            id=str(unit.id),
+            document_id=str(unit.document_id),
+            title=str(unit.title),
+            page_start=int(unit.page_start),
+            page_end=int(unit.page_end),
+            level=1,
+        )
+        for unit in study_units
+        if bool(unit.include_in_plan)
+    ]

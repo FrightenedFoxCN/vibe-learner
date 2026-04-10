@@ -6,9 +6,14 @@ from unittest.mock import patch
 
 import fitz
 from fastapi import HTTPException
-from app.api.routes import _map_plan_generation_error
+from app.api.routes import _map_plan_generation_error, get_document_planning_trace
 from app.models.api import CreatePersonaRequest, DocumentResponse
-from app.models.domain import DocumentDebugRecord, LearningGoalInput, StudyUnitRecord
+from app.models.domain import (
+    DocumentDebugRecord,
+    LearningGoalInput,
+    PlanGenerationTraceRecord,
+    StudyUnitRecord,
+)
 from app.services.documents import DocumentService
 from app.services.document_parser import DocumentParser, ParsedPage
 from app.services.local_store import LocalJsonStore
@@ -21,8 +26,10 @@ from app.services.model_provider import (
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
 from app.services.plan_prompt import build_learning_plan_messages, read_page_range_content
+from app.services.plan_prompt import load_learning_plan_prompt_template
 from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
+from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning_plan_tool_specs
 from app.services.study_arrangement import StudyArrangementService
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
@@ -136,9 +143,6 @@ class PersonaPipelineTests(unittest.TestCase):
                 document_id=processed.id,
                 persona_id=persona.id,
                 objective="掌握第一章",
-                deadline="2026-05-01",
-                study_days_per_week=4,
-                session_minutes=35,
             ),
             document=processed,
             persona_name=persona.name,
@@ -197,6 +201,253 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertEqual(response.id, processed.id)
         self.assertEqual(response.page_count, processed.page_count)
+
+    def test_learning_plan_prompt_template_loads_from_text_file(self) -> None:
+        template = load_learning_plan_prompt_template()
+
+        self.assertIn("strict JSON only", template.system_prompt)
+        self.assertIn('"course_title": string', template.system_prompt)
+        self.assertGreaterEqual(len(template.user_instructions), 3)
+        self.assertIn("study_units", template.user_instructions[0])
+
+    def test_learning_plan_tool_specs_filter_by_context(self) -> None:
+        all_specs = get_learning_plan_tool_specs()
+        self.assertEqual(
+            [spec["name"] for spec in all_specs],
+            ["get_study_unit_detail", "revise_study_units", "read_page_range_content", "read_page_range_images"],
+        )
+
+        contextual_specs = get_learning_plan_tool_specs(
+            detail_map={"unit-1": {"unit_id": "unit-1"}},
+            debug_report=None,
+        )
+        self.assertEqual([spec["name"] for spec in contextual_specs], ["get_study_unit_detail"])
+
+        multimodal_specs = get_learning_plan_tool_specs(
+            study_units=[
+                StudyUnitRecord(
+                    id="unit-1",
+                    document_id="doc-1",
+                    title="Chapter 1",
+                    page_start=1,
+                    page_end=4,
+                )
+            ],
+            detail_map={"unit-1": {"unit_id": "unit-1"}},
+            debug_report=DocumentDebugRecord.model_validate(
+                {
+                    "document_id": "doc-1",
+                    "parser_name": "parser",
+                    "processed_at": "2026-04-09T00:00:00+00:00",
+                    "page_count": 1,
+                    "total_characters": 100,
+                    "extraction_method": "text",
+                    "ocr_applied": False,
+                    "pages": [],
+                    "sections": [],
+                    "study_units": [],
+                    "chunks": [],
+                    "warnings": [],
+                    "dominant_language_hint": "en",
+                }
+            ),
+            document_path="/tmp/doc-1.pdf",
+            multimodal_enabled=True,
+        )
+        self.assertEqual(
+            [spec["name"] for spec in multimodal_specs],
+            ["get_study_unit_detail", "revise_study_units", "read_page_range_content", "read_page_range_images"],
+        )
+
+    def test_multimodal_page_image_tool_creates_follow_up_message(self) -> None:
+        runtime = build_plan_tool_runtime(
+            document_path="/tmp/discrete-math.pdf",
+            multimodal_enabled=True,
+        )
+
+        with patch(
+            "app.services.plan_tool_runtime.read_page_range_images",
+            return_value={
+                "page_start": 4,
+                "page_end": 5,
+                "image_count": 2,
+                "images": [
+                    {
+                        "page_number": 4,
+                        "mime_type": "image/png",
+                        "image_url": "data:image/png;base64,AAA",
+                    },
+                    {
+                        "page_number": 5,
+                        "mime_type": "image/png",
+                        "image_url": "data:image/png;base64,BBB",
+                    },
+                ],
+            },
+        ):
+            execution = runtime.execute_tool_call(
+                {
+                    "id": "call-image-1",
+                    "type": "function",
+                    "function": {
+                        "name": "read_page_range_images",
+                        "arguments": json.dumps(
+                            {
+                                "page_start": 4,
+                                "page_end": 5,
+                                "max_images": 2,
+                            }
+                        ),
+                    },
+                }
+            )
+
+        self.assertEqual(execution.tool_name, "read_page_range_images")
+        self.assertEqual(execution.result["image_count"], 2)
+        self.assertEqual(execution.result["page_numbers"], [4, 5])
+        self.assertEqual(len(execution.follow_up_messages), 1)
+        follow_up_content = execution.follow_up_messages[0]["content"]
+        self.assertEqual(follow_up_content[0]["type"], "text")
+        self.assertEqual(follow_up_content[1]["type"], "image_url")
+        self.assertEqual(follow_up_content[1]["image_url"]["url"], "data:image/png;base64,AAA")
+
+    def test_revise_study_units_tool_updates_active_segmentation(self) -> None:
+        debug_report = DocumentDebugRecord.model_validate(
+            {
+                "document_id": "doc-1",
+                "parser_name": "parser",
+                "processed_at": "2026-04-09T00:00:00+00:00",
+                "page_count": 20,
+                "total_characters": 1200,
+                "extraction_method": "text",
+                "ocr_applied": False,
+                "pages": [],
+                "sections": [
+                    {
+                        "id": "raw-1",
+                        "document_id": "doc-1",
+                        "title": "Chapter 1",
+                        "page_start": 1,
+                        "page_end": 10,
+                        "level": 1,
+                    },
+                    {
+                        "id": "raw-2",
+                        "document_id": "doc-1",
+                        "title": "Chapter 2",
+                        "page_start": 11,
+                        "page_end": 20,
+                        "level": 1,
+                    },
+                ],
+                "study_units": [],
+                "chunks": [],
+                "warnings": [],
+                "dominant_language_hint": "en",
+            }
+        )
+        runtime = build_plan_tool_runtime(
+            study_units=[
+                StudyUnitRecord(
+                    id="unit-1",
+                    document_id="doc-1",
+                    title="Combined Unit",
+                    page_start=1,
+                    page_end=20,
+                    summary="旧划分。",
+                    confidence=0.6,
+                )
+            ],
+            debug_report=debug_report,
+            detail_map={
+                "unit-1": {
+                    "unit_id": "unit-1",
+                    "title": "Combined Unit",
+                    "page_start": 1,
+                    "page_end": 20,
+                    "summary": "旧划分。",
+                    "unit_kind": "chapter",
+                    "include_in_plan": True,
+                    "related_section_ids": ["raw-1", "raw-2"],
+                    "subsection_titles": [],
+                    "related_sections": [],
+                    "chunk_count": 0,
+                    "chunk_excerpts": [],
+                }
+            },
+        )
+
+        execution = runtime.execute_tool_call(
+            {
+                "id": "call-revise-1",
+                "type": "function",
+                "function": {
+                    "name": "revise_study_units",
+                    "arguments": json.dumps(
+                        {
+                            "study_units": [
+                                {
+                                    "title": "Chapter 1 Foundations",
+                                    "page_start": 1,
+                                    "page_end": 10,
+                                },
+                                {
+                                    "title": "Chapter 2 Practice",
+                                    "page_start": 11,
+                                    "page_end": 20,
+                                },
+                            ],
+                            "rationale": "The original segmentation merged two chapters.",
+                        }
+                    ),
+                },
+            }
+        )
+
+        self.assertTrue(execution.result["ok"])
+        self.assertEqual(execution.result["study_unit_count"], 2)
+        self.assertEqual(
+            [unit.id for unit in runtime.current_study_units()],
+            ["doc-1:study-unit:llm:1", "doc-1:study-unit:llm:2"],
+        )
+        self.assertIn("doc-1:study-unit:llm:1", runtime.context.detail_map)
+
+    def test_document_planning_trace_route_wraps_trace_payload(self) -> None:
+        trace = PlanGenerationTraceRecord.model_validate(
+            {
+                "document_id": "doc-1",
+                "plan_id": "plan-1",
+                "model": "gpt-test",
+                "created_at": "2026-04-10T00:00:00+00:00",
+                "rounds": [
+                    {
+                        "round_index": 0,
+                        "finish_reason": "tool_calls",
+                        "assistant_content": "",
+                        "thinking": "Need more detail.",
+                        "elapsed_ms": 120,
+                        "timeout_seconds": 3,
+                        "tool_calls": [
+                            {
+                                "tool_call_id": "call-1",
+                                "tool_name": "get_study_unit_detail",
+                                "arguments_json": "{\"study_unit_id\":\"unit-1\"}",
+                                "result_json": "{\"ok\":true}",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+        with patch("app.api.routes.container.store.load_item", return_value=trace):
+            response = get_document_planning_trace("doc-1")
+
+        self.assertTrue(response.has_trace)
+        self.assertIsNotNone(response.trace)
+        self.assertEqual(response.summary.round_count, 1)
+        self.assertEqual(response.summary.tool_call_count, 1)
+        self.assertEqual(response.trace.model, "gpt-test")
 
     def test_document_process_stream_report_can_be_replayed_after_sync_processing(self) -> None:
         from fastapi import UploadFile
@@ -275,7 +526,6 @@ class PersonaPipelineTests(unittest.TestCase):
             {
                 "document_id": processed.id,
                 "persona_id": persona.id,
-                "deadline": "2026-05-01",
             },
         )
         plan = self.plan_service.create_plan(
@@ -283,9 +533,6 @@ class PersonaPipelineTests(unittest.TestCase):
                 document_id=processed.id,
                 persona_id=persona.id,
                 objective="掌握第一章",
-                deadline="2026-05-01",
-                study_days_per_week=4,
-                session_minutes=35,
             ),
             document=processed,
             persona_name=persona.name,
@@ -583,15 +830,12 @@ class PersonaPipelineTests(unittest.TestCase):
         ])
         self.assertEqual(units[0].page_end, 11)
 
-    def test_learning_plan_prompt_contains_hierarchical_outline_and_constraints(self) -> None:
+    def test_learning_plan_prompt_uses_cleaned_study_units_and_constraints(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
         goal = LearningGoalInput(
             document_id="doc-1",
             persona_id=persona.id,
             objective="掌握第一章",
-            deadline="2026-05-01",
-            study_days_per_week=4,
-            session_minutes=35,
         )
         debug_report = DocumentDebugRecord.model_validate(
             {
@@ -650,10 +894,11 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(messages[0]["role"], "system")
         self.assertIn("strict JSON only", messages[0]["content"])
         self.assertIn('"course_title": string', messages[0]["content"])
+        self.assertNotIn("course_outline", messages[0]["content"])
         self.assertIn("Chapter 1 Foundations", messages[1]["content"])
-        self.assertIn('"course_outline"', messages[1]["content"])
-        self.assertIn('"1.1 Sets"', messages[1]["content"])
         self.assertIn('"detail_tool_target_id": "unit-1"', messages[1]["content"])
+        self.assertIn('"study_units"', messages[1]["content"])
+        self.assertNotIn('"course_outline"', messages[1]["content"])
         self.assertIn("掌握第一章", messages[1]["content"])
 
     def test_openai_provider_parses_json_learning_plan_response(self) -> None:
@@ -662,9 +907,6 @@ class PersonaPipelineTests(unittest.TestCase):
             document_id="doc-1",
             persona_id=persona.id,
             objective="掌握第一章",
-            deadline="2026-05-01",
-            study_days_per_week=4,
-            session_minutes=35,
         )
         provider = OpenAIModelProvider(
             api_key="test-key",
@@ -696,10 +938,8 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 {
                                                     "unit_id": "unit-1",
                                                     "title": "Chapter 1 Foundations 精读",
-                                                    "scheduled_date": "2026-04-10",
                                                     "focus": "理解定义与例题。",
                                                     "activity_type": "learn",
-                                                    "estimated_minutes": 35,
                                                 }
                                             ],
                                         }
@@ -741,9 +981,6 @@ class PersonaPipelineTests(unittest.TestCase):
             document_id="doc-1",
             persona_id=persona.id,
             objective="掌握第一章",
-            deadline="2026-05-01",
-            study_days_per_week=4,
-            session_minutes=35,
         )
         provider = OpenAIModelProvider(
             api_key="test-key",
@@ -869,10 +1106,8 @@ class PersonaPipelineTests(unittest.TestCase):
                                             {
                                                 "unit_id": "unit-1",
                                                 "title": "Chapter 1 Foundations 精读",
-                                                "scheduled_date": "2026-04-10",
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
-                                                "estimated_minutes": 35,
                                             }
                                         ],
                                     }
@@ -907,8 +1142,14 @@ class PersonaPipelineTests(unittest.TestCase):
         first_payload = json.loads(mocked_urlopen.call_args_list[0].args[0].data.decode("utf-8"))
         second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
         self.assertIn("tools", first_payload)
-        self.assertEqual(first_payload["tools"][0]["function"]["name"], "get_study_unit_detail")
-        self.assertEqual(first_payload["tools"][1]["function"]["name"], "read_page_range_content")
+        self.assertIn(
+            "get_study_unit_detail",
+            [tool["function"]["name"] for tool in first_payload["tools"]],
+        )
+        self.assertIn(
+            "read_page_range_content",
+            [tool["function"]["name"] for tool in first_payload["tools"]],
+        )
         tool_messages = [message for message in second_payload["messages"] if message["role"] == "tool"]
         self.assertEqual(len(tool_messages), 2)
         self.assertIn("extensionality", tool_messages[0]["content"])
@@ -924,6 +1165,301 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(reply.course_title, "Discrete Mathematics / Chapter 1 Foundations")
         self.assertEqual(reply.overview, "Tool-assisted plan overview")
         self.assertEqual(reply.schedule[0].unit_id, "unit-1")
+
+    def test_openai_provider_can_revise_study_units_before_planning(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        goal = LearningGoalInput(
+            document_id="doc-1",
+            persona_id=persona.id,
+            objective="纠正章节划分",
+        )
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            timeout_seconds=3,
+        )
+        debug_report = DocumentDebugRecord.model_validate(
+            {
+                "document_id": "doc-1",
+                "parser_name": "parser",
+                "processed_at": "2026-04-09T00:00:00+00:00",
+                "page_count": 20,
+                "total_characters": 2000,
+                "extraction_method": "ocr",
+                "ocr_applied": True,
+                "ocr_language": "eng",
+                "pages": [],
+                "sections": [
+                    {
+                        "id": "raw-1",
+                        "document_id": "doc-1",
+                        "title": "Chapter 1",
+                        "page_start": 1,
+                        "page_end": 10,
+                        "level": 1,
+                    },
+                    {
+                        "id": "raw-2",
+                        "document_id": "doc-1",
+                        "title": "Chapter 2",
+                        "page_start": 11,
+                        "page_end": 20,
+                        "level": 1,
+                    },
+                ],
+                "study_units": [],
+                "chunks": [],
+                "warnings": [],
+                "dominant_language_hint": "en",
+            }
+        )
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return json.dumps(self.payload).encode("utf-8")
+
+        responses = [
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "",
+                                "tool_calls": [
+                                    {
+                                        "id": "call-revise-1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "revise_study_units",
+                                            "arguments": json.dumps(
+                                                {
+                                                    "study_units": [
+                                                        {
+                                                            "title": "Chapter 1 Foundations",
+                                                            "page_start": 1,
+                                                            "page_end": 10,
+                                                        },
+                                                        {
+                                                            "title": "Chapter 2 Practice",
+                                                            "page_start": 11,
+                                                            "page_end": 20,
+                                                        },
+                                                    ]
+                                                }
+                                            ),
+                                        },
+                                    }
+                                ],
+                            }
+                        }
+                    ]
+                }
+            ),
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "course_title": "Discrete Mathematics / Revised",
+                                        "overview": "Use the revised segmentation.",
+                                        "weekly_focus": ["Chapter 1 Foundations", "Chapter 2 Practice"],
+                                        "today_tasks": ["Start with the corrected first chapter."],
+                                        "schedule": [
+                                            {
+                                                "unit_id": "doc-1:study-unit:llm:1",
+                                                "title": "Chapter 1 Foundations 精读",
+                                                "focus": "Study the corrected first chapter.",
+                                                "activity_type": "learn",
+                                            }
+                                        ],
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ),
+        ]
+
+        with patch("urllib.request.urlopen", side_effect=responses):
+            reply = provider.generate_learning_plan(
+                persona=persona,
+                document_title="Discrete Mathematics",
+                goal=goal,
+                study_units=[
+                    StudyUnitRecord(
+                        id="unit-1",
+                        document_id="doc-1",
+                        title="Wrong Combined Unit",
+                        page_start=1,
+                        page_end=20,
+                        summary="旧划分。",
+                        confidence=0.7,
+                    )
+                ],
+                debug_report=debug_report,
+            )
+
+        self.assertIsNotNone(reply.revised_study_units)
+        self.assertEqual(
+            [unit.id for unit in reply.revised_study_units or []],
+            ["doc-1:study-unit:llm:1", "doc-1:study-unit:llm:2"],
+        )
+        self.assertEqual(reply.schedule[0].unit_id, "doc-1:study-unit:llm:1")
+
+    def test_openai_provider_multimodal_tool_call_appends_page_images(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        goal = LearningGoalInput(
+            document_id="doc-1",
+            persona_id=persona.id,
+            objective="理解图表与公式",
+        )
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            timeout_seconds=3,
+            multimodal_enabled=True,
+        )
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return json.dumps(self.payload).encode("utf-8")
+
+        responses = [
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "",
+                                "tool_calls": [
+                                    {
+                                        "id": "call-image-1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "read_page_range_images",
+                                            "arguments": json.dumps(
+                                                {
+                                                    "page_start": 2,
+                                                    "page_end": 2,
+                                                    "max_images": 1,
+                                                }
+                                            ),
+                                        },
+                                    }
+                                ],
+                            }
+                        }
+                    ]
+                }
+            ),
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "course_title": "Physics / Chapter 2 Graphs",
+                                        "overview": "Use the page image to understand the diagram-heavy unit.",
+                                        "weekly_focus": ["Chapter 2 Graphs"],
+                                        "today_tasks": ["Inspect the textbook figure and summarize it."],
+                                        "schedule": [
+                                            {
+                                                "unit_id": "unit-graph",
+                                                "title": "Chapter 2 Graphs 精读",
+                                                "focus": "Interpret the chart and connect it with the surrounding explanation.",
+                                                "activity_type": "learn",
+                                            }
+                                        ],
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ),
+        ]
+
+        with (
+            patch("urllib.request.urlopen", side_effect=responses) as mocked_urlopen,
+            patch(
+                "app.services.plan_tool_runtime.read_page_range_images",
+                return_value={
+                    "page_start": 2,
+                    "page_end": 2,
+                    "image_count": 1,
+                    "images": [
+                        {
+                            "page_number": 2,
+                            "mime_type": "image/png",
+                            "image_url": "data:image/png;base64,AAA",
+                        }
+                    ],
+                },
+            ),
+        ):
+            reply = provider.generate_learning_plan(
+                persona=persona,
+                document_title="Physics",
+                goal=goal,
+                study_units=[
+                    StudyUnitRecord(
+                        id="unit-graph",
+                        document_id="doc-1",
+                        title="Chapter 2 Graphs",
+                        page_start=2,
+                        page_end=4,
+                        summary="聚焦图表与相关解释。",
+                        confidence=0.8,
+                    )
+                ],
+                document_path="/tmp/physics.pdf",
+            )
+
+        first_payload = json.loads(mocked_urlopen.call_args_list[0].args[0].data.decode("utf-8"))
+        second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
+        self.assertIn(
+            "read_page_range_images",
+            [tool["function"]["name"] for tool in first_payload["tools"]],
+        )
+        image_follow_up_messages = [
+            message
+            for message in second_payload["messages"]
+            if message["role"] == "user" and isinstance(message["content"], list)
+        ]
+        self.assertEqual(len(image_follow_up_messages), 1)
+        self.assertEqual(image_follow_up_messages[0]["content"][1]["type"], "image_url")
+        self.assertEqual(
+            image_follow_up_messages[0]["content"][1]["image_url"]["url"],
+            "data:image/png;base64,AAA",
+        )
+        tool_messages = [message for message in second_payload["messages"] if message["role"] == "tool"]
+        self.assertEqual(tool_messages[0]["name"], "read_page_range_images")
+        self.assertIn('"page_numbers": [2]', tool_messages[0]["content"])
+        self.assertEqual(reply.schedule[0].unit_id, "unit-graph")
 
     def test_read_page_range_content_joins_overlapping_chunks(self) -> None:
         debug_report = DocumentDebugRecord.model_validate(
@@ -1064,10 +1600,8 @@ class PersonaPipelineTests(unittest.TestCase):
                     PlanScheduleItem(
                         unit_id="doc-plan:study-unit:1",
                         title="Chapter 1 Vectors 精读",
-                        scheduled_date="2026-04-10",
                         focus="完成向量定义与例题梳理。",
                         activity_type="learn",
-                        estimated_minutes=35,
                     )
                 ],
             ),
@@ -1077,9 +1611,6 @@ class PersonaPipelineTests(unittest.TestCase):
                     document_id=document.id,
                     persona_id=persona.id,
                     objective="掌握向量基础",
-                    deadline="2026-05-01",
-                    study_days_per_week=4,
-                    session_minutes=35,
                 ),
                 document=document,
                 persona_name=persona.name,
@@ -1090,6 +1621,121 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(plan.course_title, "Linear Algebra / Chapter 1 Vectors")
         self.assertEqual(plan.overview, "Model-crafted overview")
         self.assertEqual(plan.schedule[0].title, "Chapter 1 Vectors 精读")
+
+    def test_plan_service_persists_model_revised_study_units(self) -> None:
+        arrangement_service = StudyArrangementService()
+        store = LocalJsonStore(Path(self.temp_dir.name) / "plan-revision-case")
+        provider = MockModelProvider()
+        service = LearningPlanService(store, arrangement_service, provider)
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        document = DocumentResponse.model_validate(
+            {
+                "id": "doc-revise",
+                "title": "Discrete Mathematics",
+                "original_filename": "discrete.pdf",
+                "stored_path": "/tmp/discrete.pdf",
+                "status": "processed",
+                "ocr_status": "completed",
+                "created_at": "2026-04-09T00:00:00+00:00",
+                "updated_at": "2026-04-09T00:00:00+00:00",
+                "sections": [],
+                "study_units": [
+                    {
+                        "id": "doc-revise:study-unit:1",
+                        "document_id": "doc-revise",
+                        "title": "Wrong Combined Unit",
+                        "page_start": 1,
+                        "page_end": 20,
+                        "unit_kind": "chapter",
+                        "include_in_plan": True,
+                        "source_section_ids": ["raw-1"],
+                        "summary": "旧划分。",
+                        "confidence": 0.7,
+                    }
+                ],
+                "study_unit_count": 1,
+                "page_count": 20,
+                "chunk_count": 5,
+                "preview_excerpt": "sample",
+                "debug_ready": True,
+            }
+        )
+        store.save_list("documents", [document])
+        debug_report = DocumentDebugRecord.model_validate(
+            {
+                "document_id": "doc-revise",
+                "parser_name": "parser",
+                "processed_at": "2026-04-09T00:00:00+00:00",
+                "page_count": 20,
+                "total_characters": 2000,
+                "extraction_method": "text",
+                "ocr_applied": False,
+                "pages": [],
+                "sections": [],
+                "study_units": document.study_units,
+                "chunks": [],
+                "warnings": [],
+                "dominant_language_hint": "en",
+            }
+        )
+
+        with patch.object(
+            provider,
+            "generate_learning_plan",
+            return_value=PlanModelReply(
+                course_title="Discrete Mathematics / Revised",
+                overview="Model-crafted revised overview",
+                weekly_focus=["Chapter 1 Foundations", "Chapter 2 Practice"],
+                today_tasks=["从修正后的第一章开始。"],
+                schedule=[
+                    PlanScheduleItem(
+                        unit_id="doc-revise:study-unit:llm:1",
+                        title="Chapter 1 Foundations 精读",
+                        focus="修正后的第一章。",
+                        activity_type="learn",
+                    )
+                ],
+                revised_study_units=[
+                    StudyUnitRecord(
+                        id="doc-revise:study-unit:llm:1",
+                        document_id="doc-revise",
+                        title="Chapter 1 Foundations",
+                        page_start=1,
+                        page_end=10,
+                        summary="第一章",
+                        confidence=0.95,
+                    ),
+                    StudyUnitRecord(
+                        id="doc-revise:study-unit:llm:2",
+                        document_id="doc-revise",
+                        title="Chapter 2 Practice",
+                        page_start=11,
+                        page_end=20,
+                        summary="第二章",
+                        confidence=0.95,
+                    ),
+                ],
+            ),
+        ):
+            plan = service.create_plan(
+                goal=LearningGoalInput(
+                    document_id=document.id,
+                    persona_id=persona.id,
+                    objective="纠正章节划分",
+                ),
+                document=document,
+                persona_name=persona.name,
+                persona=persona,
+                debug_report=debug_report,
+            )
+
+        saved_document = store.load_list("documents", DocumentResponse)[0]
+        saved_debug = store.load_item("document_debug", "doc-revise", DocumentDebugRecord)
+        self.assertEqual([unit.id for unit in plan.study_units], ["doc-revise:study-unit:llm:1", "doc-revise:study-unit:llm:2"])
+        self.assertEqual(plan.schedule[0].unit_id, "doc-revise:study-unit:llm:1")
+        self.assertEqual(saved_document.sections[0].id, "doc-revise:study-unit:llm:1")
+        self.assertIsNotNone(saved_debug)
+        self.assertEqual(saved_debug.study_units[1].id, "doc-revise:study-unit:llm:2")
 
 
 if __name__ == "__main__":

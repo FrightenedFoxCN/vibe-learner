@@ -57,6 +57,7 @@ class Container:
                 base_url=settings.openai_base_url,
                 plan_model=settings.openai_plan_model,
                 timeout_seconds=settings.openai_timeout_seconds,
+                multimodal_enabled=settings.openai_plan_model_multimodal,
             )
 
         logger.info("bootstrap.model_provider provider=mock")

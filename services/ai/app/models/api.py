@@ -127,8 +127,21 @@ class PlanGenerationRoundTraceResponse(PlanGenerationRoundRecord):
     tool_calls: list[PlanToolCallTraceResponse]
 
 
-class DocumentPlanningTraceResponse(PlanGenerationTraceRecord):
+class PlanGenerationTraceSummaryResponse(BaseModel):
+    round_count: int
+    tool_call_count: int
+    latest_finish_reason: str = ""
+
+
+class PlanGenerationTracePayloadResponse(PlanGenerationTraceRecord):
     rounds: list[PlanGenerationRoundTraceResponse]
+
+
+class DocumentPlanningTraceResponse(BaseModel):
+    document_id: str
+    has_trace: bool
+    summary: PlanGenerationTraceSummaryResponse
+    trace: PlanGenerationTracePayloadResponse | None = None
 
 
 class StreamEventResponse(StreamEventRecord):

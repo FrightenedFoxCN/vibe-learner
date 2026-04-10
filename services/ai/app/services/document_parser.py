@@ -106,17 +106,19 @@ class DocumentParser:
             parsed_pages.append(parsed_page)
             warnings.extend(parsed_page.warnings)
             ocr_applied = ocr_applied or parsed_page.used_ocr
-            _emit_progress(
-                progress_callback,
-                "page_parsed",
-                {
-                    "page_number": index,
-                    "page_count": pdf.page_count,
-                    "extraction_source": parsed_page.extraction_source,
-                    "used_ocr": parsed_page.used_ocr,
-                    "warning_count": len(parsed_page.warnings),
-                },
-            )
+            if _should_emit_page_progress(page_number=index, page_count=pdf.page_count):
+                _emit_progress(
+                    progress_callback,
+                    "page_parsed",
+                    {
+                        "page_number": index,
+                        "page_count": pdf.page_count,
+                        "processed_pages": index,
+                        "extraction_source": parsed_page.extraction_source,
+                        "used_ocr": parsed_page.used_ocr,
+                        "warning_count": len(parsed_page.warnings),
+                    },
+                )
 
         top_margin_patterns, bottom_margin_patterns = self._detect_margin_patterns(parsed_pages)
         logger.info(
@@ -1017,6 +1019,16 @@ def _dominant_font_size(spans: list[tuple[str, float]]) -> float:
     if not rounded_sizes:
         return 0.0
     return Counter(rounded_sizes).most_common(1)[0][0]
+
+
+def _should_emit_page_progress(*, page_number: int, page_count: int) -> bool:
+    if page_count <= 12:
+        return True
+    if page_number in {1, page_count}:
+        return True
+    if page_number <= 3:
+        return True
+    return page_number % 10 == 0
 
 
 def _now() -> str:

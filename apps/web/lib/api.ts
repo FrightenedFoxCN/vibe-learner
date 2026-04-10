@@ -1,5 +1,6 @@
 import type {
   DocumentPlanningContext,
+  DocumentPlanningTraceResponse,
   PlanGenerationTrace,
   DocumentDebugRecord,
   DocumentRecord,
@@ -113,10 +114,8 @@ function normalizeScheduleItem(item: any) {
     id: item.id,
     unitId: item.unit_id,
     title: item.title,
-    scheduledDate: item.scheduled_date,
     focus: item.focus,
     activityType: item.activity_type,
-    estimatedMinutes: item.estimated_minutes,
     status: item.status
   };
 }
@@ -252,9 +251,23 @@ function normalizePlanningTrace(record: any): PlanGenerationTrace {
         toolCallId: toolCall.tool_call_id,
         toolName: toolCall.tool_name,
         argumentsJson: toolCall.arguments_json,
+        resultSummary: toolCall.result_summary ?? "",
         resultJson: toolCall.result_json
       }))
     }))
+  };
+}
+
+function normalizePlanningTraceResponse(record: any): DocumentPlanningTraceResponse {
+  return {
+    documentId: record.document_id,
+    hasTrace: Boolean(record.has_trace),
+    summary: {
+      roundCount: record.summary?.round_count ?? 0,
+      toolCallCount: record.summary?.tool_call_count ?? 0,
+      latestFinishReason: record.summary?.latest_finish_reason ?? ""
+    },
+    trace: record.trace ? normalizePlanningTrace(record.trace) : null
   };
 }
 
@@ -280,7 +293,6 @@ function normalizePlan(plan: any): LearningPlan {
     personaId: plan.persona_id,
     courseTitle: plan.course_title,
     objective: plan.objective,
-    deadline: plan.deadline,
     overview: plan.overview,
     weeklyFocus: plan.weekly_focus,
     todayTasks: plan.today_tasks,
@@ -334,11 +346,11 @@ export async function getDocumentPlanningContext(
 
 export async function getDocumentPlanningTrace(
   documentId: string
-): Promise<PlanGenerationTrace> {
+): Promise<DocumentPlanningTraceResponse> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/documents/${documentId}/planning-trace`)
   );
-  return normalizePlanningTrace(payload);
+  return normalizePlanningTraceResponse(payload);
 }
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {
@@ -355,25 +367,21 @@ export async function getDocumentPlanEvents(documentId: string): Promise<StreamR
   return normalizeStreamReport(payload);
 }
 
-export async function uploadAndProcessDocument(file: File): Promise<DocumentRecord> {
+export async function uploadDocument(file: File): Promise<DocumentRecord> {
   const form = new FormData();
   form.append("file", file);
-  const uploaded = normalizeDocument(
-    await readJson<any>(
-      await request(`${AI_BASE_URL}/documents`, {
-        method: "POST",
-        body: form
-      })
-    )
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents`, {
+      method: "POST",
+      body: form
+    })
   );
-  const processed = normalizeDocument(
-    await readJson<any>(
-      await request(`${AI_BASE_URL}/documents/${uploaded.id}/process`, {
-        method: "POST"
-      })
-    )
-  );
-  return processed;
+  return normalizeDocument(payload);
+}
+
+export async function uploadAndProcessDocument(file: File): Promise<DocumentRecord> {
+  const uploaded = await uploadDocument(file);
+  return processDocument(uploaded.id);
 }
 
 export async function processDocument(
@@ -473,10 +481,7 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
       body: JSON.stringify({
         document_id: goal.documentId,
         persona_id: goal.personaId,
-        objective: goal.objective,
-        deadline: goal.deadline,
-        study_days_per_week: goal.studyDaysPerWeek,
-        session_minutes: goal.sessionMinutes
+        objective: goal.objective
       })
     })
   );
@@ -502,10 +507,7 @@ export async function createLearningPlanStream(
     body: JSON.stringify({
       document_id: goal.documentId,
       persona_id: goal.personaId,
-      objective: goal.objective,
-      deadline: goal.deadline,
-      study_days_per_week: goal.studyDaysPerWeek,
-      session_minutes: goal.sessionMinutes
+      objective: goal.objective
     })
   });
   if (!response.ok || !response.body) {

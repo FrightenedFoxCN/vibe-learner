@@ -11,9 +11,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "baseUrl": ".",
     "paths": {
-      "@gal-learner/shared/*": ["packages/shared/src/*"]
+      "@gal-learner/shared": ["./packages/shared/src/index.ts"],
+      "@gal-learner/shared/*": ["./packages/shared/src/*"]
     }
   }
 }
