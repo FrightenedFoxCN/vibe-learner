@@ -13,6 +13,7 @@ from app.models.domain import (
     PlanGenerationRoundRecord,
     PlanToolCallTraceRecord,
     PersonaProfile,
+    PersonaSlot,
     StreamEventRecord,
     StreamReportRecord,
     StudySessionRecord,
@@ -22,12 +23,8 @@ from app.models.domain import (
 class CreatePersonaRequest(BaseModel):
     name: str
     summary: str
-    background_story: str = ""
     system_prompt: str
-    teaching_style: list[str]
-    narrative_mode: str
-    encouragement_style: str
-    correction_style: str
+    slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str] | None = None
     available_actions: list[str] | None = None
     default_speech_style: str | None = None
@@ -36,12 +33,8 @@ class CreatePersonaRequest(BaseModel):
 class UpdatePersonaRequest(BaseModel):
     name: str
     summary: str
-    background_story: str = ""
     system_prompt: str
-    teaching_style: list[str]
-    narrative_mode: str
-    encouragement_style: str
-    correction_style: str
+    slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str] | None = None
     available_actions: list[str] | None = None
     default_speech_style: str | None = None
@@ -50,16 +43,12 @@ class UpdatePersonaRequest(BaseModel):
 class PersonaSettingAssistRequest(BaseModel):
     name: str
     summary: str
-    background_story: str = ""
-    teaching_style: list[str] = []
-    narrative_mode: str = "grounded"
-    encouragement_style: str = ""
-    correction_style: str = ""
+    slots: list[PersonaSlot] = Field(default_factory=list)
     rewrite_strength: float = Field(default=0.5, ge=0.0, le=1.0)
 
 
 class PersonaSettingAssistResponse(BaseModel):
-    background_story: str
+    slots: list[PersonaSlot]
     system_prompt_suggestion: str
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import HTTPException
 
 from app.models.api import CreatePersonaRequest, UpdatePersonaRequest
-from app.models.domain import PersonaProfile
+from app.models.domain import PersonaProfile, PersonaSlot, persona_slot_content, persona_slot_list
 
 
 class PersonaEngine:
@@ -46,12 +46,8 @@ class PersonaEngine:
             name=payload.name,
             source="user",
             summary=payload.summary,
-            background_story=payload.background_story,
             system_prompt=payload.system_prompt,
-            teaching_style=payload.teaching_style,
-            narrative_mode=payload.narrative_mode,
-            encouragement_style=payload.encouragement_style,
-            correction_style=payload.correction_style,
+            slots=payload.slots,
             available_emotions=available_emotions or self._default_available_emotions(),
             available_actions=available_actions or self._default_available_actions(),
             default_speech_style=(payload.default_speech_style or "warm").strip() or "warm",
@@ -78,12 +74,8 @@ class PersonaEngine:
             source=current.source,
             name=payload.name,
             summary=payload.summary,
-            background_story=payload.background_story,
             system_prompt=payload.system_prompt,
-            teaching_style=payload.teaching_style,
-            narrative_mode=payload.narrative_mode,
-            encouragement_style=payload.encouragement_style,
-            correction_style=payload.correction_style,
+            slots=payload.slots,
             available_emotions=available_emotions or self._default_available_emotions(),
             available_actions=available_actions or self._default_available_actions(),
             default_speech_style=(payload.default_speech_style or current.default_speech_style).strip()
@@ -97,40 +89,65 @@ class PersonaEngine:
         *,
         name: str,
         summary: str,
-        background_story: str,
-        teaching_style: list[str],
-        narrative_mode: str,
-        encouragement_style: str,
-        correction_style: str,
-    ) -> dict[str, str]:
-        style_text = "、".join([item for item in teaching_style if item.strip()]) or "结构化讲解"
-        narrative_text = "轻剧情" if narrative_mode == "light_story" else "稳态导学"
+        slots: list[PersonaSlot],
+    ) -> dict[str, object]:
+        worldview = next((s.content for s in slots if s.kind == "worldview"), "")
+        past_exp = next((s.content for s in slots if s.kind == "past_experiences"), "")
+        teaching_method = next((s.content for s in slots if s.kind == "teaching_method"), "")
+        narrative_mode = next((s.content for s in slots if s.kind == "narrative_mode"), "grounded")
+        encouragement_style = next((s.content for s in slots if s.kind == "encouragement_style"), "")
+        correction_style = next((s.content for s in slots if s.kind == "correction_style"), "")
+
+        style_text = teaching_method.strip() or "结构化讲解"
+        narrative_text = "轻剧情" if narrative_mode.strip() == "light_story" else "稳态导学"
         identity_name = name.strip() or "这位教师"
         summary_text = summary.strip() or "擅长围绕章节核心概念组织学习路径"
-        base_story = background_story.strip()
-        if base_story:
-            story = (
-                f"{base_story}\n\n"
-                f"补充设定：{identity_name} 在课堂中坚持{narrative_text}叙事，"
-                f"以{style_text}推进讲解，鼓励策略偏向“{encouragement_style or '阶段性肯定'}”，"
-                f"纠错策略采用“{correction_style or '温和纠偏'}”。"
+
+        base_narrative = (worldview or past_exp).strip()
+        enc_style = encouragement_style or "阶段性肯定"
+        cor_style = correction_style or "温和纠偏"
+        if base_narrative:
+            narrative_content = (
+                base_narrative
+                + "\n\n"
+                + f"补充设定：{identity_name} 在课堂中坚持{narrative_text}叙事，"
+                + f"以{style_text}推进讲解，鼓励策略偏向“{enc_style}”，"
+                + f"纠错策略采用“{cor_style}”。"
             )
         else:
-            story = (
+            narrative_content = (
                 f"{identity_name} 的核心定位：{summary_text}。"
-                f"其教学叙事采用{narrative_text}路线，常用{style_text}组织内容。"
-                f"面对学习者挫折时，优先使用“{encouragement_style or '阶段性肯定'}”进行支持；"
-                f"在纠错时坚持“{correction_style or '温和纠偏'}”，先指出可改进点，再给出可执行下一步。"
+                + f"其教学叙事采用{narrative_text}路线，常用{style_text}组织内容。"
+                + f"面对学习者挫折时，优先使用“{enc_style}”进行支持；"
+                + f"在纠错时坚持“{cor_style}”，先指出可改进点，再给出可执行下一步。"
             )
+
+        updated_slots: list[PersonaSlot] = []
+        narrative_inserted = False
+        for slot in slots:
+            if slot.kind in ("worldview", "past_experiences") and not narrative_inserted:
+                updated_slots.append(
+                    PersonaSlot(kind=slot.kind, label=slot.label, content=narrative_content)
+                )
+                narrative_inserted = True
+            elif slot.kind in ("worldview", "past_experiences"):
+                pass
+            else:
+                updated_slots.append(slot)
+        if not narrative_inserted:
+            updated_slots.append(
+                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content)
+            )
+
         prompt = (
             "You are a chapter-grounded tutor persona. "
             f"Persona name: {identity_name}. "
-            f"Narrative mode: {narrative_mode}. "
+            f"Narrative mode: {narrative_mode.strip() or 'grounded'}. "
             f"Teaching style: {style_text}. "
             "Always keep explanations concise, grounded, and action-oriented."
         )
         return {
-            "background_story": story,
+            "slots": [s.model_dump() for s in updated_slots],
             "system_prompt_suggestion": prompt,
         }
 
@@ -141,12 +158,14 @@ class PersonaEngine:
                 name="Aurora",
                 source="builtin",
                 summary="温和而结构化的导学教师。",
-                background_story="来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。",
                 system_prompt="Prioritize clarity, chapter grounding, and encouragement.",
-                teaching_style=["structured", "guided"],
-                narrative_mode="grounded",
-                encouragement_style="small wins",
-                correction_style="precise but warm",
+                slots=[
+                    PersonaSlot(kind="worldview", label="世界观起点", content="来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。"),
+                    PersonaSlot(kind="teaching_method", label="教学方法", content="structured, guided"),
+                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="grounded"),
+                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="small wins"),
+                    PersonaSlot(kind="correction_style", label="纠错策略", content="precise but warm"),
+                ],
                 available_emotions=["calm", "encouraging", "serious"],
                 available_actions=["idle", "explain", "point", "reflect"],
                 default_speech_style="steady",
@@ -155,13 +174,15 @@ class PersonaEngine:
                 id="mentor-lyra",
                 name="Lyra",
                 source="builtin",
-                summary="带轻度剧情化陪伴感的活力教师。",
-                background_story="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。",
+                summary="带轻度剧情化陨伴感的活力教师。",
                 system_prompt="Blend chapter teaching with playful narrative energy.",
-                teaching_style=["story-led", "motivational"],
-                narrative_mode="light_story",
-                encouragement_style="hero journey",
-                correction_style="redirect with energy",
+                slots=[
+                    PersonaSlot(kind="past_experiences", label="过往经历", content="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。"),
+                    PersonaSlot(kind="teaching_method", label="教学方法", content="story-led, motivational"),
+                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="light_story"),
+                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="hero journey"),
+                    PersonaSlot(kind="correction_style", label="纠错策略", content="redirect with energy"),
+                ],
                 available_emotions=["playful", "encouraging", "excited", "concerned"],
                 available_actions=["idle", "explain", "celebrate", "prompt"],
                 default_speech_style="energetic",

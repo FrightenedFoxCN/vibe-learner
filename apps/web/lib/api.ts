@@ -26,16 +26,12 @@ export interface PersonaAssets {
 export interface PersonaSettingAssistInput {
   name: string;
   summary: string;
-  backgroundStory: string;
-  teachingStyle: string[];
-  narrativeMode: "grounded" | "light_story";
-  encouragementStyle: string;
-  correctionStyle: string;
+  slots: import("@vibe-learner/shared").PersonaSlot[];
   rewriteStrength: number;
 }
 
 export interface PersonaSettingAssistOutput {
-  backgroundStory: string;
+  slots: import("@vibe-learner/shared").PersonaSlot[];
   systemPromptSuggestion: string;
 }
 
@@ -103,12 +99,14 @@ function normalizePersona(persona: any): PersonaProfile {
     name: persona.name,
     source: persona.source,
     summary: persona.summary,
-    backgroundStory: persona.background_story ?? "",
     systemPrompt: persona.system_prompt,
-    teachingStyle: persona.teaching_style,
-    narrativeMode: persona.narrative_mode,
-    encouragementStyle: persona.encouragement_style,
-    correctionStyle: persona.correction_style,
+    slots: Array.isArray(persona.slots)
+      ? persona.slots.map((s: any) => ({
+          kind: String(s.kind ?? "custom"),
+          label: String(s.label ?? s.kind ?? ""),
+          content: String(s.content ?? "")
+        }))
+      : [],
     availableEmotions: persona.available_emotions,
     availableActions: persona.available_actions,
     defaultSpeechStyle: persona.default_speech_style
@@ -403,12 +401,8 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaP
       body: JSON.stringify({
         name: input.name,
         summary: input.summary,
-        background_story: input.backgroundStory ?? "",
         system_prompt: input.systemPrompt,
-        teaching_style: input.teachingStyle,
-        narrative_mode: input.narrativeMode,
-        encouragement_style: input.encouragementStyle,
-        correction_style: input.correctionStyle,
+        slots: input.slots,
         available_emotions: input.availableEmotions,
         available_actions: input.availableActions,
         default_speech_style: input.defaultSpeechStyle
@@ -431,12 +425,8 @@ export async function updatePersona(
       body: JSON.stringify({
         name: input.name,
         summary: input.summary,
-        background_story: input.backgroundStory ?? "",
         system_prompt: input.systemPrompt,
-        teaching_style: input.teachingStyle,
-        narrative_mode: input.narrativeMode,
-        encouragement_style: input.encouragementStyle,
-        correction_style: input.correctionStyle,
+        slots: input.slots,
         available_emotions: input.availableEmotions,
         available_actions: input.availableActions,
         default_speech_style: input.defaultSpeechStyle
@@ -469,17 +459,18 @@ export async function assistPersonaSetting(
       body: JSON.stringify({
         name: input.name,
         summary: input.summary,
-        background_story: input.backgroundStory,
-        teaching_style: input.teachingStyle,
-        narrative_mode: input.narrativeMode,
-        encouragement_style: input.encouragementStyle,
-        correction_style: input.correctionStyle,
+        slots: input.slots,
         rewrite_strength: input.rewriteStrength
       })
     })
   );
+  const rawSlots: any[] = Array.isArray(payload.slots) ? payload.slots : [];
   return {
-    backgroundStory: String(payload.background_story ?? ""),
+    slots: rawSlots.map((s: any) => ({
+      kind: String(s.kind ?? "custom"),
+      label: String(s.label ?? s.kind ?? ""),
+      content: String(s.content ?? "")
+    })),
     systemPromptSuggestion: String(payload.system_prompt_suggestion ?? "")
   };
 }

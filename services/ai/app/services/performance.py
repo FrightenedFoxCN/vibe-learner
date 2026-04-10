@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.models.domain import CharacterStateEvent, PersonaProfile
+from app.models.domain import CharacterStateEvent, PersonaProfile, persona_slot_content
 
 
 class PerformanceMapper:
@@ -15,13 +15,14 @@ class PerformanceMapper:
     ) -> list[CharacterStateEvent]:
         speech_style = persona.default_speech_style
         intensity = 0.75 if mood in {"excited", "playful"} else 0.55
+        narrative_mode = persona_slot_content(persona, "narrative_mode", "grounded")
         return [
             CharacterStateEvent(
                 emotion=mood,
                 action=action,
                 intensity=intensity,
                 speech_style=speech_style,
-                scene_hint=f"{persona.name}:{persona.narrative_mode}",
+                scene_hint=f"{persona.name}:{narrative_mode}",
                 line_segment_id=line_segment_id,
                 timing_hint="after_text",
             )
