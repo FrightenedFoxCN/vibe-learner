@@ -1,8 +1,10 @@
 import json
+from pathlib import Path
 import queue
 import threading
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -30,6 +32,7 @@ from app.models.api import (
     StudyChatRequest,
     StudyChatResponse,
     StudySessionResponse,
+    UpdateStudySessionRequest,
     SubmissionGradeRequest,
     SubmissionGradeResponse,
 )
@@ -65,7 +68,26 @@ def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="plan_model_invalid_json")
     if detail == "plan_model_invalid_payload":
         return HTTPException(status_code=502, detail="plan_model_invalid_payload")
+    if detail == "plan_model_empty_response":
+        return HTTPException(status_code=502, detail="plan_model_empty_response")
+    if detail == "plan_model_tool_loop_exhausted":
+        return HTTPException(status_code=502, detail="plan_model_tool_loop_exhausted")
     return HTTPException(status_code=500, detail="plan_generation_failed")
+
+
+def _map_chat_generation_error(exc: RuntimeError) -> HTTPException:
+    detail = str(exc)
+    if detail == "openai_chat_request_rate_limit":
+        return HTTPException(status_code=503, detail="chat_model_rate_limited")
+    if detail == "openai_chat_request_timeout":
+        return HTTPException(status_code=504, detail="chat_model_timeout")
+    if detail == "openai_chat_request_network_error":
+        return HTTPException(status_code=502, detail="chat_model_network_error")
+    if detail.startswith("openai_chat_request_failed:"):
+        return HTTPException(status_code=502, detail="chat_model_upstream_error")
+    if detail == "chat_model_invalid_payload":
+        return HTTPException(status_code=502, detail="chat_model_invalid_payload")
+    return HTTPException(status_code=500, detail="chat_generation_failed")
 
 
 @router.get("/health")
@@ -213,6 +235,19 @@ def get_document_status(document_id: str) -> DocumentStatusResponse:
     return _into_response(DocumentStatusResponse, document)
 
 
+@router.get("/documents/{document_id}/file")
+def get_document_file(document_id: str) -> FileResponse:
+    document = container.document_service.require_document(document_id)
+    path = Path(document.stored_path)
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="document_file_not_found")
+    return FileResponse(
+        path=path,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline"},
+    )
+
+
 @router.get("/documents/{document_id}/debug", response_model=DocumentDebugResponse)
 def get_document_debug(document_id: str) -> DocumentDebugResponse:
     report = container.document_service.require_debug_report(document_id)
@@ -332,16 +367,38 @@ def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
 def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatResponse:
     session = container.study_session_service.require_session(session_id)
     persona = container.persona_engine.require_persona(session.persona_id)
-    response = container.pedagogy_orchestrator.generate_chat_reply(
-        session_id=session_id,
-        persona=persona,
-        message=payload.message,
-        section_id=session.section_id,
-    )
+    debug_report = None
+    try:
+        debug_report = container.document_service.require_debug_report(session.document_id)
+    except HTTPException:
+        debug_report = None
+
+    try:
+        response = container.pedagogy_orchestrator.generate_chat_reply(
+            session_id=session_id,
+            persona=persona,
+            message=payload.message,
+            section_id=session.section_id,
+            debug_report=debug_report,
+            previous_turns=session.turns,
+        )
+    except RuntimeError as exc:
+        raise _map_chat_generation_error(exc) from exc
     container.study_session_service.append_turn(
         session_id=session_id, learner_message=payload.message, result=response
     )
     return _into_response(StudyChatResponse, response)
+
+
+@router.patch("/study-sessions/{session_id}", response_model=StudySessionResponse)
+def update_study_session(
+    session_id: str, payload: UpdateStudySessionRequest
+) -> StudySessionResponse:
+    session = container.study_session_service.update_section(
+        session_id=session_id,
+        section_id=payload.section_id,
+    )
+    return _into_response(StudySessionResponse, session)
 
 
 @router.post("/study-sessions", response_model=StudySessionResponse)
@@ -404,14 +461,16 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
                 "document_id": payload.document_id,
                 "detail": http_error.detail,
                 "status_code": http_error.status_code,
+                "internal_error_code": str(exc),
             },
         )
         logger.warning(
-            "learning_plans.create_failed document_id=%s persona_id=%s detail=%s status_code=%s",
+            "learning_plans.create_failed document_id=%s persona_id=%s detail=%s status_code=%s internal_error_code=%s",
             payload.document_id,
             payload.persona_id,
             http_error.detail,
             http_error.status_code,
+            str(exc),
         )
         raise http_error from exc
     recorder.emit(
@@ -497,6 +556,7 @@ def create_learning_plan_stream(
                     "document_id": payload.document_id,
                     "detail": http_error.detail,
                     "status_code": http_error.status_code,
+                    "internal_error_code": str(exc),
                 },
             )
             event_queue.put(
@@ -506,6 +566,7 @@ def create_learning_plan_stream(
                         "document_id": payload.document_id,
                         "detail": http_error.detail,
                         "status_code": http_error.status_code,
+                        "internal_error_code": str(exc),
                     },
                 }
             )

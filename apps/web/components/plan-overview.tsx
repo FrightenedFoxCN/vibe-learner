@@ -196,20 +196,20 @@ export function PlanOverview({
 
 const styles: Record<string, CSSProperties> = {
   panel: {
-    padding: 28,
+    padding: 24,
     borderRadius: 24,
     border: "1px solid var(--border)",
-    background: "var(--panel)",
-    boxShadow: "0 12px 30px rgba(64, 41, 22, 0.08), 0 2px 10px rgba(64, 41, 22, 0.06)",
+    background: "var(--panel-strong)",
+    boxShadow: "var(--shadow)",
     backdropFilter: "blur(18px)",
     display: "grid",
-    gap: 18
+    gap: 16
   },
   selectorSurface: {
-    padding: 18,
-    borderRadius: 20,
-    background: "rgba(255,255,255,0.52)",
-    border: "1px solid rgba(78, 53, 37, 0.1)",
+    padding: 16,
+    borderRadius: 16,
+    background: "rgba(248,252,253,0.96)",
+    border: "1px solid var(--border)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)"
   },
   selectorRow: {
@@ -236,14 +236,14 @@ const styles: Record<string, CSSProperties> = {
   },
   select: {
     width: "100%",
-    minHeight: 56,
-    borderRadius: 16,
-    border: "1px solid rgba(78, 53, 37, 0.2)",
-    padding: "16px 44px 14px 16px",
+    minHeight: 48,
+    borderRadius: 12,
+    border: "1px solid var(--border)",
+    padding: "12px 42px 10px 12px",
     background: "rgba(255,255,255,0.96)",
     color: "var(--ink)",
     appearance: "none",
-    boxShadow: "inset 0 1px 2px rgba(64, 41, 22, 0.06)"
+    boxShadow: "inset 0 1px 2px rgba(26, 53, 61, 0.08)"
   },
   selectArrow: {
     position: "absolute",
@@ -260,10 +260,10 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.5
   },
   refreshButton: {
-    minHeight: 56,
-    border: "1px solid rgba(63, 140, 133, 0.18)",
-    borderRadius: 16,
-    padding: "0 18px",
+    minHeight: 48,
+    border: "1px solid rgba(13, 110, 114, 0.24)",
+    borderRadius: 12,
+    padding: "0 14px",
     background: "rgba(63, 140, 133, 0.1)",
     color: "var(--teal)",
     fontWeight: 700,
@@ -291,7 +291,7 @@ const styles: Record<string, CSSProperties> = {
   },
   panelTitle: {
     margin: 0,
-    fontSize: "clamp(1.55rem, 2.5vw, 2.1rem)",
+    fontSize: "clamp(1.35rem, 2.1vw, 1.9rem)",
     lineHeight: 1.3,
     letterSpacing: "-0.015em",
     fontFamily: "var(--font-display), sans-serif"
@@ -299,11 +299,11 @@ const styles: Record<string, CSSProperties> = {
   summaryCard: {
     display: "grid",
     gap: 8,
-    padding: "18px 20px",
-    borderRadius: 22,
-    background: "rgba(255,255,255,0.84)",
-    border: "1px solid rgba(78, 53, 37, 0.1)",
-    boxShadow: "0 6px 18px rgba(64, 41, 22, 0.06)"
+    padding: "16px",
+    borderRadius: 14,
+    background: "rgba(255,255,255,0.95)",
+    border: "1px solid var(--border)",
+    boxShadow: "var(--shadow-soft)"
   },
   summaryLabel: {
     margin: 0,
@@ -320,10 +320,10 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.7
   },
   positionBadge: {
-    padding: "10px 14px",
-    borderRadius: 16,
-    background: "rgba(197, 92, 59, 0.1)",
-    border: "1px solid rgba(197, 92, 59, 0.16)",
+    padding: "8px 12px",
+    borderRadius: 12,
+    background: "rgba(13, 110, 114, 0.1)",
+    border: "1px solid rgba(13, 110, 114, 0.22)",
     color: "var(--accent)",
     fontSize: 13,
     fontWeight: 700,
@@ -338,10 +338,10 @@ const styles: Record<string, CSSProperties> = {
   },
   metaItem: {
     margin: 0,
-    padding: "16px 18px",
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.72)",
-    border: "1px solid rgba(78, 53, 37, 0.1)",
+    padding: "14px",
+    borderRadius: 12,
+    background: "rgba(248, 252, 253, 0.96)",
+    border: "1px solid var(--border)",
     display: "grid",
     gap: 6
   },
@@ -365,22 +365,22 @@ const styles: Record<string, CSSProperties> = {
   },
   primaryButton: {
     border: 0,
-    borderRadius: 16,
-    minHeight: 48,
-    padding: "0 20px",
+    borderRadius: 12,
+    minHeight: 44,
+    padding: "0 16px",
     background: "var(--accent)",
     color: "white",
     fontWeight: 700,
-    boxShadow: "0 8px 18px rgba(197, 92, 59, 0.22)",
+    boxShadow: "0 6px 14px rgba(13, 110, 114, 0.24)",
     cursor: "pointer"
   },
   sessionStateCard: {
     display: "grid",
     gap: 4,
-    padding: "14px 16px",
-    borderRadius: 18,
+    padding: "12px 14px",
+    borderRadius: 12,
     background: "rgba(63, 140, 133, 0.1)",
-    border: "1px solid rgba(63, 140, 133, 0.16)"
+    border: "1px solid rgba(13, 110, 114, 0.2)"
   },
   sessionStateLabel: {
     color: "var(--muted)",
@@ -412,8 +412,8 @@ const styles: Record<string, CSSProperties> = {
   },
   blockCount: {
     padding: "6px 10px",
-    borderRadius: 999,
-    background: "rgba(78, 53, 37, 0.06)",
+    borderRadius: 12,
+    background: "rgba(16, 35, 40, 0.06)",
     color: "var(--muted)",
     fontSize: 12,
     whiteSpace: "nowrap"
@@ -430,20 +430,20 @@ const styles: Record<string, CSSProperties> = {
     gridTemplateColumns: "44px minmax(0, 1fr)",
     gap: 14,
     alignItems: "flex-start",
-    padding: 18,
-    borderRadius: 20,
-    background: "rgba(255,255,255,0.88)",
-    border: "1px solid rgba(78, 53, 37, 0.12)",
-    boxShadow: "0 4px 14px rgba(64, 41, 22, 0.06)"
+    padding: 14,
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.96)",
+    border: "1px solid var(--border)",
+    boxShadow: "var(--shadow-soft)"
   },
   orderedIndex: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: 10,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(197, 92, 59, 0.12)",
+    background: "rgba(13, 110, 114, 0.14)",
     color: "var(--accent)",
     fontSize: 12,
     fontWeight: 700
@@ -473,10 +473,11 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 10,
     alignItems: "flex-start",
-    padding: 18,
-    borderRadius: 20,
-    background: "rgba(255,255,255,0.76)",
-    border: "1px solid rgba(78, 53, 37, 0.12)"
+    padding: 14,
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.96)",
+    border: "1px solid var(--border)",
+    boxShadow: "var(--shadow-soft)"
   },
   timelineContent: {
     display: "grid",
@@ -495,7 +496,7 @@ const styles: Record<string, CSSProperties> = {
   },
   scheduleTypeChip: {
     padding: "6px 10px",
-    borderRadius: 999,
+    borderRadius: 10,
     background: "rgba(63, 140, 133, 0.12)",
     color: "var(--teal)",
     fontSize: 12,

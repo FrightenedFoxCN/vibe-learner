@@ -47,6 +47,9 @@ class OpenAIPlanRunner:
             rounds=[],
         )
         max_rounds = 4
+        max_empty_response_retries = 1
+        empty_response_retries = 0
+        force_json_response = False
         for round_index in range(max_rounds):
             _emit_progress(
                 progress_callback,
@@ -62,7 +65,7 @@ class OpenAIPlanRunner:
                 "messages": current_messages,
                 "temperature": 0.2,
             }
-            if tool_runtime.has_tools():
+            if tool_runtime.has_tools() and not force_json_response:
                 payload["tools"] = tool_runtime.openai_tools()
                 payload["tool_choice"] = "auto"
             else:
@@ -77,6 +80,7 @@ class OpenAIPlanRunner:
             )
             tool_calls = message.get("tool_calls") or []
             if tool_calls:
+                force_json_response = False
                 trace_round = PlanGenerationRoundRecord(
                     round_index=round_index,
                     finish_reason=str(choice.get("finish_reason") or ""),
@@ -164,7 +168,49 @@ class OpenAIPlanRunner:
                     content=content,
                     trace=trace,
                 )
+            _emit_progress(
+                progress_callback,
+                "model_round_failed",
+                {
+                    "round_index": round_index,
+                    "elapsed_ms": elapsed_ms,
+                    "finish_reason": str(choice.get("finish_reason") or ""),
+                    "error": "plan_model_empty_response",
+                },
+            )
+            if empty_response_retries < max_empty_response_retries:
+                empty_response_retries += 1
+                force_json_response = True
+                _emit_progress(
+                    progress_callback,
+                    "model_recovery_attempt",
+                    {
+                        "round_index": round_index,
+                        "attempt": empty_response_retries,
+                        "reason": "plan_model_empty_response",
+                        "strategy": "force_json_without_tools",
+                    },
+                )
+                current_messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            "Your previous assistant message was empty. Continue from existing context and "
+                            "return a complete learning-plan JSON object now. Do not return an empty response."
+                        ),
+                    }
+                )
+                continue
             raise RuntimeError("plan_model_empty_response")
+        _emit_progress(
+            progress_callback,
+            "model_round_failed",
+            {
+                "round_index": max_rounds - 1,
+                "max_rounds": max_rounds,
+                "error": "plan_model_tool_loop_exhausted",
+            },
+        )
         raise RuntimeError("plan_model_tool_loop_exhausted")
 
 

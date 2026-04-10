@@ -33,22 +33,26 @@ export function PersonaSelector({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     minWidth: 240,
-    padding: 18,
-    borderRadius: 24,
+    padding: 16,
+    borderRadius: 20,
     border: "1px solid var(--border)",
-    background: "var(--panel)",
-    boxShadow: "var(--shadow)"
+    background: "var(--panel-strong)",
+    boxShadow: "var(--shadow-soft)"
   },
   label: {
-    margin: "0 0 8px",
+    margin: "0 0 6px",
     color: "var(--muted)",
-    fontSize: 14
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.04em"
   },
   select: {
     width: "100%",
-    borderRadius: 16,
+    minHeight: 44,
+    borderRadius: 12,
     border: "1px solid var(--border)",
-    padding: "12px 14px",
-    background: "white"
+    padding: "10px 12px",
+    background: "rgba(255,255,255,0.98)",
+    color: "var(--ink)"
   }
 };

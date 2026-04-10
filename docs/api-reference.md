@@ -308,6 +308,11 @@ The final success line includes the full plan:
 
 ## Study Sessions
 
+Section source note:
+
+- The chapter selector in Learning Workspace is now driven by the active learning plan directory (schedule units).
+- If no schedule units are available, it falls back to parsed document sections.
+
 ### `POST /study-sessions`
 
 Creates a study session shell for one document/persona/section.
@@ -335,6 +340,35 @@ Request body:
   "message": "Explain this section again"
 }
 ```
+
+Notes:
+
+- chat generation now includes recent dialogue turns as model context
+- citations are grounded from the document debug artifacts (study-unit/section/chunk page ranges)
+- returned `character_events[].scene_hint` carries chapter/page render context for character-layer drawing
+
+### `PATCH /study-sessions/{session_id}`
+
+Switches the active chapter (`section_id`) inside an existing study session.
+
+Request body:
+
+```json
+{
+  "section_id": "unit-456"
+}
+```
+
+Returns updated `StudySessionRecord`.
+
+### `GET /documents/{document_id}/file`
+
+Returns the uploaded textbook PDF as an inline file response (`application/pdf`).
+
+Usage:
+
+- Frontend can jump to pages via PDF fragment URLs, e.g. `/documents/{document_id}/file#page=12`.
+- The response is served with inline content-disposition so browsers render in embedded PDF viewers instead of forcing download.
 
 Response body:
 

@@ -56,6 +56,9 @@ class Container:
                 api_key=settings.openai_api_key,
                 base_url=settings.openai_base_url,
                 plan_model=settings.openai_plan_model,
+                chat_model=settings.openai_chat_model,
+                chat_temperature=settings.openai_chat_temperature,
+                chat_max_tokens=settings.openai_chat_max_tokens,
                 timeout_seconds=settings.openai_timeout_seconds,
                 multimodal_enabled=settings.openai_plan_model_multimodal,
             )

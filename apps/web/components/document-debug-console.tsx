@@ -455,8 +455,8 @@ export function DocumentDebugConsole() {
                     <span>{coarseSections.length} sections</span>
                   </div>
                   <div style={styles.list}>
-                    {coarseSections.map((section) => (
-                      <div key={section.id} style={styles.listItem}>
+                    {coarseSections.map((section, index) => (
+                      <div key={`${section.id}-${index}`} style={styles.listItem}>
                         <div style={styles.sectionMetaRow}>
                           <strong>{section.title}</strong>
                           <span style={styles.sectionLevelBadge}>L1</span>
@@ -476,8 +476,8 @@ export function DocumentDebugConsole() {
                   </div>
                   <div style={styles.list}>
                     {fineSections.length ? (
-                      fineSections.map((section) => (
-                        <div key={section.id} style={styles.listItem}>
+                      fineSections.map((section, index) => (
+                        <div key={`${section.id}-${index}`} style={styles.listItem}>
                           <div style={styles.sectionMetaRow}>
                             <strong>{section.title}</strong>
                             <span style={styles.sectionLevelBadgeFine}>L2</span>

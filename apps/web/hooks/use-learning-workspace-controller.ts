@@ -3,6 +3,7 @@
 import { useEffect, useReducer } from "react";
 import type {
   DocumentRecord,
+  DocumentSection,
   LearningPlan,
   PersonaProfile,
   StudyChatResponse,
@@ -17,6 +18,7 @@ import {
   listPersonas,
   processDocumentStream,
   sendStudyMessage,
+  updateStudySessionSection,
   uploadDocument
 } from "../lib/api";
 import { mockPersonas } from "../lib/mock-data";
@@ -73,14 +75,15 @@ export function useLearningWorkspaceController({
     state.personas.find((persona) => persona.id === state.selectedPersonaId) ?? state.personas[0];
   const activePlan = findLearningPlan(state.planHistory, state.selectedPlanId);
   const activeDocument = findDocumentForPlan(activePlan, state.documents);
+  const planSections = buildPlanDirectorySections(activePlan, activeDocument);
   const planHistoryItems = buildPlanHistoryItems({
     plans: state.planHistory,
     documents: state.documents,
     personas: state.personas
   });
   const activeSection =
-    activeDocument?.sections.find((section) => section.id === state.studySession?.sectionId) ??
-    activeDocument?.sections[0] ??
+    planSections.find((section) => section.id === state.studySession?.sectionId) ??
+    planSections[0] ??
     null;
 
   const applyWorkspaceSnapshot = (
@@ -294,10 +297,16 @@ export function useLearningWorkspaceController({
     try {
       dispatch({ type: "busy_started" });
       const nextSession = await createStudySession(
-        buildInitialStudySessionInput({
-          document: activeDocument,
-          personaId: activePlan.personaId
-        })
+        {
+          ...buildInitialStudySessionInput({
+            document: activeDocument,
+            personaId: activePlan.personaId
+          }),
+          sectionId:
+            planSections[0]?.id ??
+            activeDocument.sections[0]?.id ??
+            `${activeDocument.id}:intro`
+        }
       );
       dispatch({
         type: "study_session_set",
@@ -349,6 +358,40 @@ export function useLearningWorkspaceController({
         notice: `导学请求失败: ${String(error)}`
       });
       logWorkspaceError("workflow:study_chat:error", error);
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const handleSwitchSection = async (sectionId: string) => {
+    if (!state.studySession || !sectionId || state.studySession.sectionId === sectionId) {
+      return;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const nextSession = await updateStudySessionSection({
+        sessionId: state.studySession.id,
+        sectionId
+      });
+      dispatch({
+        type: "study_session_set",
+        studySession: nextSession,
+        clearResponse: true
+      });
+      dispatch({
+        type: "notice_set",
+        notice: `已切换到章节 ${sectionId}，可继续提问。`
+      });
+      logWorkspaceInfo("workflow:study_session:section_switched", {
+        sessionId: nextSession.id,
+        sectionId: nextSession.sectionId
+      });
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `切换章节失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:study_session:section_switch_error", error);
     } finally {
       dispatch({ type: "busy_finished" });
     }
@@ -407,6 +450,7 @@ export function useLearningWorkspaceController({
     selectedPlanId: state.selectedPlanId,
     activePlan,
     activeDocument,
+    planSections,
     activeSection,
     planHistory: state.planHistory,
     planHistoryItems,
@@ -418,6 +462,7 @@ export function useLearningWorkspaceController({
     generatePlanWorkflow,
     selectPlan,
     createSessionForActivePlan,
+    handleSwitchSection,
     handleAsk,
     refreshPlanSnapshot: () =>
       syncWorkspaceSnapshot({
@@ -426,4 +471,39 @@ export function useLearningWorkspaceController({
         successNotice: SNAPSHOT_REFRESHED_NOTICE
       })
   };
+}
+
+function buildPlanDirectorySections(
+  plan: LearningPlan | null,
+  document: DocumentRecord | null
+): DocumentSection[] {
+  if (!plan || !document) {
+    return [];
+  }
+
+  const studyUnitById = new Map(document.studyUnits.map((unit) => [unit.id, unit]));
+  const sections: DocumentSection[] = [];
+
+  for (const item of plan.schedule) {
+    const unit = studyUnitById.get(item.unitId);
+    if (!unit) {
+      continue;
+    }
+    sections.push({
+      id: unit.id,
+      documentId: unit.documentId,
+      title: item.title || unit.title,
+      pageStart: unit.pageStart,
+      pageEnd: unit.pageEnd,
+      level: 1
+    });
+  }
+
+  if (!sections.length) {
+    return document.sections;
+  }
+
+  return sections.filter(
+    (section, index) => sections.findIndex((candidate) => candidate.id === section.id) === index
+  );
 }

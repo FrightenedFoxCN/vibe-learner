@@ -49,6 +49,7 @@ export function DocumentSetup({
           <input
             type="file"
             accept=".pdf"
+            style={styles.fileInput}
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           />
         </label>
@@ -124,9 +125,9 @@ export function DocumentSetup({
 const styles: Record<string, CSSProperties> = {
   panel: {
     padding: 24,
-    borderRadius: 28,
+    borderRadius: 24,
     border: "1px solid var(--border)",
-    background: "var(--panel)",
+    background: "var(--panel-strong)",
     boxShadow: "var(--shadow)"
   },
   sectionLabel: {
@@ -137,58 +138,75 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)"
   },
   title: {
-    margin: "10px 0 6px",
-    fontSize: 28,
+    margin: "10px 0 8px",
+    fontSize: 24,
     fontFamily: "var(--font-display), sans-serif"
   },
   summary: {
-    margin: "0 0 18px",
-    color: "var(--muted)"
+    margin: "0 0 16px",
+    color: "var(--muted)",
+    lineHeight: 1.7
   },
   formGrid: {
     display: "grid",
-    gap: 14
+    gap: 12
   },
   field: {
     display: "grid",
-    gap: 8
+    gap: 6,
+    color: "var(--muted)",
+    fontSize: 13
   },
   textarea: {
     width: "100%",
     minHeight: 96,
-    borderRadius: 16,
+    borderRadius: 12,
     border: "1px solid var(--border)",
-    padding: 14,
+    padding: 12,
+    background: "rgba(255,255,255,0.98)",
     resize: "vertical"
   },
+  fileInput: {
+    width: "100%",
+    minHeight: 40,
+    borderRadius: 10,
+    border: "1px solid var(--border)",
+    padding: "8px 10px",
+    background: "rgba(255,255,255,0.98)",
+    color: "var(--ink)"
+  },
   button: {
-    marginTop: 18,
+    marginTop: 16,
     border: 0,
-    borderRadius: 999,
-    padding: "14px 18px",
-    background: "var(--teal)",
+    borderRadius: 12,
+    minHeight: 44,
+    padding: "0 16px",
+    background: "var(--accent)",
     color: "white",
+    fontWeight: 700,
+    boxShadow: "0 6px 14px rgba(13, 110, 114, 0.24)",
     cursor: "pointer"
   },
   statusGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
     gap: 12,
-    marginTop: 18
+    marginTop: 16
   },
   hint: {
-    margin: "12px 0 0",
+    margin: "10px 0 0",
     fontSize: 13,
     color: "var(--muted)"
   },
   card: {
-    padding: 16,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.76)",
-    border: "1px solid var(--border)"
+    padding: 14,
+    borderRadius: 14,
+    background: "rgba(248, 252, 253, 0.96)",
+    border: "1px solid var(--border)",
+    boxShadow: "var(--shadow-soft)"
   },
   cleanedSectionBlock: {
-    marginTop: 18,
+    marginTop: 16,
     display: "grid",
     gap: 10
   },
@@ -198,8 +216,8 @@ const styles: Record<string, CSSProperties> = {
   },
   cleanedSectionItem: {
     padding: 12,
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.72)",
+    borderRadius: 12,
+    background: "rgba(248, 252, 253, 0.94)",
     border: "1px solid var(--border)",
     display: "grid",
     gap: 4

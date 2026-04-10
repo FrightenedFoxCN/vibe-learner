@@ -50,21 +50,21 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
 const styles: Record<string, CSSProperties> = {
   panel: {
     padding: 24,
-    borderRadius: 32,
+    borderRadius: 24,
     border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, rgba(255,248,238,0.96), rgba(250,239,220,0.88))",
+    background: "linear-gradient(180deg, rgba(252,255,255,0.98), rgba(242,249,250,0.96))",
     boxShadow: "var(--shadow)"
   },
   label: {
     margin: 0,
-    color: "var(--teal)",
+    color: "var(--accent)",
     textTransform: "uppercase",
     letterSpacing: "0.12em",
     fontSize: 12
   },
   title: {
     margin: "12px 0 6px",
-    fontSize: 36,
+    fontSize: 30,
     fontFamily: "var(--font-display), sans-serif"
   },
   summary: {
@@ -76,31 +76,32 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: 12,
-    marginTop: 18
+    marginTop: 14
   },
   metaCard: {
-    padding: 14,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.74)",
+    padding: 12,
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.96)",
     border: "1px solid var(--border)",
     display: "grid",
-    gap: 4
+    gap: 4,
+    boxShadow: "var(--shadow-soft)"
   },
   metaLabel: {
     fontSize: 12,
     color: "var(--muted)"
   },
   streamBox: {
-    marginTop: 16,
+    marginTop: 14,
     padding: 16,
-    borderRadius: 18,
-    background: "rgba(45,36,31,0.92)",
-    color: "#fef7f0"
+    borderRadius: 12,
+    background: "#15353b",
+    color: "#ecf8fa"
   },
   streamTitle: {
     margin: 0,
     fontSize: 13,
-    color: "#dbc7b7"
+    color: "#9ed0d6"
   },
   pre: {
     margin: "10px 0 0",

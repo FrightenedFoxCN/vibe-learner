@@ -582,6 +582,24 @@ export async function createStudySession(input: {
   return normalizeSession(payload);
 }
 
+export async function updateStudySessionSection(input: {
+  sessionId: string;
+  sectionId: string;
+}): Promise<StudySessionRecord> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        section_id: input.sectionId
+      })
+    })
+  );
+  return normalizeSession(payload);
+}
+
 export async function sendStudyMessage(input: {
   sessionId: string;
   message: string;

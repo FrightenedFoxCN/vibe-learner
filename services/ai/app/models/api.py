@@ -174,6 +174,10 @@ class CreateStudySessionRequest(BaseModel):
     section_id: str
 
 
+class UpdateStudySessionRequest(BaseModel):
+    section_id: str
+
+
 class StudySessionResponse(StudySessionRecord):
     pass
 

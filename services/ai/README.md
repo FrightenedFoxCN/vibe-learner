@@ -18,7 +18,7 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-Plan generation supports one real LLM call per plan when configured.
+Plan generation and chapter chat support real LLM calls when configured.
 
 ```bash
 cp .env.example .env
@@ -31,6 +31,9 @@ GAL_LEARNER_PLAN_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_PLAN_MODEL=gpt-4.1-mini
+OPENAI_CHAT_MODEL=gpt-4.1-mini
+OPENAI_CHAT_TEMPERATURE=0.35
+OPENAI_CHAT_MAX_TOKENS=800
 OPENAI_TIMEOUT_SECONDS=30
 ```
 

@@ -55,7 +55,13 @@ class PlanModelReply:
 
 class ModelProvider:
     def generate_chat(
-        self, *, persona: PersonaProfile, section_id: str, message: str
+        self,
+        *,
+        persona: PersonaProfile,
+        section_id: str,
+        message: str,
+        section_context: str = "",
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> ModelReply:
         raise NotImplementedError
 
@@ -88,12 +94,24 @@ class ModelProvider:
 
 class MockModelProvider(ModelProvider):
     def generate_chat(
-        self, *, persona: PersonaProfile, section_id: str, message: str
+        self,
+        *,
+        persona: PersonaProfile,
+        section_id: str,
+        message: str,
+        section_context: str = "",
+        conversation_history: list[dict[str, str]] | None = None,
     ) -> ModelReply:
         style = persona.teaching_style[0] if persona.teaching_style else "structured"
+        history_hint = ""
+        if conversation_history:
+            history_hint = f" 我已读取最近 {len(conversation_history)} 条上下文。"
+        section_hint = f" 章节上下文：{section_context[:80]}。" if section_context else ""
         text = (
             f"{persona.name} 正在结合章节 {section_id} 讲解。"
             f" 当前提问是：{message}。"
+            f"{section_hint}"
+            f"{history_hint}"
             f" 我会用 {style} 的方式先解释核心概念，再给你一个复述任务。"
         )
         mood = "playful" if persona.narrative_mode == "light_story" else "calm"
@@ -171,17 +189,84 @@ class OpenAIModelProvider(MockModelProvider):
         api_key: str,
         base_url: str,
         plan_model: str,
+        chat_model: str | None = None,
+        chat_temperature: float = 0.35,
+        chat_max_tokens: int = 800,
         timeout_seconds: int = 30,
         multimodal_enabled: bool = False,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.plan_model = plan_model
+        self.chat_model = chat_model or plan_model
+        self.chat_temperature = chat_temperature
+        self.chat_max_tokens = chat_max_tokens
         self.timeout_seconds = timeout_seconds
         self.multimodal_enabled = multimodal_enabled
 
     def supports_page_image_tools(self) -> bool:
         return self.multimodal_enabled
+
+    def generate_chat(
+        self,
+        *,
+        persona: PersonaProfile,
+        section_id: str,
+        message: str,
+        section_context: str = "",
+        conversation_history: list[dict[str, str]] | None = None,
+    ) -> ModelReply:
+        history = conversation_history or []
+        messages: list[dict[str, str]] = [
+            {
+                "role": "system",
+                "content": (
+                    f"{persona.system_prompt}\n"
+                    "You are a tutor for a chapter-focused learning chat. "
+                    "Output strict JSON with keys: text, mood, action. "
+                    "mood must be one of calm, encouraging, playful, serious, excited, concerned. "
+                    "action must be one of explain, point, prompt, reflect, celebrate, idle."
+                ),
+            }
+        ]
+        messages.extend(history[-8:])
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"Section ID: {section_id}\n"
+                    f"Section Context:\n{section_context or 'N/A'}\n\n"
+                    f"Learner message: {message}\n"
+                    "Answer in Chinese and keep explanations grounded in the section context when possible."
+                ),
+            }
+        )
+
+        payload: dict[str, Any] = {
+            "model": self.chat_model,
+            "temperature": self.chat_temperature,
+            "max_tokens": self.chat_max_tokens,
+            "messages": messages,
+            "response_format": {"type": "json_object"},
+        }
+
+        raw_payload, _ = self._request_openai_chat_completion(
+            payload,
+            request_kind="chat",
+            model=self.chat_model,
+        )
+        content = _extract_choice_content(raw_payload)
+        parsed = _extract_json_payload(
+            content,
+            invalid_json_code="chat_model_invalid_payload",
+            invalid_payload_code="chat_model_invalid_payload",
+        )
+        mood = str(parsed.get("mood") or "calm")
+        action = str(parsed.get("action") or "explain")
+        text = str(parsed.get("text") or "")
+        if not text.strip():
+            raise RuntimeError("chat_model_invalid_payload")
+        return ModelReply(text=text.strip(), mood=mood, action=action)
 
     def generate_learning_plan(
         self,
@@ -215,7 +300,13 @@ class OpenAIModelProvider(MockModelProvider):
         runner = OpenAIPlanRunner(
             model=self.plan_model,
             timeout_seconds=self.timeout_seconds,
-            request_chat_completion=self._request_openai_chat_completion,
+            request_chat_completion=(
+                lambda payload: self._request_openai_chat_completion(
+                    payload,
+                    request_kind="plan",
+                    model=self.plan_model,
+                )
+            ),
         )
         run_result = runner.run(
             document_id=goal.document_id,
@@ -250,12 +341,19 @@ class OpenAIModelProvider(MockModelProvider):
             debug_trace=run_result.trace,
         )
 
-    def _request_openai_chat_completion(self, payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    def _request_openai_chat_completion(
+        self,
+        payload: dict[str, Any],
+        *,
+        request_kind: str,
+        model: str,
+    ) -> tuple[dict[str, Any], int]:
         tools_enabled = "tools" in payload
         tool_round = len([message for message in payload.get("messages", []) if message.get("role") == "tool"])
         logger.info(
-            "model.plan.request provider=openai model=%s tool_round=%s tools_enabled=%s",
-            self.plan_model,
+            "model.%s.request provider=openai model=%s tool_round=%s tools_enabled=%s",
+            request_kind,
+            model,
             tool_round,
             tools_enabled,
         )
@@ -278,26 +376,36 @@ class OpenAIModelProvider(MockModelProvider):
             body = exc.read().decode("utf-8", errors="ignore")
             error_code, error_message = _extract_upstream_error(body)
             logger.exception(
-                "model.plan.http_error status=%s upstream_code=%s upstream_message=%s body=%s",
+                "model.%s.http_error status=%s upstream_code=%s upstream_message=%s body=%s",
+                request_kind,
                 exc.code,
                 error_code,
                 error_message,
                 body,
             )
             if error_code == "rate_limit":
-                raise RuntimeError("openai_plan_request_rate_limit") from exc
+                raise RuntimeError(f"openai_{request_kind}_request_rate_limit") from exc
             raise RuntimeError(
-                f"openai_plan_request_failed:{exc.code}:{error_code or 'unknown'}"
+                f"openai_{request_kind}_request_failed:{exc.code}:{error_code or 'unknown'}"
             ) from exc
         except urllib.error.URLError as exc:
-            logger.exception("model.plan.network_error reason=%s", exc.reason)
-            raise RuntimeError("openai_plan_request_network_error") from exc
+            logger.exception("model.%s.network_error reason=%s", request_kind, exc.reason)
+            raise RuntimeError(f"openai_{request_kind}_request_network_error") from exc
         except (TimeoutError, socket.timeout) as exc:
-            logger.exception("model.plan.timeout timeout_seconds=%s", self.timeout_seconds)
-            raise RuntimeError("openai_plan_request_timeout") from exc
+            logger.exception(
+                "model.%s.timeout timeout_seconds=%s",
+                request_kind,
+                self.timeout_seconds,
+            )
+            raise RuntimeError(f"openai_{request_kind}_request_timeout") from exc
 
 
-def _extract_json_payload(content: str) -> dict[str, object]:
+def _extract_json_payload(
+    content: str,
+    *,
+    invalid_json_code: str = "plan_model_invalid_json",
+    invalid_payload_code: str = "plan_model_invalid_payload",
+) -> dict[str, object]:
     content = content.strip()
     if content.startswith("```"):
         content = content.strip("`")
@@ -309,10 +417,10 @@ def _extract_json_payload(content: str) -> dict[str, object]:
         start = content.find("{")
         end = content.rfind("}")
         if start == -1 or end == -1 or end <= start:
-            raise RuntimeError("plan_model_invalid_json")
+            raise RuntimeError(invalid_json_code)
         payload = json.loads(content[start : end + 1])
     if not isinstance(payload, dict):
-        raise RuntimeError("plan_model_invalid_payload")
+        raise RuntimeError(invalid_payload_code)
     return payload
 
 
@@ -356,3 +464,25 @@ def _extract_upstream_error(body: str) -> tuple[str, str]:
     if not isinstance(error, dict):
         return "", body[:200]
     return str(error.get("code", "")), str(error.get("message", ""))
+
+
+def _extract_choice_content(payload: dict[str, Any]) -> str:
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        raise RuntimeError("chat_model_invalid_payload")
+    message = choices[0].get("message") if isinstance(choices[0], dict) else None
+    if not isinstance(message, dict):
+        raise RuntimeError("chat_model_invalid_payload")
+    content = message.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        texts = [
+            str(item.get("text", ""))
+            for item in content
+            if isinstance(item, dict) and item.get("type") == "text"
+        ]
+        merged = "".join(texts).strip()
+        if merged:
+            return merged
+    raise RuntimeError("chat_model_invalid_payload")

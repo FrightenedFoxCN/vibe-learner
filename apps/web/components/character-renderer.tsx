@@ -41,13 +41,13 @@ export const placeholderCharacterRenderer: CharacterRendererAdapter = {
 const styles: Record<string, CSSProperties> = {
   figure: {
     position: "relative",
-    marginTop: 24,
-    minHeight: 280,
+    marginTop: 18,
+    minHeight: 260,
     display: "grid",
     placeItems: "center",
     overflow: "hidden",
-    borderRadius: 28,
-    background: "radial-gradient(circle at top, rgba(197,92,59,0.24), transparent 40%), rgba(255,255,255,0.6)",
+    borderRadius: 16,
+    background: "radial-gradient(circle at top, rgba(13,110,114,0.24), transparent 38%), rgba(250,255,255,0.92)",
     border: "1px solid var(--border)"
   },
   halo: {
@@ -59,15 +59,15 @@ const styles: Record<string, CSSProperties> = {
   },
   avatar: {
     position: "relative",
-    width: 162,
-    height: 162,
+    width: 148,
+    height: 148,
     borderRadius: "50%",
     display: "grid",
     placeItems: "center",
-    fontSize: 56,
+    fontSize: 50,
     fontFamily: "var(--font-display), sans-serif",
     color: "white",
-    background: "linear-gradient(160deg, var(--accent), #f19b6b)"
+    background: "linear-gradient(160deg, var(--accent), #38a2a7)"
   },
   badges: {
     position: "absolute",
@@ -77,8 +77,8 @@ const styles: Record<string, CSSProperties> = {
   },
   badge: {
     padding: "8px 12px",
-    borderRadius: 999,
-    background: "rgba(45,36,31,0.78)",
+    borderRadius: 10,
+    background: "rgba(16,35,40,0.82)",
     color: "white",
     fontSize: 13
   }

@@ -7,7 +7,6 @@ import { CharacterShell } from "./character-shell";
 import { DocumentSetup } from "./document-setup";
 import { PlanOverview } from "./plan-overview";
 import { PersonaSelector } from "./persona-selector";
-import { StudyConsole } from "./study-console";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
 import { mockPersonas } from "../lib/mock-data";
 import { useLearningWorkspaceController } from "../hooks/use-learning-workspace-controller";
@@ -27,7 +26,6 @@ export function LearningWorkspace({
     setSelectedPersonaId,
     activePlan,
     activeDocument,
-    activeSection,
     planHistory,
     planHistoryItems,
     studySession,
@@ -38,7 +36,6 @@ export function LearningWorkspace({
     generatePlanWorkflow,
     selectPlan,
     createSessionForActivePlan,
-    handleAsk,
     refreshPlanSnapshot
   } = useLearningWorkspaceController({
     initialPlan,
@@ -106,14 +103,16 @@ export function LearningWorkspace({
             }}
           />
 
-          <StudyConsole
-            isPending={isBusy}
-            onAsk={handleAsk}
-            session={response}
-            sectionId={studySession?.sectionId ?? activeSection?.id ?? ""}
-            sectionTitle={activeSection?.title ?? ""}
-            disabled={!studySession}
-          />
+          <article style={styles.studyEntryCard}>
+            <p style={styles.studyEntryLabel}>章节对话</p>
+            <h2 style={styles.studyEntryTitle}>进入专用章节对话页</h2>
+            <p style={styles.studyEntrySummary}>
+              在章节对话页中，左侧进行对话，右侧实时展示教材 PDF，并按章节自动联动页码。
+            </p>
+            <a href="/study" style={styles.studyEntryLink}>
+              打开章节对话页
+            </a>
+          </article>
         </div>
 
         <CharacterShell
@@ -129,41 +128,48 @@ export function LearningWorkspace({
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
-    padding: "40px 28px 60px"
+    maxWidth: 1480,
+    margin: "0 auto",
+    padding: "24px 20px 44px"
   },
   hero: {
     display: "flex",
     justifyContent: "space-between",
-    gap: 24,
+    gap: 18,
     alignItems: "flex-start",
-    marginBottom: 28
+    marginBottom: 18,
+    padding: "20px 22px",
+    borderRadius: 24,
+    border: "1px solid var(--border)",
+    background: "var(--panel-strong)",
+    boxShadow: "var(--shadow)"
   },
   eyebrow: {
     margin: 0,
     color: "var(--accent)",
-    letterSpacing: "0.08em",
+    letterSpacing: "0.1em",
     textTransform: "uppercase",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700
   },
   title: {
-    margin: "10px 0 12px",
+    margin: "8px 0 10px",
     fontFamily: "var(--font-display), sans-serif",
-    fontSize: "clamp(2.2rem, 5vw, 4.6rem)",
-    lineHeight: 1,
+    fontSize: "clamp(1.6rem, 3.6vw, 2.8rem)",
+    lineHeight: 1.2,
     maxWidth: 720
   },
   subtitle: {
     margin: 0,
     maxWidth: 760,
     color: "var(--muted)",
-    fontSize: 18,
-    lineHeight: 1.6
+    fontSize: 16,
+    lineHeight: 1.7
   },
   notice: {
     margin: "12px 0 0",
     color: "var(--teal)",
-    fontSize: 14
+    fontSize: 13
   },
   debugLinkRow: {
     margin: "14px 0 0"
@@ -171,18 +177,57 @@ const styles: Record<string, CSSProperties> = {
   debugLink: {
     display: "inline-block",
     padding: "10px 14px",
-    borderRadius: 999,
-    background: "var(--panel-strong)",
+    borderRadius: 14,
+    background: "rgba(13, 110, 114, 0.08)",
     border: "1px solid var(--border)",
-    textDecoration: "none"
+    color: "var(--accent)",
+    fontWeight: 600
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.2fr) minmax(360px, 0.8fr)",
-    gap: 24
+    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+    gap: 18,
+    alignItems: "start"
   },
   studyColumn: {
     display: "grid",
-    gap: 24
+    gap: 18
+  },
+  studyEntryCard: {
+    padding: 24,
+    borderRadius: 24,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    boxShadow: "var(--shadow)",
+    display: "grid",
+    gap: 10
+  },
+  studyEntryLabel: {
+    margin: 0,
+    fontSize: 12,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "var(--muted)"
+  },
+  studyEntryTitle: {
+    margin: 0,
+    fontSize: 24,
+    fontFamily: "var(--font-display), sans-serif"
+  },
+  studyEntrySummary: {
+    margin: 0,
+    lineHeight: 1.7,
+    color: "var(--muted)"
+  },
+  studyEntryLink: {
+    display: "inline-block",
+    width: "fit-content",
+    marginTop: 2,
+    borderRadius: 999,
+    border: "1px solid rgba(13, 110, 114, 0.24)",
+    background: "rgba(13, 110, 114, 0.1)",
+    color: "var(--teal)",
+    padding: "10px 14px",
+    fontWeight: 600
   }
 };

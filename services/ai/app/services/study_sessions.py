@@ -49,6 +49,14 @@ class StudySessionService:
         self._save_sessions(sessions)
         return session
 
+    def update_section(self, *, session_id: str, section_id: str) -> StudySessionRecord:
+        sessions = self._load_sessions()
+        session = self.require_session(session_id, sessions)
+        session.section_id = section_id
+        session.updated_at = _now()
+        self._save_sessions(sessions)
+        return session
+
     def require_session(
         self, session_id: str, sessions: list[StudySessionRecord] | None = None
     ) -> StudySessionRecord:

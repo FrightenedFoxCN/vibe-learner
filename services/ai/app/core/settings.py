@@ -11,6 +11,9 @@ class Settings:
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_plan_model: str = "gpt-4.1-mini"
+    openai_chat_model: str = "gpt-4.1-mini"
+    openai_chat_temperature: float = 0.35
+    openai_chat_max_tokens: int = 800
     openai_timeout_seconds: int = 30
     openai_plan_model_multimodal: bool = False
 
@@ -22,6 +25,12 @@ class Settings:
             openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
             openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
             openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
+            openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
+            openai_chat_temperature=_to_float(
+                os.getenv("OPENAI_CHAT_TEMPERATURE", "0.35"),
+                default=0.35,
+            ),
+            openai_chat_max_tokens=_to_int(os.getenv("OPENAI_CHAT_MAX_TOKENS", "800"), default=800),
             openai_timeout_seconds=_to_int(os.getenv("OPENAI_TIMEOUT_SECONDS", "30"), default=30),
             openai_plan_model_multimodal=_to_bool(
                 os.getenv("OPENAI_PLAN_MODEL_MULTIMODAL", "false"),
@@ -33,6 +42,13 @@ class Settings:
 def _to_int(value: str, *, default: int) -> int:
     try:
         return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _to_float(value: str, *, default: float) -> float:
+    try:
+        return float(value)
     except (TypeError, ValueError):
         return default
 
