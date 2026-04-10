@@ -61,6 +61,12 @@ type StreamEventItem = {
   payload: Record<string, unknown>;
 };
 
+type ChatFailureState = {
+  message: string;
+  sectionId: string;
+  detail: string;
+};
+
 interface UseLearningWorkspaceControllerOptions {
   initialPlan?: LearningPlan;
   initialPersonas?: PersonaProfile[];
@@ -85,6 +91,7 @@ export function useLearningWorkspaceController({
   const [processStreamDocumentId, setProcessStreamDocumentId] = useState("");
   const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
   const [sessionRegistry, setSessionRegistry] = useState<Record<string, StudySessionRecord>>({});
+  const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
 
   const selectedPersona =
     state.personas.find((persona) => persona.id === state.selectedPersonaId) ?? state.personas[0];
@@ -471,6 +478,7 @@ export function useLearningWorkspaceController({
   };
 
   const handleAskForSection = async (message: string, sectionId: string) => {
+    setChatFailure(null);
     const targetSession = await ensureSessionForSection(sectionId, {
       clearResponseOnSwitch: false,
     });
@@ -559,40 +567,22 @@ export function useLearningWorkspaceController({
         }
       }
       if (detail.includes("chat_model_invalid_payload")) {
-        try {
-          dispatch({
-            type: "notice_set",
-            notice: "模型输出格式异常，正在自动恢复重试…"
-          });
-          const recovered = await sendStudyMessage({
-            sessionId: targetSession.id,
-            message
-          });
-          dispatch({
-            type: "study_session_set",
-            studySession: recovered.session,
-            personaId: recovered.session.personaId,
-            clearResponse: false
-          });
-          registerSession(recovered.session);
-          dispatch({
-            type: "response_set",
-            response: recovered
-          });
-          dispatch({
-            type: "notice_set",
-            notice: "已自动恢复本次对话。"
-          });
-          return;
-        } catch (retryError) {
-          dispatch({
-            type: "notice_set",
-            notice: `自动恢复失败: ${String(retryError)}`
-          });
-          logWorkspaceError("workflow:study_chat:retry_error", retryError);
-          return;
-        }
+        setChatFailure({
+          message,
+          sectionId,
+          detail,
+        });
+        dispatch({
+          type: "notice_set",
+          notice: "模型输出格式异常，请点击“重试发送”再次请求。"
+        });
+        return;
       }
+      setChatFailure({
+        message,
+        sectionId,
+        detail,
+      });
       dispatch({
         type: "notice_set",
         notice: `导学请求失败: ${String(error)}`
@@ -781,6 +771,13 @@ export function useLearningWorkspaceController({
     };
   }, [activeDocument?.id, activePlan?.id, activePlan?.personaId]);
 
+  const retryFailedAsk = async () => {
+    if (!chatFailure) {
+      return;
+    }
+    await handleAskForSection(chatFailure.message, chatFailure.sectionId);
+  };
+
   return {
     personas: state.personas,
     selectedPersona,
@@ -812,6 +809,8 @@ export function useLearningWorkspaceController({
     handleSwitchSection,
     handleAsk,
     handleAskForSection,
+    chatFailure,
+    retryFailedAsk,
     handleSubmitQuestionAttempt,
     refreshPlanSnapshot: () =>
       syncWorkspaceSnapshot({

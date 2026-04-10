@@ -1075,21 +1075,46 @@ def _parse_chat_model_reply(
     raw_payload: dict[str, Any],
     tool_results: list[dict[str, Any]],
 ) -> ModelReply:
-    content = _extract_choice_content(raw_payload)
-    parsed = _extract_json_payload(
-        content,
-        invalid_json_code="chat_model_invalid_payload",
-        invalid_payload_code="chat_model_invalid_payload",
-    )
-    mood = str(parsed.get("mood") or "calm")
-    action = str(parsed.get("action") or "explain")
-    text = str(parsed.get("text") or "")
-    if not text.strip():
-        raise RuntimeError("chat_model_invalid_payload")
+    content = ""
+    try:
+        content = _extract_choice_content(raw_payload)
+    except RuntimeError:
+        content = ""
+
+    parsed: dict[str, object] = {}
+    if content.strip():
+        try:
+            parsed = _extract_json_payload(
+                content,
+                invalid_json_code="chat_model_invalid_payload",
+                invalid_payload_code="chat_model_invalid_payload",
+            )
+        except RuntimeError:
+            logger.warning("model.chat.parse_fallback invalid_payload content_preview=%s", content[:120])
+
     interactive_question = _extract_interactive_question_payload(
         parsed=parsed,
         tool_results=tool_results,
     )
+    mood = str(parsed.get("mood") or "calm")
+    action = str(parsed.get("action") or "explain")
+    text = str(parsed.get("text") or "").strip()
+
+    if not text:
+        if interactive_question is not None:
+            text = "请先完成这道题，再告诉我你的思路，我会继续追问关键细节。"
+        elif content.strip():
+            text = content.strip()
+        else:
+            finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
+            logger.warning(
+                "model.chat.invalid_payload empty_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s",
+                finish_reason,
+                reasoning_tokens,
+                completion_tokens,
+            )
+            raise RuntimeError("chat_model_invalid_payload")
+
     text = _sanitize_reply_text_for_question(text, interactive_question)
     return ModelReply(
         text=text.strip(),
@@ -1199,16 +1224,74 @@ def _extract_choice_content(payload: dict[str, Any]) -> str:
     message = choices[0].get("message") if isinstance(choices[0], dict) else None
     if not isinstance(message, dict):
         raise RuntimeError("chat_model_invalid_payload")
+
+    # Some OpenAI-compatible providers return assistant text in non-standard shapes.
+    # Keep extraction tolerant before treating the payload as invalid.
     content = message.get("content")
     if isinstance(content, str):
         return content
+    if isinstance(content, dict):
+        for key in ("text", "value", "content"):
+            value = content.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+            if isinstance(value, dict):
+                nested = value.get("value")
+                if isinstance(nested, str) and nested.strip():
+                    return nested
     if isinstance(content, list):
-        texts = [
-            str(item.get("text", ""))
-            for item in content
-            if isinstance(item, dict) and item.get("type") == "text"
-        ]
+        texts: list[str] = []
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            item_type = str(item.get("type") or "").strip().lower()
+            if item_type not in {"text", "output_text", "message"}:
+                continue
+            text_value = item.get("text")
+            if isinstance(text_value, str) and text_value.strip():
+                texts.append(text_value)
+                continue
+            if isinstance(text_value, dict):
+                nested_value = text_value.get("value")
+                if isinstance(nested_value, str) and nested_value.strip():
+                    texts.append(nested_value)
+                    continue
+            value_field = item.get("value")
+            if isinstance(value_field, str) and value_field.strip():
+                texts.append(value_field)
         merged = "".join(texts).strip()
         if merged:
             return merged
+
+    alt_text = choices[0].get("text") if isinstance(choices[0], dict) else None
+    if isinstance(alt_text, str) and alt_text.strip():
+        return alt_text
+
+    reasoning_content = message.get("reasoning_content")
+    if isinstance(reasoning_content, str) and reasoning_content.strip():
+        logger.warning("model.chat.extract_content fallback=reasoning_content")
+        return reasoning_content
+
+    logger.warning(
+        "model.chat.extract_content failed message_keys=%s content_type=%s",
+        sorted(message.keys()),
+        type(content).__name__,
+    )
     raise RuntimeError("chat_model_invalid_payload")
+
+
+def _extract_choice_diagnostics(payload: dict[str, Any]) -> tuple[str, int, int]:
+    choices = payload.get("choices")
+    finish_reason = ""
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        finish_reason = str(choices[0].get("finish_reason") or "")
+
+    usage = payload.get("usage") if isinstance(payload, dict) else None
+    completion_tokens = 0
+    reasoning_tokens = 0
+    if isinstance(usage, dict):
+        completion_tokens = _coerce_int(usage.get("completion_tokens"), default=0)
+        details = usage.get("completion_tokens_details")
+        if isinstance(details, dict):
+            reasoning_tokens = _coerce_int(details.get("reasoning_tokens"), default=0)
+    return finish_reason, reasoning_tokens, completion_tokens

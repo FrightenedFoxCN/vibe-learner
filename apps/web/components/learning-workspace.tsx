@@ -90,7 +90,7 @@ export function LearningWorkspace() {
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
-    maxWidth: 1280,
+    maxWidth: 1600,
     margin: "0 auto",
     padding: "20px 32px 48px",
     display: "grid",
@@ -120,6 +120,7 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--teal)"
   },
   entryRow: {
+    gridColumn: "1 / -1",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",

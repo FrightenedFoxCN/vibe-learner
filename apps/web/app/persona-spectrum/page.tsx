@@ -39,7 +39,6 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     alignItems: "baseline",
     gap: 12,
-    borderBottom: "1px solid var(--border)",
     paddingBottom: 12
   },
   topbarTitle: {

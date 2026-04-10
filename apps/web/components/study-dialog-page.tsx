@@ -30,6 +30,8 @@ export function StudyDialogPage() {
     createSessionForActivePlan,
     handleAsk,
     handleAskForSection,
+    chatFailure,
+    retryFailedAsk,
     handleSwitchSection,
     handleSubmitQuestionAttempt,
   } = useLearningWorkspace();
@@ -93,6 +95,36 @@ export function StudyDialogPage() {
     },
     [handleSwitchSection, resolveSectionIdByTheme, studySession]
   );
+
+  const resolveThemeStartPage = useCallback(
+    (theme: string) => {
+      const sectionId = resolveSectionIdByTheme(theme);
+      if (!sectionId) {
+        return 0;
+      }
+      const fromPlanSection = planSections.find((section) => section.id === sectionId)?.pageStart;
+      if (fromPlanSection) {
+        return fromPlanSection;
+      }
+      const fromStudyUnit = activeDocument?.studyUnits.find((unit) => unit.id === sectionId)?.pageStart;
+      if (fromStudyUnit) {
+        return fromStudyUnit;
+      }
+      const fromRawSection = activeDocument?.sections.find((section) => section.id === sectionId)?.pageStart;
+      if (fromRawSection) {
+        return fromRawSection;
+      }
+      return 0;
+    },
+    [activeDocument?.sections, activeDocument?.studyUnits, planSections, resolveSectionIdByTheme]
+  );
+
+  const handleJumpToThemeStart = useCallback(() => {
+    const nextPage = resolveThemeStartPage(currentTheme);
+    if (nextPage > 0) {
+      setPdfPage(nextPage);
+    }
+  }, [currentTheme, resolveThemeStartPage]);
 
   const handleAskByCurrentTheme = useCallback(
     async (message: string) => {
@@ -204,6 +236,9 @@ export function StudyDialogPage() {
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
             onChangeTheme={handleThemeChange}
             onOpenPage={setPdfPage}
+            onJumpToThemeStart={handleJumpToThemeStart}
+            chatErrorMessage={chatFailure?.detail ?? ""}
+            onRetryLastAsk={retryFailedAsk}
             selectedTheme={currentTheme}
             weeklyFocus={themeOptions}
             turns={studySession?.turns ?? []}

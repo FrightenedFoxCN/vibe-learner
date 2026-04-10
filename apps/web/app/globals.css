@@ -85,8 +85,8 @@ textarea {
 /* Plan page: upload form (left) + plan overview (right) */
 .plan-content-grid {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 48px;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 72px;
   align-items: start;
 }
 
@@ -114,7 +114,16 @@ textarea {
   top: 16px;
 }
 
-/* ---- Medium breakpoint (≤ 1080px): collapse 2-col layouts ---- */
+/* ---- Plan page: collapse at 1200px (nav=244px + padding=32px + min columns need room) ---- */
+
+@media (max-width: 1200px) {
+  .plan-content-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+/* ---- Medium breakpoint (≤ 1080px): collapse study/debug 2-col layouts ---- */
 
 @media (max-width: 1080px) {
   .study-dialog-grid {
@@ -124,11 +133,6 @@ textarea {
   .study-dialog-pdf-pane {
     position: static;
     height: min(70vh, 720px) !important;
-  }
-
-  .plan-content-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
   }
 
   .debug-main-grid {

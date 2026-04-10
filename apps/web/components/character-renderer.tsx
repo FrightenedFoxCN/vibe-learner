@@ -42,13 +42,12 @@ const styles: Record<string, CSSProperties> = {
   figure: {
     position: "relative",
     marginTop: 18,
-    minHeight: 260,
+    minHeight: 240,
     display: "grid",
     placeItems: "center",
     overflow: "hidden",
-    borderRadius: 16,
-    background: "radial-gradient(circle at top, rgba(13,110,114,0.24), transparent 38%), rgba(250,255,255,0.92)",
-    border: "1px solid var(--border)"
+    borderRadius: 4,
+    background: "radial-gradient(circle at top, rgba(13,110,114,0.18), transparent 40%), var(--panel)"
   },
   halo: {
     position: "absolute",
@@ -76,10 +75,10 @@ const styles: Record<string, CSSProperties> = {
     gap: 10
   },
   badge: {
-    padding: "8px 12px",
-    borderRadius: 10,
+    padding: "6px 10px",
+    borderRadius: 3,
     background: "rgba(16,35,40,0.82)",
     color: "white",
-    fontSize: 13
+    fontSize: 12
   }
 };

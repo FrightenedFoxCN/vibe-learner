@@ -21,6 +21,9 @@ interface StudyConsoleProps {
   }) => void | Promise<void>;
   onChangeTheme: (theme: string) => void;
   onOpenPage?: (page: number) => void;
+  onJumpToThemeStart?: () => void;
+  chatErrorMessage?: string;
+  onRetryLastAsk?: () => void | Promise<void>;
   selectedTheme: string;
   weeklyFocus: string[];
   turns: StudySessionRecord["turns"];
@@ -34,6 +37,9 @@ export function StudyConsole({
   onSubmitQuestionAttempt,
   onChangeTheme,
   onOpenPage,
+  onJumpToThemeStart,
+  chatErrorMessage,
+  onRetryLastAsk,
   selectedTheme,
   weeklyFocus,
   turns,
@@ -45,6 +51,11 @@ export function StudyConsole({
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
   const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>({});
   const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>({});
+  const sortedTurns = [...turns].sort((a, b) => {
+    const aTime = Date.parse(a.createdAt || "") || 0;
+    const bTime = Date.parse(b.createdAt || "") || 0;
+    return bTime - aTime;
+  });
 
   return (
     <div style={styles.wrap}>
@@ -69,6 +80,21 @@ export function StudyConsole({
             )}
           </select>
         </label>
+        <button
+          type="button"
+          style={{
+            ...styles.themeJumpButton,
+            ...(isPending || disabled || !onJumpToThemeStart ? styles.buttonDisabled : {})
+          }}
+          disabled={isPending || disabled || !onJumpToThemeStart}
+          onClick={() => {
+            if (onJumpToThemeStart) {
+              onJumpToThemeStart();
+            }
+          }}
+        >
+          跳转主题首页
+        </button>
       </div>
 
       <div style={styles.inputRow}>
@@ -90,11 +116,33 @@ export function StudyConsole({
         </button>
       </div>
 
+      {chatErrorMessage ? (
+        <div style={styles.errorBox}>
+          <div style={styles.errorTitle}>对话请求失败</div>
+          <div style={styles.errorText}>{chatErrorMessage}</div>
+          <button
+            type="button"
+            style={{
+              ...styles.retryButton,
+              ...(isPending || disabled || !onRetryLastAsk ? styles.buttonDisabled : {})
+            }}
+            disabled={isPending || disabled || !onRetryLastAsk}
+            onClick={() => {
+              if (onRetryLastAsk) {
+                void onRetryLastAsk();
+              }
+            }}
+          >
+            {isPending ? "重试中…" : "重试发送"}
+          </button>
+        </div>
+      ) : null}
+
       {turns.length ? (
         <div style={styles.transcript}>
           <div style={styles.transcriptLabel}>对话记录</div>
           <div style={styles.turnList}>
-            {turns.map((turn, index) => (
+            {sortedTurns.map((turn, index) => (
               <div
                 key={buildTurnKey(turn.createdAt, index)}
                 style={{
@@ -200,7 +248,8 @@ const styles: Record<string, CSSProperties> = {
   selectLabel: {
     display: "grid",
     gap: 4,
-    width: "100%"
+    width: "100%",
+    minWidth: 0
   },
   selectCaption: {
     fontSize: 11,
@@ -221,6 +270,50 @@ const styles: Record<string, CSSProperties> = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap"
+  },
+  themeJumpButton: {
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    height: 32,
+    padding: "0 10px",
+    background: "transparent",
+    color: "var(--ink)",
+    fontSize: 12,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    alignSelf: "flex-end",
+    cursor: "pointer"
+  },
+  errorBox: {
+    display: "grid",
+    gap: 8,
+    border: "1px solid #f0c2c2",
+    background: "#fff7f7",
+    borderRadius: 3,
+    padding: "10px 12px"
+  },
+  errorTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#9f1d1d"
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#7f1d1d",
+    wordBreak: "break-word"
+  },
+  retryButton: {
+    border: "1px solid #f0c2c2",
+    borderRadius: 3,
+    background: "white",
+    color: "#7f1d1d",
+    height: 30,
+    padding: "0 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    width: "fit-content"
   },
   inputRow: {
     display: "flex",
@@ -273,19 +366,17 @@ const styles: Record<string, CSSProperties> = {
   },
   turnList: {
     display: "grid",
-    gap: 12
+    gap: 0
   },
   turnCard: {
     display: "grid",
     gap: 8,
-    padding: 14,
-    border: "1px solid var(--border)",
-    borderRadius: 10,
-    background: "var(--panel)"
+    padding: "14px 0",
+    borderBottom: "1px solid var(--border)"
   },
   turnCardAttempt: {
-    borderColor: "#99f6e4",
-    background: "#f0fdfa"
+    paddingLeft: 12,
+    borderLeft: "3px solid var(--teal)"
   },
   turnMetaRow: {
     display: "flex",
@@ -307,10 +398,7 @@ const styles: Record<string, CSSProperties> = {
   attemptBadge: {
     display: "inline-flex",
     width: "fit-content",
-    padding: "2px 8px",
-    borderRadius: 999,
-    border: "1px solid #99f6e4",
-    color: "#0f766e",
+    color: "var(--teal)",
     fontSize: 11,
     fontWeight: 600
   },
@@ -323,10 +411,8 @@ const styles: Record<string, CSSProperties> = {
   questionWrap: {
     display: "grid",
     gap: 8,
-    border: "1px dashed var(--border)",
-    borderRadius: 10,
-    padding: 10,
-    background: "var(--panel-strong)"
+    borderTop: "1px solid var(--border)",
+    paddingTop: 10
   },
   questionTitle: {
     margin: 0,
@@ -345,24 +431,24 @@ const styles: Record<string, CSSProperties> = {
   choiceButton: {
     textAlign: "left",
     border: "1px solid var(--border)",
-    borderRadius: 8,
+    borderRadius: 3,
     padding: "8px 10px",
-    background: "var(--panel)",
+    background: "transparent",
     color: "var(--ink)",
     cursor: "pointer",
     fontSize: 13
   },
   choiceButtonActive: {
     borderColor: "var(--accent)",
-    boxShadow: "inset 0 0 0 1px var(--accent)"
+    color: "var(--accent)"
   },
   blankInput: {
     width: "100%",
     border: "1px solid var(--border)",
-    borderRadius: 6,
+    borderRadius: 3,
     minHeight: 34,
     padding: "0 10px",
-    background: "white",
+    background: "var(--panel)",
     color: "var(--ink)",
     fontSize: 13
   },
@@ -374,7 +460,7 @@ const styles: Record<string, CSSProperties> = {
   },
   checkButton: {
     border: "1px solid var(--border)",
-    borderRadius: 6,
+    borderRadius: 3,
     background: "var(--accent)",
     color: "white",
     height: 30,
@@ -392,7 +478,7 @@ const styles: Record<string, CSSProperties> = {
   },
   inlineGhostBtn: {
     border: "1px solid var(--border)",
-    borderRadius: 6,
+    borderRadius: 3,
     background: "transparent",
     color: "var(--muted)",
     height: 30,
@@ -403,7 +489,7 @@ const styles: Record<string, CSSProperties> = {
   explanationBox: {
     marginTop: 4,
     padding: "8px 10px",
-    borderRadius: 8,
+    borderRadius: 3,
     border: "1px solid var(--border)",
     background: "var(--panel)",
     fontSize: 12,
