@@ -14,7 +14,7 @@ from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
 from app.services.study_arrangement import StudyArrangementService
 
-logger = get_logger("gal_learner.documents")
+logger = get_logger("vibe_learner.documents")
 
 
 class DocumentService:

@@ -27,7 +27,7 @@ cp .env.example .env
 Example:
 
 ```bash
-GAL_LEARNER_PLAN_PROVIDER=openai
+VIBE_LEARNER_PLAN_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_PLAN_MODEL=gpt-4.1-mini

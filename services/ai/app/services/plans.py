@@ -74,6 +74,7 @@ class LearningPlanService:
             goal=goal,
             document=document,
             persona_name=persona_name,
+            persona=persona,
         )
         _emit_progress(
             progress_callback,

@@ -53,7 +53,7 @@ from app.services.plan_tool_runtime import get_learning_plan_tool_specs
 from app.services.study_session_prompt import build_study_session_system_prompt
 
 router = APIRouter()
-logger = get_logger("gal_learner.routes")
+logger = get_logger("vibe_learner.routes")
 
 
 def _into_response(response_model: type[BaseModel], value: BaseModel | dict) -> BaseModel:

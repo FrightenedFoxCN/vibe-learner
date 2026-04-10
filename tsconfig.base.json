@@ -12,8 +12,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "paths": {
-      "@gal-learner/shared": ["./packages/shared/src/index.ts"],
-      "@gal-learner/shared/*": ["./packages/shared/src/*"]
+      "@vibe-learner/shared": ["./packages/shared/src/index.ts"],
+      "@vibe-learner/shared/*": ["./packages/shared/src/*"]
     }
   }
 }

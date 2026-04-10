@@ -1,4 +1,4 @@
-# Gal Learner
+# Vibe Learner
 
 Monorepo for a local-first, persona-aware learning assistant.
 
@@ -45,14 +45,14 @@ cp .env.example .env
 Set these env vars in `services/ai/.env` when you want the plan endpoint to call a real model:
 
 ```bash
-GAL_LEARNER_PLAN_PROVIDER=openai
+VIBE_LEARNER_PLAN_PROVIDER=openai
 OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_PLAN_MODEL=gpt-4.1-mini
 OPENAI_TIMEOUT_SECONDS=30
 ```
 
-If `GAL_LEARNER_PLAN_PROVIDER` stays `mock`, the service will keep using the built-in deterministic planner.
+If `VIBE_LEARNER_PLAN_PROVIDER` stays `mock`, the service will keep using the built-in deterministic planner.
 
 ## Test
 

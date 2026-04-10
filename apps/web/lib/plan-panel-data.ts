@@ -1,4 +1,4 @@
-import type { DocumentRecord, LearningPlan, PersonaProfile } from "@gal-learner/shared";
+import type { DocumentRecord, LearningPlan, PersonaProfile } from "@vibe-learner/shared";
 
 export interface PlanHistoryItem {
   id: string;

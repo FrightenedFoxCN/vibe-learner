@@ -20,7 +20,7 @@ export function TopNav({ currentPath }: TopNavProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("gal-nav-collapsed");
+    const saved = window.localStorage.getItem("vibe-nav-collapsed");
     if (saved === "1") {
       setCollapsed(true);
     }
@@ -29,15 +29,15 @@ export function TopNav({ currentPath }: TopNavProps) {
   useEffect(() => {
     const width = collapsed ? "64px" : "220px";
     document.documentElement.style.setProperty("--app-nav-width", width);
-    window.localStorage.setItem("gal-nav-collapsed", collapsed ? "1" : "0");
+    window.localStorage.setItem("vibe-nav-collapsed", collapsed ? "1" : "0");
   }, [collapsed]);
 
   return (
     <aside className="app-side-nav" style={styles.aside} aria-label="Primary navigation">
       <div className="app-nav-brand-row" style={styles.topRow}>
         <div style={collapsed ? styles.brandCollapsed : styles.brand}>
-          <strong style={styles.brandTitle}>GL</strong>
-          {!collapsed ? <span style={styles.brandSub}>Gal Learner</span> : null}
+          <strong style={styles.brandTitle}>VL</strong>
+          {!collapsed ? <span style={styles.brandSub}>Vibe Learner</span> : null}
         </div>
         <button
           type="button"

@@ -23,7 +23,7 @@ export default function Icon() {
           fontWeight: 700
         }}
       >
-        GL
+        VL
       </div>
     ),
     size

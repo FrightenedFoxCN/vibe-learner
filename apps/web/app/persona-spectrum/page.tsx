@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import type { CSSProperties } from "react";
 import {
   CHARACTER_ACTIONS,
@@ -14,7 +14,7 @@ import {
   type PersonaProfile,
   type SpeechStyle,
   type StudyChatResponse
-} from "@gal-learner/shared";
+} from "@vibe-learner/shared";
 
 import { CharacterShell } from "../../components/character-shell";
 import { TopNav } from "../../components/top-nav";
@@ -31,8 +31,6 @@ import {
   type StudyChatExchangeResponse
 } from "../../lib/api";
 
-const VERSION_STORAGE_KEY = "gal-persona-spectrum-versions";
-
 type TimingHint = "instant" | "linger" | "after_text";
 
 interface PersonaDraft {
@@ -47,13 +45,6 @@ interface PersonaDraft {
   availableEmotionsText: string;
   availableActionsText: string;
   defaultSpeechStyle: SpeechStyle;
-}
-
-interface PersonaVersion {
-  id: string;
-  label: string;
-  createdAt: string;
-  snapshot: CreatePersonaInput;
 }
 
 const EMPTY_DRAFT: PersonaDraft = {
@@ -93,6 +84,22 @@ const BACKGROUND_TEMPLATES: Array<{ id: string; label: string; text: string }> =
   }
 ];
 
+const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
+  name: "模板教师",
+  summary: "示例人格：强调章节脉络与可执行反馈。",
+  backgroundStory:
+    "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。",
+  systemPrompt:
+    "Prioritize chapter-grounded explanation, progressive questioning, and concise actionable feedback.",
+  teachingStyle: ["structured", "guided"],
+  narrativeMode: "grounded",
+  encouragementStyle: "small wins",
+  correctionStyle: "precise but warm",
+  availableEmotions: ["calm", "encouraging", "serious"],
+  availableActions: ["idle", "explain", "point", "reflect"],
+  defaultSpeechStyle: "warm"
+};
+
 export default function PersonaSpectrumPage() {
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -111,9 +118,8 @@ export default function PersonaSpectrumPage() {
   const [assistPending, setAssistPending] = useState(false);
   const [assistError, setAssistError] = useState("");
   const [retainRatio, setRetainRatio] = useState(0.7);
-
-  const [versionsByPersona, setVersionsByPersona] = useState<Record<string, PersonaVersion[]>>({});
-  const [versionLabel, setVersionLabel] = useState("");
+  const [configMessage, setConfigMessage] = useState("");
+  const [configError, setConfigError] = useState("");
 
   const [previewEmotion, setPreviewEmotion] = useState<CharacterEmotion>("calm");
   const [previewAction, setPreviewAction] = useState<CharacterAction>("idle");
@@ -159,9 +165,6 @@ export default function PersonaSpectrumPage() {
     }
 
     bootstrap();
-    const savedVersions = readSavedVersions();
-    setVersionsByPersona(savedVersions);
-
     return () => {
       cancelled = true;
     };
@@ -240,7 +243,6 @@ export default function PersonaSpectrumPage() {
     [draft.availableActionsText]
   );
 
-  const versions = versionsByPersona[selectedPersonaId] ?? [];
   const selectedPersona = useMemo(
     () => personas.find((persona) => persona.id === selectedPersonaId) ?? null,
     [personas, selectedPersonaId]
@@ -331,6 +333,8 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleCreatePersona() {
+    setConfigError("");
+    setConfigMessage("");
     setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
     if (!payload.name) {
@@ -357,6 +361,8 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleUpdatePersona() {
+    setConfigError("");
+    setConfigMessage("");
     if (!selectedPersonaId) {
       setSaveError("请先选择要更新的人格。");
       return;
@@ -390,35 +396,58 @@ export default function PersonaSpectrumPage() {
     }
   }
 
-  function handleSaveVersion() {
-    if (!selectedPersonaId) {
-      return;
-    }
-    const label = versionLabel.trim() || `版本 ${new Date().toLocaleString()}`;
-    const nextVersion: PersonaVersion = {
-      id: `v-${Date.now()}`,
-      label,
-      createdAt: new Date().toISOString(),
-      snapshot: draftToCreatePersonaInput(draft)
-    };
-    const nextVersions = {
-      ...versionsByPersona,
-      [selectedPersonaId]: [nextVersion, ...(versionsByPersona[selectedPersonaId] ?? [])].slice(0, 20)
-    };
-    setVersionsByPersona(nextVersions);
-    writeSavedVersions(nextVersions);
-    setVersionLabel("");
+  function handleExportConfig() {
+    setConfigError("");
+    setConfigMessage("");
+    const payload = draftToCreatePersonaInput(draft);
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const baseName = (payload.name || "persona-config").trim().toLowerCase().replace(/\s+/g, "-");
+    link.href = url;
+    link.download = `${baseName || "persona-config"}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setConfigMessage("已导出当前配置。");
   }
 
-  function handleReplayVersion(versionId: string) {
-    const matched = versions.find((item) => item.id === versionId);
-    if (!matched) {
+  function handleDownloadTemplate() {
+    setConfigError("");
+    setConfigMessage("");
+    const json = JSON.stringify(DEFAULT_CONFIG_TEMPLATE, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "persona-config-template.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    setConfigMessage("已下载配置模板，可直接导入后编辑。");
+  }
+
+  async function handleImportConfig(event: ChangeEvent<HTMLInputElement>) {
+    setConfigError("");
+    setConfigMessage("");
+    const file = event.target.files?.[0];
+    if (!file) {
       return;
     }
-    setDraft(createInputToDraft(matched.snapshot));
-    setPreviewEmotion(matched.snapshot.availableEmotions?.[0] ?? "calm");
-    setPreviewAction(matched.snapshot.availableActions?.[0] ?? "idle");
-    setPreviewSpeech(matched.snapshot.defaultSpeechStyle ?? "warm");
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const normalized = normalizeImportedPersonaConfig(parsed);
+      const nextDraft = createInputToDraft(normalized);
+      setDraft(nextDraft);
+      setPreviewEmotion(normalized.availableEmotions?.[0] ?? "calm");
+      setPreviewAction(normalized.availableActions?.[0] ?? "idle");
+      setPreviewSpeech(normalized.defaultSpeechStyle ?? "warm");
+      setConfigMessage("配置导入成功，已应用到当前编辑区。");
+    } catch (error) {
+      setConfigError(`导入失败: ${String(error)}`);
+    } finally {
+      event.target.value = "";
+    }
   }
 
   async function ensurePreviewSession(): Promise<string> {
@@ -467,7 +496,7 @@ export default function PersonaSpectrumPage() {
 
       <div style={styles.topbar}>
         <span style={styles.topbarTitle}>人格色谱</span>
-        <span style={styles.topbarSub}>教师人格配置、情绪区间、版本回放与章节联动预览。</span>
+        <span style={styles.topbarSub}>教师人格配置、情绪区间、导入导出与章节联动预览。</span>
       </div>
 
       {loadError ? <div style={styles.error}>加载失败: {loadError}</div> : null}
@@ -708,35 +737,27 @@ export default function PersonaSpectrumPage() {
         </section>
 
         <section style={styles.panel}>
-          <h2 style={styles.sectionTitle}>配置版本管理与回放</h2>
+          <h2 style={styles.sectionTitle}>配置导入/导出</h2>
           <div style={styles.actionsRow}>
-            <input
-              style={styles.input}
-              placeholder="版本标签（可选）"
-              value={versionLabel}
-              onChange={(event) => setVersionLabel(event.target.value)}
-            />
-            <button style={styles.ghostButton} onClick={handleSaveVersion} disabled={!selectedPersonaId}>
-              保存当前版本
+            <button style={styles.ghostButton} type="button" onClick={handleDownloadTemplate}>
+              下载配置模板
             </button>
+            <button style={styles.ghostButton} type="button" onClick={handleExportConfig}>
+              导出当前配置
+            </button>
+            <label style={styles.ghostButton}>
+              导入配置文件
+              <input
+                type="file"
+                accept="application/json,.json"
+                style={styles.hiddenFileInput}
+                onChange={handleImportConfig}
+              />
+            </label>
           </div>
-          {versions.length === 0 ? (
-            <div style={styles.muted}>暂无版本记录，可先保存一份当前配置。</div>
-          ) : (
-            <div style={styles.versionList}>
-              {versions.map((version) => (
-                <div key={version.id} style={styles.versionItem}>
-                  <div style={styles.versionMeta}>
-                    <strong>{version.label}</strong>
-                    <span>{new Date(version.createdAt).toLocaleString()}</span>
-                  </div>
-                  <button style={styles.linkButton} onClick={() => handleReplayVersion(version.id)}>
-                    回放
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div style={styles.muted}>导入模板需为 `CreatePersonaInput` JSON 结构。</div>
+          {configMessage ? <div style={styles.muted}>{configMessage}</div> : null}
+          {configError ? <div style={styles.errorInline}>{configError}</div> : null}
         </section>
 
         <section style={styles.panel}>
@@ -894,27 +915,46 @@ function resolveSections(document: DocumentRecord): Array<{ id: string; title: s
   return sections;
 }
 
-function readSavedVersions(): Record<string, PersonaVersion[]> {
-  if (typeof window === "undefined") {
-    return {};
+function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): CreatePersonaInput {
+  const name = String(parsed.name ?? "").trim();
+  const systemPrompt = String(parsed.systemPrompt ?? parsed.system_prompt ?? "").trim();
+  if (!name) {
+    throw new Error("缺少 name 字段");
   }
-  try {
-    const raw = window.localStorage.getItem(VERSION_STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
-    const parsed = JSON.parse(raw) as Record<string, PersonaVersion[]>;
-    return parsed ?? {};
-  } catch {
-    return {};
+  if (!systemPrompt) {
+    throw new Error("缺少 systemPrompt 字段");
   }
-}
+  const narrativeModeRaw = String(parsed.narrativeMode ?? parsed.narrative_mode ?? "grounded");
+  const narrativeMode = narrativeModeRaw === "light_story" ? "light_story" : "grounded";
+  const teachingStyle = Array.isArray(parsed.teachingStyle)
+    ? parsed.teachingStyle.map((item) => String(item).trim()).filter(Boolean)
+    : Array.isArray(parsed.teaching_style)
+      ? parsed.teaching_style.map((item) => String(item).trim()).filter(Boolean)
+      : [];
+  const availableEmotions = Array.isArray(parsed.availableEmotions)
+    ? coerceEmotions(parsed.availableEmotions.map((item) => String(item)).join(","))
+    : Array.isArray(parsed.available_emotions)
+      ? coerceEmotions(parsed.available_emotions.map((item) => String(item)).join(","))
+      : undefined;
+  const availableActions = Array.isArray(parsed.availableActions)
+    ? coerceActions(parsed.availableActions.map((item) => String(item)).join(","))
+    : Array.isArray(parsed.available_actions)
+      ? coerceActions(parsed.available_actions.map((item) => String(item)).join(","))
+      : undefined;
 
-function writeSavedVersions(data: Record<string, PersonaVersion[]>) {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.setItem(VERSION_STORAGE_KEY, JSON.stringify(data));
+  return {
+    name,
+    summary: String(parsed.summary ?? "").trim(),
+    backgroundStory: String(parsed.backgroundStory ?? parsed.background_story ?? "").trim(),
+    systemPrompt,
+    teachingStyle,
+    narrativeMode,
+    encouragementStyle: String(parsed.encouragementStyle ?? parsed.encouragement_style ?? "").trim(),
+    correctionStyle: String(parsed.correctionStyle ?? parsed.correction_style ?? "").trim(),
+    availableEmotions,
+    availableActions,
+    defaultSpeechStyle: String(parsed.defaultSpeechStyle ?? parsed.default_speech_style ?? "warm") as SpeechStyle
+  };
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -1038,23 +1078,8 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     color: "var(--muted)"
   },
-  versionList: {
-    display: "grid",
-    gap: 6
-  },
-  versionItem: {
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "8px 10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10
-  },
-  versionMeta: {
-    display: "grid",
-    gap: 2,
-    fontSize: 12
+  hiddenFileInput: {
+    display: "none"
   },
   assetCard: {
     border: "1px solid var(--border)",

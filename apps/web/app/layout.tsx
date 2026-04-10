@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { LearningWorkspaceProvider } from "../components/learning-workspace-provider";
 
 export const metadata: Metadata = {
-  title: "Gal Learner",
+  title: "Vibe Learner",
   description: "本地优先的大模型辅助学习工作台，包含教材解析、学习计划与教师人格层。"
 };
 

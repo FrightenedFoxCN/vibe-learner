@@ -1,5 +1,5 @@
 import type { CSSProperties, JSX } from "react";
-import type { CharacterStateEvent, PersonaProfile } from "@gal-learner/shared";
+import type { CharacterStateEvent, PersonaProfile } from "@vibe-learner/shared";
 
 export interface CharacterRendererProps {
   persona: PersonaProfile;

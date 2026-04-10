@@ -13,7 +13,7 @@ from app.services.persona import PersonaEngine
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
 
-logger = get_logger("gal_learner.bootstrap")
+logger = get_logger("vibe_learner.bootstrap")
 
 
 class Container:

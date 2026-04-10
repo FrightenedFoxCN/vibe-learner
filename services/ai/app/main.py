@@ -9,8 +9,8 @@ from app.api.routes import router
 from app.core.logging import configure_logging, get_logger
 
 configure_logging()
-logger = get_logger("gal_learner.api")
-app = FastAPI(title="Gal Learner AI Service", version="0.1.0")
+logger = get_logger("vibe_learner.api")
+app = FastAPI(title="Vibe Learner AI Service", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],

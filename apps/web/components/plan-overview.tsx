@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { LearningPlan } from "@gal-learner/shared";
+import type { LearningPlan } from "@vibe-learner/shared";
 import type { PlanHistoryItem } from "../lib/plan-panel-data";
 
 interface PlanOverviewProps {

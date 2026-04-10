@@ -31,7 +31,7 @@ class Settings:
     def from_env(cls) -> "Settings":
         _load_dotenv()
         return cls(
-            plan_provider=os.getenv("GAL_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock",
+            plan_provider=os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock",
             openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
             openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
             openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",

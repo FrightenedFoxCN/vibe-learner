@@ -5,7 +5,7 @@ import type {
   StudyUnit,
   StudyChatResponse,
   StudySessionRecord
-} from "@gal-learner/shared";
+} from "@vibe-learner/shared";
 
 import { upsertLearningPlan } from "./plan-panel-data";
 import {

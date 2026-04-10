@@ -27,7 +27,7 @@ from app.services.plan_prompt import (
 )
 from app.services.plan_tool_runtime import build_plan_tool_runtime
 
-logger = get_logger("gal_learner.model_provider")
+logger = get_logger("vibe_learner.model_provider")
 
 
 @dataclass

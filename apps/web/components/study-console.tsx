@@ -2,7 +2,7 @@
 
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useState } from "react";
-import type { InteractiveQuestion, StudyChatResponse, StudySessionRecord } from "@gal-learner/shared";
+import type { InteractiveQuestion, StudyChatResponse, StudySessionRecord } from "@vibe-learner/shared";
 
 interface StudyConsoleProps {
   isPending: boolean;

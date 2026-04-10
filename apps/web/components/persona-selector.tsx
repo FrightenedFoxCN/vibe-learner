@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { PersonaProfile } from "@gal-learner/shared";
+import type { PersonaProfile } from "@vibe-learner/shared";
 
 interface PersonaSelectorProps {
   personas: PersonaProfile[];

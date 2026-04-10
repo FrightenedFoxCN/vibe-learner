@@ -1,4 +1,4 @@
-import type { DocumentRecord, LearningPlan, PersonaProfile } from "@gal-learner/shared";
+import type { DocumentRecord, LearningPlan, PersonaProfile } from "@vibe-learner/shared";
 
 import { findLearningPlan, resolveSelectedPlanId, sortLearningPlans } from "./plan-panel-data";
 

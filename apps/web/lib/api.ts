@@ -11,7 +11,7 @@ import type {
   StreamReport,
   StudyChatResponse,
   StudySessionRecord
-} from "@gal-learner/shared";
+} from "@vibe-learner/shared";
 
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
@@ -42,7 +42,7 @@ export interface PersonaSettingAssistOutput {
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
-  console.info(`[gal-learner] ${stage}`, payload);
+  console.info(`[vibe-learner] ${stage}`, payload);
 }
 
 async function request(input: string, init?: RequestInit): Promise<Response> {

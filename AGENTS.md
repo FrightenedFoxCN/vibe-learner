@@ -42,7 +42,7 @@ The backend creates a local document record, parses the uploaded PDF, falls back
 
 `GET /documents/{id}/planning-context` -> `POST /learning-plans` or `POST /learning-plans/stream`
 
-The planner receives cleaned study units plus finer outline/detail context. When `GAL_LEARNER_PLAN_PROVIDER=openai`, the planner may call tools such as `get_study_unit_detail` and `read_page_range_content` before returning strict JSON.
+The planner receives cleaned study units plus finer outline/detail context. When `VIBE_LEARNER_PLAN_PROVIDER=openai`, the planner may call tools such as `get_study_unit_detail` and `read_page_range_content` before returning strict JSON.
 
 ### 3. Study interaction
 
@@ -94,8 +94,8 @@ npm run build:web
 
 - Python work in this repo is `uv`-first. Do not assume a globally activated virtualenv.
 - Planner provider is controlled by `services/ai/.env`.
-- `GAL_LEARNER_PLAN_PROVIDER=mock` keeps planning deterministic and local.
-- `GAL_LEARNER_PLAN_PROVIDER=openai` enables real model planning through the configured OpenAI-compatible base URL.
+- `VIBE_LEARNER_PLAN_PROVIDER=mock` keeps planning deterministic and local.
+- `VIBE_LEARNER_PLAN_PROVIDER=openai` enables real model planning through the configured OpenAI-compatible base URL.
 
 ## Working Conventions
 

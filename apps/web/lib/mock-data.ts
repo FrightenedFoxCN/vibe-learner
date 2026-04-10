@@ -1,4 +1,4 @@
-import type { LearningPlan, PersonaProfile } from "@gal-learner/shared";
+import type { LearningPlan, PersonaProfile } from "@vibe-learner/shared";
 
 export const mockPersonas: PersonaProfile[] = [
   {

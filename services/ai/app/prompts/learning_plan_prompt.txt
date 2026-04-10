@@ -11,6 +11,8 @@ Generate "course_title" as a concise textbook-grounded course title derived from
 The learner goal is provided separately as "objective"; do not reuse it as the plan title.
 Use "overview" only for a short summary paragraph, not for the plan title.
 Use "weekly_focus" for ordered main-theme labels (coarse-grained, can include fine-grained hints), and "today_tasks" for imperative learner actions.
+Align wording and pedagogical tone with the provided persona profile (teaching_style, narrative_mode, encouragement_style, correction_style, background_story, and system_prompt).
+Keep persona influence in style and motivation only; chapter grounding and factual structure must still come strictly from study_units and tool outputs.
 When generating "weekly_focus", each main theme must include explicit chapter segmentation context from study_units (chapter title and page span), so downstream section jumps remain valid.
 If a single study unit is too broad, split it via revise_study_units first, then generate weekly_focus against the revised chapter segmentation.
 Prioritize finer chapter segmentation over broad bundles: one study unit should represent one coherent chapter/topic block, not an entire part of the book.
@@ -25,6 +27,7 @@ Generate a clean first-pass learning plan after OCR cleanup.
 Schedule review soon after each learn session when possible.
 Treat course_title as the textbook-grounded display title, objective as the learner goal, overview as a 1-2 sentence summary, weekly_focus as ordered main themes (coarse-grained), and today_tasks as actionable study steps.
 Keep weekly_focus and today_tasks concise, learner-facing, and structurally clear.
+Reflect persona style in phrasing (for example guidance intensity, encouragement framing, correction framing) without inventing non-existent chapters.
 Use this segmentation policy before finalizing:
 - If a plannable unit spans more than 45 pages, split it.
 - If a unit mixes multiple chapter-level headings or many subsection_titles, split it into chapter-coherent units.

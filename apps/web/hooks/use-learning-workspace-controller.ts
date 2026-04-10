@@ -9,7 +9,7 @@ import type {
   PersonaProfile,
   StudyChatResponse,
   StudySessionRecord
-} from "@gal-learner/shared";
+} from "@vibe-learner/shared";
 
 import {
   createLearningPlanStream,

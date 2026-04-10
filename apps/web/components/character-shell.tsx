@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { PersonaProfile, StudyChatResponse } from "@gal-learner/shared";
+import type { PersonaProfile, StudyChatResponse } from "@vibe-learner/shared";
 
 import { placeholderCharacterRenderer } from "./character-renderer";
 

@@ -49,7 +49,7 @@ CHUNK_MAX_CHARS = 1400
 CHUNK_MIN_CHARS = 500
 MARGIN_SCAN_LINES = 3
 MARGIN_MIN_REPEAT = 4
-logger = get_logger("gal_learner.parser")
+logger = get_logger("vibe_learner.parser")
 
 
 @dataclass(slots=True)
@@ -730,7 +730,7 @@ class DocumentParser:
         return merged
 
     def _ocr_page(self, page: fitz.Page) -> str:
-        with tempfile.TemporaryDirectory(prefix="gal-learner-ocr-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="vibe-learner-ocr-") as temp_dir:
             image_path = Path(temp_dir) / "page.png"
             pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
             pixmap.save(image_path)

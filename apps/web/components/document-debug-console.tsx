@@ -8,7 +8,7 @@ import type {
   DocumentPlanningTraceResponse,
   DocumentRecord,
   StreamReport
-} from "@gal-learner/shared";
+} from "@vibe-learner/shared";
 
 import {
   getDocumentDebug,

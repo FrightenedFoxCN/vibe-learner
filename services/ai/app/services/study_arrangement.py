@@ -10,6 +10,7 @@ from app.models.domain import (
     DocumentSection,
     LearningGoalInput,
     LearningPlanRecord,
+    PersonaProfile,
     StudyScheduleRecord,
     StudyUnitRecord,
 )
@@ -152,6 +153,7 @@ class StudyArrangementService:
         goal: LearningGoalInput,
         document: DocumentRecord,
         persona_name: str,
+        persona: PersonaProfile | None = None,
     ) -> LearningPlanRecord:
         units = document.study_units or self._fallback_units_from_sections(document)
         plannable_units = [unit for unit in units if unit.include_in_plan] or units
@@ -165,10 +167,19 @@ class StudyArrangementService:
         ] or [
             f"阅读 {document.title} 的第一页内容，确认学习目标与术语。",
         ]
+        if persona is not None and persona.encouragement_style:
+            today_tasks = [
+                f"[{persona.encouragement_style}] {task}"
+                for task in today_tasks
+            ]
         # objective stays as learner-authored goal text; overview/course_title are generated display fields.
+        persona_hint = ""
+        if persona is not None:
+            persona_hint = f" 采用{persona.narrative_mode}叙事，并保持{persona.correction_style}的反馈节奏。"
         overview = (
             f"{persona_name} 将带你完成 {document.title} 的"
             f" {len(plannable_units)} 个学习单元，先从 {plannable_units[0].title if plannable_units else document.title} 开始。"
+            f"{persona_hint}"
         )
         course_title = " / ".join(
             [unit.title for unit in plannable_units[:2] if unit.title]

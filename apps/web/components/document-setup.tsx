@@ -7,7 +7,7 @@ import type {
   LearningPlan,
   PersonaProfile,
   StudySessionRecord
-} from "@gal-learner/shared";
+} from "@vibe-learner/shared";
 
 interface DocumentSetupProps {
   personas: PersonaProfile[];
@@ -70,7 +70,7 @@ export function DocumentSetup({
         disabled={isBusy || !file}
         onClick={() => {
           if (!file) return;
-          console.info("[gal-learner] ui:upload_click", {
+          console.info("[vibe-learner] ui:upload_click", {
             filename: file.name,
             sizeBytes: file.size,
             selectedPersonaId

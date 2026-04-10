@@ -1,5 +1,5 @@
 [project]
-name = "gal-learner-ai"
+name = "vibe-learner-ai"
 version = "0.1.0"
 description = "AI service for persona-aware learning orchestration"
 readme = "README.md"
