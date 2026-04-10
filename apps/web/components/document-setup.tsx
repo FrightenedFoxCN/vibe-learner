@@ -12,10 +12,7 @@ import type {
 interface DocumentSetupProps {
   personas: PersonaProfile[];
   selectedPersonaId: string;
-  onGenerate: (input: {
-    file: File;
-    objective: string;
-  }) => void;
+  onGenerate: (input: { file: File; objective: string }) => void;
   isBusy: boolean;
   document: DocumentRecord | null;
   plan: LearningPlan | null;
@@ -34,18 +31,20 @@ export function DocumentSetup({
   const [file, setFile] = useState<File | null>(null);
   const [objective, setObjective] = useState("在两周内掌握这本教材的第一章并完成一次复习。");
 
-  return (
-    <article style={styles.panel}>
-      <p style={styles.sectionLabel}>教材启动</p>
-      <h2 style={styles.title}>上传教材并生成第一版计划</h2>
-      <p style={styles.summary}>
-        当前教师人格：{personas.find((persona) => persona.id === selectedPersonaId)?.name ?? "未选择"}。
-        上传完成后会依次执行教材入库、OCR/文本提取、章节清理与学习计划生成。
-      </p>
+  const personaName = personas.find((p) => p.id === selectedPersonaId)?.name ?? "未选择";
 
-      <div style={styles.formGrid}>
+  return (
+    <div style={styles.wrap}>
+      {/* 标题行 */}
+      <div style={styles.headerRow}>
+        <h2 style={styles.title}>上传教材</h2>
+        <span style={styles.persona}>人格：{personaName}</span>
+      </div>
+
+      {/* 表单 */}
+      <div style={styles.form}>
         <label style={styles.field}>
-          <span>教材 PDF</span>
+          <span style={styles.fieldLabel}>教材 PDF</span>
           <input
             type="file"
             accept=".pdf"
@@ -54,7 +53,7 @@ export function DocumentSetup({
           />
         </label>
         <label style={styles.field}>
-          <span>学习目标</span>
+          <span style={styles.fieldLabel}>学习目标</span>
           <textarea
             value={objective}
             onChange={(event) => setObjective(event.target.value)}
@@ -64,163 +63,189 @@ export function DocumentSetup({
       </div>
 
       <button
-        style={styles.button}
+        style={{
+          ...styles.button,
+          ...(isBusy || !file ? styles.buttonDisabled : {})
+        }}
         disabled={isBusy || !file}
         onClick={() => {
-          if (!file) {
-            return;
-          }
+          if (!file) return;
           console.info("[gal-learner] ui:upload_click", {
             filename: file.name,
             sizeBytes: file.size,
             selectedPersonaId
           });
-          onGenerate({
-            file,
-            objective
-          });
+          onGenerate({ file, objective });
         }}
       >
-        {isBusy ? "处理中..." : "上传并生成计划"}
+        {isBusy ? "处理中…" : "上传并生成计划"}
       </button>
-      <p style={styles.hint}>
-        调试提示：打开浏览器控制台和后端终端，可看到上传、解析、建计划、建会话的阶段日志。
-      </p>
 
-      <div style={styles.statusGrid}>
-        <div style={styles.card}>
-          <strong>教材状态</strong>
-          <p>{document ? formatDocumentSummary(document) : "尚未上传教材。"}</p>
-        </div>
-        <div style={styles.card}>
-          <strong>计划状态</strong>
-          <p>{plan ? `${plan.todayTasks.length} 条今日任务，${plan.schedule.length} 条日程已生成。` : "尚未生成学习计划。"}</p>
-        </div>
-        <div style={styles.card}>
-          <strong>会话状态</strong>
-          <p>{session ? `已创建章节会话，状态为 ${formatSessionStatus(session.status)}。` : "尚未创建学习会话。"}</p>
-        </div>
+      {/* 状态行 */}
+      <div style={styles.statusRow}>
+        <span style={styles.statusItem}>
+          <span style={styles.statusKey}>教材</span>
+          {document ? formatDocumentSummary(document) : "未上传"}
+        </span>
+        <span style={styles.statusItem}>
+          <span style={styles.statusKey}>计划</span>
+          {plan ? `${plan.todayTasks.length} 条任务` : "未生成"}
+        </span>
+        <span style={styles.statusItem}>
+          <span style={styles.statusKey}>会话</span>
+          {session ? formatSessionStatus(session.status) : "未创建"}
+        </span>
       </div>
 
+      {/* 学习单元列表 */}
       {document?.studyUnits.length ? (
-        <div style={styles.cleanedSectionBlock}>
-          <strong>学习单元清理结果</strong>
-          <div style={styles.cleanedSectionList}>
+        <div style={styles.unitSection}>
+          <span style={styles.unitSectionLabel}>学习单元</span>
+          <div style={styles.unitList}>
             {document.studyUnits.map((unit) => (
-              <div key={unit.id} style={styles.cleanedSectionItem}>
-                <span>{unit.title}</span>
-                <small>
-                  第 {unit.pageStart}-{unit.pageEnd} 页 · {formatUnitKind(unit.unitKind)}
-                  {unit.includeInPlan ? " · 纳入计划" : " · 已跳过"}
-                </small>
+              <div key={unit.id} style={styles.unitItem}>
+                <span style={styles.unitTitle}>{unit.title}</span>
+                <span style={styles.unitMeta}>
+                  p.{unit.pageStart}–{unit.pageEnd} · {formatUnitKind(unit.unitKind)}
+                  {unit.includeInPlan ? "" : " · 已跳过"}
+                </span>
               </div>
             ))}
           </div>
         </div>
       ) : null}
-    </article>
+    </div>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
-  panel: {
-    padding: 24,
-    borderRadius: 24,
-    border: "1px solid var(--border)",
-    background: "var(--panel-strong)",
-    boxShadow: "var(--shadow)"
+  wrap: {
+    display: "grid",
+    gap: 0
   },
-  sectionLabel: {
-    margin: 0,
-    fontSize: 12,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    color: "var(--muted)"
+  headerRow: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingBottom: 14,
+    borderBottom: "1px solid var(--border)"
   },
   title: {
-    margin: "10px 0 8px",
-    fontSize: 24,
-    fontFamily: "var(--font-display), sans-serif"
+    margin: 0,
+    fontSize: 15,
+    fontWeight: 700
   },
-  summary: {
-    margin: "0 0 16px",
-    color: "var(--muted)",
-    lineHeight: 1.7
+  persona: {
+    fontSize: 12,
+    color: "var(--muted)"
   },
-  formGrid: {
+  form: {
     display: "grid",
-    gap: 12
+    gap: 14,
+    padding: "16px 0"
   },
   field: {
     display: "grid",
     gap: 6,
-    color: "var(--muted)",
-    fontSize: 13
-  },
-  textarea: {
-    width: "100%",
-    minHeight: 96,
-    borderRadius: 12,
-    border: "1px solid var(--border)",
-    padding: 12,
-    background: "rgba(255,255,255,0.98)",
-    resize: "vertical"
-  },
-  fileInput: {
-    width: "100%",
-    minHeight: 40,
-    borderRadius: 10,
-    border: "1px solid var(--border)",
-    padding: "8px 10px",
-    background: "rgba(255,255,255,0.98)",
-    color: "var(--ink)"
-  },
-  button: {
-    marginTop: 16,
-    border: 0,
-    borderRadius: 12,
-    minHeight: 44,
-    padding: "0 16px",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 700,
-    boxShadow: "0 6px 14px rgba(13, 110, 114, 0.24)",
-    cursor: "pointer"
-  },
-  statusGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: 12,
-    marginTop: 16
-  },
-  hint: {
-    margin: "10px 0 0",
     fontSize: 13,
     color: "var(--muted)"
   },
-  card: {
-    padding: 14,
-    borderRadius: 14,
-    background: "rgba(248, 252, 253, 0.96)",
-    border: "1px solid var(--border)",
-    boxShadow: "var(--shadow-soft)"
+  fieldLabel: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--muted)"
   },
-  cleanedSectionBlock: {
-    marginTop: 16,
+  textarea: {
+    width: "100%",
+    minHeight: 72,
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    padding: "8px 10px",
+    background: "var(--panel)",
+    resize: "vertical",
+    fontSize: 13,
+    lineHeight: 1.6,
+    color: "var(--ink)"
+  },
+  fileInput: {
+    width: "100%",
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    padding: "6px 8px",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    fontSize: 13
+  },
+  button: {
+    border: "none",
+    borderRadius: 3,
+    height: 36,
+    padding: "0 18px",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 13,
+    alignSelf: "start",
+    justifySelf: "start"
+  },
+  buttonDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed"
+  },
+  statusRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px 20px",
+    padding: "14px 0",
+    fontSize: 13
+  },
+  statusItem: {
+    display: "flex",
+    gap: 5,
+    alignItems: "baseline",
+    color: "var(--ink)"
+  },
+  statusKey: {
+    fontSize: 11,
+    color: "var(--muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
+  },
+  unitSection: {
+    paddingTop: 14,
+    borderTop: "1px solid var(--border)",
     display: "grid",
     gap: 10
   },
-  cleanedSectionList: {
-    display: "grid",
-    gap: 8
+  unitSectionLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--muted)"
   },
-  cleanedSectionItem: {
-    padding: 12,
-    borderRadius: 12,
-    background: "rgba(248, 252, 253, 0.94)",
-    border: "1px solid var(--border)",
+  unitList: {
     display: "grid",
-    gap: 4
+    gap: 6
+  },
+  unitItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: 12,
+    flexWrap: "wrap"
+  },
+  unitTitle: {
+    fontSize: 13,
+    color: "var(--ink)"
+  },
+  unitMeta: {
+    fontSize: 12,
+    color: "var(--muted)",
+    whiteSpace: "nowrap"
   }
 };
 
@@ -228,55 +253,25 @@ function formatDocumentSummary(document: DocumentRecord) {
   return [
     document.title,
     formatDocumentStatus(document.status),
-    `${document.pageCount} 页`,
-    `${document.chunkCount} 个分段`,
-    `${document.studyUnitCount} 个学习单元`,
-    formatOcrStatus(document.ocrStatus)
+    `${document.pageCount} 页`
   ].join(" · ");
 }
 
 function formatDocumentStatus(status: string) {
-  if (status === "processed") {
-    return "解析完成";
-  }
-  if (status === "processing") {
-    return "解析中";
-  }
-  if (status === "uploaded") {
-    return "已上传";
-  }
-  return status;
-}
-
-function formatOcrStatus(status: string) {
-  if (status === "fallback_used") {
-    return "已使用 OCR 补救";
-  }
-  if (status === "completed") {
-    return "文本提取完成";
-  }
-  if (status === "pending") {
-    return "等待处理";
-  }
+  if (status === "processed") return "解析完成";
+  if (status === "processing") return "解析中";
+  if (status === "uploaded") return "已上传";
   return status;
 }
 
 function formatSessionStatus(status: string) {
-  if (status === "active") {
-    return "进行中";
-  }
+  if (status === "active") return "进行中";
   return status;
 }
 
 function formatUnitKind(unitKind: string) {
-  if (unitKind === "chapter") {
-    return "章节";
-  }
-  if (unitKind === "front_matter") {
-    return "前置材料";
-  }
-  if (unitKind === "back_matter") {
-    return "附录或后置材料";
-  }
+  if (unitKind === "chapter") return "章节";
+  if (unitKind === "front_matter") return "前置材料";
+  if (unitKind === "back_matter") return "附录";
   return unitKind;
 }

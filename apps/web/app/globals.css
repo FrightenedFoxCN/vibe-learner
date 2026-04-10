@@ -1,17 +1,16 @@
 :root {
+  --app-nav-width: 220px;
+  --mobile-nav-height: 48px;
   --font-body: "Noto Sans SC", "Roboto", "PingFang SC", "Helvetica Neue", sans-serif;
   --font-display: "Noto Sans SC", "Roboto", "PingFang SC", "Helvetica Neue", sans-serif;
-  --bg: #ecf2f4;
-  --panel: rgba(249, 252, 253, 0.9);
-  --panel-strong: rgba(255, 255, 255, 0.98);
-  --border: rgba(28, 62, 70, 0.15);
+  --bg: #ffffff;
+  --panel: #f5f7f7;
+  --border: #d4dcde;
   --ink: #102328;
-  --muted: #4e6368;
+  --muted: #5a6e73;
   --accent: #0d6e72;
   --accent-soft: #d9ecec;
   --teal: #006a6b;
-  --shadow: 0 12px 28px rgba(26, 53, 61, 0.12), 0 2px 6px rgba(26, 53, 61, 0.08);
-  --shadow-soft: 0 2px 8px rgba(26, 53, 61, 0.1);
 }
 
 * {
@@ -28,10 +27,8 @@ body {
   color: var(--ink);
   font-family: var(--font-body);
   line-height: 1.5;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(13, 110, 114, 0.18), transparent 24%),
-    radial-gradient(circle at 85% 12%, rgba(67, 103, 109, 0.14), transparent 28%),
-    linear-gradient(180deg, #f5fbfd 0%, #e5eff2 100%);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -53,34 +50,193 @@ textarea {
   outline-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
+/* ---- Side navigation (desktop) ---- */
+
+.with-app-nav {
+  padding-left: calc(var(--app-nav-width) + 24px) !important;
+  transition: padding-left 220ms ease;
+}
+
+/* Nav link styles — CSS classes used instead of inline styles */
+.app-nav-link,
+.app-nav-link--active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease;
+}
+
+.app-nav-link--active {
+  border-left-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ---- Responsive layout helpers ---- */
+
+/* Plan page: upload form (left) + plan overview (right) */
+.plan-content-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+
+/* Debug console: sidebar (left) + content (right) */
+.debug-main-grid {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 40px;
+  padding-top: 20px;
+  align-items: start;
+}
+
+/* Home page: 3-column nav grid */
+.home-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border);
+}
+
+/* ---- PDF pane: sticky on desktop ---- */
+
 .study-dialog-pdf-pane {
   position: sticky;
   top: 16px;
 }
 
-@media (max-width: 1180px) {
+/* ---- Medium breakpoint (≤ 1080px): collapse 2-col layouts ---- */
+
+@media (max-width: 1080px) {
   .study-dialog-grid {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
   .study-dialog-pdf-pane {
     position: static;
-    height: min(74vh, 760px) !important;
+    height: min(70vh, 720px) !important;
+  }
+
+  .plan-content-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .debug-main-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .debug-sidebar-sticky {
+    position: static !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding-right: 0 !important;
+    padding-bottom: 16px !important;
+    margin-bottom: 16px;
   }
 }
 
+/* ---- Small-medium breakpoint (≤ 800px): collapse home nav to 1-col ---- */
+
+@media (max-width: 800px) {
+  .home-nav-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- Mobile breakpoint (≤ 760px): nav becomes horizontal top bar ---- */
+
 @media (max-width: 760px) {
+  :root {
+    --app-nav-width: 0px;
+  }
+
+  .with-app-nav {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-top: calc(var(--mobile-nav-height) + 16px) !important;
+    transition: none;
+  }
+
+  /* Sidebar → horizontal top bar */
+  .app-side-nav {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: auto !important;
+    height: var(--mobile-nav-height) !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0 12px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0 !important;
+    transition: none !important;
+  }
+
+  /* Brand row: inline, no border */
+  .app-nav-brand-row {
+    padding: 0 !important;
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+    padding-right: 4px !important;
+  }
+
+  /* Collapse button: hidden on mobile */
+  .app-nav-collapse-btn {
+    display: none !important;
+  }
+
+  /* Nav links: horizontal scrollable row */
+  .app-nav-links {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 0 !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex: 1;
+  }
+
+  .app-nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Nav links: bottom-border active indicator instead of left-border */
+  .app-nav-link,
+  .app-nav-link--active {
+    height: var(--mobile-nav-height);
+    padding: 0 10px;
+    border-left: none !important;
+    border-bottom: 2px solid transparent;
+    font-size: 12px;
+  }
+
+  .app-nav-link--active {
+    border-left: none !important;
+    border-bottom-color: var(--accent);
+    color: var(--ink);
+  }
+
+  /* Study dialog: tighter padding on mobile */
   .study-dialog-page {
-    padding: 14px 12px 20px !important;
+    padding: 12px 16px 24px !important;
   }
 
   .study-dialog-pdf-pane {
-    height: 62vh !important;
-    border-radius: 14px !important;
-    padding: 8px !important;
-  }
-
-  .study-dialog-pdf-iframe {
-    border-radius: 10px !important;
+    height: 56vh !important;
   }
 }

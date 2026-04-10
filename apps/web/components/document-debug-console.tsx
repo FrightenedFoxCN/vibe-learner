@@ -23,6 +23,7 @@ import {
   listPersonas,
   processDocumentStream
 } from "../lib/api";
+import { TopNav } from "./top-nav";
 
 export function DocumentDebugConsole() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -273,23 +274,19 @@ export function DocumentDebugConsole() {
   };
 
   return (
-    <main style={styles.page}>
-      <section style={styles.hero}>
-        <div>
-          <p style={styles.eyebrow}>Parser Debug Console</p>
-          <h1 style={styles.title}>教材解析后台</h1>
-          <p style={styles.subtitle}>
-            这里展示解析链路的中间结果，而不是只看最终 sections。你可以直接检查页级抽取、候选标题、切块边界与告警。
-          </p>
-          <p style={styles.message}>{message}</p>
-        </div>
-        <a href="/" style={styles.link}>
-          返回学习页
-        </a>
-      </section>
+    <main className="with-app-nav" style={styles.page}>
+      <TopNav currentPath="/debug" />
 
-      <section style={styles.grid}>
-        <aside style={styles.sidebar}>
+      <div style={styles.hero}>
+        <div style={styles.heroLeft}>
+          <span style={styles.heroTitle}>教材解析后台</span>
+          <span style={styles.heroSub}>解析链路中间结果：页级抽取、候选标题、切块边界与告警。</span>
+        </div>
+        <span style={styles.message}>{message}</span>
+      </div>
+
+      <section className="debug-main-grid">
+        <aside className="debug-sidebar-sticky" style={styles.sidebar}>
           <h2 style={styles.sidebarTitle}>文档列表</h2>
           {documents.map((document) => (
             <button
@@ -381,7 +378,7 @@ export function DocumentDebugConsole() {
                 ))}
               </div>
             ) : (
-              <p style={styles.empty}>点击“重新解析”或“强制 OCR”后，这里会实时显示处理阶段。</p>
+              <p style={styles.empty}>点击"重新解析"或"强制 OCR"后，这里会实时显示处理阶段。</p>
             )}
           </article>
 
@@ -756,182 +753,184 @@ function resolveStreamStatus(stage: string) {
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
-    padding: "32px 24px 48px"
+    maxWidth: 1600,
+    margin: "0 auto",
+    padding: "20px 32px 48px"
   },
   hero: {
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
-    gap: 20,
-    alignItems: "flex-start",
-    marginBottom: 24
+    gap: 16,
+    borderBottom: "1px solid var(--border)",
+    paddingBottom: 14,
+    flexWrap: "wrap"
   },
-  eyebrow: {
-    margin: 0,
-    color: "var(--teal)",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
+  heroLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12
+  },
+  heroTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "var(--ink)"
+  },
+  heroSub: {
     fontSize: 13,
-    fontWeight: 700
-  },
-  title: {
-    margin: "8px 0 10px",
-    fontFamily: "var(--font-display), sans-serif",
-    fontSize: "clamp(2rem, 5vw, 4rem)"
-  },
-  subtitle: {
-    margin: 0,
-    maxWidth: 760,
-    color: "var(--muted)",
-    lineHeight: 1.6
+    color: "var(--muted)"
   },
   message: {
-    margin: "12px 0 0",
-    color: "var(--accent)"
-  },
-  link: {
-    padding: "12px 16px",
-    borderRadius: 999,
-    background: "var(--panel-strong)",
-    border: "1px solid var(--border)",
-    textDecoration: "none"
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "320px minmax(0, 1fr)",
-    gap: 20
+    fontSize: 13,
+    color: "var(--accent)",
+    whiteSpace: "nowrap"
   },
   sidebar: {
-    padding: 20,
-    borderRadius: 24,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    boxShadow: "var(--shadow)",
     display: "grid",
-    gap: 12,
-    alignContent: "start"
+    gap: 0,
+    alignContent: "start",
+    borderRight: "1px solid var(--border)",
+    paddingRight: 24,
+    position: "sticky",
+    top: 20
   },
   sidebarTitle: {
-    margin: 0,
-    fontSize: 20,
-    fontFamily: "var(--font-display), sans-serif"
+    margin: "0 0 8px",
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--muted)"
   },
   docButton: {
     textAlign: "left",
     display: "grid",
-    gap: 6,
-    padding: 14,
-    borderRadius: 18,
-    border: "1px solid var(--border)",
-    background: "rgba(255,255,255,0.72)",
-    cursor: "pointer"
+    gap: 4,
+    padding: "10px 0 10px 8px",
+    border: "none",
+    borderBottom: "1px solid var(--border)",
+    background: "transparent",
+    cursor: "pointer",
+    fontSize: 13,
+    color: "var(--ink)"
   },
   docButtonActive: {
-    border: "1px solid var(--accent)",
-    background: "var(--accent-soft)"
+    borderLeft: "2px solid var(--accent)",
+    paddingLeft: 6,
+    color: "var(--accent)"
   },
   content: {
     display: "grid",
-    gap: 18
+    gap: 0
   },
   summaryCard: {
-    padding: 22,
-    borderRadius: 24,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    boxShadow: "var(--shadow)"
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderTop: "1px solid var(--border)"
   },
   sectionTitle: {
-    margin: 0,
-    fontSize: 22,
-    fontFamily: "var(--font-display), sans-serif"
+    margin: "0 0 14px",
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    color: "var(--muted)"
   },
   summaryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-    gap: 12,
-    marginTop: 16
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: 1,
+    background: "var(--border)"
   },
   actionRow: {
     display: "flex",
-    gap: 12,
+    gap: 8,
     flexWrap: "wrap",
-    marginTop: 16
+    marginBottom: 14
   },
   actionButton: {
     border: "1px solid var(--border)",
-    background: "rgba(255,255,255,0.84)",
-    padding: "10px 14px",
-    borderRadius: 999,
-    cursor: "pointer"
+    background: "transparent",
+    padding: "6px 12px",
+    borderRadius: 3,
+    cursor: "pointer",
+    fontSize: 13,
+    color: "var(--ink)"
   },
   actionButtonAccent: {
-    border: "1px solid rgba(197,92,59,0.24)",
-    background: "var(--accent-soft)",
-    padding: "10px 14px",
-    borderRadius: 999,
-    cursor: "pointer"
+    border: "none",
+    background: "var(--accent)",
+    padding: "6px 12px",
+    borderRadius: 3,
+    cursor: "pointer",
+    fontSize: 13,
+    color: "white",
+    fontWeight: 600
   },
   summaryItem: {
     display: "grid",
     gap: 4,
-    padding: 14,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid var(--border)"
+    padding: "12px 14px",
+    background: "var(--bg)",
+    fontSize: 13
   },
   card: {
-    padding: 22,
-    borderRadius: 24,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    boxShadow: "var(--shadow)"
+    paddingTop: 16,
+    paddingBottom: 4,
+    borderTop: "1px solid var(--border)"
   },
   formGrid: {
     display: "grid",
     gap: 12,
-    marginTop: 14
+    marginBottom: 14
   },
   field: {
     display: "grid",
-    gap: 8
+    gap: 6,
+    fontSize: 13,
+    color: "var(--muted)"
   },
   input: {
     width: "100%",
-    borderRadius: 14,
     border: "1px solid var(--border)",
-    padding: "10px 12px",
-    background: "rgba(255,255,255,0.9)"
+    borderRadius: 3,
+    padding: "8px 10px",
+    background: "var(--panel)",
+    fontSize: 13,
+    color: "var(--ink)"
   },
   select: {
     width: "100%",
-    borderRadius: 14,
     border: "1px solid var(--border)",
-    padding: "10px 12px",
-    background: "rgba(255,255,255,0.9)"
+    borderRadius: 3,
+    padding: "8px 10px",
+    background: "var(--panel)",
+    fontSize: 13,
+    color: "var(--ink)"
   },
   textarea: {
     width: "100%",
-    minHeight: 88,
-    borderRadius: 16,
+    minHeight: 72,
     border: "1px solid var(--border)",
-    padding: 12,
-    background: "rgba(255,255,255,0.9)",
-    resize: "vertical"
+    borderRadius: 3,
+    padding: "8px 10px",
+    background: "var(--panel)",
+    resize: "vertical",
+    fontSize: 13,
+    color: "var(--ink)"
   },
   list: {
     display: "grid",
-    gap: 10,
-    marginTop: 14
+    gap: 0
   },
   sectionGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: 16,
-    marginTop: 14
+    gap: 32
   },
   sectionColumn: {
     display: "grid",
-    gap: 10,
+    gap: 0,
     alignContent: "start"
   },
   sectionColumnHeader: {
@@ -939,37 +938,43 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     gap: 12,
     alignItems: "center",
-    color: "var(--muted)"
+    color: "var(--muted)",
+    fontSize: 13,
+    paddingBottom: 8,
+    borderBottom: "1px solid var(--border)"
   },
   listItem: {
     display: "grid",
-    gap: 6,
-    padding: 14,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid var(--border)"
+    gap: 4,
+    padding: "10px 0",
+    borderBottom: "1px solid var(--border)",
+    fontSize: 13
   },
   childChipRow: {
     display: "flex",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap"
   },
   toolRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 12
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: 1,
+    background: "var(--border)",
+    marginBottom: 14
   },
   toolCard: {
     display: "grid",
-    gap: 6,
-    padding: 14,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid var(--border)"
+    gap: 4,
+    padding: "12px 14px",
+    background: "var(--bg)",
+    fontSize: 13
   },
   detailBlock: {
     display: "grid",
-    gap: 10
+    gap: 8,
+    paddingLeft: 12,
+    borderLeft: "2px solid var(--border)",
+    marginTop: 4
   },
   emptyInline: {
     color: "var(--muted)",
@@ -982,48 +987,42 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center"
   },
   sectionLevelBadge: {
-    padding: "4px 8px",
-    borderRadius: 999,
-    background: "rgba(45,36,31,0.08)",
+    fontSize: 11,
     color: "var(--muted)",
-    fontSize: 12,
     fontWeight: 700
   },
   sectionLevelBadgeFine: {
-    padding: "4px 8px",
-    borderRadius: 999,
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
-    fontSize: 12,
+    fontSize: 11,
+    color: "var(--teal)",
     fontWeight: 700
   },
   warningItem: {
     display: "grid",
-    gap: 6,
-    padding: 14,
-    borderRadius: 18,
-    background: "rgba(197,92,59,0.12)",
-    border: "1px solid rgba(197,92,59,0.24)"
+    gap: 4,
+    padding: "10px 0 10px 12px",
+    borderBottom: "1px solid var(--border)",
+    borderLeft: "2px solid var(--accent)",
+    fontSize: 13
   },
   chunkGrid: {
     display: "grid",
-    gap: 12,
-    marginTop: 14
+    gap: 10
   },
   chunkCard: {
     display: "grid",
-    gap: 8,
-    padding: 16,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid var(--border)"
+    gap: 6,
+    paddingLeft: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderLeft: "2px solid var(--border)",
+    borderBottom: "1px solid var(--border)",
+    fontSize: 13
   },
   chunkCardCollapsed: {
-    padding: 16,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.56)",
-    border: "1px dashed var(--border)",
-    color: "var(--muted)"
+    padding: "10px 0",
+    color: "var(--muted)",
+    fontSize: 13,
+    borderBottom: "1px dashed var(--border)"
   },
   traceSummary: {
     color: "var(--muted)",
@@ -1032,23 +1031,19 @@ const styles: Record<string, CSSProperties> = {
   },
   pageList: {
     display: "grid",
-    gap: 12,
-    marginTop: 14
+    gap: 0
   },
   pageCard: {
     display: "grid",
-    gap: 10,
-    padding: 16,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid var(--border)"
+    gap: 8,
+    padding: "12px 0",
+    borderBottom: "1px solid var(--border)",
+    fontSize: 13
   },
   pageCardCollapsed: {
-    padding: 16,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.56)",
-    border: "1px dashed var(--border)",
-    color: "var(--muted)"
+    padding: "10px 0",
+    color: "var(--muted)",
+    fontSize: 13
   },
   pageMeta: {
     display: "grid",
@@ -1056,46 +1051,48 @@ const styles: Record<string, CSSProperties> = {
   },
   headingRow: {
     display: "flex",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap"
   },
   headingTag: {
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: "var(--accent-soft)",
-    fontSize: 12
+    padding: "2px 6px",
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    fontSize: 11
   },
   headingTagMuted: {
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: "rgba(45,36,31,0.08)",
-    fontSize: 12,
+    padding: "2px 6px",
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    fontSize: 11,
     color: "var(--muted)"
   },
   pre: {
     margin: 0,
-    padding: 14,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 3,
     background: "rgba(45,36,31,0.92)",
     color: "#fff6ed",
     whiteSpace: "pre-wrap",
     lineHeight: 1.6,
-    overflowX: "auto"
+    overflowX: "auto",
+    fontSize: 13
   },
   preCompact: {
     margin: 0,
-    padding: 12,
-    borderRadius: 14,
+    padding: 10,
+    borderRadius: 3,
     background: "rgba(45,36,31,0.92)",
     color: "#fff6ed",
     whiteSpace: "pre-wrap",
     lineHeight: 1.5,
     overflowX: "auto",
-    fontSize: 13
+    fontSize: 12
   },
   empty: {
-    margin: "14px 0 0",
-    color: "var(--muted)"
+    margin: "10px 0 0",
+    color: "var(--muted)",
+    fontSize: 13
   }
 };
 

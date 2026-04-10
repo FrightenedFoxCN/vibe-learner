@@ -5,13 +5,31 @@ interface PersonaSelectorProps {
   personas: PersonaProfile[];
   selectedPersonaId: string;
   onChange: (personaId: string) => void;
+  compact?: boolean;
 }
 
 export function PersonaSelector({
   personas,
   selectedPersonaId,
-  onChange
+  onChange,
+  compact = false
 }: PersonaSelectorProps) {
+  if (compact) {
+    return (
+      <select
+        value={selectedPersonaId}
+        onChange={(event) => onChange(event.target.value)}
+        style={styles.selectCompact}
+      >
+        {personas.map((persona) => (
+          <option key={persona.id} value={persona.id}>
+            {persona.name}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
   return (
     <aside style={styles.wrap}>
       <p style={styles.label}>教师人格</p>
@@ -32,12 +50,11 @@ export function PersonaSelector({
 
 const styles: Record<string, CSSProperties> = {
   wrap: {
-    minWidth: 240,
-    padding: 16,
-    borderRadius: 20,
+    minWidth: 220,
+    padding: 14,
+    borderRadius: 6,
     border: "1px solid var(--border)",
     background: "var(--panel-strong)",
-    boxShadow: "var(--shadow-soft)"
   },
   label: {
     margin: "0 0 6px",
@@ -48,11 +65,20 @@ const styles: Record<string, CSSProperties> = {
   },
   select: {
     width: "100%",
-    minHeight: 44,
-    borderRadius: 12,
+    minHeight: 40,
+    borderRadius: 4,
     border: "1px solid var(--border)",
-    padding: "10px 12px",
-    background: "rgba(255,255,255,0.98)",
+    padding: "8px 10px",
+    background: "var(--panel-strong)",
     color: "var(--ink)"
+  },
+  selectCompact: {
+    height: 32,
+    borderRadius: 4,
+    border: "1px solid var(--border)",
+    padding: "0 8px",
+    background: "var(--panel-strong)",
+    color: "var(--ink)",
+    fontSize: 13
   }
 };

@@ -41,210 +41,180 @@ export function StudyConsole({
     : "";
 
   return (
-    <article style={styles.panel}>
+    <div style={styles.wrap}>
+      {/* 章节选择行 */}
       <div style={styles.row}>
-        <div>
-          <p style={styles.sectionLabel}>章节会话</p>
-          <h2 style={styles.title}>{sectionTitle || "等待创建学习会话"}</h2>
-          {sectionId ? <p style={styles.sectionMeta}>section id: {sectionId}</p> : null}
-          {uniqueSections.length ? (
-            <label style={styles.sectionPickerLabel}>
-              当前章节
-              <select
-                style={styles.sectionPicker}
-                value={currentSectionId}
-                onChange={(event) => onChangeSection(event.target.value)}
-                disabled={isPending || disabled}
+        {uniqueSections.length ? (
+          <select
+            style={styles.select}
+            value={currentSectionId}
+            onChange={(event) => onChangeSection(event.target.value)}
+            disabled={isPending || disabled}
+          >
+            {uniqueSections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {formatSectionOptionLabel(section)}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span style={styles.placeholder}>{sectionTitle || "等待创建学习会话"}</span>
+        )}
+        {currentSection
+          ? buildPageLinks(currentSection).map((link) => (
+              <a
+                key={`${link.page}-${link.label}`}
+                href={`${textbookLinkBase}#page=${link.page}`}
+                target="_blank"
+                rel="noreferrer"
+                style={styles.pageLink}
+                onClick={(event) => {
+                  if (!onOpenPage) return;
+                  event.preventDefault();
+                  onOpenPage(link.page);
+                }}
               >
-                {uniqueSections.map((section) => (
-                  <option key={section.id} value={section.id}>
-                    {formatSectionOptionLabel(section)}
-                  </option>
-                ))}
-              </select>
-              {currentSection ? (
-                <div style={styles.pageLinkRow}>
-                  {buildPageLinks(currentSection).map((link) => (
-                    <a
-                      key={`${link.page}-${link.label}`}
-                      href={`${textbookLinkBase}#page=${link.page}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={styles.pageLink}
-                      onClick={(event) => {
-                        if (!onOpenPage) {
-                          return;
-                        }
-                        event.preventDefault();
-                        onOpenPage(link.page);
-                      }}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-              ) : null}
-            </label>
-          ) : null}
-        </div>
+                {link.label}
+              </a>
+            ))
+          : null}
+      </div>
+
+      {/* 输入行 */}
+      <div style={styles.inputRow}>
+        <textarea
+          style={styles.textarea}
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="输入导学请求…"
+        />
         <button
-          style={styles.button}
+          style={{
+            ...styles.button,
+            ...(isPending || disabled ? styles.buttonDisabled : {})
+          }}
           disabled={isPending || disabled}
           onClick={() => onAsk(message)}
         >
-          {isPending ? "生成中..." : disabled ? "先创建学习会话" : "发送导学请求"}
+          {isPending ? "生成中…" : "发送"}
         </button>
       </div>
 
-      <textarea
-        style={styles.textarea}
-        value={message}
-        onChange={(event) => setMessage(event.target.value)}
-      />
-
-      <div style={styles.responseCard}>
-        <p style={styles.responseLabel}>结构化回复</p>
-        <p style={styles.responseText}>
-          {session?.reply ?? "回复尚未生成。这里会同时展示文本回答和教材引用，角色事件则在右侧角色层消费。"}
-        </p>
-        <div style={styles.citations}>
-          {(session?.citations ?? []).length ? (
-            session?.citations.map((citation, index) => (
-              <span
-                key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
-                style={styles.citation}
-              >
-                {citation.title} · p.{citation.pageStart}-{citation.pageEnd}
-              </span>
-            ))
-          ) : (
-            <span style={styles.emptyCitation}>暂无教材引用。</span>
-          )}
+      {/* 回复区：有内容才显示 */}
+      {session?.reply ? (
+        <div style={styles.reply}>
+          <p style={styles.replyText}>{session.reply}</p>
+          {session.citations.length ? (
+            <div style={styles.citations}>
+              {session.citations.map((citation, index) => (
+                <span
+                  key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
+                  style={styles.citation}
+                >
+                  {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
-      </div>
-    </article>
+      ) : null}
+    </div>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
-  panel: {
-    padding: 24,
-    borderRadius: 24,
-    border: "1px solid var(--border)",
-    background: "var(--panel-strong)",
-    boxShadow: "var(--shadow)"
+  wrap: {
+    display: "grid",
+    gap: 0
   },
   row: {
     display: "flex",
-    justifyContent: "space-between",
-    gap: 16,
-    alignItems: "flex-start",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: 10,
     flexWrap: "wrap"
   },
-  sectionLabel: {
-    margin: 0,
-    fontSize: 12,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    color: "var(--muted)"
+  select: {
+    height: 32,
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    padding: "0 8px",
+    background: "transparent",
+    color: "var(--ink)",
+    fontSize: 13,
+    maxWidth: 300
   },
-  title: {
-    margin: "8px 0 0",
-    fontSize: 24,
-    fontFamily: "var(--font-display), sans-serif"
-  },
-  sectionMeta: {
-    margin: "6px 0 0",
+  placeholder: {
     color: "var(--muted)",
     fontSize: 13
-  },
-  sectionPickerLabel: {
-    marginTop: 10,
-    display: "grid",
-    gap: 6,
-    color: "var(--muted)",
-    fontSize: 12,
-    maxWidth: 420
-  },
-  sectionPicker: {
-    minHeight: 40,
-    borderRadius: 10,
-    border: "1px solid var(--border)",
-    padding: "8px 10px",
-    background: "rgba(255,255,255,0.98)",
-    color: "var(--ink)"
-  },
-  pageLinkRow: {
-    marginTop: 8,
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap"
   },
   pageLink: {
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 32,
-    borderRadius: 10,
-    padding: "6px 10px",
-    background: "rgba(63,140,133,0.1)",
-    border: "1px solid rgba(63,140,133,0.2)",
+    height: 28,
+    padding: "0 8px",
+    border: "1px solid var(--border)",
+    borderRadius: 3,
     color: "var(--accent)",
     fontSize: 12,
-    fontWeight: 600
+    whiteSpace: "nowrap"
   },
-  button: {
-    border: 0,
-    borderRadius: 12,
-    minHeight: 44,
-    padding: "0 16px",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 700,
-    boxShadow: "0 6px 14px rgba(13, 110, 114, 0.24)",
-    cursor: "pointer"
+  inputRow: {
+    display: "flex",
+    gap: 10,
+    alignItems: "flex-start"
   },
   textarea: {
-    width: "100%",
-    minHeight: 120,
-    marginTop: 14,
-    borderRadius: 12,
-    padding: 14,
+    flex: 1,
+    minHeight: 72,
     border: "1px solid var(--border)",
-    background: "rgba(255,255,255,0.98)",
-    resize: "vertical"
+    borderRadius: 3,
+    padding: "8px 10px",
+    background: "var(--panel)",
+    resize: "vertical",
+    fontSize: 14,
+    lineHeight: 1.6,
+    color: "var(--ink)"
   },
-  responseCard: {
-    marginTop: 14,
-    padding: 16,
-    borderRadius: 12,
-    background: "rgba(248,252,253,0.96)",
-    border: "1px solid var(--border)",
-    boxShadow: "var(--shadow-soft)"
+  button: {
+    border: "none",
+    borderRadius: 3,
+    height: 34,
+    padding: "0 18px",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 13,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    alignSelf: "flex-end"
   },
-  responseLabel: {
+  buttonDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed"
+  },
+  reply: {
+    paddingTop: 16,
+    display: "grid",
+    gap: 10
+  },
+  replyText: {
     margin: 0,
-    color: "var(--muted)",
-    fontSize: 13
-  },
-  responseText: {
-    margin: "10px 0 0",
-    lineHeight: 1.7
+    lineHeight: 1.75,
+    fontSize: 14
   },
   citations: {
     display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-    marginTop: 14
+    gap: 6,
+    flexWrap: "wrap"
   },
   citation: {
-    padding: "8px 12px",
-    borderRadius: 10,
-    background: "var(--accent-soft)",
-    fontSize: 13
-  },
-  emptyCitation: {
-    color: "var(--muted)",
-    fontSize: 13
+    padding: "2px 8px",
+    border: "1px solid var(--border)",
+    borderRadius: 3,
+    fontSize: 12,
+    color: "var(--teal)"
   }
 };
 
@@ -254,30 +224,16 @@ function formatSectionOptionLabel(section: DocumentSection) {
 }
 
 function formatPageRange(pageStart: number, pageEnd: number) {
-  if (pageStart === pageEnd) {
-    return `p.${pageStart}`;
-  }
+  if (pageStart === pageEnd) return `p.${pageStart}`;
   return `p.${pageStart}-${pageEnd}`;
 }
 
 function buildPageLinks(section: DocumentSection): Array<{ page: number; label: string }> {
   if (section.pageStart === section.pageEnd) {
-    return [
-      {
-        page: section.pageStart,
-        label: `打开课本 ${formatPageRange(section.pageStart, section.pageEnd)}`
-      }
-    ];
+    return [{ page: section.pageStart, label: `p.${section.pageStart}` }];
   }
-
   return [
-    {
-      page: section.pageStart,
-      label: `打开起始页 p.${section.pageStart}`
-    },
-    {
-      page: section.pageEnd,
-      label: `打开结束页 p.${section.pageEnd}`
-    }
+    { page: section.pageStart, label: `p.${section.pageStart}` },
+    { page: section.pageEnd, label: `p.${section.pageEnd}` }
   ];
 }
