@@ -7,6 +7,7 @@
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
 - `frontend-learning-workspace.md`: frontend responsibility split for `/plan` and `/study` workspace pages
+- `persona-spectrum.md`: Persona Spectrum page data chain and API contract
 
 ## Reading Order
 
@@ -21,3 +22,11 @@
 ## Scope
 
 These docs describe the repository as it exists now, not the aspirational long-term platform. When implementation changes, update the docs in the same change if the API, runtime flow, or data layout moved.
+
+## Recent Sync Notes (2026-04-10)
+
+- Study chat now uses per-section session routing and historical session re-entry in the frontend controller.
+- Study transcript is rendered in reverse chronological order (latest first).
+- Chat failures now surface as explicit UI errors with manual retry action instead of silent fallback assistant text.
+- Study chat model now supports page-range text/image reading tools and has dedicated chat tool config variables.
+- OpenAI-compatible provider truncation mitigation is documented via `OPENAI_CHAT_MAX_TOKENS` tuning.

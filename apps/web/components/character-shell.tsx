@@ -26,6 +26,14 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
 
       <div style={styles.stateRow}>
         <span style={styles.stateItem}>
+          <span style={styles.stateKey}>神态</span>
+          {currentEvent?.emotion ?? "calm"}
+        </span>
+        <span style={styles.stateItem}>
+          <span style={styles.stateKey}>动作</span>
+          {currentEvent?.action ?? "idle"}
+        </span>
+        <span style={styles.stateItem}>
           <span style={styles.stateKey}>风格</span>
           {currentEvent?.speechStyle ?? persona.defaultSpeechStyle}
         </span>

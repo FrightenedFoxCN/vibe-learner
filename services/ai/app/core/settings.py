@@ -11,8 +11,11 @@ class Settings:
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_plan_model: str = "gpt-4.1-mini"
+    openai_setting_model: str = "gpt-4.1-mini"
     openai_chat_model: str = "gpt-4.1-mini"
     openai_chat_temperature: float = 0.35
+    openai_setting_temperature: float = 0.4
+    openai_setting_max_tokens: int = 900
     openai_chat_max_tokens: int = 800
     openai_chat_history_messages: int = 8
     openai_chat_tool_max_rounds: int = 4
@@ -32,10 +35,20 @@ class Settings:
             openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
             openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
             openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
+            openai_setting_model=os.getenv("OPENAI_SETTING_MODEL", "gpt-4.1-mini").strip()
+            or "gpt-4.1-mini",
             openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
             openai_chat_temperature=_to_float(
                 os.getenv("OPENAI_CHAT_TEMPERATURE", "0.35"),
                 default=0.35,
+            ),
+            openai_setting_temperature=_to_float(
+                os.getenv("OPENAI_SETTING_TEMPERATURE", "0.4"),
+                default=0.4,
+            ),
+            openai_setting_max_tokens=_to_int(
+                os.getenv("OPENAI_SETTING_MAX_TOKENS", "900"),
+                default=900,
             ),
             openai_chat_max_tokens=_to_int(os.getenv("OPENAI_CHAT_MAX_TOKENS", "800"), default=800),
             openai_chat_history_messages=_to_int(

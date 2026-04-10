@@ -1,4 +1,5 @@
 import type {
+  CreatePersonaInput,
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
   PlanGenerationTrace,
@@ -14,6 +15,28 @@ import type {
 
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
+}
+
+export interface PersonaAssets {
+  personaId: string;
+  renderer: string;
+  assetManifest: Record<string, unknown>;
+}
+
+export interface PersonaSettingAssistInput {
+  name: string;
+  summary: string;
+  backgroundStory: string;
+  teachingStyle: string[];
+  narrativeMode: "grounded" | "light_story";
+  encouragementStyle: string;
+  correctionStyle: string;
+  rewriteStrength: number;
+}
+
+export interface PersonaSettingAssistOutput {
+  backgroundStory: string;
+  systemPromptSuggestion: string;
 }
 
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
@@ -80,6 +103,7 @@ function normalizePersona(persona: any): PersonaProfile {
     name: persona.name,
     source: persona.source,
     summary: persona.summary,
+    backgroundStory: persona.background_story ?? "",
     systemPrompt: persona.system_prompt,
     teachingStyle: persona.teaching_style,
     narrativeMode: persona.narrative_mode,
@@ -367,6 +391,97 @@ export async function listPersonas(): Promise<PersonaProfile[]> {
     await request(`${AI_BASE_URL}/personas`)
   );
   return payload.items.map(normalizePersona);
+}
+
+export async function createPersona(input: CreatePersonaInput): Promise<PersonaProfile> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/personas`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: input.name,
+        summary: input.summary,
+        background_story: input.backgroundStory ?? "",
+        system_prompt: input.systemPrompt,
+        teaching_style: input.teachingStyle,
+        narrative_mode: input.narrativeMode,
+        encouragement_style: input.encouragementStyle,
+        correction_style: input.correctionStyle,
+        available_emotions: input.availableEmotions,
+        available_actions: input.availableActions,
+        default_speech_style: input.defaultSpeechStyle
+      })
+    })
+  );
+  return normalizePersona(payload);
+}
+
+export async function updatePersona(
+  personaId: string,
+  input: CreatePersonaInput
+): Promise<PersonaProfile> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/personas/${personaId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: input.name,
+        summary: input.summary,
+        background_story: input.backgroundStory ?? "",
+        system_prompt: input.systemPrompt,
+        teaching_style: input.teachingStyle,
+        narrative_mode: input.narrativeMode,
+        encouragement_style: input.encouragementStyle,
+        correction_style: input.correctionStyle,
+        available_emotions: input.availableEmotions,
+        available_actions: input.availableActions,
+        default_speech_style: input.defaultSpeechStyle
+      })
+    })
+  );
+  return normalizePersona(payload);
+}
+
+export async function getPersonaAssets(personaId: string): Promise<PersonaAssets> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/personas/${personaId}/assets`)
+  );
+  return {
+    personaId: payload.persona_id,
+    renderer: payload.renderer,
+    assetManifest: payload.asset_manifest ?? {}
+  };
+}
+
+export async function assistPersonaSetting(
+  input: PersonaSettingAssistInput
+): Promise<PersonaSettingAssistOutput> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/personas/assist-setting`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: input.name,
+        summary: input.summary,
+        background_story: input.backgroundStory,
+        teaching_style: input.teachingStyle,
+        narrative_mode: input.narrativeMode,
+        encouragement_style: input.encouragementStyle,
+        correction_style: input.correctionStyle,
+        rewrite_strength: input.rewriteStrength
+      })
+    })
+  );
+  return {
+    backgroundStory: String(payload.background_story ?? ""),
+    systemPromptSuggestion: String(payload.system_prompt_suggestion ?? "")
+  };
 }
 
 export async function listDocuments(): Promise<DocumentRecord[]> {

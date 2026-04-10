@@ -141,6 +141,13 @@ The `/study` page currently renders these blocks:
 - `CharacterShell`
 - embedded PDF pane
 
+Current `/study` interaction details:
+
+- theme selector routes to a concrete section id before sending chat
+- quick action allows jumping PDF preview to the current theme start page
+- transcript displays latest turns first (reverse chronological)
+- on chat failure, UI shows explicit error text and a manual retry button
+
 Each block should receive already-prepared data via props.
 
 Examples:
@@ -152,7 +159,7 @@ Chapter switching rules:
 
 - The chapter source is the active plan directory (`plan.schedule.unitId` mapped to document study units).
 - If schedule-derived units are empty, fallback is document sections.
-- Switching chapter calls `PATCH /study-sessions/{session_id}` and clears stale chat response.
+- Switching chapter re-enters or creates a section-scoped session for the active plan, then clears stale response.
 
 For `Plan Overview`, keep these display rules stable:
 

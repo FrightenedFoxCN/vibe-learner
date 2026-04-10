@@ -35,6 +35,7 @@ Response shape:
 
 - `items[]`
 - each item includes `id`, `name`, `source`, `summary`
+- each item also includes `background_story`
 - persona behavior fields such as `system_prompt`, `teaching_style`, `narrative_mode`
 - render-related defaults such as `available_emotions`, `available_actions`, `default_speech_style`
 
@@ -48,15 +49,59 @@ Request body:
 {
   "name": "string",
   "summary": "string",
+  "background_story": "string",
   "system_prompt": "string",
   "teaching_style": ["string"],
   "narrative_mode": "grounded",
   "encouragement_style": "string",
-  "correction_style": "string"
+  "correction_style": "string",
+  "available_emotions": ["calm", "encouraging"],
+  "available_actions": ["idle", "explain"],
+  "default_speech_style": "warm"
 }
 ```
 
 Returns the created persona object.
+
+### `PATCH /personas/{persona_id}`
+
+Updates an existing persona.
+
+Request body uses the same shape as `POST /personas`.
+
+Returns the updated persona object.
+
+Notes:
+
+- builtin personas are readonly and return `403` with `detail=persona_readonly_builtin` on update.
+
+### `POST /personas/assist-setting`
+
+Generates an AI-assisted refinement draft for persona setting fields.
+
+Request body:
+
+```json
+{
+  "name": "string",
+  "summary": "string",
+  "background_story": "string",
+  "teaching_style": ["string"],
+  "narrative_mode": "grounded",
+  "encouragement_style": "string",
+  "correction_style": "string",
+  "rewrite_strength": 0.5
+}
+```
+
+Response body:
+
+```json
+{
+  "background_story": "string",
+  "system_prompt_suggestion": "string"
+}
+```
 
 ### `GET /personas/{persona_id}/assets`
 
@@ -323,11 +368,23 @@ Request body:
 {
   "document_id": "doc-123",
   "persona_id": "persona-123",
-  "section_id": "unit-123"
+  "section_id": "unit-123",
+  "section_title": "optional section title",
+  "theme_hint": "optional theme hint"
 }
 ```
 
 Returns the persisted `StudySessionRecord`.
+
+### `GET /study-sessions`
+
+Lists persisted study sessions.
+
+Optional query params:
+
+- `document_id`
+- `persona_id`
+- `section_id`
 
 ### `POST /study-sessions/{session_id}/chat`
 
@@ -346,6 +403,31 @@ Notes:
 - chat generation now includes recent dialogue turns as model context
 - citations are grounded from the document debug artifacts (study-unit/section/chunk page ranges)
 - returned `character_events[].scene_hint` carries chapter/page render context for character-layer drawing
+- when model payload is invalid or empty, backend returns `502` with `detail=chat_model_invalid_payload`
+- frontend is expected to surface this as an explicit error and provide manual retry action
+
+### `POST /study-sessions/{session_id}/attempt`
+
+Appends one learner attempt turn and assistant verdict into the same session transcript.
+
+Request body:
+
+```json
+{
+  "question_type": "multiple_choice",
+  "prompt": "string",
+  "topic": "string",
+  "difficulty": "easy",
+  "options": [{ "key": "A", "text": "string" }],
+  "answer_key": "A",
+  "accepted_answers": ["A"],
+  "submitted_answer": "A",
+  "is_correct": true,
+  "explanation": "string"
+}
+```
+
+Returns updated `StudySessionRecord`.
 
 ### `PATCH /study-sessions/{session_id}`
 

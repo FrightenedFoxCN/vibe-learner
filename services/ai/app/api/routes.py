@@ -27,6 +27,8 @@ from app.models.api import (
     LearningPlanResponse,
     PersonaAssetsResponse,
     ProcessDocumentRequest,
+    PersonaSettingAssistRequest,
+    PersonaSettingAssistResponse,
     PersonaListResponse,
     PersonaResponse,
     StudyChatRequest,
@@ -35,6 +37,7 @@ from app.models.api import (
     StudyQuestionAttemptRequest,
     StudySessionListResponse,
     StudySessionResponse,
+    UpdatePersonaRequest,
     UpdateStudySessionRequest,
     SubmissionGradeRequest,
     SubmissionGradeResponse,
@@ -92,6 +95,23 @@ def _map_chat_generation_error(exc: RuntimeError) -> HTTPException:
     if detail == "chat_model_invalid_payload":
         return HTTPException(status_code=502, detail="chat_model_invalid_payload")
     return HTTPException(status_code=500, detail="chat_generation_failed")
+
+
+def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
+    detail = str(exc)
+    if detail == "openai_setting_request_rate_limit":
+        return HTTPException(status_code=503, detail="setting_model_rate_limited")
+    if detail == "openai_setting_request_timeout":
+        return HTTPException(status_code=504, detail="setting_model_timeout")
+    if detail == "openai_setting_request_network_error":
+        return HTTPException(status_code=502, detail="setting_model_network_error")
+    if detail.startswith("openai_setting_request_failed:"):
+        return HTTPException(status_code=502, detail="setting_model_upstream_error")
+    if detail == "setting_model_invalid_json":
+        return HTTPException(status_code=502, detail="setting_model_invalid_json")
+    if detail == "setting_model_invalid_payload":
+        return HTTPException(status_code=502, detail="setting_model_invalid_payload")
+    return HTTPException(status_code=500, detail="setting_generation_failed")
 
 
 @router.get("/health")
@@ -353,6 +373,12 @@ def create_persona(payload: CreatePersonaRequest) -> PersonaResponse:
     return _into_response(PersonaResponse, persona)
 
 
+@router.patch("/personas/{persona_id}", response_model=PersonaResponse)
+def update_persona(persona_id: str, payload: UpdatePersonaRequest) -> PersonaResponse:
+    persona = container.persona_engine.update_persona(persona_id, payload)
+    return _into_response(PersonaResponse, persona)
+
+
 @router.get("/personas/{persona_id}/assets", response_model=PersonaAssetsResponse)
 def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
     persona = container.persona_engine.require_persona(persona_id)
@@ -365,6 +391,38 @@ def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
             "live2d_model": None,
         },
     )
+
+
+@router.post("/personas/assist-setting", response_model=PersonaSettingAssistResponse)
+def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSettingAssistResponse:
+    try:
+        result = container.model_provider.assist_persona_setting(
+            name=payload.name,
+            summary=payload.summary,
+            background_story=payload.background_story,
+            teaching_style=payload.teaching_style,
+            narrative_mode=payload.narrative_mode,
+            encouragement_style=payload.encouragement_style,
+            correction_style=payload.correction_style,
+            rewrite_strength=payload.rewrite_strength,
+        )
+    except RuntimeError as exc:
+        http_error = _map_setting_generation_error(exc)
+        logger.warning(
+            "persona.assist_setting.model_failed detail=%s internal_error_code=%s fallback=local",
+            http_error.detail,
+            str(exc),
+        )
+        result = container.persona_engine.assist_setting(
+            name=payload.name,
+            summary=payload.summary,
+            background_story=payload.background_story,
+            teaching_style=payload.teaching_style,
+            narrative_mode=payload.narrative_mode,
+            encouragement_style=payload.encouragement_style,
+            correction_style=payload.correction_style,
+        )
+    return PersonaSettingAssistResponse(**result)
 
 
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)

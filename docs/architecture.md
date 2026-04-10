@@ -118,6 +118,12 @@ The backend writes:
 
 The frontend should never parse roleplay instructions out of plain text. Character performance stays structured.
 
+Current behavior additions:
+
+- frontend routes dialogue by active plan section and reuses historical sessions per plan-section key when available
+- chat failures are surfaced explicitly for user retry, rather than hidden by synthetic fallback assistant text
+- transcript view is reverse chronological for faster review of recent turns
+
 ## Character Layer
 
 The repository already reserves a stable character-event protocol for future richer rendering:
@@ -146,6 +152,21 @@ Current model tools:
 
 - `get_study_unit_detail`
 - `read_page_range_content`
+
+Study chat model tools now include:
+
+- `ask_multiple_choice_question`
+- `ask_fill_blank_question`
+- `read_page_range_content`
+- `read_page_range_images` (when chat multimodal mode is enabled and document path is available)
+
+Chat model runtime behavior is configurable through environment variables, including:
+
+- `OPENAI_CHAT_MAX_TOKENS`
+- `OPENAI_CHAT_HISTORY_MESSAGES`
+- `OPENAI_CHAT_TOOL_MAX_ROUNDS`
+- `OPENAI_CHAT_TOOLS_ENABLED`
+- `OPENAI_CHAT_MODEL_MULTIMODAL`
 
 This is the main mechanism used to keep plans grounded in OCR-cleaned textbook structure while still allowing a model to inspect details before scheduling.
 

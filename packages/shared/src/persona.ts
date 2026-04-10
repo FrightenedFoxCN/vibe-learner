@@ -5,6 +5,7 @@ export interface PersonaProfile {
   name: string;
   source: "builtin" | "user";
   summary: string;
+  backgroundStory?: string;
   systemPrompt: string;
   teachingStyle: string[];
   narrativeMode: "grounded" | "light_story";
@@ -26,9 +27,13 @@ export interface PersonaMemory {
 export interface CreatePersonaInput {
   name: string;
   summary: string;
+  backgroundStory?: string;
   systemPrompt: string;
   teachingStyle: string[];
   narrativeMode: "grounded" | "light_story";
   encouragementStyle: string;
   correctionStyle: string;
+  availableEmotions?: CharacterEmotion[];
+  availableActions?: CharacterAction[];
+  defaultSpeechStyle?: SpeechStyle;
 }

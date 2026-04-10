@@ -98,6 +98,20 @@ class ModelProvider:
     def supports_page_image_tools(self) -> bool:
         return False
 
+    def assist_persona_setting(
+        self,
+        *,
+        name: str,
+        summary: str,
+        background_story: str,
+        teaching_style: list[str],
+        narrative_mode: str,
+        encouragement_style: str,
+        correction_style: str,
+        rewrite_strength: float,
+    ) -> dict[str, str]:
+        raise NotImplementedError
+
 
 class MockModelProvider(ModelProvider):
     def generate_chat(
@@ -192,6 +206,50 @@ class MockModelProvider(ModelProvider):
             schedule=schedule,
         )
 
+    def assist_persona_setting(
+        self,
+        *,
+        name: str,
+        summary: str,
+        background_story: str,
+        teaching_style: list[str],
+        narrative_mode: str,
+        encouragement_style: str,
+        correction_style: str,
+        rewrite_strength: float,
+    ) -> dict[str, str]:
+        style_text = "、".join([item for item in teaching_style if item.strip()]) or "结构化讲解"
+        narrative_text = "轻剧情" if narrative_mode == "light_story" else "稳态导学"
+        identity_name = name.strip() or "这位教师"
+        summary_text = summary.strip() or "擅长围绕章节核心概念组织学习路径"
+        normalized_strength = max(0.0, min(1.0, rewrite_strength))
+        base_story = background_story.strip()
+        if base_story and normalized_strength < 0.45:
+            story = (
+                f"{base_story}\n\n"
+                f"补充设定：{identity_name} 采用{narrative_text}叙事，"
+                f"以{style_text}推进讲解，鼓励策略偏向“{encouragement_style or '阶段性肯定'}”，"
+                f"纠错策略采用“{correction_style or '温和纠偏'}”。"
+            )
+        else:
+            story = (
+                f"{identity_name} 的核心定位：{summary_text}。"
+                f"其教学叙事采用{narrative_text}路线，常用{style_text}组织内容。"
+                f"面对学习者挫折时，优先使用“{encouragement_style or '阶段性肯定'}”进行支持；"
+                f"在纠错时坚持“{correction_style or '温和纠偏'}”，先指出可改进点，再给出可执行下一步。"
+            )
+        prompt = (
+            "You are a chapter-grounded tutor persona. "
+            f"Persona name: {identity_name}. "
+            f"Narrative mode: {narrative_mode}. "
+            f"Teaching style: {style_text}. "
+            "Always keep explanations concise, grounded, and action-oriented."
+        )
+        return {
+            "background_story": story,
+            "system_prompt_suggestion": prompt,
+        }
+
 
 class OpenAIModelProvider(MockModelProvider):
     def __init__(
@@ -200,8 +258,11 @@ class OpenAIModelProvider(MockModelProvider):
         api_key: str,
         base_url: str,
         plan_model: str,
+        setting_model: str | None = None,
         chat_model: str | None = None,
         chat_temperature: float = 0.35,
+        setting_temperature: float = 0.4,
+        setting_max_tokens: int = 900,
         chat_max_tokens: int = 800,
         chat_history_messages: int = 8,
         chat_tool_max_rounds: int = 4,
@@ -216,8 +277,11 @@ class OpenAIModelProvider(MockModelProvider):
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.plan_model = plan_model
+        self.setting_model = setting_model or chat_model or plan_model
         self.chat_model = chat_model or plan_model
         self.chat_temperature = chat_temperature
+        self.setting_temperature = setting_temperature
+        self.setting_max_tokens = setting_max_tokens
         self.chat_max_tokens = chat_max_tokens
         self.chat_history_messages = max(1, chat_history_messages)
         self.chat_tool_max_rounds = max(1, chat_tool_max_rounds)
@@ -378,6 +442,70 @@ class OpenAIModelProvider(MockModelProvider):
                 raw_payload=recovery_raw_payload,
                 tool_results=[],
             )
+
+    def assist_persona_setting(
+        self,
+        *,
+        name: str,
+        summary: str,
+        background_story: str,
+        teaching_style: list[str],
+        narrative_mode: str,
+        encouragement_style: str,
+        correction_style: str,
+        rewrite_strength: float,
+    ) -> dict[str, str]:
+        payload: dict[str, Any] = {
+            "model": self.setting_model,
+            "temperature": self.setting_temperature,
+            "max_tokens": self.setting_max_tokens,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a persona writing assistant for a tutoring system. "
+                        "Return strict JSON only with keys: background_story, system_prompt_suggestion. "
+                        "Use concise but vivid Chinese, keeping the persona educational and chapter-grounded."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        "请根据以下输入完善人格设定。\n"
+                        f"name: {name}\n"
+                        f"summary: {summary}\n"
+                        f"background_story: {background_story}\n"
+                        f"teaching_style: {', '.join(teaching_style)}\n"
+                        f"narrative_mode: {narrative_mode}\n"
+                        f"encouragement_style: {encouragement_style}\n"
+                        f"correction_style: {correction_style}\n"
+                        f"rewrite_strength: {max(0.0, min(1.0, rewrite_strength))}\n"
+                        "rewrite_strength 语义：0=尽量保留原文，仅增量润色；1=可重写为全新但同人设版本。\n"
+                        "输出仅为 JSON，不要 markdown。"
+                    ),
+                },
+            ],
+        }
+        raw_payload, _ = self._request_openai_chat_completion(
+            payload,
+            request_kind="setting",
+            model=self.setting_model,
+        )
+        content = _extract_choice_content(raw_payload)
+        parsed = _extract_json_payload(
+            content,
+            invalid_json_code="setting_model_invalid_json",
+            invalid_payload_code="setting_model_invalid_payload",
+        )
+        story = str(parsed.get("background_story") or "").strip()
+        prompt = str(parsed.get("system_prompt_suggestion") or "").strip()
+        if not story or not prompt:
+            raise RuntimeError("setting_model_invalid_payload")
+        return {
+            "background_story": story,
+            "system_prompt_suggestion": prompt,
+        }
 
     def generate_learning_plan(
         self,

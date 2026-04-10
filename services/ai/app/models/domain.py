@@ -10,6 +10,7 @@ class PersonaProfile(BaseModel):
     name: str
     source: str
     summary: str
+    background_story: str = ""
     system_prompt: str
     teaching_style: list[str]
     narrative_mode: str

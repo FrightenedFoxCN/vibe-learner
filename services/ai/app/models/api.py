@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.domain import (
     CharacterStateEvent,
@@ -22,11 +22,45 @@ from app.models.domain import (
 class CreatePersonaRequest(BaseModel):
     name: str
     summary: str
+    background_story: str = ""
     system_prompt: str
     teaching_style: list[str]
     narrative_mode: str
     encouragement_style: str
     correction_style: str
+    available_emotions: list[str] | None = None
+    available_actions: list[str] | None = None
+    default_speech_style: str | None = None
+
+
+class UpdatePersonaRequest(BaseModel):
+    name: str
+    summary: str
+    background_story: str = ""
+    system_prompt: str
+    teaching_style: list[str]
+    narrative_mode: str
+    encouragement_style: str
+    correction_style: str
+    available_emotions: list[str] | None = None
+    available_actions: list[str] | None = None
+    default_speech_style: str | None = None
+
+
+class PersonaSettingAssistRequest(BaseModel):
+    name: str
+    summary: str
+    background_story: str = ""
+    teaching_style: list[str] = []
+    narrative_mode: str = "grounded"
+    encouragement_style: str = ""
+    correction_style: str = ""
+    rewrite_strength: float = Field(default=0.5, ge=0.0, le=1.0)
+
+
+class PersonaSettingAssistResponse(BaseModel):
+    background_story: str
+    system_prompt_suggestion: str
 
 
 class PersonaResponse(PersonaProfile):
