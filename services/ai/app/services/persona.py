@@ -174,7 +174,7 @@ class PersonaEngine:
                 id="mentor-lyra",
                 name="Lyra",
                 source="builtin",
-                summary="带轻度剧情化陨伴感的活力教师。",
+                summary="\u5e26\u8f7b\u5ea6\u5267\u60c5\u5316\u966a\u4f34\u611f\u7684\u6d3b\u529b\u6559\u5e08\u3002",
                 system_prompt="Blend chapter teaching with playful narrative energy.",
                 slots=[
                     PersonaSlot(kind="past_experiences", label="过往经历", content="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。"),
