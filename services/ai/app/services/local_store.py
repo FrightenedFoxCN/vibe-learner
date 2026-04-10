@@ -26,10 +26,7 @@ class LocalJsonStore:
     def save_list(self, name: str, items: list[BaseModel]) -> None:
         path = self.root / f"{name}.json"
         payload = [item.model_dump(mode="json") for item in items]
-        path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        self._write_json(path, payload)
 
     def load_item(self, category: str, item_id: str, model: type[T]) -> T | None:
         path = self.root / category / f"{item_id}.json"
@@ -42,7 +39,12 @@ class LocalJsonStore:
         category_root = self.root / category
         category_root.mkdir(parents=True, exist_ok=True)
         path = category_root / f"{item_id}.json"
-        path.write_text(
-            json.dumps(item.model_dump(mode="json"), ensure_ascii=False, indent=2),
+        self._write_json(path, item.model_dump(mode="json"))
+
+    def _write_json(self, path: Path, payload: object) -> None:
+        temp_path = path.with_suffix(f"{path.suffix}.tmp")
+        temp_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        temp_path.replace(path)

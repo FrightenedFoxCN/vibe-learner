@@ -66,6 +66,7 @@ class PlanScheduleItem:
 
 @dataclass
 class PlanModelReply:
+    course_title: str
     overview: str
     weekly_focus: list[str]
     today_tasks: list[str]
@@ -165,7 +166,12 @@ class MockModelProvider(ModelProvider):
                     estimated_minutes=goal.session_minutes,
                 )
             )
+        # course_title is the generated textbook-grounded title; objective remains learner-authored goal text.
         return PlanModelReply(
+            course_title=_build_course_title(
+                document_title=document_title,
+                plannable_units=plannable_units,
+            ),
             overview=(
                 f"{persona.name} 将围绕 {document_title} 生成首轮学习计划，"
                 f"在 {goal.deadline} 前完成 {len(plannable_units)} 个学习单元。"
@@ -236,6 +242,13 @@ class OpenAIModelProvider(MockModelProvider):
             for item in parsed.get("schedule", [])
         ]
         return PlanModelReply(
+            course_title=str(
+                parsed.get("course_title")
+                or _build_course_title(
+                    document_title=document_title,
+                    plannable_units=study_units,
+                )
+            ),
             overview=str(parsed["overview"]),
             weekly_focus=[str(item) for item in parsed.get("weekly_focus", [])],
             today_tasks=[str(item) for item in parsed.get("today_tasks", [])],
@@ -613,6 +626,17 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _build_course_title(
+    *,
+    document_title: str,
+    plannable_units: list[StudyUnitRecord],
+) -> str:
+    lead_titles = [unit.title.strip() for unit in plannable_units[:2] if unit.title.strip()]
+    if lead_titles:
+        return " / ".join(lead_titles)
+    return document_title.strip()
 
 
 def _extract_upstream_error(body: str) -> tuple[str, str]:

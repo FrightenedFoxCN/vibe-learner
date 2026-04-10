@@ -107,6 +107,61 @@ npm run build:web
   - debug console
 - Prefer adding new docs under `docs/` instead of expanding root README into a long design memo.
 
+## Page Vocabulary
+
+Use the following standard names when discussing frontend pages and page blocks. Avoid vague terms such as "that panel on the left" when a stable block name exists.
+
+### Page Names
+
+- `/` = `Learning Workspace`
+- `/debug` = `Document Debug Console`
+
+### `Learning Workspace` Block Names
+
+- `Hero Header`: the top banner area in `apps/web/components/learning-workspace.tsx` with product title, status notice, and debug link.
+- `Persona Selector`: the persona dropdown block rendered by `apps/web/components/persona-selector.tsx`.
+- `Study Column`: the main left-column flow container on the home page.
+- `Document Setup Panel`: the upload-and-generate block rendered by `apps/web/components/document-setup.tsx`.
+- `Plan History Panel`: the historical plan selection block rendered by `apps/web/components/plan-history.tsx`.
+- `Plan Overview Panel`: the current plan summary block inside `LearningWorkspace`, showing overview, weekly focus, today tasks, and recent schedule.
+- `Study Console`: the chapter chat/request block rendered by `apps/web/components/study-console.tsx`.
+- `Character Shell`: the right-column teacher/persona block rendered by `apps/web/components/character-shell.tsx`.
+- `Character Event Snapshot`: the JSON event preview area inside `Character Shell`.
+
+### `Document Debug Console` Block Names
+
+- `Debug Hero Header`: the top banner with page title, current status message, and back link.
+- `Document List Sidebar`: the left-side document picker.
+- `Parse Summary Card`: the summary block titled `解析摘要`.
+- `Process Stream Panel`: the block titled `流式处理反馈`.
+- `Plan Stream Panel`: the block titled `流式生成学习计划`.
+- `Section Guess Panel`: the block titled `章节猜测`.
+- `Study Unit Cleanup Panel`: the block titled `学习编排清洗结果`.
+- `Planning Outline Panel`: the block titled `计划输入目录`.
+- `Planning Tools Panel`: the block titled `计划工具与章节详情`.
+- `Planning Trace Panel`: the block titled `计划模型 Trace`.
+- `Parse Warning Panel`: the block titled `解析告警`.
+- `Chunk Inspector Panel`: the block titled `切块结果`.
+- `Page Extraction Panel`: the block titled `逐页抽取`.
+
+### Naming Rules
+
+- Use `Panel` for standalone content cards inside a page.
+- Use `Header` for the top banner area of a page.
+- Use `Sidebar` only for the left document list in `/debug`.
+- Use `Shell` only for the persona/character container, not for ordinary study cards.
+- Use `Study Unit` for cleaned planning units, not `section`, unless referring to raw parser-detected `sections`.
+- Use `Section` for raw parse structure or cited textbook structure.
+
+### Data-Term Mapping
+
+- `Document`: uploaded textbook file plus derived processing status.
+- `Section`: raw parser-detected chapter/subchapter structure in debug artifacts.
+- `Study Unit`: cleaned planning unit derived from sections and OCR text cleanup.
+- `Learning Plan`: persisted planner output.
+- `Study Session`: interactive tutor session bound to one document, persona, and active section.
+- `Character Event`: structured performance instruction consumed by the character layer.
+
 ## Documentation Map
 
 - Project overview: `README.md`

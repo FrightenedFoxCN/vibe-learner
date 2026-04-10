@@ -6,6 +6,7 @@ import type {
   LearningGoal,
   LearningPlan,
   PersonaProfile,
+  StreamReport,
   StudyChatResponse,
   StudySessionRecord
 } from "@gal-learner/shared";
@@ -257,11 +258,27 @@ function normalizePlanningTrace(record: any): PlanGenerationTrace {
   };
 }
 
+function normalizeStreamReport(record: any): StreamReport {
+  return {
+    documentId: record.document_id,
+    streamKind: record.stream_kind,
+    status: record.status,
+    createdAt: record.created_at ?? "",
+    updatedAt: record.updated_at ?? "",
+    events: (record.events ?? []).map((event: any) => ({
+      stage: event.stage,
+      payload: event.payload ?? {},
+      createdAt: event.created_at ?? ""
+    }))
+  };
+}
+
 function normalizePlan(plan: any): LearningPlan {
   return {
     id: plan.id,
     documentId: plan.document_id,
     personaId: plan.persona_id,
+    courseTitle: plan.course_title,
     objective: plan.objective,
     deadline: plan.deadline,
     overview: plan.overview,
@@ -322,6 +339,20 @@ export async function getDocumentPlanningTrace(
     await request(`${AI_BASE_URL}/documents/${documentId}/planning-trace`)
   );
   return normalizePlanningTrace(payload);
+}
+
+export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/process-events`)
+  );
+  return normalizeStreamReport(payload);
+}
+
+export async function getDocumentPlanEvents(documentId: string): Promise<StreamReport> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/plan-events`)
+  );
+  return normalizeStreamReport(payload);
 }
 
 export async function uploadAndProcessDocument(file: File): Promise<DocumentRecord> {

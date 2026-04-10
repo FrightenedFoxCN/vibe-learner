@@ -24,6 +24,11 @@ from app.services.plan_prompt import build_learning_plan_messages, read_page_ran
 from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
 from app.services.study_arrangement import StudyArrangementService
+from app.services.stream_reports import (
+    DOCUMENT_PROCESS_STREAM_CATEGORY,
+    LEARNING_PLAN_STREAM_CATEGORY,
+    StreamReportRecorder,
+)
 from app.services.study_sessions import StudySessionService
 
 
@@ -192,6 +197,122 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertEqual(response.id, processed.id)
         self.assertEqual(response.page_count, processed.page_count)
+
+    def test_document_process_stream_report_can_be_replayed_after_sync_processing(self) -> None:
+        from fastapi import UploadFile
+
+        sample_pdf = Path(self.temp_dir.name) / "stream-process.pdf"
+        pdf = fitz.open()
+        page = pdf.new_page()
+        page.insert_text((72, 72), "Chapter 1", fontsize=24)
+        page.insert_text((72, 120), "Enough text to produce chunks and study units.", fontsize=12)
+        pdf.save(sample_pdf)
+        pdf.close()
+
+        upload = UploadFile(filename="stream-process.pdf", file=open(sample_pdf, "rb"))
+        try:
+            document = self.document_service.create_document(upload)
+        finally:
+            upload.file.close()
+
+        recorder = StreamReportRecorder(
+            store=self.document_service.store,
+            category=DOCUMENT_PROCESS_STREAM_CATEGORY,
+            document_id=document.id,
+            stream_kind="document_process",
+        )
+        processed = self.document_service.process_document(
+            document.id,
+            progress_callback=recorder.callback,
+        )
+        recorder.emit(
+            "stream_completed",
+            {
+                "document_id": processed.id,
+                "status": processed.status,
+            },
+        )
+
+        report = StreamReportRecorder.load(
+            store=self.document_service.store,
+            category=DOCUMENT_PROCESS_STREAM_CATEGORY,
+            document_id=document.id,
+            stream_kind="document_process",
+        )
+
+        self.assertEqual(report.status, "completed")
+        self.assertTrue(report.events)
+        self.assertIn("document_processing_started", [event.stage for event in report.events])
+        self.assertIn("stream_completed", [event.stage for event in report.events])
+
+    def test_learning_plan_stream_report_can_be_replayed_after_sync_generation(self) -> None:
+        from fastapi import UploadFile
+
+        sample_pdf = Path(self.temp_dir.name) / "stream-plan.pdf"
+        pdf = fitz.open()
+        page = pdf.new_page()
+        page.insert_text((72, 72), "Chapter 1", fontsize=24)
+        page.insert_text((72, 120), "Enough text to support a simple study plan.", fontsize=12)
+        pdf.save(sample_pdf)
+        pdf.close()
+
+        upload = UploadFile(filename="stream-plan.pdf", file=open(sample_pdf, "rb"))
+        try:
+            document = self.document_service.create_document(upload)
+        finally:
+            upload.file.close()
+
+        processed = self.document_service.process_document(document.id)
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        recorder = StreamReportRecorder(
+            store=self.plan_service.store,
+            category=LEARNING_PLAN_STREAM_CATEGORY,
+            document_id=processed.id,
+            stream_kind="learning_plan",
+        )
+        recorder.emit(
+            "learning_plan_started",
+            {
+                "document_id": processed.id,
+                "persona_id": persona.id,
+                "deadline": "2026-05-01",
+            },
+        )
+        plan = self.plan_service.create_plan(
+            goal=LearningGoalInput(
+                document_id=processed.id,
+                persona_id=persona.id,
+                objective="掌握第一章",
+                deadline="2026-05-01",
+                study_days_per_week=4,
+                session_minutes=35,
+            ),
+            document=processed,
+            persona_name=persona.name,
+            persona=persona,
+            progress_callback=recorder.callback,
+        )
+        recorder.emit(
+            "stream_completed",
+            {
+                "document_id": processed.id,
+                "plan_id": plan.id,
+            },
+        )
+
+        report = StreamReportRecorder.load(
+            store=self.plan_service.store,
+            category=LEARNING_PLAN_STREAM_CATEGORY,
+            document_id=processed.id,
+            stream_kind="learning_plan",
+        )
+
+        stages = [event.stage for event in report.events]
+        self.assertEqual(report.status, "completed")
+        self.assertIn("learning_plan_started", stages)
+        self.assertIn("heuristic_plan_built", stages)
+        self.assertIn("model_plan_applied", stages)
+        self.assertIn("stream_completed", stages)
 
     def test_parser_force_ocr_can_recover_blank_page(self) -> None:
         sample_pdf = Path(self.temp_dir.name) / "blank-scan.pdf"
@@ -528,6 +649,7 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertEqual(messages[0]["role"], "system")
         self.assertIn("strict JSON only", messages[0]["content"])
+        self.assertIn('"course_title": string', messages[0]["content"])
         self.assertIn("Chapter 1 Foundations", messages[1]["content"])
         self.assertIn('"course_outline"', messages[1]["content"])
         self.assertIn('"1.1 Sets"', messages[1]["content"])
@@ -566,6 +688,7 @@ class PersonaPipelineTests(unittest.TestCase):
                                 "message": {
                                     "content": json.dumps(
                                         {
+                                            "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                             "overview": "LLM plan overview",
                                             "weekly_focus": ["Chapter 1 Foundations"],
                                             "today_tasks": ["Read Chapter 1 carefully."],
@@ -608,6 +731,7 @@ class PersonaPipelineTests(unittest.TestCase):
         request = mocked_urlopen.call_args.args[0]
         payload = json.loads(request.data.decode("utf-8"))
         self.assertEqual(payload["model"], "gpt-test")
+        self.assertEqual(reply.course_title, "Discrete Mathematics / Chapter 1 Foundations")
         self.assertEqual(reply.overview, "LLM plan overview")
         self.assertEqual(reply.schedule[0].unit_id, "unit-1")
 
@@ -737,6 +861,7 @@ class PersonaPipelineTests(unittest.TestCase):
                                 "reasoning_content": "I now have enough evidence to write the plan.",
                                 "content": json.dumps(
                                     {
+                                        "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Tool-assisted plan overview",
                                         "weekly_focus": ["Chapter 1 Foundations"],
                                         "today_tasks": ["Read sets and extensionality."],
@@ -796,6 +921,7 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(reply.debug_trace.rounds[0].timeout_seconds, 3)
         self.assertEqual(len(reply.debug_trace.rounds[0].tool_calls), 2)
         self.assertIn("enough evidence", reply.debug_trace.rounds[1].thinking)
+        self.assertEqual(reply.course_title, "Discrete Mathematics / Chapter 1 Foundations")
         self.assertEqual(reply.overview, "Tool-assisted plan overview")
         self.assertEqual(reply.schedule[0].unit_id, "unit-1")
 
@@ -930,6 +1056,7 @@ class PersonaPipelineTests(unittest.TestCase):
             provider,
             "generate_learning_plan",
             return_value=PlanModelReply(
+                course_title="Linear Algebra / Chapter 1 Vectors",
                 overview="Model-crafted overview",
                 weekly_focus=["Chapter 1 Vectors"],
                 today_tasks=["完成向量定义与例题梳理。"],
@@ -960,6 +1087,7 @@ class PersonaPipelineTests(unittest.TestCase):
             )
 
         mocked_plan_call.assert_called_once()
+        self.assertEqual(plan.course_title, "Linear Algebra / Chapter 1 Vectors")
         self.assertEqual(plan.overview, "Model-crafted overview")
         self.assertEqual(plan.schedule[0].title, "Chapter 1 Vectors 精读")
 

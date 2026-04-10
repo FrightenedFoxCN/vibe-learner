@@ -107,6 +107,8 @@ class LearningPlanService:
             for index, item in enumerate(model_plan.schedule)
             if item.unit_id in valid_unit_ids
         ]
+        if model_plan.course_title:
+            plan.course_title = model_plan.course_title
         if model_plan.overview:
             plan.overview = model_plan.overview
         if model_plan.weekly_focus:

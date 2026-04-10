@@ -10,6 +10,7 @@ export interface Citation {
 export interface LearningGoal {
   documentId: string;
   personaId: string;
+  // Learner-authored study goal captured at plan creation time.
   objective: string;
   deadline: string;
   studyDaysPerWeek: number;
@@ -20,10 +21,16 @@ export interface LearningPlan {
   id: string;
   documentId: string;
   personaId: string;
+  // Generated textbook-grounded course title for the plan header.
+  courseTitle: string;
+  // Stable learner-authored study goal captured at plan creation time.
   objective: string;
   deadline: string;
+  // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
+  // Ordered weekly study topics for sequential display.
   weeklyFocus: string[];
+  // Actionable learner tasks for the current session/day.
   todayTasks: string[];
   studyUnits: StudyUnit[];
   schedule: StudyScheduleItem[];
@@ -115,6 +122,21 @@ export interface PlanGenerationTrace {
   model: string;
   createdAt: string;
   rounds: PlanGenerationRoundTrace[];
+}
+
+export interface StreamEvent {
+  stage: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface StreamReport {
+  documentId: string;
+  streamKind: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  events: StreamEvent[];
 }
 
 export interface StudyChatRequest {

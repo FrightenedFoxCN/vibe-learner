@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -127,7 +129,12 @@ class DocumentRecord(BaseModel):
 class LearningGoalInput(BaseModel):
     document_id: str
     persona_id: str
-    objective: str
+    objective: str = Field(
+        description=(
+            "Learner-authored study goal captured at plan creation time. This is supporting goal text for the plan, "
+            "not the generated header title or summary."
+        )
+    )
     deadline: str
     study_days_per_week: int
     session_minutes: int
@@ -148,11 +155,26 @@ class LearningPlanRecord(BaseModel):
     id: str
     document_id: str
     persona_id: str
-    objective: str
+    course_title: str = Field(
+        description="Generated textbook-grounded course title for display in the learning plan header."
+    )
+    objective: str = Field(
+        description=(
+            "Learner-authored study goal captured at plan creation time. This is supporting goal text, not the plan header title."
+        )
+    )
     deadline: str
-    overview: str
-    weekly_focus: list[str]
-    today_tasks: list[str]
+    overview: str = Field(
+        description=(
+            "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."
+        )
+    )
+    weekly_focus: list[str] = Field(
+        description="Ordered weekly study topics. Suitable for a vertical study sequence."
+    )
+    today_tasks: list[str] = Field(
+        description="Actionable learner tasks for the current session or day."
+    )
     study_units: list[StudyUnitRecord] = []
     schedule: list[StudyScheduleRecord] = []
     created_at: str
@@ -181,6 +203,21 @@ class PlanGenerationTraceRecord(BaseModel):
     model: str
     created_at: str
     rounds: list[PlanGenerationRoundRecord] = []
+
+
+class StreamEventRecord(BaseModel):
+    stage: str
+    payload: dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+
+
+class StreamReportRecord(BaseModel):
+    document_id: str
+    stream_kind: str
+    status: str = "idle"
+    created_at: str
+    updated_at: str
+    events: list[StreamEventRecord] = Field(default_factory=list)
 
 
 class StudyChatResult(BaseModel):

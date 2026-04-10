@@ -11,6 +11,8 @@ from app.models.domain import (
     PlanGenerationRoundRecord,
     PlanToolCallTraceRecord,
     PersonaProfile,
+    StreamEventRecord,
+    StreamReportRecord,
     StudySessionRecord,
 )
 
@@ -127,6 +129,14 @@ class PlanGenerationRoundTraceResponse(PlanGenerationRoundRecord):
 
 class DocumentPlanningTraceResponse(PlanGenerationTraceRecord):
     rounds: list[PlanGenerationRoundTraceResponse]
+
+
+class StreamEventResponse(StreamEventRecord):
+    pass
+
+
+class StreamReportResponse(StreamReportRecord):
+    events: list[StreamEventResponse]
 
 
 class ProcessDocumentRequest(BaseModel):

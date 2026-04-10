@@ -31,8 +31,13 @@ def build_learning_plan_messages(
         "Do not schedule units marked include_in_plan=false unless they are clearly necessary for setup. "
         "When the outline suggests a unit contains multiple important subsections, reflect that internal structure in the task focus. "
         "You may call the available tool to inspect a study unit before planning it. "
+        'Generate "course_title" as a concise textbook-grounded course title derived from the cleaned study units and outline. '
+        'The learner goal is provided separately as "objective"; do not reuse it as the plan title. '
+        'Use "overview" only for a short summary paragraph, not for the plan title. '
+        'Use "weekly_focus" for short topic labels, and "today_tasks" for imperative learner actions. '
         "The JSON schema is: "
         "{"
+        '"course_title": string, '
         '"overview": string, '
         '"weekly_focus": string[], '
         '"today_tasks": string[], '
@@ -71,6 +76,7 @@ def build_learning_plan_messages(
             "Use course_outline to notice internal chapter structure such as subsections.",
             "Generate a clean first-pass learning plan after OCR cleanup.",
             "Schedule review soon after each learn session when possible.",
+            'Treat course_title as the textbook-grounded display title, objective as the learner goal, overview as a 1-2 sentence summary, weekly_focus as ordered study topics, and today_tasks as actionable study steps.',
             "Keep weekly_focus and today_tasks concise and learner-facing.",
             "If a study unit looks broad, call the tool to read its detailed subsections and chunk excerpts before scheduling.",
         ],

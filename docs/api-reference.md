@@ -240,10 +240,17 @@ Request body:
 Returns:
 
 - `id`, `document_id`, `persona_id`
-- learner-facing text fields: `overview`, `weekly_focus[]`, `today_tasks[]`
+- learner-facing text fields:
+  - `course_title`: generated textbook-grounded plan header title
+  - `objective`: learner goal captured from the request, used as supporting goal text
+  - `overview`: generated summary paragraph
+  - `weekly_focus[]`: ordered weekly study topics
+  - `today_tasks[]`: actionable learner tasks
 - referenced `study_units[]`
 - planned `schedule[]`
 - `created_at`
+
+Text-field naming and display rules are defined in `docs/plan-text-contract.md`.
 
 Possible mapped backend errors:
 

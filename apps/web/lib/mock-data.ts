@@ -35,6 +35,7 @@ export const mockPlan: LearningPlan = {
   id: "plan-1",
   documentId: "doc-1",
   personaId: "mentor-aurora",
+  courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
   deadline: "2026-04-30",
   overview: "本周完成力学导论与牛顿定律，保留一次错题回看。",

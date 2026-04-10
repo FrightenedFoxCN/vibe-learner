@@ -1,22 +1,22 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { DocumentRecord, LearningPlan, PersonaProfile } from "@gal-learner/shared";
+import type { PlanHistoryItem } from "../lib/plan-panel-data";
 
 interface PlanHistoryProps {
-  plans: LearningPlan[];
-  documents: DocumentRecord[];
-  personas: PersonaProfile[];
+  items: PlanHistoryItem[];
   selectedPlanId: string;
+  isRefreshing: boolean;
   onSelect: (planId: string) => void;
+  onRefresh: () => void;
 }
 
 export function PlanHistory({
-  plans,
-  documents,
-  personas,
+  items,
   selectedPlanId,
-  onSelect
+  isRefreshing,
+  onSelect,
+  onRefresh
 }: PlanHistoryProps) {
   return (
     <article style={styles.panel}>
@@ -25,29 +25,44 @@ export function PlanHistory({
           <p style={styles.sectionLabel}>历史计划</p>
           <h2 style={styles.title}>已生成的学习计划</h2>
         </div>
-        <span style={styles.count}>{plans.length} 条</span>
+        <div style={styles.headerActions}>
+          <button
+            type="button"
+            style={styles.refreshButton}
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? "刷新中..." : "刷新快照"}
+          </button>
+          <span style={styles.count}>{items.length} 条</span>
+        </div>
       </div>
-      {plans.length ? (
+      {items.length ? (
         <div style={styles.list}>
-          {plans.map((plan) => {
-            const document = documents.find((item) => item.id === plan.documentId);
-            const persona = personas.find((item) => item.id === plan.personaId);
-            const selected = plan.id === selectedPlanId;
+          {items.map((item) => {
+            const selected = item.id === selectedPlanId;
             return (
               <button
-                key={plan.id}
+                key={item.id}
                 type="button"
                 style={{
                   ...styles.item,
                   ...(selected ? styles.itemActive : {})
                 }}
-                onClick={() => onSelect(plan.id)}
+                onClick={() => {
+                  if (!selected) {
+                    onSelect(item.id);
+                  }
+                }}
               >
-                <strong>{document?.title ?? plan.documentId}</strong>
+                <div style={styles.itemHeader}>
+                  <strong>{item.documentTitle}</strong>
+                  {selected ? <span style={styles.selectedBadge}>当前查看</span> : null}
+                </div>
                 <span>
-                  {persona?.name ?? plan.personaId} · 截止 {plan.deadline} · {formatDate(plan.createdAt)}
+                  {item.personaName} · 截止 {item.deadline} · {formatDate(item.createdAt)}
                 </span>
-                <p style={styles.overview}>{plan.overview}</p>
+                <p style={styles.overview}>{item.overview}</p>
               </button>
             );
           })}
@@ -73,6 +88,11 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
     alignItems: "flex-start"
   },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10
+  },
   sectionLabel: {
     margin: 0,
     fontSize: 12,
@@ -92,6 +112,13 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid rgba(63, 140, 133, 0.18)",
     fontSize: 13
   },
+  refreshButton: {
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    padding: "8px 12px",
+    background: "rgba(255,255,255,0.82)",
+    cursor: "pointer"
+  },
   list: {
     display: "grid",
     gap: 10,
@@ -110,6 +137,19 @@ const styles: Record<string, CSSProperties> = {
   itemActive: {
     border: "1px solid var(--accent)",
     background: "var(--accent-soft)"
+  },
+  itemHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12
+  },
+  selectedBadge: {
+    padding: "4px 10px",
+    borderRadius: 999,
+    background: "rgba(63, 140, 133, 0.14)",
+    fontSize: 12,
+    whiteSpace: "nowrap"
   },
   overview: {
     margin: 0,

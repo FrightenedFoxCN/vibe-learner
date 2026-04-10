@@ -16,6 +16,7 @@ from app.models.api import (
     DocumentPlanningContextResponse,
     DocumentPlanningTraceResponse,
     DocumentResponse,
+    StreamReportResponse,
     DocumentStatusResponse,
     ExerciseGenerateRequest,
     ExerciseGenerateResponse,
@@ -31,6 +32,11 @@ from app.models.api import (
     StudySessionResponse,
     SubmissionGradeRequest,
     SubmissionGradeResponse,
+)
+from app.services.stream_reports import (
+    DOCUMENT_PROCESS_STREAM_CATEGORY,
+    LEARNING_PLAN_STREAM_CATEGORY,
+    StreamReportRecorder,
 )
 from app.services.model_provider import get_learning_plan_tool_specs
 from app.services.plan_prompt import build_learning_plan_context
@@ -91,13 +97,38 @@ def create_document(file: UploadFile = File(...)) -> DocumentResponse:
 def process_document(
     document_id: str, payload: ProcessDocumentRequest | None = None
 ) -> DocumentResponse:
+    recorder = StreamReportRecorder(
+        store=container.store,
+        category=DOCUMENT_PROCESS_STREAM_CATEGORY,
+        document_id=document_id,
+        stream_kind="document_process",
+    )
     logger.info(
         "documents.process document_id=%s force_ocr=%s",
         document_id,
         payload.force_ocr if payload else False,
     )
-    document = container.document_service.process_document(
-        document_id, force_ocr=(payload.force_ocr if payload else False)
+    try:
+        document = container.document_service.process_document(
+            document_id,
+            force_ocr=(payload.force_ocr if payload else False),
+            progress_callback=recorder.callback,
+        )
+    except Exception as exc:
+        recorder.emit(
+            "stream_error",
+            {
+                "document_id": document_id,
+                "error": _stringify_error(exc),
+            },
+        )
+        raise
+    recorder.emit(
+        "stream_completed",
+        {
+            "document_id": document.id,
+            "status": document.status,
+        },
     )
     return _into_response(DocumentResponse, document)
 
@@ -108,8 +139,15 @@ def process_document_stream(
 ) -> StreamingResponse:
     force_ocr = payload.force_ocr if payload else False
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
+    recorder = StreamReportRecorder(
+        store=container.store,
+        category=DOCUMENT_PROCESS_STREAM_CATEGORY,
+        document_id=document_id,
+        stream_kind="document_process",
+    )
 
     def report(stage: str, event_payload: dict[str, object]) -> None:
+        recorder.emit(stage, event_payload)
         event_queue.put({"stage": stage, "payload": event_payload})
 
     def run() -> None:
@@ -118,6 +156,13 @@ def process_document_stream(
                 document_id,
                 force_ocr=force_ocr,
                 progress_callback=report,
+            )
+            recorder.emit(
+                "stream_completed",
+                {
+                    "document_id": document.id,
+                    "status": document.status,
+                },
             )
             event_queue.put(
                 {
@@ -130,6 +175,13 @@ def process_document_stream(
                 }
             )
         except Exception as exc:
+            recorder.emit(
+                "stream_error",
+                {
+                    "document_id": document_id,
+                    "error": _stringify_error(exc),
+                },
+            )
             event_queue.put(
                 {
                     "stage": "stream_error",
@@ -164,6 +216,17 @@ def get_document_status(document_id: str) -> DocumentStatusResponse:
 def get_document_debug(document_id: str) -> DocumentDebugResponse:
     report = container.document_service.require_debug_report(document_id)
     return _into_response(DocumentDebugResponse, report)
+
+
+@router.get("/documents/{document_id}/process-events", response_model=StreamReportResponse)
+def get_document_process_events(document_id: str) -> StreamReportResponse:
+    report = StreamReportRecorder.load(
+        store=container.store,
+        category=DOCUMENT_PROCESS_STREAM_CATEGORY,
+        document_id=document_id,
+        stream_kind="document_process",
+    )
+    return _into_response(StreamReportResponse, report)
 
 
 @router.get(
@@ -203,6 +266,17 @@ def get_document_planning_trace(document_id: str) -> DocumentPlanningTraceRespon
         created_at="",
         rounds=[],
     )
+
+
+@router.get("/documents/{document_id}/plan-events", response_model=StreamReportResponse)
+def get_document_plan_events(document_id: str) -> StreamReportResponse:
+    report = StreamReportRecorder.load(
+        store=container.store,
+        category=LEARNING_PLAN_STREAM_CATEGORY,
+        document_id=document_id,
+        stream_kind="learning_plan",
+    )
+    return _into_response(StreamReportResponse, report)
 
 
 @router.get("/personas", response_model=PersonaListResponse)
@@ -267,6 +341,12 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
 
 @router.post("/learning-plans", response_model=LearningPlanResponse)
 def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResponse:
+    recorder = StreamReportRecorder(
+        store=container.store,
+        category=LEARNING_PLAN_STREAM_CATEGORY,
+        document_id=payload.document_id,
+        stream_kind="learning_plan",
+    )
     logger.info(
         "learning_plans.create document_id=%s persona_id=%s deadline=%s",
         payload.document_id,
@@ -280,6 +360,14 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
         if document.debug_ready
         else None
     )
+    recorder.emit(
+        "learning_plan_started",
+        {
+            "document_id": payload.document_id,
+            "persona_id": payload.persona_id,
+            "deadline": payload.deadline,
+        },
+    )
     try:
         plan = container.plan_service.create_plan(
             goal=payload,
@@ -287,9 +375,18 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
             persona_name=persona.name,
             persona=persona,
             debug_report=debug_report,
+            progress_callback=recorder.callback,
         )
     except RuntimeError as exc:
         http_error = _map_plan_generation_error(exc)
+        recorder.emit(
+            "stream_error",
+            {
+                "document_id": payload.document_id,
+                "detail": http_error.detail,
+                "status_code": http_error.status_code,
+            },
+        )
         logger.warning(
             "learning_plans.create_failed document_id=%s persona_id=%s detail=%s status_code=%s",
             payload.document_id,
@@ -298,6 +395,13 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
             http_error.status_code,
         )
         raise http_error from exc
+    recorder.emit(
+        "stream_completed",
+        {
+            "document_id": payload.document_id,
+            "plan_id": plan.id,
+        },
+    )
     return _into_response(LearningPlanResponse, plan)
 
 
@@ -321,8 +425,15 @@ def create_learning_plan_stream(
         else None
     )
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
+    recorder = StreamReportRecorder(
+        store=container.store,
+        category=LEARNING_PLAN_STREAM_CATEGORY,
+        document_id=payload.document_id,
+        stream_kind="learning_plan",
+    )
 
     def report(stage: str, event_payload: dict[str, object]) -> None:
+        recorder.emit(stage, event_payload)
         event_queue.put({"stage": stage, "payload": event_payload})
 
     def run() -> None:
@@ -343,6 +454,13 @@ def create_learning_plan_stream(
                 debug_report=debug_report,
                 progress_callback=report,
             )
+            recorder.emit(
+                "stream_completed",
+                {
+                    "document_id": payload.document_id,
+                    "plan_id": plan.id,
+                },
+            )
             event_queue.put(
                 {
                     "stage": "stream_completed",
@@ -355,6 +473,14 @@ def create_learning_plan_stream(
             )
         except RuntimeError as exc:
             http_error = _map_plan_generation_error(exc)
+            recorder.emit(
+                "stream_error",
+                {
+                    "document_id": payload.document_id,
+                    "detail": http_error.detail,
+                    "status_code": http_error.status_code,
+                },
+            )
             event_queue.put(
                 {
                     "stage": "stream_error",
@@ -366,6 +492,13 @@ def create_learning_plan_stream(
                 }
             )
         except Exception as exc:
+            recorder.emit(
+                "stream_error",
+                {
+                    "document_id": payload.document_id,
+                    "detail": str(exc),
+                },
+            )
             event_queue.put(
                 {
                     "stage": "stream_error",
@@ -416,3 +549,10 @@ def grade_submission(payload: SubmissionGradeRequest) -> SubmissionGradeResponse
         answer=payload.answer,
     )
     return _into_response(SubmissionGradeResponse, response)
+
+
+def _stringify_error(exc: Exception) -> str:
+    detail = getattr(exc, "detail", None)
+    if detail is not None:
+        return str(detail)
+    return str(exc)

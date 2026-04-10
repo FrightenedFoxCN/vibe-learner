@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import type {
   DocumentDebugRecord,
@@ -8,14 +8,17 @@ import type {
   LearningPlan,
   PlanGenerationTrace,
   PersonaProfile,
-  DocumentRecord
+  DocumentRecord,
+  StreamReport
 } from "@gal-learner/shared";
 
 import {
   createLearningPlanStream,
   getDocumentDebug,
+  getDocumentPlanEvents,
   getDocumentPlanningContext,
   getDocumentPlanningTrace,
+  getDocumentProcessEvents,
   listDocuments,
   listPersonas,
   processDocumentStream
@@ -36,12 +39,41 @@ export function DocumentDebugConsole() {
   const [sessionMinutes, setSessionMinutes] = useState(45);
   const [processStreamEvents, setProcessStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
   const [planStreamEvents, setPlanStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
+  const [processStreamStatus, setProcessStreamStatus] = useState("idle");
+  const [planStreamStatus, setPlanStreamStatus] = useState("idle");
   const [latestPlan, setLatestPlan] = useState<LearningPlan | null>(null);
   const [processBusy, setProcessBusy] = useState(false);
   const [planBusy, setPlanBusy] = useState(false);
   const selectedDocument = documents.find((document) => document.id === selectedId) ?? null;
   const coarseSections = debugRecord?.sections.filter((section) => section.level === 1) ?? [];
   const fineSections = debugRecord?.sections.filter((section) => section.level === 2) ?? [];
+
+  const applyStreamReport = (
+    report: StreamReport,
+    setEvents: Dispatch<SetStateAction<Array<{ stage: string; payload: Record<string, unknown> }>>>,
+    setStatus: Dispatch<SetStateAction<string>>
+  ) => {
+    setEvents(
+      report.events.map((event) => ({
+        stage: event.stage,
+        payload: event.payload
+      }))
+    );
+    setStatus(report.status);
+  };
+
+  const loadStreamReports = async (documentId: string) => {
+    const [processReport, planReport] = await Promise.all([
+      getDocumentProcessEvents(documentId),
+      getDocumentPlanEvents(documentId)
+    ]);
+    applyStreamReport(processReport, setProcessStreamEvents, setProcessStreamStatus);
+    applyStreamReport(planReport, setPlanStreamEvents, setPlanStreamStatus);
+    return {
+      processStatus: processReport.status,
+      planStatus: planReport.status
+    };
+  };
 
   useEffect(() => {
     let active = true;
@@ -68,6 +100,25 @@ export function DocumentDebugConsole() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!selectedId) {
+      return;
+    }
+    const shouldPoll =
+      selectedDocument?.status === "processing" ||
+      processStreamStatus === "running" ||
+      planStreamStatus === "running";
+    if (!shouldPoll) {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      void refreshDocuments(selectedId, true, true);
+    }, 1500);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [selectedId, selectedDocument?.status, processStreamStatus, planStreamStatus]);
+
   const handleSelect = (documentId: string) => {
     setSelectedId(documentId);
     const load = async () => {
@@ -82,11 +133,16 @@ export function DocumentDebugConsole() {
 
   const loadDebugReport = async (documentId: string) => {
     const doc = documents.find((item) => item.id === documentId);
+    const streamState = await loadStreamReports(documentId);
     if (!doc?.debugReady) {
       setDebugRecord(null);
       setPlanningContext(null);
       setPlanningTrace(null);
-      setMessage("该文档尚未生成调试报告。");
+      if (doc?.status === "processing" || streamState.processStatus === "running") {
+        setMessage("该文档仍在处理中，已加载最近一次流式处理记录。");
+      } else {
+        setMessage("该文档尚未生成调试报告。");
+      }
       return;
     }
     const report = await getDocumentDebug(documentId);
@@ -98,7 +154,7 @@ export function DocumentDebugConsole() {
     setMessage("已切换到新的解析调试报告。");
   };
 
-  const refreshDocuments = async (preferredId?: string, active = true) => {
+  const refreshDocuments = async (preferredId?: string, active = true, silent = false) => {
     const docs = await listDocuments();
     if (!active) {
       return;
@@ -109,16 +165,32 @@ export function DocumentDebugConsole() {
       setDebugRecord(null);
       setPlanningContext(null);
       setPlanningTrace(null);
-      setMessage("还没有文档。先在主页上传教材，再回来看解析后台。");
+      setProcessStreamEvents([]);
+      setPlanStreamEvents([]);
+      setProcessStreamStatus("idle");
+      setPlanStreamStatus("idle");
+      if (!silent) {
+        setMessage("还没有文档。先在主页上传教材，再回来看解析后台。");
+      }
       return;
     }
     setSelectedId(nextId);
     const nextDoc = docs.find((item) => item.id === nextId);
+    const streamState = await loadStreamReports(nextId);
+    if (!active) {
+      return;
+    }
     if (!nextDoc?.debugReady) {
       setDebugRecord(null);
       setPlanningContext(null);
       setPlanningTrace(null);
-      setMessage("该文档尚未生成调试报告，请先处理文档。");
+      if (!silent) {
+        if (nextDoc?.status === "processing" || streamState.processStatus === "running") {
+          setMessage("该文档仍在处理中，已回放最近一次流式处理记录。");
+        } else {
+          setMessage("该文档尚未生成调试报告，请先处理文档。");
+        }
+      }
       return;
     }
     const report = await getDocumentDebug(nextId);
@@ -130,7 +202,9 @@ export function DocumentDebugConsole() {
     setDebugRecord(report);
     setPlanningContext(planning);
     setPlanningTrace(trace);
-    setMessage("已加载解析调试报告。");
+    if (!silent) {
+      setMessage("已加载解析调试报告。");
+    }
   };
 
   const handleReprocess = (forceOcr: boolean) => {
@@ -141,14 +215,17 @@ export function DocumentDebugConsole() {
       try {
         setProcessBusy(true);
         setProcessStreamEvents([]);
+        setProcessStreamStatus("running");
         setMessage(forceOcr ? "正在执行强制 OCR 解析..." : "正在重新解析文档...");
         await processDocumentStream(selectedId, { forceOcr }, (event) => {
           setProcessStreamEvents((current) => [...current.slice(-39), event]);
+          setProcessStreamStatus(resolveStreamStatus(event.stage));
           setMessage(`处理中: ${event.stage}`);
         });
-        await refreshDocuments(selectedId);
+        await refreshDocuments(selectedId, true, true);
         setMessage(forceOcr ? "强制 OCR 解析完成。" : "重新解析完成。");
       } catch (error) {
+        setProcessStreamStatus("error");
         setMessage(`重新解析失败: ${String(error)}`);
       } finally {
         setProcessBusy(false);
@@ -165,6 +242,7 @@ export function DocumentDebugConsole() {
       try {
         setPlanBusy(true);
         setPlanStreamEvents([]);
+        setPlanStreamStatus("running");
         setLatestPlan(null);
         setMessage("正在流式生成学习计划...");
         const plan = await createLearningPlanStream(
@@ -178,14 +256,17 @@ export function DocumentDebugConsole() {
           },
           (event) => {
             setPlanStreamEvents((current) => [...current.slice(-59), event]);
+            setPlanStreamStatus(resolveStreamStatus(event.stage));
             setMessage(`计划处理中: ${event.stage}`);
           }
         );
         setLatestPlan(plan);
+        await loadStreamReports(selectedId);
         const trace = await getDocumentPlanningTrace(selectedId);
         setPlanningTrace(trace);
         setMessage("学习计划生成完成。");
       } catch (error) {
+        setPlanStreamStatus("error");
         setMessage(`计划生成失败: ${String(error)}`);
       } finally {
         setPlanBusy(false);
@@ -705,6 +786,16 @@ export function DocumentDebugConsole() {
       </section>
     </main>
   );
+}
+
+function resolveStreamStatus(stage: string) {
+  if (stage === "stream_completed") {
+    return "completed";
+  }
+  if (stage === "stream_error") {
+    return "error";
+  }
+  return "running";
 }
 
 const styles: Record<string, CSSProperties> = {

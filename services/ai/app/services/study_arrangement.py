@@ -167,14 +167,19 @@ class StudyArrangementService:
         ] or [
             f"阅读 {document.title} 的第一页内容，确认学习目标与术语。",
         ]
+        # objective stays as learner-authored goal text; overview/course_title are generated display fields.
         overview = (
             f"{persona_name} 将带你在 {goal.deadline} 前完成 {document.title} 的"
             f" {len(plannable_units)} 个学习单元，先从 {plannable_units[0].title if plannable_units else document.title} 开始。"
         )
+        course_title = " / ".join(
+            [unit.title for unit in plannable_units[:2] if unit.title]
+        ) or document.title
         return LearningPlanRecord(
             id="",
             document_id=document.id,
             persona_id=goal.persona_id,
+            course_title=course_title,
             objective=goal.objective,
             deadline=goal.deadline,
             overview=overview,

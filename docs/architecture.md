@@ -32,6 +32,17 @@ The frontend is responsible for:
 
 The web client should treat the backend as the only source of truth for document processing, plan history, and character events.
 
+Within the `Learning Workspace`, frontend responsibilities are further split into explicit layers:
+
+- page composition in `apps/web/components/learning-workspace.tsx`
+- async workflow orchestration in `apps/web/hooks/use-learning-workspace-controller.ts`
+- reducer-driven state transitions in `apps/web/lib/learning-workspace-reducer.ts`
+- pure state helpers in `apps/web/lib/learning-workspace-state.ts`
+- plan-view mapping helpers in `apps/web/lib/plan-panel-data.ts`
+- repeated notices and telemetry helpers in `apps/web/lib/learning-workspace-copy.ts` and `apps/web/lib/learning-workspace-telemetry.ts`
+
+See `docs/frontend-learning-workspace.md` before reshaping this boundary.
+
 ### AI Service
 
 The backend is responsible for:
@@ -52,6 +63,16 @@ The backend is responsible for:
 - character events
 
 Backend response models still live in Python and must stay aligned with these shared types.
+
+Learning-plan text fields also follow a fixed cross-layer contract:
+
+- `course_title`: generated textbook-grounded plan header title
+- `objective`: learner-authored goal shown as supporting metadata
+- `overview`: summary paragraph
+- `weekly_focus`: ordered weekly study topics
+- `today_tasks`: actionable learner tasks
+
+See `docs/plan-text-contract.md` before renaming fields or changing which text is rendered as a title versus summary.
 
 ## End-To-End Flow
 
