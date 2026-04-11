@@ -442,7 +442,9 @@ const styles: Record<string, CSSProperties> = {
   },
   choiceButton: {
     textAlign: "left",
-    border: "1px solid var(--border)",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "var(--border)",
     padding: "8px 10px",
     background: "transparent",
     color: "var(--ink)",

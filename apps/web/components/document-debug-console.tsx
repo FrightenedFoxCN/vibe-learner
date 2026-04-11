@@ -307,7 +307,7 @@ export function DocumentDebugConsole() {
                   {displayProcessStreamEvents.slice(-8).map((event, index) => (
                     <div key={`${event.stage}-${index}`} style={styles.chunkCard}>
                       <strong>{event.stage}</strong>
-                      <pre style={styles.preCompact}>{JSON.stringify(event.payload, null, 2)}</pre>
+                      <pre style={styles.preCompact}>{truncateJson(event.payload, 1200)}</pre>
                     </div>
                   ))}
                 </div>
@@ -332,7 +332,7 @@ export function DocumentDebugConsole() {
                   {displayPlanStreamEvents.slice(-8).map((event, index) => (
                     <div key={`${event.stage}-${index}`} style={styles.chunkCard}>
                       <strong>{event.stage}</strong>
-                      <pre style={styles.preCompact}>{JSON.stringify(event.payload, null, 2)}</pre>
+                      <pre style={styles.preCompact}>{truncateJson(event.payload, 1200)}</pre>
                     </div>
                   ))}
                 </div>
@@ -516,7 +516,7 @@ export function DocumentDebugConsole() {
                     {round.thinking ? (
                       <div style={styles.detailBlock}>
                         <strong>Thinking</strong>
-                        <pre style={styles.pre}>{round.thinking}</pre>
+                        <pre style={styles.pre}>{truncateText(round.thinking, 1200)}</pre>
                       </div>
                     ) : (
                       <span style={styles.emptyInline}>无 reasoning/thinking 内容。</span>
@@ -524,7 +524,7 @@ export function DocumentDebugConsole() {
                     {round.assistantContent ? (
                       <div style={styles.detailBlock}>
                         <strong>Assistant content</strong>
-                        <pre style={styles.pre}>{round.assistantContent}</pre>
+                        <pre style={styles.pre}>{truncateText(round.assistantContent, 1200)}</pre>
                       </div>
                     ) : null}
                     {round.toolCalls.length ? (
@@ -538,8 +538,8 @@ export function DocumentDebugConsole() {
                               {toolCall.resultSummary ? (
                                 <span style={styles.traceSummary}>{toolCall.resultSummary}</span>
                               ) : null}
-                              <pre style={styles.preCompact}>{toolCall.argumentsJson}</pre>
-                              <pre style={styles.preCompact}>{toolCall.resultJson}</pre>
+                              <pre style={styles.preCompact}>{truncateText(toolCall.argumentsJson, 1200)}</pre>
+                              <pre style={styles.preCompact}>{truncateText(toolCall.resultJson, 1200)}</pre>
                             </div>
                           ))}
                         </div>
@@ -621,7 +621,7 @@ export function DocumentDebugConsole() {
                         <span style={styles.headingTagMuted}>无标题候选</span>
                       )}
                     </div>
-                    <pre style={styles.pre}>{page.textPreview || "[empty]"}</pre>
+                    <pre style={styles.pre}>{truncateText(page.textPreview || "[empty]", 1200)}</pre>
                   </div>
                 ))}
                 {hiddenPageCount ? (
@@ -1019,4 +1019,8 @@ function truncateText(text: string, maxChars: number) {
     return normalized;
   }
   return `${normalized.slice(0, maxChars).trimEnd()}...`;
+}
+
+function truncateJson(value: unknown, maxChars: number) {
+  return truncateText(JSON.stringify(value, null, 2), maxChars);
 }

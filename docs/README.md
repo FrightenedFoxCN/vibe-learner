@@ -8,6 +8,7 @@
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
 - `frontend-learning-workspace.md`: frontend responsibility split for `/plan` and `/study` workspace pages
 - `persona-spectrum.md`: Persona Spectrum page data chain and API contract
+- `scene-setup.md`: layered scene editor guide for `/scene-setup`
 
 ## Reading Order
 

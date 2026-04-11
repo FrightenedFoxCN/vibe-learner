@@ -155,7 +155,6 @@ export default function PersonaSpectrumPage() {
   const [previewAction, setPreviewAction] = useState<CharacterAction>("idle");
   const [previewSpeech, setPreviewSpeech] = useState<SpeechStyle>("warm");
   const [previewIntensity, setPreviewIntensity] = useState(0.6);
-  const [previewSceneHint, setPreviewSceneHint] = useState("人格色谱预览");
   const [previewTiming, setPreviewTiming] = useState<TimingHint>("instant");
 
   const [previewSessionId, setPreviewSessionId] = useState("");
@@ -275,16 +274,16 @@ export default function PersonaSpectrumPage() {
       action: previewAction,
       intensity: previewIntensity,
       speechStyle: previewSpeech,
-      sceneHint: previewSceneHint,
+      sceneHint: "persona_layer_preview",
       lineSegmentId: "persona-spectrum-debug",
       timingHint: previewTiming
     };
     return {
-      reply: "这是色谱调试预览，不会调用模型。可先调教情绪、动作与语速，再进入章节联动预览。",
+      reply: "这是人格色谱调试预览，不会调用模型。可先调教情绪、动作与语速，再进入章节联动预览。",
       citations: [],
       characterEvents: [event]
     };
-  }, [previewAction, previewEmotion, previewIntensity, previewSceneHint, previewSpeech, previewTiming]);
+  }, [previewAction, previewEmotion, previewIntensity, previewSpeech, previewTiming]);
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
     if (assistError) setAssistError("");
@@ -590,7 +589,7 @@ export default function PersonaSpectrumPage() {
       {/* ── Heading ── */}
       <div style={styles.heading}>
         <h1 style={styles.pageTitle}>人格色谱</h1>
-        <p style={styles.pageDesc}>教师人格配置、表现层色谱、导入导出与章节联动预览。</p>
+        <p style={styles.pageDesc}>教师人格配置、插槽权重、导入导出与章节联动预览。</p>
       </div>
 
       {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
@@ -794,7 +793,7 @@ export default function PersonaSpectrumPage() {
           {/* Panel: emotion/action preview */}
           <section style={styles.rightPanel}>
             <div style={styles.panelHead}>
-              <span style={styles.panelTitle}>情绪与动作色谱</span>
+              <span style={styles.panelTitle}>人格表现调参</span>
             </div>
 
             <div style={styles.fieldGroup}>
@@ -849,10 +848,6 @@ export default function PersonaSpectrumPage() {
             <div style={styles.fieldGroup}>
               <label style={styles.fieldLabel}>强度 {previewIntensity.toFixed(2)}</label>
               <input style={styles.range} type="range" min={0} max={1} step={0.05} value={previewIntensity} onChange={(e) => setPreviewIntensity(Number(e.target.value))} />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.fieldLabel}>场景提示</label>
-              <input style={styles.input} value={previewSceneHint} onChange={(e) => setPreviewSceneHint(e.target.value)} />
             </div>
             <CharacterShell persona={draftPersona} response={syntheticPreviewResponse} pending={false} />
           </section>

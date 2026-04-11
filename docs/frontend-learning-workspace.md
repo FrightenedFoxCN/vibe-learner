@@ -13,7 +13,8 @@ When changing this area, preserve the separation below unless there is a clear a
 - `/` = navigation home
 - `/plan` = `Plan Workspace` (upload, process, generate, history)
 - `/study` = `Chapter Dialogue Workspace` (chat + PDF + chapter switching)
-- `/persona-spectrum` = reserved page for future persona configuration
+- `/persona-spectrum` = `Persona Layer Workspace` (persona slots, style tuning, import/export)
+- `/scene-setup` = `Scene Setup Workspace` (world-to-classroom layered scene editing)
 
 `/plan` and `/study` share one runtime state source through `LearningWorkspaceProvider`.
 

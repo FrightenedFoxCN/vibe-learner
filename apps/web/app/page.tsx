@@ -19,8 +19,14 @@ const PAGES = [
   {
     num: "03",
     href: "/persona-spectrum" as const,
-    title: "人格色谱",
-    desc: "配置 AI 教师人格、风格调参、情绪预览与导入导出。",
+    title: "人格层",
+    desc: "配置 AI 教师人格、插槽权重、风格调参与导入导出。",
+  },
+  {
+    num: "04",
+    href: "/scene-setup" as const,
+    title: "场景搭建",
+    desc: "从世界到教室搭建层级场景，并为每一层补充可互动物体。",
   },
 ];
 

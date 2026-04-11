@@ -13,6 +13,8 @@ import type {
   StudySessionRecord
 } from "@vibe-learner/shared";
 
+import { compactPreviewString, compactPreviewValue } from "./preview";
+
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
 }
@@ -151,7 +153,7 @@ function normalizeDocument(document: any): DocumentRecord {
     pageCount: document.page_count,
     chunkCount: document.chunk_count,
     studyUnitCount: document.study_unit_count,
-    previewExcerpt: document.preview_excerpt,
+    previewExcerpt: compactPreviewString(document.preview_excerpt, 240),
     debugReady: document.debug_ready,
     sections: document.sections.map((section: any) => ({
       id: section.id,
@@ -215,7 +217,7 @@ function normalizeDebugRecord(record: any): DocumentDebugRecord {
       pageNumber: page.page_number,
       charCount: page.char_count,
       wordCount: page.word_count,
-      textPreview: page.text_preview,
+      textPreview: compactPreviewString(page.text_preview, 320),
       dominantFontSize: page.dominant_font_size,
       extractionSource: page.extraction_source,
       headingCandidates: page.heading_candidates.map((candidate: any) => ({
@@ -232,8 +234,8 @@ function normalizeDebugRecord(record: any): DocumentDebugRecord {
       pageStart: chunk.page_start,
       pageEnd: chunk.page_end,
       charCount: chunk.char_count,
-      textPreview: chunk.text_preview,
-      content: chunk.content ?? ""
+      textPreview: compactPreviewString(chunk.text_preview, 240),
+      content: compactPreviewString(chunk.content ?? "", 600)
     })),
     warnings: record.warnings.map((warning: any) => ({
       code: warning.code,
@@ -293,7 +295,7 @@ function normalizePlanningContext(record: any): DocumentPlanningContext {
             pageStart: chunk.page_start,
             pageEnd: chunk.page_end,
             charCount: chunk.char_count,
-            content: chunk.content ?? ""
+            content: compactPreviewString(chunk.content ?? "", 600)
           }))
         }
       ])
@@ -314,16 +316,16 @@ function normalizePlanningTrace(record: any): PlanGenerationTrace {
     rounds: (record.rounds ?? []).map((round: any) => ({
       roundIndex: round.round_index,
       finishReason: round.finish_reason ?? "",
-      assistantContent: round.assistant_content ?? "",
-      thinking: round.thinking ?? "",
+      assistantContent: compactPreviewString(round.assistant_content ?? "", 800),
+      thinking: compactPreviewString(round.thinking ?? "", 800),
       elapsedMs: round.elapsed_ms ?? 0,
       timeoutSeconds: round.timeout_seconds ?? 0,
       toolCalls: (round.tool_calls ?? []).map((toolCall: any) => ({
         toolCallId: toolCall.tool_call_id,
         toolName: toolCall.tool_name,
-        argumentsJson: toolCall.arguments_json,
+        argumentsJson: compactPreviewString(toolCall.arguments_json ?? "", 800),
         resultSummary: toolCall.result_summary ?? "",
-        resultJson: toolCall.result_json
+        resultJson: compactPreviewString(toolCall.result_json ?? "", 800)
       }))
     }))
   };
@@ -351,7 +353,7 @@ function normalizeStreamReport(record: any): StreamReport {
     updatedAt: record.updated_at ?? "",
     events: (record.events ?? []).map((event: any) => ({
       stage: event.stage,
-      payload: event.payload ?? {},
+      payload: compactPreviewValue(event.payload ?? {}) as Record<string, unknown>,
       createdAt: event.created_at ?? ""
     }))
   };
@@ -381,7 +383,7 @@ function normalizeSession(session: any): StudySessionRecord {
     sectionId: session.section_id,
     sectionTitle: session.section_title ?? "",
     themeHint: session.theme_hint ?? "",
-    sessionSystemPrompt: session.session_system_prompt ?? "",
+    sessionSystemPrompt: compactPreviewString(session.session_system_prompt ?? "", 1200),
     status: session.status,
     turns: (session.turns ?? []).map((turn: any) => ({
       learnerMessage: turn.learner_message,
@@ -405,7 +407,7 @@ function normalizeSession(session: any): StudySessionRecord {
       personaSlotTrace: (turn.persona_slot_trace ?? []).map((item: any) => ({
         kind: String(item.kind ?? "custom"),
         label: String(item.label ?? item.kind ?? ""),
-        contentExcerpt: String(item.content_excerpt ?? ""),
+        contentExcerpt: compactPreviewString(item.content_excerpt ?? "", 280),
         reason: String(item.reason ?? "")
       })),
       createdAt: turn.created_at

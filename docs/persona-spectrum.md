@@ -8,7 +8,7 @@ This document defines the data chain and interface contract used by the `/person
 - Maintain editable persona settings, including background story.
 - Preview persona behavior in chapter-linked study chat sessions.
 - Provide template snippets and AI-assisted setting refinement.
-- Surface explicit interaction state (emotion/action/speech/scene) in preview.
+- Surface explicit interaction state (emotion/action/speech) in preview.
 
 ## Frontend Data Flow
 
@@ -70,6 +70,14 @@ This document defines the data chain and interface contract used by the `/person
 ### `POST /study-sessions/{session_id}/chat`
 
 - Purpose: request real chat response and character events under selected persona and section.
+
+## Scene Layer Split
+
+The layered scene editor moved to `/scene-setup`.
+
+- Use it to define the macro world, regional layers, campus layers, and the final classroom.
+- Put interactive objects and local rules in the layer they belong to.
+- Keep persona drafting focused on who the teacher is and how they speak, not on the room they stand in.
 
 ## Persona Setting: Background Story
 

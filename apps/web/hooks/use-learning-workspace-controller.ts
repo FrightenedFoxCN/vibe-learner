@@ -50,6 +50,7 @@ import {
   logWorkspaceError,
   logWorkspaceInfo
 } from "../lib/learning-workspace-telemetry";
+import { compactPreviewValue } from "../lib/preview";
 
 export interface GeneratePlanInput {
   file: File;
@@ -295,7 +296,13 @@ export function useLearningWorkspaceController({
         uploadedDocument.id,
         {},
         (event) => {
-          setProcessStreamEvents((current) => [...current.slice(-79), event]);
+          setProcessStreamEvents((current) => [
+            ...current.slice(-79),
+            {
+              stage: event.stage,
+              payload: compactPreviewValue(event.payload) as Record<string, unknown>
+            }
+          ]);
           setProcessStreamStatus(resolveStreamStatus(event.stage));
           dispatch({
             type: "notice_set",
@@ -328,7 +335,13 @@ export function useLearningWorkspaceController({
           objective: input.objective
         },
         (event) => {
-          setPlanStreamEvents((current) => [...current.slice(-119), event]);
+          setPlanStreamEvents((current) => [
+            ...current.slice(-119),
+            {
+              stage: event.stage,
+              payload: compactPreviewValue(event.payload) as Record<string, unknown>
+            }
+          ]);
           setPlanStreamStatus(resolveStreamStatus(event.stage));
           dispatch({
             type: "notice_set",

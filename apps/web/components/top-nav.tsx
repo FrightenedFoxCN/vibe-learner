@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties, JSX } from "react";
 
 interface TopNavProps {
-  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/debug";
+  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/debug";
 }
 
 /* ─── SVG icons (16×16, stroke, currentColor) ─── */
@@ -47,6 +47,16 @@ function IconPersona() {
   );
 }
 
+function IconScene() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12l3.5-4.5L9 10l2.5-3L14 12" />
+      <path d="M2 3h12v10H2z" />
+      <circle cx="5" cy="6" r="0.8" />
+    </svg>
+  );
+}
+
 function IconDebug() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -82,6 +92,7 @@ const NAV_ITEMS: Array<{
   { href: "/plan",             label: "计划生成", Icon: IconPlan    },
   { href: "/study",            label: "章节对话", Icon: IconStudy   },
   { href: "/persona-spectrum", label: "人格色谱", Icon: IconPersona },
+  { href: "/scene-setup",      label: "场景搭建", Icon: IconScene   },
   { href: "/debug",            label: "调试后台", Icon: IconDebug   },
 ];
 
