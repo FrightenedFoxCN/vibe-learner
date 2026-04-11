@@ -10,17 +10,24 @@ from dataclasses import dataclass
 from typing import Callable
 from typing import Any
 
+from fastapi import HTTPException
+
 from app.core.logging import get_logger
 from app.models.domain import (
+    ChatToolCallTraceRecord,
     DocumentDebugRecord,
     LearningGoalInput,
     PlanGenerationTraceRecord,
     PersonaProfile,
     PersonaSlot,
+    SceneProfileRecord,
     StudyUnitRecord,
+    normalize_persona_narrative_mode,
+    persona_narrative_mode_label,
     persona_slot_content,
-        persona_sorted_slots,
+    persona_sorted_slots,
 )
+from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
     build_learning_plan_context,
@@ -29,8 +36,64 @@ from app.services.plan_prompt import (
     read_page_range_images,
 )
 from app.services.plan_tool_runtime import build_plan_tool_runtime
+from app.services.prompt_loader import load_prompt_template
+from app.services.session_scene import (
+    extract_scene_profile_from_tool_results,
+    serialize_chat_tool_trace_item,
+)
 
 logger = get_logger("vibe_learner.model_provider")
+
+CHAT_JSON_SCHEMA = (
+    '{'
+    '"text": string, '
+    '"mood": "calm" | "encouraging" | "playful" | "serious" | "excited" | "concerned", '
+    '"action": "explain" | "point" | "prompt" | "reflect" | "celebrate" | "idle", '
+    '"interactive_question"?: {'
+    '"question_type": "multiple_choice" | "fill_blank", '
+    '"prompt": string, '
+    '"difficulty"?: "easy" | "medium" | "hard", '
+    '"topic"?: string, '
+    '"options"?: [{"key": string, "text": string}], '
+    '"answer_key"?: string, '
+    '"accepted_answers"?: [string], '
+    '"explanation"?: string'
+    '}'
+    '}'
+)
+
+SETTING_ASSIST_SCHEMA = (
+    '{'
+    '"slots": [{"kind": string, "label": string, "content": string, "weight"?: number, "locked"?: boolean, "sort_order"?: number}], '
+    '"system_prompt_suggestion": string'
+    '}'
+)
+
+SETTING_SLOT_SCHEMA = (
+    '{'
+    '"slot": {"kind": string, "label": string, "content": string, "weight"?: number, "locked"?: boolean, "sort_order"?: number}'
+    '}'
+)
+
+
+def _chat_prompt_sections() -> dict[str, str]:
+    template = load_prompt_template("openai_chat_prompt.txt")
+    return {
+        "system": template.require("system"),
+        "user": template.require("user"),
+        "tool_followup": template.require("tool_followup"),
+        "recovery": template.require("recovery"),
+    }
+
+
+def _setting_prompt_sections() -> dict[str, str]:
+    template = load_prompt_template("openai_setting_prompt.txt")
+    return {
+        "assist_setting_system": template.require("assist_setting_system"),
+        "assist_setting_user": template.require("assist_setting_user"),
+        "assist_slot_system": template.require("assist_slot_system"),
+        "assist_slot_user": template.require("assist_slot_user"),
+    }
 
 
 @dataclass
@@ -40,6 +103,8 @@ class ModelReply:
     action: str
     interactive_question: dict[str, Any] | None = None
     memory_trace: list[dict[str, Any]] | None = None
+    tool_calls: list[ChatToolCallTraceRecord] | None = None
+    scene_profile: SceneProfileRecord | None = None
 
 
 @dataclass
@@ -71,6 +136,8 @@ class ModelProvider:
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
+        scene_context: str = "",
+        scene_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
@@ -150,29 +217,33 @@ class MockModelProvider(ModelProvider):
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
+        scene_context: str = "",
+        scene_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
     ) -> ModelReply:
         teaching_method = persona_slot_content(persona, "teaching_method")
-        style = teaching_method.split(",")[0].strip() if teaching_method else "structured"
+        style = teaching_method.split(",")[0].strip() if teaching_method else "结构化讲解"
         history_hint = ""
         if conversation_history:
             history_hint = f" 我已读取最近 {len(conversation_history)} 条上下文。"
         section_hint = f" 章节上下文：{section_context[:80]}。" if section_context else ""
         memory_hint = f" 我还参考了历史互动记忆：{memory_context[:80]}。" if memory_context else ""
+        scene_hint = f" 当前会话场景：{scene_context[:80]}。" if scene_context else ""
         text = (
             f"{persona.name} 正在结合章节 {section_id} 讲解。"
             f" 当前提问是：{message}。"
             f"{section_hint}"
             f"{memory_hint}"
+            f"{scene_hint}"
             f"{history_hint}"
             f"{' 会话约束：' + session_prompt[:80] if session_prompt else ''}"
             f" 我会用 {style} 的方式先解释核心概念，再给你一个复述任务。"
         )
-        narrative_mode = persona_slot_content(persona, "narrative_mode", "grounded")
-        mood = "playful" if narrative_mode == "light_story" else "calm"
+        narrative_mode = persona_slot_content(persona, "narrative_mode", "稳态导学")
+        mood = "playful" if normalize_persona_narrative_mode(narrative_mode) == "light_story" else "calm"
         return ModelReply(text=text, mood=mood, action="explain", memory_trace=memory_trace_hits or [])
 
     def generate_exercise(
@@ -250,12 +321,12 @@ class MockModelProvider(ModelProvider):
         worldview = next((s.content for s in ordered_slots if s.kind == "worldview"), "")
         past_exp = next((s.content for s in ordered_slots if s.kind == "past_experiences"), "")
         teaching_method = next((s.content for s in ordered_slots if s.kind == "teaching_method"), "")
-        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "grounded")
+        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "稳态导学")
         encouragement_style = next((s.content for s in ordered_slots if s.kind == "encouragement_style"), "")
         correction_style = next((s.content for s in ordered_slots if s.kind == "correction_style"), "")
 
         style_text = teaching_method.strip() or "结构化讲解"
-        narrative_text = "轻剧情" if narrative_mode.strip() == "light_story" else "稳态导学"
+        narrative_text = persona_narrative_mode_label(narrative_mode)
         identity_name = name.strip() or "这位教师"
         summary_text = summary.strip() or "擅长围绕章节核心概念组织学习路径"
         normalized_strength = max(0.0, min(1.0, rewrite_strength))
@@ -298,11 +369,11 @@ class MockModelProvider(ModelProvider):
                 PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content, sort_order=10)
             )
         prompt = (
-            "You are a chapter-grounded tutor persona. "
-            f"Persona name: {identity_name}. "
-            f"Narrative mode: {narrative_mode.strip() or 'grounded'}. "
-            f"Teaching style: {style_text}. "
-            "Always keep explanations concise, grounded, and action-oriented."
+            "你是一位严格贴合教材章节的教学人格。"
+            f"人格名称：{identity_name}。"
+            f"叙事模式：{narrative_text}。"
+            f"教学风格：{style_text}。"
+            "回答必须简洁、贴合章节、可执行，并优先帮助学习者推进下一步。"
         )
         return {
             "slots": [s.model_dump() for s in updated_slots],
@@ -433,6 +504,8 @@ class OpenAIModelProvider(MockModelProvider):
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
+        scene_context: str = "",
+        scene_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
@@ -444,48 +517,41 @@ class OpenAIModelProvider(MockModelProvider):
             for slot in persona_sorted_slots(persona.slots)
             if slot.content.strip()
         )
+        scene_tool_instruction = (
+            "如需读取或修改当前会话绑定场景，可调用 read_scene_overview、add_scene、move_to_scene、add_object、update_object_description、delete_object；所有场景修改都必须限制在当前会话绑定场景内。"
+            if scene_tool_runtime is not None
+            else "当前对话没有绑定可操作的会话场景。"
+        )
+        prompt_sections = _chat_prompt_sections()
         messages: list[dict[str, Any]] = [
             {
                 "role": "system",
-                "content": (
-                    f"{persona.system_prompt}\n"
-                    f"{session_prompt.strip()}\n"
-                    f"Persona slot assembly (ordered):\n{persona_slots_text or 'N/A'}\n"
-                    "You are a tutor for a chapter-focused learning chat. "
-                    "Output strict JSON with keys: text, mood, action. "
-                    "mood must be one of calm, encouraging, playful, serious, excited, concerned. "
-                    "action must be one of explain, point, prompt, reflect, celebrate, idle. "
-                    "If the learner asks for practice, a check-up, a quiz, or a question drill, "
-                    "you may call ask_multiple_choice_question or ask_fill_blank_question. "
-                    "If prior interactions might help, call retrieve_memory_context before answering. "
-                    "If you need deeper grounding from the textbook, call read_page_range_content. "
-                    "If diagrams/formulas/layout matter and image tool is available, call read_page_range_images. "
-                    "Use the tool result directly in your final JSON reply. "
-                    "When an interactive question is present, do NOT repeat the question stem/options/answer in text; "
-                    "text should only provide short guidance or encouragement. "
-                    "Prioritize detail-level reasoning and deep understanding over shallow recall."
-                ),
+                "content": prompt_sections["system"]
+                .replace("{{PERSONA_SYSTEM_PROMPT}}", persona.system_prompt)
+                .replace("{{SESSION_SYSTEM_PROMPT}}", session_prompt.strip())
+                .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
+                .replace("{{PERSONA_SLOTS}}", persona_slots_text or "无")
+                .replace("{{SCENE_TOOL_INSTRUCTION}}", scene_tool_instruction),
             }
         ]
         messages.extend(history[-self.chat_history_messages:])
         messages.append(
             {
                 "role": "user",
-                "content": (
-                    f"Section ID: {section_id}\n"
-                    f"Section Context:\n{section_context or 'N/A'}\n\n"
-                    f"Retrieved Memory Context:\n{memory_context or 'N/A'}\n\n"
-                    f"Learner message: {message}\n"
-                    "Answer in Chinese and keep explanations grounded in the section context when possible. "
-                    "If you generate a question, focus on subtle distinctions, boundary conditions, causal links, "
-                    "or application-level understanding from this section."
-                ),
+                "content": prompt_sections["user"]
+                .replace("{{SECTION_ID}}", section_id)
+                .replace("{{SECTION_CONTEXT}}", section_context or "无")
+                .replace("{{MEMORY_CONTEXT}}", memory_context or "无")
+                .replace("{{SCENE_CONTEXT}}", scene_context or "无")
+                .replace("{{LEARNER_MESSAGE}}", message)
+                .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
             }
         )
 
         current_messages = list(messages)
         raw_payload: dict[str, Any] | None = None
         last_tool_results: list[dict[str, Any]] = []
+        tool_call_traces: list[ChatToolCallTraceRecord] = []
         for _ in range(self.chat_tool_max_rounds):
             payload: dict[str, Any] = {
                 "model": self.chat_model,
@@ -500,6 +566,7 @@ class OpenAIModelProvider(MockModelProvider):
                 multimodal_enabled=self.chat_multimodal_enabled,
                 debug_report=debug_report,
                 document_path=document_path,
+                scene_tool_runtime=scene_tool_runtime,
                 disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
             )
             if tool_specs:
@@ -533,9 +600,20 @@ class OpenAIModelProvider(MockModelProvider):
                         memory_hits=memory_trace_hits or [],
                         debug_report=debug_report,
                         document_path=document_path,
+                        scene_tool_runtime=scene_tool_runtime,
                         disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
                     )
                     last_tool_results.append(execution["result"])
+                    tool_call_traces.append(
+                        ChatToolCallTraceRecord.model_validate(
+                            serialize_chat_tool_trace_item(
+                                tool_call_id=execution["tool_call_id"],
+                                tool_name=execution["tool_name"],
+                                arguments_json=execution["arguments_json"],
+                                result=execution["result"],
+                            )
+                        )
+                    )
                     current_messages.append(
                         {
                             "role": "tool",
@@ -544,6 +622,12 @@ class OpenAIModelProvider(MockModelProvider):
                             "content": json.dumps(execution["result"], ensure_ascii=False),
                         }
                     )
+                current_messages.append(
+                    {
+                        "role": "user",
+                        "content": prompt_sections["tool_followup"].replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
+                    }
+                )
                 continue
             break
 
@@ -555,6 +639,7 @@ class OpenAIModelProvider(MockModelProvider):
                 raw_payload=raw_payload,
                 tool_results=last_tool_results,
                 fallback_memory_trace=memory_trace_hits or [],
+                tool_traces=tool_call_traces,
             )
         except RuntimeError as exc:
             if str(exc) != "chat_model_invalid_payload":
@@ -564,16 +649,13 @@ class OpenAIModelProvider(MockModelProvider):
                 *messages,
                 {
                     "role": "user",
-                    "content": (
-                        "Your previous output was invalid. Return strict JSON now with keys: text, mood, action. "
-                        "Do not call tools in this retry. Do not include markdown."
-                    ),
+                    "content": prompt_sections["recovery"].replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
                 },
             ]
             recovery_payload: dict[str, Any] = {
                 "model": self.chat_model,
                 "temperature": min(self.chat_temperature, 0.2),
-                "max_tokens": self.chat_max_tokens,
+                "max_tokens": max(self.chat_max_tokens, 1600),
                 "messages": recovery_messages,
                 "response_format": {"type": "json_object"},
             }
@@ -586,6 +668,7 @@ class OpenAIModelProvider(MockModelProvider):
                 raw_payload=recovery_raw_payload,
                 tool_results=[],
                 fallback_memory_trace=memory_trace_hits or [],
+                tool_traces=[],
             )
 
     def assist_persona_setting(
@@ -602,6 +685,7 @@ class OpenAIModelProvider(MockModelProvider):
             for s in ordered_slots
             if s.content.strip()
         )
+        prompt_sections = _setting_prompt_sections()
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
@@ -610,26 +694,19 @@ class OpenAIModelProvider(MockModelProvider):
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "You are a persona writing assistant for a tutoring system. "
-                        "Return strict JSON only with a key 'slots' (array of objects with kind, label, content) "
-                        "and 'system_prompt_suggestion'. "
-                        "Improve the narrative slots (worldview, past_experiences, thinking_style) while "
-                        "preserving the functional slots (teaching_method, narrative_mode, etc.) unless clearly wrong. "
-                        "Use concise but vivid Chinese, keeping the persona educational and chapter-grounded."
+                    "content": prompt_sections["assist_setting_system"].replace(
+                        "{{SETTING_ASSIST_SCHEMA}}",
+                        SETTING_ASSIST_SCHEMA,
                     ),
                 },
                 {
                     "role": "user",
-                    "content": (
-                        "请根据以下输入完善人格插槽设定。\n"
-                        f"name: {name}\n"
-                        f"summary: {summary}\n"
-                        f"slots:\n{slots_text}\n"
-                        f"rewrite_strength: {max(0.0, min(1.0, rewrite_strength))}\n"
-                        "rewrite_strength 语义：0=尽量保留原文，仅增量润色；1=可重写为全新但同人设版本。\n"
-                        "输出仅为 JSON，不要 markdown。slots 数组结构：[{{kind, label, content}}, ...]"
-                    ),
+                    "content": prompt_sections["assist_setting_user"]
+                    .replace("{{NAME}}", name)
+                    .replace("{{SUMMARY}}", summary)
+                    .replace("{{SLOTS_TEXT}}", slots_text or "无")
+                    .replace("{{REWRITE_STRENGTH}}", str(max(0.0, min(1.0, rewrite_strength))))
+                    .replace("{{SETTING_ASSIST_SCHEMA}}", SETTING_ASSIST_SCHEMA),
                 },
             ],
         }
@@ -676,6 +753,7 @@ class OpenAIModelProvider(MockModelProvider):
         slot: PersonaSlot,
         rewrite_strength: float,
     ) -> dict[str, object]:
+        prompt_sections = _setting_prompt_sections()
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
@@ -684,24 +762,21 @@ class OpenAIModelProvider(MockModelProvider):
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "你是人格卡片润色助手。只返回严格 JSON，格式："
-                        "{\"slot\": {\"kind\": string, \"label\": string, \"content\": string}}。"
-                        "内容必须是中文，保持教师人格与章节导学场景一致。"
+                    "content": prompt_sections["assist_slot_system"].replace(
+                        "{{SETTING_SLOT_SCHEMA}}",
+                        SETTING_SLOT_SCHEMA,
                     ),
                 },
                 {
                     "role": "user",
-                    "content": (
-                        "请重写这张人格卡片。\n"
-                        f"name: {name}\n"
-                        f"summary: {summary}\n"
-                        f"slot.kind: {slot.kind}\n"
-                        f"slot.label: {slot.label}\n"
-                        f"slot.content: {slot.content}\n"
-                        f"rewrite_strength: {max(0.0, min(1.0, rewrite_strength))}\n"
-                        "rewrite_strength 语义：0=尽量保留原文并增量润色；1=可重写为同人设新版本。"
-                    ),
+                    "content": prompt_sections["assist_slot_user"]
+                    .replace("{{NAME}}", name)
+                    .replace("{{SUMMARY}}", summary)
+                    .replace("{{SLOT_KIND}}", slot.kind)
+                    .replace("{{SLOT_LABEL}}", slot.label)
+                    .replace("{{SLOT_CONTENT}}", slot.content)
+                    .replace("{{REWRITE_STRENGTH}}", str(max(0.0, min(1.0, rewrite_strength))))
+                    .replace("{{SETTING_SLOT_SCHEMA}}", SETTING_SLOT_SCHEMA),
                 },
             ],
         }
@@ -1024,6 +1099,7 @@ def _chat_tools(
     multimodal_enabled: bool,
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
+    scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
 ) -> list[dict[str, object]]:
     if not tools_enabled:
@@ -1036,31 +1112,29 @@ def _chat_tools(
             "type": "function",
             "function": {
                 "name": "ask_multiple_choice_question",
-                "description": (
-                    "Generate a multiple-choice practice question grounded in the current section context."
-                ),
+                "description": TOOL_CATALOG[CHAT_STAGE]["ask_multiple_choice_question"]["description"],
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "topic": {
                             "type": "string",
-                            "description": "Optional practice topic or concept focus.",
+                            "description": "可选。指定题目聚焦的概念、术语或练习主题。",
                         },
                         "difficulty": {
                             "type": "string",
                             "enum": ["easy", "medium", "hard"],
-                            "description": "Difficulty level for the question.",
+                            "description": "题目难度。",
                         },
                         "focus_mode": {
                             "type": "string",
                             "enum": ["detail", "deep_understanding"],
-                            "description": "Prefer detail checking or deep conceptual understanding.",
+                            "description": "偏向细节核对，或偏向深层理解。",
                         },
                         "option_count": {
                             "type": "integer",
                             "minimum": 3,
                             "maximum": 5,
-                            "description": "Number of answer choices to include.",
+                            "description": "选项数量。",
                         },
                     },
                     "additionalProperties": False,
@@ -1071,31 +1145,29 @@ def _chat_tools(
             "type": "function",
             "function": {
                 "name": "ask_fill_blank_question",
-                "description": (
-                    "Generate a fill-in-the-blank practice question grounded in the current section context."
-                ),
+                "description": TOOL_CATALOG[CHAT_STAGE]["ask_fill_blank_question"]["description"],
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "topic": {
                             "type": "string",
-                            "description": "Optional practice topic or concept focus.",
+                            "description": "可选。指定题目聚焦的概念、术语或练习主题。",
                         },
                         "difficulty": {
                             "type": "string",
                             "enum": ["easy", "medium", "hard"],
-                            "description": "Difficulty level for the question.",
+                            "description": "题目难度。",
                         },
                         "focus_mode": {
                             "type": "string",
                             "enum": ["detail", "deep_understanding"],
-                            "description": "Prefer detail checking or deep conceptual understanding.",
+                            "description": "偏向细节核对，或偏向深层理解。",
                         },
                         "blank_count": {
                             "type": "integer",
                             "minimum": 1,
                             "maximum": 3,
-                            "description": "Number of blanks to include in the prompt.",
+                            "description": "题干中需要填空的位置数量。",
                         },
                     },
                     "additionalProperties": False,
@@ -1110,9 +1182,7 @@ def _chat_tools(
                 "type": "function",
                 "function": {
                     "name": "retrieve_memory_context",
-                    "description": (
-                        "Retrieve top cross-session memory hits that may help answer the learner's current question."
-                    ),
+                    "description": TOOL_CATALOG[CHAT_STAGE]["retrieve_memory_context"]["description"],
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -1120,7 +1190,7 @@ def _chat_tools(
                                 "type": "integer",
                                 "minimum": 1,
                                 "maximum": 8,
-                                "description": "Number of memory hits to return.",
+                                "description": "返回的历史记忆条数。",
                             }
                         },
                         "additionalProperties": False,
@@ -1135,15 +1205,13 @@ def _chat_tools(
                 "type": "function",
                 "function": {
                     "name": "read_page_range_content",
-                    "description": (
-                        "Read textbook text content from a page range for chapter-grounded tutoring."
-                    ),
+                    "description": TOOL_CATALOG[CHAT_STAGE]["read_page_range_content"]["description"],
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "page_start": {"type": "integer"},
-                            "page_end": {"type": "integer"},
-                            "max_chars": {"type": "integer"},
+                            "page_start": {"type": "integer", "description": "要读取的起始页码。"},
+                            "page_end": {"type": "integer", "description": "要读取的结束页码。"},
+                            "max_chars": {"type": "integer", "description": "返回文本的最大字符预算。"},
                         },
                         "required": ["page_start", "page_end"],
                         "additionalProperties": False,
@@ -1158,15 +1226,13 @@ def _chat_tools(
                 "type": "function",
                 "function": {
                     "name": "read_page_range_images",
-                    "description": (
-                        "Render textbook pages as images for formulas, diagrams, tables, and layout cues."
-                    ),
+                    "description": TOOL_CATALOG[CHAT_STAGE]["read_page_range_images"]["description"],
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "page_start": {"type": "integer"},
-                            "page_end": {"type": "integer"},
-                            "max_images": {"type": "integer"},
+                            "page_start": {"type": "integer", "description": "要渲染图像的起始页码。"},
+                            "page_end": {"type": "integer", "description": "要渲染图像的结束页码。"},
+                            "max_images": {"type": "integer", "description": "最多返回的页图像数量。"},
                         },
                         "required": ["page_start", "page_end"],
                         "additionalProperties": False,
@@ -1174,6 +1240,9 @@ def _chat_tools(
                 },
             }
         )
+
+    if scene_tool_runtime is not None:
+        tools.extend(scene_tool_runtime.tool_specs())
 
     return [
         tool
@@ -1191,6 +1260,7 @@ def _execute_chat_tool_call(
     memory_hits: list[dict[str, Any]],
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
+    scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
 ) -> dict[str, Any]:
     function_payload = tool_call.get("function") or {}
@@ -1269,6 +1339,15 @@ def _execute_chat_tool_call(
             "hit_count": min(len(memory_hits), top_k),
             "hits": memory_hits[:top_k],
         }
+    elif scene_tool_runtime is not None:
+        try:
+            result = scene_tool_runtime.execute_tool(tool_name, arguments)
+        except HTTPException as exc:
+            result = {
+                "ok": False,
+                "error": str(exc.detail),
+                "tool_name": tool_name,
+            }
     else:
         result = {
             "ok": False,
@@ -1381,7 +1460,7 @@ def _summarize_section_context(section_context: str) -> str:
 
 
 def _extract_section_title(section_context: str) -> str:
-    match = re.search(r"^Section:\s*(.+?)\s*\(", section_context, re.MULTILINE)
+    match = re.search(r"^(?:章节|Section)[:：]\s*(.+?)\s*\(", section_context, re.MULTILINE)
     if match:
         return match.group(1).strip()
     return ""
@@ -1549,6 +1628,7 @@ def _parse_chat_model_reply(
     raw_payload: dict[str, Any],
     tool_results: list[dict[str, Any]],
     fallback_memory_trace: list[dict[str, Any]],
+    tool_traces: list[ChatToolCallTraceRecord],
 ) -> ModelReply:
     content = ""
     try:
@@ -1565,13 +1645,21 @@ def _parse_chat_model_reply(
                 invalid_payload_code="chat_model_invalid_payload",
             )
         except RuntimeError:
-            logger.warning("model.chat.parse_fallback invalid_payload content_preview=%s", content[:120])
+            finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
+            logger.info(
+                "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s content_preview=%s",
+                finish_reason,
+                reasoning_tokens,
+                completion_tokens,
+                content[:120],
+            )
 
     interactive_question = _extract_interactive_question_payload(
         parsed=parsed,
         tool_results=tool_results,
     )
     memory_trace = _extract_memory_trace_payload(tool_results, fallback_memory_trace)
+    scene_profile = extract_scene_profile_from_tool_results(tool_results)
     mood = str(parsed.get("mood") or "calm")
     action = str(parsed.get("action") or "explain")
     text = str(parsed.get("text") or "").strip()
@@ -1598,6 +1686,8 @@ def _parse_chat_model_reply(
         action=action,
         interactive_question=interactive_question,
         memory_trace=memory_trace,
+        tool_calls=tool_traces,
+        scene_profile=scene_profile,
     )
 
 

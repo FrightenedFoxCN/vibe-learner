@@ -157,6 +157,19 @@ function normalizeSceneProfile(scene: any) {
   };
 }
 
+function normalizeChatToolCalls(toolCalls: any): import("@vibe-learner/shared").ChatToolCallTrace[] {
+  if (!Array.isArray(toolCalls)) {
+    return [];
+  }
+  return toolCalls.map((toolCall: any) => ({
+    toolCallId: String(toolCall.tool_call_id ?? ""),
+    toolName: String(toolCall.tool_name ?? ""),
+    argumentsJson: String(toolCall.arguments_json ?? "{}"),
+    resultSummary: compactPreviewString(toolCall.result_summary ?? "", 240),
+    resultJson: compactPreviewString(toolCall.result_json ?? "", 1200),
+  }));
+}
+
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
@@ -606,6 +619,7 @@ function normalizeSession(session: any): StudySessionRecord {
     id: session.id,
     documentId: session.document_id,
     personaId: session.persona_id,
+    sceneInstanceId: String(session.scene_instance_id ?? ""),
     sceneProfile: normalizeSceneProfile(session.scene_profile),
     sectionId: session.section_id,
     sectionTitle: session.section_title ?? "",
@@ -628,7 +642,9 @@ function normalizeSession(session: any): StudySessionRecord {
         speechStyle: event.speech_style,
         sceneHint: event.scene_hint,
         lineSegmentId: event.line_segment_id,
-        timingHint: event.timing_hint
+        timingHint: event.timing_hint,
+        toolName: event.tool_name ? String(event.tool_name) : undefined,
+        toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
       })),
       interactiveQuestion: normalizeInteractiveQuestion(turn.interactive_question),
       personaSlotTrace: (turn.persona_slot_trace ?? []).map((item: any) => ({
@@ -638,6 +654,8 @@ function normalizeSession(session: any): StudySessionRecord {
         reason: String(item.reason ?? "")
       })),
       memoryTrace: normalizeMemoryTrace(turn.memory_trace),
+      toolCalls: normalizeChatToolCalls(turn.tool_calls),
+      sceneProfile: normalizeSceneProfile(turn.scene_profile),
       createdAt: turn.created_at
     })),
     createdAt: session.created_at,
@@ -1330,7 +1348,9 @@ export async function sendStudyMessage(input: {
       speechStyle: event.speech_style,
       sceneHint: event.scene_hint,
       lineSegmentId: event.line_segment_id,
-      timingHint: event.timing_hint
+      timingHint: event.timing_hint,
+      toolName: event.tool_name ? String(event.tool_name) : undefined,
+      toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
     })),
     interactiveQuestion: normalizeInteractiveQuestion(payload.interactive_question),
     personaSlotTrace: (payload.persona_slot_trace ?? []).map((item: any) => ({
@@ -1340,6 +1360,8 @@ export async function sendStudyMessage(input: {
       reason: String(item.reason ?? "")
     })),
     memoryTrace: normalizeMemoryTrace(payload.memory_trace),
+    toolCalls: normalizeChatToolCalls(payload.tool_calls),
+    sceneProfile: normalizeSceneProfile(payload.scene_profile),
     session: normalizeSession(payload.session)
   };
 }

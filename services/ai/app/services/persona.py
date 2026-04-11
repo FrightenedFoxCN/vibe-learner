@@ -6,6 +6,7 @@ from app.models.api import CreatePersonaRequest, UpdatePersonaRequest
 from app.models.domain import (
     PersonaProfile,
     PersonaSlot,
+    persona_narrative_mode_label,
     persona_slot_content,
     persona_slot_list,
     persona_sorted_slots,
@@ -101,12 +102,12 @@ class PersonaEngine:
         worldview = next((s.content for s in ordered_slots if s.kind == "worldview"), "")
         past_exp = next((s.content for s in ordered_slots if s.kind == "past_experiences"), "")
         teaching_method = next((s.content for s in ordered_slots if s.kind == "teaching_method"), "")
-        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "grounded")
+        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "稳态导学")
         encouragement_style = next((s.content for s in ordered_slots if s.kind == "encouragement_style"), "")
         correction_style = next((s.content for s in ordered_slots if s.kind == "correction_style"), "")
 
         style_text = teaching_method.strip() or "结构化讲解"
-        narrative_text = "轻剧情" if narrative_mode.strip() == "light_story" else "稳态导学"
+        narrative_text = persona_narrative_mode_label(narrative_mode)
         identity_name = name.strip() or "这位教师"
         summary_text = summary.strip() or "擅长围绕章节核心概念组织学习路径"
 
@@ -154,11 +155,11 @@ class PersonaEngine:
             )
 
         prompt = (
-            "You are a chapter-grounded tutor persona. "
-            f"Persona name: {identity_name}. "
-            f"Narrative mode: {narrative_mode.strip() or 'grounded'}. "
-            f"Teaching style: {style_text}. "
-            "Always keep explanations concise, grounded, and action-oriented."
+            "你是一位严格贴合教材章节的教学人格。"
+            f"人格名称：{identity_name}。"
+            f"叙事模式：{narrative_text}。"
+            f"教学风格：{style_text}。"
+            "回答必须简洁、贴合章节、可执行，并优先帮助学习者推进下一步。"
         )
         return {
             "slots": [s.model_dump() for s in updated_slots],
@@ -197,7 +198,7 @@ class PersonaEngine:
         elif slot.kind == "encouragement_style":
             rewritten = "鼓励聚焦具体进步与可复现方法，避免空泛夸奖。"
         elif slot.kind == "narrative_mode":
-            rewritten = "grounded"
+            rewritten = "稳态导学"
         else:
             rewritten = f"{identity_name}：{summary_text}。{base or '请补充该插槽内容。'}"
 
@@ -221,13 +222,13 @@ class PersonaEngine:
                 name="Aurora",
                 source="builtin",
                 summary="温和而结构化的导学教师。",
-                system_prompt="Prioritize clarity, chapter grounding, and encouragement.",
+                system_prompt="优先保持讲解清晰、贴合章节，并通过温和反馈推动学习者继续前进。",
                 slots=[
                     PersonaSlot(kind="worldview", label="世界观起点", content="来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。"),
-                    PersonaSlot(kind="teaching_method", label="教学方法", content="structured, guided"),
-                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="grounded"),
-                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="small wins"),
-                    PersonaSlot(kind="correction_style", label="纠错策略", content="precise but warm"),
+                    PersonaSlot(kind="teaching_method", label="教学方法", content="结构化、引导式推进"),
+                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="稳态导学"),
+                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="强调小步成功与可见进展"),
+                    PersonaSlot(kind="correction_style", label="纠错策略", content="准确指出问题，同时保持温和语气"),
                 ],
                 available_emotions=["calm", "encouraging", "serious"],
                 available_actions=["idle", "explain", "point", "reflect"],
@@ -238,13 +239,13 @@ class PersonaEngine:
                 name="Lyra",
                 source="builtin",
                 summary="\u5e26\u8f7b\u5ea6\u5267\u60c5\u5316\u966a\u4f34\u611f\u7684\u6d3b\u529b\u6559\u5e08\u3002",
-                system_prompt="Blend chapter teaching with playful narrative energy.",
+                system_prompt="把章节讲解和轻剧情陪伴结合起来，保持活力、节奏感和明确推进。",
                 slots=[
                     PersonaSlot(kind="past_experiences", label="过往经历", content="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。"),
-                    PersonaSlot(kind="teaching_method", label="教学方法", content="story-led, motivational"),
-                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="light_story"),
-                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="hero journey"),
-                    PersonaSlot(kind="correction_style", label="纠错策略", content="redirect with energy"),
+                    PersonaSlot(kind="teaching_method", label="教学方法", content="剧情引导、激励式推进"),
+                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="轻剧情陪伴"),
+                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="把学习进展包装成阶段闯关"),
+                    PersonaSlot(kind="correction_style", label="纠错策略", content="用有节奏的转向提示带回正确路径"),
                 ],
                 available_emotions=["playful", "encouraging", "excited", "concerned"],
                 available_actions=["idle", "explain", "celebrate", "prompt"],

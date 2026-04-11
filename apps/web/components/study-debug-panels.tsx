@@ -35,6 +35,10 @@ export function StudyDebugPanels({
   const latestMemoryTrace = response?.memoryTrace?.length
     ? response.memoryTrace
     : latestTurn?.memoryTrace ?? [];
+  const latestToolCalls = response?.toolCalls?.length
+    ? response.toolCalls
+    : latestTurn?.toolCalls ?? [];
+  const latestSceneProfile = response?.sceneProfile ?? latestTurn?.sceneProfile ?? session.sceneProfile ?? null;
 
   return (
     <div style={styles.stack}>
@@ -50,10 +54,20 @@ export function StudyDebugPanels({
         </div>
         <div style={styles.metaGrid}>
           <MetaItem label="Session" value={session.id} />
+          <MetaItem label="Scene Instance" value={session.sceneInstanceId || "-"} />
           <MetaItem label="Section" value={session.sectionTitle || session.sectionId} />
           <MetaItem label="Theme" value={session.themeHint || "-"} />
           <MetaItem label="Status" value={session.status} />
         </div>
+        {latestSceneProfile ? (
+          <div style={styles.sceneCard}>
+            <strong>{latestSceneProfile.title}</strong>
+            <span style={styles.caption}>
+              {latestSceneProfile.sceneName || "未命名场景"} · {latestSceneProfile.selectedPath.join(" / ") || "未定位路径"}
+            </span>
+            <span style={styles.bodyText}>{latestSceneProfile.summary}</span>
+          </div>
+        ) : null}
         {session.sessionSystemPrompt ? (
           <details style={styles.detailBlock}>
             <summary style={styles.summary}>系统提示词</summary>
@@ -68,6 +82,24 @@ export function StudyDebugPanels({
           <pre style={styles.pre}>{JSON.stringify(latestCharacterEvents, null, 2)}</pre>
         ) : (
           <DebugEmptyState message="当前轮没有角色事件。" />
+        )}
+      </details>
+
+      <details style={styles.card} open>
+        <summary style={styles.summary}>本轮工具调用</summary>
+        {latestToolCalls.length ? (
+          <div style={styles.list}>
+            {latestToolCalls.map((toolCall, index) => (
+              <div key={`${toolCall.toolCallId}:${index}`} style={styles.itemCard}>
+                <strong>{toolCall.toolName}</strong>
+                <span style={styles.caption}>{toolCall.resultSummary || "无结果摘要"}</span>
+                <pre style={styles.pre}>{toolCall.argumentsJson}</pre>
+                <pre style={styles.pre}>{toolCall.resultJson}</pre>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <DebugEmptyState message="当前轮没有工具调用。" />
         )}
       </details>
 
@@ -224,6 +256,14 @@ const styles: Record<string, CSSProperties> = {
   },
   detailBlock: {
     marginTop: 12
+  },
+  sceneCard: {
+    display: "grid",
+    gap: 4,
+    marginTop: 12,
+    padding: "12px 14px",
+    borderRadius: 12,
+    background: "var(--panel)"
   },
   summary: {
     cursor: "pointer",

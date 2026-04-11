@@ -1,17 +1,20 @@
 [system]
 {{PERSONA_SYSTEM_PROMPT}}
 
-Session Runtime Instruction:
-- Persona: {{PERSONA_NAME}}
-- Document: {{DOCUMENT_TITLE}}
-- Current Section ID: {{SECTION_ID}}
-- Current Section Title: {{SECTION_TITLE}}
-- Current Theme: {{THEME_HINT}}
-- Scene Profile Summary: {{SCENE_PROFILE_SUMMARY}}
-- Scene Title: {{SCENE_PROFILE_TITLE}}
-- Scene Path: {{SCENE_PROFILE_PATH}}
-- Scene Focus Objects: {{SCENE_PROFILE_FOCUS_OBJECTS}}
-- Scene Tags: {{SCENE_PROFILE_TAGS}}
-- Scene Tree Roots: {{SCENE_PROFILE_TREE_ROOTS}}
-- Keep the dialogue grounded in this section unless the user explicitly asks to switch context.
-- Maintain consistency with the active persona's teaching style and tone.
+会话运行时上下文：
+- 人格：{{PERSONA_NAME}}
+- 教材：{{DOCUMENT_TITLE}}
+- 当前章节 ID：{{SECTION_ID}}
+- 当前章节标题：{{SECTION_TITLE}}
+- 当前主题：{{THEME_HINT}}
+- 场景摘要：{{SCENE_PROFILE_SUMMARY}}
+- 场景标题：{{SCENE_PROFILE_TITLE}}
+- 场景路径：{{SCENE_PROFILE_PATH}}
+- 关键物体：{{SCENE_PROFILE_FOCUS_OBJECTS}}
+- 场景标签：{{SCENE_PROFILE_TAGS}}
+- 场景树根节点：{{SCENE_PROFILE_TREE_ROOTS}}
+
+规则：
+- 默认保持在当前章节内回答，除非用户明确要求切换上下文。
+- 保持与当前人格的语气、教学方法和叙事方式一致。
+- 回答应以教材章节证据为核心，不做无根据扩展。

@@ -21,8 +21,10 @@ class StudySessionService:
     def create_session(
         self,
         *,
+        session_id: str | None = None,
         document_id: str,
         persona_id: str,
+        scene_instance_id: str = "",
         scene_profile: SceneProfileRecord | None = None,
         section_id: str,
         section_title: str = "",
@@ -30,9 +32,10 @@ class StudySessionService:
         session_system_prompt: str = "",
     ) -> StudySessionRecord:
         session = StudySessionRecord(
-            id=f"session-{uuid4().hex[:10]}",
+            id=session_id or f"session-{uuid4().hex[:10]}",
             document_id=document_id,
             persona_id=persona_id,
+            scene_instance_id=scene_instance_id,
             scene_profile=scene_profile,
             section_id=section_id,
             section_title=section_title,
@@ -62,9 +65,13 @@ class StudySessionService:
                 interactive_question=result.interactive_question,
                 persona_slot_trace=result.persona_slot_trace,
                 memory_trace=result.memory_trace,
+                tool_calls=result.tool_calls,
+                scene_profile=result.scene_profile,
                 created_at=_now(),
             )
         )
+        if result.scene_profile is not None:
+            session.scene_profile = result.scene_profile
         session.updated_at = _now()
         self._save_sessions(sessions)
         return session
@@ -74,6 +81,7 @@ class StudySessionService:
         *,
         session_id: str,
         section_id: str | None = None,
+        scene_instance_id: str | None = None,
         scene_profile: SceneProfileRecord | None = None,
         has_scene_profile: bool = False,
         section_title: str | None = None,
@@ -83,6 +91,8 @@ class StudySessionService:
         session = self.require_session(session_id, sessions)
         if section_id is not None:
             session.section_id = section_id
+        if scene_instance_id is not None:
+            session.scene_instance_id = scene_instance_id
         if has_scene_profile:
             session.scene_profile = scene_profile
         if section_title is not None:

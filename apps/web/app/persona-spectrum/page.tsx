@@ -49,7 +49,7 @@ const SLOT_KIND_HINTS: Record<string, string> = {
   past_experiences: "描述关键经历与背景，解释“为什么这个人格会这样教学”。",
   thinking_style: "描述推理与验证方式，例如是否先讲前提、是否强调反例。",
   teaching_method: "描述课堂推进方法，例如拆解步骤、提问节奏、练习设计。",
-  narrative_mode: "描述叙事密度，建议使用 grounded（贴地）或 light_story（轻故事）。",
+  narrative_mode: "描述叙事密度，建议直接使用“稳态导学”或“轻剧情陪伴”等中文表达。",
   encouragement_style: "描述鼓励策略，应当具体可执行，避免泛泛鼓励。",
   correction_style: "描述纠错方式，建议先指出可改进点，再给下一步动作。",
   custom: "自定义插槽，用于补充特殊设定。"
@@ -120,7 +120,7 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   slots: [
     { kind: "worldview", label: "世界观起点", content: "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。" },
     { kind: "teaching_method", label: "教学方法", content: "结构化、引导式推进" },
-    { kind: "narrative_mode", label: "叙事模式", content: "贴地（grounded）" },
+    { kind: "narrative_mode", label: "叙事模式", content: "稳态导学" },
     { kind: "encouragement_style", label: "鼓励策略", content: "强调小步成功与可见进展" },
     { kind: "correction_style", label: "纠错策略", content: "准确指出问题，同时保持温和语气" }
   ],

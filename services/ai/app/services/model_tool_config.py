@@ -13,13 +13,13 @@ TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
     PLAN_STAGE: {
         "get_study_unit_detail": {
             "label": "学习单元详情",
-            "description": "读取单个 Study Unit 的细节结构与切块摘录，用于精细规划。",
+            "description": "读取单个学习单元的细节结构与切块摘录，用于精细规划。",
             "category": "planning",
             "category_label": "规划分析",
         },
         "revise_study_units": {
             "label": "学习单元重编排",
-            "description": "在章节切分明显错误时，允许模型重写完整 Study Unit 列表。",
+            "description": "在章节切分明显错误时，允许模型重写完整学习单元列表。",
             "category": "planning",
             "category_label": "规划分析",
         },
@@ -66,6 +66,42 @@ TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "description": "渲染教材页图像，辅助解释公式、图表与布局细节。",
             "category": "sensory",
             "category_label": "感官工具",
+        },
+        "read_scene_overview": {
+            "label": "会话场景读取",
+            "description": "读取当前会话绑定场景的整体状态、路径与物体信息。",
+            "category": "scene",
+            "category_label": "场景工具",
+        },
+        "add_scene": {
+            "label": "新增场景",
+            "description": "在当前会话绑定场景中新增一个子场景并切换过去。",
+            "category": "scene",
+            "category_label": "场景工具",
+        },
+        "move_to_scene": {
+            "label": "转移至场景",
+            "description": "将当前会话焦点转移到绑定场景树中的另一处。",
+            "category": "scene",
+            "category_label": "场景工具",
+        },
+        "add_object": {
+            "label": "新增物体",
+            "description": "向当前场景或指定场景加入新的物体。",
+            "category": "scene",
+            "category_label": "场景工具",
+        },
+        "update_object_description": {
+            "label": "修改物体描述",
+            "description": "更新当前会话场景内某个物体的描述。",
+            "category": "scene",
+            "category_label": "场景工具",
+        },
+        "delete_object": {
+            "label": "删除物体",
+            "description": "从当前会话绑定场景中删除一个物体。",
+            "category": "scene",
+            "category_label": "场景工具",
         },
     },
 }

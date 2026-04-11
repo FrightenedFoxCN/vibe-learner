@@ -40,6 +40,8 @@ class PedagogyOrchestrator:
         previous_turns: list[DialogueTurnRecord] | None = None,
         memory_sessions: list[StudySessionRecord] | None = None,
         active_scene_summary: str = "",
+        active_scene_context: str = "",
+        scene_tool_runtime=None,
     ) -> StudyChatResult:
         turns = previous_turns or []
         section_context = _build_section_context(debug_report=debug_report, section_id=section_id)
@@ -61,6 +63,8 @@ class PedagogyOrchestrator:
             session_prompt=session_system_prompt,
             section_context=section_context,
             memory_context=memory_context,
+            scene_context=active_scene_context,
+            scene_tool_runtime=scene_tool_runtime,
             memory_trace_hits=memory_hit_payloads,
             conversation_history=conversation_history,
             debug_report=debug_report,
@@ -82,15 +86,22 @@ class PedagogyOrchestrator:
         scene_hint = _build_scene_hint(section_id=section_id, citations=citations)
         for event in events:
             event.scene_hint = scene_hint
+        tool_events = self.performance_mapper.map_tool_calls_to_events(
+            persona=persona,
+            tool_calls=raw_reply.tool_calls or [],
+            line_segment_id=f"{session_id}:chat:{turn_index}",
+        )
         slot_trace = _build_persona_slot_trace(persona=persona, message=message)
         memory_trace = _normalize_memory_trace(raw_reply.memory_trace, memory_hits)
         return StudyChatResult(
             reply=raw_reply.text,
             citations=citations,
-            character_events=events,
+            character_events=[*events, *tool_events],
             interactive_question=raw_reply.interactive_question,
             persona_slot_trace=slot_trace,
             memory_trace=memory_trace,
+            tool_calls=raw_reply.tool_calls or [],
+            scene_profile=raw_reply.scene_profile,
         )
 
     def generate_exercise(
@@ -205,11 +216,11 @@ def _build_section_context(*, debug_report: DocumentDebugRecord | None, section_
     excerpt_text = "\n".join(f"- {line}" for line in excerpts)
     if excerpt_text:
         return (
-            f"Section: {section_title} ({section_id})\n"
-            f"Pages: {page_start}-{page_end}\n"
-            f"Grounding excerpts:\n{excerpt_text}"
+            f"章节：{section_title} ({section_id})\n"
+            f"页码：{page_start}-{page_end}\n"
+            f"教材摘录：\n{excerpt_text}"
         )
-    return f"Section: {section_title} ({section_id})\nPages: {page_start}-{page_end}"
+    return f"章节：{section_title} ({section_id})\n页码：{page_start}-{page_end}"
 
 
 def _build_grounded_citations(
@@ -358,5 +369,3 @@ def _normalize_memory_trace(
         except Exception:
             continue
     return result or fallback
-
-

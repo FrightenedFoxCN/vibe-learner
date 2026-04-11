@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from app.models.domain import DocumentDebugRecord, StudyUnitRecord
+from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.plan_prompt import (
     build_study_unit_detail_map,
     read_page_range_content,
@@ -100,7 +101,7 @@ class PlanToolRuntime:
                     "error": "unknown_tool",
                     "tool_name": tool_name,
                 },
-                trace_summary=f"{tool_name}: unknown tool",
+                trace_summary=f"{tool_name}: 未知工具",
                 follow_up_messages=[],
             )
         try:
@@ -169,20 +170,17 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
     return [
         PlanToolDefinition(
             name="get_study_unit_detail",
-            description=(
-                "Read the detailed subsection structure and chunk excerpts for one study unit "
-                "before finalizing the learning plan."
-            ),
+            description=TOOL_CATALOG[PLAN_STAGE]["get_study_unit_detail"]["description"],
             parameters={
                 "type": "object",
                 "properties": {
                     "study_unit_id": {
                         "type": "string",
-                        "description": "The target study unit id from the provided study_units list.",
+                        "description": "从当前学习单元列表中选择要查看的学习单元 ID。",
                     },
                     "focus": {
                         "type": "string",
-                        "description": "Optional reason for inspection, such as subsection coverage or examples.",
+                        "description": "可选。说明查看原因，例如核对子主题覆盖或例题分布。",
                     },
                 },
                 "required": ["study_unit_id"],
@@ -193,38 +191,35 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
         ),
         PlanToolDefinition(
             name="revise_study_units",
-            description=(
-                "Replace the current study-unit segmentation when the cleaned chapter split is clearly wrong. "
-                "Return a full revised unit list with page ranges."
-            ),
+            description=TOOL_CATALOG[PLAN_STAGE]["revise_study_units"]["description"],
             parameters={
                 "type": "object",
                 "properties": {
                     "study_units": {
                         "type": "array",
-                        "description": "Full replacement list for the active study-unit segmentation.",
+                        "description": "当前学习单元切分的完整替换列表。",
                         "items": {
                             "type": "object",
                             "properties": {
                                 "title": {
                                     "type": "string",
-                                    "description": "Learner-facing chapter or unit title.",
+                                    "description": "面向学习者展示的章节或学习单元标题。",
                                 },
                                 "page_start": {
                                     "type": "integer",
-                                    "description": "Inclusive start page for the revised unit.",
+                                    "description": "该学习单元的起始页码，包含本页。",
                                 },
                                 "page_end": {
                                     "type": "integer",
-                                    "description": "Inclusive end page for the revised unit.",
+                                    "description": "该学习单元的结束页码，包含本页。",
                                 },
                                 "include_in_plan": {
                                     "type": "boolean",
-                                    "description": "Whether this unit should be scheduled in the learning plan.",
+                                    "description": "该学习单元是否应纳入学习计划。",
                                 },
                                 "summary": {
                                     "type": "string",
-                                    "description": "Optional short summary for the revised unit.",
+                                    "description": "可选。该学习单元的简短摘要。",
                                 },
                             },
                             "required": ["title", "page_start", "page_end"],
@@ -233,7 +228,7 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
                     },
                     "rationale": {
                         "type": "string",
-                        "description": "Optional reason for why the original segmentation should be replaced.",
+                        "description": "可选。说明为何需要替换原有切分。",
                     },
                 },
                 "required": ["study_units"],
@@ -244,24 +239,21 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
         ),
         PlanToolDefinition(
             name="read_page_range_content",
-            description=(
-                "Read longer textbook content for a specific page range when the planner needs "
-                "more detail than the chunk excerpts."
-            ),
+            description=TOOL_CATALOG[PLAN_STAGE]["read_page_range_content"]["description"],
             parameters={
                 "type": "object",
                 "properties": {
                     "page_start": {
                         "type": "integer",
-                        "description": "Start page of the content to inspect.",
+                        "description": "要查看文本的起始页码。",
                     },
                     "page_end": {
                         "type": "integer",
-                        "description": "End page of the content to inspect.",
+                        "description": "要查看文本的结束页码。",
                     },
                     "max_chars": {
                         "type": "integer",
-                        "description": "Optional output budget for returned content.",
+                        "description": "可选。返回文本的最大字符预算。",
                     },
                 },
                 "required": ["page_start", "page_end"],
@@ -272,24 +264,21 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
         ),
         PlanToolDefinition(
             name="read_page_range_images",
-            description=(
-                "Render textbook pages as images for multimodal inspection when the planner needs "
-                "formulas, diagrams, tables, or layout cues."
-            ),
+            description=TOOL_CATALOG[PLAN_STAGE]["read_page_range_images"]["description"],
             parameters={
                 "type": "object",
                 "properties": {
                     "page_start": {
                         "type": "integer",
-                        "description": "Start page of the page images to inspect.",
+                        "description": "要渲染图像的起始页码。",
                     },
                     "page_end": {
                         "type": "integer",
-                        "description": "End page of the page images to inspect.",
+                        "description": "要渲染图像的结束页码。",
                     },
                     "max_images": {
                         "type": "integer",
-                        "description": "Optional cap on the number of rendered page images.",
+                        "description": "可选。最多返回的页图像数量。",
                     },
                 },
                 "required": ["page_start", "page_end"],
@@ -312,7 +301,7 @@ def _execute_get_study_unit_detail(
                 "ok": False,
                 "error": "missing_study_unit_id",
             },
-            trace_summary="missing study_unit_id",
+            trace_summary="缺少 study_unit_id",
             follow_up_messages=[],
         )
     detail = context.detail_map.get(target_id)
@@ -323,7 +312,7 @@ def _execute_get_study_unit_detail(
                 "error": "study_unit_not_found",
                 "study_unit_id": target_id,
             },
-            trace_summary=f"study unit not found: {target_id}",
+            trace_summary=f"未找到学习单元：{target_id}",
             follow_up_messages=[],
         )
     return PlanToolResult(
@@ -333,7 +322,7 @@ def _execute_get_study_unit_detail(
             "requested_focus": str(arguments.get("focus") or ""),
             "detail": detail,
         },
-        trace_summary=f"loaded detail for {target_id}",
+        trace_summary=f"已读取学习单元详情：{target_id}",
         follow_up_messages=[],
     )
 
@@ -349,7 +338,7 @@ def _execute_revise_study_units(
                 "ok": False,
                 "error": "missing_study_units",
             },
-            trace_summary="missing revised study_units payload",
+            trace_summary="缺少 revised study_units 载荷",
             follow_up_messages=[],
         )
     debug_report = context.debug_report
@@ -359,7 +348,7 @@ def _execute_revise_study_units(
                 "ok": False,
                 "error": "missing_debug_report",
             },
-            trace_summary="missing debug report for segmentation revision",
+            trace_summary="重编排学习单元时缺少调试报告",
             follow_up_messages=[],
         )
     try:
@@ -376,7 +365,7 @@ def _execute_revise_study_units(
                 "error": "invalid_study_unit_revision",
                 "detail": str(exc),
             },
-            trace_summary=f"invalid study-unit revision: {exc}",
+            trace_summary=f"学习单元重编排无效：{exc}",
             follow_up_messages=[],
         )
 
@@ -431,7 +420,7 @@ def _execute_read_page_range_content(
                 max_chars=max_chars,
             ),
         },
-        trace_summary=f"read pages {page_start}-{page_end} as text",
+        trace_summary=f"已读取第 {page_start}-{page_end} 页文本",
         follow_up_messages=[],
     )
 
@@ -514,8 +503,7 @@ def _execute_read_page_range_images(
                     {
                         "type": "text",
                         "text": (
-                            "Rendered textbook page images are attached for visual inspection. "
-                            "Use them to inspect formulas, diagrams, tables, or layout when planning."
+                            "已附上教材页图像，可用于查看公式、图表、表格和版式等视觉线索，以辅助学习计划生成。"
                         ),
                     },
                     *[
@@ -540,7 +528,7 @@ def _execute_read_page_range_images(
             "image_count": len(page_numbers),
             "page_numbers": page_numbers,
         },
-        trace_summary=f"rendered {len(page_numbers)} page image(s) for pages {page_start}-{page_end}",
+        trace_summary=f"已渲染第 {page_start}-{page_end} 页图像，共 {len(page_numbers)} 张",
         follow_up_messages=follow_up_messages,
     )
 
@@ -551,12 +539,12 @@ def _build_study_unit_revision_summary(
     rationale: str,
 ) -> str:
     parts = [
-        f"{unit.title} (p.{unit.page_start}-{unit.page_end})"
+        f"{unit.title}（第 {unit.page_start}-{unit.page_end} 页）"
         for unit in revised_units[:4]
     ]
     if len(revised_units) > 4:
-        parts.append(f"+{len(revised_units) - 4} more")
-    summary = f"revised to {len(revised_units)} unit(s): " + "; ".join(parts)
+        parts.append(f"另有 {len(revised_units) - 4} 个学习单元")
+    summary = f"已重编排为 {len(revised_units)} 个学习单元：" + "；".join(parts)
     if rationale:
-        summary += f" | rationale: {rationale}"
+        summary += f"；原因：{rationale}"
     return summary

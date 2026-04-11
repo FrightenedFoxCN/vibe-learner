@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import lru_cache
-from pathlib import Path
 
 from app.models.domain import SceneProfileRecord
-
-PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "prompts" / "study_session_prompt.txt"
+from app.services.prompt_loader import load_prompt_template
 
 
 @dataclass(frozen=True)
@@ -37,36 +34,19 @@ def build_study_session_system_prompt(
         .replace("{{DOCUMENT_TITLE}}", document_title.strip())
         .replace("{{SECTION_ID}}", section_id.strip())
         .replace("{{SECTION_TITLE}}", section_title.strip())
-        .replace("{{THEME_HINT}}", theme_hint.strip() or "N/A")
-        .replace("{{SCENE_PROFILE_SUMMARY}}", scene_summary or "N/A")
-        .replace("{{SCENE_PROFILE_TITLE}}", scene_title or "N/A")
-        .replace("{{SCENE_PROFILE_PATH}}", scene_path or "N/A")
-        .replace("{{SCENE_PROFILE_FOCUS_OBJECTS}}", scene_focus_objects or "N/A")
-        .replace("{{SCENE_PROFILE_TAGS}}", scene_tags or "N/A")
-        .replace("{{SCENE_PROFILE_TREE_ROOTS}}", scene_tree_roots or "N/A")
+        .replace("{{THEME_HINT}}", theme_hint.strip() or "无")
+        .replace("{{SCENE_PROFILE_SUMMARY}}", scene_summary or "无")
+        .replace("{{SCENE_PROFILE_TITLE}}", scene_title or "无")
+        .replace("{{SCENE_PROFILE_PATH}}", scene_path or "无")
+        .replace("{{SCENE_PROFILE_FOCUS_OBJECTS}}", scene_focus_objects or "无")
+        .replace("{{SCENE_PROFILE_TAGS}}", scene_tags or "无")
+        .replace("{{SCENE_PROFILE_TREE_ROOTS}}", scene_tree_roots or "无")
     )
 
 
-@lru_cache(maxsize=1)
 def load_study_session_prompt_template() -> StudySessionPromptTemplate:
-    raw_text = PROMPT_TEMPLATE_PATH.read_text(encoding="utf-8")
-    sections = _parse_prompt_sections(raw_text)
-    system_prompt = sections.get("system", "").strip()
+    prompt = load_prompt_template("study_session_prompt.txt")
+    system_prompt = prompt.require("system")
     if not system_prompt:
         raise RuntimeError("study_session_prompt_missing_system_section")
     return StudySessionPromptTemplate(system_prompt=system_prompt)
-
-
-def _parse_prompt_sections(raw_text: str) -> dict[str, str]:
-    sections: dict[str, list[str]] = {}
-    current_section: str | None = None
-    for line in raw_text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
-            current_section = stripped[1:-1].strip().lower()
-            sections.setdefault(current_section, [])
-            continue
-        if current_section is None:
-            continue
-        sections[current_section].append(line)
-    return {name: "\n".join(lines).strip() for name, lines in sections.items()}

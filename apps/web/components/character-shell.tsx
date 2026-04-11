@@ -11,12 +11,13 @@ interface CharacterShellProps {
 
 export function CharacterShell({ persona, response, pending }: CharacterShellProps) {
   const currentEvent = response?.characterEvents[0] ?? null;
+  const toolEvents = (response?.characterEvents ?? []).filter((event) => event.toolName);
   const Renderer = placeholderCharacterRenderer.Render;
 
   const teachingMethodSlot = persona.slots.find((s) => s.kind === "teaching_method");
   const narrativeModeSlot = persona.slots.find((s) => s.kind === "narrative_mode");
   const teachingLabel = teachingMethodSlot?.content || persona.summary;
-  const narrativeLabel = formatNarrativeMode(narrativeModeSlot?.content ?? "grounded");
+  const narrativeLabel = formatNarrativeMode(narrativeModeSlot?.content ?? "稳态导学");
 
   return (
     <div style={styles.wrap}>
@@ -45,6 +46,20 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
           <span style={styles.stateVal}>{currentEvent?.sceneHint ?? "study_session"}</span>
         </div>
       </div>
+
+      {toolEvents.length ? (
+        <div style={styles.toolWrap}>
+          <span style={styles.stateKey}>场景工具事件</span>
+          <div style={styles.toolList}>
+            {toolEvents.map((event, index) => (
+              <div key={`${event.lineSegmentId}:${index}`} style={styles.toolItem}>
+                <strong style={styles.toolName}>{event.toolName}</strong>
+                <span style={styles.toolSummary}>{event.toolSummary || event.sceneHint}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -92,10 +107,35 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     color: "var(--ink)",
   },
+  toolWrap: {
+    display: "grid",
+    gap: 8,
+  },
+  toolList: {
+    display: "grid",
+    gap: 8,
+  },
+  toolItem: {
+    display: "grid",
+    gap: 4,
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+  },
+  toolName: {
+    fontSize: 12,
+    color: "var(--ink)",
+  },
+  toolSummary: {
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.5,
+  },
 };
 
 function formatNarrativeMode(mode: string) {
-  if (mode === "light_story") return "轻剧情陪伴";
-  if (mode === "grounded") return "稳态导学";
+  if (mode === "light_story" || mode.includes("轻剧情")) return "轻剧情陪伴";
+  if (mode === "grounded" || mode.includes("稳态导学") || mode.includes("贴地")) return "稳态导学";
   return mode;
 }

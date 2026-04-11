@@ -1,0 +1,10 @@
+[tool_probe_retry]
+在最终输出前，至少调用一个工具补充细节。
+如果当前学习单元切分过粗、混合多个章节，优先调用 `revise_study_units`；
+否则至少调用一次 `get_study_unit_detail` 检查代表性章节。
+拿到工具结果后，再严格输出最终 JSON，不要输出 markdown。
+
+[empty_response_retry]
+你上一轮回复为空。请继续基于已有上下文完成回答。
+必须返回完整的学习计划 JSON 对象，不要返回空内容。
+如果学习单元切分明显错误，先调用 `revise_study_units`，再输出最终 JSON。

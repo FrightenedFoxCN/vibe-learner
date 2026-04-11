@@ -498,14 +498,10 @@ export function useLearningWorkspaceController({
         sectionTitle: resolveSectionTitle(sectionId),
         themeHint: resolveThemeHintBySectionId(sectionId),
       });
-    } else if (
-      workingSession.sectionId !== sectionId ||
-      !isSameSceneProfile(workingSession.sceneProfile, activeSceneProfile)
-    ) {
+    } else if (workingSession.sectionId !== sectionId) {
       workingSession = await updateStudySessionSection({
         sessionId: workingSession.id,
         sectionId,
-        sceneProfile: activeSceneProfile ?? null,
       });
     }
 
@@ -889,22 +885,6 @@ function resolveStreamStatus(stage: string) {
     return "error";
   }
   return "running";
-}
-
-function isSameSceneProfile(
-  current: StudySessionRecord["sceneProfile"] | undefined,
-  next: StudySessionRecord["sceneProfile"] | undefined
-) {
-  const normalize = (profile: StudySessionRecord["sceneProfile"] | undefined) =>
-    JSON.stringify({
-      sceneId: profile?.sceneId ?? "",
-      title: profile?.title ?? "",
-      summary: profile?.summary ?? "",
-      tags: profile?.tags ?? [],
-      selectedPath: profile?.selectedPath ?? [],
-      focusObjectNames: profile?.focusObjectNames ?? [],
-    });
-  return normalize(current) === normalize(next);
 }
 
 function resolveSceneProfileFromLibrary(

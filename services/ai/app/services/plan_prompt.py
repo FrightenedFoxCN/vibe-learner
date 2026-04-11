@@ -3,8 +3,6 @@ from __future__ import annotations
 import base64
 import json
 from dataclasses import dataclass
-from functools import lru_cache
-from pathlib import Path
 
 import fitz
 
@@ -15,6 +13,7 @@ from app.models.domain import (
     PersonaProfile,
     StudyUnitRecord,
 )
+from app.services.prompt_loader import load_prompt_template
 
 PLAN_JSON_SCHEMA = (
     "{"
@@ -32,9 +31,6 @@ PLAN_JSON_SCHEMA = (
     "]"
     "}."
 )
-PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "prompts" / "learning_plan_prompt.txt"
-
-
 @dataclass(frozen=True)
 class LearningPlanPromptTemplate:
     system_prompt: str
@@ -100,17 +96,14 @@ def build_learning_plan_messages(
         },
     ]
 
-
-@lru_cache(maxsize=1)
 def load_learning_plan_prompt_template() -> LearningPlanPromptTemplate:
-    raw_text = PROMPT_TEMPLATE_PATH.read_text(encoding="utf-8")
-    sections = _parse_prompt_sections(raw_text)
-    system_prompt = sections.get("system", "").strip()
+    prompt = load_prompt_template("learning_plan_prompt.txt")
+    system_prompt = prompt.require("system")
     if not system_prompt:
         raise RuntimeError("learning_plan_prompt_missing_system_section")
     user_instructions = [
         line.strip()
-        for line in sections.get("user_instructions", "").splitlines()
+        for line in prompt.optional("user_instructions", "").splitlines()
         if line.strip()
     ]
     return LearningPlanPromptTemplate(
@@ -386,26 +379,6 @@ def _related_chunks_for_unit(
 
 def _ranges_overlap(*, start_a: int, end_a: int, start_b: int, end_b: int) -> bool:
     return max(start_a, start_b) <= min(end_a, end_b)
-
-
-def _parse_prompt_sections(raw_text: str) -> dict[str, str]:
-    sections: dict[str, list[str]] = {}
-    current_section: str | None = None
-    for line in raw_text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
-            current_section = stripped[1:-1].strip().lower()
-            sections.setdefault(current_section, [])
-            continue
-        if current_section is None:
-            continue
-        sections[current_section].append(line)
-    return {
-        name: "\n".join(lines).strip()
-        for name, lines in sections.items()
-    }
-
-
 def _build_segmentation_hints(study_units: list[StudyUnitRecord]) -> dict[str, object]:
     plannable = [unit for unit in study_units if unit.include_in_plan] or study_units
     if not plannable:

@@ -27,7 +27,7 @@ export interface Citation {
 export interface LearningGoal {
   documentId: string;
   personaId: string;
-  // Learner-authored study goal captured at plan creation time.
+  // 创建学习计划时记录的学习者原始目标文本。
   objective: string;
   // Optional scene summary chosen before planning.
   sceneProfileSummary?: string;
@@ -70,7 +70,7 @@ export interface LearningPlan {
   id: string;
   documentId: string;
   personaId: string;
-  // Generated textbook-grounded course title for the plan header.
+  // 系统生成的教材贴合型课程标题，用于计划头部展示。
   courseTitle: string;
   // Stable learner-authored study goal captured at plan creation time.
   objective: string;
@@ -312,6 +312,14 @@ export interface StudyChatRequest {
   message: string;
 }
 
+export interface ChatToolCallTrace {
+  toolCallId: string;
+  toolName: string;
+  argumentsJson: string;
+  resultSummary: string;
+  resultJson: string;
+}
+
 export interface StudyChatResponse {
   reply: string;
   citations: Citation[];
@@ -319,6 +327,8 @@ export interface StudyChatResponse {
   interactiveQuestion?: InteractiveQuestion;
   personaSlotTrace?: PersonaSlotTraceEntry[];
   memoryTrace?: MemoryTraceHit[];
+  toolCalls?: ChatToolCallTrace[];
+  sceneProfile?: SceneProfile;
 }
 
 export interface InteractiveQuestionOption {
@@ -392,6 +402,8 @@ export interface DialogueTurnRecord {
   interactiveQuestion?: InteractiveQuestion;
   personaSlotTrace?: PersonaSlotTraceEntry[];
   memoryTrace?: MemoryTraceHit[];
+  toolCalls?: ChatToolCallTrace[];
+  sceneProfile?: SceneProfile;
   createdAt: string;
 }
 
@@ -417,6 +429,7 @@ export interface StudySessionRecord {
   id: string;
   documentId: string;
   personaId: string;
+  sceneInstanceId?: string;
   sceneProfile?: SceneProfile;
   sectionId: string;
   sectionTitle?: string;

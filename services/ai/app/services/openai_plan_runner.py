@@ -11,6 +11,7 @@ from app.models.domain import (
     PlanToolCallTraceRecord,
 )
 from app.services.plan_tool_runtime import PlanToolRuntime
+from app.services.prompt_loader import load_prompt_template
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ class OpenAIPlanRunner:
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ) -> OpenAIPlanRunnerResult:
         current_messages: list[dict[str, Any]] = [*messages]
+        prompt_template = load_prompt_template("openai_plan_runner_prompt.txt")
         trace = PlanGenerationTraceRecord(
             document_id=document_id,
             model=self.model,
@@ -162,11 +164,7 @@ class OpenAIPlanRunner:
                     current_messages.append(
                         {
                             "role": "user",
-                            "content": (
-                                "Before finalizing, call at least one tool to inspect details for coarse segmentation. "
-                                "Use get_study_unit_detail for a representative study unit, and call revise_study_units "
-                                "if segmentation is too coarse or mixes multiple chapters. Then return strict JSON only."
-                            ),
+                            "content": prompt_template.require("tool_probe_retry"),
                         }
                     )
                     continue
@@ -221,11 +219,7 @@ class OpenAIPlanRunner:
                 current_messages.append(
                     {
                         "role": "user",
-                        "content": (
-                            "Your previous assistant message was empty. Continue from existing context and "
-                            "return a complete learning-plan JSON object now. If study-unit segmentation is wrong, "
-                            "call revise_study_units before finalizing. Do not return an empty response."
-                        ),
+                        "content": prompt_template.require("empty_response_retry"),
                     }
                 )
                 continue

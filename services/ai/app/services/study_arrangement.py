@@ -178,8 +178,10 @@ class StudyArrangementService:
         # objective stays as learner-authored goal text; overview/course_title are generated display fields.
         persona_hint = ""
         if persona is not None:
-            from app.models.domain import persona_slot_content
-            narrative_mode = persona_slot_content(persona, "narrative_mode", "grounded")
+            from app.models.domain import persona_narrative_mode_label, persona_slot_content
+            narrative_mode = persona_narrative_mode_label(
+                persona_slot_content(persona, "narrative_mode", "稳态导学")
+            )
             correction_style = persona_slot_content(persona, "correction_style")
             persona_hint = f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\uff0c\u5e76\u4fdd\u6301{correction_style}\u7684\u53cd\u9988\u8282\u594f\u3002" if correction_style else f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\u3002"
         overview = (

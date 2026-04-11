@@ -36,6 +36,8 @@ export interface CharacterStateEvent {
   sceneHint: string;
   lineSegmentId: string;
   timingHint: "instant" | "linger" | "after_text";
+  toolName?: string;
+  toolSummary?: string;
 }
 
 export interface CharacterStreamFrame {

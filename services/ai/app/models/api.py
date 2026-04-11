@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 from app.models.domain import (
     CharacterStateEvent,
+    ChatToolCallTraceRecord,
     Citation,
     DocumentDebugRecord,
     DocumentRecord,
@@ -20,6 +21,7 @@ from app.models.domain import (
     StudySessionRecord,
     SceneProfileRecord,
     SceneLayerStateRecord,
+    SessionSceneRecord,
     SceneSetupStateRecord,
 )
 
@@ -332,6 +334,10 @@ class SceneLibraryListResponse(BaseModel):
     items: list[SceneLibraryResponse]
 
 
+class SessionSceneResponse(SessionSceneRecord):
+    pass
+
+
 class UpdateSceneSetupRequest(BaseModel):
     scene_name: str = Field(min_length=1)
     scene_summary: str = Field(min_length=1)
@@ -368,6 +374,10 @@ class StudySessionResponse(StudySessionRecord):
     pass
 
 
+class ChatToolCallTraceResponse(ChatToolCallTraceRecord):
+    pass
+
+
 class StudySessionListResponse(BaseModel):
     items: list[StudySessionResponse]
 
@@ -383,6 +393,8 @@ class StudyChatResponse(BaseModel):
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list[dict[str, str]] = []
     memory_trace: list[dict[str, object]] = []
+    tool_calls: list[ChatToolCallTraceResponse] = []
+    scene_profile: SceneProfileRecord | None = None
 
 
 class StudyChatExchangeResponse(StudyChatResponse):

@@ -65,6 +65,19 @@ def persona_slot_list(persona: PersonaProfile, kind: str) -> list[str]:
     return [s.strip() for s in content.split(",") if s.strip()]
 
 
+def normalize_persona_narrative_mode(value: str) -> str:
+    """Normalize legacy and localized narrative-mode content to internal codes."""
+    text = (value or "").strip()
+    lowered = text.lower()
+    if "light_story" in lowered or "轻剧情" in text:
+        return "light_story"
+    return "grounded"
+
+
+def persona_narrative_mode_label(value: str) -> str:
+    return "轻剧情陪伴" if normalize_persona_narrative_mode(value) == "light_story" else "稳态导学"
+
+
 def persona_sorted_slots(slots: list[PersonaSlot]) -> list[PersonaSlot]:
     """Sort slots by assembly order: sort_order asc, then weight desc, then stable label."""
     return sorted(
@@ -85,6 +98,8 @@ class CharacterStateEvent(BaseModel):
     scene_hint: str
     line_segment_id: str
     timing_hint: str
+    tool_name: str = ""
+    tool_summary: str = ""
 
 
 class Citation(BaseModel):
@@ -190,8 +205,7 @@ class LearningGoalInput(BaseModel):
     persona_id: str
     objective: str = Field(
         description=(
-            "Learner-authored study goal captured at plan creation time. This is supporting goal text for the plan, "
-            "not the generated header title or summary."
+            "创建学习计划时记录的学习者原始目标文本。它用于补充计划意图，不是系统生成的计划标题或摘要。"
         )
     )
     scene_profile_summary: str = ""
@@ -251,6 +265,16 @@ class SceneLibraryRecord(SceneSetupStateRecord):
     created_at: str
 
 
+class SessionSceneRecord(SceneSetupStateRecord):
+    scene_instance_id: str
+    session_id: str
+    document_id: str
+    persona_id: str
+    source_scene_id: str = ""
+    source_scene_name: str = ""
+    created_at: str
+
+
 SceneLayerStateRecord.model_rebuild()
 SceneProfileRecord.model_rebuild()
 
@@ -269,11 +293,11 @@ class LearningPlanRecord(BaseModel):
     document_id: str
     persona_id: str
     course_title: str = Field(
-        description="Generated textbook-grounded course title for display in the learning plan header."
+        description="系统生成的教材贴合型课程标题，用于学习计划头部展示。"
     )
     objective: str = Field(
         description=(
-            "Learner-authored study goal captured at plan creation time. This is supporting goal text, not the plan header title."
+            "创建学习计划时记录的学习者原始目标文本。它用于补充计划意图，不是计划头部标题。"
         )
     )
     scene_profile_summary: str = ""
@@ -374,6 +398,14 @@ class StreamReportRecord(BaseModel):
     events: list[StreamEventRecord] = Field(default_factory=list)
 
 
+class ChatToolCallTraceRecord(BaseModel):
+    tool_call_id: str
+    tool_name: str
+    arguments_json: str
+    result_summary: str = ""
+    result_json: str
+
+
 class StudyChatResult(BaseModel):
     reply: str
     citations: list[Citation]
@@ -381,6 +413,8 @@ class StudyChatResult(BaseModel):
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list["PersonaSlotTraceRecord"] = []
     memory_trace: list["MemoryTraceHitRecord"] = []
+    tool_calls: list[ChatToolCallTraceRecord] = []
+    scene_profile: SceneProfileRecord | None = None
 
 
 class PersonaSlotTraceRecord(BaseModel):
@@ -424,6 +458,8 @@ class DialogueTurnRecord(BaseModel):
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list[PersonaSlotTraceRecord] = []
     memory_trace: list[MemoryTraceHitRecord] = []
+    tool_calls: list[ChatToolCallTraceRecord] = []
+    scene_profile: SceneProfileRecord | None = None
     created_at: str
 
 
@@ -431,6 +467,7 @@ class StudySessionRecord(BaseModel):
     id: str
     document_id: str
     persona_id: str
+    scene_instance_id: str = ""
     scene_profile: SceneProfileRecord | None = None
     section_id: str
     section_title: str = ""

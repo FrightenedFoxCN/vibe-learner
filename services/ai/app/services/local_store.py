@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import TypeVar
+from uuid import uuid4
 
 from pydantic import BaseModel
 
@@ -57,7 +58,8 @@ class LocalJsonStore:
             path.unlink()
 
     def _write_json(self, path: Path, payload: object) -> None:
-        temp_path = path.with_suffix(f"{path.suffix}.tmp")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = path.with_name(f"{path.name}.{uuid4().hex}.tmp")
         temp_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",

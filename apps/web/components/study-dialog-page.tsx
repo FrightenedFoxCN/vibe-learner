@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -200,8 +201,16 @@ export function StudyDialogPage() {
 
       <section style={styles.sceneStrip}>
         <div style={styles.sceneStripHead}>
-          <span style={styles.sceneStripLabel}>当前使用的场景</span>
-          <span style={styles.sceneStripBadge}>{studySession?.sceneProfile ? "来自会话" : activePlan?.sceneProfile ? "来自计划" : "未配置"}</span>
+          <div style={styles.sceneStripHeadMeta}>
+            <span style={styles.sceneStripLabel}>当前使用的场景</span>
+            {studySession?.sceneInstanceId ? (
+              <span style={styles.sceneStripInstance}>会话副本：{studySession.sceneInstanceId}</span>
+            ) : null}
+          </div>
+          <div style={styles.sceneStripHeadActions}>
+            <Link href="/sensory-tools" style={styles.sceneStripLink}>场景工具设置</Link>
+            <span style={styles.sceneStripBadge}>{studySession?.sceneProfile ? "来自会话" : activePlan?.sceneProfile ? "来自计划" : "未配置"}</span>
+          </div>
         </div>
         {activeSceneProfile ? (
           <>
@@ -341,12 +350,32 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
     alignItems: "center",
   },
+  sceneStripHeadMeta: {
+    display: "grid",
+    gap: 4,
+  },
+  sceneStripHeadActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+  },
   sceneStripLabel: {
     fontSize: 11,
     fontWeight: 700,
     textTransform: "uppercase",
     letterSpacing: "0.07em",
     color: "var(--muted)",
+  },
+  sceneStripInstance: {
+    fontSize: 12,
+    color: "var(--muted)",
+  },
+  sceneStripLink: {
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 600,
+    textDecoration: "none",
   },
   sceneStripBadge: {
     fontSize: 12,

@@ -228,7 +228,10 @@ class RuntimeSettingsService:
     def _load_or_default(self) -> RuntimeSettingsRecord:
         existing = self._store.load_item("runtime_settings", "default", RuntimeSettingsRecord)
         if existing is not None:
-            return existing
+            migrated = self._migrate_existing_record(existing)
+            if migrated != existing:
+                self._store.save_item("runtime_settings", "default", migrated)
+            return migrated
         record = RuntimeSettingsRecord(
             config_id="default",
             updated_at=_now_iso(),
@@ -263,6 +266,50 @@ class RuntimeSettingsService:
         )
         self._store.save_item("runtime_settings", "default", record)
         return record
+
+    def _migrate_existing_record(self, existing: RuntimeSettingsRecord) -> RuntimeSettingsRecord:
+        fields_set = set(existing.model_fields_set)
+        updates: dict[str, Any] = {}
+
+        field_to_base_value = {
+            "plan_provider": self._base_settings.plan_provider,
+            "openai_api_key": self._base_settings.openai_api_key,
+            "openai_base_url": self._base_settings.openai_base_url,
+            "openai_plan_api_key": self._base_settings.openai_plan_api_key,
+            "openai_plan_base_url": self._base_settings.openai_plan_base_url,
+            "openai_plan_model": self._base_settings.openai_plan_model,
+            "openai_setting_api_key": self._base_settings.openai_setting_api_key,
+            "openai_setting_base_url": self._base_settings.openai_setting_base_url,
+            "openai_setting_model": self._base_settings.openai_setting_model,
+            "openai_chat_api_key": self._base_settings.openai_chat_api_key,
+            "openai_chat_base_url": self._base_settings.openai_chat_base_url,
+            "openai_chat_model": self._base_settings.openai_chat_model,
+            "openai_chat_temperature": self._base_settings.openai_chat_temperature,
+            "openai_setting_temperature": self._base_settings.openai_setting_temperature,
+            "openai_setting_max_tokens": self._base_settings.openai_setting_max_tokens,
+            "openai_chat_max_tokens": self._base_settings.openai_chat_max_tokens,
+            "openai_chat_history_messages": self._base_settings.openai_chat_history_messages,
+            "openai_chat_tool_max_rounds": self._base_settings.openai_chat_tool_max_rounds,
+            "openai_chat_tools_enabled": self._base_settings.openai_chat_tools_enabled,
+            "openai_chat_memory_tool_enabled": self._base_settings.openai_chat_memory_tool_enabled,
+            "openai_embedding_model": self._base_settings.openai_embedding_model,
+            "openai_chat_model_multimodal": self._base_settings.openai_chat_model_multimodal,
+            "openai_timeout_seconds": self._base_settings.openai_timeout_seconds,
+            "openai_plan_model_multimodal": self._base_settings.openai_plan_model_multimodal,
+            "openai_plan_tools_enabled": self._base_settings.openai_plan_tools_enabled,
+            "openai_plan_fallback_model": self._base_settings.openai_plan_fallback_model,
+            "openai_plan_fallback_disable_tools": self._base_settings.openai_plan_fallback_disable_tools,
+        }
+
+        for field_name, base_value in field_to_base_value.items():
+            if field_name not in fields_set:
+                updates[field_name] = base_value
+
+        if not updates:
+            return existing
+
+        updates["updated_at"] = _now_iso()
+        return existing.model_copy(update=updates)
 
 
 def _normalize_plan_provider(value: Any) -> str:

@@ -87,7 +87,7 @@ export default function SensoryToolsPage() {
 
       <header style={styles.header}>
         <h1 style={styles.title}>感官工具</h1>
-        <p style={styles.subtitle}>统一管理模型在不同阶段可调用的工具，并按阶段与类别进行启用控制。</p>
+        <p style={styles.subtitle}>统一管理模型在不同阶段可调用的工具，包括教材感官、记忆检索、练习评测，以及会话场景工具。</p>
       </header>
 
       {loading ? <div style={styles.loading}>正在加载工具配置...</div> : null}

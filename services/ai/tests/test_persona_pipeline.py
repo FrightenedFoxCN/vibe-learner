@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import json
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -9,10 +10,17 @@ from fastapi import HTTPException
 from app.api.routes import _map_plan_generation_error, get_document_planning_trace
 from app.models.api import CreatePersonaRequest, DocumentResponse
 from app.models.domain import (
+    ChatToolCallTraceRecord,
+    Citation,
     DocumentDebugRecord,
     LearningGoalInput,
     PlanGenerationTraceRecord,
+    SceneLayerStateRecord,
+    SceneObjectStateRecord,
+    SceneProfileRecord,
     StudyUnitRecord,
+    StudyChatResult,
+    StudySessionRecord,
 )
 from app.services.documents import DocumentService
 from app.services.document_parser import DocumentParser, ParsedPage
@@ -22,7 +30,10 @@ from app.services.model_provider import (
     OpenAIModelProvider,
     PlanModelReply,
     PlanScheduleItem,
+    CHAT_JSON_SCHEMA,
+    _parse_chat_model_reply,
 )
+from app.services.runtime_settings import RuntimeSettingsService
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
 from app.services.plan_prompt import build_learning_plan_messages, read_page_range_content
@@ -36,6 +47,7 @@ from app.services.stream_reports import (
     LEARNING_PLAN_STREAM_CATEGORY,
     StreamReportRecorder,
 )
+from app.services.session_scene import SessionSceneService
 from app.services.study_sessions import StudySessionService
 
 
@@ -49,6 +61,7 @@ class PersonaPipelineTests(unittest.TestCase):
         self.document_service = DocumentService(store, DocumentParser(), arrangement_service)
         self.plan_service = LearningPlanService(store, arrangement_service, model_provider)
         self.study_session_service = StudySessionService(store)
+        self.session_scene_service = SessionSceneService(store)
         self.orchestrator = PedagogyOrchestrator(
             model_provider=model_provider,
             performance_mapper=PerformanceMapper(),
@@ -92,6 +105,370 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertTrue(result.reply)
         self.assertEqual(result.citations[0].section_id, "chapter-1")
         self.assertEqual(result.character_events[0].line_segment_id, "session-1:chat:0")
+
+    def test_session_scene_clone_and_mutation_are_isolated(self) -> None:
+        source_profile = SceneProfileRecord(
+            scene_name="力学教室",
+            scene_id="scene-classroom",
+            title="力学教室",
+            summary="以课堂讲解为中心的基础场景。",
+            tags=["classroom"],
+            selected_path=["校园", "物理楼", "力学教室"],
+            focus_object_names=["黑板"],
+            scene_tree=[
+                SceneLayerStateRecord(
+                    id="scene-campus",
+                    title="校园",
+                    scope_label="world",
+                    summary="学校外景",
+                    atmosphere="清晨",
+                    rules="安静",
+                    entrance="校门",
+                    children=[
+                        SceneLayerStateRecord(
+                            id="scene-classroom",
+                            title="力学教室",
+                            scope_label="room",
+                            summary="用于讲解牛顿定律",
+                            atmosphere="明亮",
+                            rules="保持专注",
+                            entrance="前门",
+                            objects=[
+                                SceneObjectStateRecord(
+                                    id="scene-object-board",
+                                    name="黑板",
+                                    description="写满受力分析的板书",
+                                    interaction="可以在上面推导公式",
+                                    tags="board,force",
+                                )
+                            ],
+                            children=[],
+                        )
+                    ],
+                    objects=[],
+                )
+            ],
+        )
+
+        bound_scene = self.session_scene_service.clone_scene_for_session(
+            session_id="session-demo",
+            document_id="doc-1",
+            persona_id="mentor-aurora",
+            scene_profile=source_profile,
+        )
+
+        self.assertIsNotNone(bound_scene)
+        assert bound_scene is not None
+        self.assertNotEqual(bound_scene.scene_instance_id, "")
+        self.assertEqual(bound_scene.scene_profile.title, "力学教室")
+
+        add_object_result = self.session_scene_service.add_object(
+            bound_scene.scene_instance_id,
+            scene_id="scene-classroom",
+            name="滑块",
+            description="放在实验桌上的滑块",
+            interaction="用于演示摩擦力",
+            tags="experiment,force",
+        )
+        self.assertTrue(add_object_result["ok"])
+        self.assertIn("滑块", add_object_result["summary"])
+
+        updated_scene = self.session_scene_service.require_scene(bound_scene.scene_instance_id)
+        selected_layer = updated_scene.scene_profile.scene_tree[0].children[0]
+        self.assertEqual(len(selected_layer.objects), 2)
+        self.assertEqual(source_profile.scene_tree[0].children[0].objects[0].name, "黑板")
+
+    def test_append_turn_persists_scene_profile_and_tool_traces(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-1",
+            persona_id="mentor-aurora",
+            section_id="chapter-1",
+        )
+        next_scene_profile = SceneProfileRecord(
+            scene_name="力学教室",
+            scene_id="scene-classroom",
+            title="实验桌前",
+            summary="已转移到实验桌附近。",
+            tags=["experiment"],
+            selected_path=["校园", "物理楼", "实验桌前"],
+            focus_object_names=["滑块"],
+            scene_tree=[],
+        )
+        result = StudyChatResult(
+            reply="我们现在转到实验桌前观察受力。",
+            citations=[
+                Citation(
+                    section_id="chapter-1",
+                    title="第一章",
+                    page_start=1,
+                    page_end=2,
+                )
+            ],
+            character_events=[],
+            tool_calls=[
+                ChatToolCallTraceRecord(
+                    tool_call_id="call-1",
+                    tool_name="move_to_scene",
+                    arguments_json='{"scene_id":"scene-classroom"}',
+                    result_summary="已切换到场景 校园 / 物理楼 / 实验桌前。",
+                    result_json='{"ok":true}',
+                )
+            ],
+            scene_profile=next_scene_profile,
+        )
+
+        updated_session = self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="我们切到实验桌前吧",
+            result=result,
+        )
+
+        self.assertEqual(updated_session.scene_profile.title, "实验桌前")
+        self.assertEqual(updated_session.turns[-1].tool_calls[0].tool_name, "move_to_scene")
+        self.assertEqual(updated_session.turns[-1].scene_profile.title, "实验桌前")
+
+    def test_local_store_save_list_is_safe_under_concurrent_writes(self) -> None:
+        store = LocalJsonStore(Path(self.temp_dir.name))
+        barrier = threading.Barrier(4)
+        errors: list[Exception] = []
+
+        def writer(index: int) -> None:
+            try:
+                barrier.wait(timeout=2)
+                for turn_index in range(20):
+                    session = self.study_session_service.create_session(
+                        session_id=f"session-{index}-{turn_index}",
+                        document_id=f"doc-{index}",
+                        persona_id="mentor-aurora",
+                        section_id=f"chapter-{turn_index}",
+                    )
+                    store.save_list("sessions", [session])
+            except Exception as exc:
+                errors.append(exc)
+
+        threads = [threading.Thread(target=writer, args=(index,)) for index in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+
+        self.assertFalse(errors, msg=str(errors))
+        saved_sessions = store.load_list("sessions", StudySessionRecord)
+        self.assertTrue(saved_sessions)
+
+    def test_runtime_settings_migrates_missing_fields_from_base_settings(self) -> None:
+        store = LocalJsonStore(Path(self.temp_dir.name))
+        runtime_dir = Path(self.temp_dir.name) / "runtime_settings"
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+        (runtime_dir / "default.json").write_text(
+            json.dumps(
+                {
+                    "config_id": "default",
+                    "updated_at": "2026-04-11T00:00:00+00:00",
+                    "plan_provider": "openai",
+                    "openai_api_key": "sk-test",
+                    "openai_base_url": "https://example.com/v1",
+                    "openai_chat_model": "gemini-2.5-pro",
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+
+        from app.core.settings import Settings
+
+        base_settings = Settings(
+            plan_provider="openai",
+            openai_api_key="sk-test",
+            openai_base_url="https://example.com/v1",
+            openai_chat_model="gemini-2.5-pro",
+            openai_chat_max_tokens=4800,
+            openai_timeout_seconds=120,
+        )
+        service = RuntimeSettingsService(store, base_settings)
+
+        self.assertEqual(service.describe()["openai_chat_max_tokens"], 4800)
+        self.assertEqual(service.effective_settings().openai_chat_max_tokens, 4800)
+
+    def test_parse_chat_model_reply_accepts_plain_text_without_warning_path(self) -> None:
+        raw_payload = {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "content": "好的，我们继续！你提到的是定端同伦，也就是固定端点的同伦。"
+                    },
+                }
+            ],
+            "usage": {
+                "completion_tokens": 64,
+                "completion_tokens_details": {
+                    "reasoning_tokens": 32,
+                },
+            },
+        }
+
+        with self.assertLogs("vibe_learner.model_provider", level="INFO") as logs:
+            result = _parse_chat_model_reply(
+                raw_payload=raw_payload,
+                tool_results=[],
+                fallback_memory_trace=[],
+                tool_traces=[],
+            )
+
+        self.assertIn("定端同伦", result.text)
+        self.assertEqual(result.mood, "calm")
+        self.assertEqual(result.action, "explain")
+        joined = "\n".join(logs.output)
+        self.assertIn("model.chat.parse_fallback using_plain_text", joined)
+
+    def test_openai_chat_prompt_includes_explicit_json_schema(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-plan-test",
+            chat_model="gpt-test",
+            timeout_seconds=3,
+        )
+
+        captured_payloads: list[dict[str, object]] = []
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return json.dumps(
+                    {
+                        "choices": [
+                            {
+                                "message": {
+                                    "content": json.dumps(
+                                        {
+                                            "text": "这是一个结构化回答。",
+                                            "mood": "calm",
+                                            "action": "explain",
+                                        }
+                                    )
+                                }
+                            }
+                        ]
+                    }
+                ).encode("utf-8")
+
+        def fake_urlopen(request, timeout=0):
+            captured_payloads.append(json.loads(request.data.decode("utf-8")))
+            return FakeResponse()
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            reply = provider.generate_chat(
+                persona=self.persona_engine.require_persona("mentor-aurora"),
+                section_id="chapter-1",
+                message="解释一下这个概念",
+                section_context="Section: Chapter 1",
+            )
+
+        self.assertEqual(reply.text, "这是一个结构化回答。")
+        self.assertTrue(captured_payloads)
+        system_content = captured_payloads[0]["messages"][0]["content"]
+        self.assertIn("必须严格输出单个 JSON 对象", system_content)
+        self.assertIn(CHAT_JSON_SCHEMA, system_content)
+
+    def test_openai_chat_tool_round_appends_json_only_followup(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-plan-test",
+            chat_model="gpt-test",
+            timeout_seconds=3,
+        )
+        captured_payloads: list[dict[str, object]] = []
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return json.dumps(self.payload).encode("utf-8")
+
+        responses = [
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "",
+                                "tool_calls": [
+                                    {
+                                        "id": "call-1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "ask_multiple_choice_question",
+                                            "arguments": json.dumps({"topic": "集合", "difficulty": "medium"}),
+                                        },
+                                    }
+                                ],
+                            }
+                        }
+                    ]
+                }
+            ),
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "text": "先做这道题，再告诉我你的思路。",
+                                        "mood": "encouraging",
+                                        "action": "prompt",
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ),
+        ]
+
+        def fake_urlopen(request, timeout=0):
+            captured_payloads.append(json.loads(request.data.decode("utf-8")))
+            return responses.pop(0)
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            reply = provider.generate_chat(
+                persona=self.persona_engine.require_persona("mentor-aurora"),
+                section_id="chapter-1",
+                message="给我出一道题",
+                section_context="Section: Chapter 1",
+            )
+
+        self.assertEqual(reply.action, "prompt")
+        self.assertGreaterEqual(len(captured_payloads), 2)
+        second_messages = captured_payloads[1]["messages"]
+        self.assertTrue(
+            any(
+                message["role"] == "user"
+                and "工具调用已完成。现在请基于现有上下文输出最终结果。" in str(message["content"])
+                for message in second_messages
+            )
+        )
+        self.assertTrue(
+            any(
+                message["role"] == "user" and CHAT_JSON_SCHEMA in str(message["content"])
+                for message in second_messages
+            )
+        )
 
     def test_grading_changes_based_on_answer_length(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
@@ -208,7 +585,7 @@ class PersonaPipelineTests(unittest.TestCase):
     def test_learning_plan_prompt_template_loads_from_text_file(self) -> None:
         template = load_learning_plan_prompt_template()
 
-        self.assertIn("strict JSON only", template.system_prompt)
+        self.assertIn("必须严格输出单个 JSON 对象", template.system_prompt)
         self.assertIn('"course_title": string', template.system_prompt)
         self.assertGreaterEqual(len(template.user_instructions), 3)
         self.assertIn("study_units", template.user_instructions[0])
@@ -895,7 +1272,7 @@ class PersonaPipelineTests(unittest.TestCase):
         )
 
         self.assertEqual(messages[0]["role"], "system")
-        self.assertIn("strict JSON only", messages[0]["content"])
+        self.assertIn("必须严格输出单个 JSON 对象", messages[0]["content"])
         self.assertIn('"course_title": string', messages[0]["content"])
         self.assertNotIn("course_outline", messages[0]["content"])
         self.assertIn("Chapter 1 Foundations", messages[1]["content"])

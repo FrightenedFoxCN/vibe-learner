@@ -5,6 +5,7 @@ import socket
 import threading
 import urllib.error
 import urllib.request
+from uuid import uuid4
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -679,7 +680,7 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
 
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
 def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeResponse:
-    session = container.study_session_service.require_session(session_id)
+    session = _ensure_session_scene_binding(container.study_session_service.require_session(session_id))
     memory_sessions = container.study_session_service.list_sessions(
         document_id=session.document_id,
         persona_id=session.persona_id,
@@ -692,6 +693,11 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
     except HTTPException:
         debug_report = None
 
+    scene_tool_runtime = (
+        container.session_scene_service.build_tool_runtime(session.scene_instance_id)
+        if session.scene_instance_id
+        else None
+    )
     try:
         response = container.pedagogy_orchestrator.generate_chat_reply(
             session_id=session_id,
@@ -704,6 +710,8 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
             previous_turns=session.turns,
             memory_sessions=memory_sessions,
             active_scene_summary=_scene_profile_summary(session),
+            active_scene_context=scene_tool_runtime.scene_context() if scene_tool_runtime else "",
+            scene_tool_runtime=scene_tool_runtime,
         )
     except RuntimeError as exc:
         http_error = _map_chat_generation_error(exc)
@@ -771,10 +779,22 @@ def update_study_session(
     if payload.section_id is None and "scene_profile" not in payload.model_fields_set:
         raise HTTPException(status_code=400, detail="update_payload_empty")
 
-    current_session = container.study_session_service.require_session(session_id)
+    current_session = _ensure_session_scene_binding(
+        container.study_session_service.require_session(session_id)
+    )
     next_section_id = payload.section_id or current_session.section_id
     has_scene_profile = "scene_profile" in payload.model_fields_set
-    next_scene_profile = payload.scene_profile if has_scene_profile else current_session.scene_profile
+    next_scene_instance_id = current_session.scene_instance_id
+    next_scene_profile = current_session.scene_profile
+    if has_scene_profile:
+        bound_scene = container.session_scene_service.clone_scene_for_session(
+            session_id=session_id,
+            document_id=current_session.document_id,
+            persona_id=current_session.persona_id,
+            scene_profile=payload.scene_profile,
+        )
+        next_scene_instance_id = bound_scene.scene_instance_id if bound_scene else ""
+        next_scene_profile = bound_scene.scene_profile if bound_scene else None
 
     persona = container.persona_engine.require_persona(current_session.persona_id)
     document = container.document_service.require_document(current_session.document_id)
@@ -792,7 +812,8 @@ def update_study_session(
     session = container.study_session_service.update_session(
         session_id=session_id,
         section_id=payload.section_id,
-        scene_profile=payload.scene_profile,
+        scene_instance_id=next_scene_instance_id if has_scene_profile else None,
+        scene_profile=next_scene_profile,
         has_scene_profile=has_scene_profile,
         section_title=next_section_title,
         session_system_prompt=session_system_prompt,
@@ -802,6 +823,7 @@ def update_study_session(
 
 @router.post("/study-sessions", response_model=StudySessionResponse)
 def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResponse:
+    session_id = f"session-{uuid4().hex[:10]}"
     logger.info(
         "study_sessions.create document_id=%s persona_id=%s section_id=%s scene_id=%s",
         payload.document_id,
@@ -816,6 +838,13 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         section_id=payload.section_id,
     )
     theme_hint = payload.theme_hint.strip()
+    bound_scene = container.session_scene_service.clone_scene_for_session(
+        session_id=session_id,
+        document_id=payload.document_id,
+        persona_id=payload.persona_id,
+        scene_profile=payload.scene_profile,
+    )
+    session_scene_profile = bound_scene.scene_profile if bound_scene else None
     session_system_prompt = build_study_session_system_prompt(
         persona_name=persona.name,
         persona_system_prompt=persona.system_prompt,
@@ -823,12 +852,14 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         section_id=payload.section_id,
         section_title=section_title,
         theme_hint=theme_hint,
-        scene_profile=payload.scene_profile,
+        scene_profile=session_scene_profile,
     )
     session = container.study_session_service.create_session(
+        session_id=session_id,
         document_id=payload.document_id,
         persona_id=payload.persona_id,
-        scene_profile=payload.scene_profile,
+        scene_instance_id=bound_scene.scene_instance_id if bound_scene else "",
+        scene_profile=session_scene_profile,
         section_id=payload.section_id,
         section_title=section_title,
         theme_hint=theme_hint,
@@ -851,6 +882,25 @@ def _scene_profile_summary(session) -> str:
     if not session.scene_profile:
         return ""
     return session.scene_profile.summary.strip()
+
+
+def _ensure_session_scene_binding(session):
+    if session.scene_instance_id or session.scene_profile is None:
+        return session
+    bound_scene = container.session_scene_service.clone_scene_for_session(
+        session_id=session.id,
+        document_id=session.document_id,
+        persona_id=session.persona_id,
+        scene_profile=session.scene_profile,
+    )
+    if bound_scene is None:
+        return session
+    return container.study_session_service.update_session(
+        session_id=session.id,
+        scene_instance_id=bound_scene.scene_instance_id,
+        scene_profile=bound_scene.scene_profile,
+        has_scene_profile=True,
+    )
 
 
 @router.post("/learning-plans", response_model=LearningPlanResponse)

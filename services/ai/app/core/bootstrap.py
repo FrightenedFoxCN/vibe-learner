@@ -14,6 +14,7 @@ from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConf
 from app.services.runtime_settings import RuntimeSettingsService
 from app.services.scene_library import SceneLibraryService
 from app.services.scene_setup import SceneSetupService
+from app.services.session_scene import SessionSceneService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
 
@@ -30,6 +31,7 @@ class Container:
         self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
+        self.session_scene_service = SessionSceneService(self.store)
         self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())
         self.performance_mapper = PerformanceMapper()
         self.persona_engine = PersonaEngine()
