@@ -11,7 +11,7 @@ Generate "course_title" as a concise textbook-grounded course title derived from
 The learner goal is provided separately as "objective"; do not reuse it as the plan title.
 Use "overview" only for a short summary paragraph, not for the plan title.
 Use "weekly_focus" for ordered main-theme labels (coarse-grained, can include fine-grained hints), and "today_tasks" for imperative learner actions.
-Align wording and pedagogical tone with the provided persona profile (teaching_style, narrative_mode, encouragement_style, correction_style, background_story, and system_prompt).
+Align wording and pedagogical tone with the provided persona profile (slots, and system_prompt).
 Keep persona influence in style and motivation only; chapter grounding and factual structure must still come strictly from study_units and tool outputs.
 When generating "weekly_focus", each main theme must include explicit chapter segmentation context from study_units (chapter title and page span), so downstream section jumps remain valid.
 If a single study unit is too broad, split it via revise_study_units first, then generate weekly_focus against the revised chapter segmentation.

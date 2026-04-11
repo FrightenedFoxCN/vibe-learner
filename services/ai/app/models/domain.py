@@ -5,20 +5,61 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+PERSONA_SLOT_KINDS = [
+    "worldview",
+    "past_experiences",
+    "thinking_style",
+    "teaching_method",
+    "narrative_mode",
+    "encouragement_style",
+    "correction_style",
+    "custom",
+]
+
+PERSONA_SLOT_KIND_LABELS: dict[str, str] = {
+    "worldview": "世界观起点",
+    "past_experiences": "过往经历",
+    "thinking_style": "思维风格",
+    "teaching_method": "教学方法",
+    "narrative_mode": "叙事模式",
+    "encouragement_style": "鼓励策略",
+    "correction_style": "纠错策略",
+    "custom": "自定义",
+}
+
+
+class PersonaSlot(BaseModel):
+    kind: str
+    label: str
+    content: str
+
+
 class PersonaProfile(BaseModel):
     id: str
     name: str
     source: str
     summary: str
-    background_story: str = ""
     system_prompt: str
-    teaching_style: list[str]
-    narrative_mode: str
-    encouragement_style: str
-    correction_style: str
+    slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str]
     available_actions: list[str]
     default_speech_style: str
+
+
+def persona_slot_content(persona: PersonaProfile, kind: str, default: str = "") -> str:
+    """Return the content of the first slot matching ``kind``, or ``default``."""
+    for slot in persona.slots:
+        if slot.kind == kind:
+            return slot.content
+    return default
+
+
+def persona_slot_list(persona: PersonaProfile, kind: str) -> list[str]:
+    """Return a comma-split list of values from the first slot matching ``kind``."""
+    content = persona_slot_content(persona, kind)
+    if not content:
+        return []
+    return [s.strip() for s in content.split(",") if s.strip()]
 
 
 class CharacterStateEvent(BaseModel):

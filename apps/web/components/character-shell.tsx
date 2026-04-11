@@ -13,12 +13,17 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
   const currentEvent = response?.characterEvents[0] ?? null;
   const Renderer = placeholderCharacterRenderer.Render;
 
+  const teachingMethodSlot = persona.slots.find((s) => s.kind === "teaching_method");
+  const narrativeModeSlot = persona.slots.find((s) => s.kind === "narrative_mode");
+  const teachingLabel = teachingMethodSlot?.content || persona.summary;
+  const narrativeLabel = formatNarrativeMode(narrativeModeSlot?.content ?? "grounded");
+
   return (
     <div style={styles.wrap}>
       <div style={styles.header}>
         <span style={styles.name}>{persona.name}</span>
         <span style={styles.meta}>
-          {persona.teachingStyle.join(" / ")} · {formatNarrativeMode(persona.narrativeMode)}
+          {teachingLabel} · {narrativeLabel}
         </span>
       </div>
 

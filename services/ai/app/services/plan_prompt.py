@@ -61,12 +61,11 @@ def build_learning_plan_messages(
             "name": persona.name,
             "source": persona.source,
             "summary": persona.summary,
-            "background_story": persona.background_story,
             "system_prompt": persona.system_prompt,
-            "teaching_style": persona.teaching_style,
-            "narrative_mode": persona.narrative_mode,
-            "encouragement_style": persona.encouragement_style,
-            "correction_style": persona.correction_style,
+            "slots": [
+                {"kind": slot.kind, "label": slot.label, "content": slot.content}
+                for slot in persona.slots
+            ],
             "available_emotions": persona.available_emotions,
             "available_actions": persona.available_actions,
             "default_speech_style": persona.default_speech_style,

@@ -399,11 +399,7 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
         result = container.model_provider.assist_persona_setting(
             name=payload.name,
             summary=payload.summary,
-            background_story=payload.background_story,
-            teaching_style=payload.teaching_style,
-            narrative_mode=payload.narrative_mode,
-            encouragement_style=payload.encouragement_style,
-            correction_style=payload.correction_style,
+            slots=payload.slots,
             rewrite_strength=payload.rewrite_strength,
         )
     except RuntimeError as exc:
@@ -416,11 +412,7 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
         result = container.persona_engine.assist_setting(
             name=payload.name,
             summary=payload.summary,
-            background_story=payload.background_story,
-            teaching_style=payload.teaching_style,
-            narrative_mode=payload.narrative_mode,
-            encouragement_style=payload.encouragement_style,
-            correction_style=payload.correction_style,
+            slots=payload.slots,
         )
     return PersonaSettingAssistResponse(**result)
 

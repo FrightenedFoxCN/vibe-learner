@@ -167,15 +167,21 @@ class StudyArrangementService:
         ] or [
             f"阅读 {document.title} 的第一页内容，确认学习目标与术语。",
         ]
-        if persona is not None and persona.encouragement_style:
-            today_tasks = [
-                f"[{persona.encouragement_style}] {task}"
-                for task in today_tasks
-            ]
+        if persona is not None:
+            from app.models.domain import persona_slot_content
+            enc_style = persona_slot_content(persona, "encouragement_style")
+            if enc_style:
+                today_tasks = [
+                    f"[{enc_style}] {task}"
+                    for task in today_tasks
+                ]
         # objective stays as learner-authored goal text; overview/course_title are generated display fields.
         persona_hint = ""
         if persona is not None:
-            persona_hint = f" 采用{persona.narrative_mode}叙事，并保持{persona.correction_style}的反馈节奏。"
+            from app.models.domain import persona_slot_content
+            narrative_mode = persona_slot_content(persona, "narrative_mode", "grounded")
+            correction_style = persona_slot_content(persona, "correction_style")
+            persona_hint = f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\uff0c\u5e76\u4fdd\u6301{correction_style}\u7684\u53cd\u9988\u8282\u594f\u3002" if correction_style else f" \u91c7\u7528{narrative_mode}\u53d9\u4e8b\u3002"
         overview = (
             f"{persona_name} 将带你完成 {document.title} 的"
             f" {len(plannable_units)} 个学习单元，先从 {plannable_units[0].title if plannable_units else document.title} 开始。"

@@ -63,15 +63,18 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(personas[0].source, "builtin")
 
     def test_user_persona_creation_preserves_contract_shape(self) -> None:
+        from app.models.domain import PersonaSlot
         persona = self.persona_engine.create_persona(
             CreatePersonaRequest(
                 name="Sora Guide",
                 summary="A sharp but kind mentor.",
                 system_prompt="Stay grounded in the document.",
-                teaching_style=["socratic", "precise"],
-                narrative_mode="light_story",
-                encouragement_style="celebrate effort",
-                correction_style="direct but supportive",
+                slots=[
+                    PersonaSlot(kind="teaching_method", label="教学方法", content="socratic, precise"),
+                    PersonaSlot(kind="narrative_mode", label="叙事模式", content="light_story"),
+                    PersonaSlot(kind="encouragement_style", label="鼓励策略", content="celebrate effort"),
+                    PersonaSlot(kind="correction_style", label="纠错策略", content="direct but supportive"),
+                ],
             )
         )
         self.assertEqual(persona.id, "sora-guide")

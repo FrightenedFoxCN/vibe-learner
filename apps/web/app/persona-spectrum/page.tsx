@@ -5,14 +5,18 @@ import type { CSSProperties } from "react";
 import {
   CHARACTER_ACTIONS,
   CHARACTER_EMOTIONS,
+  PERSONA_SLOT_KIND_LABELS,
+  PERSONA_SLOT_KINDS,
   SPEECH_STYLES,
   type CharacterAction,
   type CharacterEmotion,
-  type CharacterStateEvent,
   type CreatePersonaInput,
   type DocumentRecord,
   type PersonaProfile,
+  type PersonaSlot,
+  type PersonaSlotKind,
   type SpeechStyle,
+  type CharacterStateEvent,
   type StudyChatResponse
 } from "@vibe-learner/shared";
 
@@ -36,12 +40,8 @@ type TimingHint = "instant" | "linger" | "after_text";
 interface PersonaDraft {
   name: string;
   summary: string;
-  backgroundStory: string;
   systemPrompt: string;
-  teachingStyleText: string;
-  narrativeMode: "grounded" | "light_story";
-  encouragementStyle: string;
-  correctionStyle: string;
+  slots: PersonaSlot[];
   availableEmotionsText: string;
   availableActionsText: string;
   defaultSpeechStyle: SpeechStyle;
@@ -50,51 +50,48 @@ interface PersonaDraft {
 const EMPTY_DRAFT: PersonaDraft = {
   name: "",
   summary: "",
-  backgroundStory: "",
   systemPrompt: "",
-  teachingStyleText: "",
-  narrativeMode: "grounded",
-  encouragementStyle: "",
-  correctionStyle: "",
+  slots: [],
   availableEmotionsText: CHARACTER_EMOTIONS.join(", "),
   availableActionsText: CHARACTER_ACTIONS.join(", "),
   defaultSpeechStyle: "warm"
 };
 
-const BACKGROUND_TEMPLATES: Array<{ id: string; label: string; text: string }> = [
+const SLOT_TEMPLATES: Array<{ kind: PersonaSlotKind; text: string }> = [
   {
-    id: "origin",
-    label: "世界观起点",
+    kind: "worldview",
     text: "你曾在一所强调自学与互助的学院担任导学员，习惯先给学习者稳定感，再推进挑战。"
   },
   {
-    id: "style",
-    label: "教学方法",
-    text: "讲解时遵循“概念-例子-反例-迁移”的节奏，每次只推进一个关键难点。"
+    kind: "past_experiences",
+    text: "曾参与多个跨学科项目，习惯将复杂问题拆解为可验证的小步骤，再带领学习者逐步落地。"
   },
   {
-    id: "tone",
-    label: "语气口癖",
-    text: "常用短句确认学习者状态，例如“我们先把这一点站稳”，避免连续高压输出。"
+    kind: "thinking_style",
+    text: "常用短句确认学习者状态，例如「我们先把这一点站稳」，避免连续高压输出。"
   },
   {
-    id: "boundary",
-    label: "互动边界",
-    text: "纠错优先指出可操作改进，不使用否定人格的措辞；鼓励具体进步，不做空泛夸奖。"
+    kind: "teaching_method",
+    text: "讲解时遵循「概念-例子-反例-迁移」的节奏，每次只推进一个关键难点。"
+  },
+  {
+    kind: "correction_style",
+    text: "纠错优先指出可操作改进，不使用否定人格的措辞；鼓励具体进步，不做空泛夸奨。"
   }
 ];
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
   summary: "示例人格：强调章节脉络与可执行反馈。",
-  backgroundStory:
-    "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。",
   systemPrompt:
     "Prioritize chapter-grounded explanation, progressive questioning, and concise actionable feedback.",
-  teachingStyle: ["structured", "guided"],
-  narrativeMode: "grounded",
-  encouragementStyle: "small wins",
-  correctionStyle: "precise but warm",
+  slots: [
+    { kind: "worldview", label: "世界观起点", content: "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。" },
+    { kind: "teaching_method", label: "教学方法", content: "structured, guided" },
+    { kind: "narrative_mode", label: "叙事模式", content: "grounded" },
+    { kind: "encouragement_style", label: "鼓励策略", content: "small wins" },
+    { kind: "correction_style", label: "纠错策略", content: "precise but warm" }
+  ],
   availableEmotions: ["calm", "encouraging", "serious"],
   availableActions: ["idle", "explain", "point", "reflect"],
   defaultSpeechStyle: "warm"
@@ -129,21 +126,20 @@ export default function PersonaSpectrumPage() {
   const [previewTiming, setPreviewTiming] = useState<TimingHint>("instant");
 
   const [previewSessionId, setPreviewSessionId] = useState("");
-  const [previewMessage, setPreviewMessage] = useState("请用这个人格风格解释当前章节的核心概念。");
+  const [previewMessage, setPreviewMessage] = useState(
+    "请用这个人格风格解释当前章节的核心概念。"
+  );
   const [previewPending, setPreviewPending] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [previewChat, setPreviewChat] = useState<StudyChatExchangeResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
     async function bootstrap() {
       setLoadError("");
       try {
         const [personaList, documentList] = await Promise.all([listPersonas(), listDocuments()]);
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setPersonas(personaList);
         setDocuments(documentList);
         const initialPersona = personaList[0];
@@ -158,23 +154,16 @@ export default function PersonaSpectrumPage() {
           setSelectedSectionId(firstSection?.id ?? "");
         }
       } catch (error) {
-        if (!cancelled) {
-          setLoadError(String(error));
-        }
+        if (!cancelled) setLoadError(String(error));
       }
     }
-
     bootstrap();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
-    const selectedPersona = personas.find((persona) => persona.id === selectedPersonaId);
-    if (!selectedPersona) {
-      return;
-    }
+    const selectedPersona = personas.find((p) => p.id === selectedPersonaId);
+    if (!selectedPersona) return;
     setDraft(personaToDraft(selectedPersona));
     setPreviewEmotion(selectedPersona.availableEmotions[0] ?? "calm");
     setPreviewAction(selectedPersona.availableActions[0] ?? "idle");
@@ -184,91 +173,63 @@ export default function PersonaSpectrumPage() {
   }, [selectedPersonaId, personas]);
 
   useEffect(() => {
-    if (!selectedPersonaId) {
-      setAssets(null);
-      setAssetsError("");
-      return;
-    }
+    if (!selectedPersonaId) { setAssets(null); setAssetsError(""); return; }
     let cancelled = false;
-
     async function loadAssets() {
       setAssetsError("");
       try {
-        const nextAssets = await getPersonaAssets(selectedPersonaId);
-        if (!cancelled) {
-          setAssets(nextAssets);
-        }
+        const a = await getPersonaAssets(selectedPersonaId);
+        if (!cancelled) setAssets(a);
       } catch (error) {
-        if (!cancelled) {
-          setAssets(null);
-          setAssetsError(String(error));
-        }
+        if (!cancelled) { setAssets(null); setAssetsError(String(error)); }
       }
     }
-
     loadAssets();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedPersonaId]);
 
   useEffect(() => {
-    if (!selectedDocumentId) {
-      setSelectedSectionId("");
-      return;
-    }
-    const document = documents.find((item) => item.id === selectedDocumentId);
-    if (!document) {
-      return;
-    }
-    const options = resolveSections(document);
-    if (!options.find((option) => option.id === selectedSectionId)) {
-      setSelectedSectionId(options[0]?.id ?? "");
+    if (!selectedDocumentId) { setSelectedSectionId(""); return; }
+    const doc = documents.find((d) => d.id === selectedDocumentId);
+    if (!doc) return;
+    const opts = resolveSections(doc);
+    if (!opts.find((o) => o.id === selectedSectionId)) {
+      setSelectedSectionId(opts[0]?.id ?? "");
     }
   }, [documents, selectedDocumentId, selectedSectionId]);
 
   const sectionOptions = useMemo(() => {
-    const document = documents.find((item) => item.id === selectedDocumentId);
-    return document ? resolveSections(document) : [];
+    const doc = documents.find((d) => d.id === selectedDocumentId);
+    return doc ? resolveSections(doc) : [];
   }, [documents, selectedDocumentId]);
 
   const draftEmotionOptions = useMemo(
     () => coerceEmotions(draft.availableEmotionsText),
     [draft.availableEmotionsText]
   );
-
   const draftActionOptions = useMemo(
     () => coerceActions(draft.availableActionsText),
     [draft.availableActionsText]
   );
 
   const selectedPersona = useMemo(
-    () => personas.find((persona) => persona.id === selectedPersonaId) ?? null,
+    () => personas.find((p) => p.id === selectedPersonaId) ?? null,
     [personas, selectedPersonaId]
   );
   const isReadonlyPersona = selectedPersona?.source === "builtin";
 
   const draftPersona = useMemo<PersonaProfile>(() => {
-    const emotionOptions: CharacterEmotion[] = draftEmotionOptions.length
-      ? draftEmotionOptions
-      : ["calm"];
-    const actionOptions: CharacterAction[] = draftActionOptions.length
-      ? draftActionOptions
-      : ["idle"];
+    const emotions: CharacterEmotion[] = draftEmotionOptions.length ? draftEmotionOptions : ["calm"];
+    const actions: CharacterAction[] = draftActionOptions.length ? draftActionOptions : ["idle"];
     return {
       id: selectedPersonaId || "persona-draft",
       name: draft.name || "未命名人格",
       source: "user",
       summary: draft.summary,
-      backgroundStory: draft.backgroundStory,
       systemPrompt: draft.systemPrompt,
-      teachingStyle: splitCsv(draft.teachingStyleText),
-      narrativeMode: draft.narrativeMode,
-      encouragementStyle: draft.encouragementStyle,
-      correctionStyle: draft.correctionStyle,
-      availableEmotions: emotionOptions,
-      availableActions: actionOptions,
+      slots: draft.slots,
+      availableEmotions: emotions,
+      availableActions: actions,
       defaultSpeechStyle: draft.defaultSpeechStyle
     };
   }, [draft, draftActionOptions, draftEmotionOptions, selectedPersonaId]);
@@ -284,26 +245,41 @@ export default function PersonaSpectrumPage() {
       timingHint: previewTiming
     };
     return {
-      reply: "这是色谱调试预览，不会调用模型。可先调教情绪、动作与语速，再进入章节联动预览。",
+      reply:
+        "这是色谱调试预览，不会调用模型。可先调教情绪、动作与语速，再进入章节联动预览。",
       citations: [],
       characterEvents: [event]
     };
   }, [previewAction, previewEmotion, previewIntensity, previewSceneHint, previewSpeech, previewTiming]);
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
-    if (assistError) {
-      setAssistError("");
-    }
+    if (assistError) setAssistError("");
     setDraft((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleInsertTemplate(templateText: string) {
+  function handleAddSlot(kind: PersonaSlotKind | string) {
+    const label = PERSONA_SLOT_KIND_LABELS[kind as PersonaSlotKind] ?? kind;
+    const template = SLOT_TEMPLATES.find((t) => t.kind === kind);
     setDraft((prev) => ({
       ...prev,
-      backgroundStory: prev.backgroundStory.trim()
-        ? `${prev.backgroundStory.trim()}\n\n${templateText}`
-        : templateText
+      slots: [...prev.slots, { kind, label, content: template?.text ?? "" }]
     }));
+  }
+
+  function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: string) {
+    if (assistError) setAssistError("");
+    setDraft((prev) => {
+      const next = [...prev.slots];
+      next[index] = { ...next[index], [field]: value };
+      if (field === "kind") {
+        next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
+      }
+      return { ...prev, slots: next };
+    });
+  }
+
+  function handleRemoveSlot(index: number) {
+    setDraft((prev) => ({ ...prev, slots: prev.slots.filter((_, i) => i !== index) }));
   }
 
   async function handleAssistSetting() {
@@ -313,16 +289,12 @@ export default function PersonaSpectrumPage() {
       const result = await assistPersonaSetting({
         name: draft.name.trim(),
         summary: draft.summary.trim(),
-        backgroundStory: draft.backgroundStory.trim(),
-        teachingStyle: splitCsv(draft.teachingStyleText),
-        narrativeMode: draft.narrativeMode,
-        encouragementStyle: draft.encouragementStyle.trim(),
-        correctionStyle: draft.correctionStyle.trim(),
+        slots: draft.slots,
         rewriteStrength: Number((1 - retainRatio).toFixed(2))
       });
       setDraft((prev) => ({
         ...prev,
-        backgroundStory: result.backgroundStory || prev.backgroundStory,
+        slots: result.slots.length ? result.slots : prev.slots,
         systemPrompt: result.systemPromptSuggestion || prev.systemPrompt
       }));
     } catch (error) {
@@ -333,19 +305,10 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleCreatePersona() {
-    setConfigError("");
-    setConfigMessage("");
-    setSaveError("");
+    setConfigError(""); setConfigMessage(""); setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
-    if (!payload.name) {
-      setSaveError("请先填写人格名称。");
-      return;
-    }
-    if (!payload.systemPrompt) {
-      setSaveError("请先填写系统提示词。");
-      return;
-    }
-
+    if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
+    if (!payload.systemPrompt) { setSaveError("请先填写系统提示词。"); return; }
     setSavingPersona(true);
     try {
       const created = await createPersona(payload);
@@ -361,27 +324,16 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleUpdatePersona() {
-    setConfigError("");
-    setConfigMessage("");
-    if (!selectedPersonaId) {
-      setSaveError("请先选择要更新的人格。");
-      return;
-    }
+    setConfigError(""); setConfigMessage("");
+    if (!selectedPersonaId) { setSaveError("请先选择要更新的人格。"); return; }
     if (isReadonlyPersona) {
-      setSaveError("内置人格为只读，无法更新。请使用“创建新人格”另存。");
+      setSaveError("内置人格为只读，无法更新。请使用「创建新人格」另存。");
       return;
     }
     setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
-    if (!payload.name) {
-      setSaveError("请先填写人格名称。");
-      return;
-    }
-    if (!payload.systemPrompt) {
-      setSaveError("请先填写系统提示词。");
-      return;
-    }
-
+    if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
+    if (!payload.systemPrompt) { setSaveError("请先填写系统提示词。"); return; }
     setSavingPersona(true);
     try {
       const updated = await updatePersona(selectedPersonaId, payload);
@@ -397,8 +349,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function handleExportConfig() {
-    setConfigError("");
-    setConfigMessage("");
+    setConfigError(""); setConfigMessage("");
     const payload = draftToCreatePersonaInput(draft);
     const json = JSON.stringify(payload, null, 2);
     const blob = new Blob([json], { type: "application/json" });
@@ -413,8 +364,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function handleDownloadTemplate() {
-    setConfigError("");
-    setConfigMessage("");
+    setConfigError(""); setConfigMessage("");
     const json = JSON.stringify(DEFAULT_CONFIG_TEMPLATE, null, 2);
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -427,12 +377,9 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleImportConfig(event: ChangeEvent<HTMLInputElement>) {
-    setConfigError("");
-    setConfigMessage("");
+    setConfigError(""); setConfigMessage("");
     const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -451,13 +398,13 @@ export default function PersonaSpectrumPage() {
   }
 
   async function ensurePreviewSession(): Promise<string> {
-    if (previewSessionId) {
-      return previewSessionId;
-    }
+    if (previewSessionId) return previewSessionId;
     if (!selectedDocumentId || !selectedSectionId || !selectedPersonaId) {
-      throw new Error("请先选择人格、文档与章节。\n需要先处理文档，才能创建章节联动预览。".replace("\\n", ""));
+      throw new Error(
+        "\u8bf7\u5148\u9009\u62e9\u4eba\u683c\u3001\u6587\u6863\u4e0e\u7ae0\u8282\u3002\u9700\u8981\u5148\u5904\u7406\u6587\u6863\uff0c\u624d\u80fd\u521b\u5efa\u7ae0\u8282\u8054\u52a8\u9884\u89c8\u3002"
+      );
     }
-    const sectionTitle = sectionOptions.find((section) => section.id === selectedSectionId)?.title ?? "";
+    const sectionTitle = sectionOptions.find((s) => s.id === selectedSectionId)?.title ?? "";
     const session = await createStudySession({
       documentId: selectedDocumentId,
       personaId: selectedPersonaId,
@@ -470,18 +417,12 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleSendPreviewMessage() {
-    if (!previewMessage.trim()) {
-      setPreviewError("请输入预览消息。");
-      return;
-    }
+    if (!previewMessage.trim()) { setPreviewError("请输入预览消息。"); return; }
     setPreviewError("");
     setPreviewPending(true);
     try {
       const sessionId = await ensurePreviewSession();
-      const response = await sendStudyMessage({
-        sessionId,
-        message: previewMessage.trim()
-      });
+      const response = await sendStudyMessage({ sessionId, message: previewMessage.trim() });
       setPreviewChat(response);
     } catch (error) {
       setPreviewError(String(error));
@@ -496,60 +437,80 @@ export default function PersonaSpectrumPage() {
 
       <div style={styles.topbar}>
         <span style={styles.topbarTitle}>人格色谱</span>
-        <span style={styles.topbarSub}>教师人格配置、情绪区间、导入导出与章节联动预览。</span>
+        <span style={styles.topbarSub}>
+          教师人格配置、情绪区间、导入导出与章节联动预览。
+        </span>
       </div>
 
       {loadError ? <div style={styles.error}>加载失败: {loadError}</div> : null}
 
       <div style={styles.contentGrid}>
+        {/* Persona editor */}
         <section style={styles.panel}>
           <h2 style={styles.sectionTitle}>人格参数编辑器</h2>
           <label style={styles.fieldLabel}>当前人格</label>
           <select
             style={styles.select}
             value={selectedPersonaId}
-            onChange={(event) => setSelectedPersonaId(event.target.value)}
+            onChange={(e) => setSelectedPersonaId(e.target.value)}
           >
-            {personas.map((persona) => (
-              <option key={persona.id} value={persona.id}>
-                {persona.name} ({persona.source})
+            {personas.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.source})
               </option>
             ))}
           </select>
 
           <label style={styles.fieldLabel}>名称</label>
-          <input
-            style={styles.input}
-            value={draft.name}
-            onChange={(event) => updateDraft("name", event.target.value)}
-          />
+          <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
 
           <label style={styles.fieldLabel}>摘要</label>
-          <textarea
-            style={styles.textarea}
-            value={draft.summary}
-            onChange={(event) => updateDraft("summary", event.target.value)}
-          />
+          <textarea style={styles.textarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
 
-          <label style={styles.fieldLabel}>设定：背景故事</label>
-          <textarea
-            style={styles.textareaLg}
-            value={draft.backgroundStory}
-            onChange={(event) => updateDraft("backgroundStory", event.target.value)}
-            placeholder="例如：人物成长经历、教学信念、口头禅、与学习者互动时的叙事基调。"
-          />
-          <div style={styles.actionsRow}>
-            {BACKGROUND_TEMPLATES.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                style={styles.linkButton}
-                onClick={() => handleInsertTemplate(template.text)}
-              >
-                {template.label}
+          <label style={styles.fieldLabel}>人格插槽</label>
+          {draft.slots.map((slot, index) => (
+            <div key={index} style={styles.slotCard}>
+              <div style={styles.slotHeader}>
+                <select
+                  style={styles.slotKindSelect}
+                  value={slot.kind}
+                  onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
+                >
+                  {PERSONA_SLOT_KINDS.map((k) => (
+                    <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
+                  ))}
+                </select>
+                <input
+                  style={styles.slotLabelInput}
+                  value={slot.label}
+                  placeholder="显示标签"
+                  onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
+                />
+                <button type="button" style={styles.removeButton} onClick={() => handleRemoveSlot(index)} title="移除">
+                  ×
+                </button>
+              </div>
+              <textarea
+                style={styles.slotContent}
+                value={slot.content}
+                placeholder={`${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}内容…`}
+                onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
+              />
+            </div>
+          ))}
+
+          <div style={styles.addSlotRow}>
+            <span style={styles.fieldLabel}>添加插槽：</span>
+            {SLOT_TEMPLATES.map((t) => (
+              <button key={t.kind} type="button" style={styles.linkButton} onClick={() => handleAddSlot(t.kind)}>
+                {PERSONA_SLOT_KIND_LABELS[t.kind]}
               </button>
             ))}
+            <button type="button" style={styles.linkButton} onClick={() => handleAddSlot("custom")}>
+              自定义
+            </button>
           </div>
+
           <label style={styles.fieldLabel}>保留原文比例 {(retainRatio * 100).toFixed(0)}%</label>
           <input
             style={styles.range}
@@ -558,156 +519,71 @@ export default function PersonaSpectrumPage() {
             max={1}
             step={0.05}
             value={retainRatio}
-            onChange={(event) => setRetainRatio(Number(event.target.value))}
+            onChange={(e) => setRetainRatio(Number(e.target.value))}
           />
           <div style={styles.muted}>越高越保留原文，越低越允许模型重写。</div>
           <div style={styles.actionsRow}>
-            <button
-              style={styles.ghostButton}
-              type="button"
-              disabled={assistPending}
-              onClick={handleAssistSetting}
-            >
+            <button style={styles.ghostButton} type="button" disabled={assistPending} onClick={handleAssistSetting}>
               {assistPending ? "AI 完善中..." : "人工智能辅助完善设定"}
             </button>
             {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
           </div>
 
-          <label style={styles.fieldLabel}>教学风格（逗号分隔）</label>
-          <input
-            style={styles.input}
-            value={draft.teachingStyleText}
-            onChange={(event) => updateDraft("teachingStyleText", event.target.value)}
-          />
-
-          <label style={styles.fieldLabel}>叙事模式</label>
-          <select
-            style={styles.select}
-            value={draft.narrativeMode}
-            onChange={(event) => updateDraft("narrativeMode", event.target.value as PersonaDraft["narrativeMode"])}
-          >
-            <option value="grounded">grounded</option>
-            <option value="light_story">light_story</option>
-          </select>
-
-          <label style={styles.fieldLabel}>鼓励策略</label>
-          <input
-            style={styles.input}
-            value={draft.encouragementStyle}
-            onChange={(event) => updateDraft("encouragementStyle", event.target.value)}
-          />
-
-          <label style={styles.fieldLabel}>纠错策略</label>
-          <input
-            style={styles.input}
-            value={draft.correctionStyle}
-            onChange={(event) => updateDraft("correctionStyle", event.target.value)}
-          />
-
           <label style={styles.fieldLabel}>系统提示词</label>
-          <textarea
-            style={styles.textareaLg}
-            value={draft.systemPrompt}
-            onChange={(event) => updateDraft("systemPrompt", event.target.value)}
-          />
+          <textarea style={styles.textareaLg} value={draft.systemPrompt} onChange={(e) => updateDraft("systemPrompt", e.target.value)} />
 
           <div style={styles.actionsRow}>
             <button style={styles.primaryButton} disabled={savingPersona} onClick={handleCreatePersona}>
               {savingPersona ? "保存中..." : "创建新人格"}
             </button>
-            <button
-              style={styles.ghostButton}
-              disabled={savingPersona || isReadonlyPersona}
-              onClick={handleUpdatePersona}
-            >
+            <button style={styles.ghostButton} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
               {savingPersona ? "保存中..." : "更新当前人格"}
             </button>
             {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
           </div>
           {isReadonlyPersona ? (
-            <div style={styles.muted}>内置人格为只读，无法直接更新。可编辑后使用“创建新人格”另存。</div>
+            <div style={styles.muted}>内置人格为只读，可编辑后使用「创建新人格」另存。</div>
           ) : null}
         </section>
 
+        {/* Emotion/action preview panel */}
         <section style={styles.panel}>
           <h2 style={styles.sectionTitle}>情绪与动作色谱调试面板</h2>
           <label style={styles.fieldLabel}>可用情绪（逗号分隔）</label>
-          <input
-            style={styles.input}
-            value={draft.availableEmotionsText}
-            onChange={(event) => updateDraft("availableEmotionsText", event.target.value)}
-          />
-
+          <input style={styles.input} value={draft.availableEmotionsText} onChange={(e) => updateDraft("availableEmotionsText", e.target.value)} />
           <label style={styles.fieldLabel}>可用动作（逗号分隔）</label>
-          <input
-            style={styles.input}
-            value={draft.availableActionsText}
-            onChange={(event) => updateDraft("availableActionsText", event.target.value)}
-          />
-
+          <input style={styles.input} value={draft.availableActionsText} onChange={(e) => updateDraft("availableActionsText", e.target.value)} />
           <label style={styles.fieldLabel}>默认语气</label>
-          <select
-            style={styles.select}
-            value={draft.defaultSpeechStyle}
-            onChange={(event) => updateDraft("defaultSpeechStyle", event.target.value as SpeechStyle)}
-          >
-            {SPEECH_STYLES.map((styleOption) => (
-              <option key={styleOption} value={styleOption}>
-                {styleOption}
-              </option>
-            ))}
+          <select style={styles.select} value={draft.defaultSpeechStyle} onChange={(e) => updateDraft("defaultSpeechStyle", e.target.value as SpeechStyle)}>
+            {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
 
           <div style={styles.compactGrid}>
             <div>
               <label style={styles.fieldLabel}>预览情绪</label>
-              <select
-                style={styles.select}
-                value={previewEmotion}
-                onChange={(event) => setPreviewEmotion(event.target.value as CharacterEmotion)}
-              >
-                {(draftEmotionOptions.length ? draftEmotionOptions : CHARACTER_EMOTIONS).map((emotion) => (
-                  <option key={emotion} value={emotion}>
-                    {emotion}
-                  </option>
+              <select style={styles.select} value={previewEmotion} onChange={(e) => setPreviewEmotion(e.target.value as CharacterEmotion)}>
+                {(draftEmotionOptions.length ? draftEmotionOptions : CHARACTER_EMOTIONS).map((em) => (
+                  <option key={em} value={em}>{em}</option>
                 ))}
               </select>
             </div>
             <div>
               <label style={styles.fieldLabel}>预览动作</label>
-              <select
-                style={styles.select}
-                value={previewAction}
-                onChange={(event) => setPreviewAction(event.target.value as CharacterAction)}
-              >
-                {(draftActionOptions.length ? draftActionOptions : CHARACTER_ACTIONS).map((action) => (
-                  <option key={action} value={action}>
-                    {action}
-                  </option>
+              <select style={styles.select} value={previewAction} onChange={(e) => setPreviewAction(e.target.value as CharacterAction)}>
+                {(draftActionOptions.length ? draftActionOptions : CHARACTER_ACTIONS).map((ac) => (
+                  <option key={ac} value={ac}>{ac}</option>
                 ))}
               </select>
             </div>
             <div>
               <label style={styles.fieldLabel}>语气</label>
-              <select
-                style={styles.select}
-                value={previewSpeech}
-                onChange={(event) => setPreviewSpeech(event.target.value as SpeechStyle)}
-              >
-                {SPEECH_STYLES.map((styleOption) => (
-                  <option key={styleOption} value={styleOption}>
-                    {styleOption}
-                  </option>
-                ))}
+              <select style={styles.select} value={previewSpeech} onChange={(e) => setPreviewSpeech(e.target.value as SpeechStyle)}>
+                {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
               <label style={styles.fieldLabel}>时序</label>
-              <select
-                style={styles.select}
-                value={previewTiming}
-                onChange={(event) => setPreviewTiming(event.target.value as TimingHint)}
-              >
+              <select style={styles.select} value={previewTiming} onChange={(e) => setPreviewTiming(e.target.value as TimingHint)}>
                 <option value="instant">instant</option>
                 <option value="linger">linger</option>
                 <option value="after_text">after_text</option>
@@ -716,117 +592,60 @@ export default function PersonaSpectrumPage() {
           </div>
 
           <label style={styles.fieldLabel}>强度 {previewIntensity.toFixed(2)}</label>
-          <input
-            style={styles.range}
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={previewIntensity}
-            onChange={(event) => setPreviewIntensity(Number(event.target.value))}
-          />
-
+          <input style={styles.range} type="range" min={0} max={1} step={0.05} value={previewIntensity} onChange={(e) => setPreviewIntensity(Number(e.target.value))} />
           <label style={styles.fieldLabel}>场景提示</label>
-          <input
-            style={styles.input}
-            value={previewSceneHint}
-            onChange={(event) => setPreviewSceneHint(event.target.value)}
-          />
-
+          <input style={styles.input} value={previewSceneHint} onChange={(e) => setPreviewSceneHint(e.target.value)} />
           <CharacterShell persona={draftPersona} response={syntheticPreviewResponse} pending={false} />
         </section>
 
+        {/* Import/export panel */}
         <section style={styles.panel}>
           <h2 style={styles.sectionTitle}>配置导入/导出</h2>
           <div style={styles.actionsRow}>
-            <button style={styles.ghostButton} type="button" onClick={handleDownloadTemplate}>
-              下载配置模板
-            </button>
-            <button style={styles.ghostButton} type="button" onClick={handleExportConfig}>
-              导出当前配置
-            </button>
+            <button style={styles.ghostButton} type="button" onClick={handleDownloadTemplate}>下载配置模板</button>
+            <button style={styles.ghostButton} type="button" onClick={handleExportConfig}>导出当前配置</button>
             <label style={styles.ghostButton}>
               导入配置文件
-              <input
-                type="file"
-                accept="application/json,.json"
-                style={styles.hiddenFileInput}
-                onChange={handleImportConfig}
-              />
+              <input type="file" accept="application/json,.json" style={styles.hiddenFileInput} onChange={handleImportConfig} />
             </label>
           </div>
-          <div style={styles.muted}>导入模板需为 `CreatePersonaInput` JSON 结构。</div>
+          <div style={styles.muted}>
+            导入模板需为 <code>CreatePersonaInput</code> JSON 结构（包含 slots 数组）。
+          </div>
           {configMessage ? <div style={styles.muted}>{configMessage}</div> : null}
           {configError ? <div style={styles.errorInline}>{configError}</div> : null}
         </section>
 
+        {/* Live preview panel */}
         <section style={styles.panel}>
           <h2 style={styles.sectionTitle}>与章节对话联动的实时人格预览</h2>
           <div style={styles.compactGrid}>
             <div>
               <label style={styles.fieldLabel}>文档</label>
-              <select
-                style={styles.select}
-                value={selectedDocumentId}
-                onChange={(event) => {
-                  setSelectedDocumentId(event.target.value);
-                  setPreviewSessionId("");
-                  setPreviewChat(null);
-                }}
-              >
-                {documents.map((document) => (
-                  <option key={document.id} value={document.id}>
-                    {document.title}
-                  </option>
-                ))}
+              <select style={styles.select} value={selectedDocumentId} onChange={(e) => { setSelectedDocumentId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
+                {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
               </select>
             </div>
             <div>
               <label style={styles.fieldLabel}>章节</label>
-              <select
-                style={styles.select}
-                value={selectedSectionId}
-                onChange={(event) => {
-                  setSelectedSectionId(event.target.value);
-                  setPreviewSessionId("");
-                  setPreviewChat(null);
-                }}
-              >
-                {sectionOptions.map((section) => (
-                  <option key={section.id} value={section.id}>
-                    {section.title}
-                  </option>
-                ))}
+              <select style={styles.select} value={selectedSectionId} onChange={(e) => { setSelectedSectionId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
+                {sectionOptions.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
               </select>
             </div>
           </div>
-
           <label style={styles.fieldLabel}>联动提问</label>
-          <textarea
-            style={styles.textareaLg}
-            value={previewMessage}
-            onChange={(event) => setPreviewMessage(event.target.value)}
-          />
-
+          <textarea style={styles.textareaLg} value={previewMessage} onChange={(e) => setPreviewMessage(e.target.value)} />
           <div style={styles.actionsRow}>
             <button style={styles.primaryButton} onClick={handleSendPreviewMessage} disabled={previewPending}>
               {previewPending ? "预览生成中..." : "发送预览消息"}
             </button>
             {previewError ? <span style={styles.errorInline}>{previewError}</span> : null}
           </div>
-
           <div style={styles.assetCard}>
-            <div style={styles.assetRow}>
-              <span style={styles.assetLabel}>Renderer</span>
-              <span>{assets?.renderer ?? "-"}</span>
-            </div>
-            <div style={styles.assetRow}>
-              <span style={styles.assetLabel}>Manifest</span>
-              <span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span>
-            </div>
+            <div style={styles.assetRow}><span style={styles.assetLabel}>Renderer</span><span>{assets?.renderer ?? "-"}</span></div>
+            <div style={styles.assetRow}><span style={styles.assetLabel}>Manifest</span><span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span></div>
             {assetsError ? <div style={styles.errorInline}>{assetsError}</div> : null}
           </div>
-
           {previewChat ? (
             <>
               <CharacterShell persona={draftPersona} response={previewChat} pending={previewPending} />
@@ -845,12 +664,8 @@ function personaToDraft(persona: PersonaProfile): PersonaDraft {
   return {
     name: persona.name,
     summary: persona.summary,
-    backgroundStory: persona.backgroundStory ?? "",
     systemPrompt: persona.systemPrompt,
-    teachingStyleText: persona.teachingStyle.join(", "),
-    narrativeMode: persona.narrativeMode,
-    encouragementStyle: persona.encouragementStyle,
-    correctionStyle: persona.correctionStyle,
+    slots: persona.slots ?? [],
     availableEmotionsText: persona.availableEmotions.join(", "),
     availableActionsText: persona.availableActions.join(", "),
     defaultSpeechStyle: persona.defaultSpeechStyle
@@ -861,12 +676,8 @@ function draftToCreatePersonaInput(draft: PersonaDraft): CreatePersonaInput {
   return {
     name: draft.name.trim(),
     summary: draft.summary.trim(),
-    backgroundStory: draft.backgroundStory.trim(),
     systemPrompt: draft.systemPrompt.trim(),
-    teachingStyle: splitCsv(draft.teachingStyleText),
-    narrativeMode: draft.narrativeMode,
-    encouragementStyle: draft.encouragementStyle.trim(),
-    correctionStyle: draft.correctionStyle.trim(),
+    slots: draft.slots,
     availableEmotions: coerceEmotions(draft.availableEmotionsText),
     availableActions: coerceActions(draft.availableActionsText),
     defaultSpeechStyle: draft.defaultSpeechStyle
@@ -877,12 +688,8 @@ function createInputToDraft(snapshot: CreatePersonaInput): PersonaDraft {
   return {
     name: snapshot.name,
     summary: snapshot.summary,
-    backgroundStory: snapshot.backgroundStory ?? "",
     systemPrompt: snapshot.systemPrompt,
-    teachingStyleText: snapshot.teachingStyle.join(", "),
-    narrativeMode: snapshot.narrativeMode,
-    encouragementStyle: snapshot.encouragementStyle,
-    correctionStyle: snapshot.correctionStyle,
+    slots: snapshot.slots ?? [],
     availableEmotionsText: (snapshot.availableEmotions ?? CHARACTER_EMOTIONS).join(", "),
     availableActionsText: (snapshot.availableActions ?? CHARACTER_ACTIONS).join(", "),
     defaultSpeechStyle: snapshot.defaultSpeechStyle ?? "warm"
@@ -890,47 +697,42 @@ function createInputToDraft(snapshot: CreatePersonaInput): PersonaDraft {
 }
 
 function splitCsv(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
 function coerceEmotions(value: string): CharacterEmotion[] {
   const allowed = new Set<string>(CHARACTER_EMOTIONS);
-  const result = splitCsv(value).filter((item): item is CharacterEmotion => allowed.has(item));
-  return result;
+  return splitCsv(value).filter((item): item is CharacterEmotion => allowed.has(item));
 }
 
 function coerceActions(value: string): CharacterAction[] {
   const allowed = new Set<string>(CHARACTER_ACTIONS);
-  const result = splitCsv(value).filter((item): item is CharacterAction => allowed.has(item));
-  return result;
+  return splitCsv(value).filter((item): item is CharacterAction => allowed.has(item));
 }
 
 function resolveSections(document: DocumentRecord): Array<{ id: string; title: string }> {
-  const sections = document.studyUnits.length
+  return document.studyUnits.length
     ? document.studyUnits.map((unit) => ({ id: unit.id, title: `Study Unit: ${unit.title}` }))
     : document.sections.map((section) => ({ id: section.id, title: `Section: ${section.title}` }));
-  return sections;
 }
 
 function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): CreatePersonaInput {
   const name = String(parsed.name ?? "").trim();
   const systemPrompt = String(parsed.systemPrompt ?? parsed.system_prompt ?? "").trim();
-  if (!name) {
-    throw new Error("缺少 name 字段");
+  if (!name) throw new Error("缺少 name 字段");
+  if (!systemPrompt) throw new Error("缺少 systemPrompt 字段");
+
+  let slots: PersonaSlot[] = [];
+  if (Array.isArray(parsed.slots)) {
+    slots = parsed.slots
+      .filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null)
+      .map((s) => ({
+        kind: String(s.kind ?? "custom"),
+        label: String(s.label ?? s.kind ?? ""),
+        content: String(s.content ?? "")
+      }));
   }
-  if (!systemPrompt) {
-    throw new Error("缺少 systemPrompt 字段");
-  }
-  const narrativeModeRaw = String(parsed.narrativeMode ?? parsed.narrative_mode ?? "grounded");
-  const narrativeMode = narrativeModeRaw === "light_story" ? "light_story" : "grounded";
-  const teachingStyle = Array.isArray(parsed.teachingStyle)
-    ? parsed.teachingStyle.map((item) => String(item).trim()).filter(Boolean)
-    : Array.isArray(parsed.teaching_style)
-      ? parsed.teaching_style.map((item) => String(item).trim()).filter(Boolean)
-      : [];
+
   const availableEmotions = Array.isArray(parsed.availableEmotions)
     ? coerceEmotions(parsed.availableEmotions.map((item) => String(item)).join(","))
     : Array.isArray(parsed.available_emotions)
@@ -945,12 +747,8 @@ function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): Create
   return {
     name,
     summary: String(parsed.summary ?? "").trim(),
-    backgroundStory: String(parsed.backgroundStory ?? parsed.background_story ?? "").trim(),
     systemPrompt,
-    teachingStyle,
-    narrativeMode,
-    encouragementStyle: String(parsed.encouragementStyle ?? parsed.encouragement_style ?? "").trim(),
-    correctionStyle: String(parsed.correctionStyle ?? parsed.correction_style ?? "").trim(),
+    slots,
     availableEmotions,
     availableActions,
     defaultSpeechStyle: String(parsed.defaultSpeechStyle ?? parsed.default_speech_style ?? "warm") as SpeechStyle
@@ -958,162 +756,37 @@ function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): Create
 }
 
 const styles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    maxWidth: 1360,
-    margin: "0 auto",
-    padding: "20px 24px 32px",
-    display: "grid",
-    gap: 16,
-    alignContent: "start"
-  },
-  topbar: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 12,
-    paddingBottom: 12,
-    flexWrap: "wrap"
-  },
-  topbarTitle: {
-    fontSize: 16,
-    fontWeight: 700,
-    color: "var(--ink)"
-  },
-  topbarSub: {
-    fontSize: 13,
-    color: "var(--muted)"
-  },
-  contentGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-    gap: 14,
-    alignItems: "start"
-  },
-  panel: {
-    border: "1px solid var(--border)",
-    background: "white",
-    padding: 14,
-    display: "grid",
-    gap: 8,
-    alignContent: "start"
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: 14,
-    fontWeight: 700
-  },
-  fieldLabel: {
-    fontSize: 12,
-    color: "var(--muted)"
-  },
-  input: {
-    width: "100%",
-    minHeight: 36,
-    border: "1px solid var(--border)",
-    background: "white",
-    padding: "8px 10px"
-  },
-  select: {
-    width: "100%",
-    minHeight: 36,
-    border: "1px solid var(--border)",
-    background: "white",
-    padding: "8px 10px"
-  },
-  textarea: {
-    width: "100%",
-    minHeight: 72,
-    border: "1px solid var(--border)",
-    background: "white",
-    padding: "8px 10px",
-    resize: "vertical"
-  },
-  textareaLg: {
-    width: "100%",
-    minHeight: 120,
-    border: "1px solid var(--border)",
-    background: "white",
-    padding: "8px 10px",
-    resize: "vertical"
-  },
-  primaryButton: {
-    border: "1px solid var(--accent)",
-    background: "var(--accent)",
-    color: "white",
-    minHeight: 36,
-    padding: "0 12px",
-    cursor: "pointer"
-  },
-  ghostButton: {
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--ink)",
-    minHeight: 36,
-    padding: "0 12px",
-    cursor: "pointer"
-  },
-  linkButton: {
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--accent)",
-    minHeight: 30,
-    padding: "0 10px",
-    cursor: "pointer"
-  },
-  actionsRow: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-    flexWrap: "wrap"
-  },
-  compactGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: 8
-  },
-  range: {
-    width: "100%"
-  },
-  muted: {
-    fontSize: 12,
-    color: "var(--muted)"
-  },
-  hiddenFileInput: {
-    display: "none"
-  },
-  assetCard: {
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "8px 10px",
-    display: "grid",
-    gap: 6
-  },
-  assetRow: {
-    display: "grid",
-    gridTemplateColumns: "96px 1fr",
-    gap: 8,
-    fontSize: 12,
-    wordBreak: "break-all"
-  },
-  assetLabel: {
-    color: "var(--muted)"
-  },
-  chatReply: {
-    padding: "10px 12px",
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    fontSize: 13,
-    lineHeight: 1.6
-  },
-  error: {
-    border: "1px solid #f0b8b8",
-    background: "#fff4f4",
-    color: "#9c2020",
-    padding: "8px 10px",
-    fontSize: 13
-  },
-  errorInline: {
-    color: "#9c2020",
-    fontSize: 12
-  }
+  page: { minHeight: "100vh", maxWidth: 1360, margin: "0 auto", padding: "20px 24px 32px", display: "grid", gap: 16, alignContent: "start" },
+  topbar: { display: "flex", alignItems: "baseline", gap: 12, paddingBottom: 12, flexWrap: "wrap" },
+  topbarTitle: { fontSize: 16, fontWeight: 700, color: "var(--ink)" },
+  topbarSub: { fontSize: 13, color: "var(--muted)" },
+  contentGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 14, alignItems: "start" },
+  panel: { border: "1px solid var(--border)", background: "white", padding: 14, display: "grid", gap: 8, alignContent: "start" },
+  sectionTitle: { margin: 0, fontSize: 14, fontWeight: 700 },
+  fieldLabel: { fontSize: 12, color: "var(--muted)" },
+  input: { width: "100%", minHeight: 36, border: "1px solid var(--border)", background: "white", padding: "8px 10px" },
+  select: { width: "100%", minHeight: 36, border: "1px solid var(--border)", background: "white", padding: "8px 10px" },
+  textarea: { width: "100%", minHeight: 72, border: "1px solid var(--border)", background: "white", padding: "8px 10px", resize: "vertical" },
+  textareaLg: { width: "100%", minHeight: 120, border: "1px solid var(--border)", background: "white", padding: "8px 10px", resize: "vertical" },
+  slotCard: { border: "1px solid var(--border)", background: "var(--panel)", padding: "8px 10px", display: "grid", gap: 6 },
+  slotHeader: { display: "flex", gap: 6, alignItems: "center" },
+  slotKindSelect: { flex: "0 0 auto", minHeight: 30, border: "1px solid var(--border)", background: "white", padding: "4px 6px", fontSize: 12 },
+  slotLabelInput: { flex: 1, minHeight: 30, border: "1px solid var(--border)", background: "white", padding: "4px 6px", fontSize: 12 },
+  removeButton: { flex: "0 0 auto", minHeight: 30, minWidth: 30, border: "1px solid var(--border)", background: "white", color: "var(--muted)", cursor: "pointer", fontSize: 14, lineHeight: 1 },
+  slotContent: { width: "100%", minHeight: 72, border: "1px solid var(--border)", background: "white", padding: "6px 8px", resize: "vertical", fontSize: 12 },
+  addSlotRow: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" },
+  primaryButton: { border: "1px solid var(--accent)", background: "var(--accent)", color: "white", minHeight: 36, padding: "0 12px", cursor: "pointer" },
+  ghostButton: { border: "1px solid var(--border)", background: "white", color: "var(--ink)", minHeight: 36, padding: "0 12px", cursor: "pointer" },
+  linkButton: { border: "1px solid var(--border)", background: "white", color: "var(--accent)", minHeight: 30, padding: "0 10px", cursor: "pointer", fontSize: 12 },
+  actionsRow: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
+  compactGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 },
+  range: { width: "100%" },
+  muted: { fontSize: 12, color: "var(--muted)" },
+  hiddenFileInput: { display: "none" },
+  assetCard: { border: "1px solid var(--border)", background: "var(--panel)", padding: "8px 10px", display: "grid", gap: 6 },
+  assetRow: { display: "grid", gridTemplateColumns: "96px 1fr", gap: 8, fontSize: 12, wordBreak: "break-all" },
+  assetLabel: { color: "var(--muted)" },
+  chatReply: { padding: "10px 12px", border: "1px solid var(--border)", background: "var(--panel)", fontSize: 13, lineHeight: 1.6 },
+  error: { border: "1px solid #f0b8b8", background: "#fff4f4", color: "#9c2020", padding: "8px 10px", fontSize: 13 },
+  errorInline: { color: "#9c2020", fontSize: 12 }
 };

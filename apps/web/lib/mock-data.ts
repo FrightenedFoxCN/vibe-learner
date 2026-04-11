@@ -7,10 +7,13 @@ export const mockPersonas: PersonaProfile[] = [
     source: "builtin",
     summary: "温和而结构化的导学教师。",
     systemPrompt: "Prioritize clarity, chapter grounding, and encouragement.",
-    teachingStyle: ["structured", "guided"],
-    narrativeMode: "grounded",
-    encouragementStyle: "small wins",
-    correctionStyle: "precise but warm",
+    slots: [
+      { kind: "worldview", label: "世界观起点", content: "来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。" },
+      { kind: "teaching_method", label: "教学方法", content: "structured, guided" },
+      { kind: "narrative_mode", label: "叙事模式", content: "grounded" },
+      { kind: "encouragement_style", label: "鼓励策略", content: "small wins" },
+      { kind: "correction_style", label: "纠错策略", content: "precise but warm" }
+    ],
     availableEmotions: ["calm", "encouraging", "serious"],
     availableActions: ["idle", "explain", "point", "reflect"],
     defaultSpeechStyle: "steady"
@@ -21,10 +24,13 @@ export const mockPersonas: PersonaProfile[] = [
     source: "builtin",
     summary: "带轻度剧情化陪伴感的活力教师。",
     systemPrompt: "Blend chapter teaching with playful narrative energy.",
-    teachingStyle: ["story-led", "motivational"],
-    narrativeMode: "light_story",
-    encouragementStyle: "hero journey",
-    correctionStyle: "redirect with energy",
+    slots: [
+      { kind: "past_experiences", label: "过往经历", content: "前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。" },
+      { kind: "teaching_method", label: "教学方法", content: "story-led, motivational" },
+      { kind: "narrative_mode", label: "叙事模式", content: "light_story" },
+      { kind: "encouragement_style", label: "鼓励策略", content: "hero journey" },
+      { kind: "correction_style", label: "纠错策略", content: "redirect with energy" }
+    ],
     availableEmotions: ["playful", "encouraging", "excited", "concerned"],
     availableActions: ["idle", "explain", "celebrate", "prompt"],
     defaultSpeechStyle: "energetic"

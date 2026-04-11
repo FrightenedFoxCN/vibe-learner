@@ -16,7 +16,9 @@ from app.models.domain import (
     LearningGoalInput,
     PlanGenerationTraceRecord,
     PersonaProfile,
+    PersonaSlot,
     StudyUnitRecord,
+    persona_slot_content,
 )
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
@@ -103,13 +105,9 @@ class ModelProvider:
         *,
         name: str,
         summary: str,
-        background_story: str,
-        teaching_style: list[str],
-        narrative_mode: str,
-        encouragement_style: str,
-        correction_style: str,
+        slots: list[PersonaSlot],
         rewrite_strength: float,
-    ) -> dict[str, str]:
+    ) -> dict[str, object]:
         raise NotImplementedError
 
 
@@ -126,7 +124,8 @@ class MockModelProvider(ModelProvider):
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
     ) -> ModelReply:
-        style = persona.teaching_style[0] if persona.teaching_style else "structured"
+        teaching_method = persona_slot_content(persona, "teaching_method")
+        style = teaching_method.split(",")[0].strip() if teaching_method else "structured"
         history_hint = ""
         if conversation_history:
             history_hint = f" 我已读取最近 {len(conversation_history)} 条上下文。"
@@ -139,7 +138,8 @@ class MockModelProvider(ModelProvider):
             f"{' 会话约束：' + session_prompt[:80] if session_prompt else ''}"
             f" 我会用 {style} 的方式先解释核心概念，再给你一个复述任务。"
         )
-        mood = "playful" if persona.narrative_mode == "light_story" else "calm"
+        narrative_mode = persona_slot_content(persona, "narrative_mode", "grounded")
+        mood = "playful" if narrative_mode == "light_story" else "calm"
         return ModelReply(text=text, mood=mood, action="explain")
 
     def generate_exercise(
@@ -205,48 +205,66 @@ class MockModelProvider(ModelProvider):
             today_tasks=today_tasks,
             schedule=schedule,
         )
-
     def assist_persona_setting(
         self,
         *,
         name: str,
         summary: str,
-        background_story: str,
-        teaching_style: list[str],
-        narrative_mode: str,
-        encouragement_style: str,
-        correction_style: str,
+        slots: list[PersonaSlot],
         rewrite_strength: float,
-    ) -> dict[str, str]:
-        style_text = "、".join([item for item in teaching_style if item.strip()]) or "结构化讲解"
-        narrative_text = "轻剧情" if narrative_mode == "light_story" else "稳态导学"
+    ) -> dict[str, object]:
+        worldview = next((s.content for s in slots if s.kind == "worldview"), "")
+        past_exp = next((s.content for s in slots if s.kind == "past_experiences"), "")
+        teaching_method = next((s.content for s in slots if s.kind == "teaching_method"), "")
+        narrative_mode = next((s.content for s in slots if s.kind == "narrative_mode"), "grounded")
+        encouragement_style = next((s.content for s in slots if s.kind == "encouragement_style"), "")
+        correction_style = next((s.content for s in slots if s.kind == "correction_style"), "")
+
+        style_text = teaching_method.strip() or "结构化讲解"
+        narrative_text = "轻剧情" if narrative_mode.strip() == "light_story" else "稳态导学"
         identity_name = name.strip() or "这位教师"
         summary_text = summary.strip() or "擅长围绕章节核心概念组织学习路径"
         normalized_strength = max(0.0, min(1.0, rewrite_strength))
-        base_story = background_story.strip()
-        if base_story and normalized_strength < 0.45:
-            story = (
-                f"{base_story}\n\n"
+        base_narrative = (worldview or past_exp).strip()
+        if base_narrative and normalized_strength < 0.45:
+            narrative_content = (
+                f"{base_narrative}\n\n"
                 f"补充设定：{identity_name} 采用{narrative_text}叙事，"
-                f"以{style_text}推进讲解，鼓励策略偏向“{encouragement_style or '阶段性肯定'}”，"
-                f"纠错策略采用“{correction_style or '温和纠偏'}”。"
+                f"以{style_text}推进讲解，鼓励策略偏向\"{encouragement_style or '阶段性肯定'}\"，"
+                f"纠错策略采用\"{correction_style or '温和纠偏'}\"。"
             )
         else:
-            story = (
+            narrative_content = (
                 f"{identity_name} 的核心定位：{summary_text}。"
                 f"其教学叙事采用{narrative_text}路线，常用{style_text}组织内容。"
-                f"面对学习者挫折时，优先使用“{encouragement_style or '阶段性肯定'}”进行支持；"
-                f"在纠错时坚持“{correction_style or '温和纠偏'}”，先指出可改进点，再给出可执行下一步。"
+                f"面对学习者挫折时，优先使用\"{encouragement_style or '阶段性肯定'}\"进行支持；"
+                f"在纠错时坚持\"{correction_style or '温和纠偏'}\"，先指出可改进点，再给出可执行下一步。"
+            )
+        updated_slots: list[PersonaSlot] = []
+        narrative_inserted = False
+        for slot in slots:
+            if slot.kind in ("worldview", "past_experiences") and not narrative_inserted:
+                updated_slots.append(
+                    PersonaSlot(kind=slot.kind, label=slot.label, content=narrative_content)
+                )
+                narrative_inserted = True
+            elif slot.kind in ("worldview", "past_experiences"):
+                pass
+            else:
+                updated_slots.append(slot)
+        if not narrative_inserted:
+            updated_slots.append(
+                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content)
             )
         prompt = (
             "You are a chapter-grounded tutor persona. "
             f"Persona name: {identity_name}. "
-            f"Narrative mode: {narrative_mode}. "
+            f"Narrative mode: {narrative_mode.strip() or 'grounded'}. "
             f"Teaching style: {style_text}. "
             "Always keep explanations concise, grounded, and action-oriented."
         )
         return {
-            "background_story": story,
+            "slots": [s.model_dump() for s in updated_slots],
             "system_prompt_suggestion": prompt,
         }
 
@@ -448,13 +466,12 @@ class OpenAIModelProvider(MockModelProvider):
         *,
         name: str,
         summary: str,
-        background_story: str,
-        teaching_style: list[str],
-        narrative_mode: str,
-        encouragement_style: str,
-        correction_style: str,
+        slots: list[PersonaSlot],
         rewrite_strength: float,
-    ) -> dict[str, str]:
+    ) -> dict[str, object]:
+        slots_text = "\n".join(
+            f"{s.kind} ({s.label}): {s.content}" for s in slots if s.content.strip()
+        )
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
@@ -465,24 +482,23 @@ class OpenAIModelProvider(MockModelProvider):
                     "role": "system",
                     "content": (
                         "You are a persona writing assistant for a tutoring system. "
-                        "Return strict JSON only with keys: background_story, system_prompt_suggestion. "
+                        "Return strict JSON only with a key 'slots' (array of objects with kind, label, content) "
+                        "and 'system_prompt_suggestion'. "
+                        "Improve the narrative slots (worldview, past_experiences, thinking_style) while "
+                        "preserving the functional slots (teaching_method, narrative_mode, etc.) unless clearly wrong. "
                         "Use concise but vivid Chinese, keeping the persona educational and chapter-grounded."
                     ),
                 },
                 {
                     "role": "user",
                     "content": (
-                        "请根据以下输入完善人格设定。\n"
+                        "请根据以下输入完善人格插槽设定。\n"
                         f"name: {name}\n"
                         f"summary: {summary}\n"
-                        f"background_story: {background_story}\n"
-                        f"teaching_style: {', '.join(teaching_style)}\n"
-                        f"narrative_mode: {narrative_mode}\n"
-                        f"encouragement_style: {encouragement_style}\n"
-                        f"correction_style: {correction_style}\n"
+                        f"slots:\n{slots_text}\n"
                         f"rewrite_strength: {max(0.0, min(1.0, rewrite_strength))}\n"
                         "rewrite_strength 语义：0=尽量保留原文，仅增量润色；1=可重写为全新但同人设版本。\n"
-                        "输出仅为 JSON，不要 markdown。"
+                        "输出仅为 JSON，不要 markdown。slots 数组结构：[{{kind, label, content}}, ...]"
                     ),
                 },
             ],
@@ -492,20 +508,34 @@ class OpenAIModelProvider(MockModelProvider):
             request_kind="setting",
             model=self.setting_model,
         )
-        content = _extract_choice_content(raw_payload)
+        raw_content = _extract_choice_content(raw_payload)
         parsed = _extract_json_payload(
-            content,
+            raw_content,
             invalid_json_code="setting_model_invalid_json",
             invalid_payload_code="setting_model_invalid_payload",
         )
-        story = str(parsed.get("background_story") or "").strip()
-        prompt = str(parsed.get("system_prompt_suggestion") or "").strip()
-        if not story or not prompt:
+        returned_slots_raw = parsed.get("slots") or []
+        system_prompt_suggestion = str(parsed.get("system_prompt_suggestion") or "").strip()
+        if not system_prompt_suggestion:
+            raise RuntimeError("setting_model_invalid_payload")
+        returned_slots: list[PersonaSlot] = []
+        for item in returned_slots_raw:
+            if isinstance(item, dict) and item.get("kind") and item.get("content"):
+                returned_slots.append(
+                    PersonaSlot(
+                        kind=str(item["kind"]),
+                        label=str(item.get("label") or item["kind"]),
+                        content=str(item["content"]),
+                    )
+                )
+        if not returned_slots:
             raise RuntimeError("setting_model_invalid_payload")
         return {
-            "background_story": story,
-            "system_prompt_suggestion": prompt,
+            "slots": [s.model_dump() for s in returned_slots],
+            "system_prompt_suggestion": system_prompt_suggestion,
         }
+
+
 
     def generate_learning_plan(
         self,
