@@ -34,6 +34,13 @@ interface DocumentSetupProps {
   selectedSceneLibraryId: string;
   onSelectSceneLibraryId: (sceneId: string) => void;
   sceneProfile?: SceneProfile | null;
+  planStreamEvents: StreamEventItem[];
+  planStreamStatus: string;
+}
+
+interface StreamEventItem {
+  stage: string;
+  payload: Record<string, unknown>;
 }
 
 export function DocumentSetup({
@@ -52,7 +59,9 @@ export function DocumentSetup({
   sceneLibraryItems,
   selectedSceneLibraryId,
   onSelectSceneLibraryId,
-  sceneProfile
+  sceneProfile,
+  planStreamEvents,
+  planStreamStatus
 }: DocumentSetupProps) {
   const [file, setFile] = useState<File | null>(null);
   const [objective, setObjective] = useState("请基于教材结构生成首轮学习计划，先给出学习章节顺序，再拆分每章的细分学习要点。");
@@ -69,6 +78,10 @@ export function DocumentSetup({
       setUnitTitleDraft("");
     }
   }, [document, editingUnitId]);
+
+  const planRoundSummary = summarizePlanRounds(planStreamEvents);
+  const shouldShowPlanRounds =
+    planStreamStatus !== "idle" || planStreamEvents.length > 0 || planRoundSummary.rounds.length > 0;
 
   return (
     <div className="plan-setup-column" style={styles.wrap}>
@@ -177,6 +190,67 @@ export function DocumentSetup({
         >
           {isBusy ? "处理中…" : "上传并生成计划"}
         </button>
+
+        {shouldShowPlanRounds ? (
+          <div style={styles.progressSection}>
+            <div style={styles.progressHeader}>
+              <div style={styles.progressHeaderMeta}>
+                <span style={styles.progressTitle}>计划生成轮次</span>
+                <span style={styles.progressMeta}>直接显示模型轮次，不再只藏在 Debug 浮窗里。</span>
+              </div>
+              <span style={statusBadgeStyle(planStreamStatus)}>
+                {formatPlanStreamStatus(planStreamStatus)}
+              </span>
+            </div>
+
+            <div style={styles.progressStats}>
+              <span style={styles.progressStat}>已见轮次 {planRoundSummary.rounds.length}</span>
+              <span style={styles.progressStat}>工具调用 {planRoundSummary.totalToolCalls}</span>
+              <span style={styles.progressStat}>恢复尝试 {planRoundSummary.recoveryCount}</span>
+            </div>
+
+            {planRoundSummary.latestMessage ? (
+              <div style={styles.progressNotice}>{planRoundSummary.latestMessage}</div>
+            ) : null}
+
+            {planRoundSummary.rounds.length ? (
+              <div style={styles.roundList}>
+                {planRoundSummary.rounds.map((round) => (
+                  <div key={round.roundIndex} style={styles.roundCard}>
+                    <div style={styles.roundHeader}>
+                      <strong style={styles.roundTitle}>Round {round.roundIndex + 1}</strong>
+                      <span style={roundStatusBadgeStyle(round.status)}>
+                        {formatRoundStatus(round.status)}
+                      </span>
+                    </div>
+                    <span style={styles.roundMeta}>
+                      工具 {round.toolCalls.length}
+                      {round.finishReason ? ` · finish=${round.finishReason}` : ""}
+                      {typeof round.elapsedMs === "number" ? ` · ${round.elapsedMs} ms` : ""}
+                    </span>
+                    {round.error ? <span style={styles.roundError}>失败原因：{round.error}</span> : null}
+                    {round.recoveryNotes.length ? (
+                      <span style={styles.roundRecovery}>
+                        恢复：{round.recoveryNotes.join("；")}
+                      </span>
+                    ) : null}
+                    {round.toolCalls.length ? (
+                      <div style={styles.roundToolList}>
+                        {round.toolCalls.map((toolName, index) => (
+                          <span key={`${round.roundIndex}:${toolName}:${index}`} style={styles.roundToolTag}>
+                            {toolName}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <span style={styles.fieldHint}>计划流已启动，等待首个模型轮次事件。</span>
+            )}
+          </div>
+        ) : null}
       </section>
 
       <div style={styles.statusGrid}>
@@ -415,6 +489,101 @@ const styles: Record<string, CSSProperties> = {
     opacity: 0.45,
     cursor: "not-allowed"
   },
+  progressSection: {
+    display: "grid",
+    gap: 10,
+    paddingTop: 14,
+    borderTop: "1px solid var(--border)"
+  },
+  progressHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+    flexWrap: "wrap"
+  },
+  progressHeaderMeta: {
+    display: "grid",
+    gap: 2
+  },
+  progressTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "var(--ink)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
+  },
+  progressMeta: {
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.5
+  },
+  progressStats: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  progressStat: {
+    padding: "5px 8px",
+    border: "1px solid var(--border)",
+    background: "white",
+    fontSize: 12,
+    color: "var(--muted)"
+  },
+  progressNotice: {
+    padding: "10px 12px",
+    border: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border))",
+    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
+    color: "var(--ink)",
+    fontSize: 12,
+    lineHeight: 1.6
+  },
+  roundList: {
+    display: "grid",
+    gap: 8
+  },
+  roundCard: {
+    display: "grid",
+    gap: 6,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    background: "white"
+  },
+  roundHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap"
+  },
+  roundTitle: {
+    fontSize: 13,
+    color: "var(--ink)"
+  },
+  roundMeta: {
+    fontSize: 12,
+    color: "var(--muted)"
+  },
+  roundError: {
+    fontSize: 12,
+    color: "var(--danger, #b42318)"
+  },
+  roundRecovery: {
+    fontSize: 12,
+    color: "var(--muted)"
+  },
+  roundToolList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6
+  },
+  roundToolTag: {
+    padding: "4px 8px",
+    border: "1px solid color-mix(in srgb, var(--accent) 18%, var(--border))",
+    background: "color-mix(in srgb, white 88%, var(--accent-soft))",
+    color: "var(--accent)",
+    fontSize: 12
+  },
   statusGrid: {
     display: "flex",
     flexWrap: "wrap",
@@ -556,4 +725,201 @@ function formatUnitKind(unitKind: string) {
     default:
       return unitKind || "单元";
   }
+}
+
+type PlanRoundStatus = "running" | "completed" | "failed";
+
+interface PlanRoundSummaryItem {
+  roundIndex: number;
+  status: PlanRoundStatus;
+  toolCalls: string[];
+  recoveryNotes: string[];
+  finishReason: string;
+  elapsedMs?: number;
+  error?: string;
+}
+
+function summarizePlanRounds(events: StreamEventItem[]) {
+  const rounds = new Map<number, PlanRoundSummaryItem>();
+  let totalToolCalls = 0;
+  let recoveryCount = 0;
+  let latestMessage = "";
+
+  for (const event of events) {
+    const roundIndex = toNumber(event.payload.round_index);
+    const ensureRound = () => {
+      if (roundIndex === null) {
+        return null;
+      }
+      const current =
+        rounds.get(roundIndex) ??
+        {
+          roundIndex,
+          status: "running" as const,
+          toolCalls: [],
+          recoveryNotes: [],
+          finishReason: "",
+        };
+      rounds.set(roundIndex, current);
+      return current;
+    };
+
+    if (event.stage === "model_round_started") {
+      const round = ensureRound();
+      if (round) {
+        round.status = "running";
+        latestMessage = `Round ${round.roundIndex + 1} 已启动。`;
+      }
+      continue;
+    }
+
+    if (event.stage === "model_tool_call") {
+      const round = ensureRound();
+      const toolName = String(event.payload.tool_name ?? "").trim();
+      if (round && toolName) {
+        round.toolCalls.push(toolName);
+        totalToolCalls += 1;
+        latestMessage = `Round ${round.roundIndex + 1} 调用了工具 ${toolName}。`;
+      }
+      continue;
+    }
+
+    if (event.stage === "model_recovery_attempt") {
+      const round = ensureRound();
+      const reason = String(event.payload.reason ?? "").trim();
+      const strategy = String(event.payload.strategy ?? "").trim();
+      if (round) {
+        round.recoveryNotes.push([reason, strategy].filter(Boolean).join(" -> "));
+      }
+      recoveryCount += 1;
+      latestMessage = "计划器正在做恢复尝试。";
+      continue;
+    }
+
+    if (event.stage === "model_round_completed") {
+      const round = ensureRound();
+      if (round) {
+        round.status = "completed";
+        round.finishReason = String(event.payload.finish_reason ?? "").trim();
+        round.elapsedMs = toNumber(event.payload.elapsed_ms) ?? undefined;
+        latestMessage = `Round ${round.roundIndex + 1} 已完成。`;
+      }
+      continue;
+    }
+
+    if (event.stage === "model_round_failed") {
+      const round = ensureRound();
+      if (round) {
+        round.status = "failed";
+        round.finishReason = String(event.payload.finish_reason ?? "").trim();
+        round.elapsedMs = toNumber(event.payload.elapsed_ms) ?? undefined;
+        round.error = String(event.payload.error ?? "").trim();
+        latestMessage = `Round ${round.roundIndex + 1} 失败。`;
+      }
+      continue;
+    }
+
+    if (event.stage === "learning_plan_completed") {
+      latestMessage = "学习计划已生成完成。";
+      continue;
+    }
+
+    if (event.stage === "stream_error") {
+      latestMessage = `计划流出错：${String(event.payload.error ?? "未知错误")}`;
+      continue;
+    }
+
+    if (event.stage === "stream_completed" && !latestMessage) {
+      latestMessage = "计划流已完成。";
+    }
+  }
+
+  return {
+    rounds: [...rounds.values()].sort((a, b) => a.roundIndex - b.roundIndex),
+    totalToolCalls,
+    recoveryCount,
+    latestMessage,
+  };
+}
+
+function toNumber(value: unknown): number | null {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : null;
+}
+
+function formatPlanStreamStatus(status: string) {
+  switch (status) {
+    case "running":
+      return "生成中";
+    case "completed":
+      return "已完成";
+    case "error":
+      return "出错";
+    default:
+      return "未开始";
+  }
+}
+
+function formatRoundStatus(status: PlanRoundStatus) {
+  switch (status) {
+    case "completed":
+      return "完成";
+    case "failed":
+      return "失败";
+    default:
+      return "进行中";
+  }
+}
+
+function statusBadgeStyle(status: string): CSSProperties {
+  if (status === "completed") {
+    return {
+      ...styles.progressStat,
+      color: "var(--accent)",
+      borderColor: "color-mix(in srgb, var(--accent) 28%, var(--border))",
+      background: "color-mix(in srgb, white 88%, var(--accent-soft))",
+    };
+  }
+  if (status === "error") {
+    return {
+      ...styles.progressStat,
+      color: "var(--danger, #b42318)",
+      borderColor: "rgba(180, 35, 24, 0.24)",
+      background: "rgba(180, 35, 24, 0.06)",
+    };
+  }
+  if (status === "running") {
+    return {
+      ...styles.progressStat,
+      color: "var(--accent)",
+      borderColor: "color-mix(in srgb, var(--accent) 28%, var(--border))",
+    };
+  }
+  return styles.progressStat;
+}
+
+function roundStatusBadgeStyle(status: PlanRoundStatus): CSSProperties {
+  if (status === "completed") {
+    return {
+      ...styles.progressStat,
+      padding: "3px 8px",
+      color: "var(--accent)",
+      borderColor: "color-mix(in srgb, var(--accent) 28%, var(--border))",
+      background: "color-mix(in srgb, white 88%, var(--accent-soft))",
+    };
+  }
+  if (status === "failed") {
+    return {
+      ...styles.progressStat,
+      padding: "3px 8px",
+      color: "var(--danger, #b42318)",
+      borderColor: "rgba(180, 35, 24, 0.24)",
+      background: "rgba(180, 35, 24, 0.06)",
+    };
+  }
+  return {
+    ...styles.progressStat,
+    padding: "3px 8px",
+    color: "var(--accent)",
+  };
 }

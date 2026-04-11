@@ -87,6 +87,45 @@ SETTING_SLOT_SCHEMA = (
     '}'
 )
 
+PERSONA_CARD_GENERATION_SCHEMA = (
+    '{'
+    '"summary": string, '
+    '"relationship": string, '
+    '"learner_address": string, '
+    '"cards": [{"title": string, "kind": string, "label": string, "content": string, "tags"?: [string], "source_note"?: string}]'
+    '}'
+)
+
+PERSONA_CARD_GENERATION_JSON_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "summary": {"type": "string"},
+        "relationship": {"type": "string"},
+        "learner_address": {"type": "string"},
+        "cards": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "kind": {"type": "string"},
+                    "label": {"type": "string"},
+                    "content": {"type": "string"},
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "source_note": {"type": "string"},
+                },
+                "required": ["title", "kind", "label", "content"],
+            },
+        }
+    },
+    "required": ["summary", "relationship", "learner_address", "cards"],
+}
+
 CHAT_EXEMPT_TOOL_NAMES = frozenset(
     (
         "read_page_range_content",
@@ -114,6 +153,10 @@ def _setting_prompt_sections() -> dict[str, str]:
         "assist_setting_user": template.require("assist_setting_user"),
         "assist_slot_system": template.require("assist_slot_system"),
         "assist_slot_user": template.require("assist_slot_user"),
+        "generate_keywords_system": template.require("generate_keywords_system"),
+        "generate_keywords_user": template.require("generate_keywords_user"),
+        "generate_long_text_system": template.require("generate_long_text_system"),
+        "generate_long_text_user": template.require("generate_long_text_user"),
     }
 
 
@@ -384,6 +427,22 @@ class ModelProvider:
     ) -> dict[str, object]:
         raise NotImplementedError
 
+    def generate_persona_cards_from_keywords(
+        self,
+        *,
+        keywords: str,
+        count: int,
+    ) -> dict[str, object]:
+        raise NotImplementedError
+
+    def generate_persona_cards_from_text(
+        self,
+        *,
+        text: str,
+        count: int,
+    ) -> dict[str, object]:
+        raise NotImplementedError
+
 
 class MockModelProvider(ModelProvider):
     def generate_chat(
@@ -620,6 +679,55 @@ class MockModelProvider(ModelProvider):
             ).model_dump()
         }
 
+    def generate_persona_cards_from_keywords(
+        self,
+        *,
+        keywords: str,
+        count: int,
+    ) -> dict[str, object]:
+        raise RuntimeError("setting_keyword_generation_requires_openai")
+
+    def generate_persona_cards_from_text(
+        self,
+        *,
+        text: str,
+        count: int,
+    ) -> dict[str, object]:
+        sentences = [segment.strip() for segment in re.split(r"[。！？\n]+", text) if segment.strip()]
+        seed = sentences[: max(3, min(count, 6))]
+        if not seed:
+            raise RuntimeError("setting_model_invalid_payload")
+        cards: list[dict[str, object]] = []
+        slot_cycle = [
+            ("worldview", "世界观起点"),
+            ("past_experiences", "过往经历"),
+            ("thinking_style", "思维风格"),
+            ("teaching_method", "教学方法"),
+            ("encouragement_style", "鼓励策略"),
+            ("correction_style", "纠错策略"),
+            ("narrative_mode", "叙事模式"),
+        ]
+        for index, fragment in enumerate(seed[:count]):
+            kind, label = slot_cycle[index % len(slot_cycle)]
+            cards.append(
+                {
+                    "title": f"{label}卡片 {index + 1}",
+                    "kind": kind,
+                    "label": label,
+                    "content": fragment,
+                    "tags": ["长文本提取"],
+                    "source_note": "由输入长文本抽取的设定片段。",
+                }
+            )
+        return {
+            "summary": "从长文本中提取出的导学型教师人格，强调稳定叙事与可执行反馈。",
+            "relationship": "陪伴式导师",
+            "learner_address": "同学",
+            "cards": cards,
+            "used_model": "mock",
+            "used_web_search": False,
+        }
+
 
 class OpenAIModelProvider(MockModelProvider):
     def __init__(
@@ -633,6 +741,7 @@ class OpenAIModelProvider(MockModelProvider):
         setting_api_key: str = "",
         setting_base_url: str = "",
         setting_model: str | None = None,
+        setting_web_search_enabled: bool = True,
         chat_api_key: str = "",
         chat_base_url: str = "",
         chat_model: str | None = None,
@@ -664,6 +773,7 @@ class OpenAIModelProvider(MockModelProvider):
         self.chat_base_url = (chat_base_url or base_url).rstrip("/")
         self.plan_model = plan_model
         self.setting_model = setting_model or chat_model or plan_model
+        self.setting_web_search_enabled = setting_web_search_enabled
         self.chat_model = chat_model or plan_model
         self.chat_temperature = chat_temperature
         self.setting_temperature = setting_temperature
@@ -720,6 +830,14 @@ class OpenAIModelProvider(MockModelProvider):
             for slot in persona_sorted_slots(persona.slots)
             if slot.content.strip()
         )
+        persona_context_text = "\n".join(
+            line
+            for line in [
+                f"人格关系：{persona.relationship.strip() or '无'}",
+                f"学习者称呼：{persona.learner_address.strip() or '无'}",
+            ]
+            if line
+        )
         scene_tool_instruction = (
             "如需读取或修改当前会话绑定场景，可调用 read_scene_overview、add_scene、move_to_scene、add_object、update_object_description、delete_object；所有场景修改都必须限制在当前会话绑定场景内。"
             if scene_tool_runtime is not None
@@ -731,6 +849,7 @@ class OpenAIModelProvider(MockModelProvider):
                 "role": "system",
                 "content": prompt_sections["system"]
                 .replace("{{PERSONA_SYSTEM_PROMPT}}", persona.system_prompt)
+                .replace("{{PERSONA_CONTEXT}}", persona_context_text or "")
                 .replace("{{SESSION_SYSTEM_PROMPT}}", session_prompt.strip())
                 .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
                 .replace("{{PERSONA_SLOTS}}", persona_slots_text or "无")
@@ -1026,6 +1145,135 @@ class OpenAIModelProvider(MockModelProvider):
             ).model_dump()
         }
 
+    def generate_persona_cards_from_keywords(
+        self,
+        *,
+        keywords: str,
+        count: int,
+    ) -> dict[str, object]:
+        prompt_sections = _setting_prompt_sections()
+        if self.setting_web_search_enabled:
+            payload: dict[str, Any] = {
+                "model": self.setting_model,
+                "temperature": self.setting_temperature,
+                "max_output_tokens": max(self.setting_max_tokens, 1200),
+                "instructions": prompt_sections["generate_keywords_system"]
+                .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
+                .replace("{{CARD_COUNT}}", str(max(1, min(12, count)))),
+                "input": prompt_sections["generate_keywords_user"]
+                .replace("{{KEYWORDS}}", keywords.strip())
+                .replace("{{CARD_COUNT}}", str(max(1, min(12, count))))
+                .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA),
+                "tools": [{"type": "web_search"}],
+                "text": {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "persona_card_batch",
+                        "schema": PERSONA_CARD_GENERATION_JSON_SCHEMA,
+                    }
+                },
+            }
+            raw_payload, _ = self._request_openai_response(
+                payload,
+                request_kind="setting",
+                model=self.setting_model,
+            )
+            parsed = _extract_json_payload(
+                _extract_response_output_text(raw_payload),
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+        else:
+            payload = {
+                "model": self.setting_model,
+                "temperature": self.setting_temperature,
+                "max_tokens": max(self.setting_max_tokens, 1200),
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": prompt_sections["generate_keywords_system"]
+                        .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
+                        .replace("{{CARD_COUNT}}", str(max(1, min(12, count)))),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            prompt_sections["generate_keywords_user"]
+                            .replace("{{KEYWORDS}}", keywords.strip())
+                            .replace("{{CARD_COUNT}}", str(max(1, min(12, count))))
+                            .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
+                            + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
+                        ),
+                    },
+                ],
+            }
+            raw_payload, _ = self._request_openai_chat_completion(
+                payload,
+                request_kind="setting",
+                model=self.setting_model,
+            )
+            parsed = _extract_json_payload(
+                _extract_choice_content(raw_payload),
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+        return {
+            "summary": str(parsed.get("summary") or "").strip(),
+            "relationship": str(parsed.get("relationship") or "").strip(),
+            "learner_address": str(parsed.get("learner_address") or "").strip(),
+            "cards": _normalize_generated_persona_cards(parsed),
+            "used_model": self.setting_model,
+            "used_web_search": self.setting_web_search_enabled,
+        }
+
+    def generate_persona_cards_from_text(
+        self,
+        *,
+        text: str,
+        count: int,
+    ) -> dict[str, object]:
+        prompt_sections = _setting_prompt_sections()
+        payload: dict[str, Any] = {
+            "model": self.setting_model,
+            "temperature": self.setting_temperature,
+            "max_tokens": max(self.setting_max_tokens, 1200),
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": prompt_sections["generate_long_text_system"]
+                    .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
+                    .replace("{{CARD_COUNT}}", str(max(1, min(12, count)))),
+                },
+                {
+                    "role": "user",
+                    "content": prompt_sections["generate_long_text_user"]
+                    .replace("{{SOURCE_TEXT}}", text.strip())
+                    .replace("{{CARD_COUNT}}", str(max(1, min(12, count))))
+                    .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA),
+                },
+            ],
+        }
+        raw_payload, _ = self._request_openai_chat_completion(
+            payload,
+            request_kind="setting",
+            model=self.setting_model,
+        )
+        parsed = _extract_json_payload(
+            _extract_choice_content(raw_payload),
+            invalid_json_code="setting_model_invalid_json",
+            invalid_payload_code="setting_model_invalid_payload",
+        )
+        return {
+            "summary": str(parsed.get("summary") or "").strip(),
+            "relationship": str(parsed.get("relationship") or "").strip(),
+            "learner_address": str(parsed.get("learner_address") or "").strip(),
+            "cards": _normalize_generated_persona_cards(parsed),
+            "used_model": self.setting_model,
+            "used_web_search": False,
+        }
+
 
 
     def generate_learning_plan(
@@ -1249,6 +1497,62 @@ class OpenAIModelProvider(MockModelProvider):
         except (TimeoutError, socket.timeout) as exc:
             logger.exception(
                 "model.%s.timeout timeout_seconds=%s",
+                request_kind,
+                self.timeout_seconds,
+            )
+            raise RuntimeError(f"openai_{request_kind}_request_timeout") from exc
+
+    def _request_openai_response(
+        self,
+        payload: dict[str, Any],
+        *,
+        request_kind: str,
+        model: str,
+    ) -> tuple[dict[str, Any], int]:
+        request_base_url, request_api_key = self._resolve_request_endpoint(request_kind)
+        logger.info(
+            "model.%s.responses.request provider=openai model=%s tools_enabled=%s",
+            request_kind,
+            model,
+            bool(payload.get("tools")),
+        )
+        request = urllib.request.Request(
+            url=f"{request_base_url}/responses",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {request_api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        started_at = time.perf_counter()
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+                raw_payload = json.loads(response.read().decode("utf-8"))
+            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            return raw_payload, elapsed_ms
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="ignore")
+            error_code, error_message = _extract_upstream_error(body)
+            logger.exception(
+                "model.%s.responses.http_error status=%s upstream_code=%s upstream_message=%s body=%s",
+                request_kind,
+                exc.code,
+                error_code,
+                error_message,
+                body,
+            )
+            if error_code == "rate_limit":
+                raise RuntimeError(f"openai_{request_kind}_request_rate_limit") from exc
+            raise RuntimeError(
+                f"openai_{request_kind}_request_failed:{exc.code}:{error_code or 'unknown'}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            logger.exception("model.%s.responses.network_error reason=%s", request_kind, exc.reason)
+            raise RuntimeError(f"openai_{request_kind}_request_network_error") from exc
+        except (TimeoutError, socket.timeout) as exc:
+            logger.exception(
+                "model.%s.responses.timeout timeout_seconds=%s",
                 request_kind,
                 self.timeout_seconds,
             )
@@ -1847,6 +2151,64 @@ def _extract_json_payload(
     if not isinstance(payload, dict):
         raise RuntimeError(invalid_payload_code)
     return payload
+
+
+def _extract_response_output_text(payload: dict[str, Any]) -> str:
+    direct = payload.get("output_text")
+    if isinstance(direct, str) and direct.strip():
+        return direct
+    output = payload.get("output")
+    if not isinstance(output, list):
+        raise RuntimeError("setting_model_invalid_payload")
+    parts: list[str] = []
+    for item in output:
+        if not isinstance(item, dict) or item.get("type") != "message":
+            continue
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "output_text":
+                text = block.get("text")
+                if isinstance(text, str) and text.strip():
+                    parts.append(text)
+    merged = "\n".join(parts).strip()
+    if not merged:
+        raise RuntimeError("setting_model_invalid_payload")
+    return merged
+
+
+def _normalize_generated_persona_cards(parsed: dict[str, object]) -> list[dict[str, object]]:
+    raw_cards = parsed.get("cards")
+    if not isinstance(raw_cards, list):
+        raise RuntimeError("setting_model_invalid_payload")
+    cards: list[dict[str, object]] = []
+    for item in raw_cards:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or "").strip()
+        kind = str(item.get("kind") or "").strip() or "custom"
+        label = str(item.get("label") or kind).strip() or kind
+        content = str(item.get("content") or "").strip()
+        if not title or not content:
+            continue
+        tags_raw = item.get("tags")
+        tags = [str(tag).strip() for tag in tags_raw] if isinstance(tags_raw, list) else []
+        cards.append(
+            {
+                "title": title,
+                "kind": kind,
+                "label": label,
+                "content": content,
+                "tags": [tag for tag in tags if tag],
+                "source_note": str(item.get("source_note") or "").strip(),
+            }
+        )
+    if not cards:
+        raise RuntimeError("setting_model_invalid_payload")
+    return cards
 
 
 def _parse_chat_model_reply(

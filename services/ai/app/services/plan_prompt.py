@@ -60,6 +60,8 @@ def build_learning_plan_messages(
             "name": persona.name,
             "source": persona.source,
             "summary": persona.summary,
+            "relationship": persona.relationship,
+            "learner_address": persona.learner_address,
             "system_prompt": persona.system_prompt,
             "slots": [
                 {"kind": slot.kind, "label": slot.label, "content": slot.content}

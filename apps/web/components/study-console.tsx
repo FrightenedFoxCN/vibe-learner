@@ -348,6 +348,8 @@ export function StudyConsole({
               </div>
               <div style={styles.companionRow}>
                 <span style={styles.companionChip}>人格 · {persona.name}</span>
+                <span style={styles.companionChip}>关系 · {persona.relationship || "未设"}</span>
+                <span style={styles.companionChip}>称呼 · {persona.learnerAddress || "未设"}</span>
                 <span style={styles.companionChip}>场景 · {sceneProfile?.title || "未设置"}</span>
                 {sceneSourceLabel ? <span style={styles.companionChip}>来源 · {sceneSourceLabel}</span> : null}
                 {sceneInstanceId ? <span style={styles.companionChip}>副本 · {sceneInstanceId}</span> : null}

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import fitz
 from fastapi import HTTPException
 from app.api.routes import _map_plan_generation_error, get_document_planning_trace
-from app.models.api import CreatePersonaRequest, DocumentResponse
+from app.models.api import CreatePersonaCardRequest, CreatePersonaRequest, DocumentResponse
 from app.models.domain import (
     ChatToolCallTraceRecord,
     Citation,
@@ -40,6 +40,7 @@ from app.services.plan_prompt import build_learning_plan_messages, read_page_ran
 from app.services.plan_prompt import load_learning_plan_prompt_template
 from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
+from app.services.persona_cards import PersonaCardLibraryService
 from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning_plan_tool_specs
 from app.services.study_arrangement import StudyArrangementService
 from app.services.stream_reports import (
@@ -55,9 +56,11 @@ class PersonaPipelineTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
         store = LocalJsonStore(Path(self.temp_dir.name))
+        self.store = store
         arrangement_service = StudyArrangementService()
         model_provider = MockModelProvider()
-        self.persona_engine = PersonaEngine()
+        self.persona_engine = PersonaEngine(store)
+        self.persona_card_library = PersonaCardLibraryService(store)
         self.document_service = DocumentService(store, DocumentParser(), arrangement_service)
         self.plan_service = LearningPlanService(store, arrangement_service, model_provider)
         self.study_session_service = StudySessionService(store)
@@ -81,6 +84,8 @@ class PersonaPipelineTests(unittest.TestCase):
             CreatePersonaRequest(
                 name="Sora Guide",
                 summary="A sharp but kind mentor.",
+                relationship="mentor",
+                learner_address="friend",
                 system_prompt="Stay grounded in the document.",
                 slots=[
                     PersonaSlot(kind="teaching_method", label="教学方法", content="socratic, precise"),
@@ -92,7 +97,211 @@ class PersonaPipelineTests(unittest.TestCase):
         )
         self.assertEqual(persona.id, "sora-guide")
         self.assertEqual(persona.source, "user")
+        self.assertEqual(persona.relationship, "mentor")
+        self.assertEqual(persona.learner_address, "friend")
         self.assertIn("playful", persona.available_emotions)
+
+    def test_user_persona_creation_persists_to_local_store(self) -> None:
+        self.persona_engine.create_persona(
+            CreatePersonaRequest(
+                name="Persisted Mentor",
+                summary="Stored on disk.",
+                system_prompt="Stay grounded.",
+                slots=[],
+            )
+        )
+        reloaded = PersonaEngine(self.store)
+        persona = reloaded.require_persona("persisted-mentor")
+        self.assertEqual(persona.summary, "Stored on disk.")
+
+    def test_persona_card_library_crud_roundtrip(self) -> None:
+        created = self.persona_card_library.create_card(
+            CreatePersonaCardRequest(
+                title="冷静拆解",
+                kind="thinking_style",
+                label="思维风格",
+                content="先澄清前提，再给出推理链。",
+                tags=["理性", "结构化"],
+                source="manual",
+                source_note="人工整理",
+            )
+        )
+        listed = self.persona_card_library.list_cards()
+        self.assertEqual(len(listed), 1)
+        self.assertEqual(listed[0].id, created.id)
+        self.assertEqual(listed[0].tags, ["理性", "结构化"])
+        self.persona_card_library.delete_card(created.id)
+        self.assertEqual(self.persona_card_library.list_cards(), [])
+
+    def test_mock_provider_keyword_card_generation_requires_openai(self) -> None:
+        with self.assertRaises(RuntimeError) as ctx:
+            MockModelProvider().generate_persona_cards_from_keywords(
+                keywords="福尔摩斯式导师",
+                count=6,
+            )
+        self.assertEqual(str(ctx.exception), "setting_keyword_generation_requires_openai")
+
+    def test_openai_provider_keyword_card_generation_uses_responses_web_search(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            setting_model="gpt-setting-test",
+            timeout_seconds=3,
+        )
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]) -> None:
+                self.payload = payload
+
+            def read(self) -> bytes:
+                return json.dumps(self.payload).encode("utf-8")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeResponse(
+                {
+                    "output": [
+                        {
+                            "type": "message",
+                            "content": [
+                                {
+                                    "type": "output_text",
+                                    "text": json.dumps(
+                                        {
+                                            "summary": "冷静推理型导师，擅长把复杂问题拆成线索链。",
+                                            "relationship": "并肩破案的导师",
+                                            "learner_address": "搭档",
+                                            "cards": [
+                                                {
+                                                    "title": "冷静推理式教学",
+                                                    "kind": "thinking_style",
+                                                    "label": "思维风格",
+                                                    "content": "先整理线索，再逐步排除错误路径。",
+                                                    "tags": ["推理", "克制"],
+                                                    "source_note": "参考了公开侦探型角色的推理节奏。",
+                                                }
+                                            ]
+                                        },
+                                        ensure_ascii=False,
+                                    ),
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ),
+        ) as mocked_urlopen:
+            result = provider.generate_persona_cards_from_keywords(
+                keywords="侦探导师, 冷静推理",
+                count=5,
+            )
+
+        request = mocked_urlopen.call_args.args[0]
+        self.assertTrue(request.full_url.endswith("/responses"))
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(payload["model"], "gpt-setting-test")
+        self.assertEqual(payload["tools"][0]["type"], "web_search")
+        self.assertIn("侦探导师, 冷静推理", payload["input"])
+        self.assertTrue(result["used_web_search"])
+        self.assertEqual(result["relationship"], "并肩破案的导师")
+        self.assertEqual(result["learner_address"], "搭档")
+        self.assertEqual(result["cards"][0]["kind"], "thinking_style")
+
+    def test_openai_provider_keyword_card_generation_falls_back_to_model_only_when_web_disabled(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            setting_model="gpt-setting-test",
+            setting_web_search_enabled=False,
+            timeout_seconds=3,
+        )
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]) -> None:
+                self.payload = payload
+
+            def read(self) -> bytes:
+                return json.dumps(self.payload).encode("utf-8")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "summary": "由关键词直接生成的导学人格。",
+                                        "relationship": "耐心导师",
+                                        "learner_address": "同学",
+                                        "cards": [
+                                            {
+                                                "title": "结构化导学",
+                                                "kind": "teaching_method",
+                                                "label": "教学方法",
+                                                "content": "先搭框架，再逐步推进例题和反例。",
+                                            }
+                                        ],
+                                    },
+                                    ensure_ascii=False,
+                                )
+                            }
+                        }
+                    ]
+                }
+            ),
+        ) as mocked_urlopen:
+            result = provider.generate_persona_cards_from_keywords(
+                keywords="学院派导师",
+                count=4,
+            )
+
+        request = mocked_urlopen.call_args.args[0]
+        self.assertTrue(request.full_url.endswith("/chat/completions"))
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertNotIn("tools", payload)
+        self.assertFalse(result["used_web_search"])
+        self.assertEqual(result["summary"], "由关键词直接生成的导学人格。")
+
+    def test_learning_plan_prompt_includes_persona_identity_fields(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        messages = build_learning_plan_messages(
+            persona=persona,
+            document_title="Physics",
+            goal=LearningGoalInput(
+                document_id="doc-1",
+                persona_id=persona.id,
+                objective="掌握牛顿定律",
+            ),
+            study_units=[
+                StudyUnitRecord(
+                    id="unit-1",
+                    document_id="doc-1",
+                    title="牛顿定律",
+                    page_start=1,
+                    page_end=4,
+                    summary="",
+                )
+            ],
+        )
+        payload = "\n".join(message["content"] for message in messages)
+        self.assertIn(persona.relationship, payload)
+        self.assertIn(persona.learner_address, payload)
 
     def test_chat_reply_returns_character_events(self) -> None:
         persona = self.persona_engine.require_persona("mentor-lyra")
@@ -288,6 +497,7 @@ class PersonaPipelineTests(unittest.TestCase):
         service = RuntimeSettingsService(store, base_settings)
 
         self.assertEqual(service.describe()["openai_chat_max_tokens"], 4800)
+        self.assertTrue(service.describe()["openai_setting_web_search_enabled"])
         self.assertEqual(service.effective_settings().openai_chat_max_tokens, 4800)
 
     def test_parse_chat_model_reply_accepts_plain_text_without_warning_path(self) -> None:

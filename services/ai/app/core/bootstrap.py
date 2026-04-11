@@ -9,6 +9,7 @@ from app.services.local_store import LocalJsonStore
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
 from app.services.plans import LearningPlanService
+from app.services.persona_cards import PersonaCardLibraryService
 from app.services.persona import PersonaEngine
 from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConfigService
 from app.services.runtime_settings import RuntimeSettingsService
@@ -31,10 +32,11 @@ class Container:
         self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
+        self.persona_card_library_service = PersonaCardLibraryService(self.store)
         self.session_scene_service = SessionSceneService(self.store)
         self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())
         self.performance_mapper = PerformanceMapper()
-        self.persona_engine = PersonaEngine()
+        self.persona_engine = PersonaEngine(self.store)
         self.study_arrangement_service = StudyArrangementService()
         self.document_service = DocumentService(
             self.store,
@@ -81,6 +83,7 @@ class Container:
                 setting_api_key=settings.openai_setting_api_key,
                 setting_base_url=settings.openai_setting_base_url,
                 setting_model=settings.openai_setting_model,
+                setting_web_search_enabled=settings.openai_setting_web_search_enabled,
                 chat_api_key=settings.openai_chat_api_key,
                 chat_base_url=settings.openai_chat_base_url,
                 chat_model=settings.openai_chat_model,

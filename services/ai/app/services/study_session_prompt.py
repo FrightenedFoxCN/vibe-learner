@@ -14,6 +14,8 @@ class StudySessionPromptTemplate:
 def build_study_session_system_prompt(
     *,
     persona_name: str,
+    persona_relationship: str,
+    persona_learner_address: str,
     persona_system_prompt: str,
     document_title: str,
     section_id: str,
@@ -31,6 +33,8 @@ def build_study_session_system_prompt(
     return (
         template.replace("{{PERSONA_SYSTEM_PROMPT}}", persona_system_prompt.strip())
         .replace("{{PERSONA_NAME}}", persona_name.strip())
+        .replace("{{PERSONA_RELATIONSHIP}}", persona_relationship.strip() or "无")
+        .replace("{{PERSONA_LEARNER_ADDRESS}}", persona_learner_address.strip() or "无")
         .replace("{{DOCUMENT_TITLE}}", document_title.strip())
         .replace("{{SECTION_ID}}", section_id.strip())
         .replace("{{SECTION_TITLE}}", section_title.strip())

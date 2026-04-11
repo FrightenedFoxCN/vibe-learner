@@ -35,7 +35,7 @@ export function StudyDialogPage() {
   } = useLearningWorkspace();
 
   const [pdfPage, setPdfPage] = useState(1);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(true);
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [selectedChapter, setSelectedChapter] = useState("");
   const [selectedSubsectionId, setSelectedSubsectionId] = useState("");
   const [requestedPlanId, setRequestedPlanId] = useState("");

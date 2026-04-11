@@ -11,13 +11,18 @@ from app.models.domain import (
     persona_slot_list,
     persona_sorted_slots,
 )
+from app.services.local_store import LocalJsonStore
 
 
 class PersonaEngine:
-    def __init__(self) -> None:
+    def __init__(self, store: LocalJsonStore | None = None) -> None:
+        self._store = store
         self._personas: dict[str, PersonaProfile] = {}
         for persona in self._builtin_personas():
             self._personas[persona.id] = persona
+        if self._store is not None:
+            for persona in self._store.load_category_items("personas", PersonaProfile):
+                self._personas[persona.id] = persona
 
     @staticmethod
     def _default_available_emotions() -> list[str]:
@@ -28,7 +33,8 @@ class PersonaEngine:
         return ["idle", "nod", "point", "lean_in", "smile", "pause", "write"]
 
     def list_personas(self) -> list[PersonaProfile]:
-        return list(self._personas.values())
+        personas = list(self._personas.values())
+        return sorted(personas, key=lambda item: (item.source != "builtin", item.name.lower()))
 
     def require_persona(self, persona_id: str) -> PersonaProfile:
         persona = self._personas.get(persona_id)
@@ -37,7 +43,7 @@ class PersonaEngine:
         return persona
 
     def create_persona(self, payload: CreatePersonaRequest) -> PersonaProfile:
-        persona_id = payload.name.strip().lower().replace(" ", "-")
+        persona_id = self._allocate_persona_id(payload.name)
         available_emotions = [
             emotion.strip()
             for emotion in (payload.available_emotions or self._default_available_emotions())
@@ -53,6 +59,8 @@ class PersonaEngine:
             name=payload.name,
             source="user",
             summary=payload.summary,
+            relationship=payload.relationship.strip(),
+            learner_address=payload.learner_address.strip(),
             system_prompt=payload.system_prompt,
             slots=payload.slots,
             available_emotions=available_emotions or self._default_available_emotions(),
@@ -60,6 +68,7 @@ class PersonaEngine:
             default_speech_style=(payload.default_speech_style or "warm").strip() or "warm",
         )
         self._personas[persona.id] = persona
+        self._save_persona(persona)
         return persona
 
     def update_persona(self, persona_id: str, payload: UpdatePersonaRequest) -> PersonaProfile:
@@ -81,6 +90,8 @@ class PersonaEngine:
             source=current.source,
             name=payload.name,
             summary=payload.summary,
+            relationship=payload.relationship.strip(),
+            learner_address=payload.learner_address.strip(),
             system_prompt=payload.system_prompt,
             slots=payload.slots,
             available_emotions=available_emotions or self._default_available_emotions(),
@@ -89,7 +100,23 @@ class PersonaEngine:
             or current.default_speech_style,
         )
         self._personas[current.id] = updated
+        self._save_persona(updated)
         return updated
+
+    def _allocate_persona_id(self, name: str) -> str:
+        base = name.strip().lower().replace(" ", "-")
+        base = base or "persona"
+        if base not in self._personas:
+            return base
+        suffix = 2
+        while f"{base}-{suffix}" in self._personas:
+            suffix += 1
+        return f"{base}-{suffix}"
+
+    def _save_persona(self, persona: PersonaProfile) -> None:
+        if self._store is None or persona.source == "builtin":
+            return
+        self._store.save_item("personas", persona.id, persona)
 
     def assist_setting(
         self,
@@ -222,6 +249,8 @@ class PersonaEngine:
                 name="Aurora",
                 source="builtin",
                 summary="温和而结构化的导学教师。",
+                relationship="以师生协作方式陪伴学习者。",
+                learner_address="同学",
                 system_prompt="优先保持讲解清晰、贴合章节，并通过温和反馈推动学习者继续前进。",
                 slots=[
                     PersonaSlot(kind="worldview", label="世界观起点", content="来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。"),
@@ -239,6 +268,8 @@ class PersonaEngine:
                 name="Lyra",
                 source="builtin",
                 summary="\u5e26\u8f7b\u5ea6\u5267\u60c5\u5316\u966a\u4f34\u611f\u7684\u6d3b\u529b\u6559\u5e08\u3002",
+                relationship="像并肩探路的学伴，也会在关键节点保持老师的引导感。",
+                learner_address="伙伴",
                 system_prompt="把章节讲解和轻剧情陪伴结合起来，保持活力、节奏感和明确推进。",
                 slots=[
                     PersonaSlot(kind="past_experiences", label="过往经历", content="前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。"),

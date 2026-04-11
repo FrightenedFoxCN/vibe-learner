@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 import queue
 import socket
@@ -15,6 +16,8 @@ from pydantic import BaseModel
 from app.core.logging import get_logger
 from app.core.bootstrap import container
 from app.models.api import (
+    BatchCreatePersonaCardsRequest,
+    CreatePersonaCardRequest,
     CreatePersonaRequest,
     CreateStudySessionRequest,
     DocumentDebugResponse,
@@ -44,6 +47,10 @@ from app.models.api import (
     UpsertSceneLibraryRequest,
     UpdateRuntimeSettingsRequest,
     PersonaAssetsResponse,
+    PersonaCardGenerateRequest,
+    PersonaCardGenerateResponse,
+    PersonaCardListResponse,
+    PersonaCardResponse,
     PersonaSlotAssistRequest,
     PersonaSlotAssistResponse,
     ProcessDocumentRequest,
@@ -62,7 +69,7 @@ from app.models.api import (
     SubmissionGradeRequest,
     SubmissionGradeResponse,
 )
-from app.models.domain import PlanGenerationTraceRecord
+from app.models.domain import PersonaCardRecord, PlanGenerationTraceRecord
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -132,6 +139,13 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
     if detail == "setting_model_invalid_payload":
         return HTTPException(status_code=502, detail="setting_model_invalid_payload")
     return HTTPException(status_code=500, detail="setting_generation_failed")
+
+
+def _map_persona_card_generation_error(exc: RuntimeError) -> HTTPException:
+    detail = str(exc)
+    if detail == "setting_keyword_generation_requires_openai":
+        return HTTPException(status_code=400, detail="keyword_generation_requires_openai")
+    return _map_setting_generation_error(exc)
 
 
 @router.get("/health")
@@ -655,6 +669,81 @@ def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
     )
 
 
+@router.get("/persona-cards", response_model=PersonaCardListResponse)
+def list_persona_cards() -> PersonaCardListResponse:
+    items = container.persona_card_library_service.list_cards()
+    return PersonaCardListResponse(
+        items=[_into_response(PersonaCardResponse, item) for item in items]
+    )
+
+
+@router.post("/persona-cards", response_model=PersonaCardResponse)
+def create_persona_card(payload: CreatePersonaCardRequest) -> PersonaCardResponse:
+    record = container.persona_card_library_service.create_card(payload)
+    return _into_response(PersonaCardResponse, record)
+
+
+@router.post("/persona-cards/batch", response_model=PersonaCardListResponse)
+def create_persona_cards_batch(payload: BatchCreatePersonaCardsRequest) -> PersonaCardListResponse:
+    items = container.persona_card_library_service.create_many(payload.items)
+    return PersonaCardListResponse(
+        items=[_into_response(PersonaCardResponse, item) for item in items]
+    )
+
+
+@router.delete("/persona-cards/{card_id}")
+def delete_persona_card(card_id: str) -> dict[str, str]:
+    container.persona_card_library_service.delete_card(card_id)
+    return {"deleted_persona_card_id": card_id}
+
+
+@router.post("/persona-cards/generate", response_model=PersonaCardGenerateResponse)
+def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGenerateResponse:
+    try:
+        if payload.mode == "keywords":
+            result = container.model_provider.generate_persona_cards_from_keywords(
+                keywords=payload.input_text,
+                count=payload.count,
+            )
+            source = "generated_keywords"
+        elif payload.mode == "long_text":
+            result = container.model_provider.generate_persona_cards_from_text(
+                text=payload.input_text,
+                count=payload.count,
+            )
+            source = "generated_text"
+        else:
+            raise HTTPException(status_code=400, detail="invalid_persona_card_generation_mode")
+    except RuntimeError as exc:
+        raise _map_persona_card_generation_error(exc) from exc
+
+    cards = [
+        PersonaCardRecord(
+            id=f"generated-{uuid4().hex[:10]}",
+            title=str(item.get("title") or ""),
+            kind=str(item.get("kind") or "custom"),
+            label=str(item.get("label") or item.get("kind") or "自定义"),
+            content=str(item.get("content") or ""),
+            tags=[str(tag) for tag in (item.get("tags") or []) if str(tag).strip()],
+            search_keywords=payload.input_text.strip() if payload.mode == "keywords" else "自定义",
+            source=source,
+            source_note=str(item.get("source_note") or ""),
+            created_at=datetime.now(timezone.utc).isoformat(),
+            updated_at=datetime.now(timezone.utc).isoformat(),
+        )
+        for item in result.get("cards") or []
+    ]
+    return PersonaCardGenerateResponse(
+        mode=payload.mode,
+        used_model=str(result.get("used_model") or ""),
+        used_web_search=bool(result.get("used_web_search")),
+        summary=str(result.get("summary") or ""),
+        relationship=str(result.get("relationship") or ""),
+        learner_address=str(result.get("learner_address") or ""),
+        items=[_into_response(PersonaCardResponse, item) for item in cards],
+    )
+
+
 @router.post("/personas/assist-setting", response_model=PersonaSettingAssistResponse)
 def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSettingAssistResponse:
     try:
@@ -830,6 +919,8 @@ def update_study_session(
     next_section_title = _resolve_section_title(document=document, section_id=next_section_id)
     session_system_prompt = build_study_session_system_prompt(
         persona_name=persona.name,
+        persona_relationship=persona.relationship,
+        persona_learner_address=persona.learner_address,
         persona_system_prompt=persona.system_prompt,
         document_title=document.title,
         section_id=next_section_id,
@@ -876,6 +967,8 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
     session_scene_profile = bound_scene.scene_profile if bound_scene else None
     session_system_prompt = build_study_session_system_prompt(
         persona_name=persona.name,
+        persona_relationship=persona.relationship,
+        persona_learner_address=persona.learner_address,
         persona_system_prompt=persona.system_prompt,
         document_title=document.title,
         section_id=payload.section_id,

@@ -14,6 +14,7 @@ from app.models.domain import (
     PlanGenerationRoundRecord,
     PlanToolCallTraceRecord,
     PersonaProfile,
+    PersonaCardRecord,
     PersonaSlot,
     SceneLibraryRecord,
     StreamEventRecord,
@@ -29,6 +30,8 @@ from app.models.domain import (
 class CreatePersonaRequest(BaseModel):
     name: str
     summary: str
+    relationship: str = ""
+    learner_address: str = ""
     system_prompt: str
     slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str] | None = None
@@ -39,6 +42,8 @@ class CreatePersonaRequest(BaseModel):
 class UpdatePersonaRequest(BaseModel):
     name: str
     summary: str
+    relationship: str = ""
+    learner_address: str = ""
     system_prompt: str
     slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str] | None = None
@@ -81,6 +86,45 @@ class PersonaAssetsResponse(BaseModel):
     persona_id: str
     renderer: str
     asset_manifest: dict[str, object]
+
+
+class CreatePersonaCardRequest(BaseModel):
+    title: str
+    kind: str
+    label: str
+    content: str
+    tags: list[str] = Field(default_factory=list)
+    search_keywords: str = "自定义"
+    source: str = "manual"
+    source_note: str = ""
+
+
+class BatchCreatePersonaCardsRequest(BaseModel):
+    items: list[CreatePersonaCardRequest] = Field(default_factory=list)
+
+
+class PersonaCardGenerateRequest(BaseModel):
+    mode: str
+    input_text: str
+    count: int = Field(default=6, ge=1, le=12)
+
+
+class PersonaCardResponse(PersonaCardRecord):
+    pass
+
+
+class PersonaCardListResponse(BaseModel):
+    items: list[PersonaCardResponse]
+
+
+class PersonaCardGenerateResponse(BaseModel):
+    mode: str
+    used_model: str
+    used_web_search: bool
+    summary: str = ""
+    relationship: str = ""
+    learner_address: str = ""
+    items: list[PersonaCardResponse]
 
 
 class DocumentResponse(DocumentRecord):
@@ -210,6 +254,7 @@ class RuntimeSettingsResponse(BaseModel):
     openai_setting_api_key: str
     openai_setting_base_url: str
     openai_setting_model: str
+    openai_setting_web_search_enabled: bool
     openai_chat_api_key: str
     openai_chat_base_url: str
     openai_chat_model: str
@@ -241,6 +286,7 @@ class UpdateRuntimeSettingsRequest(BaseModel):
     openai_setting_api_key: str | None = None
     openai_setting_base_url: str | None = None
     openai_setting_model: str | None = None
+    openai_setting_web_search_enabled: bool | None = None
     openai_chat_api_key: str | None = None
     openai_chat_base_url: str | None = None
     openai_chat_model: str | None = None

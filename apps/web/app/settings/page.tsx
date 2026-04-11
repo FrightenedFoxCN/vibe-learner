@@ -9,6 +9,24 @@ import { probeRuntimeOpenAIModels, updateRuntimeSettings } from "../../lib/api";
 
 type ProbeScope = "global" | "plan" | "setting" | "chat";
 
+type NumericSettingKey =
+  | "openaiTimeoutSeconds"
+  | "openaiSettingTemperature"
+  | "openaiChatTemperature"
+  | "openaiSettingMaxTokens"
+  | "openaiChatMaxTokens"
+  | "openaiChatHistoryMessages"
+  | "openaiChatToolMaxRounds";
+
+interface NumericSettingConfig {
+  min: number;
+  max: number;
+  fallback: number;
+  integer: boolean;
+}
+
+type NumericDraftState = Record<NumericSettingKey, string>;
+
 interface ScopeProbeState {
   loading: boolean;
   available: boolean;
@@ -23,12 +41,31 @@ const EMPTY_PROBE_STATE: ScopeProbeState = {
   error: ""
 };
 
+const NUMERIC_SETTING_CONFIGS: Record<NumericSettingKey, NumericSettingConfig> = {
+  openaiTimeoutSeconds: { min: 5, max: 300, fallback: 30, integer: true },
+  openaiSettingTemperature: { min: 0, max: 2, fallback: 0.4, integer: false },
+  openaiChatTemperature: { min: 0, max: 2, fallback: 0.35, integer: false },
+  openaiSettingMaxTokens: { min: 64, max: 16384, fallback: 900, integer: true },
+  openaiChatMaxTokens: { min: 64, max: 16384, fallback: 800, integer: true },
+  openaiChatHistoryMessages: { min: 1, max: 40, fallback: 8, integer: true },
+  openaiChatToolMaxRounds: { min: 1, max: 12, fallback: 4, integer: true }
+};
+
 export default function SettingsPage() {
   const runtimeSettings = useRuntimeSettings();
   const [settings, setSettings] = useState<RuntimeSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [error, setError] = useState("");
+  const [numericDrafts, setNumericDrafts] = useState<NumericDraftState>({
+    openaiTimeoutSeconds: "",
+    openaiSettingTemperature: "",
+    openaiChatTemperature: "",
+    openaiSettingMaxTokens: "",
+    openaiChatMaxTokens: "",
+    openaiChatHistoryMessages: "",
+    openaiChatToolMaxRounds: ""
+  });
   const [probeState, setProbeState] = useState<Record<ProbeScope, ScopeProbeState>>({
     global: { ...EMPTY_PROBE_STATE },
     plan: { ...EMPTY_PROBE_STATE },
@@ -39,6 +76,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (runtimeSettings.settings) {
       setSettings(runtimeSettings.settings);
+      setNumericDrafts(buildNumericDrafts(runtimeSettings.settings));
     }
   }, [runtimeSettings.settings]);
 
@@ -50,35 +88,37 @@ export default function SettingsPage() {
     setSaving(true);
     setError("");
     try {
+      const normalized = normalizeNumericSettings(settings, numericDrafts);
       const next = await updateRuntimeSettings({
-        planProvider: settings.planProvider,
-        openaiApiKey: settings.openaiApiKey,
-        openaiBaseUrl: settings.openaiBaseUrl,
-        openaiPlanApiKey: settings.openaiPlanApiKey,
-        openaiPlanBaseUrl: settings.openaiPlanBaseUrl,
-        openaiPlanModel: settings.openaiPlanModel,
-        openaiSettingApiKey: settings.openaiSettingApiKey,
-        openaiSettingBaseUrl: settings.openaiSettingBaseUrl,
-        openaiSettingModel: settings.openaiSettingModel,
-        openaiChatApiKey: settings.openaiChatApiKey,
-        openaiChatBaseUrl: settings.openaiChatBaseUrl,
-        openaiChatModel: settings.openaiChatModel,
-        openaiChatTemperature: settings.openaiChatTemperature,
-        openaiSettingTemperature: settings.openaiSettingTemperature,
-        openaiSettingMaxTokens: settings.openaiSettingMaxTokens,
-        openaiChatMaxTokens: settings.openaiChatMaxTokens,
-        openaiChatHistoryMessages: settings.openaiChatHistoryMessages,
-        openaiChatToolMaxRounds: settings.openaiChatToolMaxRounds,
-        openaiChatToolsEnabled: settings.openaiChatToolsEnabled,
-        openaiChatMemoryToolEnabled: settings.openaiChatMemoryToolEnabled,
-        openaiEmbeddingModel: settings.openaiEmbeddingModel,
-        openaiChatModelMultimodal: settings.openaiChatModelMultimodal,
-        openaiTimeoutSeconds: settings.openaiTimeoutSeconds,
-        openaiPlanModelMultimodal: settings.openaiPlanModelMultimodal,
-        openaiPlanToolsEnabled: settings.openaiPlanToolsEnabled,
-        openaiPlanFallbackModel: settings.openaiPlanFallbackModel,
-        openaiPlanFallbackDisableTools: settings.openaiPlanFallbackDisableTools,
-        showDebugInfo: settings.showDebugInfo
+        planProvider: normalized.planProvider,
+        openaiApiKey: normalized.openaiApiKey,
+        openaiBaseUrl: normalized.openaiBaseUrl,
+        openaiPlanApiKey: normalized.openaiPlanApiKey,
+        openaiPlanBaseUrl: normalized.openaiPlanBaseUrl,
+        openaiPlanModel: normalized.openaiPlanModel,
+        openaiSettingApiKey: normalized.openaiSettingApiKey,
+        openaiSettingBaseUrl: normalized.openaiSettingBaseUrl,
+        openaiSettingModel: normalized.openaiSettingModel,
+        openaiSettingWebSearchEnabled: normalized.openaiSettingWebSearchEnabled,
+        openaiChatApiKey: normalized.openaiChatApiKey,
+        openaiChatBaseUrl: normalized.openaiChatBaseUrl,
+        openaiChatModel: normalized.openaiChatModel,
+        openaiChatTemperature: normalized.openaiChatTemperature,
+        openaiSettingTemperature: normalized.openaiSettingTemperature,
+        openaiSettingMaxTokens: normalized.openaiSettingMaxTokens,
+        openaiChatMaxTokens: normalized.openaiChatMaxTokens,
+        openaiChatHistoryMessages: normalized.openaiChatHistoryMessages,
+        openaiChatToolMaxRounds: normalized.openaiChatToolMaxRounds,
+        openaiChatToolsEnabled: normalized.openaiChatToolsEnabled,
+        openaiChatMemoryToolEnabled: normalized.openaiChatMemoryToolEnabled,
+        openaiEmbeddingModel: normalized.openaiEmbeddingModel,
+        openaiChatModelMultimodal: normalized.openaiChatModelMultimodal,
+        openaiTimeoutSeconds: normalized.openaiTimeoutSeconds,
+        openaiPlanModelMultimodal: normalized.openaiPlanModelMultimodal,
+        openaiPlanToolsEnabled: normalized.openaiPlanToolsEnabled,
+        openaiPlanFallbackModel: normalized.openaiPlanFallbackModel,
+        openaiPlanFallbackDisableTools: normalized.openaiPlanFallbackDisableTools,
+        showDebugInfo: normalized.showDebugInfo
       });
       runtimeSettings.replaceSettings(next);
       setSettings(next);
@@ -138,6 +178,15 @@ export default function SettingsPage() {
         }
       }));
     }
+  }
+
+  function commitNumericSetting(key: NumericSettingKey) {
+    if (!settings) {
+      return;
+    }
+    const nextValue = parseNumericSetting(numericDrafts[key], NUMERIC_SETTING_CONFIGS[key]);
+    setSettings((prev) => (prev ? ({ ...prev, [key]: nextValue } as RuntimeSettings) : prev));
+    setNumericDrafts((prev) => ({ ...prev, [key]: String(nextValue) }));
   }
 
   return (
@@ -337,6 +386,23 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </label>
+                  <label style={styles.checkboxField}>
+                    <input
+                      type="checkbox"
+                      checked={settings.openaiSettingWebSearchEnabled}
+                      onChange={(event) =>
+                        setSettings((prev) =>
+                          prev
+                            ? { ...prev, openaiSettingWebSearchEnabled: event.target.checked }
+                            : prev
+                        )
+                      }
+                    />
+                    <span style={styles.checkboxLabel}>允许人格设置模型访问网络资源</span>
+                  </label>
+                  <p style={styles.tip}>
+                    关闭后，关键词生成人格卡片仍会调用设定模型，但不再使用联网搜索，而是仅根据关键词自行生成。
+                  </p>
                 </div>
 
                 <div style={styles.subCard}>
@@ -400,26 +466,46 @@ export default function SettingsPage() {
                 <label style={styles.field}>
                   <span style={styles.label}>请求超时时间（秒）</span>
                   <input
-                    type="number"
-                    min={5}
-                    max={300}
-                    value={settings.openaiTimeoutSeconds}
-                    onChange={(event) => {
-                      const next = Number(event.target.value);
-                      if (!Number.isFinite(next)) {
-                        return;
-                      }
-                      setSettings((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              openaiTimeoutSeconds: Math.min(300, Math.max(5, Math.round(next)))
-                            }
-                          : prev
-                      );
-                    }}
+                    type="text"
+                    inputMode="numeric"
+                    value={numericDrafts.openaiTimeoutSeconds}
+                    onChange={(event) =>
+                      setNumericDrafts((prev) => ({ ...prev, openaiTimeoutSeconds: event.target.value }))
+                    }
+                    onBlur={() => commitNumericSetting("openaiTimeoutSeconds")}
                   />
                 </label>
+              </section>
+
+              <section style={styles.card}>
+                <h2 style={styles.cardTitle}>多模态能力</h2>
+                <p style={styles.tip}>将图像输入能力单独放在这里，避免和高级参数混在一起。</p>
+                <div style={styles.toggleGrid}>
+                  <label style={styles.switchField}>
+                    <input
+                      type="checkbox"
+                      checked={settings.openaiChatModelMultimodal}
+                      onChange={(event) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, openaiChatModelMultimodal: event.target.checked } : prev
+                        )
+                      }
+                    />
+                    <span>对话支持图像输入</span>
+                  </label>
+                  <label style={styles.switchField}>
+                    <input
+                      type="checkbox"
+                      checked={settings.openaiPlanModelMultimodal}
+                      onChange={(event) =>
+                        setSettings((prev) =>
+                          prev ? { ...prev, openaiPlanModelMultimodal: event.target.checked } : prev
+                        )
+                      }
+                    />
+                    <span>计划支持图像输入</span>
+                  </label>
+                </div>
               </section>
 
               <section style={styles.card}>
@@ -431,42 +517,32 @@ export default function SettingsPage() {
                   {advancedExpanded ? "收起高级设置" : "展开高级设置"}
                 </button>
                 {!advancedExpanded ? (
-                  <p style={styles.tip}>高级设置包括温度、输出长度、工具开关与降级策略。</p>
+                  <p style={styles.tip}>高级设置包括温度、输出长度、工具开关、降级策略和向量检索模型。</p>
                 ) : (
                   <div style={styles.advancedContent}>
                     <div style={styles.grid2}>
                       <label style={styles.field}>
                         <span style={styles.label}>人格设置温度</span>
                         <input
-                          type="number"
-                          min={0}
-                          max={2}
-                          step={0.05}
-                          value={settings.openaiSettingTemperature}
+                          type="text"
+                          inputMode="decimal"
+                          value={numericDrafts.openaiSettingTemperature}
                           onChange={(event) =>
-                            setSettings((prev) =>
-                              prev
-                                ? { ...prev, openaiSettingTemperature: clampNumber(event.target.value, 0, 2, 0.4) }
-                                : prev
-                            )
+                            setNumericDrafts((prev) => ({ ...prev, openaiSettingTemperature: event.target.value }))
                           }
+                          onBlur={() => commitNumericSetting("openaiSettingTemperature")}
                         />
                       </label>
                       <label style={styles.field}>
                         <span style={styles.label}>章节对话温度</span>
                         <input
-                          type="number"
-                          min={0}
-                          max={2}
-                          step={0.05}
-                          value={settings.openaiChatTemperature}
+                          type="text"
+                          inputMode="decimal"
+                          value={numericDrafts.openaiChatTemperature}
                           onChange={(event) =>
-                            setSettings((prev) =>
-                              prev
-                                ? { ...prev, openaiChatTemperature: clampNumber(event.target.value, 0, 2, 0.35) }
-                                : prev
-                            )
+                            setNumericDrafts((prev) => ({ ...prev, openaiChatTemperature: event.target.value }))
                           }
+                          onBlur={() => commitNumericSetting("openaiChatTemperature")}
                         />
                       </label>
                     </div>
@@ -475,39 +551,25 @@ export default function SettingsPage() {
                       <label style={styles.field}>
                         <span style={styles.label}>人格设置最大输出长度</span>
                         <input
-                          type="number"
-                          min={64}
-                          max={16384}
-                          value={settings.openaiSettingMaxTokens}
+                          type="text"
+                          inputMode="numeric"
+                          value={numericDrafts.openaiSettingMaxTokens}
                           onChange={(event) =>
-                            setSettings((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    openaiSettingMaxTokens: clampInt(event.target.value, 64, 16384, 900)
-                                  }
-                                : prev
-                            )
+                            setNumericDrafts((prev) => ({ ...prev, openaiSettingMaxTokens: event.target.value }))
                           }
+                          onBlur={() => commitNumericSetting("openaiSettingMaxTokens")}
                         />
                       </label>
                       <label style={styles.field}>
                         <span style={styles.label}>章节对话最大输出长度</span>
                         <input
-                          type="number"
-                          min={64}
-                          max={16384}
-                          value={settings.openaiChatMaxTokens}
+                          type="text"
+                          inputMode="numeric"
+                          value={numericDrafts.openaiChatMaxTokens}
                           onChange={(event) =>
-                            setSettings((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    openaiChatMaxTokens: clampInt(event.target.value, 64, 16384, 800)
-                                  }
-                                : prev
-                            )
+                            setNumericDrafts((prev) => ({ ...prev, openaiChatMaxTokens: event.target.value }))
                           }
+                          onBlur={() => commitNumericSetting("openaiChatMaxTokens")}
                         />
                       </label>
                     </div>
@@ -516,39 +578,25 @@ export default function SettingsPage() {
                       <label style={styles.field}>
                         <span style={styles.label}>保留历史消息数</span>
                         <input
-                          type="number"
-                          min={1}
-                          max={40}
-                          value={settings.openaiChatHistoryMessages}
+                          type="text"
+                          inputMode="numeric"
+                          value={numericDrafts.openaiChatHistoryMessages}
                           onChange={(event) =>
-                            setSettings((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    openaiChatHistoryMessages: clampInt(event.target.value, 1, 40, 8)
-                                  }
-                                : prev
-                            )
+                            setNumericDrafts((prev) => ({ ...prev, openaiChatHistoryMessages: event.target.value }))
                           }
+                          onBlur={() => commitNumericSetting("openaiChatHistoryMessages")}
                         />
                       </label>
                       <label style={styles.field}>
                         <span style={styles.label}>工具调用最大轮次</span>
                         <input
-                          type="number"
-                          min={1}
-                          max={12}
-                          value={settings.openaiChatToolMaxRounds}
+                          type="text"
+                          inputMode="numeric"
+                          value={numericDrafts.openaiChatToolMaxRounds}
                           onChange={(event) =>
-                            setSettings((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    openaiChatToolMaxRounds: clampInt(event.target.value, 1, 12, 4)
-                                  }
-                                : prev
-                            )
+                            setNumericDrafts((prev) => ({ ...prev, openaiChatToolMaxRounds: event.target.value }))
                           }
+                          onBlur={() => commitNumericSetting("openaiChatToolMaxRounds")}
                         />
                       </label>
                     </div>
@@ -602,30 +650,6 @@ export default function SettingsPage() {
                           }
                         />
                         <span>启用跨会话记忆检索</span>
-                      </label>
-                      <label style={styles.switchField}>
-                        <input
-                          type="checkbox"
-                          checked={settings.openaiChatModelMultimodal}
-                          onChange={(event) =>
-                            setSettings((prev) =>
-                              prev ? { ...prev, openaiChatModelMultimodal: event.target.checked } : prev
-                            )
-                          }
-                        />
-                        <span>对话支持图像输入</span>
-                      </label>
-                      <label style={styles.switchField}>
-                        <input
-                          type="checkbox"
-                          checked={settings.openaiPlanModelMultimodal}
-                          onChange={(event) =>
-                            setSettings((prev) =>
-                              prev ? { ...prev, openaiPlanModelMultimodal: event.target.checked } : prev
-                            )
-                          }
-                        />
-                        <span>计划支持图像输入</span>
                       </label>
                       <label style={styles.switchField}>
                         <input
@@ -743,20 +767,56 @@ function uniqueWithCurrent(models: string[], current: string): string[] {
   return list;
 }
 
-function clampInt(value: string, min: number, max: number, fallback: number): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, Math.round(parsed)));
+function buildNumericDrafts(settings: RuntimeSettings): NumericDraftState {
+  return {
+    openaiTimeoutSeconds: String(settings.openaiTimeoutSeconds),
+    openaiSettingTemperature: String(settings.openaiSettingTemperature),
+    openaiChatTemperature: String(settings.openaiChatTemperature),
+    openaiSettingMaxTokens: String(settings.openaiSettingMaxTokens),
+    openaiChatMaxTokens: String(settings.openaiChatMaxTokens),
+    openaiChatHistoryMessages: String(settings.openaiChatHistoryMessages),
+    openaiChatToolMaxRounds: String(settings.openaiChatToolMaxRounds)
+  };
 }
 
-function clampNumber(value: string, min: number, max: number, fallback: number): number {
+function parseNumericSetting(value: string, config: NumericSettingConfig): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
-    return fallback;
+    return config.fallback;
   }
-  return Math.min(max, Math.max(min, parsed));
+  const normalized = config.integer ? Math.round(parsed) : parsed;
+  return Math.min(config.max, Math.max(config.min, normalized));
+}
+
+function normalizeNumericSettings(settings: RuntimeSettings, drafts: NumericDraftState): RuntimeSettings {
+  return {
+    ...settings,
+    openaiTimeoutSeconds: parseNumericSetting(
+      drafts.openaiTimeoutSeconds,
+      NUMERIC_SETTING_CONFIGS.openaiTimeoutSeconds
+    ),
+    openaiSettingTemperature: parseNumericSetting(
+      drafts.openaiSettingTemperature,
+      NUMERIC_SETTING_CONFIGS.openaiSettingTemperature
+    ),
+    openaiChatTemperature: parseNumericSetting(
+      drafts.openaiChatTemperature,
+      NUMERIC_SETTING_CONFIGS.openaiChatTemperature
+    ),
+    openaiSettingMaxTokens: parseNumericSetting(
+      drafts.openaiSettingMaxTokens,
+      NUMERIC_SETTING_CONFIGS.openaiSettingMaxTokens
+    ),
+    openaiChatMaxTokens: parseNumericSetting(drafts.openaiChatMaxTokens, NUMERIC_SETTING_CONFIGS.openaiChatMaxTokens),
+    openaiChatHistoryMessages: parseNumericSetting(
+      drafts.openaiChatHistoryMessages,
+      NUMERIC_SETTING_CONFIGS.openaiChatHistoryMessages
+    ),
+    openaiChatToolMaxRounds: parseNumericSetting(
+      drafts.openaiChatToolMaxRounds,
+      NUMERIC_SETTING_CONFIGS.openaiChatToolMaxRounds
+    )
+  };
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -863,6 +923,17 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     fontSize: 14,
     color: "var(--ink)"
+  },
+  checkboxField: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 13,
+    color: "var(--ink)",
+  },
+  checkboxLabel: {
+    color: "var(--ink)",
+    fontSize: 13,
   },
   grid2: {
     display: "grid",

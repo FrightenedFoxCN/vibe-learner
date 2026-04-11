@@ -631,15 +631,15 @@ export default function SceneSetupPage() {
 
   return (
     <main className="with-app-nav" style={styles.page}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", alignItems: "stretch" }}>
-        <div>
+      <div style={styles.workspaceShell}>
+        <div style={styles.mainColumn}>
           <TopNav currentPath="/scene-setup" />
           <div style={styles.heading}>
             <h1 style={styles.pageTitle}>场景搭建</h1>
             <p style={styles.pageDesc}>从世界整体一路搭到具体教室。每一层都可以写设定、补互动物体，并把层级之间的过渡关系说明清楚。先选层级，再在右侧补细节。</p>
           </div>
 
-          <section style={{ display: "grid", gridTemplateColumns: "minmax(280px, 1fr) minmax(0, 1.6fr)", alignItems: "start" }}>
+          <section style={styles.editorShell}>
             <div style={styles.treePane}>
           <div style={styles.panelHead}>
             <span style={styles.panelTitle}>层级结构</span>
@@ -1339,13 +1339,30 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100vh",
     maxWidth: 1460,
     margin: "0 auto",
-    padding: "0 0 40px",
+    padding: 0,
+  },
+  workspaceShell: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 300px",
+    alignItems: "stretch",
+    minHeight: "100vh",
+  },
+  mainColumn: {
+    display: "grid",
+    alignContent: "start",
+    minHeight: "100vh",
   },
   heading: {
     display: "grid",
     gap: 4,
-    padding: "20px 24px 16px",
+    padding: "16px 24px 12px",
     borderBottom: "1px solid var(--border)",
+  },
+  editorShell: {
+    display: "grid",
+    gridTemplateColumns: "minmax(280px, 1fr) minmax(0, 1.6fr)",
+    alignItems: "start",
+    minHeight: "calc(100vh - 120px)",
   },
   pageTitle: {
     margin: 0,

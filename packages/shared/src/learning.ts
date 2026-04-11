@@ -196,6 +196,7 @@ export interface RuntimeSettings {
   openaiSettingApiKey: string;
   openaiSettingBaseUrl: string;
   openaiSettingModel: string;
+  openaiSettingWebSearchEnabled: boolean;
   openaiChatApiKey: string;
   openaiChatBaseUrl: string;
   openaiChatModel: string;
@@ -227,6 +228,7 @@ export interface RuntimeSettingsPatch {
   openaiSettingApiKey?: string;
   openaiSettingBaseUrl?: string;
   openaiSettingModel?: string;
+  openaiSettingWebSearchEnabled?: boolean;
   openaiChatApiKey?: string;
   openaiChatBaseUrl?: string;
   openaiChatModel?: string;

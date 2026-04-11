@@ -26,6 +26,7 @@ class RuntimeSettingsService:
             "openai_setting_api_key": self._record.openai_setting_api_key,
             "openai_setting_base_url": self._record.openai_setting_base_url,
             "openai_setting_model": self._record.openai_setting_model,
+            "openai_setting_web_search_enabled": self._record.openai_setting_web_search_enabled,
             "openai_chat_api_key": self._record.openai_chat_api_key,
             "openai_chat_base_url": self._record.openai_chat_base_url,
             "openai_chat_model": self._record.openai_chat_model,
@@ -59,6 +60,7 @@ class RuntimeSettingsService:
             openai_setting_api_key=record.openai_setting_api_key,
             openai_setting_base_url=record.openai_setting_base_url,
             openai_setting_model=record.openai_setting_model,
+            openai_setting_web_search_enabled=record.openai_setting_web_search_enabled,
             openai_chat_api_key=record.openai_chat_api_key,
             openai_chat_base_url=record.openai_chat_base_url,
             openai_chat_model=record.openai_chat_model,
@@ -107,6 +109,13 @@ class RuntimeSettingsService:
         openai_setting_model = str(
             updates.get("openai_setting_model", self._record.openai_setting_model)
         ).strip() or "gpt-4.1-mini"
+        openai_setting_web_search_enabled = _normalize_bool(
+            updates.get(
+                "openai_setting_web_search_enabled",
+                self._record.openai_setting_web_search_enabled,
+            ),
+            code="invalid_openai_setting_web_search_enabled",
+        )
         openai_chat_model = str(
             updates.get("openai_chat_model", self._record.openai_chat_model)
         ).strip() or "gpt-4.1-mini"
@@ -202,6 +211,7 @@ class RuntimeSettingsService:
             openai_setting_api_key=openai_setting_api_key,
             openai_setting_base_url=openai_setting_base_url,
             openai_setting_model=openai_setting_model,
+            openai_setting_web_search_enabled=openai_setting_web_search_enabled,
             openai_chat_api_key=openai_chat_api_key,
             openai_chat_base_url=openai_chat_base_url,
             openai_chat_model=openai_chat_model,
@@ -244,6 +254,7 @@ class RuntimeSettingsService:
             openai_setting_api_key=self._base_settings.openai_setting_api_key,
             openai_setting_base_url=self._base_settings.openai_setting_base_url,
             openai_setting_model=self._base_settings.openai_setting_model,
+            openai_setting_web_search_enabled=self._base_settings.openai_setting_web_search_enabled,
             openai_chat_api_key=self._base_settings.openai_chat_api_key,
             openai_chat_base_url=self._base_settings.openai_chat_base_url,
             openai_chat_model=self._base_settings.openai_chat_model,
@@ -281,6 +292,7 @@ class RuntimeSettingsService:
             "openai_setting_api_key": self._base_settings.openai_setting_api_key,
             "openai_setting_base_url": self._base_settings.openai_setting_base_url,
             "openai_setting_model": self._base_settings.openai_setting_model,
+            "openai_setting_web_search_enabled": self._base_settings.openai_setting_web_search_enabled,
             "openai_chat_api_key": self._base_settings.openai_chat_api_key,
             "openai_chat_base_url": self._base_settings.openai_chat_base_url,
             "openai_chat_model": self._base_settings.openai_chat_model,

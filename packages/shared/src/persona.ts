@@ -33,11 +33,42 @@ export interface PersonaSlot {
   sortOrder?: number;
 }
 
+export type PersonaCardSource = "manual" | "generated_keywords" | "generated_text";
+
+export type PersonaCardGenerationMode = "keywords" | "long_text";
+
+export interface PersonaCard {
+  id: string;
+  title: string;
+  kind: PersonaSlotKind | string;
+  label: string;
+  content: string;
+  tags: string[];
+  searchKeywords: string;
+  source: PersonaCardSource;
+  sourceNote: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePersonaCardInput {
+  title: string;
+  kind: PersonaSlotKind | string;
+  label: string;
+  content: string;
+  tags?: string[];
+  searchKeywords?: string;
+  source?: PersonaCardSource;
+  sourceNote?: string;
+}
+
 export interface PersonaProfile {
   id: string;
   name: string;
   source: "builtin" | "user";
   summary: string;
+  relationship: string;
+  learnerAddress: string;
   systemPrompt: string;
   slots: PersonaSlot[];
   availableEmotions: CharacterEmotion[];
@@ -56,6 +87,8 @@ export interface PersonaMemory {
 export interface CreatePersonaInput {
   name: string;
   summary: string;
+  relationship: string;
+  learnerAddress: string;
   systemPrompt: string;
   slots: PersonaSlot[];
   availableEmotions?: CharacterEmotion[];

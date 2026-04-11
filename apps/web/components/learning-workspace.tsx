@@ -25,6 +25,8 @@ export function LearningWorkspace() {
     notice,
     isBusy,
     isSnapshotRefreshing,
+    planStreamEvents,
+    planStreamStatus,
     sceneLibraryItems,
     selectedSceneLibraryId,
     setSelectedSceneLibraryId,
@@ -78,6 +80,8 @@ export function LearningWorkspace() {
           canOpenStudyDialog={Boolean(activePlan || studySession)}
           hasStudySession={Boolean(studySession)}
           onRenameStudyUnitTitle={renameStudyUnitTitle}
+          planStreamEvents={planStreamEvents}
+          planStreamStatus={planStreamStatus}
         />
 
         <div className="plan-main-column" style={styles.planColumn}>

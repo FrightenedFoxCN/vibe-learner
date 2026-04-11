@@ -1,5 +1,6 @@
 import type {
   CreatePersonaInput,
+  CreatePersonaCardInput,
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
   ModelToolConfig,
@@ -9,6 +10,8 @@ import type {
   DocumentRecord,
   LearningGoal,
   LearningPlan,
+  PersonaCard,
+  PersonaCardGenerationMode,
   PersonaProfile,
   RuntimeOpenAIProbeResult,
   RuntimeSettings,
@@ -28,6 +31,16 @@ export interface PersonaAssets {
   personaId: string;
   renderer: string;
   assetManifest: Record<string, unknown>;
+}
+
+export interface PersonaCardGenerateResult {
+  mode: PersonaCardGenerationMode;
+  usedModel: string;
+  usedWebSearch: boolean;
+  summary: string;
+  relationship: string;
+  learnerAddress: string;
+  items: PersonaCard[];
 }
 
 export interface PersonaSettingAssistInput {
@@ -239,6 +252,8 @@ function normalizePersona(persona: any): PersonaProfile {
     name: persona.name,
     source: persona.source,
     summary: persona.summary,
+    relationship: String(persona.relationship ?? ""),
+    learnerAddress: String(persona.learner_address ?? ""),
     systemPrompt: persona.system_prompt,
     slots: Array.isArray(persona.slots)
       ? persona.slots.map((s: any) => ({
@@ -256,6 +271,22 @@ function normalizePersona(persona: any): PersonaProfile {
   };
 }
 
+function normalizePersonaCard(card: any): PersonaCard {
+  return {
+    id: String(card.id ?? ""),
+    title: String(card.title ?? ""),
+    kind: String(card.kind ?? "custom"),
+    label: String(card.label ?? card.kind ?? ""),
+    content: String(card.content ?? ""),
+    tags: Array.isArray(card.tags) ? card.tags.map((item: unknown) => String(item)) : [],
+    searchKeywords: String(card.search_keywords ?? "自定义"),
+    source: String(card.source ?? "manual") as PersonaCard["source"],
+    sourceNote: String(card.source_note ?? ""),
+    createdAt: String(card.created_at ?? ""),
+    updatedAt: String(card.updated_at ?? "")
+  };
+}
+
 function serializeSlot(slot: any) {
   return {
     kind: slot.kind,
@@ -264,6 +295,33 @@ function serializeSlot(slot: any) {
     weight: slot.weight ?? 1,
     locked: slot.locked ?? false,
     sort_order: slot.sortOrder ?? 0
+  };
+}
+
+function serializePersonaCardInput(input: CreatePersonaCardInput) {
+  return {
+    title: input.title,
+    kind: input.kind,
+    label: input.label,
+    content: input.content,
+    tags: input.tags ?? [],
+    search_keywords: input.searchKeywords ?? "自定义",
+    source: input.source ?? "manual",
+    source_note: input.sourceNote ?? ""
+  };
+}
+
+function serializePersonaInput(input: CreatePersonaInput) {
+  return {
+    name: input.name,
+    summary: input.summary,
+    relationship: input.relationship,
+    learner_address: input.learnerAddress,
+    system_prompt: input.systemPrompt,
+    slots: input.slots.map(serializeSlot),
+    available_emotions: input.availableEmotions,
+    available_actions: input.availableActions,
+    default_speech_style: input.defaultSpeechStyle
   };
 }
 
@@ -513,6 +571,7 @@ function normalizeRuntimeSettings(record: any): RuntimeSettings {
     openaiSettingApiKey: String(record.openai_setting_api_key ?? ""),
     openaiSettingBaseUrl: String(record.openai_setting_base_url ?? "https://api.openai.com/v1"),
     openaiSettingModel: String(record.openai_setting_model ?? "gpt-4.1-mini"),
+    openaiSettingWebSearchEnabled: Boolean(record.openai_setting_web_search_enabled ?? true),
     openaiChatApiKey: String(record.openai_chat_api_key ?? ""),
     openaiChatBaseUrl: String(record.openai_chat_base_url ?? "https://api.openai.com/v1"),
     openaiChatModel: String(record.openai_chat_model ?? "gpt-4.1-mini"),
@@ -792,15 +851,7 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaP
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        name: input.name,
-        summary: input.summary,
-        system_prompt: input.systemPrompt,
-        slots: input.slots.map(serializeSlot),
-        available_emotions: input.availableEmotions,
-        available_actions: input.availableActions,
-        default_speech_style: input.defaultSpeechStyle
-      })
+      body: JSON.stringify(serializePersonaInput(input))
     })
   );
   return normalizePersona(payload);
@@ -816,15 +867,7 @@ export async function updatePersona(
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        name: input.name,
-        summary: input.summary,
-        system_prompt: input.systemPrompt,
-        slots: input.slots.map(serializeSlot),
-        available_emotions: input.availableEmotions,
-        available_actions: input.availableActions,
-        default_speech_style: input.defaultSpeechStyle
-      })
+      body: JSON.stringify(serializePersonaInput(input))
     })
   );
   return normalizePersona(payload);
@@ -838,6 +881,67 @@ export async function getPersonaAssets(personaId: string): Promise<PersonaAssets
     personaId: payload.persona_id,
     renderer: payload.renderer,
     assetManifest: payload.asset_manifest ?? {}
+  };
+}
+
+export async function listPersonaCards(): Promise<PersonaCard[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/persona-cards`)
+  );
+  return payload.items.map(normalizePersonaCard);
+}
+
+export async function createPersonaCardsBatch(
+  items: CreatePersonaCardInput[]
+): Promise<PersonaCard[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/persona-cards/batch`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        items: items.map(serializePersonaCardInput)
+      })
+    })
+  );
+  return payload.items.map(normalizePersonaCard);
+}
+
+export async function deletePersonaCard(cardId: string): Promise<void> {
+  await readJson<{ deleted_persona_card_id: string }>(
+    await request(`${AI_BASE_URL}/persona-cards/${cardId}`, {
+      method: "DELETE"
+    })
+  );
+}
+
+export async function generatePersonaCards(input: {
+  mode: PersonaCardGenerationMode;
+  inputText: string;
+  count: number;
+}): Promise<PersonaCardGenerateResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/persona-cards/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mode: input.mode,
+        input_text: input.inputText,
+        count: input.count
+      })
+    })
+  );
+  return {
+    mode: (payload.mode === "keywords" ? "keywords" : "long_text") as PersonaCardGenerationMode,
+    usedModel: String(payload.used_model ?? ""),
+    usedWebSearch: Boolean(payload.used_web_search),
+    summary: String(payload.summary ?? ""),
+    relationship: String(payload.relationship ?? ""),
+    learnerAddress: String(payload.learner_address ?? ""),
+    items: Array.isArray(payload.items) ? payload.items.map(normalizePersonaCard) : []
   };
 }
 
@@ -1101,6 +1205,7 @@ export async function updateRuntimeSettings(
         openai_setting_api_key: patch.openaiSettingApiKey,
         openai_setting_base_url: patch.openaiSettingBaseUrl,
         openai_setting_model: patch.openaiSettingModel,
+        openai_setting_web_search_enabled: patch.openaiSettingWebSearchEnabled,
         openai_chat_api_key: patch.openaiChatApiKey,
         openai_chat_base_url: patch.openaiChatBaseUrl,
         openai_chat_model: patch.openaiChatModel,

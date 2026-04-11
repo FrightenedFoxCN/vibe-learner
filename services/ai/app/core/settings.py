@@ -16,6 +16,7 @@ class Settings:
     openai_setting_api_key: str = ""
     openai_setting_base_url: str = ""
     openai_setting_model: str = "gpt-4.1-mini"
+    openai_setting_web_search_enabled: bool = True
     openai_chat_api_key: str = ""
     openai_chat_base_url: str = ""
     openai_chat_model: str = "gpt-4.1-mini"
@@ -51,6 +52,10 @@ class Settings:
             openai_setting_base_url=os.getenv("OPENAI_SETTING_BASE_URL", "").strip().rstrip("/"),
             openai_setting_model=os.getenv("OPENAI_SETTING_MODEL", "gpt-4.1-mini").strip()
             or "gpt-4.1-mini",
+            openai_setting_web_search_enabled=_to_bool(
+                os.getenv("OPENAI_SETTING_WEB_SEARCH_ENABLED", "true"),
+                default=True,
+            ),
             openai_chat_api_key=(os.getenv("OPENAI_CHAT_API_KEY", "").strip() or global_api_key),
             openai_chat_base_url=os.getenv("OPENAI_CHAT_BASE_URL", "").strip().rstrip("/"),
             openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",

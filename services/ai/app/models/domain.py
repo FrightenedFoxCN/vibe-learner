@@ -42,11 +42,27 @@ class PersonaProfile(BaseModel):
     name: str
     source: str
     summary: str
+    relationship: str = ""
+    learner_address: str = ""
     system_prompt: str
     slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str]
     available_actions: list[str]
     default_speech_style: str
+
+
+class PersonaCardRecord(BaseModel):
+    id: str
+    title: str
+    kind: str
+    label: str
+    content: str
+    tags: list[str] = Field(default_factory=list)
+    search_keywords: str = "自定义"
+    source: str = "manual"
+    source_note: str = ""
+    created_at: str
+    updated_at: str
 
 
 def persona_slot_content(persona: PersonaProfile, kind: str, default: str = "") -> str:
@@ -364,6 +380,7 @@ class RuntimeSettingsRecord(BaseModel):
     openai_setting_api_key: str = ""
     openai_setting_base_url: str = ""
     openai_setting_model: str = "gpt-4.1-mini"
+    openai_setting_web_search_enabled: bool = True
     openai_chat_api_key: str = ""
     openai_chat_base_url: str = ""
     openai_chat_model: str = "gpt-4.1-mini"

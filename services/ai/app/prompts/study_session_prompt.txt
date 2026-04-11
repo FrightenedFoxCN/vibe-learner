@@ -3,6 +3,8 @@
 
 会话运行时上下文：
 - 人格：{{PERSONA_NAME}}
+- 人格关系：{{PERSONA_RELATIONSHIP}}
+- 学习者称呼：{{PERSONA_LEARNER_ADDRESS}}
 - 教材：{{DOCUMENT_TITLE}}
 - 当前章节 ID：{{SECTION_ID}}
 - 当前章节标题：{{SECTION_TITLE}}

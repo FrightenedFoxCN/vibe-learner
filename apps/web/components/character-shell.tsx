@@ -34,6 +34,7 @@ export function CharacterShell({
       {!isEmbedded ? (
         <div style={styles.header}>
           <span style={styles.name}>{persona.name}</span>
+          <span style={styles.meta}>{persona.relationship || "未设关系"} · {persona.learnerAddress || "未设称呼"}</span>
           <span style={styles.meta}>{teachingLabel} · {narrativeLabel}</span>
         </div>
       ) : null}
