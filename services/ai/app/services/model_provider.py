@@ -39,6 +39,7 @@ from app.services.plan_prompt import (
 from app.services.plan_tool_runtime import build_plan_tool_runtime
 from app.services.prompt_loader import load_prompt_template
 from app.services.session_scene import (
+    SCENE_TOOL_NAMES,
     extract_scene_profile_from_tool_results,
     serialize_chat_tool_trace_item,
 )
@@ -65,6 +66,7 @@ CHAT_JSON_SCHEMA = (
     '"difficulty"?: "easy" | "medium" | "hard", '
     '"topic"?: string, '
     '"options"?: [{"key": string, "text": string}], '
+    '"call_back"?: boolean, '
     '"answer_key"?: string, '
     '"accepted_answers"?: [string], '
     '"explanation"?: string'
@@ -85,6 +87,15 @@ SETTING_SLOT_SCHEMA = (
     '}'
 )
 
+CHAT_EXEMPT_TOOL_NAMES = frozenset(
+    (
+        "read_page_range_content",
+        "read_page_range_images",
+        *SCENE_TOOL_NAMES,
+    )
+)
+CHAT_EXEMPT_TOOL_EXTRA_ROUNDS = 12
+
 
 def _chat_prompt_sections() -> dict[str, str]:
     template = load_prompt_template("openai_chat_prompt.txt")
@@ -104,6 +115,44 @@ def _setting_prompt_sections() -> dict[str, str]:
         "assist_slot_system": template.require("assist_slot_system"),
         "assist_slot_user": template.require("assist_slot_user"),
     }
+
+
+def _chat_tool_name(tool_call: dict[str, Any]) -> str:
+    function_payload = tool_call.get("function") or {}
+    return str(function_payload.get("name") or "").strip()
+
+
+def _round_uses_only_exempt_chat_tools(tool_calls: list[dict[str, Any]]) -> bool:
+    tool_names = [_chat_tool_name(tool_call) for tool_call in tool_calls]
+    valid_tool_names = [tool_name for tool_name in tool_names if tool_name]
+    return bool(valid_tool_names) and all(tool_name in CHAT_EXEMPT_TOOL_NAMES for tool_name in valid_tool_names)
+
+
+def _chat_tools_disabled_for_round(
+    *,
+    disabled_tools: set[str],
+    limited_rounds_used: int,
+    limited_rounds_max: int,
+) -> set[str]:
+    if limited_rounds_used < limited_rounds_max:
+        return disabled_tools
+    return disabled_tools | {
+        tool_name
+        for tool_name in TOOL_CATALOG[CHAT_STAGE]
+        if tool_name not in CHAT_EXEMPT_TOOL_NAMES
+    }
+
+
+def _chat_tool_followup_rules(*, exempt_only_round: bool) -> str:
+    if exempt_only_round:
+        return (
+            "- 如果还需要与场景继续互动，或继续翻看课本页、图表、公式，可以继续调用对应工具；这类轮次不计入常规工具调用限制，也允许重复调用。\n"
+            "- 除非确实需要记忆检索或出题，否则优先继续用场景互动和课本页面读取把讲解补足。"
+        )
+    return (
+        "- 如果信息已经足够，直接输出最终结果；除非确有必要，不要继续调用记忆检索或出题等常规工具。\n"
+        "- 与场景互动和读取课本页面相关的工具不受这条抑制：它们仍可继续调用，且允许重复调用。"
+    )
 
 
 def _dedupe_rich_blocks(blocks: list[RichTextBlockRecord]) -> list[RichTextBlockRecord]:
@@ -191,7 +240,7 @@ def _recover_legacy_chat_payload(content: str) -> dict[str, object] | None:
     payload: dict[str, object] = {
         "text": recovered_text,
         "mood": str(re.search(r'"mood"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"mood"\s*:\s*"([^"]+)"', content) else "calm",
-        "action": str(re.search(r'"action"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"action"\s*:\s*"([^"]+)"', content) else "explain",
+        "action": str(re.search(r'"action"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"action"\s*:\s*"([^"]+)"', content) else "point",
     }
     speech_style_match = re.search(r'"speech_style"\s*:\s*"([^"]+)"', content)
     delivery_cue_match = re.search(r'"delivery_cue"\s*:\s*"([^"]+)"', content)
@@ -207,11 +256,14 @@ def _recover_legacy_chat_payload(content: str) -> dict[str, object] | None:
 
 def _build_persona_event_guidance(persona: PersonaProfile) -> str:
     available_emotions = ", ".join(persona.available_emotions) or "calm, encouraging, serious"
-    available_actions = ", ".join(persona.available_actions) or "explain, prompt, reflect"
+    available_actions = ", ".join(persona.available_actions) or "nod, point, lean_in"
     default_speech_style = persona.default_speech_style or "steady"
     return (
         f"- 优先从这些情绪词中挑选最贴合当前回答的一项，必要时也可自定义更细的情绪：{available_emotions}。\n"
-        f"- 优先从这些动作词中挑选最贴合当前回答的一项，必要时也可自定义更细的动作：{available_actions}。\n"
+        f"- 可参考这些常见动作示例，但不要被它们限制：{available_actions}。\n"
+        "- `action` 请写成一条简短中文动作短句，像舞台说明，例如“微微前倾，抬手点向黑板右侧”“停笔片刻，像是在等你补全下一步”。\n"
+        "- `action` 必须描述可视化的肢体动作、手势、姿态、视线或节奏停顿；不要只写“讲解”“追问”“纠错”“鼓励”这类抽象话语功能词。\n"
+        "- 如果正在与场景互动，或正在翻看课本页、图表、公式，鼓励把讲解焦点压缩进 `action`，例如“翻到第 12 页，指着图 2-3 的箭头逐项对照”“伸手扶住实验台边缘，示意物块受力方向”。\n"
         f"- `speech_style` 默认参考 `{default_speech_style}`，但可按当前互动切换成更具体的语气标签。\n"
         "- `delivery_cue` 用一句中文短语描述语气、节奏或停顿方式，例如“先压低语速，再逐步抬高强调”。\n"
         "- `state_commentary` 用一句中文短句解释本轮状态变化、场景操作结果或当前陪伴策略。"
@@ -373,7 +425,7 @@ class MockModelProvider(ModelProvider):
         return ModelReply(
             text=text,
             mood=mood,
-            action="explain",
+            action="point",
             speech_style=persona.default_speech_style,
             delivery_cue="先稳住节奏，再把概念拆成两到三个抓手。",
             state_commentary=f"围绕 {section_id} 保持连续讲解，并根据当前提问延展重点。",
@@ -391,7 +443,7 @@ class MockModelProvider(ModelProvider):
         return ModelReply(
             text=text,
             mood="encouraging",
-            action="prompt",
+            action="lean_in",
             speech_style=persona.default_speech_style,
             delivery_cue="提问时把语气往前推一点，给学习者明确的答题起点。",
             state_commentary=f"正在把 {topic} 转成可作答的小练习。",
@@ -407,7 +459,7 @@ class MockModelProvider(ModelProvider):
             " 我会指出遗漏点，并给出下一步复习建议。"
         )
         mood = "excited" if quality == "完整" else "concerned"
-        action = "celebrate" if quality == "完整" else "reflect"
+        action = "smile" if quality == "完整" else "pause"
         return ModelReply(
             text=text,
             mood=mood,
@@ -704,7 +756,19 @@ class OpenAIModelProvider(MockModelProvider):
         raw_payload: dict[str, Any] | None = None
         last_tool_results: list[dict[str, Any]] = []
         tool_call_traces: list[ChatToolCallTraceRecord] = []
-        for _ in range(self.chat_tool_max_rounds):
+        limited_rounds_used = 0
+        total_rounds = 0
+        max_total_rounds = max(
+            self.chat_tool_max_rounds + CHAT_EXEMPT_TOOL_EXTRA_ROUNDS,
+            self.chat_tool_max_rounds * 3,
+        )
+        while total_rounds < max_total_rounds:
+            total_rounds += 1
+            round_disabled_tools = _chat_tools_disabled_for_round(
+                disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
+                limited_rounds_used=limited_rounds_used,
+                limited_rounds_max=self.chat_tool_max_rounds,
+            )
             payload: dict[str, Any] = {
                 "model": self.chat_model,
                 "temperature": self.chat_temperature,
@@ -719,7 +783,7 @@ class OpenAIModelProvider(MockModelProvider):
                 debug_report=debug_report,
                 document_path=document_path,
                 scene_tool_runtime=scene_tool_runtime,
-                disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
+                disabled_tools=round_disabled_tools,
             )
             if tool_specs:
                 payload["tools"] = tool_specs
@@ -753,7 +817,7 @@ class OpenAIModelProvider(MockModelProvider):
                         debug_report=debug_report,
                         document_path=document_path,
                         scene_tool_runtime=scene_tool_runtime,
-                        disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
+                        disabled_tools=round_disabled_tools,
                     )
                     last_tool_results.append(execution["result"])
                     tool_call_traces.append(
@@ -774,10 +838,15 @@ class OpenAIModelProvider(MockModelProvider):
                             "content": json.dumps(execution["result"], ensure_ascii=False),
                         }
                     )
+                exempt_only_round = _round_uses_only_exempt_chat_tools(tool_calls)
+                if not exempt_only_round:
+                    limited_rounds_used += 1
                 current_messages.append(
                     {
                         "role": "user",
-                        "content": prompt_sections["tool_followup"].replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
+                        "content": prompt_sections["tool_followup"]
+                        .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
+                        .replace("{{TOOL_FOLLOWUP_RULES}}", _chat_tool_followup_rules(exempt_only_round=exempt_only_round)),
                     }
                 )
                 continue
@@ -1687,6 +1756,7 @@ def _normalize_interactive_question(payload: dict[str, Any]) -> dict[str, Any] |
     topic = str(payload.get("topic") or "").strip()
     difficulty = str(payload.get("difficulty") or "medium").strip() or "medium"
     explanation = str(payload.get("explanation") or "").strip()
+    call_back = bool(payload.get("call_back"))
 
     options: list[dict[str, str]] = []
     raw_options = payload.get("options")
@@ -1727,6 +1797,7 @@ def _normalize_interactive_question(payload: dict[str, Any]) -> dict[str, Any] |
         "difficulty": difficulty,
         "topic": topic,
         "options": options,
+        "call_back": call_back,
         "answer_key": answer_key,
         "accepted_answers": accepted_answers,
         "explanation": explanation,
@@ -1822,7 +1893,7 @@ def _parse_chat_model_reply(
     scene_profile = extract_scene_profile_from_tool_results(tool_results)
     rich_blocks = _extract_rich_blocks_payload(parsed)
     mood = str(parsed.get("mood") or "calm")
-    action = str(parsed.get("action") or "explain")
+    action = str(parsed.get("action") or "point")
     speech_style = str(parsed.get("speech_style") or "").strip()
     delivery_cue = str(parsed.get("delivery_cue") or "").strip()
     state_commentary = str(parsed.get("state_commentary") or "").strip()

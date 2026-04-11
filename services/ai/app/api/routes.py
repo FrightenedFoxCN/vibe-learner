@@ -781,21 +781,22 @@ def record_study_question_attempt(
     payload: StudyQuestionAttemptRequest,
 ) -> StudySessionResponse:
     answer = payload.submitted_answer.strip()
-    learner_message = (
-        f"[练习作答] {payload.question_type} · {payload.topic or '章节练习'}\n"
-        f"我的答案: {answer or '（空）'}"
-    )
     verdict = "回答正确" if payload.is_correct else "回答不正确"
-    explanation = payload.explanation.strip()
-    assistant_reply = (
-        f"{verdict}。"
-        if not explanation
-        else f"{verdict}。解析：{explanation}"
+    feedback_text = (
+        verdict
+        if payload.is_correct
+        else (
+            f"{verdict}，正确答案是 {payload.answer_key}"
+            if payload.answer_key
+            else f"{verdict}，参考答案：{' / '.join(payload.accepted_answers) or '未提供'}"
+        )
     )
     session = container.study_session_service.append_attempt_turn(
         session_id=session_id,
-        learner_message=learner_message,
-        assistant_reply=assistant_reply,
+        prompt=payload.prompt,
+        submitted_answer=answer,
+        is_correct=payload.is_correct,
+        feedback_text=feedback_text,
     )
     return _into_response(StudySessionResponse, session)
 

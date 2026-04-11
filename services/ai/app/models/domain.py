@@ -93,7 +93,6 @@ def persona_sorted_slots(slots: list[PersonaSlot]) -> list[PersonaSlot]:
 class CharacterStateEvent(BaseModel):
     emotion: str
     action: str
-    intensity: float = Field(ge=0.0, le=1.0)
     speech_style: str
     scene_hint: str
     line_segment_id: str
@@ -454,9 +453,13 @@ class InteractiveQuestion(BaseModel):
     difficulty: str = "medium"
     topic: str = ""
     options: list[InteractiveQuestionOption] = []
+    call_back: bool = False
     answer_key: str | None = None
     accepted_answers: list[str] = []
     explanation: str = ""
+    submitted_answer: str = ""
+    is_correct: bool | None = None
+    feedback_text: str = ""
 
 
 class DialogueTurnRecord(BaseModel):

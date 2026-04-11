@@ -422,6 +422,7 @@ class StudyQuestionAttemptRequest(BaseModel):
     topic: str = ""
     difficulty: str = "medium"
     options: list[InteractiveQuestionOption] = []
+    call_back: bool = False
     answer_key: str | None = None
     accepted_answers: list[str] = []
     submitted_answer: str

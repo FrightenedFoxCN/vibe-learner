@@ -318,7 +318,7 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertIn("定端同伦", result.text)
         self.assertEqual(result.mood, "calm")
-        self.assertEqual(result.action, "explain")
+        self.assertEqual(result.action, "point")
         joined = "\n".join(logs.output)
         self.assertIn("model.chat.parse_fallback using_plain_text", joined)
 
@@ -350,7 +350,7 @@ class PersonaPipelineTests(unittest.TestCase):
                                         {
                                             "text": "这是一个结构化回答。",
                                             "mood": "calm",
-                                            "action": "explain",
+                                            "action": "point",
                                         }
                                     )
                                 }
@@ -431,7 +431,7 @@ class PersonaPipelineTests(unittest.TestCase):
                                     {
                                         "text": "先做这道题，再告诉我你的思路。",
                                         "mood": "encouraging",
-                                        "action": "prompt",
+                                        "action": "lean_in",
                                     }
                                 )
                             }
@@ -453,13 +453,13 @@ class PersonaPipelineTests(unittest.TestCase):
                 section_context="Section: Chapter 1",
             )
 
-        self.assertEqual(reply.action, "prompt")
+        self.assertEqual(reply.action, "lean_in")
         self.assertGreaterEqual(len(captured_payloads), 2)
         second_messages = captured_payloads[1]["messages"]
         self.assertTrue(
             any(
                 message["role"] == "user"
-                and "工具调用已完成。现在请基于现有上下文输出最终结果。" in str(message["content"])
+                and "工具调用已完成。请根据现有上下文判断下一步。" in str(message["content"])
                 for message in second_messages
             )
         )
@@ -469,6 +469,185 @@ class PersonaPipelineTests(unittest.TestCase):
                 for message in second_messages
             )
         )
+        self.assertTrue(
+            any(
+                message["role"] == "user"
+                and "与场景互动和读取课本页面相关的工具不受这条抑制" in str(message["content"])
+                for message in second_messages
+            )
+        )
+
+    def test_openai_chat_exempt_tool_rounds_do_not_consume_limit(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-plan-test",
+            chat_model="gpt-test",
+            timeout_seconds=3,
+            chat_tool_max_rounds=1,
+        )
+        captured_payloads: list[dict[str, object]] = []
+        debug_report = DocumentDebugRecord.model_validate(
+            {
+                "document_id": "doc-1",
+                "parser_name": "parser",
+                "processed_at": "2026-04-09T00:00:00+00:00",
+                "page_count": 6,
+                "total_characters": 600,
+                "extraction_method": "text",
+                "ocr_applied": False,
+                "pages": [],
+                "sections": [],
+                "study_units": [],
+                "chunks": [
+                    {
+                        "id": "chunk-1",
+                        "document_id": "doc-1",
+                        "section_id": "chapter-1",
+                        "page_start": 2,
+                        "page_end": 2,
+                        "char_count": 120,
+                        "text_preview": "力的定义",
+                        "content": "第 2 页详细解释了力、作用点与方向。",
+                    }
+                ],
+                "warnings": [],
+                "dominant_language_hint": "zh",
+            }
+        )
+        scene_profile = SceneProfileRecord(
+            scene_name="力学教室",
+            scene_id="scene-classroom",
+            title="力学教室",
+            summary="黑板前摆着实验台。",
+            tags=["classroom"],
+            selected_path=["校园", "物理楼", "力学教室"],
+            focus_object_names=["黑板", "实验台"],
+            scene_tree=[
+                SceneLayerStateRecord(
+                    id="scene-classroom",
+                    title="力学教室",
+                    scope_label="room",
+                    summary="黑板前摆着实验台。",
+                    atmosphere="明亮",
+                    rules="讲解时保持专注",
+                    entrance="教室前门",
+                    objects=[],
+                    children=[],
+                )
+            ],
+        )
+        bound_scene = self.session_scene_service.clone_scene_for_session(
+            session_id="session-chat-limit",
+            document_id="doc-1",
+            persona_id="mentor-aurora",
+            scene_profile=scene_profile,
+        )
+        assert bound_scene is not None
+        scene_tool_runtime = self.session_scene_service.build_tool_runtime(bound_scene.scene_instance_id)
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return json.dumps(self.payload).encode("utf-8")
+
+        responses = [
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "",
+                                "tool_calls": [
+                                    {
+                                        "id": "call-page-1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "read_page_range_content",
+                                            "arguments": json.dumps({"page_start": 2, "page_end": 2}),
+                                        },
+                                    }
+                                ],
+                            }
+                        }
+                    ]
+                }
+            ),
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": "",
+                                "tool_calls": [
+                                    {
+                                        "id": "call-scene-1",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "read_scene_overview",
+                                            "arguments": json.dumps({}),
+                                        },
+                                    }
+                                ],
+                            }
+                        }
+                    ]
+                }
+            ),
+            FakeResponse(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "text": "我先对照课本第 2 页，再把黑板前的受力方向和页面定义对齐。",
+                                        "mood": "focused",
+                                        "action": "翻到第 2 页，抬手指向黑板上的受力箭头",
+                                    }
+                                )
+                            }
+                        }
+                    ]
+                }
+            ),
+        ]
+
+        def fake_urlopen(request, timeout=0):
+            captured_payloads.append(json.loads(request.data.decode("utf-8")))
+            return responses.pop(0)
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            reply = provider.generate_chat(
+                persona=self.persona_engine.require_persona("mentor-aurora"),
+                section_id="chapter-1",
+                message="结合场景和课本解释一下力的方向",
+                section_context="Section: Chapter 1",
+                debug_report=debug_report,
+                scene_tool_runtime=scene_tool_runtime,
+            )
+
+        self.assertEqual(reply.mood, "focused")
+        self.assertEqual(len(captured_payloads), 3)
+        second_messages = captured_payloads[1]["messages"]
+        third_payload_tools = [tool["function"]["name"] for tool in captured_payloads[2]["tools"]]
+        self.assertTrue(
+            any(
+                message["role"] == "user"
+                and "这类轮次不计入常规工具调用限制，也允许重复调用" in str(message["content"])
+                for message in second_messages
+            )
+        )
+        self.assertIn("read_page_range_content", third_payload_tools)
+        self.assertIn("read_scene_overview", third_payload_tools)
 
     def test_grading_changes_based_on_answer_length(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
@@ -481,7 +660,7 @@ class PersonaPipelineTests(unittest.TestCase):
             answer="这是一个相对完整的回答，包含概念解释、教材例子以及一点自己的复述。",
         )
         self.assertLess(short.score, long.score)
-        self.assertEqual(long.character_events[0].action, "celebrate")
+        self.assertEqual(long.character_events[0].action, "smile")
 
     def test_plan_and_session_can_be_persisted(self) -> None:
         from fastapi import UploadFile

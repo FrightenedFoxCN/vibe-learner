@@ -25,6 +25,7 @@ interface StudyConsoleProps {
     topic: string;
     difficulty: "easy" | "medium" | "hard";
     options: Array<{ key: string; text: string }>;
+    callBack?: boolean;
     answerKey?: string;
     acceptedAnswers: string[];
     submittedAnswer: string;
@@ -195,15 +196,15 @@ export function StudyConsole({
                     key={buildTurnKey(turn.createdAt, index)}
                     style={styles.turnCard}
                   >
-                    <div style={styles.userSection}>
-                      <div style={{ ...styles.turnMeta, ...styles.turnMetaRight }}>
-                        <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
-                        <span style={styles.roleLabel}>
-                          {isAttemptTurn(turn.learnerMessage) ? "答题记录" : "你"}
-                        </span>
+                    {!isHiddenLearnerMessage(turn.learnerMessage) ? (
+                      <div style={styles.userSection}>
+                        <div style={{ ...styles.turnMeta, ...styles.turnMetaRight }}>
+                          <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
+                          <span style={styles.roleLabel}>你</span>
+                        </div>
+                        <p style={styles.userMessage}>{formatLearnerMessage(turn.learnerMessage)}</p>
                       </div>
-                      <p style={styles.userMessage}>{formatLearnerMessage(turn.learnerMessage)}</p>
-                    </div>
+                    ) : null}
 
                     <div style={styles.aiSection}>
                       <div style={styles.turnMeta}>
@@ -795,6 +796,9 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--accent-soft)",
     color: "var(--accent)",
   },
+  choiceButtonLocked: {
+    cursor: "default",
+  },
   blankInput: {
     width: "100%",
     border: "1px solid var(--border)",
@@ -803,6 +807,10 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--panel)",
     color: "var(--ink)",
     fontSize: 13,
+  },
+  blankInputLocked: {
+    color: "var(--muted)",
+    background: "#f8fbfc",
   },
   questionActions: {
     display: "flex",
@@ -829,6 +837,12 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     color: "var(--negative)",
     fontWeight: 500,
+  },
+  answerInline: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)",
   },
   inlineGhostBtn: {
     border: "1px solid var(--border)",
@@ -912,6 +926,7 @@ function renderInteractiveQuestion(input: {
     topic: string;
     difficulty: "easy" | "medium" | "hard";
     options: Array<{ key: string; text: string }>;
+    callBack?: boolean;
     answerKey?: string;
     acceptedAnswers: string[];
     submittedAnswer: string;
@@ -937,9 +952,14 @@ function renderInteractiveQuestion(input: {
   } = input;
   const feedback = questionFeedback[turnKey];
   const explanationVisible = Boolean(expandedExplanation[turnKey]);
+  const persistedFeedback = question.feedbackText
+    ? { ok: Boolean(question.isCorrect), text: question.feedbackText }
+    : undefined;
+  const effectiveFeedback = feedback ?? persistedFeedback;
+  const isLocked = Boolean(question.submittedAnswer);
 
   if (question.questionType === "multiple_choice") {
-    const selected = selectedChoices[turnKey] ?? "";
+    const selected = selectedChoices[turnKey] ?? question.submittedAnswer ?? "";
     return (
       <>
         <p style={styles.questionTitle}>选择题</p>
@@ -950,7 +970,12 @@ function renderInteractiveQuestion(input: {
             <button
               key={`${turnKey}:${option.key}`}
               type="button"
-              style={{ ...styles.choiceButton, ...(selected === option.key ? styles.choiceButtonActive : {}) }}
+              style={{
+                ...styles.choiceButton,
+                ...(selected === option.key ? styles.choiceButtonActive : {}),
+                ...(isLocked ? styles.choiceButtonLocked : {})
+              }}
+              disabled={isLocked}
               onClick={() => setSelectedChoices((current) => ({ ...current, [turnKey]: option.key }))}
             >
               <RichTextMessage
@@ -965,7 +990,7 @@ function renderInteractiveQuestion(input: {
           <button
             type="button"
             style={styles.checkButton}
-            disabled={!selected || disabled}
+            disabled={!selected || disabled || isLocked}
             onClick={() => {
               const correct = selected.trim().toUpperCase() === (question.answerKey ?? "").trim().toUpperCase();
               const feedbackText = correct ? "回答正确" : `回答不正确，正确答案是 ${question.answerKey ?? "未提供"}`;
@@ -976,6 +1001,7 @@ function renderInteractiveQuestion(input: {
                 topic: question.topic,
                 difficulty: question.difficulty,
                 options: question.options,
+                callBack: question.callBack,
                 answerKey: question.answerKey,
                 acceptedAnswers: question.acceptedAnswers,
                 submittedAnswer: selected,
@@ -1001,8 +1027,15 @@ function renderInteractiveQuestion(input: {
           >
             再来一题
           </button>
-          {feedback ? <span style={feedback.ok ? styles.feedbackOk : styles.feedbackBad}>{feedback.text}</span> : null}
+          {effectiveFeedback ? (
+            <span style={effectiveFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{effectiveFeedback.text}</span>
+          ) : null}
         </div>
+        {selected ? (
+          <p style={styles.answerInline}>
+            你的选择：{selected}
+          </p>
+        ) : null}
         {explanationVisible ? (
           <div style={styles.explanationBox}>
             <RichTextMessage content={question.explanation || "暂无解析"} />
@@ -1012,7 +1045,7 @@ function renderInteractiveQuestion(input: {
     );
   }
 
-  const value = blankAnswers[turnKey] ?? "";
+  const value = blankAnswers[turnKey] ?? question.submittedAnswer ?? "";
   return (
     <>
       <p style={styles.questionTitle}>填空题</p>
@@ -1021,18 +1054,19 @@ function renderInteractiveQuestion(input: {
       <input
         type="text"
         value={value}
-        style={styles.blankInput}
+        style={{ ...styles.blankInput, ...(isLocked ? styles.blankInputLocked : {}) }}
         onChange={(event) => {
           const next = event.target.value;
           setBlankAnswers((current) => ({ ...current, [turnKey]: next }));
         }}
+        readOnly={isLocked}
         placeholder="输入你的答案"
       />
       <div style={styles.questionActions}>
         <button
           type="button"
           style={styles.checkButton}
-          disabled={!value.trim() || disabled}
+          disabled={!value.trim() || disabled || isLocked}
           onClick={() => {
             const normalized = normalizeAnswer(value);
             const accepted = question.acceptedAnswers.map(normalizeAnswer);
@@ -1047,6 +1081,7 @@ function renderInteractiveQuestion(input: {
               topic: question.topic,
               difficulty: question.difficulty,
               options: question.options,
+              callBack: question.callBack,
               answerKey: question.answerKey,
               acceptedAnswers: question.acceptedAnswers,
               submittedAnswer: value,
@@ -1069,11 +1104,18 @@ function renderInteractiveQuestion(input: {
           style={styles.inlineGhostBtn}
           disabled={disabled}
           onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度填空题。`); }}
-        >
-          再来一题
-        </button>
-        {feedback ? <span style={feedback.ok ? styles.feedbackOk : styles.feedbackBad}>{feedback.text}</span> : null}
+          >
+            再来一题
+          </button>
+        {effectiveFeedback ? (
+          <span style={effectiveFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{effectiveFeedback.text}</span>
+        ) : null}
       </div>
+      {value.trim() ? (
+        <p style={styles.answerInline}>
+          你的答案：{value.trim()}
+        </p>
+      ) : null}
       {explanationVisible ? (
         <div style={styles.explanationBox}>
           <RichTextMessage content={question.explanation || "暂无解析"} />
@@ -1158,7 +1200,12 @@ function collectEventDescriptions(events: CharacterStateEvent[]) {
   const seen = new Set<string>();
 
   events.forEach((event) => {
-    [event.commentary, event.deliveryCue, event.toolSummary].forEach((item) => {
+    [
+      formatActionDescription(event.action),
+      event.commentary,
+      event.deliveryCue,
+      event.toolSummary
+    ].forEach((item) => {
       const text = String(item ?? "").trim();
       if (!text || text.length < 12 || seen.has(text)) {
         return;
@@ -1194,9 +1241,7 @@ function collectEventBadges(events: CharacterStateEvent[]) {
 
   events.forEach((event) => {
     pushBadge("情绪", formatEmotionLabel(event.emotion));
-    pushBadge("动作", formatActionLabel(event.action));
     pushBadge("语气", formatSpeechStyleLabel(event.speechStyle), "muted");
-    pushBadge("强度", formatIntensity(event.intensity), "muted");
     pushBadge("场景", formatSceneHint(event.sceneHint), "muted");
     if (event.toolName) {
       pushBadge("工具", formatToolName(event.toolName), "accent");
@@ -1217,15 +1262,16 @@ function formatEmotionLabel(value: string) {
   return value || "未标注";
 }
 
-function formatActionLabel(value: string) {
+function formatActionDescription(value: string) {
   const normalized = value.trim().toLowerCase();
-  if (normalized === "idle") return "待机";
-  if (normalized === "explain") return "讲解";
-  if (normalized === "point") return "指向重点";
-  if (normalized === "prompt") return "发起追问";
-  if (normalized === "reflect") return "回看修正";
-  if (normalized === "celebrate") return "强化鼓励";
-  return value || "未标注";
+  if (!normalized || normalized === "idle") return "";
+  if (normalized === "nod") return "动作：轻轻点头，示意可以继续。";
+  if (normalized === "point") return "动作：抬手指向当前重点，提醒注意关键位置。";
+  if (normalized === "lean_in") return "动作：身体微微前倾，像是在等你回应。";
+  if (normalized === "smile") return "动作：嘴角带笑，把鼓励自然递出来。";
+  if (normalized === "pause") return "动作：短暂停住，像是在给思路留白。";
+  if (normalized === "write") return "动作：抬手书写比划，把结构关系描出来。";
+  return `动作：${value.trim()}`;
 }
 
 function formatSpeechStyleLabel(value: string) {
@@ -1236,13 +1282,6 @@ function formatSpeechStyleLabel(value: string) {
   if (normalized === "gentle") return "轻柔";
   if (normalized === "energetic") return "有活力";
   return value || "默认";
-}
-
-function formatIntensity(value?: number) {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return "55%";
-  }
-  return `${Math.round(value * 100)}%`;
 }
 
 function formatSceneHint(value: string) {
@@ -1278,6 +1317,11 @@ function formatToolName(value: string) {
 
 function isAttemptTurn(message: string) {
   return message.trim().startsWith("[练习作答]");
+}
+
+function isHiddenLearnerMessage(message: string) {
+  const normalized = message.trim();
+  return normalized.startsWith("[练习作答]") || normalized.startsWith("[交互回调]");
 }
 
 function formatLearnerMessage(message: string) {

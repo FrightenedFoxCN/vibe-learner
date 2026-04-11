@@ -750,7 +750,6 @@ function normalizeSession(session: any): StudySessionRecord {
         characterEvents: (turn.character_events ?? []).map((event: any) => ({
           emotion: event.emotion,
           action: event.action,
-          intensity: event.intensity,
           speechStyle: event.speech_style,
           sceneHint: event.scene_hint,
           lineSegmentId: event.line_segment_id,
@@ -1533,7 +1532,6 @@ export async function sendStudyMessage(input: {
     characterEvents: payload.character_events.map((event: any) => ({
       emotion: event.emotion,
       action: event.action,
-      intensity: event.intensity,
       speechStyle: event.speech_style,
       sceneHint: event.scene_hint,
       lineSegmentId: event.line_segment_id,
@@ -1565,6 +1563,7 @@ export async function submitStudyQuestionAttempt(input: {
   topic: string;
   difficulty: "easy" | "medium" | "hard";
   options: Array<{ key: string; text: string }>;
+  callBack?: boolean;
   answerKey?: string;
   acceptedAnswers: string[];
   submittedAnswer: string;
@@ -1583,6 +1582,7 @@ export async function submitStudyQuestionAttempt(input: {
         topic: input.topic,
         difficulty: input.difficulty,
         options: input.options.map((option) => ({ key: option.key, text: option.text })),
+        call_back: Boolean(input.callBack),
         answer_key: input.answerKey ?? null,
         accepted_answers: input.acceptedAnswers,
         submitted_answer: input.submittedAnswer,
@@ -1624,12 +1624,16 @@ function normalizeInteractiveQuestion(raw: any) {
           })
           .filter(Boolean)
       : [],
+    callBack: Boolean(raw.call_back),
     answerKey: raw.answer_key ? String(raw.answer_key) : undefined,
     acceptedAnswers: Array.isArray(raw.accepted_answers)
       ? raw.accepted_answers
           .map((value: unknown) => String(value ?? "").trim())
           .filter((value: string) => value.length > 0)
       : [],
-    explanation: String(raw.explanation ?? "").trim()
+    explanation: String(raw.explanation ?? "").trim(),
+    submittedAnswer: String(raw.submitted_answer ?? "").trim() || undefined,
+    isCorrect: typeof raw.is_correct === "boolean" ? raw.is_correct : undefined,
+    feedbackText: String(raw.feedback_text ?? "").trim() || undefined,
   };
 }

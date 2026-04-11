@@ -17,6 +17,7 @@ function PlaceholderRenderer({
   currentEvent,
   pending
 }: CharacterRendererProps) {
+  const actionText = formatActionText(currentEvent?.action ?? "");
   return (
     <div style={styles.figure}>
       <div style={styles.avatar}>
@@ -24,11 +25,23 @@ function PlaceholderRenderer({
       </div>
       <div style={styles.badges}>
         <span style={styles.badge}>{pending ? "思考中" : currentEvent?.emotion ?? "calm"}</span>
-        <span style={styles.badge}>{currentEvent?.action ?? "待机"}</span>
         <span style={styles.badgeAlt}>{currentEvent?.speechStyle ?? persona.defaultSpeechStyle}</span>
       </div>
+      {actionText ? <p style={styles.actionLine}>{actionText}</p> : null}
     </div>
   );
+}
+
+function formatActionText(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === "idle") return "";
+  if (normalized === "nod") return "轻轻点头，示意可以继续。";
+  if (normalized === "point") return "抬手指向当前重点。";
+  if (normalized === "lean_in") return "身体微微前倾，等待回应。";
+  if (normalized === "smile") return "嘴角带笑，给出鼓励。";
+  if (normalized === "pause") return "短暂停住，像是在整理思路。";
+  if (normalized === "write") return "抬手书写比划，标出结构关系。";
+  return value.trim();
 }
 
 export const placeholderCharacterRenderer: CharacterRendererAdapter = {
@@ -61,6 +74,14 @@ const styles: Record<string, CSSProperties> = {
   badges: {
     display: "flex",
     gap: 8,
+  },
+  actionLine: {
+    margin: 0,
+    maxWidth: 240,
+    textAlign: "center",
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "var(--muted)",
   },
   badge: {
     padding: "4px 10px",

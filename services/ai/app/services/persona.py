@@ -25,7 +25,7 @@ class PersonaEngine:
 
     @staticmethod
     def _default_available_actions() -> list[str]:
-        return ["idle", "explain", "point", "celebrate", "reflect", "prompt"]
+        return ["idle", "nod", "point", "lean_in", "smile", "pause", "write"]
 
     def list_personas(self) -> list[PersonaProfile]:
         return list(self._personas.values())
@@ -231,7 +231,7 @@ class PersonaEngine:
                     PersonaSlot(kind="correction_style", label="纠错策略", content="准确指出问题，同时保持温和语气"),
                 ],
                 available_emotions=["calm", "encouraging", "serious"],
-                available_actions=["idle", "explain", "point", "reflect"],
+                available_actions=["idle", "nod", "point", "pause"],
                 default_speech_style="steady",
             ),
             PersonaProfile(
@@ -248,7 +248,7 @@ class PersonaEngine:
                     PersonaSlot(kind="correction_style", label="纠错策略", content="用有节奏的转向提示带回正确路径"),
                 ],
                 available_emotions=["playful", "encouraging", "excited", "concerned"],
-                available_actions=["idle", "explain", "celebrate", "prompt"],
+                available_actions=["idle", "lean_in", "smile", "write"],
                 default_speech_style="energetic",
             ),
         ]

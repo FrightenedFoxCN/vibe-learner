@@ -25,6 +25,7 @@ export function CharacterShell({
   const narrativeModeSlot = persona.slots.find((s) => s.kind === "narrative_mode");
   const teachingLabel = teachingMethodSlot?.content || persona.summary;
   const narrativeLabel = formatNarrativeMode(narrativeModeSlot?.content ?? "稳态导学");
+  const actionText = formatActionText(currentEvent?.action ?? "");
   const primaryNote = currentEvent?.commentary || currentEvent?.toolSummary || "";
   const deliveryCue = currentEvent?.deliveryCue || "";
 
@@ -46,11 +47,15 @@ export function CharacterShell({
         </div>
         <div style={styles.stateGrid}>
           <StateChip label="情绪" value={formatEmotionLabel(currentEvent?.emotion ?? "calm")} />
-          <StateChip label="动作" value={formatActionLabel(currentEvent?.action ?? "idle")} />
           <StateChip label="语气" value={formatSpeechStyleLabel(currentEvent?.speechStyle ?? persona.defaultSpeechStyle)} />
-          <StateChip label="强度" value={formatIntensity(currentEvent?.intensity)} />
           {!isEmbedded ? <StateChip label="场景" value={formatSceneHint(currentEvent?.sceneHint ?? "study_session")} /> : null}
         </div>
+        {actionText ? (
+          <div style={styles.noteBlock}>
+            <span style={styles.noteKey}>动作呈现</span>
+            <p style={styles.noteText}>{actionText}</p>
+          </div>
+        ) : null}
         {deliveryCue ? (
           <div style={styles.noteBlock}>
             <span style={styles.noteKey}>语气提示</span>
@@ -77,13 +82,6 @@ function StateChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatIntensity(value?: number) {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return "55%";
-  }
-  return `${Math.round(value * 100)}%`;
-}
-
 function formatNarrativeMode(mode: string) {
   if (mode === "light_story" || mode.includes("轻剧情")) return "轻剧情陪伴";
   if (mode === "grounded" || mode.includes("稳态导学") || mode.includes("贴地")) return "稳态导学";
@@ -101,15 +99,16 @@ function formatEmotionLabel(value: string) {
   return value || "未标注";
 }
 
-function formatActionLabel(value: string) {
+function formatActionText(value: string) {
   const normalized = value.trim().toLowerCase();
-  if (normalized === "idle") return "待机";
-  if (normalized === "explain") return "讲解";
-  if (normalized === "point") return "指向重点";
-  if (normalized === "prompt") return "发起追问";
-  if (normalized === "reflect") return "回看修正";
-  if (normalized === "celebrate") return "强化鼓励";
-  return value || "未标注";
+  if (!normalized || normalized === "idle") return "";
+  if (normalized === "nod") return "轻轻点头，示意可以继续。";
+  if (normalized === "point") return "抬手指向当前重点，提醒把注意力收回来。";
+  if (normalized === "lean_in") return "身体微微前倾，像是在等你接住这个问题。";
+  if (normalized === "smile") return "嘴角带笑，顺势把鼓励递出来。";
+  if (normalized === "pause") return "短暂停住动作，像是在给思路留出落点。";
+  if (normalized === "write") return "抬手书写比划，把结构关系描出来。";
+  return value.trim();
 }
 
 function formatSpeechStyleLabel(value: string) {

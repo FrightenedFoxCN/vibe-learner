@@ -348,9 +348,13 @@ export interface InteractiveQuestion {
   difficulty: "easy" | "medium" | "hard";
   topic: string;
   options: InteractiveQuestionOption[];
+  callBack?: boolean;
   answerKey?: string;
   acceptedAnswers: string[];
   explanation: string;
+  submittedAnswer?: string;
+  isCorrect?: boolean;
+  feedbackText?: string;
 }
 
 export interface Exercise {

@@ -15,7 +15,7 @@ export const mockPersonas: PersonaProfile[] = [
       { kind: "correction_style", label: "纠错策略", content: "准确指出问题，同时保持温和语气" }
     ],
     availableEmotions: ["calm", "encouraging", "serious"],
-    availableActions: ["idle", "explain", "point", "reflect"],
+    availableActions: ["idle", "nod", "point", "pause"],
     defaultSpeechStyle: "steady"
   },
   {
@@ -32,7 +32,7 @@ export const mockPersonas: PersonaProfile[] = [
       { kind: "correction_style", label: "纠错策略", content: "用有节奏的转向提示带回正确路径" }
     ],
     availableEmotions: ["playful", "encouraging", "excited", "concerned"],
-    availableActions: ["idle", "explain", "celebrate", "prompt"],
+    availableActions: ["idle", "lean_in", "smile", "write"],
     defaultSpeechStyle: "energetic"
   }
 ];

@@ -66,11 +66,12 @@ const EMOTION_LABELS: Record<string, string> = {
 
 const ACTION_LABELS: Record<string, string> = {
   idle: "待机",
-  explain: "讲解",
+  nod: "点头",
   point: "指向",
-  celebrate: "庆祝",
-  reflect: "反思",
-  prompt: "提问引导"
+  lean_in: "前倾",
+  smile: "微笑",
+  pause: "停顿",
+  write: "书写比划"
 };
 
 const SPEECH_STYLE_LABELS: Record<string, string> = {
@@ -125,7 +126,7 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
     { kind: "correction_style", label: "纠错策略", content: "准确指出问题，同时保持温和语气" }
   ],
   availableEmotions: ["calm", "encouraging", "serious"],
-  availableActions: ["idle", "explain", "point", "reflect"],
+  availableActions: ["idle", "nod", "point", "pause"],
   defaultSpeechStyle: "warm"
 };
 
@@ -154,7 +155,6 @@ export default function PersonaSpectrumPage() {
   const [previewEmotion, setPreviewEmotion] = useState<CharacterEmotion>("calm");
   const [previewAction, setPreviewAction] = useState<CharacterAction>("idle");
   const [previewSpeech, setPreviewSpeech] = useState<SpeechStyle>("warm");
-  const [previewIntensity, setPreviewIntensity] = useState(0.6);
   const [previewTiming, setPreviewTiming] = useState<TimingHint>("instant");
 
   const [previewSessionId, setPreviewSessionId] = useState("");
@@ -272,7 +272,6 @@ export default function PersonaSpectrumPage() {
     const event: CharacterStateEvent = {
       emotion: previewEmotion,
       action: previewAction,
-      intensity: previewIntensity,
       speechStyle: previewSpeech,
       sceneHint: "persona_layer_preview",
       lineSegmentId: "persona-spectrum-debug",
@@ -283,7 +282,7 @@ export default function PersonaSpectrumPage() {
       citations: [],
       characterEvents: [event]
     };
-  }, [previewAction, previewEmotion, previewIntensity, previewSpeech, previewTiming]);
+  }, [previewAction, previewEmotion, previewSpeech, previewTiming]);
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
     if (assistError) setAssistError("");
@@ -802,8 +801,9 @@ export default function PersonaSpectrumPage() {
               <span style={styles.mutedText}>表现层配置：用于控制角色事件渲染，不直接改写人格插槽文本。</span>
             </div>
             <div style={styles.fieldGroup}>
-              <label style={styles.fieldLabel}>可用动作（逗号分隔）</label>
+              <label style={styles.fieldLabel}>可用动作示例（逗号分隔）</label>
               <input style={styles.input} value={draft.availableActionsText} onChange={(e) => updateDraft("availableActionsText", e.target.value)} />
+              <span style={styles.mutedText}>这里只是常见动作示例；实际生成时，模型可以输出更自然的动作短句。</span>
             </div>
             <div style={styles.fieldGroup}>
               <label style={styles.fieldLabel}>默认语气</label>
@@ -845,10 +845,6 @@ export default function PersonaSpectrumPage() {
               </div>
             </div>
 
-            <div style={styles.fieldGroup}>
-              <label style={styles.fieldLabel}>强度 {previewIntensity.toFixed(2)}</label>
-              <input style={styles.range} type="range" min={0} max={1} step={0.05} value={previewIntensity} onChange={(e) => setPreviewIntensity(Number(e.target.value))} />
-            </div>
             <CharacterShell persona={draftPersona} response={syntheticPreviewResponse} pending={false} />
           </section>
 

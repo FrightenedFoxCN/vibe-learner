@@ -9,11 +9,12 @@ export const CHARACTER_EMOTIONS = [
 
 export const CHARACTER_ACTIONS = [
   "idle",
-  "explain",
+  "nod",
   "point",
-  "celebrate",
-  "reflect",
-  "prompt"
+  "lean_in",
+  "smile",
+  "pause",
+  "write"
 ] as const;
 
 export const SPEECH_STYLES = [
@@ -31,7 +32,6 @@ export type SpeechStyle = (typeof SPEECH_STYLES)[number] | string;
 export interface CharacterStateEvent {
   emotion: CharacterEmotion;
   action: CharacterAction;
-  intensity: number;
   speechStyle: SpeechStyle;
   sceneHint: string;
   lineSegmentId: string;

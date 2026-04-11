@@ -821,6 +821,7 @@ export function useLearningWorkspaceController({
     topic: string;
     difficulty: "easy" | "medium" | "hard";
     options: Array<{ key: string; text: string }>;
+    callBack?: boolean;
     answerKey?: string;
     acceptedAnswers: string[];
     submittedAnswer: string;
@@ -841,6 +842,33 @@ export function useLearningWorkspaceController({
         personaId: nextSession.personaId,
         clearResponse: false
       });
+      if (input.callBack) {
+        try {
+          dispatch({ type: "busy_started" });
+          const callbackResponse = await sendStudyMessage({
+            sessionId: nextSession.id,
+            message: buildInteractiveCallbackMessage(input)
+          });
+          dispatch({
+            type: "study_session_set",
+            studySession: callbackResponse.session,
+            personaId: callbackResponse.session.personaId,
+            clearResponse: false
+          });
+          dispatch({
+            type: "response_set",
+            response: callbackResponse
+          });
+        } catch (callbackError) {
+          dispatch({
+            type: "notice_set",
+            notice: `答案已记录，但自动续问失败: ${String(callbackError)}`
+          });
+          logWorkspaceError("workflow:study_attempt:callback_error", callbackError);
+        } finally {
+          dispatch({ type: "busy_finished" });
+        }
+      }
     } catch (error) {
       const detail = String(error);
       if (detail.includes("session_not_found")) {
@@ -1105,4 +1133,27 @@ function buildPlanDirectorySections(
   return sections.filter(
     (section, index) => sections.findIndex((candidate) => candidate.id === section.id) === index
   );
+}
+
+function buildInteractiveCallbackMessage(input: {
+  questionType: "multiple_choice" | "fill_blank";
+  prompt: string;
+  topic: string;
+  submittedAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+}) {
+  const verdict = input.isCorrect ? "正确" : "不正确";
+  return [
+    "[交互回调]",
+    `学习者刚完成了一道${input.questionType === "multiple_choice" ? "选择题" : "填空题"}。`,
+    `题目：${input.prompt}`,
+    `主题：${input.topic || "章节练习"}`,
+    `学习者答案：${input.submittedAnswer || "（空）"}`,
+    `判定：${verdict}`,
+    input.explanation ? `解析：${input.explanation}` : "",
+    input.isCorrect
+      ? "请基于这次正确作答继续推进下一步讲解或追问。"
+      : "请先针对错误点做纠正，再继续推进下一步讲解或追问。"
+  ].filter(Boolean).join("\n");
 }

@@ -108,21 +108,29 @@ class StudySessionService:
         self,
         *,
         session_id: str,
-        learner_message: str,
-        assistant_reply: str,
+        prompt: str,
+        submitted_answer: str,
+        is_correct: bool,
+        feedback_text: str,
     ) -> StudySessionRecord:
         sessions = self._load_sessions()
         session = self.require_session(session_id, sessions)
-        session.turns.append(
-            DialogueTurnRecord(
-                learner_message=learner_message,
-                assistant_reply=assistant_reply,
-                citations=[],
-                character_events=[],
-                interactive_question=None,
-                created_at=_now(),
-            )
-        )
+        target_turn: DialogueTurnRecord | None = None
+        for turn in reversed(session.turns):
+            question = turn.interactive_question
+            if question is None:
+                continue
+            if question.prompt.strip() != prompt.strip():
+                continue
+            target_turn = turn
+            break
+
+        if target_turn is None or target_turn.interactive_question is None:
+            raise HTTPException(status_code=404, detail="interactive_question_not_found")
+
+        target_turn.interactive_question.submitted_answer = submitted_answer
+        target_turn.interactive_question.is_correct = is_correct
+        target_turn.interactive_question.feedback_text = feedback_text
         session.updated_at = _now()
         self._save_sessions(sessions)
         return session

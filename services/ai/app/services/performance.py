@@ -23,7 +23,6 @@ class PerformanceMapper:
         commentary: str = "",
     ) -> list[CharacterStateEvent]:
         resolved_speech_style = speech_style or persona.default_speech_style
-        intensity = 0.75 if mood in {"excited", "playful"} else 0.55
         narrative_mode = persona_narrative_mode_label(
             persona_slot_content(persona, "narrative_mode", "稳态导学")
         )
@@ -31,7 +30,6 @@ class PerformanceMapper:
             CharacterStateEvent(
                 emotion=mood,
                 action=action,
-                intensity=intensity,
                 speech_style=resolved_speech_style,
                 scene_hint=f"{persona.name}:{narrative_mode}",
                 line_segment_id=line_segment_id,
@@ -55,14 +53,13 @@ class PerformanceMapper:
         for index, tool_call in enumerate(tool_calls[:4]):
             action = "point"
             if tool_call.tool_name in {"add_scene", "move_to_scene"}:
-                action = "reflect"
+                action = "pause"
             elif tool_call.tool_name in {"add_object", "update_object_description", "delete_object"}:
-                action = "explain"
+                action = "write"
             events.append(
                 CharacterStateEvent(
                     emotion="serious",
                     action=action,
-                    intensity=0.42,
                     speech_style=speech_style,
                     scene_hint=f"scene_tool:{tool_call.tool_name}",
                     line_segment_id=f"{line_segment_id}:tool:{index}",
