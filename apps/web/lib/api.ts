@@ -621,6 +621,106 @@ function normalizeMemoryTrace(items: any[] | undefined) {
   }));
 }
 
+function normalizeRichBlocks(items: any[] | undefined) {
+  const raw = Array.isArray(items) ? items : [];
+  return raw
+    .map((item: any) => ({
+      kind: String(item.kind ?? "").trim(),
+      content: String(item.content ?? "").trim(),
+    }))
+    .filter((item) => item.kind && item.content);
+}
+
+function repairLegacyRichReply(
+  reply: string,
+  existingBlocks: Array<{ kind: string; content: string }>
+) {
+  const normalizedReply = String(reply ?? "");
+  const normalizedBlocks = dedupeRichBlocks(existingBlocks);
+  if (!normalizedReply.trimStart().startsWith("```json")) {
+    const extracted = extractMermaidBlocksFromReply(normalizedReply);
+    return {
+      reply: extracted.reply,
+      richBlocks: dedupeRichBlocks([...normalizedBlocks, ...extracted.richBlocks]),
+    };
+  }
+
+  const textKey = '"text": "';
+  const textStart = normalizedReply.indexOf(textKey);
+  if (textStart === -1) {
+    return {
+      reply: normalizedReply,
+      richBlocks: normalizedBlocks,
+    };
+  }
+
+  try {
+    const rawTextStart = textStart + textKey.length;
+    const rawTextEnd = normalizedReply.indexOf('",\n  "mood"', rawTextStart);
+    const rawText = (
+      rawTextEnd === -1
+        ? normalizedReply
+            .slice(rawTextStart)
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .replace(/"\s*}\s*```?\s*$/g, "")
+            .replace(/`+\s*$/g, "")
+            .trimEnd()
+        : normalizedReply.slice(rawTextStart, rawTextEnd)
+    );
+    const repairedSource = rawText
+      .replace(/\\"/g, "__ESCAPED_QUOTE__")
+      .replace(/"/g, "\\\"")
+      .replace(/__ESCAPED_QUOTE__/g, '\\"')
+      .replace(/\r?\n/g, "\\n");
+    const recoveredReply = JSON.parse(`"${repairedSource}"`) as string;
+    const extracted = extractMermaidBlocksFromReply(recoveredReply);
+    return {
+      reply: extracted.reply,
+      richBlocks: dedupeRichBlocks([...normalizedBlocks, ...extracted.richBlocks]),
+    };
+  } catch {
+    return {
+      reply: normalizedReply,
+      richBlocks: normalizedBlocks,
+    };
+  }
+}
+
+function extractMermaidBlocksFromReply(reply: string) {
+  const richBlocks: Array<{ kind: string; content: string }> = [];
+  const cleaned = reply.replace(/```mermaid\s*\n([\s\S]*?)```|```\s*\nmermaid\s*\n([\s\S]*?)```/gi, (_, chartA, chartB) => {
+    const content = String(chartA ?? chartB ?? "").trim();
+    if (content) {
+      richBlocks.push({ kind: "mermaid", content });
+    }
+    return "\n\n";
+  }).replace(/\n{3,}/g, "\n\n").trim();
+  return {
+    reply: cleaned,
+    richBlocks: dedupeRichBlocks(richBlocks),
+  };
+}
+
+function dedupeRichBlocks(items: Array<{ kind: string; content: string }>) {
+  const result: Array<{ kind: string; content: string }> = [];
+  const seen = new Set<string>();
+  items.forEach((item) => {
+    const kind = item.kind.trim();
+    const content = item.content.trim();
+    if (!kind || !content) {
+      return;
+    }
+    const key = `${kind.toLowerCase()}:${content}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    result.push({ kind, content });
+  });
+  return result;
+}
+
 function normalizeSession(session: any): StudySessionRecord {
   return {
     id: session.id,
@@ -633,38 +733,47 @@ function normalizeSession(session: any): StudySessionRecord {
     themeHint: session.theme_hint ?? "",
     sessionSystemPrompt: compactPreviewString(session.session_system_prompt ?? "", 1200),
     status: session.status,
-    turns: (session.turns ?? []).map((turn: any) => ({
-      learnerMessage: turn.learner_message,
-      assistantReply: turn.assistant_reply,
-      citations: (turn.citations ?? []).map((citation: any) => ({
-        sectionId: citation.section_id,
-        title: citation.title,
-        pageStart: citation.page_start,
-        pageEnd: citation.page_end
-      })),
-      characterEvents: (turn.character_events ?? []).map((event: any) => ({
-        emotion: event.emotion,
-        action: event.action,
-        intensity: event.intensity,
-        speechStyle: event.speech_style,
-        sceneHint: event.scene_hint,
-        lineSegmentId: event.line_segment_id,
-        timingHint: event.timing_hint,
-        toolName: event.tool_name ? String(event.tool_name) : undefined,
-        toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
-      })),
-      interactiveQuestion: normalizeInteractiveQuestion(turn.interactive_question),
-      personaSlotTrace: (turn.persona_slot_trace ?? []).map((item: any) => ({
-        kind: String(item.kind ?? "custom"),
-        label: String(item.label ?? item.kind ?? ""),
-        contentExcerpt: compactPreviewString(item.content_excerpt ?? "", 280),
-        reason: String(item.reason ?? "")
-      })),
-      memoryTrace: normalizeMemoryTrace(turn.memory_trace),
-      toolCalls: normalizeChatToolCalls(turn.tool_calls),
-      sceneProfile: normalizeSceneProfile(turn.scene_profile),
-      createdAt: turn.created_at
-    })),
+    turns: (session.turns ?? []).map((turn: any) => {
+      const repaired = repairLegacyRichReply(
+        String(turn.assistant_reply ?? ""),
+        normalizeRichBlocks(turn.rich_blocks)
+      );
+      return {
+        learnerMessage: turn.learner_message,
+        assistantReply: repaired.reply,
+        citations: (turn.citations ?? []).map((citation: any) => ({
+          sectionId: citation.section_id,
+          title: citation.title,
+          pageStart: citation.page_start,
+          pageEnd: citation.page_end
+        })),
+        characterEvents: (turn.character_events ?? []).map((event: any) => ({
+          emotion: event.emotion,
+          action: event.action,
+          intensity: event.intensity,
+          speechStyle: event.speech_style,
+          sceneHint: event.scene_hint,
+          lineSegmentId: event.line_segment_id,
+          timingHint: event.timing_hint,
+          toolName: event.tool_name ? String(event.tool_name) : undefined,
+          toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
+          deliveryCue: event.delivery_cue ? compactPreviewString(event.delivery_cue, 160) : undefined,
+          commentary: event.commentary ? compactPreviewString(event.commentary, 280) : undefined,
+        })),
+        richBlocks: repaired.richBlocks,
+        interactiveQuestion: normalizeInteractiveQuestion(turn.interactive_question),
+        personaSlotTrace: (turn.persona_slot_trace ?? []).map((item: any) => ({
+          kind: String(item.kind ?? "custom"),
+          label: String(item.label ?? item.kind ?? ""),
+          contentExcerpt: compactPreviewString(item.content_excerpt ?? "", 280),
+          reason: String(item.reason ?? "")
+        })),
+        memoryTrace: normalizeMemoryTrace(turn.memory_trace),
+        toolCalls: normalizeChatToolCalls(turn.tool_calls),
+        sceneProfile: normalizeSceneProfile(turn.scene_profile),
+        createdAt: turn.created_at
+      };
+    }),
     createdAt: session.created_at,
     updatedAt: session.updated_at
   };
@@ -1408,9 +1517,13 @@ export async function sendStudyMessage(input: {
       })
     })
   );
+  const repaired = repairLegacyRichReply(
+    String(payload.reply ?? ""),
+    normalizeRichBlocks(payload.rich_blocks)
+  );
 
   return {
-    reply: payload.reply,
+    reply: repaired.reply,
     citations: payload.citations.map((citation: any) => ({
       sectionId: citation.section_id,
       title: citation.title,
@@ -1427,7 +1540,10 @@ export async function sendStudyMessage(input: {
       timingHint: event.timing_hint,
       toolName: event.tool_name ? String(event.tool_name) : undefined,
       toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
+      deliveryCue: event.delivery_cue ? compactPreviewString(event.delivery_cue, 160) : undefined,
+      commentary: event.commentary ? compactPreviewString(event.commentary, 280) : undefined,
     })),
+    richBlocks: repaired.richBlocks,
     interactiveQuestion: normalizeInteractiveQuestion(payload.interactive_question),
     personaSlotTrace: (payload.persona_slot_trace ?? []).map((item: any) => ({
       kind: String(item.kind ?? "custom"),

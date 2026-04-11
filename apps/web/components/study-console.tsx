@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import type {
+  CharacterStateEvent,
   DocumentSection,
   InteractiveQuestion,
   PersonaProfile,
@@ -210,9 +211,13 @@ export function StudyConsole({
                         <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
                       </div>
                       <div style={styles.aiBubble}>
-                        <RichTextMessage content={turn.assistantReply} style={styles.aiMessage} />
-                        {turn.interactiveQuestion ? (
-                          <div style={styles.questionWrap}>
+                        <RichTextMessage
+                          content={buildRenderableReply(turn.assistantReply, turn.richBlocks)}
+                          style={styles.aiMessage}
+                        />
+                        <CharacterEventInline events={turn.characterEvents} />
+                      {turn.interactiveQuestion ? (
+                        <div style={styles.questionWrap}>
                             {renderInteractiveQuestion({
                               question: turn.interactiveQuestion,
                               turnKey: buildTurnKey(turn.createdAt, index),
@@ -259,7 +264,11 @@ export function StudyConsole({
                       <span style={styles.aiLabel}>AI</span>
                     </div>
                     <div style={styles.aiBubble}>
-                      <RichTextMessage content={session.reply} style={styles.aiMessage} />
+                      <RichTextMessage
+                        content={buildRenderableReply(session.reply, session.richBlocks)}
+                        style={styles.aiMessage}
+                      />
+                      <CharacterEventInline events={session.characterEvents} />
                       {session.citations.length ? (
                         <div style={styles.citations}>
                           {session.citations.map((citation, index) => (
@@ -350,7 +359,12 @@ export function StudyConsole({
               ) : null}
             </div>
             <div style={styles.shellCard}>
-              <CharacterShell persona={persona} response={session} pending={isPending} variant="embedded" />
+              <CharacterShell
+                persona={persona}
+                response={session}
+                pending={isPending}
+                variant="embedded"
+              />
             </div>
           </div>
         </aside>
@@ -695,6 +709,48 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid var(--border)",
     background: "#fcfefe",
   },
+  eventInline: {
+    display: "grid",
+    gap: 8,
+    minWidth: 0,
+  },
+  eventNotes: {
+    display: "grid",
+    gap: 4,
+  },
+  eventNoteText: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)",
+    wordBreak: "break-word",
+  },
+  eventBadgeRow: {
+    display: "flex",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  eventBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 8px",
+    borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    fontSize: 11,
+    lineHeight: 1.4,
+    maxWidth: "100%",
+  },
+  eventBadgeMuted: {
+    background: "var(--bg)",
+    color: "var(--muted)",
+  },
+  eventBadgeAccent: {
+    background: "rgba(29, 125, 117, 0.14)",
+    color: "var(--teal)",
+    border: "1px solid rgba(29, 125, 117, 0.22)",
+  },
   questionWrap: {
     display: "grid",
     gap: 8,
@@ -1029,6 +1085,195 @@ function renderInteractiveQuestion(input: {
 
 function normalizeAnswer(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function buildRenderableReply(
+  reply: string,
+  richBlocks?: Array<{ kind: string; content: string }>
+) {
+  const normalizedReply = String(reply ?? "").trim();
+  const blocks = Array.isArray(richBlocks) ? richBlocks : [];
+  if (!blocks.length) {
+    return normalizedReply;
+  }
+  const appendix = blocks
+    .map((block) => {
+      const kind = String(block.kind ?? "").trim().toLowerCase();
+      const content = String(block.content ?? "").trim();
+      if (!kind || !content) {
+        return "";
+      }
+      if (kind === "mermaid") {
+        return `\n\n\`\`\`mermaid\n${content}\n\`\`\``;
+      }
+      return `\n\n\`\`\`${kind}\n${content}\n\`\`\``;
+    })
+    .filter(Boolean)
+    .join("");
+  return `${normalizedReply}${appendix}`;
+}
+
+function CharacterEventInline({ events }: { events: CharacterStateEvent[] }) {
+  if (!events.length) {
+    return null;
+  }
+
+  const descriptionLines = collectEventDescriptions(events);
+  const badges = collectEventBadges(events);
+  if (!descriptionLines.length && !badges.length) {
+    return null;
+  }
+
+  return (
+    <div style={styles.eventInline}>
+      {descriptionLines.length ? (
+        <div style={styles.eventNotes}>
+          {descriptionLines.map((line, index) => (
+            <p key={`${line}:${index}`} style={styles.eventNoteText}>{line}</p>
+          ))}
+        </div>
+      ) : null}
+      {badges.length ? (
+        <div style={styles.eventBadgeRow}>
+          {badges.map((badge, index) => (
+            <span
+              key={`${badge.label}:${badge.value}:${index}`}
+              style={{
+                ...styles.eventBadge,
+                ...(badge.kind === "accent" ? styles.eventBadgeAccent : {}),
+                ...(badge.kind === "muted" ? styles.eventBadgeMuted : {})
+              }}
+            >
+              {badge.label}·{badge.value}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function collectEventDescriptions(events: CharacterStateEvent[]) {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+
+  events.forEach((event) => {
+    [event.commentary, event.deliveryCue, event.toolSummary].forEach((item) => {
+      const text = String(item ?? "").trim();
+      if (!text || text.length < 12 || seen.has(text)) {
+        return;
+      }
+      seen.add(text);
+      lines.push(text);
+    });
+  });
+
+  return lines.slice(0, 3);
+}
+
+function collectEventBadges(events: CharacterStateEvent[]) {
+  const badges: Array<{ label: string; value: string; kind?: "default" | "muted" | "accent" }> = [];
+  const seen = new Set<string>();
+
+  const pushBadge = (
+    label: string,
+    value: string,
+    kind: "default" | "muted" | "accent" = "default"
+  ) => {
+    const normalizedValue = value.trim();
+    if (!normalizedValue) {
+      return;
+    }
+    const key = `${label}:${normalizedValue}:${kind}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    badges.push({ label, value: normalizedValue, kind });
+  };
+
+  events.forEach((event) => {
+    pushBadge("情绪", formatEmotionLabel(event.emotion));
+    pushBadge("动作", formatActionLabel(event.action));
+    pushBadge("语气", formatSpeechStyleLabel(event.speechStyle), "muted");
+    pushBadge("强度", formatIntensity(event.intensity), "muted");
+    pushBadge("场景", formatSceneHint(event.sceneHint), "muted");
+    if (event.toolName) {
+      pushBadge("工具", formatToolName(event.toolName), "accent");
+    }
+  });
+
+  return badges.slice(0, 12);
+}
+
+function formatEmotionLabel(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "calm") return "冷静";
+  if (normalized === "encouraging") return "鼓励";
+  if (normalized === "playful") return "轻快";
+  if (normalized === "serious") return "认真";
+  if (normalized === "excited") return "兴奋";
+  if (normalized === "concerned") return "关注";
+  return value || "未标注";
+}
+
+function formatActionLabel(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "idle") return "待机";
+  if (normalized === "explain") return "讲解";
+  if (normalized === "point") return "指向重点";
+  if (normalized === "prompt") return "发起追问";
+  if (normalized === "reflect") return "回看修正";
+  if (normalized === "celebrate") return "强化鼓励";
+  return value || "未标注";
+}
+
+function formatSpeechStyleLabel(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "steady") return "平稳";
+  if (normalized === "warm") return "温和";
+  if (normalized === "dramatic") return "戏剧化";
+  if (normalized === "gentle") return "轻柔";
+  if (normalized === "energetic") return "有活力";
+  return value || "默认";
+}
+
+function formatIntensity(value?: number) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "55%";
+  }
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatSceneHint(value: string) {
+  if (!value) {
+    return "学习场景";
+  }
+  if (value.startsWith("study_session:")) {
+    const detail = value.replace("study_session:", "");
+    return `学习场景:${detail}`;
+  }
+  if (value.startsWith("scene_tool:")) {
+    return `场景工具:${formatToolName(value.replace("scene_tool:", ""))}`;
+  }
+  return value
+    .replaceAll("study_session", "学习场景")
+    .replaceAll("overview", "概览")
+    .replaceAll("scene_tool", "场景工具");
+}
+
+function formatToolName(value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "read_scene_overview") return "读取场景";
+  if (normalized === "add_scene") return "新增场景层";
+  if (normalized === "move_to_scene") return "切换场景层";
+  if (normalized === "add_object") return "新增物件";
+  if (normalized === "update_object_description") return "更新物件描述";
+  if (normalized === "delete_object") return "删除物件";
+  if (normalized === "retrieve_memory_context") return "检索记忆";
+  if (normalized === "read_page_range_content") return "读取教材正文";
+  if (normalized === "read_page_range_images") return "读取教材图像";
+  return value || "工具事件";
 }
 
 function isAttemptTurn(message: string) {

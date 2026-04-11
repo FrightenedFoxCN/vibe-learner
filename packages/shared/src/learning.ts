@@ -320,10 +320,16 @@ export interface ChatToolCallTrace {
   resultJson: string;
 }
 
+export interface RichTextBlock {
+  kind: string;
+  content: string;
+}
+
 export interface StudyChatResponse {
   reply: string;
   citations: Citation[];
   characterEvents: CharacterStateEvent[];
+  richBlocks?: RichTextBlock[];
   interactiveQuestion?: InteractiveQuestion;
   personaSlotTrace?: PersonaSlotTraceEntry[];
   memoryTrace?: MemoryTraceHit[];
@@ -399,6 +405,7 @@ export interface DialogueTurnRecord {
   assistantReply: string;
   citations: Citation[];
   characterEvents: CharacterStateEvent[];
+  richBlocks?: RichTextBlock[];
   interactiveQuestion?: InteractiveQuestion;
   personaSlotTrace?: PersonaSlotTraceEntry[];
   memoryTrace?: MemoryTraceHit[];

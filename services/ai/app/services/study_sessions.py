@@ -62,6 +62,7 @@ class StudySessionService:
                 assistant_reply=result.reply,
                 citations=result.citations,
                 character_events=result.character_events,
+                rich_blocks=result.rich_blocks,
                 interactive_question=result.interactive_question,
                 persona_slot_trace=result.persona_slot_trace,
                 memory_trace=result.memory_trace,

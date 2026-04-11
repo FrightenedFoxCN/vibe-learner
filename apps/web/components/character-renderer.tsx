@@ -23,10 +23,9 @@ function PlaceholderRenderer({
         <span>{persona.name.slice(0, 1)}</span>
       </div>
       <div style={styles.badges}>
-        <span style={styles.badge}>
-          {pending ? "思考中" : currentEvent?.emotion ?? persona.defaultSpeechStyle}
-        </span>
+        <span style={styles.badge}>{pending ? "思考中" : currentEvent?.emotion ?? "calm"}</span>
         <span style={styles.badge}>{currentEvent?.action ?? "待机"}</span>
+        <span style={styles.badgeAlt}>{currentEvent?.speechStyle ?? persona.defaultSpeechStyle}</span>
       </div>
     </div>
   );
@@ -69,5 +68,13 @@ const styles: Record<string, CSSProperties> = {
     color: "white",
     fontSize: 12,
     fontWeight: 500,
+  },
+  badgeAlt: {
+    padding: "4px 10px",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    fontSize: 12,
+    fontWeight: 500,
+    border: "1px solid var(--border)",
   },
 };

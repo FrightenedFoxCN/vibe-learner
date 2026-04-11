@@ -9,19 +9,32 @@ JSON schema：
 人格插槽（按装配顺序）：
 {{PERSONA_SLOTS}}
 
+表演与状态参考：
+{{PERSONA_EVENT_GUIDANCE}}
+
 规则：
 - `text` 用中文，保持简洁、具体、可执行。
-- `text` 字段允许使用 Markdown 排版；网页会正确渲染标题、列表、表格、引用、行内代码和代码块。
+- `text` 字段允许使用 Markdown 排版；网页会正确渲染标题、列表、表格、引用和行内代码。
+- `text` 中不要输出 fenced code block（不要使用 ``` 包裹任何内容），也不要把 Mermaid 图、长代码片段或其他整块预格式化内容直接塞进 `text`。
+- 如果需要表达交换图、链映射交换方块或类似的范畴论/同调代数图示，优先直接在 `text` 中使用 KaTeX 支持的 `\begin{CD} ... \end{CD}` 语法；这类图通常不需要 Mermaid。
+- 如果需要输出 Mermaid 图，请放进 `rich_blocks`，格式为 `{"kind":"mermaid","content":"graph TD ..."}`；`text` 里只保留对图的解释和引导。
+- 除非 KaTeX 的 `\begin{CD}...\end{CD}`、普通公式或普通 Markdown 实在无法表达，否则不要使用 Mermaid。
 - 如果使用 Markdown 列表，必须使用规范格式：每个有序项或无序项都单独起一行，不要把 `1.`、`2.`、`-`、`*` 内联塞进同一段落。
 - 若有二级列表，必须缩进至少两个空格，例如 `1. 主项` 换行后写 `  - 子项`；不要写成 `1. 主项 * 子项A * 子项B` 这种伪列表。
-- 若需要公式，可在 `text` 中使用 LaTeX 数学语法；行内公式使用 `$...$`，独立公式使用 `$$...$$`，网页会通过 MathJax 正确渲染。
-- `mood` 只能取：calm / encouraging / playful / serious / excited / concerned。
-- `action` 只能取：explain / point / prompt / reflect / celebrate / idle。
+- 若需要公式，可在 `text` 中使用 LaTeX 数学语法；行内公式使用 `$...$`，独立公式使用 `$$...$$`，网页会通过 MathJax 正确渲染。所有反斜杠都必须作为 JSON 字符串内容合法转义。
+- 每次回答都必须认真填写 `mood` 和 `action`，让它们反映当前解释、追问、纠错、鼓励或场景操作的实际状态。
+- `mood` 与 `action` 可优先使用常见值，也允许输出更细的自定义词；不要为了稳定而机械重复同一个词。
+- 如有合适表达，尽量同时填写 `speech_style`、`delivery_cue`、`state_commentary`，其中：
+  - `speech_style` 表示说话风格或语气标签；
+  - `delivery_cue` 表示这一轮该如何说；
+  - `state_commentary` 表示为什么此刻处于这个状态，或场景修改后发生了什么。
+- 如果调用了场景工具，`state_commentary` 应简要解释这次场景变化或对象更新带来的影响。
 - 若生成题目，可在 `interactive_question` 中返回，不要把题干和选项重复写进 `text`。
 - 若需要回忆历史互动，可调用 `retrieve_memory_context`。
 - 若需要更强教材依据，可调用 `read_page_range_content`。
 - 若需要图表、公式或版式线索，可调用 `read_page_range_images`。
 - {{SCENE_TOOL_INSTRUCTION}}
+- 不要输出 ```json、```mermaid 或任何代码围栏；最终只返回一个合法 JSON 对象。
 - 最终回答必须严格匹配 schema。
 
 [user]

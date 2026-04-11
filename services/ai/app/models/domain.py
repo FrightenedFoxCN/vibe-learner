@@ -100,6 +100,8 @@ class CharacterStateEvent(BaseModel):
     timing_hint: str
     tool_name: str = ""
     tool_summary: str = ""
+    delivery_cue: str = ""
+    commentary: str = ""
 
 
 class Citation(BaseModel):
@@ -407,10 +409,16 @@ class ChatToolCallTraceRecord(BaseModel):
     result_json: str
 
 
+class RichTextBlockRecord(BaseModel):
+    kind: str
+    content: str
+
+
 class StudyChatResult(BaseModel):
     reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+    rich_blocks: list[RichTextBlockRecord] = []
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list["PersonaSlotTraceRecord"] = []
     memory_trace: list["MemoryTraceHitRecord"] = []
@@ -456,6 +464,7 @@ class DialogueTurnRecord(BaseModel):
     assistant_reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+    rich_blocks: list[RichTextBlockRecord] = []
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list[PersonaSlotTraceRecord] = []
     memory_trace: list[MemoryTraceHitRecord] = []

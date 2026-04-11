@@ -82,6 +82,9 @@ class PedagogyOrchestrator:
             mood=raw_reply.mood,
             action=raw_reply.action,
             line_segment_id=f"{session_id}:chat:{turn_index}",
+            speech_style=raw_reply.speech_style,
+            delivery_cue=raw_reply.delivery_cue,
+            commentary=raw_reply.state_commentary,
         )
         scene_hint = _build_scene_hint(section_id=section_id, citations=citations)
         for event in events:
@@ -97,6 +100,7 @@ class PedagogyOrchestrator:
             reply=raw_reply.text,
             citations=citations,
             character_events=[*events, *tool_events],
+            rich_blocks=raw_reply.rich_blocks or [],
             interactive_question=raw_reply.interactive_question,
             persona_slot_trace=slot_trace,
             memory_trace=memory_trace,
@@ -116,6 +120,9 @@ class PedagogyOrchestrator:
             mood=raw_reply.mood,
             action=raw_reply.action,
             line_segment_id=f"{section_id}:exercise:0",
+            speech_style=raw_reply.speech_style,
+            delivery_cue=raw_reply.delivery_cue,
+            commentary=raw_reply.state_commentary,
         )
         return ExerciseResult(
             exercise_id=f"exercise-{section_id}",
@@ -139,6 +146,9 @@ class PedagogyOrchestrator:
             mood=raw_reply.mood,
             action=raw_reply.action,
             line_segment_id=f"{exercise_id}:grade:0",
+            speech_style=raw_reply.speech_style,
+            delivery_cue=raw_reply.delivery_cue,
+            commentary=raw_reply.state_commentary,
         )
         score = 88 if len(answer.strip()) > 24 else 61
         diagnosis = (

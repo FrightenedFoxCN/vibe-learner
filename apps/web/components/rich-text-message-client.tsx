@@ -1,10 +1,13 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { isValidElement } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+
+import { MermaidDiagram } from "./mermaid-diagram";
 
 interface RichTextMessageClientProps {
   content: string;
@@ -64,7 +67,13 @@ export default function RichTextMessageClient({ content, style, inline = false }
               </code>
             );
           },
-          pre: ({ children }) => <pre style={styles.pre}>{children}</pre>,
+          pre: ({ children }) => {
+            const mermaidChart = extractMermaidChart(children);
+            if (mermaidChart) {
+              return <MermaidDiagram chart={mermaidChart} />;
+            }
+            return <pre style={styles.pre}>{children}</pre>;
+          },
         }}
       >
         {normalizedContent}
@@ -84,6 +93,19 @@ function normalizeRichTextContent(content: string) {
     .replace(/\n\s*[*-]\s+/g, "\n   - ")
     .replace(/([^\n])\n(\d+\.\s+)/g, "$1\n\n$2")
     .replace(/\n{3,}/g, "\n\n");
+}
+
+function extractMermaidChart(children: ReactNode) {
+  if (!isValidElement<{ className?: string; children?: ReactNode }>(children)) {
+    return "";
+  }
+  const className = String(children.props?.className ?? "");
+  if (!className.includes("language-mermaid")) {
+    return "";
+  }
+  return String(children.props?.children ?? "")
+    .replace(/\n$/, "")
+    .trim();
 }
 
 const styles: Record<string, CSSProperties> = {

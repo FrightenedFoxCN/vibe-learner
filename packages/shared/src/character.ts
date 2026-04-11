@@ -24,9 +24,9 @@ export const SPEECH_STYLES = [
   "energetic"
 ] as const;
 
-export type CharacterEmotion = (typeof CHARACTER_EMOTIONS)[number];
-export type CharacterAction = (typeof CHARACTER_ACTIONS)[number];
-export type SpeechStyle = (typeof SPEECH_STYLES)[number];
+export type CharacterEmotion = (typeof CHARACTER_EMOTIONS)[number] | string;
+export type CharacterAction = (typeof CHARACTER_ACTIONS)[number] | string;
+export type SpeechStyle = (typeof SPEECH_STYLES)[number] | string;
 
 export interface CharacterStateEvent {
   emotion: CharacterEmotion;
@@ -38,6 +38,8 @@ export interface CharacterStateEvent {
   timingHint: "instant" | "linger" | "after_text";
   toolName?: string;
   toolSummary?: string;
+  deliveryCue?: string;
+  commentary?: string;
 }
 
 export interface CharacterStreamFrame {

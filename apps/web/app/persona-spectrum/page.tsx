@@ -991,13 +991,25 @@ function splitCsv(value: string): string[] {
 }
 
 function coerceEmotions(value: string): CharacterEmotion[] {
-  const allowed = new Set<string>(CHARACTER_EMOTIONS);
-  return splitCsv(value).filter((item): item is CharacterEmotion => allowed.has(item));
+  return dedupeCsvValues(splitCsv(value));
 }
 
 function coerceActions(value: string): CharacterAction[] {
-  const allowed = new Set<string>(CHARACTER_ACTIONS);
-  return splitCsv(value).filter((item): item is CharacterAction => allowed.has(item));
+  return dedupeCsvValues(splitCsv(value));
+}
+
+function dedupeCsvValues<T extends string>(values: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  values.forEach((value) => {
+    const key = value.toLowerCase();
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    result.push(value);
+  });
+  return result;
 }
 
 function resolveSections(document: DocumentRecord): Array<{ id: string; title: string }> {

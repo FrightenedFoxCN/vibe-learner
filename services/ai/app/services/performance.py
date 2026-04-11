@@ -18,8 +18,11 @@ class PerformanceMapper:
         mood: str,
         action: str,
         line_segment_id: str,
+        speech_style: str = "",
+        delivery_cue: str = "",
+        commentary: str = "",
     ) -> list[CharacterStateEvent]:
-        speech_style = persona.default_speech_style
+        resolved_speech_style = speech_style or persona.default_speech_style
         intensity = 0.75 if mood in {"excited", "playful"} else 0.55
         narrative_mode = persona_narrative_mode_label(
             persona_slot_content(persona, "narrative_mode", "稳态导学")
@@ -29,10 +32,12 @@ class PerformanceMapper:
                 emotion=mood,
                 action=action,
                 intensity=intensity,
-                speech_style=speech_style,
+                speech_style=resolved_speech_style,
                 scene_hint=f"{persona.name}:{narrative_mode}",
                 line_segment_id=line_segment_id,
                 timing_hint="after_text",
+                delivery_cue=delivery_cue,
+                commentary=commentary or text[:140].strip(),
             )
         ]
 
@@ -64,6 +69,7 @@ class PerformanceMapper:
                     timing_hint="after_text",
                     tool_name=tool_call.tool_name,
                     tool_summary=tool_call.result_summary,
+                    commentary=tool_call.result_summary,
                 )
             )
         return events

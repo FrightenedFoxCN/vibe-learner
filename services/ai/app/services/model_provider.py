@@ -20,6 +20,7 @@ from app.models.domain import (
     PlanGenerationTraceRecord,
     PersonaProfile,
     PersonaSlot,
+    RichTextBlockRecord,
     SceneProfileRecord,
     StudyUnitRecord,
     normalize_persona_narrative_mode,
@@ -44,11 +45,20 @@ from app.services.session_scene import (
 
 logger = get_logger("vibe_learner.model_provider")
 
+MERMAID_BLOCK_RE = re.compile(
+    r"```mermaid\s*\n(.*?)```|```\s*\nmermaid\s*\n(.*?)```",
+    re.IGNORECASE | re.DOTALL,
+)
+
 CHAT_JSON_SCHEMA = (
     '{'
     '"text": string, '
-    '"mood": "calm" | "encouraging" | "playful" | "serious" | "excited" | "concerned", '
-    '"action": "explain" | "point" | "prompt" | "reflect" | "celebrate" | "idle", '
+    '"mood": string, '
+    '"action": string, '
+    '"speech_style"?: string, '
+    '"delivery_cue"?: string, '
+    '"state_commentary"?: string, '
+    '"rich_blocks"?: [{"kind": string, "content": string}], '
     '"interactive_question"?: {'
     '"question_type": "multiple_choice" | "fill_blank", '
     '"prompt": string, '
@@ -96,11 +106,127 @@ def _setting_prompt_sections() -> dict[str, str]:
     }
 
 
+def _dedupe_rich_blocks(blocks: list[RichTextBlockRecord]) -> list[RichTextBlockRecord]:
+    result: list[RichTextBlockRecord] = []
+    seen: set[tuple[str, str]] = set()
+    for block in blocks:
+        key = (block.kind.strip().lower(), block.content.strip())
+        if not key[0] or not key[1] or key in seen:
+            continue
+        seen.add(key)
+        result.append(
+            RichTextBlockRecord(
+                kind=block.kind.strip(),
+                content=block.content.strip(),
+            )
+        )
+    return result
+
+
+def _extract_rich_blocks_payload(parsed: dict[str, object]) -> list[RichTextBlockRecord]:
+    raw_blocks = parsed.get("rich_blocks")
+    if not isinstance(raw_blocks, list):
+        return []
+    result: list[RichTextBlockRecord] = []
+    for item in raw_blocks:
+        if not isinstance(item, dict):
+            continue
+        kind = str(item.get("kind") or "").strip()
+        content = str(item.get("content") or "").strip()
+        if not kind or not content:
+            continue
+        result.append(RichTextBlockRecord(kind=kind, content=content))
+    return _dedupe_rich_blocks(result)
+
+
+def _extract_mermaid_blocks_from_text(text: str) -> tuple[str, list[RichTextBlockRecord]]:
+    blocks: list[RichTextBlockRecord] = []
+
+    def replace(match: re.Match[str]) -> str:
+        content = (match.group(1) or match.group(2) or "").strip()
+        if content:
+            blocks.append(RichTextBlockRecord(kind="mermaid", content=content))
+        return "\n\n"
+
+    cleaned = MERMAID_BLOCK_RE.sub(replace, text)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned, _dedupe_rich_blocks(blocks)
+
+
+def _normalize_reply_text_and_blocks(
+    *,
+    text: str,
+    rich_blocks: list[RichTextBlockRecord],
+) -> tuple[str, list[RichTextBlockRecord]]:
+    cleaned_text, inline_blocks = _extract_mermaid_blocks_from_text(text)
+    merged = _dedupe_rich_blocks([*rich_blocks, *inline_blocks])
+    return cleaned_text, merged
+
+
+def _recover_legacy_chat_payload(content: str) -> dict[str, object] | None:
+    text_key = '"text": "'
+    text_start = content.find(text_key)
+    if text_start == -1:
+        return None
+    raw_text_start = text_start + len(text_key)
+    raw_text_end = content.find('",\n  "mood"', raw_text_start)
+    if raw_text_end == -1:
+        raw_text = content[raw_text_start:]
+        raw_text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
+        raw_text = re.sub(r'"\s*}\s*```?\s*$', "", raw_text).rstrip("`").rstrip()
+    else:
+        raw_text = content[raw_text_start:raw_text_end]
+    repaired_source = (
+        raw_text
+        .replace(r"\"", "__ESCAPED_QUOTE__")
+        .replace('"', r"\"")
+        .replace("__ESCAPED_QUOTE__", r"\"")
+        .replace("\r\n", r"\n")
+        .replace("\n", r"\n")
+    )
+    try:
+        recovered_text = json.loads(f'"{repaired_source}"')
+    except json.JSONDecodeError:
+        return None
+    payload: dict[str, object] = {
+        "text": recovered_text,
+        "mood": str(re.search(r'"mood"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"mood"\s*:\s*"([^"]+)"', content) else "calm",
+        "action": str(re.search(r'"action"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"action"\s*:\s*"([^"]+)"', content) else "explain",
+    }
+    speech_style_match = re.search(r'"speech_style"\s*:\s*"([^"]+)"', content)
+    delivery_cue_match = re.search(r'"delivery_cue"\s*:\s*"([^"]+)"', content)
+    commentary_match = re.search(r'"state_commentary"\s*:\s*"([^"]+)"', content)
+    if speech_style_match:
+        payload["speech_style"] = speech_style_match.group(1)
+    if delivery_cue_match:
+        payload["delivery_cue"] = delivery_cue_match.group(1)
+    if commentary_match:
+        payload["state_commentary"] = commentary_match.group(1)
+    return payload
+
+
+def _build_persona_event_guidance(persona: PersonaProfile) -> str:
+    available_emotions = ", ".join(persona.available_emotions) or "calm, encouraging, serious"
+    available_actions = ", ".join(persona.available_actions) or "explain, prompt, reflect"
+    default_speech_style = persona.default_speech_style or "steady"
+    return (
+        f"- 优先从这些情绪词中挑选最贴合当前回答的一项，必要时也可自定义更细的情绪：{available_emotions}。\n"
+        f"- 优先从这些动作词中挑选最贴合当前回答的一项，必要时也可自定义更细的动作：{available_actions}。\n"
+        f"- `speech_style` 默认参考 `{default_speech_style}`，但可按当前互动切换成更具体的语气标签。\n"
+        "- `delivery_cue` 用一句中文短语描述语气、节奏或停顿方式，例如“先压低语速，再逐步抬高强调”。\n"
+        "- `state_commentary` 用一句中文短句解释本轮状态变化、场景操作结果或当前陪伴策略。"
+    )
+
+
 @dataclass
 class ModelReply:
     text: str
     mood: str
     action: str
+    speech_style: str = ""
+    delivery_cue: str = ""
+    state_commentary: str = ""
+    rich_blocks: list[RichTextBlockRecord] | None = None
     interactive_question: dict[str, Any] | None = None
     memory_trace: list[dict[str, Any]] | None = None
     tool_calls: list[ChatToolCallTraceRecord] | None = None
@@ -244,7 +370,16 @@ class MockModelProvider(ModelProvider):
         )
         narrative_mode = persona_slot_content(persona, "narrative_mode", "稳态导学")
         mood = "playful" if normalize_persona_narrative_mode(narrative_mode) == "light_story" else "calm"
-        return ModelReply(text=text, mood=mood, action="explain", memory_trace=memory_trace_hits or [])
+        return ModelReply(
+            text=text,
+            mood=mood,
+            action="explain",
+            speech_style=persona.default_speech_style,
+            delivery_cue="先稳住节奏，再把概念拆成两到三个抓手。",
+            state_commentary=f"围绕 {section_id} 保持连续讲解，并根据当前提问延展重点。",
+            rich_blocks=[],
+            memory_trace=memory_trace_hits or [],
+        )
 
     def generate_exercise(
         self, *, persona: PersonaProfile, section_id: str, topic: str
@@ -253,7 +388,15 @@ class MockModelProvider(ModelProvider):
             f"围绕 {section_id} 的 {topic}，请你先用三句话概括概念，"
             "再举一个教材中的例子。"
         )
-        return ModelReply(text=text, mood="encouraging", action="prompt")
+        return ModelReply(
+            text=text,
+            mood="encouraging",
+            action="prompt",
+            speech_style=persona.default_speech_style,
+            delivery_cue="提问时把语气往前推一点，给学习者明确的答题起点。",
+            state_commentary=f"正在把 {topic} 转成可作答的小练习。",
+            rich_blocks=[],
+        )
 
     def grade_submission(
         self, *, persona: PersonaProfile, exercise_id: str, answer: str
@@ -265,7 +408,15 @@ class MockModelProvider(ModelProvider):
         )
         mood = "excited" if quality == "完整" else "concerned"
         action = "celebrate" if quality == "完整" else "reflect"
-        return ModelReply(text=text, mood=mood, action=action)
+        return ModelReply(
+            text=text,
+            mood=mood,
+            action=action,
+            speech_style=persona.default_speech_style,
+            delivery_cue="先给判断，再补原因，末尾留一个可执行的修正动作。",
+            state_commentary="正在根据答题完整度切换鼓励或纠偏反馈。",
+            rich_blocks=[],
+        )
 
     def generate_learning_plan(
         self,
@@ -531,6 +682,7 @@ class OpenAIModelProvider(MockModelProvider):
                 .replace("{{SESSION_SYSTEM_PROMPT}}", session_prompt.strip())
                 .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
                 .replace("{{PERSONA_SLOTS}}", persona_slots_text or "无")
+                .replace("{{PERSONA_EVENT_GUIDANCE}}", _build_persona_event_guidance(persona))
                 .replace("{{SCENE_TOOL_INSTRUCTION}}", scene_tool_instruction),
             }
         ]
@@ -1648,14 +1800,19 @@ def _parse_chat_model_reply(
                 invalid_payload_code="chat_model_invalid_payload",
             )
         except RuntimeError:
-            finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
-            logger.info(
-                "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s content_preview=%s",
-                finish_reason,
-                reasoning_tokens,
-                completion_tokens,
-                content[:120],
-            )
+            legacy_payload = _recover_legacy_chat_payload(content)
+            if legacy_payload is not None:
+                parsed = legacy_payload
+                logger.info("model.chat.parse_recovered legacy_text_payload")
+            else:
+                finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
+                logger.info(
+                    "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s content_preview=%s",
+                    finish_reason,
+                    reasoning_tokens,
+                    completion_tokens,
+                    content[:120],
+                )
 
     interactive_question = _extract_interactive_question_payload(
         parsed=parsed,
@@ -1663,8 +1820,12 @@ def _parse_chat_model_reply(
     )
     memory_trace = _extract_memory_trace_payload(tool_results, fallback_memory_trace)
     scene_profile = extract_scene_profile_from_tool_results(tool_results)
+    rich_blocks = _extract_rich_blocks_payload(parsed)
     mood = str(parsed.get("mood") or "calm")
     action = str(parsed.get("action") or "explain")
+    speech_style = str(parsed.get("speech_style") or "").strip()
+    delivery_cue = str(parsed.get("delivery_cue") or "").strip()
+    state_commentary = str(parsed.get("state_commentary") or "").strip()
     text = str(parsed.get("text") or "").strip()
 
     if not text:
@@ -1683,10 +1844,18 @@ def _parse_chat_model_reply(
             raise RuntimeError("chat_model_invalid_payload")
 
     text = _sanitize_reply_text_for_question(text, interactive_question)
+    text, rich_blocks = _normalize_reply_text_and_blocks(
+        text=text,
+        rich_blocks=rich_blocks,
+    )
     return ModelReply(
         text=text.strip(),
         mood=mood,
         action=action,
+        speech_style=speech_style,
+        delivery_cue=delivery_cue,
+        state_commentary=state_commentary,
+        rich_blocks=rich_blocks,
         interactive_question=interactive_question,
         memory_trace=memory_trace,
         tool_calls=tool_traces,

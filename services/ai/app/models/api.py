@@ -404,6 +404,7 @@ class StudyChatResponse(BaseModel):
     reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
+    rich_blocks: list[dict[str, str]] = []
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list[dict[str, str]] = []
     memory_trace: list[dict[str, object]] = []
