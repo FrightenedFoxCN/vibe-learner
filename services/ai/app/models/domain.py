@@ -32,6 +32,9 @@ class PersonaSlot(BaseModel):
     kind: str
     label: str
     content: str
+    weight: float = 1.0
+    locked: bool = False
+    sort_order: int = 0
 
 
 class PersonaProfile(BaseModel):
@@ -48,7 +51,7 @@ class PersonaProfile(BaseModel):
 
 def persona_slot_content(persona: PersonaProfile, kind: str, default: str = "") -> str:
     """Return the content of the first slot matching ``kind``, or ``default``."""
-    for slot in persona.slots:
+    for slot in persona_sorted_slots(persona.slots):
         if slot.kind == kind:
             return slot.content
     return default
@@ -60,6 +63,18 @@ def persona_slot_list(persona: PersonaProfile, kind: str) -> list[str]:
     if not content:
         return []
     return [s.strip() for s in content.split(",") if s.strip()]
+
+
+def persona_sorted_slots(slots: list[PersonaSlot]) -> list[PersonaSlot]:
+    """Sort slots by assembly order: sort_order asc, then weight desc, then stable label."""
+    return sorted(
+        slots,
+        key=lambda slot: (
+            int(slot.sort_order),
+            -float(slot.weight),
+            slot.label,
+        ),
+    )
 
 
 class CharacterStateEvent(BaseModel):
@@ -264,6 +279,14 @@ class StudyChatResult(BaseModel):
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
     interactive_question: InteractiveQuestion | None = None
+    persona_slot_trace: list["PersonaSlotTraceRecord"] = []
+
+
+class PersonaSlotTraceRecord(BaseModel):
+    kind: str
+    label: str
+    content_excerpt: str
+    reason: str
 
 
 class InteractiveQuestionOption(BaseModel):
@@ -288,6 +311,7 @@ class DialogueTurnRecord(BaseModel):
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
     interactive_question: InteractiveQuestion | None = None
+    persona_slot_trace: list[PersonaSlotTraceRecord] = []
     created_at: str
 
 

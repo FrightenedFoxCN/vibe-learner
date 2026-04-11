@@ -19,6 +19,7 @@ from app.models.domain import (
     PersonaSlot,
     StudyUnitRecord,
     persona_slot_content,
+        persona_sorted_slots,
 )
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
@@ -106,6 +107,16 @@ class ModelProvider:
         name: str,
         summary: str,
         slots: list[PersonaSlot],
+        rewrite_strength: float,
+    ) -> dict[str, object]:
+        raise NotImplementedError
+
+    def assist_persona_slot(
+        self,
+        *,
+        name: str,
+        summary: str,
+        slot: PersonaSlot,
         rewrite_strength: float,
     ) -> dict[str, object]:
         raise NotImplementedError
@@ -213,12 +224,13 @@ class MockModelProvider(ModelProvider):
         slots: list[PersonaSlot],
         rewrite_strength: float,
     ) -> dict[str, object]:
-        worldview = next((s.content for s in slots if s.kind == "worldview"), "")
-        past_exp = next((s.content for s in slots if s.kind == "past_experiences"), "")
-        teaching_method = next((s.content for s in slots if s.kind == "teaching_method"), "")
-        narrative_mode = next((s.content for s in slots if s.kind == "narrative_mode"), "grounded")
-        encouragement_style = next((s.content for s in slots if s.kind == "encouragement_style"), "")
-        correction_style = next((s.content for s in slots if s.kind == "correction_style"), "")
+        ordered_slots = persona_sorted_slots(slots)
+        worldview = next((s.content for s in ordered_slots if s.kind == "worldview"), "")
+        past_exp = next((s.content for s in ordered_slots if s.kind == "past_experiences"), "")
+        teaching_method = next((s.content for s in ordered_slots if s.kind == "teaching_method"), "")
+        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "grounded")
+        encouragement_style = next((s.content for s in ordered_slots if s.kind == "encouragement_style"), "")
+        correction_style = next((s.content for s in ordered_slots if s.kind == "correction_style"), "")
 
         style_text = teaching_method.strip() or "结构化讲解"
         narrative_text = "轻剧情" if narrative_mode.strip() == "light_story" else "稳态导学"
@@ -242,10 +254,17 @@ class MockModelProvider(ModelProvider):
             )
         updated_slots: list[PersonaSlot] = []
         narrative_inserted = False
-        for slot in slots:
+        for slot in ordered_slots:
             if slot.kind in ("worldview", "past_experiences") and not narrative_inserted:
                 updated_slots.append(
-                    PersonaSlot(kind=slot.kind, label=slot.label, content=narrative_content)
+                    PersonaSlot(
+                        kind=slot.kind,
+                        label=slot.label,
+                        content=narrative_content,
+                        weight=slot.weight,
+                        locked=slot.locked,
+                        sort_order=slot.sort_order,
+                    )
                 )
                 narrative_inserted = True
             elif slot.kind in ("worldview", "past_experiences"):
@@ -254,7 +273,7 @@ class MockModelProvider(ModelProvider):
                 updated_slots.append(slot)
         if not narrative_inserted:
             updated_slots.append(
-                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content)
+                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content, sort_order=10)
             )
         prompt = (
             "You are a chapter-grounded tutor persona. "
@@ -266,6 +285,43 @@ class MockModelProvider(ModelProvider):
         return {
             "slots": [s.model_dump() for s in updated_slots],
             "system_prompt_suggestion": prompt,
+        }
+
+    def assist_persona_slot(
+        self,
+        *,
+        name: str,
+        summary: str,
+        slot: PersonaSlot,
+        rewrite_strength: float,
+    ) -> dict[str, object]:
+        identity_name = name.strip() or "这位教师"
+        strength = max(0.0, min(1.0, rewrite_strength))
+        base = slot.content.strip()
+        if slot.kind == "worldview":
+            rewritten = f"{identity_name} 坚持先建立概念锚点，再推进抽象推理，并始终回到章节证据。"
+        elif slot.kind == "past_experiences":
+            rewritten = "曾长期负责章节导学与错题复盘，习惯把复杂主题拆解成可执行步骤。"
+        elif slot.kind == "thinking_style":
+            rewritten = "先澄清前提，再给推理链，最后做边界与反例检查。"
+        elif slot.kind == "teaching_method":
+            rewritten = "按“概念-例子-反例-迁移”组织讲解，每次聚焦一个关键难点。"
+        elif slot.kind == "encouragement_style":
+            rewritten = "鼓励聚焦具体进步与可复现方法，避免空泛夸奖。"
+        elif slot.kind == "correction_style":
+            rewritten = "纠错先指出可执行改进点，再给下一步练习，保持语气温和但明确。"
+        else:
+            rewritten = f"{identity_name}：{summary or '围绕章节核心概念组织学习路径'}。"
+        content = f"{base}\n\n润色补充：{rewritten}" if base and strength < 0.45 else rewritten
+        return {
+            "slot": PersonaSlot(
+                kind=slot.kind,
+                label=slot.label,
+                content=content,
+                weight=slot.weight,
+                locked=slot.locked,
+                sort_order=slot.sort_order,
+            ).model_dump()
         }
 
 
@@ -327,12 +383,18 @@ class OpenAIModelProvider(MockModelProvider):
         document_path: str | None = None,
     ) -> ModelReply:
         history = conversation_history or []
+        persona_slots_text = "\n".join(
+            f"- [{slot.kind}] {slot.label}: {slot.content}"
+            for slot in persona_sorted_slots(persona.slots)
+            if slot.content.strip()
+        )
         messages: list[dict[str, Any]] = [
             {
                 "role": "system",
                 "content": (
                     f"{persona.system_prompt}\n"
                     f"{session_prompt.strip()}\n"
+                    f"Persona slot assembly (ordered):\n{persona_slots_text or 'N/A'}\n"
                     "You are a tutor for a chapter-focused learning chat. "
                     "Output strict JSON with keys: text, mood, action. "
                     "mood must be one of calm, encouraging, playful, serious, excited, concerned. "
@@ -469,8 +531,11 @@ class OpenAIModelProvider(MockModelProvider):
         slots: list[PersonaSlot],
         rewrite_strength: float,
     ) -> dict[str, object]:
+        ordered_slots = persona_sorted_slots(slots)
         slots_text = "\n".join(
-            f"{s.kind} ({s.label}): {s.content}" for s in slots if s.content.strip()
+            f"{s.kind} ({s.label}) [sort_order={s.sort_order}, weight={s.weight}]: {s.content}"
+            for s in ordered_slots
+            if s.content.strip()
         )
         payload: dict[str, Any] = {
             "model": self.setting_model,
@@ -526,6 +591,9 @@ class OpenAIModelProvider(MockModelProvider):
                         kind=str(item["kind"]),
                         label=str(item.get("label") or item["kind"]),
                         content=str(item["content"]),
+                        weight=float(item.get("weight") or 1),
+                        locked=bool(item.get("locked") or False),
+                        sort_order=int(item.get("sort_order") or 0),
                     )
                 )
         if not returned_slots:
@@ -533,6 +601,68 @@ class OpenAIModelProvider(MockModelProvider):
         return {
             "slots": [s.model_dump() for s in returned_slots],
             "system_prompt_suggestion": system_prompt_suggestion,
+        }
+
+    def assist_persona_slot(
+        self,
+        *,
+        name: str,
+        summary: str,
+        slot: PersonaSlot,
+        rewrite_strength: float,
+    ) -> dict[str, object]:
+        payload: dict[str, Any] = {
+            "model": self.setting_model,
+            "temperature": self.setting_temperature,
+            "max_tokens": self.setting_max_tokens,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "你是人格卡片润色助手。只返回严格 JSON，格式："
+                        "{\"slot\": {\"kind\": string, \"label\": string, \"content\": string}}。"
+                        "内容必须是中文，保持教师人格与章节导学场景一致。"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        "请重写这张人格卡片。\n"
+                        f"name: {name}\n"
+                        f"summary: {summary}\n"
+                        f"slot.kind: {slot.kind}\n"
+                        f"slot.label: {slot.label}\n"
+                        f"slot.content: {slot.content}\n"
+                        f"rewrite_strength: {max(0.0, min(1.0, rewrite_strength))}\n"
+                        "rewrite_strength 语义：0=尽量保留原文并增量润色；1=可重写为同人设新版本。"
+                    ),
+                },
+            ],
+        }
+        raw_payload, _ = self._request_openai_chat_completion(
+            payload,
+            request_kind="setting",
+            model=self.setting_model,
+        )
+        raw_content = _extract_choice_content(raw_payload)
+        parsed = _extract_json_payload(
+            raw_content,
+            invalid_json_code="setting_model_invalid_json",
+            invalid_payload_code="setting_model_invalid_payload",
+        )
+        slot_raw = parsed.get("slot")
+        if not isinstance(slot_raw, dict) or not slot_raw.get("kind") or not slot_raw.get("content"):
+            raise RuntimeError("setting_model_invalid_payload")
+        return {
+            "slot": PersonaSlot(
+                kind=str(slot_raw.get("kind")),
+                label=str(slot_raw.get("label") or slot_raw.get("kind")),
+                content=str(slot_raw.get("content")),
+                weight=float(slot_raw.get("weight") or slot.weight),
+                locked=bool(slot_raw.get("locked") if slot_raw.get("locked") is not None else slot.locked),
+                sort_order=int(slot_raw.get("sort_order") if slot_raw.get("sort_order") is not None else slot.sort_order),
+            ).model_dump()
         }
 
 

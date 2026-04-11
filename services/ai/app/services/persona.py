@@ -3,7 +3,13 @@ from __future__ import annotations
 from fastapi import HTTPException
 
 from app.models.api import CreatePersonaRequest, UpdatePersonaRequest
-from app.models.domain import PersonaProfile, PersonaSlot, persona_slot_content, persona_slot_list
+from app.models.domain import (
+    PersonaProfile,
+    PersonaSlot,
+    persona_slot_content,
+    persona_slot_list,
+    persona_sorted_slots,
+)
 
 
 class PersonaEngine:
@@ -91,12 +97,13 @@ class PersonaEngine:
         summary: str,
         slots: list[PersonaSlot],
     ) -> dict[str, object]:
-        worldview = next((s.content for s in slots if s.kind == "worldview"), "")
-        past_exp = next((s.content for s in slots if s.kind == "past_experiences"), "")
-        teaching_method = next((s.content for s in slots if s.kind == "teaching_method"), "")
-        narrative_mode = next((s.content for s in slots if s.kind == "narrative_mode"), "grounded")
-        encouragement_style = next((s.content for s in slots if s.kind == "encouragement_style"), "")
-        correction_style = next((s.content for s in slots if s.kind == "correction_style"), "")
+        ordered_slots = persona_sorted_slots(slots)
+        worldview = next((s.content for s in ordered_slots if s.kind == "worldview"), "")
+        past_exp = next((s.content for s in ordered_slots if s.kind == "past_experiences"), "")
+        teaching_method = next((s.content for s in ordered_slots if s.kind == "teaching_method"), "")
+        narrative_mode = next((s.content for s in ordered_slots if s.kind == "narrative_mode"), "grounded")
+        encouragement_style = next((s.content for s in ordered_slots if s.kind == "encouragement_style"), "")
+        correction_style = next((s.content for s in ordered_slots if s.kind == "correction_style"), "")
 
         style_text = teaching_method.strip() or "结构化讲解"
         narrative_text = "轻剧情" if narrative_mode.strip() == "light_story" else "稳态导学"
@@ -124,10 +131,17 @@ class PersonaEngine:
 
         updated_slots: list[PersonaSlot] = []
         narrative_inserted = False
-        for slot in slots:
+        for slot in ordered_slots:
             if slot.kind in ("worldview", "past_experiences") and not narrative_inserted:
                 updated_slots.append(
-                    PersonaSlot(kind=slot.kind, label=slot.label, content=narrative_content)
+                    PersonaSlot(
+                        kind=slot.kind,
+                        label=slot.label,
+                        content=narrative_content,
+                        weight=slot.weight,
+                        locked=slot.locked,
+                        sort_order=slot.sort_order,
+                    )
                 )
                 narrative_inserted = True
             elif slot.kind in ("worldview", "past_experiences"):
@@ -136,7 +150,7 @@ class PersonaEngine:
                 updated_slots.append(slot)
         if not narrative_inserted:
             updated_slots.append(
-                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content)
+                PersonaSlot(kind="worldview", label="世界观起点", content=narrative_content, sort_order=10)
             )
 
         prompt = (
@@ -150,6 +164,55 @@ class PersonaEngine:
             "slots": [s.model_dump() for s in updated_slots],
             "system_prompt_suggestion": prompt,
         }
+
+    def assist_slot(
+        self,
+        *,
+        name: str,
+        summary: str,
+        slot: PersonaSlot,
+        rewrite_strength: float,
+    ) -> PersonaSlot:
+        identity_name = name.strip() or "这位教师"
+        summary_text = summary.strip() or "围绕章节核心概念组织学习路径"
+        base = slot.content.strip()
+        strength = max(0.0, min(1.0, rewrite_strength))
+
+        if slot.kind == "worldview":
+            rewritten = (
+                f"{identity_name} 相信学习应该先建立可验证的概念支点，再推进抽象推理与迁移。"
+                f"在教学中始终围绕教材章节结构，避免脱离文本的空泛发挥。"
+            )
+        elif slot.kind == "past_experiences":
+            rewritten = (
+                f"{identity_name} 曾长期负责章节导学与错题复盘，形成了“先稳核心定义、再攻难点变体”的节奏。"
+                f"这段经历让其在复杂主题中更擅长拆解路径。"
+            )
+        elif slot.kind == "thinking_style":
+            rewritten = "先澄清前提，再给出推理链，最后用反例或边界条件做自检。"
+        elif slot.kind == "teaching_method":
+            rewritten = "按“概念-例子-反例-迁移”四步推进，每轮只解决一个关键难点。"
+        elif slot.kind == "correction_style":
+            rewritten = "纠错先指出可执行改进点，再给下一步练习，不使用否定人格的措辞。"
+        elif slot.kind == "encouragement_style":
+            rewritten = "鼓励聚焦具体进步与可复现方法，避免空泛夸奖。"
+        elif slot.kind == "narrative_mode":
+            rewritten = "grounded"
+        else:
+            rewritten = f"{identity_name}：{summary_text}。{base or '请补充该插槽内容。'}"
+
+        if base and strength < 0.45:
+            content = f"{base}\n\n润色补充：{rewritten}"
+        else:
+            content = rewritten
+        return PersonaSlot(
+            kind=slot.kind,
+            label=slot.label,
+            content=content,
+            weight=slot.weight,
+            locked=slot.locked,
+            sort_order=slot.sort_order,
+        )
 
     def _builtin_personas(self) -> list[PersonaProfile]:
         return [

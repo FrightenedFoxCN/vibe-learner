@@ -1,5 +1,12 @@
 import type { CharacterStateEvent } from "./character";
 
+export interface PersonaSlotTraceEntry {
+  kind: string;
+  label: string;
+  contentExcerpt: string;
+  reason: string;
+}
+
 export interface Citation {
   sectionId: string;
   title: string;
@@ -158,6 +165,7 @@ export interface StudyChatResponse {
   citations: Citation[];
   characterEvents: CharacterStateEvent[];
   interactiveQuestion?: InteractiveQuestion;
+  personaSlotTrace?: PersonaSlotTraceEntry[];
 }
 
 export interface InteractiveQuestionOption {
@@ -229,6 +237,7 @@ export interface DialogueTurnRecord {
   citations: Citation[];
   characterEvents: CharacterStateEvent[];
   interactiveQuestion?: InteractiveQuestion;
+  personaSlotTrace?: PersonaSlotTraceEntry[];
   createdAt: string;
 }
 

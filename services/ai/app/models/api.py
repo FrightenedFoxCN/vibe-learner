@@ -52,6 +52,17 @@ class PersonaSettingAssistResponse(BaseModel):
     system_prompt_suggestion: str
 
 
+class PersonaSlotAssistRequest(BaseModel):
+    name: str
+    summary: str
+    slot: PersonaSlot
+    rewrite_strength: float = Field(default=0.5, ge=0.0, le=1.0)
+
+
+class PersonaSlotAssistResponse(BaseModel):
+    slot: PersonaSlot
+
+
 class PersonaResponse(PersonaProfile):
     pass
 
@@ -222,6 +233,7 @@ class StudyChatResponse(BaseModel):
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
     interactive_question: InteractiveQuestion | None = None
+    persona_slot_trace: list[dict[str, str]] = []
 
 
 class StudyChatExchangeResponse(StudyChatResponse):

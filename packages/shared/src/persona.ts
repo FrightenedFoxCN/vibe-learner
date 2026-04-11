@@ -28,6 +28,9 @@ export interface PersonaSlot {
   kind: PersonaSlotKind | string;
   label: string;
   content: string;
+  weight?: number;
+  locked?: boolean;
+  sortOrder?: number;
 }
 
 export interface PersonaProfile {

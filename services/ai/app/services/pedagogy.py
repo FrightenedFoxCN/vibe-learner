@@ -8,8 +8,10 @@ from app.models.domain import (
     DocumentDebugRecord,
     ExerciseResult,
     PersonaProfile,
+    PersonaSlotTraceRecord,
     StudyChatResult,
     SubmissionGradeResult,
+    persona_sorted_slots,
 )
 from app.services.model_provider import ModelProvider
 from app.services.performance import PerformanceMapper
@@ -63,11 +65,13 @@ class PedagogyOrchestrator:
         scene_hint = _build_scene_hint(section_id=section_id, citations=citations)
         for event in events:
             event.scene_hint = scene_hint
+        slot_trace = _build_persona_slot_trace(persona=persona, message=message)
         return StudyChatResult(
             reply=raw_reply.text,
             citations=citations,
             character_events=events,
             interactive_question=raw_reply.interactive_question,
+            persona_slot_trace=slot_trace,
         )
 
     def generate_exercise(
@@ -282,3 +286,31 @@ def _truncate_for_prompt(text: str, *, limit: int) -> str:
     if len(compact) <= limit:
         return compact
     return compact[: limit - 3] + "..."
+
+
+def _build_persona_slot_trace(*, persona: PersonaProfile, message: str) -> list[PersonaSlotTraceRecord]:
+    tokens = set(_tokenize(message))
+    scored: list[tuple[int, int, PersonaSlotTraceRecord]] = []
+    for index, slot in enumerate(persona_sorted_slots(persona.slots)):
+        content = slot.content.strip()
+        if not content:
+            continue
+        content_lower = content.lower()
+        score = sum(1 for token in tokens if token in content_lower)
+        if score == 0 and slot.kind not in ("teaching_method", "thinking_style", "worldview"):
+            continue
+        reason = "命中提问关键词" if score > 0 else "作为人格基础策略默认参与"
+        scored.append(
+            (
+                score,
+                index,
+                PersonaSlotTraceRecord(
+                    kind=slot.kind,
+                    label=slot.label,
+                    content_excerpt=_truncate_for_prompt(content, limit=80),
+                    reason=reason,
+                ),
+            )
+        )
+    scored.sort(key=lambda item: (item[0], -item[1]), reverse=True)
+    return [item[2] for item in scored[:4]]

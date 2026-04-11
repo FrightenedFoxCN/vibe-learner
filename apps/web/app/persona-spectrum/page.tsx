@@ -23,6 +23,7 @@ import {
 import { CharacterShell } from "../../components/character-shell";
 import { TopNav } from "../../components/top-nav";
 import {
+  assistPersonaSlot,
   assistPersonaSetting,
   createPersona,
   createStudySession,
@@ -37,6 +38,48 @@ import {
 
 type TimingHint = "instant" | "linger" | "after_text";
 
+const TIMING_HINT_LABELS: Record<TimingHint, string> = {
+  instant: "立即触发",
+  linger: "延迟停留",
+  after_text: "文本后触发"
+};
+
+const SLOT_KIND_HINTS: Record<string, string> = {
+  worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
+  past_experiences: "描述关键经历与背景，解释“为什么这个人格会这样教学”。",
+  thinking_style: "描述推理与验证方式，例如是否先讲前提、是否强调反例。",
+  teaching_method: "描述课堂推进方法，例如拆解步骤、提问节奏、练习设计。",
+  narrative_mode: "描述叙事密度，建议使用 grounded（贴地）或 light_story（轻故事）。",
+  encouragement_style: "描述鼓励策略，应当具体可执行，避免泛泛鼓励。",
+  correction_style: "描述纠错方式，建议先指出可改进点，再给下一步动作。",
+  custom: "自定义插槽，用于补充特殊设定。"
+};
+
+const EMOTION_LABELS: Record<string, string> = {
+  calm: "平静",
+  encouraging: "鼓励",
+  playful: "活泼",
+  serious: "严谨",
+  excited: "兴奋",
+  concerned: "关切"
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  idle: "待机",
+  explain: "讲解",
+  point: "指向",
+  celebrate: "庆祝",
+  reflect: "反思",
+  prompt: "提问引导"
+};
+
+const SPEECH_STYLE_LABELS: Record<string, string> = {
+  warm: "温和",
+  steady: "稳重",
+  energetic: "活力",
+  concise: "简洁"
+};
+
 interface PersonaDraft {
   name: string;
   summary: string;
@@ -45,6 +88,11 @@ interface PersonaDraft {
   availableEmotionsText: string;
   availableActionsText: string;
   defaultSpeechStyle: SpeechStyle;
+}
+
+function clampWeight(value: number): number {
+  const n = Number.isFinite(value) ? Math.round(value) : 50;
+  return Math.max(0, Math.min(100, n));
 }
 
 const EMPTY_DRAFT: PersonaDraft = {
@@ -68,13 +116,13 @@ const SLOT_TEMPLATES: Array<{ kind: PersonaSlotKind; text: string }> = [
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
   summary: "示例人格：强调章节脉络与可执行反馈。",
-  systemPrompt: "Prioritize chapter-grounded explanation, progressive questioning, and concise actionable feedback.",
+  systemPrompt: "优先基于章节内容讲解，通过递进式提问推进理解，并给出简洁可执行的反馈。",
   slots: [
     { kind: "worldview", label: "世界观起点", content: "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。" },
-    { kind: "teaching_method", label: "教学方法", content: "structured, guided" },
-    { kind: "narrative_mode", label: "叙事模式", content: "grounded" },
-    { kind: "encouragement_style", label: "鼓励策略", content: "small wins" },
-    { kind: "correction_style", label: "纠错策略", content: "precise but warm" }
+    { kind: "teaching_method", label: "教学方法", content: "结构化、引导式推进" },
+    { kind: "narrative_mode", label: "叙事模式", content: "贴地（grounded）" },
+    { kind: "encouragement_style", label: "鼓励策略", content: "强调小步成功与可见进展" },
+    { kind: "correction_style", label: "纠错策略", content: "准确指出问题，同时保持温和语气" }
   ],
   availableEmotions: ["calm", "encouraging", "serious"],
   availableActions: ["idle", "explain", "point", "reflect"],
@@ -97,6 +145,7 @@ export default function PersonaSpectrumPage() {
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [assistPending, setAssistPending] = useState(false);
+  const [slotAssistIndex, setSlotAssistIndex] = useState<number | null>(null);
   const [assistError, setAssistError] = useState("");
   const [retainRatio, setRetainRatio] = useState(0.7);
   const [configMessage, setConfigMessage] = useState("");
@@ -106,7 +155,7 @@ export default function PersonaSpectrumPage() {
   const [previewAction, setPreviewAction] = useState<CharacterAction>("idle");
   const [previewSpeech, setPreviewSpeech] = useState<SpeechStyle>("warm");
   const [previewIntensity, setPreviewIntensity] = useState(0.6);
-  const [previewSceneHint, setPreviewSceneHint] = useState("persona_spectrum_preview");
+  const [previewSceneHint, setPreviewSceneHint] = useState("人格色谱预览");
   const [previewTiming, setPreviewTiming] = useState<TimingHint>("instant");
 
   const [previewSessionId, setPreviewSessionId] = useState("");
@@ -114,6 +163,19 @@ export default function PersonaSpectrumPage() {
   const [previewPending, setPreviewPending] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [previewChat, setPreviewChat] = useState<StudyChatExchangeResponse | null>(null);
+  const [draggingSlotIndex, setDraggingSlotIndex] = useState<number | null>(null);
+  const [dragOverSlotIndex, setDragOverSlotIndex] = useState<number | null>(null);
+  const [movePulse, setMovePulse] = useState<{ index: number; direction: -1 | 1 } | null>(null);
+
+  useEffect(() => {
+    if (!movePulse) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setMovePulse(null);
+    }, 140);
+    return () => window.clearTimeout(timer);
+  }, [movePulse]);
 
   useEffect(() => {
     let cancelled = false;
@@ -234,15 +296,29 @@ export default function PersonaSpectrumPage() {
     const template = SLOT_TEMPLATES.find((t) => t.kind === kind);
     setDraft((prev) => ({
       ...prev,
-      slots: [...prev.slots, { kind, label, content: template?.text ?? "" }]
+      slots: [
+        ...prev.slots,
+        {
+          kind,
+          label,
+          content: template?.text ?? "",
+          weight: 50,
+          locked: false,
+          sortOrder: prev.slots.length * 10,
+        },
+      ]
     }));
   }
 
-  function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: string) {
+  function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: PersonaSlot[keyof PersonaSlot]) {
     if (assistError) setAssistError("");
     setDraft((prev) => {
       const next = [...prev.slots];
-      next[index] = { ...next[index], [field]: value };
+      let nextValue = value;
+      if (field === "weight") {
+        nextValue = clampWeight(Number(value));
+      }
+      next[index] = { ...next[index], [field]: nextValue };
       if (field === "kind") next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
       return { ...prev, slots: next };
     });
@@ -250,6 +326,104 @@ export default function PersonaSpectrumPage() {
 
   function handleRemoveSlot(index: number) {
     setDraft((prev) => ({ ...prev, slots: prev.slots.filter((_, i) => i !== index) }));
+  }
+
+  function handleMoveSlot(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= draft.slots.length) {
+      return;
+    }
+    setDraft((prev) => {
+      const next = [...prev.slots];
+      const temp = next[index];
+      next[index] = next[target];
+      next[target] = temp;
+      return {
+        ...prev,
+        slots: next.map((slot, i) => ({ ...slot, sortOrder: i * 10 })),
+      };
+    });
+    setMovePulse({ index: target, direction });
+  }
+
+  function handleSortSlotsByPriority() {
+    setDraft((prev) => ({
+      ...prev,
+      slots: [...prev.slots]
+        .sort((a, b) => {
+          const orderA = a.sortOrder ?? 0;
+          const orderB = b.sortOrder ?? 0;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          const weightA = a.weight ?? 50;
+          const weightB = b.weight ?? 50;
+          return weightB - weightA;
+        })
+        .map((slot, i) => ({ ...slot, sortOrder: i * 10 })),
+    }));
+  }
+
+  function reorderSlots(fromIndex: number, toIndex: number) {
+    setDraft((prev) => {
+      if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= prev.slots.length || toIndex >= prev.slots.length) {
+        return prev;
+      }
+      const next = [...prev.slots];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return {
+        ...prev,
+        slots: next.map((slot, i) => ({ ...slot, sortOrder: i * 10 }))
+      };
+    });
+  }
+
+  function handleDragStart(index: number) {
+    setDraggingSlotIndex(index);
+  }
+
+  function handleDragOver(index: number) {
+    setDragOverSlotIndex(index);
+  }
+
+  function handleDrop(index: number) {
+    if (draggingSlotIndex !== null) {
+      reorderSlots(draggingSlotIndex, index);
+    }
+    setDraggingSlotIndex(null);
+    setDragOverSlotIndex(null);
+  }
+
+  function handleDragEnd() {
+    setDraggingSlotIndex(null);
+    setDragOverSlotIndex(null);
+  }
+
+  async function handleAssistSlot(index: number) {
+    const targetSlot = draft.slots[index];
+    if (!targetSlot) {
+      return;
+    }
+    setAssistError("");
+    setSlotAssistIndex(index);
+    try {
+      const result = await assistPersonaSlot({
+        name: draft.name.trim(),
+        summary: draft.summary.trim(),
+        slot: targetSlot,
+        rewriteStrength: Number((1 - retainRatio).toFixed(2))
+      });
+      setDraft((prev) => {
+        const next = [...prev.slots];
+        next[index] = result.slot;
+        return { ...prev, slots: next };
+      });
+    } catch (error) {
+      setAssistError(String(error));
+    } finally {
+      setSlotAssistIndex(null);
+    }
   }
 
   async function handleAssistSetting() {
@@ -264,7 +438,20 @@ export default function PersonaSpectrumPage() {
       });
       setDraft((prev) => ({
         ...prev,
-        slots: result.slots.length ? result.slots : prev.slots,
+        slots: result.slots.length
+          ? prev.slots.map((slot, index) => {
+              if (slot.locked) {
+                return slot;
+              }
+              const nextSlot = result.slots[index] ?? slot;
+              return {
+                ...nextSlot,
+                weight: slot.weight ?? nextSlot.weight ?? 1,
+                locked: slot.locked ?? nextSlot.locked ?? false,
+                sortOrder: slot.sortOrder ?? nextSlot.sortOrder ?? index * 10,
+              };
+            })
+          : prev.slots,
         systemPrompt: result.systemPromptSuggestion || prev.systemPrompt
       }));
     } catch (error) {
@@ -375,7 +562,7 @@ export default function PersonaSpectrumPage() {
       personaId: selectedPersonaId,
       sectionId: selectedSectionId,
       sectionTitle,
-      themeHint: "persona_spectrum_preview"
+      themeHint: "人格色谱预览"
     });
     setPreviewSessionId(session.id);
     return session.id;
@@ -403,7 +590,7 @@ export default function PersonaSpectrumPage() {
       {/* ── Heading ── */}
       <div style={styles.heading}>
         <h1 style={styles.pageTitle}>人格色谱</h1>
-        <p style={styles.pageDesc}>教师人格配置、情绪区间、导入导出与章节联动预览。</p>
+        <p style={styles.pageDesc}>教师人格配置、表现层色谱、导入导出与章节联动预览。</p>
       </div>
 
       {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
@@ -419,7 +606,7 @@ export default function PersonaSpectrumPage() {
             <label style={styles.fieldLabel}>当前人格</label>
             <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
               {personas.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.source})</option>
+                <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
               ))}
             </select>
           </div>
@@ -436,13 +623,48 @@ export default function PersonaSpectrumPage() {
 
           <div style={styles.fieldGroup}>
             <label style={styles.fieldLabel}>人格插槽</label>
+            <span style={styles.mutedText}>插槽属于人格认知层，决定“这个老师怎么想、怎么教”。</span>
+            <div style={styles.actionsRow}>
+              <button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理插槽</button>
+              <span style={styles.mutedText}>排序规则：先按排序值（sortOrder）升序，再按权重（weight）降序。</span>
+            </div>
             {draft.slots.map((slot, index) => (
-              <div key={index} style={styles.slotCard}>
+              <div
+                key={`${slot.kind}:${slot.label}:${index}`}
+                style={{
+                  ...styles.slotCard,
+                  ...(draggingSlotIndex === index ? styles.slotCardDragging : null),
+                  ...(dragOverSlotIndex === index && draggingSlotIndex !== index ? styles.slotCardDragOver : null),
+                  ...(movePulse?.index === index
+                    ? movePulse.direction === -1
+                      ? styles.slotCardMoveUp
+                      : styles.slotCardMoveDown
+                    : null),
+                }}
+              >
                 <div style={styles.slotHeader}>
+                  <span
+                    style={styles.dragHandle}
+                    title="拖动排序"
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      handleDragOver(index);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleDrop(index);
+                    }}
+                  >
+                    ⋮⋮
+                  </span>
                   <select
                     style={styles.slotKindSelect}
                     value={slot.kind}
                     onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
+                    disabled={Boolean(slot.locked)}
                   >
                     {PERSONA_SLOT_KINDS.map((k) => (
                       <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
@@ -453,15 +675,66 @@ export default function PersonaSpectrumPage() {
                     value={slot.label}
                     placeholder="显示标签"
                     onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
+                    disabled={Boolean(slot.locked)}
                   />
                   <button type="button" style={styles.removeBtn} onClick={() => handleRemoveSlot(index)}>×</button>
                 </div>
+                <span style={styles.slotHintText}>{SLOT_KIND_HINTS[slot.kind] ?? SLOT_KIND_HINTS.custom}</span>
                 <textarea
                   style={styles.slotContent}
                   value={slot.content}
-                  placeholder={`${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}内容…`}
+                  placeholder={`请填写“${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}”的具体内容。`}
                   onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
+                  disabled={Boolean(slot.locked)}
                 />
+                <div style={styles.compactGrid}>
+                  <label style={styles.fieldGroup}>
+                    <span style={styles.fieldLabel}>权重（0-100）</span>
+                    <input
+                      style={styles.input}
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={slot.weight ?? 50}
+                      onChange={(e) => handleUpdateSlot(index, "weight", Number(e.target.value))}
+                      disabled={Boolean(slot.locked)}
+                    />
+                  </label>
+                  <label style={styles.fieldGroup}>
+                    <span style={styles.fieldLabel}>权重滑杆</span>
+                    <input
+                      style={styles.range}
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={slot.weight ?? 50}
+                      onChange={(e) => handleUpdateSlot(index, "weight", Number(e.target.value))}
+                      disabled={Boolean(slot.locked)}
+                    />
+                  </label>
+                </div>
+                <div style={styles.actionsRow}>
+                  <button type="button" style={styles.ghostBtn} onClick={() => handleMoveSlot(index, -1)}>上移</button>
+                  <button type="button" style={styles.ghostBtn} onClick={() => handleMoveSlot(index, 1)}>下移</button>
+                  <button
+                    type="button"
+                    style={styles.ghostBtn}
+                    onClick={() => handleUpdateSlot(index, "locked", !slot.locked)}
+                  >
+                    {slot.locked ? "解锁" : "锁定"}
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.ghostBtn}
+                    onClick={() => void handleAssistSlot(index)}
+                    disabled={assistPending || slotAssistIndex === index || Boolean(slot.locked)}
+                  >
+                    {slotAssistIndex === index ? "AI 重写中…" : "AI 重写此卡片"}
+                  </button>
+                  <span style={styles.mutedText}>逐卡片重写仅作用于当前卡片，不会覆盖其他插槽。</span>
+                </div>
               </div>
             ))}
             <div style={styles.addSlotRow}>
@@ -493,6 +766,7 @@ export default function PersonaSpectrumPage() {
             <button style={styles.ghostBtn} type="button" disabled={assistPending} onClick={handleAssistSetting}>
               {assistPending ? "AI 完善中…" : "AI 辅助完善设定"}
             </button>
+            <span style={styles.mutedText}>该操作会对整套插槽进行联动改写。</span>
             {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
           </div>
 
@@ -526,6 +800,7 @@ export default function PersonaSpectrumPage() {
             <div style={styles.fieldGroup}>
               <label style={styles.fieldLabel}>可用情绪（逗号分隔）</label>
               <input style={styles.input} value={draft.availableEmotionsText} onChange={(e) => updateDraft("availableEmotionsText", e.target.value)} />
+              <span style={styles.mutedText}>表现层配置：用于控制角色事件渲染，不直接改写人格插槽文本。</span>
             </div>
             <div style={styles.fieldGroup}>
               <label style={styles.fieldLabel}>可用动作（逗号分隔）</label>
@@ -534,7 +809,7 @@ export default function PersonaSpectrumPage() {
             <div style={styles.fieldGroup}>
               <label style={styles.fieldLabel}>默认语气</label>
               <select style={styles.select} value={draft.defaultSpeechStyle} onChange={(e) => updateDraft("defaultSpeechStyle", e.target.value as SpeechStyle)}>
-                {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {SPEECH_STYLES.map((s) => <option key={s} value={s}>{SPEECH_STYLE_LABELS[s] ?? s}</option>)}
               </select>
             </div>
 
@@ -543,7 +818,7 @@ export default function PersonaSpectrumPage() {
                 <label style={styles.fieldLabel}>预览情绪</label>
                 <select style={styles.select} value={previewEmotion} onChange={(e) => setPreviewEmotion(e.target.value as CharacterEmotion)}>
                   {(draftEmotionOptions.length ? draftEmotionOptions : CHARACTER_EMOTIONS).map((em) => (
-                    <option key={em} value={em}>{em}</option>
+                    <option key={em} value={em}>{EMOTION_LABELS[em] ?? em}</option>
                   ))}
                 </select>
               </div>
@@ -551,22 +826,22 @@ export default function PersonaSpectrumPage() {
                 <label style={styles.fieldLabel}>预览动作</label>
                 <select style={styles.select} value={previewAction} onChange={(e) => setPreviewAction(e.target.value as CharacterAction)}>
                   {(draftActionOptions.length ? draftActionOptions : CHARACTER_ACTIONS).map((ac) => (
-                    <option key={ac} value={ac}>{ac}</option>
+                    <option key={ac} value={ac}>{ACTION_LABELS[ac] ?? ac}</option>
                   ))}
                 </select>
               </div>
               <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>语气</label>
                 <select style={styles.select} value={previewSpeech} onChange={(e) => setPreviewSpeech(e.target.value as SpeechStyle)}>
-                  {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {SPEECH_STYLES.map((s) => <option key={s} value={s}>{SPEECH_STYLE_LABELS[s] ?? s}</option>)}
                 </select>
               </div>
               <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>时序</label>
                 <select style={styles.select} value={previewTiming} onChange={(e) => setPreviewTiming(e.target.value as TimingHint)}>
-                  <option value="instant">instant</option>
-                  <option value="linger">linger</option>
-                  <option value="after_text">after_text</option>
+                    <option value="instant">{TIMING_HINT_LABELS.instant}</option>
+                    <option value="linger">{TIMING_HINT_LABELS.linger}</option>
+                    <option value="after_text">{TIMING_HINT_LABELS.after_text}</option>
                 </select>
               </div>
             </div>
@@ -595,7 +870,8 @@ export default function PersonaSpectrumPage() {
                 <input type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
               </label>
             </div>
-            <span style={styles.mutedText}>导入模板需为 CreatePersonaInput JSON 结构（包含 slots 数组）。</span>
+            <span style={styles.mutedText}>导入模板需为人格配置 JSON 结构（包含 slots 数组）。</span>
+            <span style={styles.mutedText}>建议先导出一份模板，再基于模板编辑，避免字段缺失。</span>
             {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
             {configError ? <span style={styles.errorInline}>{configError}</span> : null}
           </section>
@@ -634,8 +910,8 @@ export default function PersonaSpectrumPage() {
             </div>
 
             <div style={styles.assetCard}>
-              <div style={styles.assetRow}><span style={styles.assetLabel}>Renderer</span><span>{assets?.renderer ?? "-"}</span></div>
-              <div style={styles.assetRow}><span style={styles.assetLabel}>Manifest</span><span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span></div>
+              <div style={styles.assetRow}><span style={styles.assetLabel}>渲染器</span><span>{assets?.renderer ?? "-"}</span></div>
+              <div style={styles.assetRow}><span style={styles.assetLabel}>资源清单</span><span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span></div>
               {assetsError ? <div style={styles.errorInline}>{assetsError}</div> : null}
             </div>
 
@@ -661,7 +937,12 @@ function personaToDraft(persona: PersonaProfile): PersonaDraft {
     name: persona.name,
     summary: persona.summary,
     systemPrompt: persona.systemPrompt,
-    slots: persona.slots ?? [],
+    slots: (persona.slots ?? []).map((slot, index) => ({
+      ...slot,
+      weight: slot.weight ?? 50,
+      locked: slot.locked ?? false,
+      sortOrder: slot.sortOrder ?? index * 10,
+    })),
     availableEmotionsText: persona.availableEmotions.join(", "),
     availableActionsText: persona.availableActions.join(", "),
     defaultSpeechStyle: persona.defaultSpeechStyle
@@ -673,7 +954,20 @@ function draftToCreatePersonaInput(draft: PersonaDraft): CreatePersonaInput {
     name: draft.name.trim(),
     summary: draft.summary.trim(),
     systemPrompt: draft.systemPrompt.trim(),
-    slots: draft.slots,
+    slots: [...draft.slots]
+      .sort((a, b) => {
+        const orderA = a.sortOrder ?? 0;
+        const orderB = b.sortOrder ?? 0;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return (b.weight ?? 50) - (a.weight ?? 50);
+      })
+      .map((slot, index) => ({
+        ...slot,
+        weight: clampWeight(Number(slot.weight ?? 50)),
+        sortOrder: index * 10,
+      })),
     availableEmotions: coerceEmotions(draft.availableEmotionsText),
     availableActions: coerceActions(draft.availableActionsText),
     defaultSpeechStyle: draft.defaultSpeechStyle
@@ -685,7 +979,12 @@ function createInputToDraft(snapshot: CreatePersonaInput): PersonaDraft {
     name: snapshot.name,
     summary: snapshot.summary,
     systemPrompt: snapshot.systemPrompt,
-    slots: snapshot.slots ?? [],
+    slots: (snapshot.slots ?? []).map((slot, index) => ({
+      ...slot,
+      weight: clampWeight(Number(slot.weight ?? 50)),
+      locked: slot.locked ?? false,
+      sortOrder: slot.sortOrder ?? index * 10,
+    })),
     availableEmotionsText: (snapshot.availableEmotions ?? CHARACTER_EMOTIONS).join(", "),
     availableActionsText: (snapshot.availableActions ?? CHARACTER_ACTIONS).join(", "),
     defaultSpeechStyle: snapshot.defaultSpeechStyle ?? "warm"
@@ -708,24 +1007,27 @@ function coerceActions(value: string): CharacterAction[] {
 
 function resolveSections(document: DocumentRecord): Array<{ id: string; title: string }> {
   return document.studyUnits.length
-    ? document.studyUnits.map((unit) => ({ id: unit.id, title: `Study Unit: ${unit.title}` }))
-    : document.sections.map((section) => ({ id: section.id, title: `Section: ${section.title}` }));
+    ? document.studyUnits.map((unit) => ({ id: unit.id, title: `学习单元：${unit.title}` }))
+    : document.sections.map((section) => ({ id: section.id, title: `章节：${section.title}` }));
 }
 
 function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): CreatePersonaInput {
   const name = String(parsed.name ?? "").trim();
   const systemPrompt = String(parsed.systemPrompt ?? parsed.system_prompt ?? "").trim();
-  if (!name) throw new Error("缺少 name 字段");
-  if (!systemPrompt) throw new Error("缺少 systemPrompt 字段");
+  if (!name) throw new Error("缺少名称字段（name）");
+  if (!systemPrompt) throw new Error("缺少系统提示词字段（systemPrompt）");
 
   let slots: PersonaSlot[] = [];
   if (Array.isArray(parsed.slots)) {
     slots = parsed.slots
       .filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null)
-      .map((s) => ({
+      .map((s, index) => ({
         kind: String(s.kind ?? "custom"),
         label: String(s.label ?? s.kind ?? ""),
-        content: String(s.content ?? "")
+        content: String(s.content ?? ""),
+        weight: clampWeight(Number(s.weight ?? 50)),
+        locked: Boolean(s.locked),
+        sortOrder: Number(s.sortOrder ?? s.sort_order ?? index * 10),
       }));
   }
 
@@ -883,11 +1185,41 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 8,
     marginBottom: 6,
+    transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease",
+  },
+  slotCardDragging: {
+    opacity: 0.7,
+    transform: "scale(0.99)",
+    borderColor: "var(--teal)",
+    boxShadow: "0 8px 18px rgba(10, 48, 51, 0.14)",
+  },
+  slotCardDragOver: {
+    borderColor: "var(--accent)",
+    boxShadow: "0 0 0 2px var(--accent-soft) inset",
+    transform: "translateY(-2px)",
+  },
+  slotCardMoveUp: {
+    transform: "translateY(-8px)",
+    borderColor: "var(--accent)",
+    boxShadow: "0 0 0 2px var(--accent-soft) inset",
+  },
+  slotCardMoveDown: {
+    transform: "translateY(8px)",
+    borderColor: "var(--accent)",
+    boxShadow: "0 0 0 2px var(--accent-soft) inset",
   },
   slotHeader: {
     display: "flex",
     gap: 6,
     alignItems: "center",
+  },
+  dragHandle: {
+    color: "var(--muted)",
+    cursor: "grab",
+    userSelect: "none",
+    fontSize: 14,
+    lineHeight: 1,
+    padding: "0 2px",
   },
   slotKindSelect: {
     flex: "0 0 auto",
@@ -931,6 +1263,11 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     lineHeight: 1.6,
     color: "var(--ink)",
+  },
+  slotHintText: {
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.6,
   },
   addSlotRow: {
     display: "flex",

@@ -35,6 +35,17 @@ export interface PersonaSettingAssistOutput {
   systemPromptSuggestion: string;
 }
 
+export interface PersonaSlotAssistInput {
+  name: string;
+  summary: string;
+  slot: import("@vibe-learner/shared").PersonaSlot;
+  rewriteStrength: number;
+}
+
+export interface PersonaSlotAssistOutput {
+  slot: import("@vibe-learner/shared").PersonaSlot;
+}
+
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
@@ -104,12 +115,26 @@ function normalizePersona(persona: any): PersonaProfile {
       ? persona.slots.map((s: any) => ({
           kind: String(s.kind ?? "custom"),
           label: String(s.label ?? s.kind ?? ""),
-          content: String(s.content ?? "")
+          content: String(s.content ?? ""),
+          weight: Number(s.weight ?? 1),
+          locked: Boolean(s.locked),
+          sortOrder: Number(s.sort_order ?? 0)
         }))
       : [],
     availableEmotions: persona.available_emotions,
     availableActions: persona.available_actions,
     defaultSpeechStyle: persona.default_speech_style
+  };
+}
+
+function serializeSlot(slot: any) {
+  return {
+    kind: slot.kind,
+    label: slot.label,
+    content: slot.content,
+    weight: slot.weight ?? 1,
+    locked: slot.locked ?? false,
+    sort_order: slot.sortOrder ?? 0
   };
 }
 
@@ -377,6 +402,12 @@ function normalizeSession(session: any): StudySessionRecord {
         timingHint: event.timing_hint
       })),
       interactiveQuestion: normalizeInteractiveQuestion(turn.interactive_question),
+      personaSlotTrace: (turn.persona_slot_trace ?? []).map((item: any) => ({
+        kind: String(item.kind ?? "custom"),
+        label: String(item.label ?? item.kind ?? ""),
+        contentExcerpt: String(item.content_excerpt ?? ""),
+        reason: String(item.reason ?? "")
+      })),
       createdAt: turn.created_at
     })),
     createdAt: session.created_at,
@@ -402,7 +433,7 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaP
         name: input.name,
         summary: input.summary,
         system_prompt: input.systemPrompt,
-        slots: input.slots,
+        slots: input.slots.map(serializeSlot),
         available_emotions: input.availableEmotions,
         available_actions: input.availableActions,
         default_speech_style: input.defaultSpeechStyle
@@ -426,7 +457,7 @@ export async function updatePersona(
         name: input.name,
         summary: input.summary,
         system_prompt: input.systemPrompt,
-        slots: input.slots,
+        slots: input.slots.map(serializeSlot),
         available_emotions: input.availableEmotions,
         available_actions: input.availableActions,
         default_speech_style: input.defaultSpeechStyle
@@ -459,7 +490,7 @@ export async function assistPersonaSetting(
       body: JSON.stringify({
         name: input.name,
         summary: input.summary,
-        slots: input.slots,
+        slots: input.slots.map(serializeSlot),
         rewrite_strength: input.rewriteStrength
       })
     })
@@ -469,9 +500,42 @@ export async function assistPersonaSetting(
     slots: rawSlots.map((s: any) => ({
       kind: String(s.kind ?? "custom"),
       label: String(s.label ?? s.kind ?? ""),
-      content: String(s.content ?? "")
+      content: String(s.content ?? ""),
+      weight: Number(s.weight ?? 1),
+      locked: Boolean(s.locked),
+      sortOrder: Number(s.sort_order ?? 0)
     })),
     systemPromptSuggestion: String(payload.system_prompt_suggestion ?? "")
+  };
+}
+
+export async function assistPersonaSlot(
+  input: PersonaSlotAssistInput
+): Promise<PersonaSlotAssistOutput> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/personas/assist-slot`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: input.name,
+        summary: input.summary,
+        slot: serializeSlot(input.slot),
+        rewrite_strength: input.rewriteStrength
+      })
+    })
+  );
+  const slot = payload.slot ?? {};
+  return {
+    slot: {
+      kind: String(slot.kind ?? "custom"),
+      label: String(slot.label ?? slot.kind ?? ""),
+      content: String(slot.content ?? ""),
+      weight: Number(slot.weight ?? 1),
+      locked: Boolean(slot.locked),
+      sortOrder: Number(slot.sort_order ?? 0)
+    }
   };
 }
 
@@ -808,6 +872,12 @@ export async function sendStudyMessage(input: {
       timingHint: event.timing_hint
     })),
     interactiveQuestion: normalizeInteractiveQuestion(payload.interactive_question),
+    personaSlotTrace: (payload.persona_slot_trace ?? []).map((item: any) => ({
+      kind: String(item.kind ?? "custom"),
+      label: String(item.label ?? item.kind ?? ""),
+      contentExcerpt: String(item.content_excerpt ?? ""),
+      reason: String(item.reason ?? "")
+    })),
     session: normalizeSession(payload.session)
   };
 }

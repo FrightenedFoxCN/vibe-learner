@@ -176,6 +176,20 @@ export function StudyConsole({
                       })}
                     </div>
                   ) : null}
+                  {turn.personaSlotTrace?.length ? (
+                    <div style={styles.traceWrap}>
+                      <span style={styles.traceTitle}>本轮参考人格插槽</span>
+                      <div style={styles.traceList}>
+                        {turn.personaSlotTrace.map((item, idx) => (
+                          <div key={`${turn.createdAt}:${item.kind}:${idx}`} style={styles.traceItem}>
+                            <strong>{item.label}</strong>
+                            <span style={styles.traceReason}>{item.reason}</span>
+                            <span>{item.contentExcerpt}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   {turn.citations.length ? (
                     <div style={styles.citations}>
                       {turn.citations.map((citation, citationIndex) => (
@@ -201,6 +215,20 @@ export function StudyConsole({
         <div style={styles.aiSection}>
           <span style={styles.aiLabel}>AI</span>
           <p style={styles.aiMessage}>{session.reply}</p>
+          {session.personaSlotTrace?.length ? (
+            <div style={styles.traceWrap}>
+              <span style={styles.traceTitle}>本轮参考人格插槽</span>
+              <div style={styles.traceList}>
+                {session.personaSlotTrace.map((item, idx) => (
+                  <div key={`${item.kind}:${idx}`} style={styles.traceItem}>
+                    <strong>{item.label}</strong>
+                    <span style={styles.traceReason}>{item.reason}</span>
+                    <span>{item.contentExcerpt}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {session.citations.length ? (
             <div style={styles.citations}>
               {session.citations.map((citation, index) => (
@@ -492,6 +520,34 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--teal)",
     background: "transparent",
     cursor: "pointer",
+  },
+  traceWrap: {
+    marginTop: 8,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "8px 10px",
+    display: "grid",
+    gap: 8,
+  },
+  traceTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "var(--ink)",
+  },
+  traceList: {
+    display: "grid",
+    gap: 6,
+  },
+  traceItem: {
+    display: "grid",
+    gap: 2,
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)",
+  },
+  traceReason: {
+    color: "var(--teal)",
+    fontSize: 11,
   },
 };
 

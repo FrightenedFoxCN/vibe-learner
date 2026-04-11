@@ -53,6 +53,7 @@ class StudySessionService:
                 citations=result.citations,
                 character_events=result.character_events,
                 interactive_question=result.interactive_question,
+                persona_slot_trace=result.persona_slot_trace,
                 created_at=_now(),
             )
         )

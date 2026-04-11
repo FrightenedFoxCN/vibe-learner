@@ -26,6 +26,8 @@ from app.models.api import (
     LearningPlanListResponse,
     LearningPlanResponse,
     PersonaAssetsResponse,
+    PersonaSlotAssistRequest,
+    PersonaSlotAssistResponse,
     ProcessDocumentRequest,
     PersonaSettingAssistRequest,
     PersonaSettingAssistResponse,
@@ -415,6 +417,33 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
             slots=payload.slots,
         )
     return PersonaSettingAssistResponse(**result)
+
+
+@router.post("/personas/assist-slot", response_model=PersonaSlotAssistResponse)
+def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistResponse:
+    try:
+        result = container.model_provider.assist_persona_slot(
+            name=payload.name,
+            summary=payload.summary,
+            slot=payload.slot,
+            rewrite_strength=payload.rewrite_strength,
+        )
+    except RuntimeError as exc:
+        http_error = _map_setting_generation_error(exc)
+        logger.warning(
+            "persona.assist_slot.model_failed detail=%s internal_error_code=%s fallback=local",
+            http_error.detail,
+            str(exc),
+        )
+        result = {
+            "slot": container.persona_engine.assist_slot(
+                name=payload.name,
+                summary=payload.summary,
+                slot=payload.slot,
+                rewrite_strength=payload.rewrite_strength,
+            ).model_dump()
+        }
+    return PersonaSlotAssistResponse(**result)
 
 
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
