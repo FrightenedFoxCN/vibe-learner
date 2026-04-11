@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties, JSX } from "react";
 
 interface TopNavProps {
-  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/sensory-tools" | "/settings";
+  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/sensory-tools" | "/settings" | "/model-usage";
 }
 
 /* ─── SVG icons (16×16, stroke, currentColor) ─── */
@@ -82,6 +82,16 @@ function IconSettings() {
   );
 }
 
+function IconUsage() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="10" width="3" height="5" />
+      <rect x="6" y="6" width="3" height="9" />
+      <rect x="11" y="2" width="3" height="13" />
+    </svg>
+  );
+}
+
 function IconChevronLeft() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -110,6 +120,7 @@ const NAV_ITEMS: Array<{
   { href: "/scene-setup",      label: "场景搭建", Icon: IconScene   },
   { href: "/sensory-tools",    label: "感官工具", Icon: IconSensory },
   { href: "/settings",         label: "统一设置", Icon: IconSettings },
+  { href: "/model-usage",      label: "用量审计", Icon: IconUsage   },
 ];
 
 export function TopNav({ currentPath }: TopNavProps) {
