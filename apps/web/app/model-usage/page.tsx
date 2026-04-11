@@ -310,7 +310,7 @@ export default function ModelUsagePage() {
                       {[...stats.buckets]
                         .sort((a, b) => b.date.localeCompare(a.date) || a.feature.localeCompare(b.feature))
                         .map((b, i) => (
-                          <tr key={i}>
+                          <tr key={`${b.date}-${b.feature}-${b.model}-${i}`}>
                             <td style={styles.td}>{b.date}</td>
                             <td style={styles.td}>
                               <span style={{ ...styles.featureDot, background: featureColor(b.feature) }} />

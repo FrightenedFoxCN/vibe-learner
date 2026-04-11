@@ -1615,14 +1615,22 @@ class OpenAIModelProvider(MockModelProvider):
         except (TimeoutError, socket.timeout) as exc:
             raise RuntimeError("openai_embedding_request_timeout") from exc
 
-    def _record_token_usage(self, raw_payload: dict[str, Any], *, feature: str, model: str) -> None:
+    def _record_token_usage(
+        self,
+        raw_payload: dict[str, Any],
+        *,
+        feature: str,
+        model: str,
+        prompt_key: str = "prompt_tokens",
+        completion_key: str = "completion_tokens",
+    ) -> None:
         if self.token_usage_service is None:
             return
         usage = raw_payload.get("usage") if isinstance(raw_payload, dict) else None
         if not isinstance(usage, dict):
             return
-        prompt_tokens = _coerce_int(usage.get("prompt_tokens"), default=0)
-        completion_tokens = _coerce_int(usage.get("completion_tokens"), default=0)
+        prompt_tokens = _coerce_int(usage.get(prompt_key) or usage.get("prompt_tokens"), default=0)
+        completion_tokens = _coerce_int(usage.get(completion_key) or usage.get("completion_tokens"), default=0)
         total_tokens = _coerce_int(usage.get("total_tokens"), default=prompt_tokens + completion_tokens)
         try:
             self.token_usage_service.record(
@@ -1636,24 +1644,13 @@ class OpenAIModelProvider(MockModelProvider):
             logger.exception("token_usage.record failed feature=%s model=%s", feature, model)
 
     def _record_token_usage_responses(self, raw_payload: dict[str, Any], *, feature: str, model: str) -> None:
-        if self.token_usage_service is None:
-            return
-        usage = raw_payload.get("usage") if isinstance(raw_payload, dict) else None
-        if not isinstance(usage, dict):
-            return
-        prompt_tokens = _coerce_int(usage.get("input_tokens") or usage.get("prompt_tokens"), default=0)
-        completion_tokens = _coerce_int(usage.get("output_tokens") or usage.get("completion_tokens"), default=0)
-        total_tokens = _coerce_int(usage.get("total_tokens"), default=prompt_tokens + completion_tokens)
-        try:
-            self.token_usage_service.record(
-                feature=feature,
-                model=model,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=total_tokens,
-            )
-        except Exception:
-            logger.exception("token_usage.record failed feature=%s model=%s", feature, model)
+        self._record_token_usage(
+            raw_payload,
+            feature=feature,
+            model=model,
+            prompt_key="input_tokens",
+            completion_key="output_tokens",
+        )
 
     def _resolve_request_endpoint(self, request_kind: str) -> tuple[str, str]:
         if request_kind == "plan":
