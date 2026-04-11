@@ -4,7 +4,8 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
 
 import type { RuntimeSettings } from "@vibe-learner/shared";
 import { TopNav } from "../../components/top-nav";
-import { getRuntimeSettings, probeRuntimeOpenAIModels, updateRuntimeSettings } from "../../lib/api";
+import { useRuntimeSettings } from "../../components/runtime-settings-provider";
+import { probeRuntimeOpenAIModels, updateRuntimeSettings } from "../../lib/api";
 
 type ProbeScope = "global" | "plan" | "setting" | "chat";
 
@@ -23,8 +24,8 @@ const EMPTY_PROBE_STATE: ScopeProbeState = {
 };
 
 export default function SettingsPage() {
+  const runtimeSettings = useRuntimeSettings();
   const [settings, setSettings] = useState<RuntimeSettings | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [error, setError] = useState("");
@@ -36,30 +37,10 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError("");
-      try {
-        const payload = await getRuntimeSettings();
-        if (!cancelled) {
-          setSettings(payload);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(String(err));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    if (runtimeSettings.settings) {
+      setSettings(runtimeSettings.settings);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [runtimeSettings.settings]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,6 +80,7 @@ export default function SettingsPage() {
         openaiPlanFallbackDisableTools: settings.openaiPlanFallbackDisableTools,
         showDebugInfo: settings.showDebugInfo
       });
+      runtimeSettings.replaceSettings(next);
       setSettings(next);
     } catch (err) {
       setError(String(err));
@@ -167,10 +149,11 @@ export default function SettingsPage() {
         <p style={styles.subtitle}>通过可视化方式管理模型连接与运行参数，保存后立即生效。</p>
       </header>
 
-      {loading ? <div style={styles.loading}>正在加载设置...</div> : null}
+      {runtimeSettings.loading ? <div style={styles.loading}>正在加载设置...</div> : null}
+      {runtimeSettings.error ? <div style={styles.error}>设置加载失败：{runtimeSettings.error}</div> : null}
       {error ? <div style={styles.error}>设置操作失败：{error}</div> : null}
 
-      {!loading && settings ? (
+      {!runtimeSettings.loading && settings ? (
         <form className="settings-form" style={styles.form} onSubmit={handleSubmit}>
           <section style={styles.card}>
             <h2 style={styles.cardTitle}>模型提供商</h2>
@@ -683,7 +666,7 @@ export default function SettingsPage() {
                       setSettings((prev) => (prev ? { ...prev, showDebugInfo: event.target.checked } : prev))
                     }
                   />
-                  <span>显示调试信息（后续页面会据此控制显示层级）</span>
+                  <span>显示调试悬浮窗（计划页与章节对话页会按此开关显示）</span>
                 </label>
               </section>
             </>

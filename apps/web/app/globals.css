@@ -113,15 +113,6 @@ textarea {
   align-items: start;
 }
 
-/* Debug console: sidebar (left) | content (right) */
-.debug-main-grid {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 32px;
-  padding-top: 16px;
-  align-items: start;
-}
-
 /* Home page: 3-column feature cards — gap shows as border */
 .home-nav-grid {
   display: grid;
@@ -193,18 +184,6 @@ textarea {
     height: min(70vh, 720px) !important;
   }
 
-  .debug-main-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .debug-sidebar-sticky {
-    position: static !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--border) !important;
-    padding-right: 0 !important;
-    padding-bottom: 16px !important;
-    margin-bottom: 16px;
-  }
 }
 
 /* Small-medium (≤ 800px): 1-col home grid */

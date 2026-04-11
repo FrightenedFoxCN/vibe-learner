@@ -45,10 +45,6 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
           <span style={styles.stateVal}>{currentEvent?.sceneHint ?? "study_session"}</span>
         </div>
       </div>
-
-      {response?.characterEvents.length ? (
-        <pre style={styles.pre}>{JSON.stringify(response.characterEvents, null, 2)}</pre>
-      ) : null}
     </div>
   );
 }
@@ -95,18 +91,6 @@ const styles: Record<string, CSSProperties> = {
   stateVal: {
     fontSize: 13,
     color: "var(--ink)",
-  },
-  pre: {
-    margin: 0,
-    padding: "10px 12px",
-    background: "var(--panel)",
-    border: "1px solid var(--border)",
-    overflowX: "auto",
-    whiteSpace: "pre-wrap",
-    fontSize: 11,
-    lineHeight: 1.6,
-    color: "var(--ink)",
-    fontFamily: "var(--font-mono, monospace)",
   },
 };
 

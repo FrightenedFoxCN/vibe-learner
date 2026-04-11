@@ -1,7 +1,9 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { DebugOverlay } from "../components/debug-overlay";
 import { LearningWorkspaceProvider } from "../components/learning-workspace-provider";
+import { RuntimeSettingsProvider } from "../components/runtime-settings-provider";
 
 export const metadata: Metadata = {
   title: "Vibe Learner",
@@ -12,7 +14,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-CN">
       <body>
-        <LearningWorkspaceProvider>{children}</LearningWorkspaceProvider>
+        <RuntimeSettingsProvider>
+          <LearningWorkspaceProvider>
+            {children}
+            <DebugOverlay />
+          </LearningWorkspaceProvider>
+        </RuntimeSettingsProvider>
       </body>
     </html>
   );
