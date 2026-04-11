@@ -119,7 +119,7 @@ class PlanScheduleItem:
 class PlanModelReply:
     course_title: str
     overview: str
-    weekly_focus: list[str]
+    study_chapters: list[str]
     today_tasks: list[str]
     schedule: list[PlanScheduleItem]
     revised_study_units: list[StudyUnitRecord] | None = None
@@ -284,7 +284,7 @@ class MockModelProvider(ModelProvider):
             for unit in plannable_units[:2]
         ]
         if not today_tasks:
-            today_tasks = [f"阅读 {document_title}，确认主线主题与细分要点。"]
+            today_tasks = [f"阅读 {document_title}，确认学习章节顺序与关键知识点。"]
         schedule: list[PlanScheduleItem] = []
         for unit in plannable_units[:4]:
             schedule.append(
@@ -305,7 +305,7 @@ class MockModelProvider(ModelProvider):
                 f"{persona.name} 将围绕 {document_title} 生成首轮学习计划，"
                 f"覆盖 {len(plannable_units)} 个学习单元。"
             ),
-            weekly_focus=[unit.title for unit in plannable_units[:4]],
+            study_chapters=[unit.title for unit in plannable_units[:4]],
             today_tasks=today_tasks,
             schedule=schedule,
         )
@@ -911,7 +911,10 @@ class OpenAIModelProvider(MockModelProvider):
                 )
             ),
             overview=str(parsed["overview"]),
-            weekly_focus=[str(item) for item in parsed.get("weekly_focus", [])],
+            study_chapters=[
+                str(item)
+                for item in parsed.get("study_chapters", [])
+            ],
             today_tasks=[str(item) for item in parsed.get("today_tasks", [])],
             schedule=schedule_items,
             revised_study_units=active_study_units if _study_units_changed(study_units, active_study_units) else None,

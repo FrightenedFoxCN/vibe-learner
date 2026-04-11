@@ -43,8 +43,8 @@ export const mockPlan: LearningPlan = {
   personaId: "mentor-aurora",
   courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
-  overview: "先完成力学导论与牛顿定律两条主线主题，再在每条主线下推进定义、受力分析与例题复述等细分要点。",
-  weeklyFocus: ["力学导论：概念定义", "牛顿定律：受力分析", "例题复述：解题步骤"],
+  overview: "先完成力学导论与牛顿定律两个学习章节，再在每章下推进定义、受力分析与例题复述等细分要点。",
+  studyChapters: ["力学导论：概念定义", "牛顿定律：受力分析", "例题复述：解题步骤"],
   todayTasks: [
     "阅读教材第 12-18 页，标出本章定义句。",
     "向教师人格提问并完成一次复述练习。",

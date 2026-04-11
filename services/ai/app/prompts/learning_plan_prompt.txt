@@ -7,23 +7,27 @@
 - 不要虚构章节，不要引入输入中不存在的目录结构。
 - `include_in_plan=false` 的单元默认不要进入正式计划，除非确有必要作为铺垫。
 - 人格只影响措辞风格、激励方式和节奏，不影响事实结构。
-- 若单元切分明显过粗、跨多个章节或保留了解析噪声，优先调用工具修正后再输出。
-- `weekly_focus` 必须保留章节锚点，便于下游章节跳转。
+- 若单元切分明显过粗、跨多个章节、子章节过少、页跨度过宽或保留了解析噪声，优先调用工具修正后再输出。
+- `study_chapters` 表示按顺序排列的学习章节列表，必须保留章节锚点，便于下游章节跳转；在不虚构目录的前提下，优先细化到可操作的子章节级别。
 - `schedule[].unit_id` 必须引用当前有效的学习单元。
+- 只要目录还不够细，就不要因为已经调用过一次工具而停止；允许并鼓励多轮工具调用来迭代出更细的章节目录。
+- 最终计划应尽量让学习者可以直接在章节对话中选择到足够细的子章节，而不是停留在大而宽的整章粒度。
 
 JSON schema：
 {{PLAN_JSON_SCHEMA}}
 
 [user_instructions]
-仅把 `study_units` 视为章节结构的唯一来源。
-必要时结合 `subsection_titles` 和 `related_section_ids` 理解单元内部结构。
-生成第一轮可执行学习计划，优先保证章节边界清晰。
+把 `course_outline`、`study_units`、`subsection_titles`、`related_section_ids` 和工具结果一起视为章节结构来源，不要只看单元标题。
+优先生成足够精细的目录与计划：如果教材原始结构允许，学习章节应细化到子章节级，而不是只保留宽泛章名。
+生成第一轮可执行学习计划，优先保证章节边界清晰、子章节足够可选。
 尽量在 learn 之后尽快安排 review。
 `course_title` 是教材导向标题；`objective` 是学习者目标；两者不要混用。
 `overview` 控制在 1 到 2 句。
-`weekly_focus` 是按顺序排列的主线主题；`today_tasks` 是当下可执行动作。
-`weekly_focus` 每项都要带明确章节锚点，例如“主题名（第 X 章 / 标题，p.start-end）”。
-若单个学习单元过宽，先调用 `revise_study_units` 再生成计划。
-如果需要更细证据，先调用 `get_study_unit_detail` 或页范围读取工具。
-避免把不相关章节硬合并成一个主题。
+`study_chapters` 是按顺序排列的学习章节列表；`today_tasks` 是当下可执行动作。
+`study_chapters` 每项都要直接对应一个明确章节或子章节，不要写抽象主题；优先使用类似“第 X 章 / X.Y 子章节 / 标题（p.start-end）”的粒度。
+若单个学习单元过宽、子章节过少、跨越多个 level-1 章节、或 `segmentation_hints` 提示目录过粗，先调用 `revise_study_units` 再生成计划。
+不要满足于一次性的工具确认；如果目录仍粗糙，继续调用 `revise_study_units`、`get_study_unit_detail`、`read_page_range_content`，反复打磨到边界更清楚为止。
+如果需要更细证据，优先对多个代表性章节反复调用细节工具，而不是只检查一个样本后就结束。
+当 `subsection_titles` 稀少、泛化、重复或与页范围不匹配时，应视为目录仍不够细，需要继续工具调用。
+避免把不相关章节硬合并成一个学习章节。
 若修订了学习单元，最终 `schedule` 必须引用修订后的 `unit_id`。

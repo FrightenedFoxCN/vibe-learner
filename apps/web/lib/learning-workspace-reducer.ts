@@ -7,6 +7,7 @@ import type {
   StudySessionRecord
 } from "@vibe-learner/shared";
 
+import { findLearningPlan } from "./plan-panel-data";
 import { upsertLearningPlan } from "./plan-panel-data";
 import {
   type WorkspaceSnapshotResolution,
@@ -52,6 +53,20 @@ type LearningWorkspaceAction =
   | {
       type: "generated_plan_applied";
       plan: LearningPlan;
+    }
+  | {
+      type: "plan_updated";
+      plan: LearningPlan;
+    }
+  | {
+      type: "plan_deleted";
+      planId: string;
+      preferredPlanId: string;
+    }
+  | {
+      type: "document_and_plans_updated";
+      document: DocumentRecord;
+      plans: LearningPlan[];
     }
   | {
       type: "study_session_set";
@@ -173,6 +188,44 @@ export function learningWorkspaceReducer(
         studySession: null,
         response: null
       };
+      }
+    case "plan_updated":
+      return {
+        ...state,
+        planHistory: upsertLearningPlan(state.planHistory, action.plan),
+        selectedPlanId:
+          state.selectedPlanId === action.plan.id ? action.plan.id : state.selectedPlanId,
+        selectedPersonaId:
+          state.selectedPlanId === action.plan.id ? action.plan.personaId : state.selectedPersonaId
+      };
+    case "plan_deleted":
+      {
+        const nextPlanHistory = state.planHistory.filter((plan) => plan.id !== action.planId);
+        const deletingSelectedPlan = action.planId === state.selectedPlanId;
+        const nextSelectedPlan = findLearningPlan(nextPlanHistory, action.preferredPlanId);
+        return {
+          ...state,
+          planHistory: nextPlanHistory,
+          selectedPlanId: deletingSelectedPlan ? nextSelectedPlan?.id ?? "" : state.selectedPlanId,
+          selectedPersonaId:
+            deletingSelectedPlan && nextSelectedPlan
+              ? nextSelectedPlan.personaId
+              : state.selectedPersonaId,
+          studySession: deletingSelectedPlan ? null : state.studySession,
+          response: deletingSelectedPlan ? null : state.response
+        };
+      }
+    case "document_and_plans_updated":
+      {
+        let nextPlanHistory = state.planHistory;
+        for (const plan of action.plans) {
+          nextPlanHistory = upsertLearningPlan(nextPlanHistory, plan);
+        }
+        return {
+          ...state,
+          documents: upsertDocumentRecord(state.documents, action.document),
+          planHistory: nextPlanHistory
+        };
       }
     case "study_session_set":
       return {

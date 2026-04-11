@@ -80,8 +80,8 @@ export interface LearningPlan {
   sceneProfile?: SceneProfile;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
-  // Ordered main themes (coarse-grained) for sequential display.
-  weeklyFocus: string[];
+  // Ordered study-chapter list used for navigation.
+  studyChapters: string[];
   // Actionable learner tasks for the current session/day.
   todayTasks: string[];
   studyUnits: StudyUnit[];

@@ -408,7 +408,7 @@ Returns:
   - `course_title`: generated textbook-grounded plan header title
   - `objective`: learner goal captured from the request, used as supporting goal text
   - `overview`: generated summary paragraph
-  - `weekly_focus[]`: ordered main study themes (coarse-grained)
+  - `study_chapters[]`: ordered study chapters used for downstream navigation
   - `today_tasks[]`: actionable learner tasks
 - referenced `study_units[]`
 - planned `schedule[]`

@@ -310,8 +310,22 @@ class ProcessDocumentRequest(BaseModel):
     force_ocr: bool = False
 
 
+class StudyUnitTitleUpdateRequest(BaseModel):
+    title: str = Field(min_length=1)
+
+
 class LearningPlanCreateRequest(LearningGoalInput):
     pass
+
+
+class LearningPlanUpdateRequest(BaseModel):
+    course_title: str | None = Field(default=None, min_length=1)
+    study_chapters: list[str] | None = None
+
+
+class DocumentStudyUnitUpdateResponse(BaseModel):
+    document: DocumentResponse
+    plans: list["LearningPlanResponse"]
 
 
 class LearningPlanResponse(LearningPlanRecord):
@@ -441,3 +455,6 @@ class SubmissionGradeResponse(BaseModel):
     diagnosis: list[str]
     recommendation: str
     character_events: list[CharacterStateEvent]
+
+
+DocumentStudyUnitUpdateResponse.model_rebuild()

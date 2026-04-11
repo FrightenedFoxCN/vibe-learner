@@ -22,6 +22,7 @@ from app.models.api import (
     DocumentPlanningContextResponse,
     DocumentPlanningTraceResponse,
     DocumentResponse,
+    DocumentStudyUnitUpdateResponse,
     StreamReportResponse,
     DocumentStatusResponse,
     ExerciseGenerateRequest,
@@ -29,6 +30,7 @@ from app.models.api import (
     LearningPlanCreateRequest,
     LearningPlanListResponse,
     LearningPlanResponse,
+    LearningPlanUpdateRequest,
     ModelToolConfigResponse,
     RuntimeSettingsResponse,
     RuntimeSettingsProbeRequest,
@@ -36,6 +38,7 @@ from app.models.api import (
     SceneLibraryListResponse,
     SceneLibraryResponse,
     SceneSetupResponse,
+    StudyUnitTitleUpdateRequest,
     UpdateModelToolConfigRequest,
     UpdateSceneSetupRequest,
     UpsertSceneLibraryRequest,
@@ -412,6 +415,31 @@ def process_document(
         },
     )
     return _into_response(DocumentResponse, document)
+
+
+@router.patch(
+    "/documents/{document_id}/study-units/{study_unit_id}",
+    response_model=DocumentStudyUnitUpdateResponse,
+)
+def update_study_unit_title(
+    document_id: str,
+    study_unit_id: str,
+    payload: StudyUnitTitleUpdateRequest,
+) -> DocumentStudyUnitUpdateResponse:
+    document = container.document_service.update_study_unit_title(
+        document_id=document_id,
+        study_unit_id=study_unit_id,
+        title=payload.title,
+    )
+    plans = container.plan_service.update_study_unit_title(
+        document_id=document_id,
+        study_unit_id=study_unit_id,
+        title=payload.title,
+    )
+    return DocumentStudyUnitUpdateResponse(
+        document=_into_response(DocumentResponse, document),
+        plans=[_into_response(LearningPlanResponse, plan) for plan in plans],
+    )
 
 
 @router.post("/documents/{document_id}/process/stream")
@@ -1092,6 +1120,25 @@ def create_learning_plan_stream(
 def get_learning_plan(plan_id: str) -> LearningPlanResponse:
     plan = container.plan_service.require_plan(plan_id)
     return _into_response(LearningPlanResponse, plan)
+
+
+@router.patch("/learning-plans/{plan_id}", response_model=LearningPlanResponse)
+def update_learning_plan(
+    plan_id: str,
+    payload: LearningPlanUpdateRequest,
+) -> LearningPlanResponse:
+    plan = container.plan_service.update_plan(
+        plan_id=plan_id,
+        course_title=payload.course_title,
+        study_chapters=payload.study_chapters,
+    )
+    return _into_response(LearningPlanResponse, plan)
+
+
+@router.delete("/learning-plans/{plan_id}")
+def delete_learning_plan(plan_id: str) -> dict[str, str]:
+    container.plan_service.delete_plan(plan_id)
+    return {"deleted_plan_id": plan_id}
 
 
 @router.post("/exercises/generate", response_model=ExerciseGenerateResponse)

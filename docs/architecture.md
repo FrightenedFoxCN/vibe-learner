@@ -69,7 +69,7 @@ Learning-plan text fields also follow a fixed cross-layer contract:
 - `course_title`: generated textbook-grounded plan header title
 - `objective`: learner-authored goal shown as supporting metadata
 - `overview`: summary paragraph
-- `weekly_focus`: ordered main study themes (coarse-grained)
+- `study_chapters`: ordered study chapters used for downstream navigation
 - `today_tasks`: actionable learner tasks
 
 See `docs/plan-text-contract.md` before renaming fields or changing which text is rendered as a title versus summary.

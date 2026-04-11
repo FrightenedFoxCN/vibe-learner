@@ -14,6 +14,7 @@ import type {
 
 import {
   createLearningPlanStream,
+  deleteLearningPlan as deleteLearningPlanRequest,
   createStudySession,
   listStudySessions,
   listSceneLibrary,
@@ -24,6 +25,9 @@ import {
   sendStudyMessage,
   submitStudyQuestionAttempt,
   type SceneLibraryItemPayload,
+  updateDocumentStudyUnitTitle as updateDocumentStudyUnitTitleRequest,
+  updateLearningPlanStudyChapters as updateLearningPlanStudyChaptersRequest,
+  updateLearningPlanTitle as updateLearningPlanTitleRequest,
   updateStudySessionSection,
   uploadDocument
 } from "../lib/api";
@@ -141,11 +145,33 @@ export function useLearningWorkspaceController({
     if (scheduleItem?.focus) {
       return scheduleItem.focus;
     }
-    const sectionIndex = planSections.findIndex((section) => section.id === sectionId);
-    if (sectionIndex >= 0 && activePlan.weeklyFocus[sectionIndex]) {
-      return activePlan.weeklyFocus[sectionIndex];
+    const containingUnit = activePlan.studyUnits.find((unit) =>
+      unit.id === sectionId ||
+      unit.sourceSectionIds.includes(sectionId) ||
+      (
+        activeDocument?.sections.some((section) =>
+          section.id === sectionId &&
+          Math.max(unit.pageStart, section.pageStart) <= Math.min(unit.pageEnd, section.pageEnd)
+        ) ?? false
+      )
+    );
+    if (containingUnit) {
+      const containingSchedule = activePlan.schedule.find((item) => item.unitId === containingUnit.id);
+      if (containingSchedule?.focus) {
+        return containingSchedule.focus;
+      }
+      const containingIndex = (activePlan.studyUnits.filter((unit) => unit.includeInPlan) || []).findIndex(
+        (unit) => unit.id === containingUnit.id
+      );
+      if (containingIndex >= 0 && activePlan.studyChapters[containingIndex]) {
+        return activePlan.studyChapters[containingIndex];
+      }
     }
-    return activePlan.weeklyFocus[0] ?? "";
+    const sectionIndex = planSections.findIndex((section) => section.id === sectionId);
+    if (sectionIndex >= 0 && activePlan.studyChapters[sectionIndex]) {
+      return activePlan.studyChapters[sectionIndex];
+    }
+    return activePlan.studyChapters[0] ?? "";
   };
 
   const fetchLatestSessionForPlan = async (): Promise<StudySessionRecord | null> => {
@@ -440,7 +466,7 @@ export function useLearningWorkspaceController({
               activeDocument.sections[0]?.id ??
               `${activeDocument.id}:intro`
           ),
-          themeHint: activePlan.weeklyFocus[0] ?? "",
+          themeHint: activePlan.studyChapters[0] ?? "",
           sectionId:
             planSections[0]?.id ??
             activeDocument.sections[0]?.id ??
@@ -463,6 +489,135 @@ export function useLearningWorkspaceController({
         notice: `创建学习会话失败: ${String(error)}`
       });
       logWorkspaceError("workflow:session_create:error", error);
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const renamePlanTitle = async (planId: string, courseTitle: string) => {
+    const normalizedTitle = courseTitle.trim();
+    if (!planId || !normalizedTitle) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const updatedPlan = await updateLearningPlanTitleRequest(planId, normalizedTitle);
+      dispatch({
+        type: "plan_updated",
+        plan: updatedPlan
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "已更新计划题目。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `更新计划题目失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:plan_title_update:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const removePlan = async (planId: string) => {
+    if (!planId) {
+      return false;
+    }
+    const preferredPlanId =
+      state.selectedPlanId === planId
+        ? state.planHistory.find((plan) => plan.id !== planId)?.id ?? ""
+        : state.selectedPlanId;
+    try {
+      dispatch({ type: "busy_started" });
+      await deleteLearningPlanRequest(planId);
+      dispatch({
+        type: "plan_deleted",
+        planId,
+        preferredPlanId
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "已删除学习计划。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `删除学习计划失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:plan_delete:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const renameStudyUnitTitle = async (
+    documentId: string,
+    studyUnitId: string,
+    title: string
+  ) => {
+    const normalizedTitle = title.trim();
+    if (!documentId || !studyUnitId || !normalizedTitle) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const payload = await updateDocumentStudyUnitTitleRequest(
+        documentId,
+        studyUnitId,
+        normalizedTitle
+      );
+      dispatch({
+        type: "document_and_plans_updated",
+        document: payload.document,
+        plans: payload.plans
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "已更新学习单元标题。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `更新学习单元标题失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:study_unit_title_update:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const updatePlanStudyChapters = async (planId: string, studyChapters: string[]) => {
+    const normalizedChapters = studyChapters.map((item) => item.trim()).filter(Boolean);
+    if (!planId || !normalizedChapters.length) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const updatedPlan = await updateLearningPlanStudyChaptersRequest(planId, normalizedChapters);
+      dispatch({
+        type: "plan_updated",
+        plan: updatedPlan
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "已更新学习章节。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `更新学习章节失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:plan_study_chapters_update:error", error);
+      return false;
     } finally {
       dispatch({ type: "busy_finished" });
     }
@@ -862,6 +1017,10 @@ export function useLearningWorkspaceController({
     generatePlanWorkflow,
     selectPlan,
     createSessionForActivePlan,
+    renamePlanTitle,
+    updatePlanStudyChapters,
+    renameStudyUnitTitle,
+    removePlan,
     handleSwitchSection,
     handleAsk,
     handleAskForSection,

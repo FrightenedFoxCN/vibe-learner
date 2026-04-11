@@ -7,12 +7,19 @@ interface CharacterShellProps {
   persona: PersonaProfile;
   response: StudyChatResponse | null;
   pending: boolean;
+  variant?: "default" | "embedded";
 }
 
-export function CharacterShell({ persona, response, pending }: CharacterShellProps) {
+export function CharacterShell({
+  persona,
+  response,
+  pending,
+  variant = "default"
+}: CharacterShellProps) {
   const currentEvent = response?.characterEvents[0] ?? null;
   const toolEvents = (response?.characterEvents ?? []).filter((event) => event.toolName);
   const Renderer = placeholderCharacterRenderer.Render;
+  const isEmbedded = variant === "embedded";
 
   const teachingMethodSlot = persona.slots.find((s) => s.kind === "teaching_method");
   const narrativeModeSlot = persona.slots.find((s) => s.kind === "narrative_mode");
@@ -20,11 +27,13 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
   const narrativeLabel = formatNarrativeMode(narrativeModeSlot?.content ?? "稳态导学");
 
   return (
-    <div style={styles.wrap}>
-      <div style={styles.header}>
-        <span style={styles.name}>{persona.name}</span>
-        <span style={styles.meta}>{teachingLabel} · {narrativeLabel}</span>
-      </div>
+    <div style={{ ...styles.wrap, ...(isEmbedded ? styles.wrapEmbedded : {}) }}>
+      {!isEmbedded ? (
+        <div style={styles.header}>
+          <span style={styles.name}>{persona.name}</span>
+          <span style={styles.meta}>{teachingLabel} · {narrativeLabel}</span>
+        </div>
+      ) : null}
 
       <Renderer persona={persona} currentEvent={currentEvent} pending={pending} />
 
@@ -41,10 +50,12 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
           <span style={styles.stateKey}>风格</span>
           <span style={styles.stateVal}>{currentEvent?.speechStyle ?? persona.defaultSpeechStyle}</span>
         </div>
-        <div style={styles.stateItem}>
-          <span style={styles.stateKey}>场景</span>
-          <span style={styles.stateVal}>{currentEvent?.sceneHint ?? "study_session"}</span>
-        </div>
+        {!isEmbedded ? (
+          <div style={styles.stateItem}>
+            <span style={styles.stateKey}>场景</span>
+            <span style={styles.stateVal}>{currentEvent?.sceneHint ?? "study_session"}</span>
+          </div>
+        ) : null}
       </div>
 
       {toolEvents.length ? (
@@ -70,6 +81,10 @@ const styles: Record<string, CSSProperties> = {
     paddingTop: 14,
     display: "grid",
     gap: 12,
+  },
+  wrapEmbedded: {
+    borderTop: "none",
+    paddingTop: 0,
   },
   header: {
     display: "flex",

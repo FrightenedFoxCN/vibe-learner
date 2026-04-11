@@ -1,8 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
-import { useState } from "react";
-import type { InteractiveQuestion, StudyChatResponse, StudySessionRecord } from "@vibe-learner/shared";
+import { useEffect, useRef, useState } from "react";
+import type {
+  DocumentSection,
+  InteractiveQuestion,
+  PersonaProfile,
+  SceneProfile,
+  StudyChatResponse,
+  StudySessionRecord
+} from "@vibe-learner/shared";
+
+import { CharacterShell } from "./character-shell";
+import { RichTextMessage } from "./rich-text-message";
 
 interface StudyConsoleProps {
   isPending: boolean;
@@ -19,20 +30,25 @@ interface StudyConsoleProps {
     isCorrect: boolean;
     explanation: string;
   }) => void | Promise<void>;
-  onChangeTheme: (theme: string) => void;
+  onChangeChapter: (chapter: string) => void;
   onOpenPage?: (page: number) => void;
-  onJumpToThemeStart?: () => void;
+  onJumpToChapterStart?: () => void;
   chatErrorMessage?: string;
   onRetryLastAsk?: () => void | Promise<void>;
-  selectedTheme: string;
-  weeklyFocus: string[];
+  selectedChapter: string;
+  studyChapters: string[];
+  selectedSubsectionId?: string;
+  subsectionOptions?: DocumentSection[];
+  onChangeSubsection?: (subsectionId: string) => void;
   turns: StudySessionRecord["turns"];
   session: StudyChatResponse | null;
-  companionSnapshot?: {
-    personaName: string;
-    sceneTitle: string;
-    sceneSummary: string;
-  };
+  persona: PersonaProfile;
+  sceneProfile?: SceneProfile | null;
+  sceneSourceLabel?: string;
+  sceneInstanceId?: string;
+  onTogglePdfPreview?: () => void;
+  isPdfPreviewOpen?: boolean;
+  canOpenPdfPreview?: boolean;
   disabled?: boolean;
 }
 
@@ -40,16 +56,25 @@ export function StudyConsole({
   isPending,
   onAsk,
   onSubmitQuestionAttempt,
-  onChangeTheme,
+  onChangeChapter,
   onOpenPage,
-  onJumpToThemeStart,
+  onJumpToChapterStart,
   chatErrorMessage,
   onRetryLastAsk,
-  selectedTheme,
-  weeklyFocus,
+  selectedChapter,
+  studyChapters,
+  selectedSubsectionId,
+  subsectionOptions = [],
+  onChangeSubsection,
   turns,
   session,
-  companionSnapshot,
+  persona,
+  sceneProfile,
+  sceneSourceLabel,
+  sceneInstanceId,
+  onTogglePdfPreview,
+  isPdfPreviewOpen,
+  canOpenPdfPreview,
   disabled
 }: StudyConsoleProps) {
   const [message, setMessage] = useState("请解释这一章的核心概念，并给我一个复述练习。");
@@ -57,200 +82,377 @@ export function StudyConsole({
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
   const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>({});
   const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>({});
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
 
   const sortedTurns = [...turns].sort((a, b) => {
     const aTime = Date.parse(a.createdAt || "") || 0;
     const bTime = Date.parse(b.createdAt || "") || 0;
-    return bTime - aTime;
+    return aTime - bTime;
   });
+
+  useEffect(() => {
+    const node = transcriptRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+  }, [sortedTurns.length, session?.reply, chatErrorMessage]);
 
   return (
     <div style={styles.wrap}>
-      {companionSnapshot ? (
-        <div style={styles.companionCard}>
-          <span style={styles.caption}>当前陪伴设定</span>
-          <div style={styles.companionRow}>
-            <span style={styles.companionChip}>人格: {companionSnapshot.personaName}</span>
-            <span style={styles.companionChip}>场景: {companionSnapshot.sceneTitle || "未设置"}</span>
-          </div>
-          <p style={styles.companionSummary}>{companionSnapshot.sceneSummary || "尚未配置场景摘要。"}</p>
-        </div>
-      ) : null}
-
-      {/* Theme selector */}
-      <div style={styles.themeRow}>
-        <label style={styles.themeLabel}>
-          <span style={styles.caption}>主线主题</span>
-          <select
-            style={styles.select}
-            value={selectedTheme}
-            onChange={(event) => onChangeTheme(event.target.value)}
-            disabled={isPending || disabled}
-            title={selectedTheme || "暂无主线主题"}
-          >
-            {weeklyFocus.length ? (
-              weeklyFocus.map((theme) => (
-                <option key={theme} value={theme}>{theme}</option>
-              ))
-            ) : (
-              <option value="">暂无主线主题</option>
-            )}
-          </select>
-        </label>
-        <button
-          type="button"
-          style={{
-            ...styles.ghostBtn,
-            ...(isPending || disabled || !onJumpToThemeStart ? styles.btnDisabled : {})
-          }}
-          disabled={isPending || disabled || !onJumpToThemeStart}
-          onClick={() => { if (onJumpToThemeStart) onJumpToThemeStart(); }}
-        >
-          跳转首页
-        </button>
-      </div>
-
-      {/* Input */}
-      <div style={styles.inputArea}>
-        <textarea
-          style={styles.textarea}
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          placeholder="继续输入问题，或追问上一轮内容…"
-        />
-        <button
-          style={{
-            ...styles.sendBtn,
-            ...(isPending || disabled ? styles.btnDisabled : {})
-          }}
-          disabled={isPending || disabled}
-          onClick={() => onAsk(message)}
-        >
-          {isPending ? "发送中…" : "发送"}
-        </button>
-      </div>
-
-      {/* Error */}
-      {chatErrorMessage ? (
-        <div style={styles.errorBox}>
-          <span style={styles.errorTitle}>对话请求失败</span>
-          <span style={styles.errorText}>{chatErrorMessage}</span>
-          <button
-            type="button"
-            style={{
-              ...styles.retryBtn,
-              ...(isPending || disabled || !onRetryLastAsk ? styles.btnDisabled : {})
-            }}
-            disabled={isPending || disabled || !onRetryLastAsk}
-            onClick={() => { if (onRetryLastAsk) void onRetryLastAsk(); }}
-          >
-            {isPending ? "重试中…" : "重试"}
-          </button>
-        </div>
-      ) : null}
-
-      {/* Conversation turns */}
-      {turns.length ? (
-        <div style={styles.transcript}>
-          <span style={styles.caption}>对话记录</span>
-          <div style={styles.turnList}>
-            {sortedTurns.map((turn, index) => (
-              <div
-                key={buildTurnKey(turn.createdAt, index)}
-                style={styles.turnCard}
+      <div className="study-console-layout" style={styles.consoleCard}>
+        <section style={styles.chatPanel}>
+          <div style={styles.consoleHead}>
+            <div style={styles.consoleMeta}>
+              <span style={styles.caption}>章节对话主界面</span>
+              <h2 style={styles.consoleTitle}>{selectedChapter || "选择章节后开始对话"}</h2>
+              <p style={styles.consoleSummary}>
+                左侧保持常规聊天窗口，历史消息会被新内容向上推走；右侧单列只保留人格与场景陪伴信息。
+              </p>
+            </div>
+            <div style={styles.consoleActions}>
+              <button
+                type="button"
+                style={{
+                  ...styles.ghostBtn,
+                  ...(disabled || !canOpenPdfPreview || !onTogglePdfPreview ? styles.btnDisabled : {})
+                }}
+                disabled={disabled || !canOpenPdfPreview || !onTogglePdfPreview}
+                onClick={() => { if (onTogglePdfPreview) onTogglePdfPreview(); }}
               >
-                {/* User message */}
-                <div style={styles.userSection}>
-                  <div style={styles.turnMeta}>
-                    <span style={styles.roleLabel}>
-                      {isAttemptTurn(turn.learnerMessage) ? "答题记录" : "你"}
-                    </span>
-                    <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
-                  </div>
-                  <p style={styles.userMessage}>{formatLearnerMessage(turn.learnerMessage)}</p>
-                </div>
+                {isPdfPreviewOpen ? "收拢教材浮窗" : "展开教材浮窗"}
+              </button>
+            </div>
+          </div>
 
-                {/* AI reply */}
-                <div style={styles.aiSection}>
-                  <span style={styles.aiLabel}>AI</span>
-                  <p style={styles.aiMessage}>{turn.assistantReply}</p>
-                  {turn.interactiveQuestion ? (
-                    <div style={styles.questionWrap}>
-                      {renderInteractiveQuestion({
-                        question: turn.interactiveQuestion,
-                        turnKey: buildTurnKey(turn.createdAt, index),
-                        selectedChoices,
-                        blankAnswers,
-                        questionFeedback,
-                        setSelectedChoices,
-                        setBlankAnswers,
-                        setQuestionFeedback,
-                        expandedExplanation,
-                        setExpandedExplanation,
-                        onAsk,
-                        onSubmitQuestionAttempt,
-                        disabled: Boolean(disabled || isPending)
-                      })}
+          <div style={styles.controlStack}>
+            <div style={styles.themeRow}>
+              <label style={styles.themeLabel}>
+                <span style={styles.caption}>学习章节</span>
+                <select
+                  style={styles.select}
+                  value={selectedChapter}
+                  onChange={(event) => onChangeChapter(event.target.value)}
+                  disabled={isPending || disabled}
+                  title={selectedChapter || "暂无学习章节"}
+                >
+                  {studyChapters.length ? (
+                    studyChapters.map((chapter) => (
+                      <option key={chapter} value={chapter}>{chapter}</option>
+                    ))
+                  ) : (
+                    <option value="">暂无学习章节</option>
+                  )}
+                </select>
+              </label>
+              <button
+                type="button"
+                style={{
+                  ...styles.ghostBtn,
+                  ...(isPending || disabled || !onJumpToChapterStart ? styles.btnDisabled : {})
+                }}
+                disabled={isPending || disabled || !onJumpToChapterStart}
+                onClick={() => { if (onJumpToChapterStart) onJumpToChapterStart(); }}
+              >
+                定位章节首页
+              </button>
+            </div>
+
+            <div style={styles.themeRow}>
+              <label style={styles.themeLabel}>
+                <span style={styles.caption}>子章节</span>
+                <select
+                  style={styles.select}
+                  value={selectedSubsectionId ?? ""}
+                  onChange={(event) => { if (onChangeSubsection) onChangeSubsection(event.target.value); }}
+                  disabled={isPending || disabled || !subsectionOptions.length || !onChangeSubsection}
+                  title={selectedSubsectionId || "当前按整章范围学习"}
+                >
+                  <option value="">整章范围</option>
+                  {subsectionOptions.map((subsection) => (
+                    <option key={subsection.id} value={subsection.id}>
+                      {subsection.title} · p.{subsection.pageStart}-{subsection.pageEnd}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span style={styles.subsectionHint}>
+                {subsectionOptions.length
+                  ? "选择更细的子章节后，会话和教材预览会同步切到对应 section。"
+                  : "当前章节没有可用的子章节，保持整章范围。"}
+              </span>
+            </div>
+          </div>
+
+          <div style={styles.transcript}>
+            <div style={styles.transcriptHeader}>
+              <span style={styles.caption}>对话记录</span>
+              <span style={styles.transcriptMeta}>{turns.length} 轮内容</span>
+            </div>
+            {turns.length ? (
+              <div ref={transcriptRef} style={styles.turnList}>
+                {sortedTurns.map((turn, index) => (
+                  <div
+                    key={buildTurnKey(turn.createdAt, index)}
+                    style={styles.turnCard}
+                  >
+                    <div style={styles.userSection}>
+                      <div style={{ ...styles.turnMeta, ...styles.turnMetaRight }}>
+                        <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
+                        <span style={styles.roleLabel}>
+                          {isAttemptTurn(turn.learnerMessage) ? "答题记录" : "你"}
+                        </span>
+                      </div>
+                      <p style={styles.userMessage}>{formatLearnerMessage(turn.learnerMessage)}</p>
                     </div>
-                  ) : null}
-                  {turn.citations.length ? (
-                    <div style={styles.citations}>
-                      {turn.citations.map((citation, citationIndex) => (
-                        <button
-                          key={`${turn.createdAt}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
-                          type="button"
-                          style={styles.citation}
-                          onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
-                          title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
-                          disabled={!onOpenPage}
-                        >
-                          {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
-                        </button>
-                      ))}
+
+                    <div style={styles.aiSection}>
+                      <div style={styles.turnMeta}>
+                        <span style={styles.aiLabel}>AI</span>
+                        <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
+                      </div>
+                      <div style={styles.aiBubble}>
+                        <RichTextMessage content={turn.assistantReply} style={styles.aiMessage} />
+                        {turn.interactiveQuestion ? (
+                          <div style={styles.questionWrap}>
+                            {renderInteractiveQuestion({
+                              question: turn.interactiveQuestion,
+                              turnKey: buildTurnKey(turn.createdAt, index),
+                              selectedChoices,
+                              blankAnswers,
+                              questionFeedback,
+                              setSelectedChoices,
+                              setBlankAnswers,
+                              setQuestionFeedback,
+                              expandedExplanation,
+                              setExpandedExplanation,
+                              onAsk,
+                              onSubmitQuestionAttempt,
+                              disabled: Boolean(disabled || isPending)
+                            })}
+                          </div>
+                        ) : null}
+                        {turn.citations.length ? (
+                          <div style={styles.citations}>
+                            {turn.citations.map((citation, citationIndex) => (
+                              <button
+                                key={`${turn.createdAt}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
+                                type="button"
+                                style={styles.citation}
+                                onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
+                                title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
+                                disabled={!onOpenPage}
+                              >
+                                {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : session?.reply ? (
+              <div ref={transcriptRef} style={styles.turnList}>
+                <div style={styles.turnCard}>
+                  <div style={styles.aiSection}>
+                    <div style={styles.turnMeta}>
+                      <span style={styles.aiLabel}>AI</span>
+                    </div>
+                    <div style={styles.aiBubble}>
+                      <RichTextMessage content={session.reply} style={styles.aiMessage} />
+                      {session.citations.length ? (
+                        <div style={styles.citations}>
+                          {session.citations.map((citation, index) => (
+                            <button
+                              key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
+                              type="button"
+                              style={styles.citation}
+                              onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
+                              title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
+                              disabled={!onOpenPage}
+                            >
+                              {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
+            ) : (
+              <div style={styles.emptyTranscriptCard}>
+                <span style={styles.caption}>对话记录</span>
+                <p style={styles.emptyTranscriptText}>创建会话后，从当前章节开始提问，回答、练习题和引用页码都会集中显示在这里。</p>
+              </div>
+            )}
           </div>
-        </div>
-      ) : session?.reply ? (
-        <div style={styles.aiSection}>
-          <span style={styles.aiLabel}>AI</span>
-          <p style={styles.aiMessage}>{session.reply}</p>
-          {session.citations.length ? (
-            <div style={styles.citations}>
-              {session.citations.map((citation, index) => (
-                <button
-                  key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
-                  type="button"
-                  style={styles.citation}
-                  onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
-                  title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
-                  disabled={!onOpenPage}
-                >
-                  {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
-                </button>
-              ))}
+
+          {chatErrorMessage ? (
+            <div style={styles.errorBox}>
+              <span style={styles.errorTitle}>对话请求失败</span>
+              <span style={styles.errorText}>{chatErrorMessage}</span>
+              <button
+                type="button"
+                style={{
+                  ...styles.retryBtn,
+                  ...(isPending || disabled || !onRetryLastAsk ? styles.btnDisabled : {})
+                }}
+                disabled={isPending || disabled || !onRetryLastAsk}
+                onClick={() => { if (onRetryLastAsk) void onRetryLastAsk(); }}
+              >
+                {isPending ? "重试中…" : "重试"}
+              </button>
             </div>
           ) : null}
-        </div>
-      ) : null}
+
+          <div style={styles.inputArea}>
+            <textarea
+              style={styles.textarea}
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="继续输入问题，或追问上一轮内容…"
+            />
+            <button
+              style={{
+                ...styles.sendBtn,
+                ...(isPending || disabled ? styles.btnDisabled : {})
+              }}
+              disabled={isPending || disabled}
+              onClick={() => onAsk(message)}
+            >
+              {isPending ? "发送中…" : "发送"}
+            </button>
+          </div>
+        </section>
+
+        <aside style={styles.sidebar}>
+          <div style={styles.companionCard}>
+            <div style={styles.companionMeta}>
+              <div style={styles.companionHeader}>
+                <span style={styles.caption}>陪伴设定</span>
+                <div style={styles.companionLinks}>
+                  <Link href="/persona-spectrum" style={styles.companionLink}>人格库</Link>
+                  <Link href="/scene-setup" style={styles.companionLink}>场景编辑</Link>
+                </div>
+              </div>
+              <div style={styles.companionRow}>
+                <span style={styles.companionChip}>人格 · {persona.name}</span>
+                <span style={styles.companionChip}>场景 · {sceneProfile?.title || "未设置"}</span>
+                {sceneSourceLabel ? <span style={styles.companionChip}>来源 · {sceneSourceLabel}</span> : null}
+                {sceneInstanceId ? <span style={styles.companionChip}>副本 · {sceneInstanceId}</span> : null}
+              </div>
+              <p style={styles.companionSummary}>
+                {sceneProfile?.summary || persona.summary || "尚未配置场景摘要。"}
+              </p>
+              {sceneProfile?.selectedPath.length ? (
+                <p style={styles.companionPath}>{sceneProfile.selectedPath.join(" / ")}</p>
+              ) : null}
+            </div>
+            <div style={styles.shellCard}>
+              <CharacterShell persona={persona} response={session} pending={isPending} variant="embedded" />
+            </div>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }
 
 const styles: Record<string, CSSProperties> = {
   wrap: {
+    display: "block",
+  },
+  consoleCard: {
     display: "grid",
+    gridTemplateColumns: "minmax(0, 1.75fr) minmax(320px, 0.82fr)",
+    gap: 20,
+    alignItems: "start",
+  },
+  chatPanel: {
+    display: "grid",
+    gridTemplateRows: "auto auto minmax(0, 1fr) auto auto",
     gap: 14,
+    minWidth: 0,
+    minHeight: "calc(100vh - 220px)",
+    padding: 20,
+    border: "1px solid var(--border)",
+    background: "linear-gradient(180deg, #fbfdfe 0%, #f3f7f8 100%)",
+    boxShadow: "0 22px 60px rgba(13, 32, 40, 0.08)",
+  },
+  controlStack: {
+    display: "grid",
+    gap: 10,
+    padding: "14px 16px",
+    border: "1px solid var(--border)",
+    background: "rgba(255, 255, 255, 0.78)",
+  },
+  sidebar: {
+    minWidth: 0,
+    position: "sticky",
+    top: 96,
+  },
+  consoleHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 16,
+    flexWrap: "wrap",
+  },
+  consoleMeta: {
+    display: "grid",
+    gap: 6,
+    minWidth: 0,
+    flex: 1,
+  },
+  consoleTitle: {
+    margin: 0,
+    fontSize: 24,
+    lineHeight: 1.15,
+    color: "var(--ink)",
+  },
+  consoleSummary: {
+    margin: 0,
+    maxWidth: 720,
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "var(--muted)",
+  },
+  consoleActions: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
   },
   companionCard: {
     display: "grid",
-    gap: 8,
+    gap: 14,
     border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "10px 12px",
+    background: "linear-gradient(180deg, #fbfdfe 0%, #f4f7f8 100%)",
+    padding: "16px 16px 18px",
+    boxShadow: "0 18px 48px rgba(13, 32, 40, 0.08)",
+  },
+  companionMeta: {
+    display: "grid",
+    gap: 10,
+    alignContent: "start",
+  },
+  companionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  companionLinks: {
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  companionLink: {
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 600,
   },
   companionRow: {
     display: "flex",
@@ -270,10 +472,23 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     lineHeight: 1.6,
   },
+  companionPath: {
+    margin: 0,
+    fontSize: 12,
+    color: "var(--ink-2)",
+    lineHeight: 1.6,
+  },
+  shellCard: {
+    minWidth: 0,
+    padding: "12px 14px",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+  },
   themeRow: {
     display: "flex",
     alignItems: "flex-end",
     gap: 8,
+    flexWrap: "wrap",
   },
   themeLabel: {
     display: "grid",
@@ -297,6 +512,15 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     fontSize: 13,
   },
+  subsectionHint: {
+    minHeight: 34,
+    display: "inline-flex",
+    alignItems: "center",
+    maxWidth: 420,
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.6,
+  },
   ghostBtn: {
     border: "1px solid var(--border)",
     height: 34,
@@ -314,12 +538,19 @@ const styles: Record<string, CSSProperties> = {
     gridTemplateColumns: "minmax(0, 1fr) auto",
     gap: 8,
     alignItems: "end",
+    position: "sticky",
+    bottom: 0,
+    zIndex: 8,
+    padding: "14px 16px 16px",
+    border: "1px solid var(--border)",
+    background: "rgba(255, 255, 255, 0.92)",
+    boxShadow: "0 -10px 26px rgba(13, 32, 40, 0.08)",
   },
   textarea: {
-    minHeight: 76,
+    minHeight: 84,
     border: "1px solid var(--border)",
     padding: "8px 10px",
-    background: "var(--panel)",
+    background: "white",
     resize: "vertical",
     fontSize: 14,
     lineHeight: 1.6,
@@ -327,7 +558,7 @@ const styles: Record<string, CSSProperties> = {
   },
   sendBtn: {
     border: "none",
-    height: 76,
+    height: 84,
     padding: "0 20px",
     background: "var(--accent)",
     color: "white",
@@ -371,33 +602,54 @@ const styles: Record<string, CSSProperties> = {
   },
   transcript: {
     display: "grid",
-    gap: 10,
+    gridTemplateRows: "auto minmax(0, 1fr)",
+    gap: 12,
+    padding: "16px 16px 10px",
+    border: "1px solid var(--border)",
+    background: "white",
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  transcriptHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  transcriptMeta: {
+    fontSize: 12,
+    color: "var(--muted)",
   },
   turnList: {
     display: "grid",
-    gap: 0,
+    gap: 16,
+    overflowY: "auto",
+    paddingRight: 6,
+    alignContent: "start",
   },
   turnCard: {
     display: "grid",
-    gap: 0,
-    borderBottom: "1px solid var(--border)",
-    paddingBottom: 16,
-    marginBottom: 16,
+    gap: 12,
   },
   userSection: {
     display: "grid",
     gap: 6,
-    marginBottom: 12,
+    justifyItems: "end",
   },
   aiSection: {
     display: "grid",
     gap: 8,
+    justifyItems: "start",
   },
   turnMeta: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+  },
+  turnMetaRight: {
+    justifyContent: "flex-end",
   },
   roleLabel: {
     fontSize: 11,
@@ -412,9 +664,10 @@ const styles: Record<string, CSSProperties> = {
   },
   userMessage: {
     margin: 0,
-    padding: "8px 12px",
-    background: "var(--panel)",
-    borderLeft: "2px solid var(--border-strong)",
+    padding: "10px 12px",
+    background: "linear-gradient(180deg, #e7f5f7 0%, #dff0f2 100%)",
+    border: "1px solid #b8dde2",
+    maxWidth: "min(82%, 720px)",
     fontSize: 14,
     lineHeight: 1.7,
     color: "var(--ink-2)",
@@ -434,11 +687,19 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     whiteSpace: "pre-wrap",
   },
+  aiBubble: {
+    display: "grid",
+    gap: 10,
+    width: "min(100%, 820px)",
+    padding: "12px 14px",
+    border: "1px solid var(--border)",
+    background: "#fcfefe",
+  },
   questionWrap: {
     display: "grid",
     gap: 8,
     borderTop: "1px solid var(--border)",
-    paddingTop: 10,
+    paddingTop: 12,
   },
   questionTitle: {
     margin: 0,
@@ -464,6 +725,14 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     cursor: "pointer",
     fontSize: 13,
+  },
+  choiceButtonText: {
+    margin: 0,
+    fontSize: 13,
+    lineHeight: 1.65,
+    color: "inherit",
+    whiteSpace: "normal",
+    wordBreak: "break-word",
   },
   choiceButtonActive: {
     borderColor: "var(--accent)",
@@ -537,6 +806,20 @@ const styles: Record<string, CSSProperties> = {
     background: "transparent",
     cursor: "pointer",
   },
+  emptyTranscriptCard: {
+    display: "grid",
+    gap: 8,
+    minHeight: 220,
+    alignContent: "center",
+    justifyItems: "start",
+  },
+  emptyTranscriptText: {
+    margin: 0,
+    maxWidth: 560,
+    fontSize: 14,
+    lineHeight: 1.75,
+    color: "var(--muted)",
+  },
 };
 
 function formatTurnTime(value: string) {
@@ -605,7 +888,7 @@ function renderInteractiveQuestion(input: {
       <>
         <p style={styles.questionTitle}>选择题</p>
         <span style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-        <p style={styles.aiMessage}>{question.prompt}</p>
+        <RichTextMessage content={question.prompt} style={styles.aiMessage} />
         <div style={styles.choiceList}>
           {question.options.map((option) => (
             <button
@@ -614,7 +897,11 @@ function renderInteractiveQuestion(input: {
               style={{ ...styles.choiceButton, ...(selected === option.key ? styles.choiceButtonActive : {}) }}
               onClick={() => setSelectedChoices((current) => ({ ...current, [turnKey]: option.key }))}
             >
-              {option.key}. {option.text}
+              <RichTextMessage
+                content={`${option.key}. ${option.text}`}
+                inline
+                style={styles.choiceButtonText}
+              />
             </button>
           ))}
         </div>
@@ -661,7 +948,9 @@ function renderInteractiveQuestion(input: {
           {feedback ? <span style={feedback.ok ? styles.feedbackOk : styles.feedbackBad}>{feedback.text}</span> : null}
         </div>
         {explanationVisible ? (
-          <div style={styles.explanationBox}>{question.explanation || "暂无解析"}</div>
+          <div style={styles.explanationBox}>
+            <RichTextMessage content={question.explanation || "暂无解析"} />
+          </div>
         ) : null}
       </>
     );
@@ -672,7 +961,7 @@ function renderInteractiveQuestion(input: {
     <>
       <p style={styles.questionTitle}>填空题</p>
       <span style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-      <p style={styles.aiMessage}>{question.prompt}</p>
+      <RichTextMessage content={question.prompt} style={styles.aiMessage} />
       <input
         type="text"
         value={value}
@@ -730,7 +1019,9 @@ function renderInteractiveQuestion(input: {
         {feedback ? <span style={feedback.ok ? styles.feedbackOk : styles.feedbackBad}>{feedback.text}</span> : null}
       </div>
       {explanationVisible ? (
-        <div style={styles.explanationBox}>{question.explanation || "暂无解析"}</div>
+        <div style={styles.explanationBox}>
+          <RichTextMessage content={question.explanation || "暂无解析"} />
+        </div>
       ) : null}
     </>
   );

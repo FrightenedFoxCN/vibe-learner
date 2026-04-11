@@ -12,5 +12,8 @@
     "lint:web": "npm --workspace @vibe-learner/web run lint",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai"
+  },
+  "dependencies": {
+    "rehype-katex": "^7.0.1"
   }
 }

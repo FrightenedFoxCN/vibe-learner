@@ -48,12 +48,15 @@ class OpenAIPlanRunner:
             created_at=_now(),
             rounds=[],
         )
-        max_rounds = 4
+        max_rounds = 24
+        max_content_filter_retries = 2
         max_empty_response_retries = 1
         empty_response_retries = 0
-        max_tool_probe_retries = 1
+        max_tool_probe_retries = 3
         tool_probe_retries = 0
-        for round_index in range(max_rounds):
+        round_index = 0
+        content_filter_retries = 0
+        while round_index < max_rounds:
             _emit_progress(
                 progress_callback,
                 "model_round_started",
@@ -140,15 +143,20 @@ class OpenAIPlanRunner:
                         "tool_call_count": len(tool_calls),
                     },
                 )
+                content_filter_retries = 0
+                round_index += 1
                 continue
 
             content = _coerce_text_content(message.get("content"))
+            finish_reason = str(choice.get("finish_reason") or "")
             if content.strip():
                 if (
                     tool_runtime.has_tools()
                     and tool_probe_retries < max_tool_probe_retries
-                    and _looks_coarse_grained(tool_runtime.current_study_units())
-                    and not _trace_has_tool_calls(trace)
+                    and _should_continue_tool_refinement(
+                        trace=trace,
+                        study_units=tool_runtime.current_study_units(),
+                    )
                 ):
                     tool_probe_retries += 1
                     _emit_progress(
@@ -167,11 +175,13 @@ class OpenAIPlanRunner:
                             "content": prompt_template.require("tool_probe_retry"),
                         }
                     )
+                    content_filter_retries = 0
+                    round_index += 1
                     continue
                 trace.rounds.append(
                     PlanGenerationRoundRecord(
                         round_index=round_index,
-                        finish_reason=str(choice.get("finish_reason") or ""),
+                        finish_reason=finish_reason,
                         assistant_content=content,
                         thinking=thinking,
                         elapsed_ms=elapsed_ms,
@@ -185,7 +195,7 @@ class OpenAIPlanRunner:
                     {
                         "round_index": round_index,
                         "elapsed_ms": elapsed_ms,
-                        "finish_reason": str(choice.get("finish_reason") or ""),
+                        "finish_reason": finish_reason,
                         "tool_call_count": 0,
                         "has_content": True,
                     },
@@ -194,13 +204,37 @@ class OpenAIPlanRunner:
                     content=content,
                     trace=trace,
                 )
+            if finish_reason == "content_filter":
+                _emit_progress(
+                    progress_callback,
+                    "model_round_failed",
+                    {
+                        "round_index": round_index,
+                        "elapsed_ms": elapsed_ms,
+                        "finish_reason": finish_reason,
+                        "error": "plan_model_content_filter",
+                    },
+                )
+                if content_filter_retries < max_content_filter_retries:
+                    content_filter_retries += 1
+                    _emit_progress(
+                        progress_callback,
+                        "model_recovery_attempt",
+                        {
+                            "round_index": round_index,
+                            "attempt": content_filter_retries,
+                            "reason": "plan_model_content_filter",
+                            "strategy": "retry_same_context",
+                        },
+                    )
+                    continue
             _emit_progress(
                 progress_callback,
                 "model_round_failed",
                 {
                     "round_index": round_index,
                     "elapsed_ms": elapsed_ms,
-                    "finish_reason": str(choice.get("finish_reason") or ""),
+                    "finish_reason": finish_reason,
                     "error": "plan_model_empty_response",
                 },
             )
@@ -222,6 +256,8 @@ class OpenAIPlanRunner:
                         "content": prompt_template.require("empty_response_retry"),
                     }
                 )
+                content_filter_retries = 0
+                round_index += 1
                 continue
             raise RuntimeError("plan_model_empty_response")
         _emit_progress(
@@ -289,6 +325,18 @@ def _now() -> str:
 
 def _trace_has_tool_calls(trace: PlanGenerationTraceRecord) -> bool:
     return any(round_record.tool_calls for round_record in trace.rounds)
+
+
+def _tool_call_count(trace: PlanGenerationTraceRecord) -> int:
+    return sum(len(round_record.tool_calls) for round_record in trace.rounds)
+
+
+def _should_continue_tool_refinement(
+    *,
+    trace: PlanGenerationTraceRecord,
+    study_units: list[Any],
+) -> bool:
+    return _tool_call_count(trace) == 0 and _looks_coarse_grained(study_units)
 
 
 def _looks_coarse_grained(study_units: list[Any]) -> bool:

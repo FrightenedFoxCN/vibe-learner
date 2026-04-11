@@ -189,6 +189,48 @@ class DocumentService:
     def list_documents(self) -> list[DocumentRecord]:
         return self._load_documents()
 
+    def update_study_unit_title(
+        self,
+        *,
+        document_id: str,
+        study_unit_id: str,
+        title: str,
+    ) -> DocumentRecord:
+        normalized_title = title.strip()
+        if not normalized_title:
+            raise HTTPException(status_code=422, detail="study_unit_title_required")
+
+        documents = self._load_documents()
+        document = self.require_document(document_id, documents)
+
+        updated = False
+        for unit in document.study_units:
+            if unit.id != study_unit_id:
+                continue
+            unit.title = normalized_title
+            updated = True
+            break
+
+        if not updated:
+            raise HTTPException(status_code=404, detail="study_unit_not_found")
+
+        for section in document.sections:
+            if section.id == study_unit_id:
+                section.title = normalized_title
+
+        document.updated_at = _now()
+        self._save_documents(documents)
+
+        debug_report = self.store.load_item("document_debug", document_id, DocumentDebugRecord)
+        if debug_report is not None:
+            for unit in debug_report.study_units:
+                if unit.id == study_unit_id:
+                    unit.title = normalized_title
+                    break
+            self.store.save_item("document_debug", document_id, debug_report)
+
+        return document
+
     def require_debug_report(self, document_id: str) -> DocumentDebugRecord:
         report = self.store.load_item("document_debug", document_id, DocumentDebugRecord)
         if report is None:

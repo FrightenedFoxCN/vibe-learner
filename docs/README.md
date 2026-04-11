@@ -6,6 +6,7 @@
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
+- `learning-plan-prompt-contract.md`: exact learning-plan prompt sections, user payload shape, schema injection, and model transport string
 - `frontend-learning-workspace.md`: frontend responsibility split for `/plan` and `/study` workspace pages
 - `persona-spectrum.md`: Persona Spectrum page data chain and API contract
 - `scene-setup.md`: layered scene editor guide for `/scene-setup`
@@ -16,9 +17,10 @@
 2. Read `parsing-and-planning-data-flow.md` before changing PDF parsing, study-unit cleanup, planning context, or tool-enabled plan generation.
 3. Read `frontend-learning-workspace.md` before changing `apps/web/components/learning-workspace.tsx` or its controller/state helpers.
 4. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
-5. Read `api-reference.md` before touching frontend/backend contracts.
-6. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-7. Read `../TODO.md` for the active implementation backlog.
+5. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
+6. Read `api-reference.md` before touching frontend/backend contracts.
+7. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+8. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 

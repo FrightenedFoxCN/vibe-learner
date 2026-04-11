@@ -307,8 +307,8 @@ class LearningPlanRecord(BaseModel):
             "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."
         )
     )
-    weekly_focus: list[str] = Field(
-        description="Ordered main study themes (coarse-grained), suitable for a vertical learning sequence."
+    study_chapters: list[str] = Field(
+        description="Ordered study-chapter list used by downstream navigation."
     )
     today_tasks: list[str] = Field(
         description="Actionable learner tasks for the current session or day."
@@ -316,6 +316,7 @@ class LearningPlanRecord(BaseModel):
     study_units: list[StudyUnitRecord] = []
     schedule: list[StudyScheduleRecord] = []
     created_at: str
+
 
 
 class PlanToolCallTraceRecord(BaseModel):

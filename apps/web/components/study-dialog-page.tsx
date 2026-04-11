@@ -3,8 +3,8 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
+import type { DocumentRecord, DocumentSection, LearningPlan, StudyUnit } from "@vibe-learner/shared";
 
-import { CharacterShell } from "./character-shell";
 import { useLearningWorkspace } from "./learning-workspace-provider";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
@@ -35,19 +35,32 @@ export function StudyDialogPage() {
   } = useLearningWorkspace();
 
   const [pdfPage, setPdfPage] = useState(1);
-  const [selectedTheme, setSelectedTheme] = useState("");
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(true);
+  const [selectedChapter, setSelectedChapter] = useState("");
+  const [selectedSubsectionId, setSelectedSubsectionId] = useState("");
+  const [requestedPlanId, setRequestedPlanId] = useState("");
+  const [requestedChapter, setRequestedChapter] = useState("");
+  const [requestedSubsectionId, setRequestedSubsectionId] = useState("");
+  const [requestedPage, setRequestedPage] = useState(0);
 
-  const themeOptions = activePlan?.weeklyFocus ?? [];
-  const currentTheme = selectedTheme || themeOptions[0] || "";
+  const chapterOptions = activePlan?.studyChapters ?? [];
+  const currentChapter = selectedChapter || chapterOptions[0] || "";
   const activeSceneProfile = studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
+  const activeSceneSourceLabel = studySession?.sceneProfile
+    ? "会话副本"
+    : activePlan?.sceneProfile
+      ? "学习计划"
+      : "";
+  const currentChapterStudyUnit = resolveStudyUnitByChapter(activePlan, currentChapter);
+  const subsectionOptions = resolveSubsectionsForStudyUnit(activeDocument, currentChapterStudyUnit);
 
-  const resolveSectionIdByTheme = useCallback(
-    (theme: string) => {
-      if (!theme) return "";
-      const themeIndex = themeOptions.findIndex((item) => item === theme);
+  const resolveSectionIdByChapter = useCallback(
+    (chapter: string) => {
+      if (!chapter) return "";
+      const chapterIndex = chapterOptions.findIndex((item) => item === chapter);
       const exactFocusMatch = activePlan?.schedule.find((item) => {
         const focus = item.focus?.trim() ?? "";
-        return focus === theme || focus.includes(theme) || theme.includes(focus);
+        return focus === chapter || focus.includes(chapter) || chapter.includes(focus);
       });
       if (exactFocusMatch?.unitId) return exactFocusMatch.unitId;
 
@@ -55,36 +68,37 @@ export function StudyDialogPage() {
         .filter((unit) => unit.includeInPlan)
         .map((unit) => unit.id);
 
-      if (themeIndex >= 0 && chapterScopedUnitIds[themeIndex]) {
-        return chapterScopedUnitIds[themeIndex];
+      if (chapterIndex >= 0 && chapterScopedUnitIds[chapterIndex]) {
+        return chapterScopedUnitIds[chapterIndex];
       }
-      if (themeIndex >= 0) {
-        if (planSections[themeIndex]?.id) return planSections[themeIndex].id;
+      if (chapterIndex >= 0) {
+        if (planSections[chapterIndex]?.id) return planSections[chapterIndex].id;
         const uniqueUnitIds = Array.from(
           new Set((activePlan?.schedule ?? []).map((item) => item.unitId).filter(Boolean))
         );
-        if (uniqueUnitIds[themeIndex]) return uniqueUnitIds[themeIndex];
+        if (uniqueUnitIds[chapterIndex]) return uniqueUnitIds[chapterIndex];
       }
       return planSections[0]?.id ?? "";
     },
-    [activePlan?.schedule, activePlan?.studyUnits, planSections, themeOptions]
+    [activePlan?.schedule, activePlan?.studyUnits, chapterOptions, planSections]
   );
 
-  const handleThemeChange = useCallback(
-    (theme: string) => {
-      setSelectedTheme(theme);
+  const handleChapterChange = useCallback(
+    (chapter: string) => {
+      setSelectedChapter(chapter);
+      setSelectedSubsectionId("");
       if (!studySession) return;
-      const nextSectionId = resolveSectionIdByTheme(theme);
+      const nextSectionId = resolveSectionIdByChapter(chapter);
       if (nextSectionId && nextSectionId !== studySession.sectionId) {
         void handleSwitchSection(nextSectionId);
       }
     },
-    [handleSwitchSection, resolveSectionIdByTheme, studySession]
+    [handleSwitchSection, resolveSectionIdByChapter, studySession]
   );
 
-  const resolveThemeStartPage = useCallback(
-    (theme: string) => {
-      const sectionId = resolveSectionIdByTheme(theme);
+  const resolveChapterStartPage = useCallback(
+    (chapter: string) => {
+      const sectionId = resolveSectionIdByChapter(chapter);
       if (!sectionId) return 0;
       const fromPlanSection = planSections.find((section) => section.id === sectionId)?.pageStart;
       if (fromPlanSection) return fromPlanSection;
@@ -94,48 +108,132 @@ export function StudyDialogPage() {
       if (fromRawSection) return fromRawSection;
       return 0;
     },
-    [activeDocument?.sections, activeDocument?.studyUnits, planSections, resolveSectionIdByTheme]
+    [activeDocument?.sections, activeDocument?.studyUnits, planSections, resolveSectionIdByChapter]
   );
 
-  const handleJumpToThemeStart = useCallback(() => {
-    const nextPage = resolveThemeStartPage(currentTheme);
-    if (nextPage > 0) setPdfPage(nextPage);
-  }, [currentTheme, resolveThemeStartPage]);
+  const handleOpenPdfPage = useCallback((page: number) => {
+    setPdfPage(page);
+    setIsPdfPreviewOpen(true);
+  }, []);
 
-  const handleAskByCurrentTheme = useCallback(
+  const handleSubsectionChange = useCallback(
+    (subsectionId: string) => {
+      setSelectedSubsectionId(subsectionId);
+
+      if (!subsectionId) {
+        const chapterSectionId = resolveSectionIdByChapter(currentChapter);
+        const chapterStartPage = resolveChapterStartPage(currentChapter);
+        if (chapterStartPage > 0) {
+          handleOpenPdfPage(chapterStartPage);
+        }
+        if (studySession && chapterSectionId && chapterSectionId !== studySession.sectionId) {
+          void handleSwitchSection(chapterSectionId);
+        }
+        return;
+      }
+
+      const targetSubsection = subsectionOptions.find((section) => section.id === subsectionId);
+      if (targetSubsection) {
+        handleOpenPdfPage(targetSubsection.pageStart);
+      }
+      if (studySession && subsectionId !== studySession.sectionId) {
+        void handleSwitchSection(subsectionId);
+      }
+    },
+    [
+      currentChapter,
+      handleOpenPdfPage,
+      handleSwitchSection,
+      resolveChapterStartPage,
+      resolveSectionIdByChapter,
+      studySession,
+      subsectionOptions
+    ]
+  );
+
+  const handleJumpToChapterStart = useCallback(() => {
+    const nextPage = resolveChapterStartPage(currentChapter);
+    if (nextPage > 0) handleOpenPdfPage(nextPage);
+  }, [currentChapter, handleOpenPdfPage, resolveChapterStartPage]);
+
+  const handleAskByCurrentChapter = useCallback(
     async (message: string) => {
-      const targetSectionId = resolveSectionIdByTheme(currentTheme);
+      const targetSectionId = selectedSubsectionId || resolveSectionIdByChapter(currentChapter);
       if (targetSectionId) {
         await handleAskForSection(message, targetSectionId);
         return;
       }
       await handleAsk(message);
     },
-    [currentTheme, handleAsk, handleAskForSection, resolveSectionIdByTheme]
+    [currentChapter, handleAsk, handleAskForSection, resolveSectionIdByChapter, selectedSubsectionId]
   );
 
   useEffect(() => {
-    if (!themeOptions.length) { setSelectedTheme(""); return; }
-    if (!selectedTheme || !themeOptions.includes(selectedTheme)) {
-      setSelectedTheme(themeOptions[0]);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setRequestedPlanId(params.get("plan") ?? "");
+    setRequestedChapter(params.get("chapter") ?? "");
+    setRequestedSubsectionId(params.get("subsection") ?? "");
+    setRequestedPage(Number(params.get("page") ?? "0"));
+  }, []);
+
+  useEffect(() => {
+    if (!requestedPlanId || requestedPlanId === activePlan?.id) return;
+    selectPlan(requestedPlanId, PLAN_SWITCH_NOTICE);
+  }, [activePlan?.id, requestedPlanId, selectPlan]);
+
+  useEffect(() => {
+    if (!chapterOptions.length) { setSelectedChapter(""); return; }
+    if (requestedChapter && chapterOptions.includes(requestedChapter) && requestedChapter !== selectedChapter) {
+      setSelectedChapter(requestedChapter);
+      setSelectedSubsectionId("");
+      return;
     }
-  }, [activePlan?.id, selectedTheme, themeOptions]);
+    if (!selectedChapter || !chapterOptions.includes(selectedChapter)) {
+      setSelectedChapter(chapterOptions[0]);
+      setSelectedSubsectionId("");
+    }
+  }, [activePlan?.id, chapterOptions, requestedChapter, selectedChapter]);
+
+  useEffect(() => {
+    if (!selectedSubsectionId) return;
+    if (subsectionOptions.some((section) => section.id === selectedSubsectionId)) {
+      return;
+    }
+    setSelectedSubsectionId("");
+  }, [selectedSubsectionId, subsectionOptions]);
+
+  useEffect(() => {
+    if (!requestedSubsectionId || !subsectionOptions.length) return;
+    if (!subsectionOptions.some((section) => section.id === requestedSubsectionId)) return;
+    setSelectedSubsectionId((current) => current || requestedSubsectionId);
+  }, [requestedSubsectionId, subsectionOptions]);
 
   useEffect(() => {
     const firstPage = activeDocument?.sections[0]?.pageStart;
-    if (firstPage) setPdfPage(firstPage);
+    if (firstPage) {
+      setPdfPage(firstPage);
+      setIsPdfPreviewOpen(true);
+    }
   }, [activeDocument?.id]);
 
   useEffect(() => {
-    if (!studySession || !currentTheme) return;
-    const nextSectionId = resolveSectionIdByTheme(currentTheme);
+    if (!Number.isFinite(requestedPage) || requestedPage <= 0) return;
+    setPdfPage(requestedPage);
+    setIsPdfPreviewOpen(true);
+  }, [requestedPage, activeDocument?.id]);
+
+  useEffect(() => {
+    if (!studySession || !currentChapter) return;
+    const nextSectionId = selectedSubsectionId || resolveSectionIdByChapter(currentChapter);
     if (nextSectionId && nextSectionId !== studySession.sectionId) {
       void handleSwitchSection(nextSectionId);
     }
   }, [
-    currentTheme,
+    currentChapter,
     handleSwitchSection,
-    resolveSectionIdByTheme,
+    resolveSectionIdByChapter,
+    selectedSubsectionId,
     studySession?.id,
     studySession?.sectionId,
   ]);
@@ -149,7 +247,7 @@ export function StudyDialogPage() {
       {/* ── Heading ── */}
       <div style={styles.heading}>
         <h1 style={styles.pageTitle}>章节对话</h1>
-        <p style={styles.pageDesc}>基于学习计划开展章节问答；选择教材计划与教师人格，创建会话后开始学习。</p>
+        <p style={styles.pageDesc}>让对话成为主界面；章节切换、练习反馈与教材引用围绕同一个会话流展开，教材预览收进可收拢浮窗。</p>
       </div>
 
       {/* ── Toolbar ── */}
@@ -174,14 +272,6 @@ export function StudyDialogPage() {
           </select>
         </div>
 
-        <div style={styles.toolbarField}>
-          <span style={styles.toolbarLabel}>统一陪伴</span>
-          <span style={styles.companionText}>
-            {selectedPersona.name}
-            {studySession?.sceneProfile?.title ? ` · ${studySession.sceneProfile.title}` : ""}
-          </span>
-        </div>
-
         {!studySession ? (
           <button
             type="button"
@@ -196,95 +286,147 @@ export function StudyDialogPage() {
           </button>
         ) : null}
 
+        <Link href="/plan" style={styles.toolbarLink}>返回计划生成</Link>
         {notice ? <span style={styles.notice}>{notice}</span> : null}
       </div>
 
-      <section style={styles.sceneStrip}>
-        <div style={styles.sceneStripHead}>
-          <div style={styles.sceneStripHeadMeta}>
-            <span style={styles.sceneStripLabel}>当前使用的场景</span>
-            {studySession?.sceneInstanceId ? (
-              <span style={styles.sceneStripInstance}>会话副本：{studySession.sceneInstanceId}</span>
-            ) : null}
-          </div>
-          <div style={styles.sceneStripHeadActions}>
-            <Link href="/sensory-tools" style={styles.sceneStripLink}>场景工具设置</Link>
-            <span style={styles.sceneStripBadge}>{studySession?.sceneProfile ? "来自会话" : activePlan?.sceneProfile ? "来自计划" : "未配置"}</span>
-          </div>
-        </div>
-        {activeSceneProfile ? (
-          <>
-            <p style={styles.sceneStripName}>云端名称：{activeSceneProfile.sceneName || "未命名"}</p>
-            <div style={styles.sceneStripTitleRow}>
-              <strong style={styles.sceneStripTitle}>{activeSceneProfile.title}</strong>
-              <span style={styles.sceneStripPath}>{activeSceneProfile.selectedPath.join(" / ")}</span>
-            </div>
-            <p style={styles.sceneStripSummary}>场景树根节点：{activeSceneProfile.sceneTree.map((node) => node.title).join(" / ") || "未配置"} · 共 {countSceneNodes(activeSceneProfile.sceneTree)} 个节点</p>
-            <p style={styles.sceneStripSummary}>{activeSceneProfile.summary}</p>
-            <div style={styles.sceneStripTags}>
-              {activeSceneProfile.tags.slice(0, 4).map((tag) => (
-                <span key={tag} style={styles.sceneStripTag}>{tag}</span>
-              ))}
-              {activeSceneProfile.focusObjectNames.slice(0, 4).map((name) => (
-                <span key={name} style={styles.sceneStripTag}>{name}</span>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p style={styles.sceneStripSummary}>尚未配置场景。请先到场景编辑页创建并保存场景。</p>
-        )}
-      </section>
-
-      <section className="study-dialog-grid" style={styles.grid}>
-        <div style={styles.leftColumn}>
+      <section style={styles.mainStage}>
           <StudyConsole
             isPending={isBusy}
-            onAsk={handleAskByCurrentTheme}
+            onAsk={handleAskByCurrentChapter}
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
-            onChangeTheme={handleThemeChange}
-            onOpenPage={setPdfPage}
-            onJumpToThemeStart={handleJumpToThemeStart}
+            onChangeChapter={handleChapterChange}
+            onOpenPage={handleOpenPdfPage}
+            onJumpToChapterStart={handleJumpToChapterStart}
             chatErrorMessage={chatFailure?.detail ?? ""}
             onRetryLastAsk={retryFailedAsk}
-            selectedTheme={currentTheme}
-            weeklyFocus={themeOptions}
+            selectedChapter={currentChapter}
+            studyChapters={chapterOptions}
+            selectedSubsectionId={selectedSubsectionId}
+            subsectionOptions={subsectionOptions}
+            onChangeSubsection={handleSubsectionChange}
             turns={studySession?.turns ?? []}
             session={response}
-            companionSnapshot={{
-              personaName: selectedPersona.name,
-              sceneTitle: studySession?.sceneProfile?.title ?? "",
-              sceneSummary: studySession?.sceneProfile?.summary ?? ""
-            }}
+            persona={selectedPersona}
+            sceneProfile={activeSceneProfile}
+            sceneSourceLabel={activeSceneSourceLabel}
+            sceneInstanceId={studySession?.sceneInstanceId ?? ""}
+            onTogglePdfPreview={() => setIsPdfPreviewOpen((current) => !current)}
+            isPdfPreviewOpen={isPdfPreviewOpen}
+            canOpenPdfPreview={Boolean(activeDocument)}
             disabled={!studySession}
           />
-          <CharacterShell persona={selectedPersona} response={response} pending={isBusy} />
-        </div>
-
-        <aside className="study-dialog-pdf-pane" style={styles.pdfPane}>
-          <div style={styles.pdfHeader}>
-            <span style={styles.pdfTitle}>{activeDocument?.title ?? "未选择教材"}</span>
-            <span style={styles.pdfPage}>第 {pdfPage} 页</span>
-          </div>
-          {activeDocument ? (
-            <iframe title="textbook-pdf" src={pdfSrc} className="study-dialog-pdf-iframe" style={styles.iframe} />
-          ) : (
-            <div style={styles.emptyPdf}>请先在计划页完成教材上传并生成学习计划。</div>
-          )}
-        </aside>
       </section>
+
+      {activeDocument ? (
+        isPdfPreviewOpen ? (
+          <aside className="study-dialog-pdf-window" style={styles.pdfWindow}>
+            <div style={styles.pdfHeader}>
+              <div style={styles.pdfHeaderMeta}>
+                <span style={styles.pdfTitle}>{activeDocument.title}</span>
+                <span style={styles.pdfSubtitle}>第 {pdfPage} 页</span>
+              </div>
+              <button
+                type="button"
+                style={styles.pdfCollapseBtn}
+                onClick={() => setIsPdfPreviewOpen(false)}
+              >
+                收拢
+              </button>
+            </div>
+            <iframe title="textbook-pdf" src={pdfSrc} className="study-dialog-pdf-iframe" style={styles.iframe} />
+          </aside>
+        ) : (
+          <button
+            type="button"
+            className="study-dialog-pdf-dock"
+            style={styles.pdfDock}
+            onClick={() => setIsPdfPreviewOpen(true)}
+          >
+            教材浮窗 · p.{pdfPage}
+          </button>
+        )
+      ) : (
+        <div style={styles.emptyDock}>请先在计划页完成教材上传并生成学习计划。</div>
+      )}
     </main>
   );
 }
 
-function countSceneNodes(nodes: import("@vibe-learner/shared").SceneTreeNode[]): number {
-  return nodes.reduce((count, node) => count + 1 + countSceneNodes(node.children), 0);
+function resolveStudyUnitByChapter(
+  plan: LearningPlan | null,
+  chapter: string
+): StudyUnit | null {
+  if (!plan || !chapter) {
+    return null;
+  }
+
+  const chapterIndex = plan.studyChapters.findIndex((item) => item === chapter);
+  const exactFocusMatch = plan.schedule.find((item) => {
+    const focus = item.focus?.trim() ?? "";
+    return focus === chapter || focus.includes(chapter) || chapter.includes(focus);
+  });
+  if (exactFocusMatch?.unitId) {
+    const matchedUnit = plan.studyUnits.find((unit) => unit.id === exactFocusMatch.unitId);
+    if (matchedUnit) {
+      return matchedUnit;
+    }
+  }
+
+  const chapterScopedUnits = plan.studyUnits.filter((unit) => unit.includeInPlan);
+  if (chapterIndex >= 0 && chapterScopedUnits[chapterIndex]) {
+    return chapterScopedUnits[chapterIndex];
+  }
+
+  if (chapterIndex >= 0) {
+    const uniqueUnitIds = Array.from(new Set(plan.schedule.map((item) => item.unitId).filter(Boolean)));
+    const fallbackUnitId = uniqueUnitIds[chapterIndex];
+    if (fallbackUnitId) {
+      return plan.studyUnits.find((unit) => unit.id === fallbackUnitId) ?? null;
+    }
+  }
+
+  return null;
 }
+
+function resolveSubsectionsForStudyUnit(
+  document: DocumentRecord | null,
+  studyUnit: StudyUnit | null
+): DocumentSection[] {
+  if (!document || !studyUnit) {
+    return [];
+  }
+
+  const sectionMap = new Map(document.sections.map((section) => [section.id, section]));
+  const directMatches = studyUnit.sourceSectionIds
+    .map((sectionId) => sectionMap.get(sectionId))
+    .filter((section): section is DocumentSection => Boolean(section));
+  const scopeSections = directMatches.length ? directMatches : [studyUnit];
+  const candidates = document.sections
+    .filter((section) =>
+      scopeSections.some((scope) =>
+        Math.max(scope.pageStart, section.pageStart) <= Math.min(scope.pageEnd, section.pageEnd)
+      )
+    )
+    .filter((section) => section.level >= 2)
+    .sort((left, right) =>
+      left.pageStart - right.pageStart ||
+      left.level - right.level ||
+      left.pageEnd - right.pageEnd ||
+      left.id.localeCompare(right.id)
+    );
+
+  return candidates.filter(
+    (section, index) => candidates.findIndex((candidate) => candidate.id === section.id) === index
+  );
+}
+
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
     maxWidth: 1600,
     margin: "0 auto",
-    padding: "28px 32px 48px",
+    padding: "28px 32px 16px",
     display: "grid",
     gap: 0,
     alignContent: "start",
@@ -336,88 +478,6 @@ const styles: Record<string, CSSProperties> = {
     alignSelf: "center",
     paddingBottom: 2,
   },
-  sceneStrip: {
-    display: "grid",
-    gap: 8,
-    padding: 12,
-    marginBottom: 20,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-  },
-  sceneStripHead: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
-  },
-  sceneStripHeadMeta: {
-    display: "grid",
-    gap: 4,
-  },
-  sceneStripHeadActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  sceneStripLabel: {
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    color: "var(--muted)",
-  },
-  sceneStripInstance: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  sceneStripLink: {
-    fontSize: 12,
-    color: "var(--accent)",
-    fontWeight: 600,
-    textDecoration: "none",
-  },
-  sceneStripBadge: {
-    fontSize: 12,
-    color: "var(--accent)",
-    fontWeight: 600,
-  },
-  sceneStripTitleRow: {
-    display: "grid",
-    gap: 2,
-  },
-  sceneStripName: {
-    margin: 0,
-    fontSize: 12,
-    color: "var(--accent)",
-    fontWeight: 600,
-  },
-  sceneStripTitle: {
-    fontSize: 14,
-    color: "var(--ink)",
-  },
-  sceneStripPath: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  sceneStripSummary: {
-    margin: 0,
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: "var(--muted)",
-  },
-  sceneStripTags: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  sceneStripTag: {
-    padding: "3px 8px",
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--muted)",
-    fontSize: 11,
-  },
   planSelect: {
     height: 32,
     border: "1px solid var(--border)",
@@ -427,18 +487,6 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 260,
     maxWidth: 480,
     fontSize: 13,
-  },
-  companionText: {
-    height: 32,
-    display: "inline-flex",
-    alignItems: "center",
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    color: "var(--ink)",
-    padding: "0 10px",
-    minWidth: 180,
-    fontSize: 13,
-    fontWeight: 600,
   },
   createBtn: {
     border: "1px solid var(--accent)",
@@ -454,33 +502,46 @@ const styles: Record<string, CSSProperties> = {
     opacity: 0.45,
     cursor: "not-allowed",
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-    gap: 40,
-    alignItems: "start",
+  toolbarLink: {
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 600,
+    alignSelf: "center",
+    paddingBottom: 2,
   },
-  leftColumn: {
-    display: "grid",
-    gap: 24,
-    alignContent: "start",
+  mainStage: {
+    minWidth: 0,
   },
-  pdfPane: {
+  pdfWindow: {
+    position: "fixed",
+    top: 30,
+    right: 0,
+    bottom: "auto",
+    zIndex: 35,
     display: "flex",
     flexDirection: "column",
-    gap: 0,
-    height: "clamp(480px, 82vh, 980px)",
+    width: "min(440px, calc(100vw - 40px))",
+    height: "min(72vh, calc(100vh - 120px))",
+    border: "1px solid var(--border)",
+    borderTop: "1px solid var(--border)",
+    borderRadius: 20,
+    background: "color-mix(in srgb, white 94%, var(--panel))",
+    boxShadow: "0 28px 72px rgba(13, 32, 40, 0.18)",
     overflow: "hidden",
-    borderLeft: "1px solid var(--border)",
-    paddingLeft: 24,
   },
   pdfHeader: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-    paddingBottom: 10,
+    alignItems: "flex-start",
+    gap: 12,
+    padding: "14px 14px 12px",
     borderBottom: "1px solid var(--border)",
+    background: "linear-gradient(180deg, #fbfdfe 0%, #f3f7f8 100%)",
+  },
+  pdfHeaderMeta: {
+    display: "grid",
+    gap: 4,
+    minWidth: 0,
   },
   pdfTitle: {
     fontSize: 13,
@@ -490,14 +551,19 @@ const styles: Record<string, CSSProperties> = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-  pdfPage: {
+  pdfSubtitle: {
     fontSize: 12,
     color: "var(--muted)",
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-    background: "var(--panel)",
+  },
+  pdfCollapseBtn: {
     border: "1px solid var(--border)",
-    padding: "1px 8px",
+    background: "white",
+    color: "var(--ink-2)",
+    height: 32,
+    padding: "0 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
   },
   iframe: {
     width: "100%",
@@ -506,17 +572,41 @@ const styles: Record<string, CSSProperties> = {
     border: "none",
     background: "white",
     display: "block",
-    marginTop: 10,
   },
-  emptyPdf: {
-    flex: 1,
-    display: "grid",
-    placeItems: "center",
+  pdfDock: {
+    position: "fixed",
+    right: 0,
+    top: 30,
+    transform: "none",
+    zIndex: 35,
+    border: "1px solid var(--accent)",
+    background: "var(--accent)",
+    color: "white",
+    minHeight: 0,
+    width: "auto",
+    height: 42,
+    padding: "0 14px",
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 18px 44px rgba(10, 103, 114, 0.2)",
+    borderRadius: 999,
+    letterSpacing: "0.03em",
+  },
+  emptyDock: {
+    position: "fixed",
+    right: 0,
+    top: 60,
+    transform: "none",
+    zIndex: 20,
+    width: "auto",
+    maxWidth: 220,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+    background: "rgba(255, 255, 255, 0.96)",
     color: "var(--muted)",
-    padding: 24,
-    textAlign: "center",
-    fontSize: 14,
-    background: "var(--panel)",
-    marginTop: 10,
+    fontSize: 12,
+    lineHeight: 1.6,
   },
 };

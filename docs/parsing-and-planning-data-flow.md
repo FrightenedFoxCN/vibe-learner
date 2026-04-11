@@ -204,7 +204,7 @@ This produces a `LearningPlanRecord` shell with:
 - `course_title`
 - `objective`
 - `overview`
-- `weekly_focus` (ordered main themes, coarse-grained)
+- `study_chapters` (ordered study chapters used for downstream navigation)
 - `today_tasks`
 - `study_units`
 - `schedule`
@@ -239,7 +239,7 @@ Model output is parsed into:
 
 - `course_title`
 - `overview`
-- `weekly_focus` (ordered main themes, coarse-grained)
+- `study_chapters` (ordered study chapters used for downstream navigation)
 - `today_tasks`
 - `schedule`
 

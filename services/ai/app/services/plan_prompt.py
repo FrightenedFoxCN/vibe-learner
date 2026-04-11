@@ -19,7 +19,7 @@ PLAN_JSON_SCHEMA = (
     "{"
     '"course_title": string, '
     '"overview": string, '
-    '"weekly_focus": string[], '
+    '"study_chapters": string[], '
     '"today_tasks": string[], '
     '"schedule": ['
     "{"
@@ -49,7 +49,10 @@ def build_learning_plan_messages(
         study_units=study_units,
         debug_report=debug_report,
     )
-    segmentation_hints = _build_segmentation_hints(study_units)
+    segmentation_hints = _build_segmentation_hints(
+        study_units=study_units,
+        detail_map=planning_context["detail_map"],
+    )
     prompt_template = load_learning_plan_prompt_template()
     user_prompt = {
         "persona": {
@@ -84,6 +87,7 @@ def build_learning_plan_messages(
                 else None
             ),
         },
+        "course_outline": planning_context["course_outline"],
         "segmentation_hints": segmentation_hints,
         "study_units": planning_context["study_units"],
         "instructions": prompt_template.user_instructions,
@@ -379,22 +383,57 @@ def _related_chunks_for_unit(
 
 def _ranges_overlap(*, start_a: int, end_a: int, start_b: int, end_b: int) -> bool:
     return max(start_a, start_b) <= min(end_a, end_b)
-def _build_segmentation_hints(study_units: list[StudyUnitRecord]) -> dict[str, object]:
+def _build_segmentation_hints(
+    *,
+    study_units: list[StudyUnitRecord],
+    detail_map: dict[str, dict[str, object]],
+) -> dict[str, object]:
     plannable = [unit for unit in study_units if unit.include_in_plan] or study_units
     if not plannable:
         return {
             "is_coarse_grained": False,
             "plannable_unit_count": 0,
             "max_unit_page_span": 0,
+            "units_with_subsections": 0,
+            "sparse_subsection_unit_count": 0,
+            "total_subsection_count": 0,
+            "recommend_min_tool_rounds": 1,
             "recommend_detail_tool_call": False,
             "recommend_revise_study_units": False,
+            "recommend_continue_tool_calls": False,
+            "reason": "no_plannable_units",
         }
     max_span = max((unit.page_end - unit.page_start + 1) for unit in plannable)
+    subsection_counts = [
+        len(detail_map.get(unit.id, {}).get("subsection_titles", []) or [])
+        for unit in plannable
+    ]
+    units_with_subsections = sum(1 for count in subsection_counts if count > 0)
+    sparse_subsection_unit_count = sum(1 for count in subsection_counts if count <= 1)
+    total_subsection_count = sum(subsection_counts)
     coarse = len(plannable) <= 1 or (len(plannable) <= 2 and max_span >= 80)
+    sparse = sparse_subsection_unit_count >= max(1, len(plannable) // 2)
+    should_continue = coarse or sparse or total_subsection_count < len(plannable) * 2
+    recommend_min_tool_rounds = 3 if should_continue else 2
+    reason_parts: list[str] = []
+    if coarse:
+        reason_parts.append("plannable_units_too_coarse")
+    if sparse:
+        reason_parts.append("subsections_too_sparse")
+    if total_subsection_count < len(plannable) * 2:
+        reason_parts.append("subsection_coverage_thin")
+    if not reason_parts:
+        reason_parts.append("structure_looks_usable_but_still_verify_details")
     return {
         "is_coarse_grained": coarse,
         "plannable_unit_count": len(plannable),
         "max_unit_page_span": max_span,
-        "recommend_detail_tool_call": coarse,
-        "recommend_revise_study_units": coarse,
+        "units_with_subsections": units_with_subsections,
+        "sparse_subsection_unit_count": sparse_subsection_unit_count,
+        "total_subsection_count": total_subsection_count,
+        "recommend_min_tool_rounds": recommend_min_tool_rounds,
+        "recommend_detail_tool_call": should_continue,
+        "recommend_revise_study_units": coarse or sparse,
+        "recommend_continue_tool_calls": should_continue,
+        "reason": ", ".join(reason_parts),
     }

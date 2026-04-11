@@ -166,7 +166,7 @@ For `Plan Overview`, keep these display rules stable:
 
 - `courseTitle` is the main heading
 - `objective` is supporting goal text, not the heading
-- `weeklyFocus` and `todayTasks` are sequential content and should render as vertical reading flow, not same-row card grids
+- `studyChapters` and `todayTasks` are sequential content and should render as vertical reading flow, not same-row card grids
 - `schedule` remains part of the plan payload but is not currently rendered in `Plan Overview`
 
 ## Design Rule

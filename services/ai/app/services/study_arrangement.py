@@ -160,7 +160,7 @@ class StudyArrangementService:
         schedule = self._build_schedule(
             units=plannable_units,
         )
-        weekly_focus = [unit.title for unit in plannable_units[:4]] or [document.title]
+        study_chapters = [unit.title for unit in plannable_units[:4]] or [document.title]
         today_tasks = [
             f"{item.title} · {item.focus}"
             for item in schedule[:3]
@@ -200,7 +200,7 @@ class StudyArrangementService:
             objective=goal.objective,
             scene_profile_summary=goal.scene_profile_summary,
             overview=overview,
-            weekly_focus=weekly_focus,
+            study_chapters=study_chapters,
             today_tasks=today_tasks,
             study_units=units,
             schedule=schedule,

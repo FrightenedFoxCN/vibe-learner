@@ -75,6 +75,11 @@ export interface SceneLibraryItemPayload {
   sceneProfile?: import("@vibe-learner/shared").SceneProfile;
 }
 
+export interface DocumentStudyUnitUpdatePayload {
+  document: DocumentRecord;
+  plans: LearningPlan[];
+}
+
 function serializeSceneTree(
   nodes: import("@vibe-learner/shared").SceneTreeNode[] | undefined
 ): Array<Record<string, unknown>> {
@@ -555,7 +560,9 @@ function normalizePlan(plan: any): LearningPlan {
     sceneProfileSummary: String(plan.scene_profile_summary ?? ""),
     sceneProfile: normalizeSceneProfile(plan.scene_profile),
     overview: plan.overview,
-    weeklyFocus: plan.weekly_focus,
+    studyChapters: Array.isArray(plan.study_chapters)
+      ? plan.study_chapters.map((item: unknown) => String(item))
+      : [],
     todayTasks: plan.today_tasks,
     studyUnits: plan.study_units.map(normalizeStudyUnit),
     schedule: plan.schedule.map(normalizeScheduleItem),
@@ -1179,6 +1186,75 @@ export async function listLearningPlans(): Promise<LearningPlan[]> {
     await request(`${AI_BASE_URL}/learning-plans`)
   );
   return payload.items.map(normalizePlan);
+}
+
+export async function updateDocumentStudyUnitTitle(
+  documentId: string,
+  studyUnitId: string,
+  title: string
+): Promise<DocumentStudyUnitUpdatePayload> {
+  const payload = await readJson<{
+    document: any;
+    plans: any[];
+  }>(
+    await request(`${AI_BASE_URL}/documents/${documentId}/study-units/${studyUnitId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title
+      })
+    })
+  );
+  return {
+    document: normalizeDocument(payload.document),
+    plans: payload.plans.map(normalizePlan)
+  };
+}
+
+export async function updateLearningPlanTitle(
+  planId: string,
+  courseTitle: string
+): Promise<LearningPlan> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        course_title: courseTitle
+      })
+    })
+  );
+  return normalizePlan(payload);
+}
+
+export async function updateLearningPlanStudyChapters(
+  planId: string,
+  studyChapters: string[]
+): Promise<LearningPlan> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        study_chapters: studyChapters
+      })
+    })
+  );
+  return normalizePlan(payload);
+}
+
+export async function deleteLearningPlan(planId: string): Promise<void> {
+  await readJson<{ deleted_plan_id: string }>(
+    await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
+      method: "DELETE"
+    })
+  );
 }
 
 export async function createLearningPlanStream(

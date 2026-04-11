@@ -83,7 +83,7 @@ class LearningPlanService:
                 "document_id": document.id,
                 "today_task_count": len(plan.today_tasks),
                 "schedule_count": len(plan.schedule),
-                "weekly_focus_count": len(plan.weekly_focus),
+                "study_chapter_count": len(plan.study_chapters),
             },
         )
         model_plan = self.model_provider.generate_learning_plan(
@@ -121,8 +121,8 @@ class LearningPlanService:
             plan.course_title = model_plan.course_title
         if model_plan.overview:
             plan.overview = model_plan.overview
-        if model_plan.weekly_focus:
-            plan.weekly_focus = model_plan.weekly_focus
+        if model_plan.study_chapters:
+            plan.study_chapters = model_plan.study_chapters
         if model_plan.today_tasks:
             plan.today_tasks = model_plan.today_tasks
         if goal.scene_profile is not None:
@@ -136,7 +136,7 @@ class LearningPlanService:
                 "document_id": document.id,
                 "schedule_count": len(plan.schedule),
                 "today_task_count": len(plan.today_tasks),
-                "weekly_focus_count": len(plan.weekly_focus),
+                "study_chapter_count": len(plan.study_chapters),
             },
         )
         plan.id = f"plan-{uuid4().hex[:10]}"
@@ -164,6 +164,90 @@ class LearningPlanService:
             if plan.id == plan_id:
                 return plan
         raise HTTPException(status_code=404, detail="plan_not_found")
+
+    def update_plan(
+        self,
+        *,
+        plan_id: str,
+        course_title: str | None = None,
+        study_chapters: list[str] | None = None,
+    ) -> LearningPlanRecord:
+        normalized_title = course_title.strip() if course_title is not None else None
+        normalized_chapters = (
+            [item.strip() for item in study_chapters if item.strip()]
+            if study_chapters is not None
+            else None
+        )
+        if normalized_title is None and normalized_chapters is None:
+            raise HTTPException(status_code=422, detail="plan_update_empty")
+        if normalized_title is not None and not normalized_title:
+            raise HTTPException(status_code=422, detail="course_title_required")
+        if normalized_chapters is not None and not normalized_chapters:
+            raise HTTPException(status_code=422, detail="study_chapters_required")
+
+        plans = self._load_plans()
+        updated_plan: LearningPlanRecord | None = None
+        next_plans: list[LearningPlanRecord] = []
+        for plan in plans:
+            if plan.id != plan_id:
+                next_plans.append(plan)
+                continue
+            updates: dict[str, object] = {}
+            if normalized_title is not None:
+                updates["course_title"] = normalized_title
+            if normalized_chapters is not None:
+                updates["study_chapters"] = normalized_chapters
+            updated_plan = plan.model_copy(update=updates)
+            next_plans.append(updated_plan)
+
+        if updated_plan is None:
+            raise HTTPException(status_code=404, detail="plan_not_found")
+
+        self._save_plans(next_plans)
+        return updated_plan
+
+    def delete_plan(self, plan_id: str) -> None:
+        plans = self._load_plans()
+        next_plans = [plan for plan in plans if plan.id != plan_id]
+        if len(next_plans) == len(plans):
+            raise HTTPException(status_code=404, detail="plan_not_found")
+        self._save_plans(next_plans)
+
+    def update_study_unit_title(
+        self,
+        *,
+        document_id: str,
+        study_unit_id: str,
+        title: str,
+    ) -> list[LearningPlanRecord]:
+        normalized_title = title.strip()
+        if not normalized_title:
+            raise HTTPException(status_code=422, detail="study_unit_title_required")
+
+        plans = self._load_plans()
+        updated_plans: list[LearningPlanRecord] = []
+        next_plans: list[LearningPlanRecord] = []
+
+        for plan in plans:
+            if plan.document_id != document_id:
+                next_plans.append(plan)
+                continue
+
+            did_update = False
+            for unit in plan.study_units:
+                if unit.id != study_unit_id:
+                    continue
+                unit.title = normalized_title
+                did_update = True
+                break
+
+            next_plans.append(plan)
+            if did_update:
+                updated_plans.append(plan)
+
+        if updated_plans:
+            self._save_plans(next_plans)
+        return updated_plans
 
     def list_plans(self) -> list[LearningPlanRecord]:
         return self._load_plans()
