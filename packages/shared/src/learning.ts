@@ -31,15 +31,39 @@ export interface LearningGoal {
   objective: string;
   // Optional scene summary chosen before planning.
   sceneProfileSummary?: string;
+  // Optional structured scene profile chosen before planning.
+  sceneProfile?: SceneProfile;
 }
 
 export interface SceneProfile {
+  sceneName: string;
   sceneId: string;
   title: string;
   summary: string;
   tags: string[];
   selectedPath: string[];
   focusObjectNames: string[];
+  sceneTree: SceneTreeNode[];
+}
+
+export interface SceneObjectSnapshot {
+  id: string;
+  name: string;
+  description: string;
+  interaction: string;
+  tags: string;
+}
+
+export interface SceneTreeNode {
+  id: string;
+  title: string;
+  scopeLabel: string;
+  summary: string;
+  atmosphere: string;
+  rules: string;
+  entrance: string;
+  objects: SceneObjectSnapshot[];
+  children: SceneTreeNode[];
 }
 
 export interface LearningPlan {
@@ -52,6 +76,8 @@ export interface LearningPlan {
   objective: string;
   // Optional scene summary captured at plan creation time.
   sceneProfileSummary?: string;
+  // Optional structured scene profile captured at plan creation time.
+  sceneProfile?: SceneProfile;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
   // Ordered main themes (coarse-grained) for sequential display.

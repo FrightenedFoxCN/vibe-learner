@@ -38,6 +38,7 @@ export function StudyDialogPage() {
 
   const themeOptions = activePlan?.weeklyFocus ?? [];
   const currentTheme = selectedTheme || themeOptions[0] || "";
+  const activeSceneProfile = studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
 
   const resolveSectionIdByTheme = useCallback(
     (theme: string) => {
@@ -197,6 +198,34 @@ export function StudyDialogPage() {
         {notice ? <span style={styles.notice}>{notice}</span> : null}
       </div>
 
+      <section style={styles.sceneStrip}>
+        <div style={styles.sceneStripHead}>
+          <span style={styles.sceneStripLabel}>当前使用的场景</span>
+          <span style={styles.sceneStripBadge}>{studySession?.sceneProfile ? "来自会话" : activePlan?.sceneProfile ? "来自计划" : "未配置"}</span>
+        </div>
+        {activeSceneProfile ? (
+          <>
+            <p style={styles.sceneStripName}>云端名称：{activeSceneProfile.sceneName || "未命名"}</p>
+            <div style={styles.sceneStripTitleRow}>
+              <strong style={styles.sceneStripTitle}>{activeSceneProfile.title}</strong>
+              <span style={styles.sceneStripPath}>{activeSceneProfile.selectedPath.join(" / ")}</span>
+            </div>
+            <p style={styles.sceneStripSummary}>场景树根节点：{activeSceneProfile.sceneTree.map((node) => node.title).join(" / ") || "未配置"} · 共 {countSceneNodes(activeSceneProfile.sceneTree)} 个节点</p>
+            <p style={styles.sceneStripSummary}>{activeSceneProfile.summary}</p>
+            <div style={styles.sceneStripTags}>
+              {activeSceneProfile.tags.slice(0, 4).map((tag) => (
+                <span key={tag} style={styles.sceneStripTag}>{tag}</span>
+              ))}
+              {activeSceneProfile.focusObjectNames.slice(0, 4).map((name) => (
+                <span key={name} style={styles.sceneStripTag}>{name}</span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p style={styles.sceneStripSummary}>尚未配置场景。请先到场景编辑页创建并保存场景。</p>
+        )}
+      </section>
+
       <section className="study-dialog-grid" style={styles.grid}>
         <div style={styles.leftColumn}>
           <StudyConsole
@@ -238,6 +267,9 @@ export function StudyDialogPage() {
   );
 }
 
+function countSceneNodes(nodes: import("@vibe-learner/shared").SceneTreeNode[]): number {
+  return nodes.reduce((count, node) => count + 1 + countSceneNodes(node.children), 0);
+}
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
@@ -294,6 +326,68 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--teal)",
     alignSelf: "center",
     paddingBottom: 2,
+  },
+  sceneStrip: {
+    display: "grid",
+    gap: 8,
+    padding: 12,
+    marginBottom: 20,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+  },
+  sceneStripHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+  },
+  sceneStripLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
+  },
+  sceneStripBadge: {
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 600,
+  },
+  sceneStripTitleRow: {
+    display: "grid",
+    gap: 2,
+  },
+  sceneStripName: {
+    margin: 0,
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 600,
+  },
+  sceneStripTitle: {
+    fontSize: 14,
+    color: "var(--ink)",
+  },
+  sceneStripPath: {
+    fontSize: 12,
+    color: "var(--muted)",
+  },
+  sceneStripSummary: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)",
+  },
+  sceneStripTags: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  sceneStripTag: {
+    padding: "3px 8px",
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--muted)",
+    fontSize: 11,
   },
   planSelect: {
     height: 32,

@@ -69,10 +69,26 @@ class StudySessionService:
         self._save_sessions(sessions)
         return session
 
-    def update_section(self, *, session_id: str, section_id: str) -> StudySessionRecord:
+    def update_session(
+        self,
+        *,
+        session_id: str,
+        section_id: str | None = None,
+        scene_profile: SceneProfileRecord | None = None,
+        has_scene_profile: bool = False,
+        section_title: str | None = None,
+        session_system_prompt: str | None = None,
+    ) -> StudySessionRecord:
         sessions = self._load_sessions()
         session = self.require_session(session_id, sessions)
-        session.section_id = section_id
+        if section_id is not None:
+            session.section_id = section_id
+        if has_scene_profile:
+            session.scene_profile = scene_profile
+        if section_title is not None:
+            session.section_title = section_title
+        if session_system_prompt is not None:
+            session.session_system_prompt = session_system_prompt
         session.updated_at = _now()
         self._save_sessions(sessions)
         return session

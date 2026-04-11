@@ -125,6 +125,8 @@ class LearningPlanService:
             plan.weekly_focus = model_plan.weekly_focus
         if model_plan.today_tasks:
             plan.today_tasks = model_plan.today_tasks
+        if goal.scene_profile is not None:
+            plan.scene_profile = goal.scene_profile
         if filtered_schedule:
             plan.schedule = filtered_schedule
         _emit_progress(

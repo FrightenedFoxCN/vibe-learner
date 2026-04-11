@@ -41,6 +41,21 @@ class LocalJsonStore:
         path = category_root / f"{item_id}.json"
         self._write_json(path, item.model_dump(mode="json"))
 
+    def load_category_items(self, category: str, model: type[T]) -> list[T]:
+        category_root = self.root / category
+        if not category_root.exists():
+            return []
+        items: list[T] = []
+        for path in sorted(category_root.glob("*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            items.append(model.model_validate(payload))
+        return items
+
+    def delete_item(self, category: str, item_id: str) -> None:
+        path = self.root / category / f"{item_id}.json"
+        if path.exists():
+            path.unlink()
+
     def _write_json(self, path: Path, payload: object) -> None:
         temp_path = path.with_suffix(f"{path.suffix}.tmp")
         temp_path.write_text(

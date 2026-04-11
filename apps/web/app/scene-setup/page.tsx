@@ -2,9 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import type { SceneProfile } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
-import { assistPersonaSlot } from "../../lib/api";
+import {
+  assistPersonaSlot,
+  createSceneLibraryItem,
+  deleteSceneLibraryItem,
+  listSceneLibrary,
+  updateSceneLibraryItem,
+} from "../../lib/api";
 
 interface SceneObject {
   id: string;
@@ -44,6 +51,22 @@ type RewriteUndoEntry =
       field: "description" | "interaction";
       previousValue: string;
     };
+
+function formatDate(value: string) {
+  if (!value) {
+    return "未知时间";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
 
 const LAYER_TEMPLATES = [
   {
@@ -164,8 +187,12 @@ const SCENE_STORAGE_KEY = "vibe-learner.scene-setup.v1";
 
 export default function SceneSetupPage() {
   const [sceneLayers, setSceneLayers] = useState<SceneLayer[]>(INITIAL_SCENE);
+  const [sceneName, setSceneName] = useState("示例场景");
+  const [sceneSummary, setSceneSummary] = useState("从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。");
   const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>([]);
+  const [savedScenes, setSavedScenes] = useState<import("../../lib/api").SceneLibraryItemPayload[]>([]);
+  const [selectedSavedSceneId, setSelectedSavedSceneId] = useState("");
   const [rewriteStrength, setRewriteStrength] = useState(0.6);
   const [rewritePendingKey, setRewritePendingKey] = useState("");
   const [rewriteError, setRewriteError] = useState("");
@@ -175,8 +202,11 @@ export default function SceneSetupPage() {
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedLayer = useMemo(() => findLayerById(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
-  const sceneStats = useMemo(() => collectSceneStats(sceneLayers), [sceneLayers]);
   const selectedPath = useMemo(() => findLayerPath(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
+  const sceneProfilePreview = useMemo(
+    () => deriveSceneProfile(sceneLayers, selectedLayerId, sceneName.trim(), sceneSummary.trim()),
+    [sceneLayers, selectedLayerId, sceneName, sceneSummary]
+  );
 
   useEffect(() => {
     if (!selectedLayer && sceneLayers[0]?.id) {
@@ -185,25 +215,85 @@ export default function SceneSetupPage() {
   }, [sceneLayers, selectedLayer]);
 
   useEffect(() => {
-    try {
-      const raw = globalThis.localStorage?.getItem(SCENE_STORAGE_KEY);
-      if (!raw) {
-        return;
+    let active = true;
+    const hydrateScene = async () => {
+      try {
+        const raw = globalThis.localStorage?.getItem(SCENE_STORAGE_KEY);
+        if (!raw || !active) {
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        const imported = parseSceneImportPayload(parsed);
+        setSceneLayers(imported.sceneLayers);
+        setSceneName(String(imported.sceneName || ""));
+        setSceneSummary(String(imported.sceneSummary || ""));
+        const knownIds = new Set(collectLayerIds(imported.sceneLayers));
+        const preferredId = imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
+          ? imported.selectedLayerId
+          : imported.sceneLayers[0]?.id ?? "";
+        setSelectedLayerId(preferredId);
+        setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
+        setSceneIoMessage("已加载本地保存场景。");
+      } catch {
+        if (active) {
+          setSceneIoMessage("本地保存内容解析失败，已忽略。");
+        }
       }
-      const parsed = JSON.parse(raw);
-      const imported = parseSceneImportPayload(parsed);
-      setSceneLayers(imported.sceneLayers);
-      const knownIds = new Set(collectLayerIds(imported.sceneLayers));
-      const preferredId = imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
-        ? imported.selectedLayerId
-        : imported.sceneLayers[0]?.id ?? "";
-      setSelectedLayerId(preferredId);
-      setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
-      setSceneIoMessage("已加载本地保存场景。");
-    } catch {
-      setSceneIoMessage("本地保存内容解析失败，已忽略。");
-    }
+    };
+
+    void hydrateScene();
+    return () => {
+      active = false;
+    };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const hydrateLibrary = async () => {
+      try {
+        const items = await listSceneLibrary();
+        if (!active) {
+          return;
+        }
+        setSavedScenes(items);
+        if (!selectedSavedSceneId && items[0]) {
+          setSelectedSavedSceneId(items[0].sceneId);
+        }
+      } catch {
+        if (active) {
+          setSavedScenes([]);
+        }
+      }
+    };
+
+    void hydrateLibrary();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = globalThis.setTimeout(() => {
+      const payload = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        sceneName,
+        sceneSummary,
+        sceneLayers,
+        selectedLayerId,
+        collapsedLayerIds,
+      };
+      try {
+        globalThis.localStorage?.setItem(SCENE_STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        // local fallback write best effort
+      }
+    }, 700);
+
+    return () => {
+      globalThis.clearTimeout(timer);
+    };
+  }, [sceneLayers, sceneName, sceneSummary, selectedLayerId, collapsedLayerIds]);
 
   function updateLayer(targetId: string, updater: (layer: SceneLayer) => SceneLayer) {
     setSceneLayers((current) => updateLayerTree(current, targetId, updater));
@@ -305,19 +395,85 @@ export default function SceneSetupPage() {
     setRewriteError("");
   }
 
-  function saveScene() {
+  async function saveLibraryScene(mode: "upsert" | "create" = "upsert") {
     try {
+      const trimmedSceneName = sceneName.trim();
+      const trimmedSceneSummary = sceneSummary.trim();
+      if (!trimmedSceneName || !trimmedSceneSummary) {
+        setSceneIoMessage("请先填写场景名和 summary。");
+        return;
+      }
+      const sceneProfile = deriveSceneProfile(sceneLayers, selectedLayerId, trimmedSceneName, trimmedSceneSummary);
       const payload = {
-        version: 1,
-        savedAt: new Date().toISOString(),
+        sceneName: trimmedSceneName,
+        sceneSummary: trimmedSceneSummary,
         sceneLayers,
         selectedLayerId,
         collapsedLayerIds,
+        sceneProfile: sceneProfile ?? null,
       };
-      globalThis.localStorage?.setItem(SCENE_STORAGE_KEY, JSON.stringify(payload));
-      setSceneIoMessage("场景已保存到本地。");
+      if (mode === "upsert" && selectedSavedSceneId) {
+        const updated = await updateSceneLibraryItem(selectedSavedSceneId, payload);
+        setSavedScenes((current) => current.map((item) => (item.sceneId === updated.sceneId ? updated : item)));
+        setSceneIoMessage(`已更新已保存场景“${updated.sceneName}”。`);
+        return;
+      }
+      const created = await createSceneLibraryItem(payload);
+      setSavedScenes((current) => [created, ...current.filter((item) => item.sceneId !== created.sceneId)]);
+      setSelectedSavedSceneId(created.sceneId);
+      setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
     } catch {
-      setSceneIoMessage("场景保存失败，请稍后重试。");
+      setSceneIoMessage("保存到场景库失败，请稍后重试。");
+    }
+  }
+
+  async function loadSavedScene(sceneId: string) {
+    const target = savedScenes.find((item) => item.sceneId === sceneId);
+    if (!target) {
+      return;
+    }
+    try {
+      const imported = parseSceneImportPayload({
+        sceneName: target.sceneName,
+        sceneSummary: target.sceneSummary,
+        sceneLayers: target.sceneLayers,
+        selectedLayerId: target.selectedLayerId,
+        collapsedLayerIds: target.collapsedLayerIds,
+      });
+      const knownIds = new Set(collectLayerIds(imported.sceneLayers));
+      setSceneLayers(imported.sceneLayers);
+      setSceneName(String(imported.sceneName || ""));
+      setSceneSummary(String(imported.sceneSummary || ""));
+      setSelectedLayerId(
+        imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
+          ? imported.selectedLayerId
+          : imported.sceneLayers[0]?.id ?? ""
+      );
+      setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
+      setSelectedSavedSceneId(target.sceneId);
+      setSceneIoMessage(`已载入场景”${target.sceneName}”。`);
+    } catch {
+      setSceneIoMessage(`载入场景”${target.sceneName}”时数据格式异常。`);
+    }
+  }
+
+  async function deleteSavedScene(sceneId: string) {
+    const target = savedScenes.find((item) => item.sceneId === sceneId);
+    if (!target) {
+      return;
+    }
+    if (!globalThis.confirm(`确认删除已保存场景“${target.sceneName}”？`)) {
+      return;
+    }
+    try {
+      await deleteSceneLibraryItem(sceneId);
+      setSavedScenes((current) => current.filter((item) => item.sceneId !== sceneId));
+      if (selectedSavedSceneId === sceneId) {
+        setSelectedSavedSceneId("");
+      }
+      setSceneIoMessage(`已删除场景“${target.sceneName}”。`);
+    } catch {
+      setSceneIoMessage("删除场景失败，请稍后重试。");
     }
   }
 
@@ -326,6 +482,8 @@ export default function SceneSetupPage() {
       const payload = {
         version: 1,
         exportedAt: new Date().toISOString(),
+        sceneName,
+        sceneSummary,
         sceneLayers,
         selectedLayerId,
         collapsedLayerIds,
@@ -360,6 +518,8 @@ export default function SceneSetupPage() {
       const imported = parseSceneImportPayload(parsed);
       const knownIds = new Set(collectLayerIds(imported.sceneLayers));
       setSceneLayers(imported.sceneLayers);
+      setSceneName(String(imported.sceneName || ""));
+      setSceneSummary(String(imported.sceneSummary || ""));
       setSelectedLayerId(
         imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
           ? imported.selectedLayerId
@@ -471,50 +631,26 @@ export default function SceneSetupPage() {
 
   return (
     <main className="with-app-nav" style={styles.page}>
-      <TopNav currentPath="/scene-setup" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", alignItems: "stretch" }}>
+        <div>
+          <TopNav currentPath="/scene-setup" />
+          <div style={styles.heading}>
+            <h1 style={styles.pageTitle}>场景搭建</h1>
+            <p style={styles.pageDesc}>从世界整体一路搭到具体教室。每一层都可以写设定、补互动物体，并把层级之间的过渡关系说明清楚。先选层级，再在右侧补细节。</p>
+          </div>
 
-      <div style={styles.heading}>
-        <h1 style={styles.pageTitle}>场景搭建</h1>
-        <p style={styles.pageDesc}>从世界整体一路搭到具体教室。每一层都可以写设定、补互动物体，并把层级之间的过渡关系说明清楚。先选层级，再在右侧补细节。</p>
-      </div>
-
-      <section style={styles.metricsRow}>
-        <div style={{ ...styles.metricCard, ...styles.metricCardDivider }}>
-          <span style={styles.metricLabel}>层级跨度</span>
-          <strong style={styles.metricValue}>{sceneStats.layerCount} 层</strong>
-          <span style={styles.metricHint}>从世界到教室的完整链条</span>
-        </div>
-        <div style={{ ...styles.metricCard, ...styles.metricCardDivider }}>
-          <span style={styles.metricLabel}>可互动物体</span>
-          <strong style={styles.metricValue}>{sceneStats.objectCount} 个</strong>
-          <span style={styles.metricHint}>每一层都能放置局部物件</span>
-        </div>
-        <div style={styles.metricCard}>
-          <span style={styles.metricLabel}>当前选中</span>
-          <strong style={styles.metricValue}>{selectedLayer?.title ?? "未选择"}</strong>
-          <span style={styles.metricHint}>{selectedPath.length ? selectedPath.join(" / ") : "选择任一层级开始编辑"}</span>
-        </div>
-      </section>
-
-      <section style={styles.workspace}>
-        <div style={styles.treePane}>
+          <section style={{ display: "grid", gridTemplateColumns: "minmax(280px, 1fr) minmax(0, 1.6fr)", alignItems: "start" }}>
+            <div style={styles.treePane}>
           <div style={styles.panelHead}>
             <span style={styles.panelTitle}>层级结构</span>
-            <span style={styles.panelSubTitle}>从大范围写到小范围，并在每层放入可交互对象。</span>
           </div>
-          <div style={styles.sceneIoRow}>
-            <button type="button" style={styles.ghostButton} onClick={saveScene}>场景保存</button>
-            <button type="button" style={styles.ghostButton} onClick={requestImportScene}>导入 JSON</button>
-            <button type="button" style={styles.ghostButton} onClick={exportScene}>导出 JSON</button>
-            {sceneIoMessage ? <span style={styles.sceneIoMessage}>{sceneIoMessage}</span> : null}
-            <input
-              ref={importInputRef}
-              type="file"
-              accept="application/json,.json"
-              style={styles.hiddenInput}
-              onChange={(event) => void importSceneFromFile(event)}
-            />
-          </div>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            style={styles.hiddenInput}
+            onChange={(event) => void importSceneFromFile(event)}
+          />
           <div style={styles.treeStack}>
             {sceneLayers.map((layer, index) => (
               <SceneLayerCard
@@ -537,7 +673,6 @@ export default function SceneSetupPage() {
         <aside style={styles.editorPane}>
           <div style={styles.panelHead}>
             <span style={styles.panelTitle}>层级编辑器</span>
-            <span style={styles.panelSubTitle}>所有字段都是可直接写的场景设定。</span>
           </div>
 
           {selectedLayer ? (
@@ -549,7 +684,7 @@ export default function SceneSetupPage() {
               </div>
 
               <div style={styles.rewriteControlRow}>
-                <label style={styles.rewriteControlLabel}>重写强度 {(rewriteStrength * 100).toFixed(0)}%</label>
+                <label style={styles.rewriteControlLabel}>AI 重写强度 {(rewriteStrength * 100).toFixed(0)}%</label>
                 <input
                   style={styles.rewriteSlider}
                   type="range"
@@ -559,15 +694,14 @@ export default function SceneSetupPage() {
                   value={rewriteStrength}
                   onChange={(event) => setRewriteStrength(Number(event.target.value))}
                 />
-                <span style={styles.helperText}>值越高，AI 改写越明显。</span>
                 {lastRewrite ? (
                   <button
                     type="button"
-                    style={styles.inlineActionButton}
+                    style={styles.btnSmall}
                     onClick={undoLastRewrite}
                     disabled={Boolean(rewritePendingKey)}
                   >
-                    撤销上一次 AI 重写（{lastRewrite.label}）
+                    撤销重写（{lastRewrite.label}）
                   </button>
                 ) : null}
                 {rewriteError ? <span style={styles.errorText}>{rewriteError}</span> : null}
@@ -597,7 +731,7 @@ export default function SceneSetupPage() {
                     <span style={styles.fieldLabel}>层级总述</span>
                     <button
                       type="button"
-                      style={styles.inlineActionButton}
+                      style={styles.btnSmall}
                       onClick={() => void rewriteLayerField(selectedLayer.id, "summary", "层级总述")}
                       disabled={Boolean(rewritePendingKey)}
                     >
@@ -616,7 +750,7 @@ export default function SceneSetupPage() {
                     <span style={styles.fieldLabel}>氛围与感知</span>
                     <button
                       type="button"
-                      style={styles.inlineActionButton}
+                      style={styles.btnSmall}
                       onClick={() => void rewriteLayerField(selectedLayer.id, "atmosphere", "氛围与感知")}
                       disabled={Boolean(rewritePendingKey)}
                     >
@@ -635,7 +769,7 @@ export default function SceneSetupPage() {
                     <span style={styles.fieldLabel}>进入方式 / 过渡</span>
                     <button
                       type="button"
-                      style={styles.inlineActionButton}
+                      style={styles.btnSmall}
                       onClick={() => void rewriteLayerField(selectedLayer.id, "entrance", "进入方式 / 过渡")}
                       disabled={Boolean(rewritePendingKey)}
                     >
@@ -654,7 +788,7 @@ export default function SceneSetupPage() {
                     <span style={styles.fieldLabel}>层级规则</span>
                     <button
                       type="button"
-                      style={styles.inlineActionButton}
+                      style={styles.btnSmall}
                       onClick={() => void rewriteLayerField(selectedLayer.id, "rules", "层级规则")}
                       disabled={Boolean(rewritePendingKey)}
                     >
@@ -675,7 +809,7 @@ export default function SceneSetupPage() {
                     <p style={styles.objectsTitle}>可互动物体</p>
                     <p style={styles.objectsHint}>在当前层级里继续补充可见、可触发、可移动或可交谈的对象。</p>
                   </div>
-                  <button type="button" style={styles.primaryButton} onClick={() => addObject(selectedLayer.id)}>
+                  <button type="button" style={styles.btnPrimary} onClick={() => addObject(selectedLayer.id)}>
                     添加物体
                   </button>
                 </div>
@@ -692,7 +826,7 @@ export default function SceneSetupPage() {
                             onChange={(event) => updateObject(selectedLayer.id, object.id, "name", event.target.value)}
                           />
                         </label>
-                        <button type="button" style={styles.ghostButton} onClick={() => removeObject(selectedLayer.id, object.id)}>
+                        <button type="button" style={styles.btnGhost} onClick={() => removeObject(selectedLayer.id, object.id)}>
                           删除
                         </button>
                       </div>
@@ -702,7 +836,7 @@ export default function SceneSetupPage() {
                           <span style={styles.fieldLabel}>外观 / 说明</span>
                           <button
                             type="button"
-                            style={styles.inlineActionButton}
+                            style={styles.btnSmall}
                             onClick={() => void rewriteObjectField(selectedLayer.id, object.id, "description", "物体外观与说明")}
                             disabled={Boolean(rewritePendingKey)}
                           >
@@ -721,7 +855,7 @@ export default function SceneSetupPage() {
                           <span style={styles.fieldLabel}>交互方式</span>
                           <button
                             type="button"
-                            style={styles.inlineActionButton}
+                            style={styles.btnSmall}
                             onClick={() => void rewriteObjectField(selectedLayer.id, object.id, "interaction", "物体交互方式")}
                             disabled={Boolean(rewritePendingKey)}
                           >
@@ -749,12 +883,12 @@ export default function SceneSetupPage() {
               </div>
 
               <div style={styles.editorActions}>
-                <button type="button" style={styles.ghostButton} onClick={() => addChildLayer(selectedLayer.id)}>
+                <button type="button" style={styles.btnGhost} onClick={() => addChildLayer(selectedLayer.id)}>
                   新增下级层级
                 </button>
                 <button
                   type="button"
-                  style={styles.ghostButton}
+                  style={styles.btnGhost}
                   onClick={() => requestDeleteLayer(selectedLayer.id)}
                   disabled={!canDeleteLayerSafely(sceneLayers, selectedLayer.id)}
                 >
@@ -767,7 +901,87 @@ export default function SceneSetupPage() {
             <p style={styles.emptyState}>选择一个层级后，这里会显示它的设定、对象和子层级操作。</p>
           )}
         </aside>
-      </section>
+          </section>
+        </div>
+
+        <aside style={styles.sidebarPane}>
+          {sceneIoMessage && <p style={styles.sidebarStatusMsg}>{sceneIoMessage}</p>}
+
+              <div style={styles.sidebarSection}>
+                <span style={styles.panelTitle}>当前草稿</span>
+                <label style={styles.sceneNameLabel}>
+                  <span style={styles.fieldLabel}>场景名称</span>
+                  <input
+                    style={styles.sceneNameInput}
+                    value={sceneName}
+                    onChange={(event) => setSceneName(event.target.value)}
+                    placeholder="例如：高一物理-力学基础"
+                  />
+                </label>
+                <label style={styles.sceneSummaryLabel}>
+                  <span style={styles.fieldLabel}>场景 summary</span>
+                  <textarea
+                    style={styles.sceneSummaryInput}
+                    value={sceneSummary}
+                    onChange={(event) => setSceneSummary(event.target.value)}
+                    placeholder="用自己的话描述这个场景。"
+                  />
+                </label>
+              </div>
+
+              <div style={styles.sidebarSection}>
+                <span style={styles.panelTitle}>场景库 / 导入 / 导出</span>
+                <div style={styles.sceneActionButtons}>
+                  <button type="button" style={styles.btnPrimary} onClick={() => void saveLibraryScene("upsert")}>
+                    {selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.btnGhost}
+                    onClick={() => void saveLibraryScene("create")}
+                  >
+                    另存为新场景
+                  </button>
+                </div>
+                <div style={styles.sceneActionButtons}>
+                  <button type="button" style={styles.btnGhost} onClick={requestImportScene}>导入 JSON</button>
+                  <button type="button" style={styles.btnGhost} onClick={exportScene}>导出 JSON</button>
+                </div>
+              </div>
+
+              <div style={{ ...styles.sidebarSection, flex: 1, overflowY: "auto", minHeight: 0 }}>
+                <span style={styles.panelTitle}>已保存场景</span>
+                {savedScenes.length ? (
+                  <div style={styles.savedSceneList}>
+                    {savedScenes.map((item) => {
+                      const isSelected = selectedSavedSceneId === item.sceneId;
+                      return (
+                        <div key={item.sceneId} style={{ ...styles.savedSceneItem, ...(isSelected ? styles.savedSceneItemSelected : {}) }}>
+                          <button
+                            type="button"
+                            style={styles.savedSceneBody}
+                            onClick={() => setSelectedSavedSceneId(item.sceneId)}
+                          >
+                            <div style={styles.savedSceneTitleRow}>
+                              <strong style={styles.savedSceneTitle}>{item.sceneName}</strong>
+                              <span style={styles.savedSceneMeta}>{formatDate(item.updatedAt)}</span>
+                            </div>
+                            <p style={styles.savedSceneSummary}>{item.sceneSummary || "未填写 summary"}</p>
+                            <p style={styles.savedSceneMeta}>{item.sceneProfile?.title ?? "未生成快照"} · {countSceneNodes(item.sceneProfile?.sceneTree ?? [])} 节点</p>
+                          </button>
+                          <div style={styles.savedSceneActions}>
+                            <button type="button" style={styles.btnSmall} onClick={() => void loadSavedScene(item.sceneId)}>载入</button>
+                            <button type="button" style={styles.btnSmall} onClick={() => setSelectedSavedSceneId(item.sceneId)}>作为更新目标</button>
+                            <button type="button" style={styles.btnSmallDanger} onClick={() => void deleteSavedScene(item.sceneId)}>删除</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+        </aside>
+      </div>
 
       {pendingDeleteLayerId ? (
         <div style={styles.confirmOverlay} role="presentation">
@@ -777,8 +991,8 @@ export default function SceneSetupPage() {
               即将删除“{findLayerById(sceneLayers, pendingDeleteLayerId)?.title ?? "当前层级"}”及其所有子层级与物体。此操作不可自动恢复。
             </p>
             <div style={styles.confirmActions}>
-              <button type="button" style={styles.ghostButton} onClick={cancelDeleteLayer}>取消</button>
-              <button type="button" style={styles.dangerButton} onClick={confirmDeleteLayer}>确认删除</button>
+              <button type="button" style={styles.btnGhost} onClick={cancelDeleteLayer}>取消</button>
+              <button type="button" style={styles.btnDanger} onClick={confirmDeleteLayer}>确认删除</button>
             </div>
           </div>
         </div>
@@ -832,11 +1046,6 @@ function SceneLayerCard({
 
         <p style={styles.layerSummary}>{layer.summary}</p>
 
-        <div style={styles.layerMetaRow}>
-          <span style={styles.layerMetaItem}>{layer.objects.length} 个物体</span>
-          <span style={styles.layerMetaItem}>{layer.children.length} 个子层级</span>
-        </div>
-
         <div style={styles.objectChipRow}>
           {layer.objects.slice(0, 3).map((object) => (
             <span key={object.id} style={styles.objectChip}>{object.name}</span>
@@ -845,15 +1054,15 @@ function SceneLayerCard({
         </div>
 
         <div style={styles.cardActions}>
-          <button type="button" style={styles.cardButton} onClick={(event) => { event.stopPropagation(); onAddObject(layer.id); }}>
+          <button type="button" style={styles.btnMicro} onClick={(event) => { event.stopPropagation(); onAddObject(layer.id); }}>
             添加物体
           </button>
-          <button type="button" style={styles.cardButton} onClick={(event) => { event.stopPropagation(); onAddChild(layer.id); }}>
+          <button type="button" style={styles.btnMicro} onClick={(event) => { event.stopPropagation(); onAddChild(layer.id); }}>
             添加子层
           </button>
           <button
             type="button"
-            style={styles.cardButton}
+            style={styles.btnMicro}
             onClick={(event) => { event.stopPropagation(); onToggleCollapse(layer.id); }}
             disabled={!hasChildren}
           >
@@ -861,7 +1070,7 @@ function SceneLayerCard({
           </button>
           <button
             type="button"
-            style={styles.cardButton}
+            style={styles.btnMicro}
             onClick={(event) => { event.stopPropagation(); onDeleteLayer(layer.id); }}
             disabled={!canDeleteLayerForId(layer.id)}
           >
@@ -893,6 +1102,65 @@ function SceneLayerCard({
   );
 }
 
+function deriveSceneProfile(
+  layers: SceneLayer[],
+  selectedLayerId: string,
+  sceneName: string,
+  sceneSummary: string,
+): SceneProfile | undefined {
+  if (!layers.length) {
+    return undefined;
+  }
+  const selectedPath = findLayerPath(layers, selectedLayerId);
+  const selectedLayer = findLayerById(layers, selectedLayerId) ?? layers[0];
+  const normalizedPath = selectedPath.length ? selectedPath : [selectedLayer.title || "学习场景"];
+  const focusObjects = selectedLayer.objects
+    .slice(0, 4)
+    .map((item) => item.name.trim())
+    .filter(Boolean);
+  const tags = selectedLayer.objects
+    .flatMap((item) => item.tags.split(","))
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const summary = sceneSummary.trim();
+
+  return {
+    sceneName,
+    sceneId: selectedLayer.id,
+    title: selectedLayer.title || normalizedPath[normalizedPath.length - 1] || "默认教室",
+    summary,
+    tags,
+    selectedPath: normalizedPath,
+    focusObjectNames: focusObjects,
+    sceneTree: layers.map((layer) => normalizeSceneTreeNodeForProfile(layer)),
+  };
+}
+
+function normalizeSceneTreeNodeForProfile(layer: SceneLayer): import("@vibe-learner/shared").SceneTreeNode {
+  return {
+    id: layer.id,
+    title: layer.title,
+    scopeLabel: layer.scopeLabel,
+    summary: layer.summary,
+    atmosphere: layer.atmosphere,
+    rules: layer.rules,
+    entrance: layer.entrance,
+    objects: layer.objects.map((object) => ({
+      id: object.id,
+      name: object.name,
+      description: object.description,
+      interaction: object.interaction,
+      tags: object.tags,
+    })),
+    children: layer.children.map((child) => normalizeSceneTreeNodeForProfile(child)),
+  };
+}
+
+function countSceneNodes(nodes: import("@vibe-learner/shared").SceneTreeNode[]): number {
+  return nodes.reduce((count, node) => count + 1 + countSceneNodes(node.children), 0);
+}
+
 function removeLayerTree(layers: SceneLayer[], targetId: string): SceneLayer[] {
   return layers
     .filter((layer) => layer.id !== targetId)
@@ -922,30 +1190,57 @@ function collectLayerIds(layers: SceneLayer[]): string[] {
 }
 
 function parseSceneImportPayload(input: unknown): {
+  sceneName: string;
+  sceneSummary: string;
   sceneLayers: SceneLayer[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
 } {
   const container = input as {
+    sceneName?: unknown;
+    scene_name?: unknown;
+    sceneSummary?: unknown;
+    scene_summary?: unknown;
     sceneLayers?: unknown;
+    scene_layers?: unknown;
     selectedLayerId?: unknown;
+    selected_layer_id?: unknown;
     collapsedLayerIds?: unknown;
+    collapsed_layer_ids?: unknown;
   };
   const rawLayers = Array.isArray(input)
     ? input
     : Array.isArray(container.sceneLayers)
       ? container.sceneLayers
+      : Array.isArray(container.scene_layers)
+        ? container.scene_layers
       : null;
   if (!rawLayers?.length) {
     throw new Error("invalid_scene_layers");
   }
   const sceneLayers = rawLayers.map((entry) => normalizeSceneLayer(entry));
-  const selectedLayerId = typeof container.selectedLayerId === "string" ? container.selectedLayerId : "";
+  const selectedLayerId = typeof container.selectedLayerId === "string"
+    ? container.selectedLayerId
+    : typeof container.selected_layer_id === "string"
+      ? container.selected_layer_id
+      : "";
   const collapsedLayerIds = Array.isArray(container.collapsedLayerIds)
     ? container.collapsedLayerIds.filter((value): value is string => typeof value === "string")
+    : Array.isArray(container.collapsed_layer_ids)
+      ? container.collapsed_layer_ids.filter((value): value is string => typeof value === "string")
     : [];
 
   return {
+    sceneName: typeof container.sceneName === "string"
+      ? container.sceneName
+      : typeof container.scene_name === "string"
+        ? container.scene_name
+        : "",
+    sceneSummary: typeof container.sceneSummary === "string"
+      ? container.sceneSummary
+      : typeof container.scene_summary === "string"
+        ? container.scene_summary
+        : "",
     sceneLayers,
     selectedLayerId,
     collapsedLayerIds,
@@ -960,7 +1255,11 @@ function normalizeSceneLayer(input: unknown): SceneLayer {
   return {
     id: typeof record.id === "string" && record.id ? record.id : createId("scene-layer"),
     title: typeof record.title === "string" ? record.title : "未命名层级",
-    scopeLabel: typeof record.scopeLabel === "string" ? record.scopeLabel : "未定义范围",
+    scopeLabel: typeof record.scopeLabel === "string"
+      ? record.scopeLabel
+      : typeof record.scope_label === "string"
+        ? record.scope_label
+        : "未定义范围",
     summary: typeof record.summary === "string" ? record.summary : "",
     atmosphere: typeof record.atmosphere === "string" ? record.atmosphere : "",
     rules: typeof record.rules === "string" ? record.rules : "",
@@ -1020,22 +1319,6 @@ function findLayerPath(layers: SceneLayer[], targetId: string, trail: string[] =
   return [];
 }
 
-function collectSceneStats(layers: SceneLayer[]) {
-  let layerCount = 0;
-  let objectCount = 0;
-  const stack = [...layers];
-  while (stack.length) {
-    const layer = stack.pop();
-    if (!layer) {
-      continue;
-    }
-    layerCount += 1;
-    objectCount += layer.objects.length;
-    stack.push(...layer.children);
-  }
-  return { layerCount, objectCount };
-}
-
 function inferTemplateIndexFromLayer(layer: SceneLayer): number {
   const exactMatch = LAYER_TEMPLATES.findIndex(
     (template) => template.title === layer.title && template.scopeLabel === layer.scopeLabel
@@ -1051,24 +1334,22 @@ function inferTemplateIndexFromLayer(layer: SceneLayer): number {
 }
 
 const styles: Record<string, CSSProperties> = {
+  // ── page shell ────────────────────────────────────────────
   page: {
     minHeight: "100vh",
     maxWidth: 1460,
     margin: "0 auto",
-    padding: "20px 24px 40px",
-    display: "grid",
-    gap: 20,
-    alignContent: "start",
+    padding: "0 0 40px",
   },
   heading: {
     display: "grid",
-    gap: 6,
-    paddingBottom: 14,
+    gap: 4,
+    padding: "20px 24px 16px",
     borderBottom: "1px solid var(--border)",
   },
   pageTitle: {
     margin: 0,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 700,
     color: "var(--ink)",
     lineHeight: 1.2,
@@ -1079,412 +1360,133 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     lineHeight: 1.6,
   },
-  metricsRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  // ── sidebar fields ────────────────────────────────────────
+  sceneNameLabel: { display: "grid", gap: 6 },
+  sceneSummaryLabel: { display: "grid", gap: 6 },
+  sceneNameInput: {
+    width: "100%",
     border: "1px solid var(--border)",
-  },
-  metricCard: {
-    padding: 16,
-    display: "grid",
-    gap: 4,
-  },
-  metricCardDivider: {
-    borderRightWidth: 1,
-    borderRightStyle: "solid",
-    borderRightColor: "var(--border)",
-  },
-  metricLabel: {
-    fontSize: 11,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    color: "var(--muted)",
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: 700,
+    padding: "7px 10px",
+    background: "var(--panel)",
     color: "var(--ink)",
-  },
-  metricHint: {
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: "var(--muted)",
-  },
-  workspace: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1.15fr) minmax(360px, 0.85fr)",
-    border: "1px solid var(--border)",
-    alignItems: "start",
-  },
-  treePane: {
-    padding: 20,
-    display: "grid",
-    gap: 16,
-    alignContent: "start",
-  },
-  editorPane: {
-    borderLeft: "1px solid var(--border)",
-    padding: 20,
-    display: "grid",
-    gap: 18,
-    alignContent: "start",
-    position: "sticky",
-    top: 16,
-  },
-  panelHead: {
-    paddingBottom: 10,
-    borderBottom: "1px solid var(--border)",
-    marginBottom: 2,
-    display: "grid",
-    gap: 4,
-  },
-  panelTitle: {
     fontSize: 13,
-    fontWeight: 700,
-    color: "var(--ink)",
-    letterSpacing: "0.01em",
+    outline: "none",
   },
-  panelSubTitle: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  treeStack: {
-    display: "grid",
-    gap: 10,
-  },
-  sceneIoRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 8,
-  },
-  sceneIoMessage: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  hiddenInput: {
-    display: "none",
-  },
-  cardGroup: {
-    display: "grid",
-    gap: 8,
-  },
-  layerCard: {
-    borderWidth: 1,
-    borderStyle: "solid",
-    borderColor: "var(--border)",
+  sceneSummaryInput: {
+    width: "100%",
+    minHeight: 80,
+    resize: "vertical",
+    border: "1px solid var(--border)",
+    padding: "7px 10px",
     background: "var(--panel)",
-    padding: 14,
-    display: "grid",
-    gap: 10,
-    cursor: "pointer",
-  },
-  layerCardActive: {
-    borderColor: "var(--accent)",
-    boxShadow: "0 0 0 2px var(--accent-soft) inset",
-  },
-  layerTopRow: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  layerIndexBadge: {
-    width: 28,
-    height: 28,
-    background: "var(--accent)",
-    color: "#fff",
-    display: "grid",
-    placeItems: "center",
-    fontSize: 11,
-    fontWeight: 800,
-    letterSpacing: "0.08em",
-    flexShrink: 0,
-  },
-  layerHeadCopy: {
-    display: "grid",
-    gap: 2,
-    minWidth: 0,
-  },
-  layerScope: {
-    fontSize: 11,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    color: "var(--muted)",
-  },
-  layerTitle: {
-    margin: 0,
-    fontSize: 14,
-    fontWeight: 700,
     color: "var(--ink)",
-    lineHeight: 1.2,
-  },
-  layerSummary: {
-    margin: 0,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.6,
-    color: "var(--muted)",
+    outline: "none",
   },
-  layerMetaRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  layerMetaItem: {
-    padding: "3px 8px",
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
-    fontSize: 11,
-    fontWeight: 600,
-  },
-  objectChipRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  objectChip: {
-    padding: "3px 8px",
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    fontSize: 11,
-    color: "var(--muted)",
-  },
-  cardActions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  cardButton: {
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--ink)",
-    padding: "4px 10px",
-    fontSize: 12,
-    cursor: "pointer",
-    height: 28,
-  },
-  childStack: {
-    paddingLeft: 16,
-    borderLeft: "2px solid var(--border)",
-    display: "grid",
-    gap: 8,
-  },
-  pathChipRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  pathChip: {
-    padding: "3px 8px",
-    background: "var(--panel)",
-    border: "1px solid var(--border)",
-    fontSize: 11,
-    color: "var(--muted)",
-  },
-  formGrid: {
-    display: "grid",
-    gap: 12,
-  },
-  fieldGroup: {
+  sceneActionButtons: { display: "flex", flexWrap: "wrap", gap: 6 },
+  // ── saved scenes ──────────────────────────────────────────
+  savedSceneList: {
     display: "grid",
     gap: 6,
+    alignContent: "start",
+    alignItems: "start",
+    justifyContent: "start",
+    alignSelf: "start",
+    width: "100%",
   },
-  compactField: {
-    display: "grid",
-    gap: 6,
-    flex: 1,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    color: "var(--muted)",
-  },
-  fieldLabelRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 8,
-  },
-  rewriteControlRow: {
+  savedSceneItem: {
     display: "grid",
     gap: 6,
     padding: 10,
     border: "1px solid var(--border)",
     background: "var(--panel)",
-  },
-  rewriteControlLabel: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: "var(--muted)",
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-  },
-  rewriteSlider: {
     width: "100%",
   },
-  inlineActionButton: {
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--ink)",
-    height: 26,
-    padding: "0 8px",
-    cursor: "pointer",
-    fontSize: 11,
-    display: "inline-flex",
-    alignItems: "center",
-    flexShrink: 0,
+  savedSceneItemSelected: {
+    border: "1px solid var(--accent)",
+    boxShadow: "0 0 0 1px var(--accent) inset",
   },
-  errorText: {
-    fontSize: 12,
-    color: "#b42318",
-    lineHeight: 1.5,
-  },
-  confirmOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15, 23, 42, 0.35)",
+  savedSceneBody: {
     display: "grid",
-    placeItems: "center",
-    zIndex: 30,
-    padding: 16,
-  },
-  confirmDialog: {
-    width: "min(480px, 100%)",
-    background: "white",
-    border: "1px solid var(--border)",
-    display: "grid",
-    gap: 12,
-    padding: 16,
-    boxShadow: "0 14px 28px rgba(15, 23, 42, 0.18)",
-  },
-  confirmTitle: {
-    margin: 0,
-    fontSize: 16,
-    fontWeight: 700,
-    color: "var(--ink)",
-  },
-  confirmText: {
-    margin: 0,
-    fontSize: 13,
-    lineHeight: 1.6,
-    color: "var(--muted)",
-  },
-  confirmActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 10,
-  },
-  dangerButton: {
+    gap: 4,
+    textAlign: "left",
     border: "none",
-    background: "#b42318",
-    color: "white",
-    height: 36,
-    padding: "0 12px",
+    background: "transparent",
+    padding: 0,
     cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 600,
   },
-  input: {
-    width: "100%",
-    height: 36,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "0 10px",
-    color: "var(--ink)",
-    fontSize: 13,
-    outline: "none",
-  },
-  textarea: {
-    width: "100%",
-    minHeight: 72,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "8px 10px",
-    color: "var(--ink)",
-    fontSize: 13,
-    lineHeight: 1.6,
-    resize: "vertical",
-    outline: "none",
-  },
-  objectsSection: {
-    display: "grid",
-    gap: 10,
-  },
-  objectsHead: {
+  savedSceneTitleRow: {
     display: "flex",
     justifyContent: "space-between",
     gap: 10,
-    alignItems: "center",
+    alignItems: "baseline",
   },
-  objectsTitle: {
-    margin: 0,
-    fontSize: 13,
-    fontWeight: 700,
-    color: "var(--ink)",
-  },
-  objectsHint: {
-    margin: "3px 0 0",
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: "var(--muted)",
-  },
-  primaryButton: {
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
-    height: 36,
-    padding: "0 14px",
-    fontWeight: 600,
-    cursor: "pointer",
-    fontSize: 13,
-    flexShrink: 0,
-  },
-  objectList: {
+  savedSceneTitle: { fontSize: 13, color: "var(--ink)" },
+  savedSceneMeta: { fontSize: 11, color: "var(--muted)", margin: 0, lineHeight: 1.4 },
+  savedSceneSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
+  savedSceneActions: { display: "flex", flexWrap: "wrap", gap: 4 },
+  sidebarPane: { borderLeft: "1px solid var(--border)", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" },
+  sidebarSection: {
+    padding: "14px 16px",
+    borderBottom: "1px solid var(--border)",
     display: "grid",
     gap: 10,
+    alignContent: "start",
+    justifyItems: "stretch",
   },
-  objectCard: {
-    padding: 12,
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    display: "grid",
-    gap: 10,
-  },
-  objectRow: {
-    display: "flex",
-    alignItems: "end",
-    gap: 10,
-  },
-  ghostButton: {
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--ink)",
-    height: 36,
-    padding: "0 12px",
-    cursor: "pointer",
-    fontSize: 13,
-    display: "inline-flex",
-    alignItems: "center",
-    flexShrink: 0,
-  },
-  editorActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  helperText: {
-    fontSize: 12,
-    color: "var(--muted)",
-  },
-  emptyState: {
-    margin: 0,
-    padding: "20px 0",
-    color: "var(--muted)",
-    lineHeight: 1.7,
-    fontSize: 13,
-  },
+  sidebarStatusMsg: { margin: 0, padding: "8px 16px", fontSize: 12, color: "var(--muted)", borderBottom: "1px solid var(--border)" },
+  treePane: { padding: "16px 20px", display: "grid", gap: 14, alignContent: "start" },
+  editorPane: { borderLeft: "1px solid var(--border)", padding: "16px 20px", display: "grid", gap: 16, alignContent: "start", position: "sticky", top: 0 },
+  panelHead: { paddingBottom: 10, borderBottom: "1px solid var(--border)", display: "grid", gap: 3 },
+  panelTitle: { fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" },
+  hiddenInput: { display: "none" },
+  treeStack: { display: "grid", gap: 8 },
+  cardGroup: { display: "grid", gap: 6 },
+  layerCard: { borderWidth: 1, borderStyle: "solid", borderColor: "var(--border)", background: "var(--panel)", padding: 12, display: "grid", gap: 8, cursor: "pointer" },
+  layerCardActive: { borderColor: "var(--accent)", boxShadow: "0 0 0 2px var(--accent-soft) inset" },
+  layerTopRow: { display: "flex", alignItems: "flex-start", gap: 8 },
+  layerIndexBadge: { width: 22, height: 22, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", flexShrink: 0 },
+  layerHeadCopy: { display: "grid", gap: 2, minWidth: 0 },
+  layerScope: { fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)" },
+  layerTitle: { margin: 0, fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2 },
+  layerSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
+  objectChipRow: { display: "flex", flexWrap: "wrap", gap: 4 },
+  objectChip: { padding: "2px 6px", border: "1px solid var(--border)", background: "var(--bg)", fontSize: 10, color: "var(--muted)" },
+  cardActions: { display: "flex", flexWrap: "wrap", gap: 4 },
+  childStack: { paddingLeft: 12, borderLeft: "2px solid var(--border)", display: "grid", gap: 6 },
+  pathChipRow: { display: "flex", flexWrap: "wrap", gap: 4 },
+  pathChip: { padding: "2px 6px", background: "var(--panel)", border: "1px solid var(--border)", fontSize: 11, color: "var(--muted)" },
+  rewriteControlRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, paddingBottom: 4, borderBottom: "1px solid var(--border)" },
+  rewriteControlLabel: { fontSize: 11, color: "var(--muted)" },
+  rewriteSlider: { width: 80, flexShrink: 0 },
+  formGrid: { display: "grid", gap: 12 },
+  fieldGroup: { display: "grid", gap: 6 },
+  compactField: { display: "grid", gap: 6, flex: 1 },
+  fieldLabel: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)" },
+  fieldLabelRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 },
+  input: { width: "100%", height: 36, border: "1px solid var(--border)", background: "var(--panel)", padding: "0 10px", color: "var(--ink)", fontSize: 13, outline: "none" },
+  textarea: { width: "100%", minHeight: 72, border: "1px solid var(--border)", background: "var(--panel)", padding: "8px 10px", color: "var(--ink)", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none" },
+  objectsSection: { display: "grid", gap: 10 },
+  objectsHead: { display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" },
+  objectsTitle: { margin: 0, fontSize: 13, fontWeight: 600, color: "var(--ink)" },
+  objectsHint: { margin: "2px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
+  objectList: { display: "grid", gap: 8 },
+  objectCard: { padding: 12, border: "1px solid var(--border)", background: "var(--panel)", display: "grid", gap: 10 },
+  objectRow: { display: "flex", alignItems: "end", gap: 10 },
+  editorActions: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", paddingTop: 4, borderTop: "1px solid var(--border)" },
+  helperText: { fontSize: 12, color: "var(--muted)" },
+  emptyState: { margin: 0, padding: "20px 0", color: "var(--muted)", lineHeight: 1.7, fontSize: 13 },
+  errorText: { fontSize: 12, color: "var(--danger, #b42318)", lineHeight: 1.5 },
+  btnPrimary: { border: "none", background: "var(--accent)", color: "white", height: 34, padding: "0 14px", fontWeight: 600, cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
+  btnGhost: { border: "1px solid var(--border)", background: "transparent", color: "var(--ink)", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
+  btnDanger: { border: "none", background: "var(--danger, #b42318)", color: "white", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" },
+  btnSmall: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", height: 26, padding: "0 8px", cursor: "pointer", fontSize: 11, display: "inline-flex", alignItems: "center", flexShrink: 0 },
+  btnSmallDanger: { border: "1px solid var(--danger, #b42318)", background: "transparent", color: "var(--danger, #b42318)", height: 26, padding: "0 8px", cursor: "pointer", fontSize: 11, display: "inline-flex", alignItems: "center" },
+  btnMicro: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", padding: "1px 6px", fontSize: 11, cursor: "pointer", height: 22, display: "inline-flex", alignItems: "center" },
+  confirmOverlay: { position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", display: "grid", placeItems: "center", zIndex: 30, padding: 16 },
+  confirmDialog: { width: "min(480px, 100%)", background: "white", border: "1px solid var(--border)", display: "grid", gap: 12, padding: 20, boxShadow: "0 14px 28px rgba(15, 23, 42, 0.12)" },
+  confirmTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "var(--ink)" },
+  confirmText: { margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--muted)" },
+  confirmActions: { display: "flex", justifyContent: "flex-end", gap: 8 },
 };

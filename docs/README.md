@@ -31,3 +31,5 @@ These docs describe the repository as it exists now, not the aspirational long-t
 - Chat failures now surface as explicit UI errors with manual retry action instead of silent fallback assistant text.
 - Study chat model now supports page-range text/image reading tools and has dedicated chat tool config variables.
 - OpenAI-compatible provider truncation mitigation is documented via `OPENAI_CHAT_MAX_TOKENS` tuning.
+- Scene Setup and Scene Library contracts are documented in `scene-setup.md` and summarized in `api-reference.md`.
+- Scene-related 422 triage now centers on empty `scene_name` / `scene_summary` and missing required `scene_layers[].scope_label`.

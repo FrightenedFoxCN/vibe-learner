@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { LearningPlan } from "@vibe-learner/shared";
+import type { LearningPlan, SceneProfile } from "@vibe-learner/shared";
 import type { PlanHistoryItem } from "../lib/plan-panel-data";
 
 interface PlanOverviewProps {
@@ -11,6 +11,7 @@ interface PlanOverviewProps {
   documentTitle: string;
   personaName: string;
   planPositionLabel: string;
+  sceneProfile?: SceneProfile | null;
   hasSession: boolean;
   isBusy: boolean;
   isRefreshing: boolean;
@@ -26,6 +27,7 @@ export function PlanOverview({
   documentTitle,
   personaName,
   planPositionLabel,
+  sceneProfile,
   hasSession,
   isBusy,
   isRefreshing,
@@ -89,10 +91,38 @@ export function PlanOverview({
               <dd style={styles.metaVal}>{personaName}</dd>
             </div>
             <div style={styles.metaItem}>
+              <dt style={styles.metaKey}>场景使用</dt>
+              <dd style={styles.metaVal}>{sceneProfile ? formatSceneProfile(sceneProfile) : plan.sceneProfileSummary || "未配置"}</dd>
+            </div>
+            <div style={styles.metaItem}>
               <dt style={styles.metaKey}>生成时间</dt>
               <dd style={styles.metaVal}>{formatDate(plan.createdAt)}</dd>
             </div>
           </dl>
+
+          {sceneProfile ? (
+            <div style={styles.sceneCard}>
+              <div style={styles.sceneCardHead}>
+                <span style={styles.sectionLabel}>当前学习场景</span>
+                <span style={styles.count}>{countSceneNodes(sceneProfile.sceneTree)} 节点</span>
+              </div>
+              <p style={styles.sceneName}>云端名称：{sceneProfile.sceneName || "未命名"}</p>
+              <div style={styles.sceneTitleRow}>
+                <strong style={styles.sceneTitle}>{sceneProfile.title}</strong>
+                <span style={styles.scenePath}>{sceneProfile.selectedPath.join(" / ")}</span>
+              </div>
+              <p style={styles.scenePath}>场景树根节点：{sceneProfile.sceneTree.map((node) => node.title).join(" / ") || "未配置"}</p>
+              <p style={styles.sceneSummary}>{sceneProfile.summary}</p>
+              <div style={styles.sceneTags}>
+                {sceneProfile.tags.slice(0, 4).map((tag) => (
+                  <span key={tag} style={styles.sceneTag}>{tag}</span>
+                ))}
+                {sceneProfile.focusObjectNames.slice(0, 3).map((name) => (
+                  <span key={name} style={styles.sceneTag}>{name}</span>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div style={styles.actionRow}>
             {hasSession ? (
@@ -256,6 +286,57 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--positive)",
     fontWeight: 500,
   },
+  sceneCard: {
+    display: "grid",
+    gap: 8,
+    padding: 12,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    marginBottom: 14,
+  },
+  sceneCardHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+  },
+  sceneTitleRow: {
+    display: "grid",
+    gap: 2,
+  },
+  sceneName: {
+    margin: 0,
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 600,
+  },
+  sceneTitle: {
+    fontSize: 13,
+    color: "var(--ink)",
+  },
+  scenePath: {
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.5,
+  },
+  sceneSummary: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)",
+  },
+  sceneTags: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  sceneTag: {
+    padding: "3px 8px",
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--muted)",
+    fontSize: 11,
+  },
   section: {
     paddingTop: 16,
     paddingBottom: 4,
@@ -323,4 +404,13 @@ function resolveCourseTitle(courseTitle: string, documentTitle: string) {
   if (courseTitle.trim()) return courseTitle.trim();
   if (documentTitle.trim()) return documentTitle.trim();
   return "当前学习计划";
+}
+
+function formatSceneProfile(sceneProfile: SceneProfile) {
+  const path = sceneProfile.selectedPath.join(" / ");
+  return `${sceneProfile.title}${path ? ` · ${path}` : ""}`;
+}
+
+function countSceneNodes(nodes: SceneProfile["sceneTree"]): number {
+  return nodes.reduce((count, node) => count + 1 + countSceneNodes(node.children), 0);
 }

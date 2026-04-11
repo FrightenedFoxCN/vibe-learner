@@ -14,10 +14,13 @@ from app.models.domain import (
     PlanToolCallTraceRecord,
     PersonaProfile,
     PersonaSlot,
+    SceneLibraryRecord,
     StreamEventRecord,
     StreamReportRecord,
     StudySessionRecord,
     SceneProfileRecord,
+    SceneLayerStateRecord,
+    SceneSetupStateRecord,
 )
 
 
@@ -317,6 +320,36 @@ class LearningPlanListResponse(BaseModel):
     items: list[LearningPlanResponse]
 
 
+class SceneSetupResponse(SceneSetupStateRecord):
+    pass
+
+
+class SceneLibraryResponse(SceneLibraryRecord):
+    pass
+
+
+class SceneLibraryListResponse(BaseModel):
+    items: list[SceneLibraryResponse]
+
+
+class UpdateSceneSetupRequest(BaseModel):
+    scene_name: str = Field(min_length=1)
+    scene_summary: str = Field(min_length=1)
+    scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
+    selected_layer_id: str = ""
+    collapsed_layer_ids: list[str] = Field(default_factory=list)
+    scene_profile: SceneProfileRecord | None = None
+
+
+class UpsertSceneLibraryRequest(BaseModel):
+    scene_name: str = Field(min_length=1)
+    scene_summary: str = Field(min_length=1)
+    scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
+    selected_layer_id: str = ""
+    collapsed_layer_ids: list[str] = Field(default_factory=list)
+    scene_profile: SceneProfileRecord | None = None
+
+
 class CreateStudySessionRequest(BaseModel):
     document_id: str
     persona_id: str
@@ -327,7 +360,8 @@ class CreateStudySessionRequest(BaseModel):
 
 
 class UpdateStudySessionRequest(BaseModel):
-    section_id: str
+    section_id: str | None = None
+    scene_profile: SceneProfileRecord | None = None
 
 
 class StudySessionResponse(StudySessionRecord):

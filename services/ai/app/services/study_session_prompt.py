@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
+from app.models.domain import SceneProfileRecord
+
 PROMPT_TEMPLATE_PATH = Path(__file__).resolve().parents[1] / "prompts" / "study_session_prompt.txt"
 
 
@@ -20,9 +22,15 @@ def build_study_session_system_prompt(
     section_id: str,
     section_title: str,
     theme_hint: str,
-    scene_profile_summary: str = "",
+    scene_profile: SceneProfileRecord | None = None,
 ) -> str:
     template = load_study_session_prompt_template().system_prompt
+    scene_summary = scene_profile.summary.strip() if scene_profile else ""
+    scene_title = scene_profile.title.strip() if scene_profile else ""
+    scene_path = " > ".join(scene_profile.selected_path) if scene_profile else ""
+    scene_focus_objects = ", ".join(scene_profile.focus_object_names) if scene_profile else ""
+    scene_tags = ", ".join(scene_profile.tags) if scene_profile else ""
+    scene_tree_roots = ", ".join(node.title for node in scene_profile.scene_tree[:4]) if scene_profile else ""
     return (
         template.replace("{{PERSONA_SYSTEM_PROMPT}}", persona_system_prompt.strip())
         .replace("{{PERSONA_NAME}}", persona_name.strip())
@@ -30,7 +38,12 @@ def build_study_session_system_prompt(
         .replace("{{SECTION_ID}}", section_id.strip())
         .replace("{{SECTION_TITLE}}", section_title.strip())
         .replace("{{THEME_HINT}}", theme_hint.strip() or "N/A")
-        .replace("{{SCENE_PROFILE_SUMMARY}}", scene_profile_summary.strip() or "N/A")
+        .replace("{{SCENE_PROFILE_SUMMARY}}", scene_summary or "N/A")
+        .replace("{{SCENE_PROFILE_TITLE}}", scene_title or "N/A")
+        .replace("{{SCENE_PROFILE_PATH}}", scene_path or "N/A")
+        .replace("{{SCENE_PROFILE_FOCUS_OBJECTS}}", scene_focus_objects or "N/A")
+        .replace("{{SCENE_PROFILE_TAGS}}", scene_tags or "N/A")
+        .replace("{{SCENE_PROFILE_TREE_ROOTS}}", scene_tree_roots or "N/A")
     )
 
 

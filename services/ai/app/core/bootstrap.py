@@ -12,6 +12,8 @@ from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
 from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConfigService
 from app.services.runtime_settings import RuntimeSettingsService
+from app.services.scene_library import SceneLibraryService
+from app.services.scene_setup import SceneSetupService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
 
@@ -26,6 +28,8 @@ class Container:
         self.document_parser = DocumentParser()
         self.model_tool_config_service = ModelToolConfigService(self.store)
         self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
+        self.scene_setup_service = SceneSetupService(self.store)
+        self.scene_library_service = SceneLibraryService(self.store)
         self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())
         self.performance_mapper = PerformanceMapper()
         self.persona_engine = PersonaEngine()

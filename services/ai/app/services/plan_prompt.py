@@ -74,6 +74,19 @@ def build_learning_plan_messages(
         "learning_goal": {
             "objective": goal.objective,
             "scene_profile_summary": goal.scene_profile_summary,
+            "scene_profile": (
+                {
+                    "scene_id": goal.scene_profile.scene_id,
+                    "title": goal.scene_profile.title,
+                    "summary": goal.scene_profile.summary,
+                    "tags": goal.scene_profile.tags,
+                    "selected_path": goal.scene_profile.selected_path,
+                    "focus_object_names": goal.scene_profile.focus_object_names,
+                    "scene_tree": [node.model_dump(mode="json") for node in goal.scene_profile.scene_tree],
+                }
+                if goal.scene_profile is not None
+                else None
+            ),
         },
         "segmentation_hints": segmentation_hints,
         "study_units": planning_context["study_units"],

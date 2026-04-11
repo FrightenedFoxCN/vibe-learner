@@ -53,6 +53,110 @@ export interface PersonaSlotAssistOutput {
   slot: import("@vibe-learner/shared").PersonaSlot;
 }
 
+export interface SceneSetupStatePayload {
+  updatedAt: string;
+  sceneName: string;
+  sceneSummary: string;
+  sceneLayers: unknown[];
+  selectedLayerId: string;
+  collapsedLayerIds: string[];
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile;
+}
+
+export interface SceneLibraryItemPayload {
+  sceneId: string;
+  createdAt: string;
+  updatedAt: string;
+  sceneName: string;
+  sceneSummary: string;
+  sceneLayers: unknown[];
+  selectedLayerId: string;
+  collapsedLayerIds: string[];
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile;
+}
+
+function serializeSceneTree(
+  nodes: import("@vibe-learner/shared").SceneTreeNode[] | undefined
+): Array<Record<string, unknown>> {
+  return (nodes ?? []).map((node) => ({
+    id: node.id,
+    title: node.title,
+    scope_label: node.scopeLabel,
+    summary: node.summary,
+    atmosphere: node.atmosphere,
+    rules: node.rules,
+    entrance: node.entrance,
+    objects: (node.objects ?? []).map((object) => ({
+      id: object.id,
+      name: object.name,
+      description: object.description,
+      interaction: object.interaction,
+      tags: object.tags,
+    })),
+    children: serializeSceneTree(node.children),
+  }));
+}
+
+function serializeSceneProfile(
+  sceneProfile: import("@vibe-learner/shared").SceneProfile | null | undefined
+) {
+  if (!sceneProfile) {
+    return null;
+  }
+  return {
+    scene_name: sceneProfile.sceneName,
+    scene_id: sceneProfile.sceneId,
+    title: sceneProfile.title,
+    summary: sceneProfile.summary,
+    tags: sceneProfile.tags,
+    selected_path: sceneProfile.selectedPath,
+    focus_object_names: sceneProfile.focusObjectNames,
+    scene_tree: serializeSceneTree(sceneProfile.sceneTree),
+  };
+}
+
+function normalizeSceneTreeNode(node: any): import("@vibe-learner/shared").SceneTreeNode {
+  return {
+    id: String(node.id ?? ""),
+    title: String(node.title ?? ""),
+    scopeLabel: String(node.scope_label ?? ""),
+    summary: String(node.summary ?? ""),
+    atmosphere: String(node.atmosphere ?? ""),
+    rules: String(node.rules ?? ""),
+    entrance: String(node.entrance ?? ""),
+    objects: Array.isArray(node.objects)
+      ? node.objects.map((object: any) => ({
+          id: String(object.id ?? ""),
+          name: String(object.name ?? ""),
+          description: String(object.description ?? ""),
+          interaction: String(object.interaction ?? ""),
+          tags: String(object.tags ?? ""),
+        }))
+      : [],
+    children: Array.isArray(node.children) ? node.children.map(normalizeSceneTreeNode) : [],
+  };
+}
+
+function normalizeSceneProfile(scene: any) {
+  if (!scene || typeof scene !== "object") {
+    return undefined;
+  }
+  return {
+    sceneId: String(scene.scene_id ?? ""),
+    sceneName: String(scene.scene_name ?? ""),
+    title: String(scene.title ?? ""),
+    summary: String(scene.summary ?? ""),
+    tags: Array.isArray(scene.tags) ? scene.tags.map((item: unknown) => String(item)) : [],
+    selectedPath: Array.isArray(scene.selected_path)
+      ? scene.selected_path.map((item: unknown) => String(item))
+      : [],
+    focusObjectNames: Array.isArray(scene.focus_object_names)
+      ? scene.focus_object_names.map((item: unknown) => String(item))
+      : [],
+    sceneTree: Array.isArray(scene.scene_tree) ? scene.scene_tree.map(normalizeSceneTreeNode) : [],
+  };
+}
+
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
@@ -436,6 +540,7 @@ function normalizePlan(plan: any): LearningPlan {
     courseTitle: plan.course_title,
     objective: plan.objective,
     sceneProfileSummary: String(plan.scene_profile_summary ?? ""),
+    sceneProfile: normalizeSceneProfile(plan.scene_profile),
     overview: plan.overview,
     weeklyFocus: plan.weekly_focus,
     todayTasks: plan.today_tasks,
@@ -445,21 +550,41 @@ function normalizePlan(plan: any): LearningPlan {
   };
 }
 
-function normalizeSceneProfile(scene: any) {
-  if (!scene || typeof scene !== "object") {
-    return undefined;
-  }
+function normalizeSceneSetupState(payload: any): SceneSetupStatePayload {
   return {
-    sceneId: String(scene.scene_id ?? ""),
-    title: String(scene.title ?? ""),
-    summary: String(scene.summary ?? ""),
-    tags: Array.isArray(scene.tags) ? scene.tags.map((item: unknown) => String(item)) : [],
-    selectedPath: Array.isArray(scene.selected_path)
-      ? scene.selected_path.map((item: unknown) => String(item))
+    updatedAt: String(payload.updated_at ?? ""),
+    sceneName: String(payload.scene_name ?? ""),
+    sceneSummary: String(payload.scene_summary ?? ""),
+    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers : [],
+    selectedLayerId: String(payload.selected_layer_id ?? ""),
+    collapsedLayerIds: Array.isArray(payload.collapsed_layer_ids)
+      ? payload.collapsed_layer_ids.map((item: unknown) => String(item))
       : [],
-    focusObjectNames: Array.isArray(scene.focus_object_names)
-      ? scene.focus_object_names.map((item: unknown) => String(item))
-      : []
+    sceneProfile: normalizeSceneProfile(payload.scene_profile),
+  };
+}
+
+function normalizeSceneLibraryItem(payload: any): SceneLibraryItemPayload {
+  // 尝试从多个源获取sceneSummary：scene_summary, sceneSummary, 或从scene_profile.summary
+  const sceneSummary = String(
+    payload.scene_summary ??
+    payload.sceneSummary ??
+    payload.scene_profile?.summary ??
+    payload.sceneProfile?.summary ??
+    ""
+  );
+  return {
+    sceneId: String(payload.scene_id ?? ""),
+    createdAt: String(payload.created_at ?? ""),
+    updatedAt: String(payload.updated_at ?? ""),
+    sceneName: String(payload.scene_name ?? payload.sceneName ?? ""),
+    sceneSummary,
+    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers : (Array.isArray(payload.sceneLayers) ? payload.sceneLayers : []),
+    selectedLayerId: String(payload.selected_layer_id ?? payload.selectedLayerId ?? ""),
+    collapsedLayerIds: Array.isArray(payload.collapsed_layer_ids)
+      ? payload.collapsed_layer_ids.map((item: unknown) => String(item))
+      : (Array.isArray(payload.collapsedLayerIds) ? payload.collapsedLayerIds.map((item: unknown) => String(item)) : []),
+    sceneProfile: normalizeSceneProfile(payload.scene_profile ?? payload.sceneProfile),
   };
 }
 
@@ -711,6 +836,119 @@ export async function getRuntimeSettings(): Promise<RuntimeSettings> {
   return normalizeRuntimeSettings(payload);
 }
 
+export async function getSceneSetupState(): Promise<SceneSetupStatePayload> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-setup`)
+  );
+  return normalizeSceneSetupState(payload);
+}
+
+export async function updateSceneSetupState(input: {
+  sceneLayers: unknown[];
+  selectedLayerId: string;
+  collapsedLayerIds: string[];
+  sceneName?: string;
+  sceneSummary?: string;
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
+}): Promise<SceneSetupStatePayload> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-setup`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        scene_name: input.sceneName ?? input.sceneProfile?.sceneName ?? "",
+        scene_summary: input.sceneSummary ?? input.sceneProfile?.summary ?? "",
+        scene_layers: serializeSceneTree(input.sceneLayers as import("@vibe-learner/shared").SceneTreeNode[]),
+        selected_layer_id: input.selectedLayerId,
+        collapsed_layer_ids: input.collapsedLayerIds,
+        scene_profile: serializeSceneProfile(input.sceneProfile)
+      })
+    })
+  );
+  return normalizeSceneSetupState(payload);
+}
+
+export async function listSceneLibrary(): Promise<SceneLibraryItemPayload[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/scene-library`)
+  );
+  return payload.items.map(normalizeSceneLibraryItem);
+}
+
+export async function getSceneLibraryItem(sceneId: string): Promise<SceneLibraryItemPayload> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-library/${sceneId}`)
+  );
+  return normalizeSceneLibraryItem(payload);
+}
+
+export async function createSceneLibraryItem(input: {
+  sceneName: string;
+  sceneSummary: string;
+  sceneLayers: unknown[];
+  selectedLayerId: string;
+  collapsedLayerIds: string[];
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
+}): Promise<SceneLibraryItemPayload> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-library`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        scene_name: input.sceneName,
+        scene_summary: input.sceneSummary,
+        scene_layers: serializeSceneTree(input.sceneLayers as import("@vibe-learner/shared").SceneTreeNode[]),
+        selected_layer_id: input.selectedLayerId,
+        collapsed_layer_ids: input.collapsedLayerIds,
+        scene_profile: serializeSceneProfile(input.sceneProfile)
+      })
+    })
+  );
+  return normalizeSceneLibraryItem(payload);
+}
+
+export async function updateSceneLibraryItem(sceneId: string, input: {
+  sceneName: string;
+  sceneSummary: string;
+  sceneLayers: unknown[];
+  selectedLayerId: string;
+  collapsedLayerIds: string[];
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
+}): Promise<SceneLibraryItemPayload> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-library/${sceneId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        scene_name: input.sceneName,
+        scene_summary: input.sceneSummary,
+        scene_layers: serializeSceneTree(input.sceneLayers as import("@vibe-learner/shared").SceneTreeNode[]),
+        selected_layer_id: input.selectedLayerId,
+        collapsed_layer_ids: input.collapsedLayerIds,
+        scene_profile: serializeSceneProfile(input.sceneProfile)
+      })
+    })
+  );
+  return normalizeSceneLibraryItem(payload);
+}
+
+export async function deleteSceneLibraryItem(sceneId: string): Promise<{ deletedSceneId: string }> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-library/${sceneId}`, {
+      method: "DELETE"
+    })
+  );
+  return {
+    deletedSceneId: String(payload.deleted_scene_id ?? sceneId),
+  };
+}
+
 export async function updateRuntimeSettings(
   patch: RuntimeSettingsPatch
 ): Promise<RuntimeSettings> {
@@ -899,6 +1137,7 @@ export async function processDocumentStream(
 }
 
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
+  const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/learning-plans`, {
       method: "POST",
@@ -909,7 +1148,8 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
         document_id: goal.documentId,
         persona_id: goal.personaId,
         objective: goal.objective,
-        scene_profile_summary: goal.sceneProfileSummary ?? ""
+        scene_profile_summary: sceneSummary,
+        scene_profile: serializeSceneProfile(goal.sceneProfile)
       })
     })
   );
@@ -927,6 +1167,7 @@ export async function createLearningPlanStream(
   goal: LearningGoal,
   onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
 ): Promise<LearningPlan> {
+  const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
   const response = await request(`${AI_BASE_URL}/learning-plans/stream`, {
     method: "POST",
     headers: {
@@ -936,7 +1177,8 @@ export async function createLearningPlanStream(
       document_id: goal.documentId,
       persona_id: goal.personaId,
       objective: goal.objective,
-      scene_profile_summary: goal.sceneProfileSummary ?? ""
+      scene_profile_summary: sceneSummary,
+      scene_profile: serializeSceneProfile(goal.sceneProfile)
     })
   });
   if (!response.ok || !response.body) {
@@ -993,7 +1235,7 @@ export async function createLearningPlanStream(
 export async function createStudySession(input: {
   documentId: string;
   personaId: string;
-  sceneProfile?: import("@vibe-learner/shared").SceneProfile;
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
   sectionId: string;
   sectionTitle?: string;
   themeHint?: string;
@@ -1007,16 +1249,7 @@ export async function createStudySession(input: {
       body: JSON.stringify({
         document_id: input.documentId,
         persona_id: input.personaId,
-        scene_profile: input.sceneProfile
-          ? {
-              scene_id: input.sceneProfile.sceneId,
-              title: input.sceneProfile.title,
-              summary: input.sceneProfile.summary,
-              tags: input.sceneProfile.tags,
-              selected_path: input.sceneProfile.selectedPath,
-              focus_object_names: input.sceneProfile.focusObjectNames
-            }
-          : null,
+        scene_profile: serializeSceneProfile(input.sceneProfile),
         section_id: input.sectionId,
         section_title: input.sectionTitle ?? "",
         theme_hint: input.themeHint ?? ""
@@ -1044,17 +1277,23 @@ export async function listStudySessions(input: {
 
 export async function updateStudySessionSection(input: {
   sessionId: string;
-  sectionId: string;
+  sectionId?: string;
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<StudySessionRecord> {
+  const body: Record<string, unknown> = {};
+  if (typeof input.sectionId === "string") {
+    body.section_id = input.sectionId;
+  }
+  if (Object.prototype.hasOwnProperty.call(input, "sceneProfile")) {
+    body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);
+  }
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        section_id: input.sectionId
-      })
+      body: JSON.stringify(body)
     })
   );
   return normalizeSession(payload);

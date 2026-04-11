@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 PERSONA_SLOT_KINDS = [
@@ -195,15 +195,64 @@ class LearningGoalInput(BaseModel):
         )
     )
     scene_profile_summary: str = ""
+    scene_profile: "SceneProfileRecord | None" = None
+
+    @model_validator(mode="after")
+    def populate_scene_summary_from_profile(self) -> "LearningGoalInput":
+        if (not self.scene_profile_summary.strip()) and self.scene_profile is not None:
+            self.scene_profile_summary = self.scene_profile.summary
+        return self
 
 
 class SceneProfileRecord(BaseModel):
+    scene_name: str = ""
     scene_id: str
     title: str
     summary: str
     tags: list[str] = Field(default_factory=list)
     selected_path: list[str] = Field(default_factory=list)
     focus_object_names: list[str] = Field(default_factory=list)
+    scene_tree: list["SceneLayerStateRecord"] = Field(default_factory=list)
+
+
+class SceneObjectStateRecord(BaseModel):
+    id: str
+    name: str
+    description: str
+    interaction: str
+    tags: str = ""
+
+
+class SceneLayerStateRecord(BaseModel):
+    id: str
+    title: str
+    scope_label: str
+    summary: str
+    atmosphere: str
+    rules: str
+    entrance: str
+    objects: list[SceneObjectStateRecord] = Field(default_factory=list)
+    children: list["SceneLayerStateRecord"] = Field(default_factory=list)
+
+
+class SceneSetupStateRecord(BaseModel):
+    config_id: str = "default"
+    updated_at: str
+    scene_name: str = ""
+    scene_summary: str = ""
+    scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
+    selected_layer_id: str = ""
+    collapsed_layer_ids: list[str] = Field(default_factory=list)
+    scene_profile: SceneProfileRecord | None = None
+
+
+class SceneLibraryRecord(SceneSetupStateRecord):
+    scene_id: str
+    created_at: str
+
+
+SceneLayerStateRecord.model_rebuild()
+SceneProfileRecord.model_rebuild()
 
 
 class StudyScheduleRecord(BaseModel):
@@ -228,6 +277,7 @@ class LearningPlanRecord(BaseModel):
         )
     )
     scene_profile_summary: str = ""
+    scene_profile: SceneProfileRecord | None = None
     overview: str = Field(
         description=(
             "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."

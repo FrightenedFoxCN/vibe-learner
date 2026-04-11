@@ -23,6 +23,10 @@ export function LearningWorkspace() {
     notice,
     isBusy,
     isSnapshotRefreshing,
+    sceneLibraryItems,
+    selectedSceneLibraryId,
+    setSelectedSceneLibraryId,
+    selectedSceneProfile,
     generatePlanWorkflow,
     selectPlan,
     createSessionForActivePlan,
@@ -50,6 +54,10 @@ export function LearningWorkspace() {
             compact
           />
         </div>
+        <div style={styles.toolbarField}>
+          <span style={styles.toolbarLabel}>场景配置</span>
+          <Link href="/scene-setup" style={styles.sceneLink}>去场景编辑</Link>
+        </div>
         {notice ? <span style={styles.notice}>{notice}</span> : null}
       </div>
 
@@ -62,6 +70,10 @@ export function LearningWorkspace() {
           document={activeDocument}
           plan={activePlan}
           session={studySession}
+          sceneLibraryItems={sceneLibraryItems}
+          selectedSceneLibraryId={selectedSceneLibraryId}
+          onSelectSceneLibraryId={setSelectedSceneLibraryId}
+          sceneProfile={selectedSceneProfile ?? activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
           onGenerate={(input) => { void generatePlanWorkflow(input); }}
         />
 
@@ -76,6 +88,7 @@ export function LearningWorkspace() {
             "未关联人格"
           }
           planPositionLabel={activePlan ? `共 ${planHistory.length} 条` : ""}
+          sceneProfile={activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
           hasSession={Boolean(studySession)}
           isBusy={isBusy}
           isRefreshing={isSnapshotRefreshing}
@@ -136,6 +149,18 @@ const styles: Record<string, CSSProperties> = {
   toolbarField: {
     display: "grid",
     gap: 5,
+  },
+  sceneLink: {
+    display: "inline-flex",
+    alignItems: "center",
+    height: 32,
+    padding: "0 12px",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--accent)",
+    fontSize: 13,
+    fontWeight: 600,
+    width: "fit-content",
   },
   toolbarLabel: {
     fontSize: 11,

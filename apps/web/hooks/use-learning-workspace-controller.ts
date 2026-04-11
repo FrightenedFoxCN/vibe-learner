@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useEffect, useReducer } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import type {
   DocumentRecord,
   DocumentSection,
   LearningPlan,
   PersonaProfile,
+  SceneProfile,
   StudyChatResponse,
   StudySessionRecord
 } from "@vibe-learner/shared";
@@ -15,12 +16,14 @@ import {
   createLearningPlanStream,
   createStudySession,
   listStudySessions,
+  listSceneLibrary,
   listDocuments,
   listLearningPlans,
   listPersonas,
   processDocumentStream,
   sendStudyMessage,
   submitStudyQuestionAttempt,
+  type SceneLibraryItemPayload,
   updateStudySessionSection,
   uploadDocument
 } from "../lib/api";
@@ -94,6 +97,8 @@ export function useLearningWorkspaceController({
   const [processStreamDocumentId, setProcessStreamDocumentId] = useState("");
   const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
+  const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
+  const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState("");
 
   const selectedPersona =
     state.personas.find((persona) => persona.id === state.selectedPersonaId) ?? state.personas[0];
@@ -109,6 +114,12 @@ export function useLearningWorkspaceController({
     planSections.find((section) => section.id === state.studySession?.sectionId) ??
     planSections[0] ??
     null;
+  const selectedSceneProfile = useMemo(
+    () => resolveSceneProfileFromLibrary(sceneLibraryItems, selectedSceneLibraryId),
+    [sceneLibraryItems, selectedSceneLibraryId]
+  );
+
+  const resolveActiveSceneProfile = () => selectedSceneProfile ?? readSceneProfileFromLocalStorage();
 
   const resolveSectionTitle = (sectionId: string) => {
     const sectionFromPlan = planSections.find((section) => section.id === sectionId);
@@ -154,6 +165,22 @@ export function useLearningWorkspaceController({
       return bTime - aTime;
     });
     return sorted[0] ?? null;
+  };
+
+  const refreshSceneLibrary = async () => {
+    try {
+      const items = await listSceneLibrary();
+      setSceneLibraryItems(items);
+      setSelectedSceneLibraryId((current) => {
+        if (current && items.some((item) => item.sceneId === current)) {
+          return current;
+        }
+        return items[0]?.sceneId ?? "";
+      });
+    } catch {
+      setSceneLibraryItems([]);
+      setSelectedSceneLibraryId("");
+    }
   };
 
   const applyWorkspaceSnapshot = (
@@ -248,7 +275,7 @@ export function useLearningWorkspaceController({
     document: DocumentRecord;
     personaId: string;
   }): Promise<StudySessionRecord> => {
-    const sceneProfile = readSceneProfileFromLocalStorage();
+    const sceneProfile = resolveActiveSceneProfile();
     const nextSession = await createStudySession(
       {
         ...buildInitialStudySessionInput(input),
@@ -325,12 +352,14 @@ export function useLearningWorkspaceController({
         notice: "教材解析完成，正在生成学习计划。"
       });
       setPlanStreamStatus("running");
+      const sceneProfile = resolveActiveSceneProfile();
       const nextPlan = await createLearningPlanStream(
         {
           documentId: nextDocument.id,
           personaId: selectedPersona.id,
           objective: input.objective,
-          sceneProfileSummary: readSceneProfileFromLocalStorage()?.summary ?? ""
+          sceneProfileSummary: sceneProfile?.summary ?? "",
+          sceneProfile,
         },
         (event) => {
           setPlanStreamEvents((current) => [
@@ -405,7 +434,7 @@ export function useLearningWorkspaceController({
             document: activeDocument,
             personaId: activePlan.personaId
           }),
-          sceneProfile: readSceneProfileFromLocalStorage(),
+          sceneProfile: resolveActiveSceneProfile(),
           sectionTitle: resolveSectionTitle(
             planSections[0]?.id ??
               activeDocument.sections[0]?.id ??
@@ -459,19 +488,24 @@ export function useLearningWorkspaceController({
       workingSession = await fetchLatestSessionForPlan();
     }
 
+    const activeSceneProfile = resolveActiveSceneProfile();
     if (!workingSession) {
       workingSession = await createStudySession({
         documentId: activeDocument.id,
         personaId: activePlan.personaId,
-        sceneProfile: readSceneProfileFromLocalStorage(),
+        sceneProfile: activeSceneProfile ?? null,
         sectionId,
         sectionTitle: resolveSectionTitle(sectionId),
         themeHint: resolveThemeHintBySectionId(sectionId),
       });
-    } else if (workingSession.sectionId !== sectionId) {
+    } else if (
+      workingSession.sectionId !== sectionId ||
+      !isSameSceneProfile(workingSession.sceneProfile, activeSceneProfile)
+    ) {
       workingSession = await updateStudySessionSection({
         sessionId: workingSession.id,
         sectionId,
+        sceneProfile: activeSceneProfile ?? null,
       });
     }
 
@@ -531,7 +565,7 @@ export function useLearningWorkspaceController({
           const recoveredSession = await createStudySession({
             documentId: activeDocument.id,
             personaId: activePlan.personaId,
-            sceneProfile: readSceneProfileFromLocalStorage(),
+            sceneProfile: resolveActiveSceneProfile(),
             sectionId,
             sectionTitle: resolveSectionTitle(sectionId),
             themeHint: resolveThemeHintBySectionId(sectionId),
@@ -737,11 +771,28 @@ export function useLearningWorkspaceController({
   }, []);
 
   useEffect(() => {
+    void refreshSceneLibrary();
+  }, []);
+
+  useEffect(() => {
+    if (!activePlan?.sceneProfile || selectedSceneLibraryId) {
+      return;
+    }
+    const matched = sceneLibraryItems.find(
+      (item) => item.sceneName === activePlan.sceneProfile?.sceneName
+    );
+    if (matched) {
+      setSelectedSceneLibraryId(matched.sceneId);
+    }
+  }, [activePlan?.id, activePlan?.sceneProfile, sceneLibraryItems, selectedSceneLibraryId]);
+
+  useEffect(() => {
     const handleFocus = () => {
       void syncWorkspaceSnapshot({
         includePersonas: false,
         preferredPlanId: state.selectedPlanId
       });
+      void refreshSceneLibrary();
     };
     window.addEventListener("focus", handleFocus);
     return () => {
@@ -808,6 +859,10 @@ export function useLearningWorkspaceController({
     processStreamStatus,
     planStreamStatus,
     isSnapshotRefreshing: state.isSnapshotRefreshing,
+    sceneLibraryItems,
+    selectedSceneLibraryId,
+    setSelectedSceneLibraryId,
+    selectedSceneProfile,
     generatePlanWorkflow,
     selectPlan,
     createSessionForActivePlan,
@@ -834,6 +889,48 @@ function resolveStreamStatus(stage: string) {
     return "error";
   }
   return "running";
+}
+
+function isSameSceneProfile(
+  current: StudySessionRecord["sceneProfile"] | undefined,
+  next: StudySessionRecord["sceneProfile"] | undefined
+) {
+  const normalize = (profile: StudySessionRecord["sceneProfile"] | undefined) =>
+    JSON.stringify({
+      sceneId: profile?.sceneId ?? "",
+      title: profile?.title ?? "",
+      summary: profile?.summary ?? "",
+      tags: profile?.tags ?? [],
+      selectedPath: profile?.selectedPath ?? [],
+      focusObjectNames: profile?.focusObjectNames ?? [],
+    });
+  return normalize(current) === normalize(next);
+}
+
+function resolveSceneProfileFromLibrary(
+  items: SceneLibraryItemPayload[],
+  selectedSceneLibraryId: string
+): SceneProfile | undefined {
+  if (!selectedSceneLibraryId) {
+    return undefined;
+  }
+  const selectedItem = items.find((item) => item.sceneId === selectedSceneLibraryId);
+  if (!selectedItem) {
+    return undefined;
+  }
+  if (selectedItem.sceneProfile) {
+    return selectedItem.sceneProfile;
+  }
+  return {
+    sceneName: selectedItem.sceneName,
+    sceneId: selectedItem.selectedLayerId || selectedItem.sceneId,
+    title: selectedItem.sceneName || "未命名场景",
+    summary: selectedItem.sceneSummary || "",
+    tags: [],
+    selectedPath: [],
+    focusObjectNames: [],
+    sceneTree: [],
+  };
 }
 
 function buildPlanDirectorySections(

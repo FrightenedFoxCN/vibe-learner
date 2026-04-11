@@ -32,7 +32,12 @@ from app.models.api import (
     RuntimeSettingsResponse,
     RuntimeSettingsProbeRequest,
     RuntimeSettingsProbeResponse,
+    SceneLibraryListResponse,
+    SceneLibraryResponse,
+    SceneSetupResponse,
     UpdateModelToolConfigRequest,
+    UpdateSceneSetupRequest,
+    UpsertSceneLibraryRequest,
     UpdateRuntimeSettingsRequest,
     PersonaAssetsResponse,
     PersonaSlotAssistRequest,
@@ -219,6 +224,71 @@ def update_runtime_settings(payload: UpdateRuntimeSettingsRequest) -> RuntimeSet
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return get_runtime_settings()
+
+
+@router.get("/scene-setup", response_model=SceneSetupResponse)
+def get_scene_setup() -> SceneSetupResponse:
+    record = container.scene_setup_service.get_state()
+    return _into_response(SceneSetupResponse, record)
+
+
+@router.put("/scene-setup", response_model=SceneSetupResponse)
+def update_scene_setup(payload: UpdateSceneSetupRequest) -> SceneSetupResponse:
+    record = container.scene_setup_service.upsert_state(
+        scene_name=payload.scene_name,
+        scene_summary=payload.scene_summary,
+        scene_layers=payload.scene_layers,
+        selected_layer_id=payload.selected_layer_id,
+        collapsed_layer_ids=payload.collapsed_layer_ids,
+        scene_profile=payload.scene_profile,
+    )
+    return _into_response(SceneSetupResponse, record)
+
+
+@router.get("/scene-library", response_model=SceneLibraryListResponse)
+def list_scene_library() -> SceneLibraryListResponse:
+    items = container.scene_library_service.list_scenes()
+    return SceneLibraryListResponse(items=[_into_response(SceneLibraryResponse, item) for item in items])
+
+
+@router.get("/scene-library/{scene_id}", response_model=SceneLibraryResponse)
+def get_scene_library_item(scene_id: str) -> SceneLibraryResponse:
+    record = container.scene_library_service.require_scene(scene_id)
+    return _into_response(SceneLibraryResponse, record)
+
+
+@router.post("/scene-library", response_model=SceneLibraryResponse)
+def create_scene_library_item(payload: UpsertSceneLibraryRequest) -> SceneLibraryResponse:
+    record = container.scene_library_service.upsert_scene(
+        scene_id=None,
+        scene_name=payload.scene_name,
+        scene_summary=payload.scene_summary,
+        scene_layers=payload.scene_layers,
+        selected_layer_id=payload.selected_layer_id,
+        collapsed_layer_ids=payload.collapsed_layer_ids,
+        scene_profile=payload.scene_profile,
+    )
+    return _into_response(SceneLibraryResponse, record)
+
+
+@router.put("/scene-library/{scene_id}", response_model=SceneLibraryResponse)
+def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest) -> SceneLibraryResponse:
+    record = container.scene_library_service.upsert_scene(
+        scene_id=scene_id,
+        scene_name=payload.scene_name,
+        scene_summary=payload.scene_summary,
+        scene_layers=payload.scene_layers,
+        selected_layer_id=payload.selected_layer_id,
+        collapsed_layer_ids=payload.collapsed_layer_ids,
+        scene_profile=payload.scene_profile,
+    )
+    return _into_response(SceneLibraryResponse, record)
+
+
+@router.delete("/scene-library/{scene_id}")
+def delete_scene_library_item(scene_id: str) -> dict[str, str]:
+    container.scene_library_service.delete_scene(scene_id)
+    return {"deleted_scene_id": scene_id}
 
 
 @router.post("/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse)
@@ -698,9 +768,34 @@ def record_study_question_attempt(
 def update_study_session(
     session_id: str, payload: UpdateStudySessionRequest
 ) -> StudySessionResponse:
-    session = container.study_session_service.update_section(
+    if payload.section_id is None and "scene_profile" not in payload.model_fields_set:
+        raise HTTPException(status_code=400, detail="update_payload_empty")
+
+    current_session = container.study_session_service.require_session(session_id)
+    next_section_id = payload.section_id or current_session.section_id
+    has_scene_profile = "scene_profile" in payload.model_fields_set
+    next_scene_profile = payload.scene_profile if has_scene_profile else current_session.scene_profile
+
+    persona = container.persona_engine.require_persona(current_session.persona_id)
+    document = container.document_service.require_document(current_session.document_id)
+    next_section_title = _resolve_section_title(document=document, section_id=next_section_id)
+    session_system_prompt = build_study_session_system_prompt(
+        persona_name=persona.name,
+        persona_system_prompt=persona.system_prompt,
+        document_title=document.title,
+        section_id=next_section_id,
+        section_title=next_section_title,
+        theme_hint=current_session.theme_hint,
+        scene_profile=next_scene_profile,
+    )
+
+    session = container.study_session_service.update_session(
         session_id=session_id,
         section_id=payload.section_id,
+        scene_profile=payload.scene_profile,
+        has_scene_profile=has_scene_profile,
+        section_title=next_section_title,
+        session_system_prompt=session_system_prompt,
     )
     return _into_response(StudySessionResponse, session)
 
@@ -728,7 +823,7 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         section_id=payload.section_id,
         section_title=section_title,
         theme_hint=theme_hint,
-        scene_profile_summary=(payload.scene_profile.summary if payload.scene_profile else ""),
+        scene_profile=payload.scene_profile,
     )
     session = container.study_session_service.create_session(
         document_id=payload.document_id,

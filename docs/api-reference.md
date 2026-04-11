@@ -125,6 +125,105 @@ Response fields:
 
 ## Documents
 
+## Scene Setup and Scene Library
+
+### `GET /scene-setup`
+
+Loads the current draft scene setup state.
+
+Returns a `SceneSetupStateRecord` payload with snake_case fields:
+
+- `updated_at`
+- `scene_name`
+- `scene_summary`
+- `scene_layers[]`
+- `selected_layer_id`
+- `collapsed_layer_ids[]`
+- `scene_profile`
+
+### `PUT /scene-setup`
+
+Saves the current draft scene setup state.
+
+Request body:
+
+```json
+{
+  "scene_name": "高一物理-力学基础",
+  "scene_summary": "从世界整体出发...",
+  "scene_layers": [],
+  "selected_layer_id": "scene-classroom",
+  "collapsed_layer_ids": [],
+  "scene_profile": null
+}
+```
+
+Validation notes:
+
+- `scene_name` requires `min_length=1`
+- `scene_summary` requires `min_length=1`
+- `scene_layers[]` items must match `SceneLayerStateRecord`
+
+### `GET /scene-library`
+
+Lists saved scene snapshots.
+
+Returns:
+
+```json
+{
+  "items": [
+    {
+      "scene_id": "scene-abc123",
+      "created_at": "...",
+      "updated_at": "...",
+      "scene_name": "...",
+      "scene_summary": "...",
+      "scene_layers": [],
+      "selected_layer_id": "...",
+      "collapsed_layer_ids": [],
+      "scene_profile": null
+    }
+  ]
+}
+```
+
+### `GET /scene-library/{scene_id}`
+
+Returns one saved scene item.
+
+### `POST /scene-library`
+
+Creates a new saved scene item.
+
+Request body is the same shape as `PUT /scene-setup`.
+
+### `PUT /scene-library/{scene_id}`
+
+Updates an existing saved scene item.
+
+Request body is the same shape as `PUT /scene-setup`.
+
+### `DELETE /scene-library/{scene_id}`
+
+Deletes one saved scene item.
+
+Returns:
+
+```json
+{
+  "deleted_scene_id": "scene-abc123"
+}
+```
+
+### Scene 422 Checklist
+
+Common 422 causes in this surface:
+
+- `scene_name` or `scene_summary` sent as empty string
+- missing required layer fields in `scene_layers[]` (especially `scope_label`)
+- camelCase layer payload sent directly to backend without snake_case serialization
+
 ### `GET /documents`
 
 Lists uploaded documents.
@@ -441,15 +540,30 @@ Returns updated `StudySessionRecord`.
 
 ### `PATCH /study-sessions/{session_id}`
 
-Switches the active chapter (`section_id`) inside an existing study session.
+Updates an existing study session. Supports section switch and/or scene profile refresh.
 
 Request body:
 
 ```json
 {
-  "section_id": "unit-456"
+  "section_id": "unit-456",
+  "scene_profile": {
+    "scene_name": "高一物理-力学基础",
+    "scene_id": "scene-classroom",
+    "title": "教室层",
+    "summary": "...",
+    "tags": ["黑板", "实验台"],
+    "selected_path": ["世界整体", "校园", "教室"],
+    "focus_object_names": ["黑板", "实验台"],
+    "scene_tree": []
+  }
 }
 ```
+
+Validation notes:
+
+- `section_id` and `scene_profile` are both optional, but at least one must be provided.
+- Sending neither returns `400` with `detail=update_payload_empty`.
 
 Returns updated `StudySessionRecord`.
 

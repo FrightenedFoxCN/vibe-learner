@@ -6,8 +6,10 @@ import type {
   DocumentRecord,
   LearningPlan,
   PersonaProfile,
+  SceneProfile,
   StudySessionRecord
 } from "@vibe-learner/shared";
+import type { SceneLibraryItemPayload } from "../lib/api";
 
 interface DocumentSetupProps {
   personas: PersonaProfile[];
@@ -17,6 +19,10 @@ interface DocumentSetupProps {
   document: DocumentRecord | null;
   plan: LearningPlan | null;
   session: StudySessionRecord | null;
+  sceneLibraryItems: SceneLibraryItemPayload[];
+  selectedSceneLibraryId: string;
+  onSelectSceneLibraryId: (sceneId: string) => void;
+  sceneProfile?: SceneProfile | null;
 }
 
 export function DocumentSetup({
@@ -26,7 +32,11 @@ export function DocumentSetup({
   isBusy,
   document,
   plan,
-  session
+  session,
+  sceneLibraryItems,
+  selectedSceneLibraryId,
+  onSelectSceneLibraryId,
+  sceneProfile
 }: DocumentSetupProps) {
   const [file, setFile] = useState<File | null>(null);
   const [objective, setObjective] = useState("请基于教材结构生成首轮学习计划，先给出主线主题，再拆分为细分学习要点。");
@@ -57,6 +67,26 @@ export function DocumentSetup({
             onChange={(event) => setObjective(event.target.value)}
             style={styles.textarea}
           />
+        </label>
+        <label style={styles.field}>
+          <span style={styles.fieldLabel}>计划使用场景</span>
+          <select
+            value={selectedSceneLibraryId}
+            onChange={(event) => onSelectSceneLibraryId(event.target.value)}
+            style={styles.select}
+          >
+            <option value="">不使用场景库场景</option>
+            {sceneLibraryItems.map((item) => (
+              <option key={item.sceneId} value={item.sceneId}>
+                {item.sceneName}
+              </option>
+            ))}
+          </select>
+          <span style={styles.fieldHint}>
+            {sceneProfile
+              ? `当前将使用：${formatSceneSummary(sceneProfile)}`
+              : "未选择场景时会回退到本地场景草稿（若存在）。"}
+          </span>
         </label>
       </div>
 
@@ -96,6 +126,12 @@ export function DocumentSetup({
           <span style={styles.statusLabel}>会话</span>
           <span style={styles.statusValue}>
             {session ? formatSessionStatus(session.status) : "未创建"}
+          </span>
+        </div>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>场景</span>
+          <span style={styles.statusValue}>
+            {sceneProfile ? formatSceneSummary(sceneProfile) : "未配置"}
           </span>
         </div>
       </div>
@@ -178,6 +214,20 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--panel)",
     color: "var(--ink)",
     fontSize: 13,
+  },
+  select: {
+    width: "100%",
+    height: 36,
+    border: "1px solid var(--border)",
+    padding: "0 10px",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    fontSize: 13,
+  },
+  fieldHint: {
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.5,
   },
   button: {
     border: "none",
@@ -279,6 +329,11 @@ function formatDocumentStatus(status: string) {
 function formatSessionStatus(status: string) {
   if (status === "active") return "进行中";
   return status;
+}
+
+function formatSceneSummary(sceneProfile: SceneProfile) {
+  const path = sceneProfile.selectedPath.join(" / ");
+  return `${sceneProfile.title}${path ? ` · ${path}` : ""}`;
 }
 
 function formatUnitKind(unitKind: string) {
