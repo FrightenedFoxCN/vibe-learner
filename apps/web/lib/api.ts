@@ -2,6 +2,8 @@ import type {
   CreatePersonaInput,
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
+  ModelToolConfig,
+  ModelToolToggle,
   PlanGenerationTrace,
   DocumentDebugRecord,
   DocumentRecord,
@@ -344,6 +346,36 @@ function normalizePlanningTraceResponse(record: any): DocumentPlanningTraceRespo
   };
 }
 
+function normalizeModelToolConfig(record: any): ModelToolConfig {
+  return {
+    updatedAt: String(record.updated_at ?? ""),
+    stages: (record.stages ?? []).map((stage: any) => ({
+      name: String(stage.name ?? ""),
+      label: String(stage.label ?? stage.name ?? ""),
+      description: String(stage.description ?? ""),
+      stageEnabled: Boolean(stage.stage_enabled),
+      auditBasis: Array.isArray(stage.audit_basis)
+        ? stage.audit_basis.map((item: unknown) => String(item))
+        : [],
+      stageDisabledReason: String(stage.stage_disabled_reason ?? ""),
+      tools: (stage.tools ?? []).map((tool: any) => ({
+        name: String(tool.name ?? ""),
+        label: String(tool.label ?? tool.name ?? ""),
+        description: String(tool.description ?? ""),
+        category: String(tool.category ?? ""),
+        categoryLabel: String(tool.category_label ?? tool.category ?? ""),
+        enabled: Boolean(tool.enabled),
+        available: Boolean(tool.available),
+        effectiveEnabled: Boolean(tool.effective_enabled),
+        auditBasis: Array.isArray(tool.audit_basis)
+          ? tool.audit_basis.map((item: unknown) => String(item))
+          : [],
+        unavailableReason: String(tool.unavailable_reason ?? "")
+      }))
+    }))
+  };
+}
+
 function normalizeStreamReport(record: any): StreamReport {
   return {
     documentId: record.document_id,
@@ -605,6 +637,34 @@ export async function getDocumentPlanningTrace(
     await request(`${AI_BASE_URL}/documents/${documentId}/planning-trace`)
   );
   return normalizePlanningTraceResponse(payload);
+}
+
+export async function getModelToolConfig(): Promise<ModelToolConfig> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/model-tools/config`)
+  );
+  return normalizeModelToolConfig(payload);
+}
+
+export async function updateModelToolConfig(
+  toggles: ModelToolToggle[]
+): Promise<ModelToolConfig> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/model-tools/config`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        toggles: toggles.map((toggle) => ({
+          stage_name: toggle.stageName,
+          tool_name: toggle.toolName,
+          enabled: toggle.enabled
+        }))
+      })
+    })
+  );
+  return normalizeModelToolConfig(payload);
 }
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {

@@ -10,6 +10,7 @@ from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
 from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
+from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConfigService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
 
@@ -22,6 +23,7 @@ class Container:
         settings = Settings.from_env()
         self.store = LocalJsonStore(data_root)
         self.document_parser = DocumentParser()
+        self.model_tool_config_service = ModelToolConfigService(self.store)
         self.model_provider = self._build_model_provider(settings)
         self.performance_mapper = PerformanceMapper()
         self.persona_engine = PersonaEngine()
@@ -73,6 +75,12 @@ class Container:
                 plan_tools_enabled=settings.openai_plan_tools_enabled,
                 fallback_plan_model=settings.openai_plan_fallback_model,
                 fallback_disable_tools=settings.openai_plan_fallback_disable_tools,
+                plan_disabled_tools_provider=(
+                    lambda: self.model_tool_config_service.disabled_tools_for_stage(PLAN_STAGE)
+                ),
+                chat_disabled_tools_provider=(
+                    lambda: self.model_tool_config_service.disabled_tools_for_stage(CHAT_STAGE)
+                ),
             )
 
         logger.info("bootstrap.model_provider provider=mock")

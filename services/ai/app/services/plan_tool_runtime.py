@@ -48,12 +48,13 @@ class PlanToolExecution:
 
 
 class PlanToolRuntime:
-    def __init__(self, *, context: PlanToolRuntimeContext) -> None:
+    def __init__(self, *, context: PlanToolRuntimeContext, disabled_tools: set[str] | None = None) -> None:
         self.context = context
+        disabled = disabled_tools or set()
         self._definitions = {
             definition.name: definition
             for definition in _registered_plan_tools()
-            if definition.is_available(context)
+            if definition.is_available(context) and definition.name not in disabled
         }
 
     def has_tools(self) -> bool:
@@ -124,6 +125,7 @@ def build_plan_tool_runtime(
     debug_report: DocumentDebugRecord | None = None,
     document_path: str | None = None,
     multimodal_enabled: bool = False,
+    disabled_tools: set[str] | None = None,
 ) -> PlanToolRuntime:
     return PlanToolRuntime(
         context=PlanToolRuntimeContext(
@@ -132,7 +134,8 @@ def build_plan_tool_runtime(
             debug_report=debug_report,
             document_path=document_path,
             multimodal_enabled=multimodal_enabled,
-        )
+        ),
+        disabled_tools=disabled_tools,
     )
 
 

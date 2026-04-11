@@ -25,6 +25,8 @@ from app.models.api import (
     LearningPlanCreateRequest,
     LearningPlanListResponse,
     LearningPlanResponse,
+    ModelToolConfigResponse,
+    UpdateModelToolConfigRequest,
     PersonaAssetsResponse,
     PersonaSlotAssistRequest,
     PersonaSlotAssistResponse,
@@ -119,6 +121,81 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
 @router.get("/health")
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/model-tools/config", response_model=ModelToolConfigResponse)
+def get_model_tool_config() -> ModelToolConfigResponse:
+    described = container.model_tool_config_service.describe()
+    provider = container.model_provider
+
+    stage_enabled: dict[str, tuple[bool, str]] = {
+        "plan_generation": (
+            provider.plan_tools_runtime_enabled(),
+            "当前环境已关闭计划阶段工具总开关。" if not provider.plan_tools_runtime_enabled() else "",
+        ),
+        "study_chat": (
+            provider.chat_tools_runtime_enabled(),
+            "当前环境已关闭对话阶段工具总开关。" if not provider.chat_tools_runtime_enabled() else "",
+        ),
+    }
+
+    for stage in described["stages"]:
+        current_stage_name = str(stage.get("name") or "")
+        stage_flag, stage_reason = stage_enabled.get(current_stage_name, (False, "当前模型提供器不支持此阶段工具。"))
+        stage["stage_enabled"] = stage_flag
+        stage["stage_disabled_reason"] = stage_reason
+        stage["audit_basis"] = [
+            f"stage_registry={current_stage_name}",
+            f"stage_runtime_gate={'on' if stage_flag else 'off'}",
+        ]
+        tools = stage.get("tools") or []
+        for tool in tools:
+            tool_name = str(tool.get("name") or "")
+            available = True
+            unavailable_reason = ""
+            audit_basis = [
+                f"manual_toggle={'on' if bool(tool.get('enabled')) else 'off'}",
+                f"stage_gate={'on' if stage_flag else 'off'}",
+            ]
+            if not stage_flag:
+                available = False
+                unavailable_reason = stage_reason
+            elif tool_name == "read_page_range_images":
+                if current_stage_name == "plan_generation" and not provider.supports_page_image_tools():
+                    available = False
+                    unavailable_reason = "当前计划模型未启用多模态能力。"
+                    audit_basis.append("plan_multimodal=off")
+                else:
+                    audit_basis.append("plan_multimodal=on")
+                if current_stage_name == "study_chat" and not provider.supports_chat_page_image_tools():
+                    available = False
+                    unavailable_reason = "当前对话模型未启用多模态能力。"
+                    audit_basis.append("chat_multimodal=off")
+                elif current_stage_name == "study_chat":
+                    audit_basis.append("chat_multimodal=on")
+            elif tool_name == "retrieve_memory_context" and not provider.chat_memory_tool_runtime_enabled():
+                available = False
+                unavailable_reason = "当前环境已关闭记忆检索工具。"
+                audit_basis.append("chat_memory_gate=off")
+            elif tool_name == "retrieve_memory_context":
+                audit_basis.append("chat_memory_gate=on")
+            tool["available"] = available
+            tool["unavailable_reason"] = unavailable_reason
+            tool["effective_enabled"] = bool(tool.get("enabled")) and available
+            tool["audit_basis"] = audit_basis
+
+    return _into_response(ModelToolConfigResponse, described)
+
+
+@router.patch("/model-tools/config", response_model=ModelToolConfigResponse)
+def update_model_tool_config(payload: UpdateModelToolConfigRequest) -> ModelToolConfigResponse:
+    try:
+        container.model_tool_config_service.update(
+            [toggle.model_dump(mode="json") for toggle in payload.toggles]
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return get_model_tool_config()
 
 
 @router.get("/documents", response_model=DocumentListResponse)

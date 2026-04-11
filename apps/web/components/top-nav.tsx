@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties, JSX } from "react";
 
 interface TopNavProps {
-  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/debug";
+  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/sensory-tools" | "/debug";
 }
 
 /* ─── SVG icons (16×16, stroke, currentColor) ─── */
@@ -67,6 +67,15 @@ function IconDebug() {
   );
 }
 
+function IconSensory() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 8c1.6-2.8 3.8-4.2 6.5-4.2S12.9 5.2 14.5 8c-1.6 2.8-3.8 4.2-6.5 4.2S3.1 10.8 1.5 8Z" />
+      <circle cx="8" cy="8" r="2.1" />
+    </svg>
+  );
+}
+
 function IconChevronLeft() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -93,6 +102,7 @@ const NAV_ITEMS: Array<{
   { href: "/study",            label: "章节对话", Icon: IconStudy   },
   { href: "/persona-spectrum", label: "人格色谱", Icon: IconPersona },
   { href: "/scene-setup",      label: "场景搭建", Icon: IconScene   },
+  { href: "/sensory-tools",    label: "感官工具", Icon: IconSensory },
   { href: "/debug",            label: "调试后台", Icon: IconDebug   },
 ];
 

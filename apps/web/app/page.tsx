@@ -28,6 +28,12 @@ const PAGES = [
     title: "场景搭建",
     desc: "从世界到教室搭建层级场景，并为每一层补充可互动物体。",
   },
+  {
+    num: "05",
+    href: "/sensory-tools" as const,
+    title: "感官工具",
+    desc: "按阶段管理模型工具：分类查看、开启关闭，并对可用性做统一调节。",
+  },
 ];
 
 export default function HomePage() {

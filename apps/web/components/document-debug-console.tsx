@@ -4,6 +4,7 @@ import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import type {
   DocumentDebugRecord,
+  ModelToolConfig,
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
   DocumentRecord,
@@ -16,6 +17,7 @@ import {
   getDocumentPlanningContext,
   getDocumentPlanningTrace,
   getDocumentProcessEvents,
+  getModelToolConfig,
   listDocuments
 } from "../lib/api";
 import { useLearningWorkspace } from "./learning-workspace-provider";
@@ -35,6 +37,7 @@ export function DocumentDebugConsole() {
   const [debugRecord, setDebugRecord] = useState<DocumentDebugRecord | null>(null);
   const [planningContext, setPlanningContext] = useState<DocumentPlanningContext | null>(null);
   const [planningTrace, setPlanningTrace] = useState<DocumentPlanningTraceResponse | null>(null);
+  const [modelToolConfig, setModelToolConfig] = useState<ModelToolConfig | null>(null);
   const [message, setMessage] = useState("正在加载解析结果...");
   const [processStreamEvents, setProcessStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
   const [planStreamEvents, setPlanStreamEvents] = useState<Array<{ stage: string; payload: Record<string, unknown> }>>([]);
@@ -145,6 +148,8 @@ export function DocumentDebugConsole() {
 
   const loadDebugReport = async (documentId: string) => {
     const doc = documents.find((item) => item.id === documentId);
+    const toolConfig = await getModelToolConfig();
+    setModelToolConfig(toolConfig);
     const streamState = await loadStreamReports(documentId);
     if (!doc?.debugReady) {
       setDebugRecord(null);
@@ -163,14 +168,17 @@ export function DocumentDebugConsole() {
     setDebugRecord(report);
     setPlanningContext(planning);
     setPlanningTrace(trace);
+    setModelToolConfig(toolConfig);
     setMessage("已切换到新的解析调试报告。");
   };
 
   const refreshDocuments = async (preferredId?: string, active = true, silent = false) => {
     const docs = await listDocuments();
+    const toolConfig = await getModelToolConfig();
     if (!active) {
       return;
     }
+    setModelToolConfig(toolConfig);
     setDocuments(docs);
     const nextId = preferredId ?? selectedId ?? docs.find((item) => item.debugReady)?.id ?? docs[0]?.id ?? "";
     if (!nextId) {
@@ -486,6 +494,45 @@ export function DocumentDebugConsole() {
               </div>
             ) : (
               <p style={styles.empty}>暂无计划工具上下文。</p>
+            )}
+          </article>
+
+          <article style={styles.card}>
+            <h2 style={styles.sectionTitle}>工具生效快照</h2>
+            {modelToolConfig ? (
+              <div style={styles.list}>
+                <div style={styles.toolCard}>
+                  <strong>updated at</strong>
+                  <span>{modelToolConfig.updatedAt || "unknown"}</span>
+                </div>
+                {modelToolConfig.stages.map((stage) => (
+                  <div key={stage.name} style={styles.listItem}>
+                    <div style={styles.sectionMetaRow}>
+                      <strong>{stage.label}</strong>
+                      <span style={stage.stageEnabled ? styles.sectionLevelBadgeFine : styles.sectionLevelBadge}>
+                        {stage.stageEnabled ? "stage_on" : "stage_off"}
+                      </span>
+                    </div>
+                    <span>audit: {stage.auditBasis.join(" | ") || "-"}</span>
+                    {stage.stageDisabledReason ? <span>reason: {stage.stageDisabledReason}</span> : null}
+                    <div style={styles.toolRow}>
+                      {stage.tools.map((tool) => (
+                        <div key={`${stage.name}:${tool.name}`} style={styles.toolCard}>
+                          <strong>{tool.name}</strong>
+                          <span>{tool.label}</span>
+                          <span>
+                            category: {tool.categoryLabel} · manual: {tool.enabled ? "on" : "off"} · available: {tool.available ? "yes" : "no"} · effective: {tool.effectiveEnabled ? "yes" : "no"}
+                          </span>
+                          <span>audit: {tool.auditBasis.join(" | ") || "-"}</span>
+                          {tool.unavailableReason ? <span>reason: {tool.unavailableReason}</span> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={styles.empty}>暂无工具生效快照。</p>
             )}
           </article>
 

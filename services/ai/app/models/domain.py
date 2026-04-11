@@ -270,6 +270,12 @@ class PlanGenerationTraceRecord(BaseModel):
     rounds: list[PlanGenerationRoundRecord] = []
 
 
+class ModelToolConfigRecord(BaseModel):
+    config_id: str = "default"
+    updated_at: str
+    stage_tool_enabled: dict[str, dict[str, bool]] = Field(default_factory=dict)
+
+
 class StreamEventRecord(BaseModel):
     stage: str
     payload: dict[str, Any] = Field(default_factory=dict)

@@ -156,6 +156,44 @@ class DocumentPlanningContextResponse(BaseModel):
     available_tools: list[PlanningToolSpecResponse]
 
 
+class ModelToolToggleRequest(BaseModel):
+    stage_name: str
+    tool_name: str
+    enabled: bool
+
+
+class UpdateModelToolConfigRequest(BaseModel):
+    toggles: list[ModelToolToggleRequest]
+
+
+class ModelToolConfigItemResponse(BaseModel):
+    name: str
+    label: str
+    description: str
+    category: str
+    category_label: str
+    enabled: bool
+    available: bool
+    effective_enabled: bool
+    audit_basis: list[str]
+    unavailable_reason: str = ""
+
+
+class ModelToolStageResponse(BaseModel):
+    name: str
+    label: str
+    description: str
+    stage_enabled: bool
+    audit_basis: list[str]
+    stage_disabled_reason: str = ""
+    tools: list[ModelToolConfigItemResponse]
+
+
+class ModelToolConfigResponse(BaseModel):
+    updated_at: str
+    stages: list[ModelToolStageResponse]
+
+
 class PlanToolCallTraceResponse(PlanToolCallTraceRecord):
     pass
 

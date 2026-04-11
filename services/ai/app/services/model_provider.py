@@ -107,6 +107,18 @@ class ModelProvider:
     def supports_page_image_tools(self) -> bool:
         return False
 
+    def supports_chat_page_image_tools(self) -> bool:
+        return False
+
+    def plan_tools_runtime_enabled(self) -> bool:
+        return False
+
+    def chat_tools_runtime_enabled(self) -> bool:
+        return False
+
+    def chat_memory_tool_runtime_enabled(self) -> bool:
+        return False
+
     def assist_persona_setting(
         self,
         *,
@@ -359,6 +371,8 @@ class OpenAIModelProvider(MockModelProvider):
         plan_tools_enabled: bool = True,
         fallback_plan_model: str = "",
         fallback_disable_tools: bool = True,
+        plan_disabled_tools_provider: Callable[[], set[str]] | None = None,
+        chat_disabled_tools_provider: Callable[[], set[str]] | None = None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
@@ -380,9 +394,23 @@ class OpenAIModelProvider(MockModelProvider):
         self.plan_tools_enabled = plan_tools_enabled
         self.fallback_plan_model = fallback_plan_model.strip()
         self.fallback_disable_tools = fallback_disable_tools
+        self.plan_disabled_tools_provider = plan_disabled_tools_provider
+        self.chat_disabled_tools_provider = chat_disabled_tools_provider
 
     def supports_page_image_tools(self) -> bool:
         return self.multimodal_enabled
+
+    def supports_chat_page_image_tools(self) -> bool:
+        return self.chat_multimodal_enabled
+
+    def plan_tools_runtime_enabled(self) -> bool:
+        return self.plan_tools_enabled
+
+    def chat_tools_runtime_enabled(self) -> bool:
+        return self.chat_tools_enabled
+
+    def chat_memory_tool_runtime_enabled(self) -> bool:
+        return self.chat_memory_tool_enabled
 
     def generate_chat(
         self,
@@ -460,6 +488,7 @@ class OpenAIModelProvider(MockModelProvider):
                 multimodal_enabled=self.chat_multimodal_enabled,
                 debug_report=debug_report,
                 document_path=document_path,
+                disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
             )
             if tool_specs:
                 payload["tools"] = tool_specs
@@ -492,6 +521,7 @@ class OpenAIModelProvider(MockModelProvider):
                         memory_hits=memory_trace_hits or [],
                         debug_report=debug_report,
                         document_path=document_path,
+                        disabled_tools=(self.chat_disabled_tools_provider() if self.chat_disabled_tools_provider else set()),
                     )
                     last_tool_results.append(execution["result"])
                     current_messages.append(
@@ -818,6 +848,7 @@ class OpenAIModelProvider(MockModelProvider):
             debug_report=debug_report,
             document_path=document_path,
             multimodal_enabled=self.multimodal_enabled,
+            disabled_tools=(self.plan_disabled_tools_provider() if self.plan_disabled_tools_provider else set()),
         )
 
     def _run_plan_model(
@@ -970,9 +1001,12 @@ def _chat_tools(
     multimodal_enabled: bool,
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
+    disabled_tools: set[str] | None = None,
 ) -> list[dict[str, object]]:
     if not tools_enabled:
         return []
+
+    disabled = disabled_tools or set()
 
     tools: list[dict[str, object]] = [
         {
@@ -1118,7 +1152,11 @@ def _chat_tools(
             }
         )
 
-    return tools
+    return [
+        tool
+        for tool in tools
+        if str((tool.get("function") or {}).get("name") or "") not in disabled
+    ]
 
 
 def _execute_chat_tool_call(
@@ -1130,6 +1168,7 @@ def _execute_chat_tool_call(
     memory_hits: list[dict[str, Any]],
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
+    disabled_tools: set[str] | None = None,
 ) -> dict[str, Any]:
     function_payload = tool_call.get("function") or {}
     tool_name = str(function_payload.get("name") or "")
@@ -1139,6 +1178,19 @@ def _execute_chat_tool_call(
         arguments = json.loads(raw_arguments)
     except json.JSONDecodeError:
         arguments = {}
+
+    if tool_name in (disabled_tools or set()):
+        result = {
+            "ok": False,
+            "error": "tool_disabled",
+            "tool_name": tool_name,
+        }
+        return {
+            "tool_call_id": tool_call_id,
+            "tool_name": tool_name,
+            "arguments_json": raw_arguments,
+            "result": result,
+        }
 
     if tool_name == "ask_multiple_choice_question":
         result = _build_multiple_choice_question(

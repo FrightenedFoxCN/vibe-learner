@@ -125,6 +125,40 @@ export interface DocumentPlanningContext {
   availableTools: PlanningToolSpec[];
 }
 
+export interface ModelToolConfigItem {
+  name: string;
+  label: string;
+  description: string;
+  category: string;
+  categoryLabel: string;
+  enabled: boolean;
+  available: boolean;
+  effectiveEnabled: boolean;
+  auditBasis: string[];
+  unavailableReason: string;
+}
+
+export interface ModelToolStageConfig {
+  name: string;
+  label: string;
+  description: string;
+  stageEnabled: boolean;
+  auditBasis: string[];
+  stageDisabledReason: string;
+  tools: ModelToolConfigItem[];
+}
+
+export interface ModelToolConfig {
+  updatedAt: string;
+  stages: ModelToolStageConfig[];
+}
+
+export interface ModelToolToggle {
+  stageName: string;
+  toolName: string;
+  enabled: boolean;
+}
+
 export interface PlanToolCallTrace {
   toolCallId: string;
   toolName: string;
