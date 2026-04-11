@@ -19,7 +19,6 @@ function PlaceholderRenderer({
 }: CharacterRendererProps) {
   return (
     <div style={styles.figure}>
-      <div style={styles.halo} />
       <div style={styles.avatar}>
         <span>{persona.name.slice(0, 1)}</span>
       </div>
@@ -40,45 +39,35 @@ export const placeholderCharacterRenderer: CharacterRendererAdapter = {
 
 const styles: Record<string, CSSProperties> = {
   figure: {
-    position: "relative",
-    marginTop: 18,
-    minHeight: 240,
-    display: "grid",
-    placeItems: "center",
-    overflow: "hidden",
-    borderRadius: 4,
-    background: "radial-gradient(circle at top, rgba(13,110,114,0.18), transparent 40%), var(--panel)"
-  },
-  halo: {
-    position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(255,219,192,0.9), rgba(255,219,192,0))"
+    minHeight: 200,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+    padding: "24px 16px",
   },
   avatar: {
-    position: "relative",
-    width: 148,
-    height: 148,
-    borderRadius: "50%",
+    width: 80,
+    height: 80,
+    background: "var(--accent)",
     display: "grid",
     placeItems: "center",
-    fontSize: 50,
-    fontFamily: "var(--font-display), sans-serif",
+    fontSize: 32,
     color: "white",
-    background: "linear-gradient(160deg, var(--accent), #38a2a7)"
+    fontWeight: 700,
   },
   badges: {
-    position: "absolute",
-    bottom: 20,
     display: "flex",
-    gap: 10
+    gap: 8,
   },
   badge: {
-    padding: "6px 10px",
-    borderRadius: 3,
-    background: "rgba(16,35,40,0.82)",
+    padding: "4px 10px",
+    background: "var(--ink)",
     color: "white",
-    fontSize: 12
-  }
+    fontSize: 12,
+    fontWeight: 500,
+  },
 };

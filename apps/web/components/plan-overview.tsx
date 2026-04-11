@@ -39,7 +39,6 @@ export function PlanOverview({
 
   return (
     <div style={styles.wrap}>
-      {/* 计划选择行 */}
       <div style={styles.selectorRow}>
         <select
           value={selectedPlanId}
@@ -67,7 +66,6 @@ export function PlanOverview({
         </button>
       </div>
 
-      {/* 标题行 */}
       <div style={styles.titleRow}>
         <h2 style={styles.title}>{activeCourseTitle}</h2>
         {plan ? <span style={styles.badge}>{planPositionLabel}</span> : null}
@@ -75,10 +73,8 @@ export function PlanOverview({
 
       {plan ? (
         <>
-          {/* 摘要 */}
           <p style={styles.overview}>{plan.overview}</p>
 
-          {/* 元信息：内联 dl */}
           <dl style={styles.meta}>
             <div style={styles.metaItem}>
               <dt style={styles.metaKey}>学习目标</dt>
@@ -98,14 +94,16 @@ export function PlanOverview({
             </div>
           </dl>
 
-          {/* 会话操作 */}
           <div style={styles.actionRow}>
             {hasSession ? (
               <span style={styles.sessionConnected}>章节会话已连接</span>
             ) : (
               <button
                 type="button"
-                style={styles.primaryButton}
+                style={{
+                  ...styles.primaryButton,
+                  ...(isBusy ? styles.buttonDisabled : {})
+                }}
                 onClick={onCreateSession}
                 disabled={isBusy}
               >
@@ -116,7 +114,6 @@ export function PlanOverview({
         </>
       ) : null}
 
-      {/* 主线主题 */}
       {plan?.weeklyFocus.length ? (
         <div style={styles.section}>
           <div style={styles.sectionHead}>
@@ -134,7 +131,6 @@ export function PlanOverview({
         </div>
       ) : null}
 
-      {/* 今日任务 */}
       <div style={styles.section}>
         <div style={styles.sectionHead}>
           <span style={styles.sectionLabel}>今日任务</span>
@@ -152,7 +148,6 @@ export function PlanOverview({
           ))}
         </ol>
       </div>
-
     </div>
   );
 }
@@ -160,130 +155,140 @@ export function PlanOverview({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
-    gap: 0
+    gap: 0,
+    paddingLeft: 40,
   },
   selectorRow: {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    paddingBottom: 14
+    paddingBottom: 14,
   },
   select: {
     flex: 1,
     height: 34,
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "0 8px",
-    background: "transparent",
+    background: "var(--panel)",
     color: "var(--ink)",
     fontSize: 13,
-    minWidth: 0
+    minWidth: 0,
   },
   ghostButton: {
     height: 34,
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "0 12px",
     background: "transparent",
     color: "var(--muted)",
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
   },
   titleRow: {
     display: "flex",
     alignItems: "baseline",
     justifyContent: "space-between",
     gap: 12,
-    paddingBottom: 6
+    paddingBottom: 8,
   },
   title: {
     margin: 0,
-    fontSize: "clamp(1.1rem, 1.6vw, 1.4rem)",
+    fontSize: "clamp(1.1rem, 1.6vw, 1.35rem)",
     lineHeight: 1.3,
-    fontFamily: "var(--font-display), sans-serif"
+    fontWeight: 700,
+    color: "var(--ink)",
   },
   badge: {
     fontSize: 12,
     color: "var(--muted)",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
   },
   overview: {
     margin: "0 0 16px",
     color: "var(--muted)",
     fontSize: 13,
-    lineHeight: 1.7
+    lineHeight: 1.7,
   },
   meta: {
     margin: 0,
     padding: "0 0 14px",
     display: "flex",
     flexWrap: "wrap",
-    gap: "6px 20px"
+    gap: "6px 20px",
   },
   metaItem: {
     display: "flex",
-    gap: 5,
-    alignItems: "baseline"
+    gap: 6,
+    alignItems: "baseline",
   },
   metaKey: {
     fontSize: 11,
+    fontWeight: 600,
     color: "var(--muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    flexShrink: 0
+    letterSpacing: "0.07em",
+    flexShrink: 0,
   },
   metaVal: {
     margin: 0,
     fontSize: 13,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   actionRow: {
-    paddingBottom: 16
+    paddingBottom: 16,
   },
   primaryButton: {
     border: "none",
-    borderRadius: 3,
     height: 34,
     padding: "0 16px",
     background: "var(--accent)",
     color: "white",
     fontWeight: 600,
     cursor: "pointer",
-    fontSize: 13
+    fontSize: 13,
+  },
+  buttonDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed",
   },
   sessionConnected: {
     fontSize: 13,
-    color: "var(--teal)"
+    color: "var(--positive)",
+    fontWeight: 500,
   },
   section: {
     paddingTop: 16,
     paddingBottom: 4,
     borderTop: "1px solid var(--border)",
     display: "grid",
-    gap: 10
+    gap: 10,
   },
   sectionHead: {
     display: "flex",
     alignItems: "center",
-    gap: 8
+    gap: 8,
   },
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
-    color: "var(--ink)",
-    letterSpacing: "0.02em"
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
   },
   count: {
-    fontSize: 12,
-    color: "var(--muted)"
+    fontSize: 11,
+    color: "var(--muted)",
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+    padding: "1px 6px",
+    fontWeight: 600,
   },
   list: {
     listStyle: "none",
     margin: 0,
     padding: 0,
     display: "grid",
-    gap: 6
+    gap: 6,
   },
   listItem: {
     display: "flex",
@@ -291,48 +296,16 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "baseline",
     fontSize: 13,
     lineHeight: 1.6,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   idx: {
     fontSize: 11,
-    color: "var(--muted)",
+    fontWeight: 700,
+    color: "var(--accent)",
     minWidth: 16,
-    flexShrink: 0
+    flexShrink: 0,
   },
-  scheduleItem: {
-    display: "grid",
-    gap: 3
-  },
-  scheduleTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10
-  },
-  scheduleTitle: {
-    fontSize: 13,
-    lineHeight: 1.4,
-    fontWeight: 600
-  },
-  chip: {
-    fontSize: 11,
-    color: "var(--muted)",
-    whiteSpace: "nowrap"
-  },
-  scheduleFocus: {
-    margin: 0,
-    color: "var(--muted)",
-    fontSize: 12,
-    lineHeight: 1.6
-  }
 };
-
-function formatActivityType(activityType: string) {
-  if (activityType === "learn") return "学习";
-  if (activityType === "review") return "复习";
-  if (activityType === "practice") return "练习";
-  return activityType;
-}
 
 function formatDate(value: string) {
   if (!value) return "未知时间";

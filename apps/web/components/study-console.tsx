@@ -51,6 +51,7 @@ export function StudyConsole({
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
   const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>({});
   const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>({});
+
   const sortedTurns = [...turns].sort((a, b) => {
     const aTime = Date.parse(a.createdAt || "") || 0;
     const bTime = Date.parse(b.createdAt || "") || 0;
@@ -59,9 +60,10 @@ export function StudyConsole({
 
   return (
     <div style={styles.wrap}>
-      <div style={styles.row}>
-        <label style={styles.selectLabel}>
-          <span style={styles.selectCaption}>主线主题</span>
+      {/* Theme selector */}
+      <div style={styles.themeRow}>
+        <label style={styles.themeLabel}>
+          <span style={styles.caption}>主线主题</span>
           <select
             style={styles.select}
             value={selectedTheme}
@@ -71,9 +73,7 @@ export function StudyConsole({
           >
             {weeklyFocus.length ? (
               weeklyFocus.map((theme) => (
-                <option key={theme} value={theme}>
-                  {theme}
-                </option>
+                <option key={theme} value={theme}>{theme}</option>
               ))
             ) : (
               <option value="">暂无主线主题</option>
@@ -83,131 +83,124 @@ export function StudyConsole({
         <button
           type="button"
           style={{
-            ...styles.themeJumpButton,
-            ...(isPending || disabled || !onJumpToThemeStart ? styles.buttonDisabled : {})
+            ...styles.ghostBtn,
+            ...(isPending || disabled || !onJumpToThemeStart ? styles.btnDisabled : {})
           }}
           disabled={isPending || disabled || !onJumpToThemeStart}
-          onClick={() => {
-            if (onJumpToThemeStart) {
-              onJumpToThemeStart();
-            }
-          }}
+          onClick={() => { if (onJumpToThemeStart) onJumpToThemeStart(); }}
         >
-          跳转主题首页
+          跳转首页
         </button>
       </div>
 
-      <div style={styles.inputRow}>
+      {/* Input */}
+      <div style={styles.inputArea}>
         <textarea
           style={styles.textarea}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
-          placeholder="继续输入问题，或直接追问上一轮内容…"
+          placeholder="继续输入问题，或追问上一轮内容…"
         />
         <button
           style={{
-            ...styles.button,
-            ...(isPending || disabled ? styles.buttonDisabled : {})
+            ...styles.sendBtn,
+            ...(isPending || disabled ? styles.btnDisabled : {})
           }}
           disabled={isPending || disabled}
           onClick={() => onAsk(message)}
         >
-          {isPending ? "发送中…" : "发送消息"}
+          {isPending ? "发送中…" : "发送"}
         </button>
       </div>
 
+      {/* Error */}
       {chatErrorMessage ? (
         <div style={styles.errorBox}>
-          <div style={styles.errorTitle}>对话请求失败</div>
-          <div style={styles.errorText}>{chatErrorMessage}</div>
+          <span style={styles.errorTitle}>对话请求失败</span>
+          <span style={styles.errorText}>{chatErrorMessage}</span>
           <button
             type="button"
             style={{
-              ...styles.retryButton,
-              ...(isPending || disabled || !onRetryLastAsk ? styles.buttonDisabled : {})
+              ...styles.retryBtn,
+              ...(isPending || disabled || !onRetryLastAsk ? styles.btnDisabled : {})
             }}
             disabled={isPending || disabled || !onRetryLastAsk}
-            onClick={() => {
-              if (onRetryLastAsk) {
-                void onRetryLastAsk();
-              }
-            }}
+            onClick={() => { if (onRetryLastAsk) void onRetryLastAsk(); }}
           >
-            {isPending ? "重试中…" : "重试发送"}
+            {isPending ? "重试中…" : "重试"}
           </button>
         </div>
       ) : null}
 
+      {/* Conversation turns */}
       {turns.length ? (
         <div style={styles.transcript}>
-          <div style={styles.transcriptLabel}>对话记录</div>
+          <span style={styles.caption}>对话记录</span>
           <div style={styles.turnList}>
             {sortedTurns.map((turn, index) => (
               <div
                 key={buildTurnKey(turn.createdAt, index)}
-                style={{
-                  ...styles.turnCard,
-                  ...(isAttemptTurn(turn.learnerMessage) ? styles.turnCardAttempt : {})
-                }}
+                style={styles.turnCard}
               >
-                <div style={styles.turnMetaRow}>
-                  <span style={styles.turnRole}>{isAttemptTurn(turn.learnerMessage) ? "答题记录" : "你"}</span>
-                  <span style={styles.turnTime}>{formatTurnTime(turn.createdAt)}</span>
-                </div>
-                {isAttemptTurn(turn.learnerMessage) ? (
-                  <span style={styles.attemptBadge}>已写回会话</span>
-                ) : null}
-                <p style={styles.turnText}>{formatLearnerMessage(turn.learnerMessage)}</p>
-                <div style={{ ...styles.turnMetaRow, marginTop: 10 }}>
-                  <span style={{ ...styles.turnRole, color: "var(--accent)" }}>AI</span>
-                </div>
-                <p style={styles.turnText}>{turn.assistantReply}</p>
-                {turn.interactiveQuestion ? (
-                  <div style={styles.questionWrap}>
-                    {renderInteractiveQuestion({
-                      question: turn.interactiveQuestion,
-                      turnKey: buildTurnKey(turn.createdAt, index),
-                      selectedChoices,
-                      blankAnswers,
-                      questionFeedback,
-                      setSelectedChoices,
-                      setBlankAnswers,
-                      setQuestionFeedback,
-                      expandedExplanation,
-                      setExpandedExplanation,
-                      onAsk,
-                      onSubmitQuestionAttempt,
-                      disabled: Boolean(disabled || isPending)
-                    })}
+                {/* User message */}
+                <div style={styles.userSection}>
+                  <div style={styles.turnMeta}>
+                    <span style={styles.roleLabel}>
+                      {isAttemptTurn(turn.learnerMessage) ? "答题记录" : "你"}
+                    </span>
+                    <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
                   </div>
-                ) : null}
-                {turn.citations.length ? (
-                  <div style={styles.citations}>
-                    {turn.citations.map((citation, citationIndex) => (
-                      <button
-                        key={`${turn.createdAt}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
-                        type="button"
-                        style={styles.citation}
-                        onClick={() => {
-                          if (onOpenPage) {
-                            onOpenPage(citation.pageStart);
-                          }
-                        }}
-                        title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
-                        disabled={!onOpenPage}
-                      >
-                        {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
+                  <p style={styles.userMessage}>{formatLearnerMessage(turn.learnerMessage)}</p>
+                </div>
+
+                {/* AI reply */}
+                <div style={styles.aiSection}>
+                  <span style={styles.aiLabel}>AI</span>
+                  <p style={styles.aiMessage}>{turn.assistantReply}</p>
+                  {turn.interactiveQuestion ? (
+                    <div style={styles.questionWrap}>
+                      {renderInteractiveQuestion({
+                        question: turn.interactiveQuestion,
+                        turnKey: buildTurnKey(turn.createdAt, index),
+                        selectedChoices,
+                        blankAnswers,
+                        questionFeedback,
+                        setSelectedChoices,
+                        setBlankAnswers,
+                        setQuestionFeedback,
+                        expandedExplanation,
+                        setExpandedExplanation,
+                        onAsk,
+                        onSubmitQuestionAttempt,
+                        disabled: Boolean(disabled || isPending)
+                      })}
+                    </div>
+                  ) : null}
+                  {turn.citations.length ? (
+                    <div style={styles.citations}>
+                      {turn.citations.map((citation, citationIndex) => (
+                        <button
+                          key={`${turn.createdAt}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
+                          type="button"
+                          style={styles.citation}
+                          onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
+                          title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
+                          disabled={!onOpenPage}
+                        >
+                          {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ))}
           </div>
         </div>
       ) : session?.reply ? (
-        <div style={styles.reply}>
-          <p style={styles.replyText}>{session.reply}</p>
+        <div style={styles.aiSection}>
+          <span style={styles.aiLabel}>AI</span>
+          <p style={styles.aiMessage}>{session.reply}</p>
           {session.citations.length ? (
             <div style={styles.citations}>
               {session.citations.map((citation, index) => (
@@ -215,11 +208,7 @@ export function StudyConsole({
                   key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
                   type="button"
                   style={styles.citation}
-                  onClick={() => {
-                    if (onOpenPage) {
-                      onOpenPage(citation.pageStart);
-                    }
-                  }}
+                  onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
                   title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
                   disabled={!onOpenPage}
                 >
@@ -237,75 +226,98 @@ export function StudyConsole({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
-    gap: 14
+    gap: 14,
   },
-  row: {
+  themeRow: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-end",
     gap: 8,
-    flexWrap: "nowrap"
   },
-  selectLabel: {
+  themeLabel: {
     display: "grid",
     gap: 4,
-    width: "100%",
-    minWidth: 0
+    flex: 1,
+    minWidth: 0,
   },
-  selectCaption: {
+  caption: {
     fontSize: 11,
-    letterSpacing: "0.06em",
+    fontWeight: 600,
+    letterSpacing: "0.07em",
     textTransform: "uppercase",
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   select: {
     width: "100%",
-    height: 32,
+    height: 34,
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "0 8px",
     background: "var(--panel)",
     color: "var(--ink)",
     fontSize: 13,
-    maxWidth: "100%",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
   },
-  themeJumpButton: {
+  ghostBtn: {
     border: "1px solid var(--border)",
-    borderRadius: 3,
-    height: 32,
-    padding: "0 10px",
+    height: 34,
+    padding: "0 12px",
     background: "transparent",
-    color: "var(--ink)",
+    color: "var(--ink-2)",
     fontSize: 12,
-    fontWeight: 600,
+    fontWeight: 500,
     whiteSpace: "nowrap",
     flexShrink: 0,
-    alignSelf: "flex-end",
-    cursor: "pointer"
+    cursor: "pointer",
+  },
+  inputArea: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 8,
+    alignItems: "end",
+  },
+  textarea: {
+    minHeight: 76,
+    border: "1px solid var(--border)",
+    padding: "8px 10px",
+    background: "var(--panel)",
+    resize: "vertical",
+    fontSize: 14,
+    lineHeight: 1.6,
+    color: "var(--ink)",
+  },
+  sendBtn: {
+    border: "none",
+    height: 76,
+    padding: "0 20px",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 13,
+    whiteSpace: "nowrap",
+    alignSelf: "stretch",
+  },
+  btnDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed",
   },
   errorBox: {
     display: "grid",
     gap: 8,
     border: "1px solid #f0c2c2",
     background: "#fff7f7",
-    borderRadius: 3,
-    padding: "10px 12px"
+    padding: "10px 12px",
   },
   errorTitle: {
     fontSize: 12,
     fontWeight: 700,
-    color: "#9f1d1d"
+    color: "#9f1d1d",
   },
   errorText: {
     fontSize: 12,
     color: "#7f1d1d",
-    wordBreak: "break-word"
+    wordBreak: "break-word",
   },
-  retryButton: {
+  retryBtn: {
     border: "1px solid #f0c2c2",
-    borderRadius: 3,
     background: "white",
     color: "#7f1d1d",
     height: 30,
@@ -313,209 +325,174 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
     cursor: "pointer",
-    width: "fit-content"
-  },
-  inputRow: {
-    display: "flex",
-    gap: 10,
-    alignItems: "flex-start"
-  },
-  textarea: {
-    flex: 1,
-    minHeight: 72,
-    border: "1px solid var(--border)",
-    borderRadius: 3,
-    padding: "8px 10px",
-    background: "var(--panel)",
-    resize: "vertical",
-    fontSize: 14,
-    lineHeight: 1.6,
-    color: "var(--ink)"
-  },
-  button: {
-    border: "none",
-    borderRadius: 3,
-    height: 34,
-    padding: "0 18px",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 600,
-    cursor: "pointer",
-    fontSize: 13,
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-    alignSelf: "flex-end"
-  },
-  buttonDisabled: {
-    opacity: 0.45,
-    cursor: "not-allowed"
-  },
-  reply: {
-    display: "grid",
-    gap: 10
+    width: "fit-content",
   },
   transcript: {
     display: "grid",
-    gap: 10
-  },
-  transcriptLabel: {
-    fontSize: 11,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    color: "var(--muted)"
+    gap: 10,
   },
   turnList: {
     display: "grid",
-    gap: 0
+    gap: 0,
   },
   turnCard: {
     display: "grid",
+    gap: 0,
+    borderBottom: "1px solid var(--border)",
+    paddingBottom: 16,
+    marginBottom: 16,
+  },
+  userSection: {
+    display: "grid",
+    gap: 6,
+    marginBottom: 12,
+  },
+  aiSection: {
+    display: "grid",
     gap: 8,
-    padding: "14px 0",
-    borderBottom: "1px solid var(--border)"
   },
-  turnCardAttempt: {
-    paddingLeft: 12,
-    borderLeft: "3px solid var(--teal)"
-  },
-  turnMetaRow: {
+  turnMeta: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12
+    gap: 12,
   },
-  turnRole: {
+  roleLabel: {
     fontSize: 11,
     fontWeight: 700,
-    letterSpacing: "0.06em",
+    letterSpacing: "0.07em",
     textTransform: "uppercase",
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
-  turnTime: {
+  timeLabel: {
     fontSize: 11,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
-  attemptBadge: {
-    display: "inline-flex",
-    width: "fit-content",
-    color: "var(--teal)",
-    fontSize: 11,
-    fontWeight: 600
-  },
-  turnText: {
+  userMessage: {
     margin: 0,
-    lineHeight: 1.75,
+    padding: "8px 12px",
+    background: "var(--panel)",
+    borderLeft: "2px solid var(--border-strong)",
     fontSize: 14,
-    whiteSpace: "pre-wrap"
+    lineHeight: 1.7,
+    color: "var(--ink-2)",
+    whiteSpace: "pre-wrap",
+  },
+  aiLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.07em",
+    textTransform: "uppercase",
+    color: "var(--accent)",
+  },
+  aiMessage: {
+    margin: 0,
+    fontSize: 14,
+    lineHeight: 1.75,
+    color: "var(--ink)",
+    whiteSpace: "pre-wrap",
   },
   questionWrap: {
     display: "grid",
     gap: 8,
     borderTop: "1px solid var(--border)",
-    paddingTop: 10
+    paddingTop: 10,
   },
   questionTitle: {
     margin: 0,
     fontSize: 13,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   questionMeta: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   choiceList: {
     display: "grid",
-    gap: 8
+    gap: 6,
   },
   choiceButton: {
     textAlign: "left",
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "8px 10px",
     background: "transparent",
     color: "var(--ink)",
     cursor: "pointer",
-    fontSize: 13
+    fontSize: 13,
   },
   choiceButtonActive: {
     borderColor: "var(--accent)",
-    color: "var(--accent)"
+    background: "var(--accent-soft)",
+    color: "var(--accent)",
   },
   blankInput: {
     width: "100%",
     border: "1px solid var(--border)",
-    borderRadius: 3,
-    minHeight: 34,
+    height: 36,
     padding: "0 10px",
     background: "var(--panel)",
     color: "var(--ink)",
-    fontSize: 13
+    fontSize: 13,
   },
   questionActions: {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   checkButton: {
-    border: "1px solid var(--border)",
-    borderRadius: 3,
+    border: "none",
     background: "var(--accent)",
     color: "white",
     height: 30,
     padding: "0 12px",
     fontSize: 12,
-    cursor: "pointer"
+    fontWeight: 600,
+    cursor: "pointer",
   },
   feedbackOk: {
     fontSize: 12,
-    color: "#0f766e"
+    color: "var(--positive)",
+    fontWeight: 500,
   },
   feedbackBad: {
     fontSize: 12,
-    color: "#b91c1c"
+    color: "var(--negative)",
+    fontWeight: 500,
   },
   inlineGhostBtn: {
     border: "1px solid var(--border)",
-    borderRadius: 3,
     background: "transparent",
     color: "var(--muted)",
     height: 30,
     padding: "0 10px",
     fontSize: 12,
-    cursor: "pointer"
+    cursor: "pointer",
   },
   explanationBox: {
     marginTop: 4,
     padding: "8px 10px",
-    borderRadius: 3,
     border: "1px solid var(--border)",
     background: "var(--panel)",
     fontSize: 12,
     color: "var(--muted)",
-    lineHeight: 1.6
-  },
-  replyText: {
-    margin: 0,
-    lineHeight: 1.75,
-    fontSize: 14
+    lineHeight: 1.6,
   },
   citations: {
     display: "flex",
     gap: 6,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   citation: {
     appearance: "none",
     padding: "2px 8px",
     border: "1px solid var(--border)",
-    borderRadius: 3,
     fontSize: 12,
     color: "var(--teal)",
     background: "transparent",
-    cursor: "pointer"
-  }
+    cursor: "pointer",
+  },
 };
 
 function formatTurnTime(value: string) {
@@ -584,7 +561,7 @@ function renderInteractiveQuestion(input: {
       <>
         <p style={styles.questionTitle}>选择题</p>
         <span style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-        <p style={styles.turnText}>{question.prompt}</p>
+        <p style={styles.aiMessage}>{question.prompt}</p>
         <div style={styles.choiceList}>
           {question.options.map((option) => (
             <button
@@ -605,13 +582,7 @@ function renderInteractiveQuestion(input: {
             onClick={() => {
               const correct = selected.trim().toUpperCase() === (question.answerKey ?? "").trim().toUpperCase();
               const feedbackText = correct ? "回答正确" : `回答不正确，正确答案是 ${question.answerKey ?? "未提供"}`;
-              setQuestionFeedback((current) => ({
-                ...current,
-                [turnKey]: {
-                  ok: correct,
-                  text: feedbackText
-                }
-              }));
+              setQuestionFeedback((current) => ({ ...current, [turnKey]: { ok: correct, text: feedbackText } }));
               void onSubmitQuestionAttempt({
                 questionType: question.questionType,
                 prompt: question.prompt,
@@ -631,9 +602,7 @@ function renderInteractiveQuestion(input: {
           <button
             type="button"
             style={styles.inlineGhostBtn}
-            onClick={() => {
-              setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }));
-            }}
+            onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
           >
             {explanationVisible ? "收起解析" : "查看解析"}
           </button>
@@ -641,10 +610,7 @@ function renderInteractiveQuestion(input: {
             type="button"
             style={styles.inlineGhostBtn}
             disabled={disabled}
-            onClick={() => {
-              const topic = question.topic || "本章节核心概念";
-              void onAsk(`请围绕${topic}再出一道同难度选择题。`);
-            }}
+            onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度选择题。`); }}
           >
             再来一题
           </button>
@@ -662,7 +628,7 @@ function renderInteractiveQuestion(input: {
     <>
       <p style={styles.questionTitle}>填空题</p>
       <span style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-      <p style={styles.turnText}>{question.prompt}</p>
+      <p style={styles.aiMessage}>{question.prompt}</p>
       <input
         type="text"
         value={value}
@@ -685,13 +651,7 @@ function renderInteractiveQuestion(input: {
             const feedbackText = correct
               ? "回答正确"
               : `回答不正确，参考答案：${question.acceptedAnswers.join(" / ") || "未提供"}`;
-            setQuestionFeedback((current) => ({
-              ...current,
-              [turnKey]: {
-                ok: correct,
-                text: feedbackText
-              }
-            }));
+            setQuestionFeedback((current) => ({ ...current, [turnKey]: { ok: correct, text: feedbackText } }));
             void onSubmitQuestionAttempt({
               questionType: question.questionType,
               prompt: question.prompt,
@@ -711,9 +671,7 @@ function renderInteractiveQuestion(input: {
         <button
           type="button"
           style={styles.inlineGhostBtn}
-          onClick={() => {
-            setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }));
-          }}
+          onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
         >
           {explanationVisible ? "收起解析" : "查看解析"}
         </button>
@@ -721,10 +679,7 @@ function renderInteractiveQuestion(input: {
           type="button"
           style={styles.inlineGhostBtn}
           disabled={disabled}
-          onClick={() => {
-            const topic = question.topic || "本章节核心概念";
-            void onAsk(`请围绕${topic}再出一道同难度填空题。`);
-          }}
+          onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度填空题。`); }}
         >
           再来一题
         </button>
@@ -746,8 +701,6 @@ function isAttemptTurn(message: string) {
 }
 
 function formatLearnerMessage(message: string) {
-  if (!isAttemptTurn(message)) {
-    return message;
-  }
+  if (!isAttemptTurn(message)) return message;
   return message.replace("[练习作答]", "练习作答").trim();
 }

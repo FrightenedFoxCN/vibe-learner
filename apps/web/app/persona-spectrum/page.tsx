@@ -58,33 +58,17 @@ const EMPTY_DRAFT: PersonaDraft = {
 };
 
 const SLOT_TEMPLATES: Array<{ kind: PersonaSlotKind; text: string }> = [
-  {
-    kind: "worldview",
-    text: "你曾在一所强调自学与互助的学院担任导学员，习惯先给学习者稳定感，再推进挑战。"
-  },
-  {
-    kind: "past_experiences",
-    text: "曾参与多个跨学科项目，习惯将复杂问题拆解为可验证的小步骤，再带领学习者逐步落地。"
-  },
-  {
-    kind: "thinking_style",
-    text: "常用短句确认学习者状态，例如「我们先把这一点站稳」，避免连续高压输出。"
-  },
-  {
-    kind: "teaching_method",
-    text: "讲解时遵循「概念-例子-反例-迁移」的节奏，每次只推进一个关键难点。"
-  },
-  {
-    kind: "correction_style",
-    text: "纠错优先指出可操作改进，不使用否定人格的措辞；鼓励具体进步，不做空泛夸奨。"
-  }
+  { kind: "worldview", text: "你曾在一所强调自学与互助的学院担任导学员，习惯先给学习者稳定感，再推进挑战。" },
+  { kind: "past_experiences", text: "曾参与多个跨学科项目，习惯将复杂问题拆解为可验证的小步骤，再带领学习者逐步落地。" },
+  { kind: "thinking_style", text: "常用短句确认学习者状态，例如「我们先把这一点站稳」，避免连续高压输出。" },
+  { kind: "teaching_method", text: "讲解时遵循「概念-例子-反例-迁移」的节奏，每次只推进一个关键难点。" },
+  { kind: "correction_style", text: "纠错优先指出可操作改进，不使用否定人格的措辞；鼓励具体进步，不做空泛夸奨。" }
 ];
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
   summary: "示例人格：强调章节脉络与可执行反馈。",
-  systemPrompt:
-    "Prioritize chapter-grounded explanation, progressive questioning, and concise actionable feedback.",
+  systemPrompt: "Prioritize chapter-grounded explanation, progressive questioning, and concise actionable feedback.",
   slots: [
     { kind: "worldview", label: "世界观起点", content: "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。" },
     { kind: "teaching_method", label: "教学方法", content: "structured, guided" },
@@ -126,9 +110,7 @@ export default function PersonaSpectrumPage() {
   const [previewTiming, setPreviewTiming] = useState<TimingHint>("instant");
 
   const [previewSessionId, setPreviewSessionId] = useState("");
-  const [previewMessage, setPreviewMessage] = useState(
-    "请用这个人格风格解释当前章节的核心概念。"
-  );
+  const [previewMessage, setPreviewMessage] = useState("请用这个人格风格解释当前章节的核心概念。");
   const [previewPending, setPreviewPending] = useState(false);
   const [previewError, setPreviewError] = useState("");
   const [previewChat, setPreviewChat] = useState<StudyChatExchangeResponse | null>(null);
@@ -143,10 +125,7 @@ export default function PersonaSpectrumPage() {
         setPersonas(personaList);
         setDocuments(documentList);
         const initialPersona = personaList[0];
-        if (initialPersona) {
-          setSelectedPersonaId(initialPersona.id);
-          setDraft(personaToDraft(initialPersona));
-        }
+        if (initialPersona) { setSelectedPersonaId(initialPersona.id); setDraft(personaToDraft(initialPersona)); }
         const initialDocument = documentList[0];
         if (initialDocument) {
           setSelectedDocumentId(initialDocument.id);
@@ -203,14 +182,8 @@ export default function PersonaSpectrumPage() {
     return doc ? resolveSections(doc) : [];
   }, [documents, selectedDocumentId]);
 
-  const draftEmotionOptions = useMemo(
-    () => coerceEmotions(draft.availableEmotionsText),
-    [draft.availableEmotionsText]
-  );
-  const draftActionOptions = useMemo(
-    () => coerceActions(draft.availableActionsText),
-    [draft.availableActionsText]
-  );
+  const draftEmotionOptions = useMemo(() => coerceEmotions(draft.availableEmotionsText), [draft.availableEmotionsText]);
+  const draftActionOptions = useMemo(() => coerceActions(draft.availableActionsText), [draft.availableActionsText]);
 
   const selectedPersona = useMemo(
     () => personas.find((p) => p.id === selectedPersonaId) ?? null,
@@ -245,8 +218,7 @@ export default function PersonaSpectrumPage() {
       timingHint: previewTiming
     };
     return {
-      reply:
-        "这是色谱调试预览，不会调用模型。可先调教情绪、动作与语速，再进入章节联动预览。",
+      reply: "这是色谱调试预览，不会调用模型。可先调教情绪、动作与语速，再进入章节联动预览。",
       citations: [],
       characterEvents: [event]
     };
@@ -271,9 +243,7 @@ export default function PersonaSpectrumPage() {
     setDraft((prev) => {
       const next = [...prev.slots];
       next[index] = { ...next[index], [field]: value };
-      if (field === "kind") {
-        next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
-      }
+      if (field === "kind") next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
       return { ...prev, slots: next };
     });
   }
@@ -326,10 +296,7 @@ export default function PersonaSpectrumPage() {
   async function handleUpdatePersona() {
     setConfigError(""); setConfigMessage("");
     if (!selectedPersonaId) { setSaveError("请先选择要更新的人格。"); return; }
-    if (isReadonlyPersona) {
-      setSaveError("内置人格为只读，无法更新。请使用「创建新人格」另存。");
-      return;
-    }
+    if (isReadonlyPersona) { setSaveError("内置人格为只读，无法更新。请使用「创建新人格」另存。"); return; }
     setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
     if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
@@ -400,9 +367,7 @@ export default function PersonaSpectrumPage() {
   async function ensurePreviewSession(): Promise<string> {
     if (previewSessionId) return previewSessionId;
     if (!selectedDocumentId || !selectedSectionId || !selectedPersonaId) {
-      throw new Error(
-        "\u8bf7\u5148\u9009\u62e9\u4eba\u683c\u3001\u6587\u6863\u4e0e\u7ae0\u8282\u3002\u9700\u8981\u5148\u5904\u7406\u6587\u6863\uff0c\u624d\u80fd\u521b\u5efa\u7ae0\u8282\u8054\u52a8\u9884\u89c8\u3002"
-      );
+      throw new Error("请先选择人格、文档与章节。需要先处理文档，才能创建章节联动预览。");
     }
     const sectionTitle = sectionOptions.find((s) => s.id === selectedSectionId)?.title ?? "";
     const session = await createStudySession({
@@ -435,230 +400,261 @@ export default function PersonaSpectrumPage() {
     <main className="with-app-nav" style={styles.page}>
       <TopNav currentPath="/persona-spectrum" />
 
-      <div style={styles.topbar}>
-        <span style={styles.topbarTitle}>人格色谱</span>
-        <span style={styles.topbarSub}>
-          教师人格配置、情绪区间、导入导出与章节联动预览。
-        </span>
+      {/* ── Heading ── */}
+      <div style={styles.heading}>
+        <h1 style={styles.pageTitle}>人格色谱</h1>
+        <p style={styles.pageDesc}>教师人格配置、情绪区间、导入导出与章节联动预览。</p>
       </div>
 
-      {loadError ? <div style={styles.error}>加载失败: {loadError}</div> : null}
+      {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
 
       <div style={styles.contentGrid}>
-        {/* Persona editor */}
-        <section style={styles.panel}>
-          <h2 style={styles.sectionTitle}>人格参数编辑器</h2>
-          <label style={styles.fieldLabel}>当前人格</label>
-          <select
-            style={styles.select}
-            value={selectedPersonaId}
-            onChange={(e) => setSelectedPersonaId(e.target.value)}
-          >
-            {personas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.source})
-              </option>
-            ))}
-          </select>
-
-          <label style={styles.fieldLabel}>名称</label>
-          <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
-
-          <label style={styles.fieldLabel}>摘要</label>
-          <textarea style={styles.textarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
-
-          <label style={styles.fieldLabel}>人格插槽</label>
-          {draft.slots.map((slot, index) => (
-            <div key={index} style={styles.slotCard}>
-              <div style={styles.slotHeader}>
-                <select
-                  style={styles.slotKindSelect}
-                  value={slot.kind}
-                  onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
-                >
-                  {PERSONA_SLOT_KINDS.map((k) => (
-                    <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
-                  ))}
-                </select>
-                <input
-                  style={styles.slotLabelInput}
-                  value={slot.label}
-                  placeholder="显示标签"
-                  onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
-                />
-                <button type="button" style={styles.removeButton} onClick={() => handleRemoveSlot(index)} title="移除">
-                  ×
-                </button>
-              </div>
-              <textarea
-                style={styles.slotContent}
-                value={slot.content}
-                placeholder={`${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}内容…`}
-                onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
-              />
-            </div>
-          ))}
-
-          <div style={styles.addSlotRow}>
-            <span style={styles.fieldLabel}>添加插槽：</span>
-            {SLOT_TEMPLATES.map((t) => (
-              <button key={t.kind} type="button" style={styles.linkButton} onClick={() => handleAddSlot(t.kind)}>
-                {PERSONA_SLOT_KIND_LABELS[t.kind]}
-              </button>
-            ))}
-            <button type="button" style={styles.linkButton} onClick={() => handleAddSlot("custom")}>
-              自定义
-            </button>
+        {/* ── Left column: persona editor ── */}
+        <section style={styles.editorPanel}>
+          <div style={styles.panelHead}>
+            <span style={styles.panelTitle}>人格参数编辑器</span>
           </div>
 
-          <label style={styles.fieldLabel}>保留原文比例 {(retainRatio * 100).toFixed(0)}%</label>
-          <input
-            style={styles.range}
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={retainRatio}
-            onChange={(e) => setRetainRatio(Number(e.target.value))}
-          />
-          <div style={styles.muted}>越高越保留原文，越低越允许模型重写。</div>
+          <div style={styles.fieldGroup}>
+            <label style={styles.fieldLabel}>当前人格</label>
+            <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
+              {personas.map((p) => (
+                <option key={p.id} value={p.id}>{p.name} ({p.source})</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.fieldLabel}>名称</label>
+            <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.fieldLabel}>摘要</label>
+            <textarea style={styles.textarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.fieldLabel}>人格插槽</label>
+            {draft.slots.map((slot, index) => (
+              <div key={index} style={styles.slotCard}>
+                <div style={styles.slotHeader}>
+                  <select
+                    style={styles.slotKindSelect}
+                    value={slot.kind}
+                    onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
+                  >
+                    {PERSONA_SLOT_KINDS.map((k) => (
+                      <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
+                    ))}
+                  </select>
+                  <input
+                    style={styles.slotLabelInput}
+                    value={slot.label}
+                    placeholder="显示标签"
+                    onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
+                  />
+                  <button type="button" style={styles.removeBtn} onClick={() => handleRemoveSlot(index)}>×</button>
+                </div>
+                <textarea
+                  style={styles.slotContent}
+                  value={slot.content}
+                  placeholder={`${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}内容…`}
+                  onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
+                />
+              </div>
+            ))}
+            <div style={styles.addSlotRow}>
+              <span style={styles.mutedText}>添加插槽：</span>
+              {SLOT_TEMPLATES.map((t) => (
+                <button key={t.kind} type="button" style={styles.tagBtn} onClick={() => handleAddSlot(t.kind)}>
+                  {PERSONA_SLOT_KIND_LABELS[t.kind]}
+                </button>
+              ))}
+              <button type="button" style={styles.tagBtn} onClick={() => handleAddSlot("custom")}>自定义</button>
+            </div>
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <label style={styles.fieldLabel}>保留原文比例 {(retainRatio * 100).toFixed(0)}%</label>
+            <input
+              style={styles.range}
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={retainRatio}
+              onChange={(e) => setRetainRatio(Number(e.target.value))}
+            />
+            <span style={styles.mutedText}>越高越保留原文，越低越允许模型重写。</span>
+          </div>
+
           <div style={styles.actionsRow}>
-            <button style={styles.ghostButton} type="button" disabled={assistPending} onClick={handleAssistSetting}>
-              {assistPending ? "AI 完善中..." : "人工智能辅助完善设定"}
+            <button style={styles.ghostBtn} type="button" disabled={assistPending} onClick={handleAssistSetting}>
+              {assistPending ? "AI 完善中…" : "AI 辅助完善设定"}
             </button>
             {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
           </div>
 
-          <label style={styles.fieldLabel}>系统提示词</label>
-          <textarea style={styles.textareaLg} value={draft.systemPrompt} onChange={(e) => updateDraft("systemPrompt", e.target.value)} />
+          <div style={styles.fieldGroup}>
+            <label style={styles.fieldLabel}>系统提示词</label>
+            <textarea style={styles.textareaLg} value={draft.systemPrompt} onChange={(e) => updateDraft("systemPrompt", e.target.value)} />
+          </div>
 
           <div style={styles.actionsRow}>
-            <button style={styles.primaryButton} disabled={savingPersona} onClick={handleCreatePersona}>
-              {savingPersona ? "保存中..." : "创建新人格"}
+            <button style={styles.primaryBtn} disabled={savingPersona} onClick={handleCreatePersona}>
+              {savingPersona ? "保存中…" : "创建新人格"}
             </button>
-            <button style={styles.ghostButton} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
-              {savingPersona ? "保存中..." : "更新当前人格"}
+            <button style={styles.ghostBtn} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
+              {savingPersona ? "保存中…" : "更新当前人格"}
             </button>
             {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
           </div>
           {isReadonlyPersona ? (
-            <div style={styles.muted}>内置人格为只读，可编辑后使用「创建新人格」另存。</div>
+            <span style={styles.mutedText}>内置人格为只读，可编辑后使用「创建新人格」另存。</span>
           ) : null}
         </section>
 
-        {/* Emotion/action preview panel */}
-        <section style={styles.panel}>
-          <h2 style={styles.sectionTitle}>情绪与动作色谱调试面板</h2>
-          <label style={styles.fieldLabel}>可用情绪（逗号分隔）</label>
-          <input style={styles.input} value={draft.availableEmotionsText} onChange={(e) => updateDraft("availableEmotionsText", e.target.value)} />
-          <label style={styles.fieldLabel}>可用动作（逗号分隔）</label>
-          <input style={styles.input} value={draft.availableActionsText} onChange={(e) => updateDraft("availableActionsText", e.target.value)} />
-          <label style={styles.fieldLabel}>默认语气</label>
-          <select style={styles.select} value={draft.defaultSpeechStyle} onChange={(e) => updateDraft("defaultSpeechStyle", e.target.value as SpeechStyle)}>
-            {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+        {/* ── Right column: three stacked panels ── */}
+        <div style={styles.rightColumn}>
+          {/* Panel: emotion/action preview */}
+          <section style={styles.rightPanel}>
+            <div style={styles.panelHead}>
+              <span style={styles.panelTitle}>情绪与动作色谱</span>
+            </div>
 
-          <div style={styles.compactGrid}>
-            <div>
-              <label style={styles.fieldLabel}>预览情绪</label>
-              <select style={styles.select} value={previewEmotion} onChange={(e) => setPreviewEmotion(e.target.value as CharacterEmotion)}>
-                {(draftEmotionOptions.length ? draftEmotionOptions : CHARACTER_EMOTIONS).map((em) => (
-                  <option key={em} value={em}>{em}</option>
-                ))}
-              </select>
+            <div style={styles.fieldGroup}>
+              <label style={styles.fieldLabel}>可用情绪（逗号分隔）</label>
+              <input style={styles.input} value={draft.availableEmotionsText} onChange={(e) => updateDraft("availableEmotionsText", e.target.value)} />
             </div>
-            <div>
-              <label style={styles.fieldLabel}>预览动作</label>
-              <select style={styles.select} value={previewAction} onChange={(e) => setPreviewAction(e.target.value as CharacterAction)}>
-                {(draftActionOptions.length ? draftActionOptions : CHARACTER_ACTIONS).map((ac) => (
-                  <option key={ac} value={ac}>{ac}</option>
-                ))}
-              </select>
+            <div style={styles.fieldGroup}>
+              <label style={styles.fieldLabel}>可用动作（逗号分隔）</label>
+              <input style={styles.input} value={draft.availableActionsText} onChange={(e) => updateDraft("availableActionsText", e.target.value)} />
             </div>
-            <div>
-              <label style={styles.fieldLabel}>语气</label>
-              <select style={styles.select} value={previewSpeech} onChange={(e) => setPreviewSpeech(e.target.value as SpeechStyle)}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.fieldLabel}>默认语气</label>
+              <select style={styles.select} value={draft.defaultSpeechStyle} onChange={(e) => updateDraft("defaultSpeechStyle", e.target.value as SpeechStyle)}>
                 {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div>
-              <label style={styles.fieldLabel}>时序</label>
-              <select style={styles.select} value={previewTiming} onChange={(e) => setPreviewTiming(e.target.value as TimingHint)}>
-                <option value="instant">instant</option>
-                <option value="linger">linger</option>
-                <option value="after_text">after_text</option>
-              </select>
-            </div>
-          </div>
 
-          <label style={styles.fieldLabel}>强度 {previewIntensity.toFixed(2)}</label>
-          <input style={styles.range} type="range" min={0} max={1} step={0.05} value={previewIntensity} onChange={(e) => setPreviewIntensity(Number(e.target.value))} />
-          <label style={styles.fieldLabel}>场景提示</label>
-          <input style={styles.input} value={previewSceneHint} onChange={(e) => setPreviewSceneHint(e.target.value)} />
-          <CharacterShell persona={draftPersona} response={syntheticPreviewResponse} pending={false} />
-        </section>
-
-        {/* Import/export panel */}
-        <section style={styles.panel}>
-          <h2 style={styles.sectionTitle}>配置导入/导出</h2>
-          <div style={styles.actionsRow}>
-            <button style={styles.ghostButton} type="button" onClick={handleDownloadTemplate}>下载配置模板</button>
-            <button style={styles.ghostButton} type="button" onClick={handleExportConfig}>导出当前配置</button>
-            <label style={styles.ghostButton}>
-              导入配置文件
-              <input type="file" accept="application/json,.json" style={styles.hiddenFileInput} onChange={handleImportConfig} />
-            </label>
-          </div>
-          <div style={styles.muted}>
-            导入模板需为 <code>CreatePersonaInput</code> JSON 结构（包含 slots 数组）。
-          </div>
-          {configMessage ? <div style={styles.muted}>{configMessage}</div> : null}
-          {configError ? <div style={styles.errorInline}>{configError}</div> : null}
-        </section>
-
-        {/* Live preview panel */}
-        <section style={styles.panel}>
-          <h2 style={styles.sectionTitle}>与章节对话联动的实时人格预览</h2>
-          <div style={styles.compactGrid}>
-            <div>
-              <label style={styles.fieldLabel}>文档</label>
-              <select style={styles.select} value={selectedDocumentId} onChange={(e) => { setSelectedDocumentId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
-                {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-              </select>
+            <div style={styles.compactGrid}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>预览情绪</label>
+                <select style={styles.select} value={previewEmotion} onChange={(e) => setPreviewEmotion(e.target.value as CharacterEmotion)}>
+                  {(draftEmotionOptions.length ? draftEmotionOptions : CHARACTER_EMOTIONS).map((em) => (
+                    <option key={em} value={em}>{em}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>预览动作</label>
+                <select style={styles.select} value={previewAction} onChange={(e) => setPreviewAction(e.target.value as CharacterAction)}>
+                  {(draftActionOptions.length ? draftActionOptions : CHARACTER_ACTIONS).map((ac) => (
+                    <option key={ac} value={ac}>{ac}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>语气</label>
+                <select style={styles.select} value={previewSpeech} onChange={(e) => setPreviewSpeech(e.target.value as SpeechStyle)}>
+                  {SPEECH_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>时序</label>
+                <select style={styles.select} value={previewTiming} onChange={(e) => setPreviewTiming(e.target.value as TimingHint)}>
+                  <option value="instant">instant</option>
+                  <option value="linger">linger</option>
+                  <option value="after_text">after_text</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={styles.fieldLabel}>章节</label>
-              <select style={styles.select} value={selectedSectionId} onChange={(e) => { setSelectedSectionId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
-                {sectionOptions.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-              </select>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.fieldLabel}>强度 {previewIntensity.toFixed(2)}</label>
+              <input style={styles.range} type="range" min={0} max={1} step={0.05} value={previewIntensity} onChange={(e) => setPreviewIntensity(Number(e.target.value))} />
             </div>
-          </div>
-          <label style={styles.fieldLabel}>联动提问</label>
-          <textarea style={styles.textareaLg} value={previewMessage} onChange={(e) => setPreviewMessage(e.target.value)} />
-          <div style={styles.actionsRow}>
-            <button style={styles.primaryButton} onClick={handleSendPreviewMessage} disabled={previewPending}>
-              {previewPending ? "预览生成中..." : "发送预览消息"}
-            </button>
-            {previewError ? <span style={styles.errorInline}>{previewError}</span> : null}
-          </div>
-          <div style={styles.assetCard}>
-            <div style={styles.assetRow}><span style={styles.assetLabel}>Renderer</span><span>{assets?.renderer ?? "-"}</span></div>
-            <div style={styles.assetRow}><span style={styles.assetLabel}>Manifest</span><span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span></div>
-            {assetsError ? <div style={styles.errorInline}>{assetsError}</div> : null}
-          </div>
-          {previewChat ? (
-            <>
-              <CharacterShell persona={draftPersona} response={previewChat} pending={previewPending} />
-              <div style={styles.chatReply}>{previewChat.reply}</div>
-            </>
-          ) : (
-            <div style={styles.muted}>发送一条消息后，这里会展示真实章节联动的返回与角色事件。</div>
-          )}
-        </section>
+            <div style={styles.fieldGroup}>
+              <label style={styles.fieldLabel}>场景提示</label>
+              <input style={styles.input} value={previewSceneHint} onChange={(e) => setPreviewSceneHint(e.target.value)} />
+            </div>
+            <CharacterShell persona={draftPersona} response={syntheticPreviewResponse} pending={false} />
+          </section>
+
+          {/* Panel: import/export */}
+          <section style={styles.rightPanel}>
+            <div style={styles.panelHead}>
+              <span style={styles.panelTitle}>配置导入/导出</span>
+            </div>
+            <div style={styles.actionsRow}>
+              <button style={styles.ghostBtn} type="button" onClick={handleDownloadTemplate}>下载模板</button>
+              <button style={styles.ghostBtn} type="button" onClick={handleExportConfig}>导出配置</button>
+              <label style={styles.ghostBtn}>
+                导入配置
+                <input type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
+              </label>
+            </div>
+            <span style={styles.mutedText}>导入模板需为 CreatePersonaInput JSON 结构（包含 slots 数组）。</span>
+            {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
+            {configError ? <span style={styles.errorInline}>{configError}</span> : null}
+          </section>
+
+          {/* Panel: live preview */}
+          <section style={styles.rightPanel}>
+            <div style={styles.panelHead}>
+              <span style={styles.panelTitle}>章节联动实时预览</span>
+            </div>
+
+            <div style={styles.compactGrid}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>文档</label>
+                <select style={styles.select} value={selectedDocumentId} onChange={(e) => { setSelectedDocumentId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
+                  {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                </select>
+              </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>章节</label>
+                <select style={styles.select} value={selectedSectionId} onChange={(e) => { setSelectedSectionId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
+                  {sectionOptions.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={styles.fieldGroup}>
+              <label style={styles.fieldLabel}>联动提问</label>
+              <textarea style={styles.textareaLg} value={previewMessage} onChange={(e) => setPreviewMessage(e.target.value)} />
+            </div>
+
+            <div style={styles.actionsRow}>
+              <button style={styles.primaryBtn} onClick={handleSendPreviewMessage} disabled={previewPending}>
+                {previewPending ? "预览生成中…" : "发送预览消息"}
+              </button>
+              {previewError ? <span style={styles.errorInline}>{previewError}</span> : null}
+            </div>
+
+            <div style={styles.assetCard}>
+              <div style={styles.assetRow}><span style={styles.assetLabel}>Renderer</span><span>{assets?.renderer ?? "-"}</span></div>
+              <div style={styles.assetRow}><span style={styles.assetLabel}>Manifest</span><span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span></div>
+              {assetsError ? <div style={styles.errorInline}>{assetsError}</div> : null}
+            </div>
+
+            {previewChat ? (
+              <>
+                <CharacterShell persona={draftPersona} response={previewChat} pending={previewPending} />
+                <div style={styles.chatReply}>{previewChat.reply}</div>
+              </>
+            ) : (
+              <span style={styles.mutedText}>发送一条消息后，这里会展示真实章节联动的返回与角色事件。</span>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );
 }
+
+/* ─── Helpers (unchanged) ─── */
 
 function personaToDraft(persona: PersonaProfile): PersonaDraft {
   return {
@@ -755,38 +751,278 @@ function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): Create
   };
 }
 
+/* ─── Styles ─── */
+
 const styles: Record<string, CSSProperties> = {
-  page: { minHeight: "100vh", maxWidth: 1360, margin: "0 auto", padding: "20px 24px 32px", display: "grid", gap: 16, alignContent: "start" },
-  topbar: { display: "flex", alignItems: "baseline", gap: 12, paddingBottom: 12, flexWrap: "wrap" },
-  topbarTitle: { fontSize: 16, fontWeight: 700, color: "var(--ink)" },
-  topbarSub: { fontSize: 13, color: "var(--muted)" },
-  contentGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 14, alignItems: "start" },
-  panel: { border: "1px solid var(--border)", background: "white", padding: 14, display: "grid", gap: 8, alignContent: "start" },
-  sectionTitle: { margin: 0, fontSize: 14, fontWeight: 700 },
-  fieldLabel: { fontSize: 12, color: "var(--muted)" },
-  input: { width: "100%", minHeight: 36, border: "1px solid var(--border)", background: "white", padding: "8px 10px" },
-  select: { width: "100%", minHeight: 36, border: "1px solid var(--border)", background: "white", padding: "8px 10px" },
-  textarea: { width: "100%", minHeight: 72, border: "1px solid var(--border)", background: "white", padding: "8px 10px", resize: "vertical" },
-  textareaLg: { width: "100%", minHeight: 120, border: "1px solid var(--border)", background: "white", padding: "8px 10px", resize: "vertical" },
-  slotCard: { border: "1px solid var(--border)", background: "var(--panel)", padding: "8px 10px", display: "grid", gap: 6 },
-  slotHeader: { display: "flex", gap: 6, alignItems: "center" },
-  slotKindSelect: { flex: "0 0 auto", minHeight: 30, border: "1px solid var(--border)", background: "white", padding: "4px 6px", fontSize: 12 },
-  slotLabelInput: { flex: 1, minHeight: 30, border: "1px solid var(--border)", background: "white", padding: "4px 6px", fontSize: 12 },
-  removeButton: { flex: "0 0 auto", minHeight: 30, minWidth: 30, border: "1px solid var(--border)", background: "white", color: "var(--muted)", cursor: "pointer", fontSize: 14, lineHeight: 1 },
-  slotContent: { width: "100%", minHeight: 72, border: "1px solid var(--border)", background: "white", padding: "6px 8px", resize: "vertical", fontSize: 12 },
-  addSlotRow: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" },
-  primaryButton: { border: "1px solid var(--accent)", background: "var(--accent)", color: "white", minHeight: 36, padding: "0 12px", cursor: "pointer" },
-  ghostButton: { border: "1px solid var(--border)", background: "white", color: "var(--ink)", minHeight: 36, padding: "0 12px", cursor: "pointer" },
-  linkButton: { border: "1px solid var(--border)", background: "white", color: "var(--accent)", minHeight: 30, padding: "0 10px", cursor: "pointer", fontSize: 12 },
-  actionsRow: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" },
-  compactGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 },
-  range: { width: "100%" },
-  muted: { fontSize: 12, color: "var(--muted)" },
-  hiddenFileInput: { display: "none" },
-  assetCard: { border: "1px solid var(--border)", background: "var(--panel)", padding: "8px 10px", display: "grid", gap: 6 },
-  assetRow: { display: "grid", gridTemplateColumns: "96px 1fr", gap: 8, fontSize: 12, wordBreak: "break-all" },
+  /* Page shell */
+  page: {
+    minHeight: "100vh",
+    maxWidth: 1400,
+    margin: "0 auto",
+    padding: "20px 24px 40px",
+    display: "grid",
+    gap: 20,
+    alignContent: "start",
+  },
+  heading: {
+    display: "grid",
+    gap: 6,
+    paddingBottom: 14,
+    borderBottom: "1px solid var(--border)",
+  },
+  pageTitle: { margin: 0, fontSize: 20, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 },
+  pageDesc: { margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.6 },
+
+  /* 2-column content grid */
+  contentGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)",
+    border: "1px solid var(--border)",
+    alignItems: "start",
+  },
+
+  /* Left: editor */
+  editorPanel: {
+    padding: 20,
+    display: "grid",
+    gap: 14,
+    alignContent: "start",
+  },
+
+  /* Right: stacked panels container */
+  rightColumn: {
+    borderLeft: "1px solid var(--border)",
+    display: "grid",
+    alignContent: "start",
+    gap: 0,
+  },
+
+  /* Individual right-column panels */
+  rightPanel: {
+    padding: 20,
+    display: "grid",
+    gap: 14,
+    alignContent: "start",
+    borderBottom: "1px solid var(--border)",
+  },
+
+  /* Panel header */
+  panelHead: {
+    paddingBottom: 10,
+    borderBottom: "1px solid var(--border)",
+    marginBottom: 2,
+  },
+  panelTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "var(--ink)",
+    letterSpacing: "0.01em",
+  },
+
+  /* Form elements */
+  fieldGroup: {
+    display: "grid",
+    gap: 6,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
+  },
+  input: {
+    width: "100%",
+    height: 36,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "0 10px",
+    color: "var(--ink)",
+    fontSize: 13,
+  },
+  select: {
+    width: "100%",
+    height: 36,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "0 8px",
+    color: "var(--ink)",
+    fontSize: 13,
+  },
+  textarea: {
+    width: "100%",
+    minHeight: 72,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "8px 10px",
+    resize: "vertical",
+    color: "var(--ink)",
+    fontSize: 13,
+    lineHeight: 1.6,
+  },
+  textareaLg: {
+    width: "100%",
+    minHeight: 120,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "8px 10px",
+    resize: "vertical",
+    color: "var(--ink)",
+    fontSize: 13,
+    lineHeight: 1.6,
+  },
+  range: {
+    width: "100%",
+  },
+
+  /* Slot card */
+  slotCard: {
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "10px",
+    display: "grid",
+    gap: 8,
+    marginBottom: 6,
+  },
+  slotHeader: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+  },
+  slotKindSelect: {
+    flex: "0 0 auto",
+    height: 30,
+    border: "1px solid var(--border)",
+    background: "white",
+    padding: "0 6px",
+    fontSize: 12,
+    color: "var(--ink)",
+  },
+  slotLabelInput: {
+    flex: 1,
+    height: 30,
+    border: "1px solid var(--border)",
+    background: "white",
+    padding: "0 8px",
+    fontSize: 12,
+    color: "var(--ink)",
+  },
+  removeBtn: {
+    flex: "0 0 auto",
+    height: 30,
+    width: 30,
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--muted)",
+    cursor: "pointer",
+    fontSize: 16,
+    lineHeight: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  slotContent: {
+    width: "100%",
+    minHeight: 64,
+    border: "1px solid var(--border)",
+    background: "white",
+    padding: "6px 8px",
+    resize: "vertical",
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--ink)",
+  },
+  addSlotRow: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+
+  /* Compact 2-col grid */
+  compactGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 10,
+  },
+
+  /* Buttons */
+  primaryBtn: {
+    border: "none",
+    background: "var(--accent)",
+    color: "white",
+    height: 36,
+    padding: "0 14px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: 13,
+  },
+  ghostBtn: {
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--ink)",
+    height: 36,
+    padding: "0 12px",
+    cursor: "pointer",
+    fontSize: 13,
+    display: "inline-flex",
+    alignItems: "center",
+  },
+  tagBtn: {
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--accent)",
+    height: 28,
+    padding: "0 10px",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 500,
+  },
+  actionsRow: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+
+  /* Asset info card */
+  assetCard: {
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "10px",
+    display: "grid",
+    gap: 6,
+  },
+  assetRow: {
+    display: "grid",
+    gridTemplateColumns: "80px 1fr",
+    gap: 8,
+    fontSize: 12,
+    wordBreak: "break-all",
+  },
   assetLabel: { color: "var(--muted)" },
-  chatReply: { padding: "10px 12px", border: "1px solid var(--border)", background: "var(--panel)", fontSize: 13, lineHeight: 1.6 },
-  error: { border: "1px solid #f0b8b8", background: "#fff4f4", color: "#9c2020", padding: "8px 10px", fontSize: 13 },
-  errorInline: { color: "#9c2020", fontSize: 12 }
+
+  /* Chat reply */
+  chatReply: {
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    fontSize: 13,
+    lineHeight: 1.6,
+    color: "var(--ink)",
+  },
+
+  /* Text helpers */
+  mutedText: { fontSize: 12, color: "var(--muted)" },
+  hiddenInput: { display: "none" },
+
+  /* Error states */
+  errorBanner: {
+    border: "1px solid #f0b8b8",
+    background: "#fff4f4",
+    color: "#9c2020",
+    padding: "8px 12px",
+    fontSize: 13,
+  },
+  errorInline: { color: "#9c2020", fontSize: 12 },
 };

@@ -2,18 +2,87 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, JSX } from "react";
 
 interface TopNavProps {
   currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/debug";
 }
 
-const NAV_ITEMS: Array<{ href: TopNavProps["currentPath"]; label: string }> = [
-  { href: "/", label: "导航首页" },
-  { href: "/plan", label: "计划生成" },
-  { href: "/study", label: "章节对话" },
-  { href: "/persona-spectrum", label: "人格色谱" },
-  { href: "/debug", label: "调试后台" },
+/* ─── SVG icons (16×16, stroke, currentColor) ─── */
+
+function IconHome() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 7.5L8 2L15 7.5V14H10.5V9.5H5.5V14H1V7.5Z" />
+    </svg>
+  );
+}
+
+function IconPlan() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <rect x="2" y="1" width="12" height="14" />
+      <line x1="5" y1="5" x2="11" y2="5" />
+      <line x1="5" y1="8" x2="11" y2="8" />
+      <line x1="5" y1="11" x2="9" y2="11" />
+    </svg>
+  );
+}
+
+function IconStudy() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 1H10V8H5L1 12V1Z" />
+      <path d="M10 4H15V10H10" />
+    </svg>
+  );
+}
+
+function IconPersona() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5" r="3" />
+      <path d="M1 15c0-3.866 3.134-7 7-7s7 3.134 7 7" />
+    </svg>
+  );
+}
+
+function IconDebug() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="2" width="14" height="12" />
+      <polyline points="4,6 7,9 4,12" />
+      <line x1="9" y1="12" x2="13" y2="12" />
+    </svg>
+  );
+}
+
+function IconChevronLeft() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9,2 4,7 9,12" />
+    </svg>
+  );
+}
+
+function IconChevronRight() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="5,2 10,7 5,12" />
+    </svg>
+  );
+}
+
+const NAV_ITEMS: Array<{
+  href: TopNavProps["currentPath"];
+  label: string;
+  Icon: () => JSX.Element;
+}> = [
+  { href: "/",                 label: "导航首页", Icon: IconHome    },
+  { href: "/plan",             label: "计划生成", Icon: IconPlan    },
+  { href: "/study",            label: "章节对话", Icon: IconStudy   },
+  { href: "/persona-spectrum", label: "人格色谱", Icon: IconPersona },
+  { href: "/debug",            label: "调试后台", Icon: IconDebug   },
 ];
 
 export function TopNav({ currentPath }: TopNavProps) {
@@ -21,35 +90,24 @@ export function TopNav({ currentPath }: TopNavProps) {
 
   useEffect(() => {
     const saved = window.localStorage.getItem("vibe-nav-collapsed");
-    if (saved === "1") {
-      setCollapsed(true);
-    }
+    if (saved === "1") setCollapsed(true);
   }, []);
 
   useEffect(() => {
-    const width = collapsed ? "64px" : "220px";
+    const width = collapsed ? "56px" : "200px";
     document.documentElement.style.setProperty("--app-nav-width", width);
     window.localStorage.setItem("vibe-nav-collapsed", collapsed ? "1" : "0");
   }, [collapsed]);
 
   return (
     <aside className="app-side-nav" style={styles.aside} aria-label="Primary navigation">
+      {/* Brand */}
       <div className="app-nav-brand-row" style={styles.topRow}>
-        <div style={collapsed ? styles.brandCollapsed : styles.brand}>
-          <strong style={styles.brandTitle}>VL</strong>
-          {!collapsed ? <span style={styles.brandSub}>Vibe Learner</span> : null}
-        </div>
-        <button
-          type="button"
-          className="app-nav-collapse-btn"
-          style={styles.collapseButton}
-          onClick={() => setCollapsed((value) => !value)}
-          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
-        >
-          {collapsed ? "›" : "‹"}
-        </button>
+        <div style={styles.brandMark}>VL</div>
+        {!collapsed ? <span style={styles.brandName}>Vibe Learner</span> : null}
       </div>
 
+      {/* Nav links */}
       <nav className="app-nav-links" style={styles.nav}>
         {NAV_ITEMS.map((item) => {
           const active = item.href === currentPath;
@@ -58,17 +116,48 @@ export function TopNav({ currentPath }: TopNavProps) {
               key={item.href}
               href={item.href as never}
               className={active ? "app-nav-link--active" : "app-nav-link"}
-              title={collapsed ? item.label : undefined}
+              style={collapsed ? styles.linkCollapsed : undefined}
+              title={item.label}
             >
-              <span style={styles.linkDot}>{active ? "●" : "○"}</span>
+              <item.Icon />
               {!collapsed ? <span>{item.label}</span> : null}
             </Link>
           );
         })}
       </nav>
+
+      {/* Spacer pushes the toggle to the bottom */}
+      <div style={{ flex: 1 }} />
+
+      {/* Collapse toggle — pinned to bottom */}
+      <button
+        type="button"
+        className="app-nav-collapse-btn"
+        style={collapsed ? styles.toggleCollapsed : styles.toggle}
+        onClick={() => setCollapsed((v) => !v)}
+        aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+        title={collapsed ? "展开侧栏" : "收起侧栏"}
+      >
+        {collapsed ? <IconChevronRight /> : <><IconChevronLeft /><span>收起</span></>}
+      </button>
     </aside>
   );
 }
+
+const toggleBase: CSSProperties = {
+  border: "none",
+  borderTop: "1px solid var(--border)",
+  background: "transparent",
+  height: 44,
+  cursor: "pointer",
+  color: "var(--muted)",
+  fontSize: 13,
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
+  transition: "color 100ms",
+  width: "100%",
+};
 
 const styles: Record<string, CSSProperties> = {
   aside: {
@@ -79,65 +168,61 @@ const styles: Record<string, CSSProperties> = {
     width: "var(--app-nav-width)",
     borderRight: "1px solid var(--border)",
     background: "var(--bg)",
-    padding: "16px 0",
     zIndex: 40,
-    display: "grid",
-    alignContent: "start",
-    gap: 0,
-    transition: "width 220ms ease",
+    display: "flex",
+    flexDirection: "column",
+    transition: "width 200ms ease",
+    overflow: "hidden",
   },
   topRow: {
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
-    gap: 8,
-    padding: "0 14px 14px",
+    gap: 10,
+    padding: "14px 14px 12px",
     borderBottom: "1px solid var(--border)",
-    marginBottom: 8,
+    flexShrink: 0,
+    overflow: "hidden",
   },
-  brand: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 6,
-  },
-  brandCollapsed: {
-    display: "grid",
-    placeItems: "center",
-    width: "100%",
-  },
-  brandTitle: {
-    color: "var(--accent)",
-    fontSize: 13,
-    fontWeight: 700,
-    letterSpacing: "0.08em",
-  },
-  brandSub: {
-    color: "var(--muted)",
-    fontSize: 11,
-  },
-  collapseButton: {
-    border: "none",
-    background: "transparent",
-    color: "var(--muted)",
+  brandMark: {
     width: 28,
     height: 28,
-    cursor: "pointer",
-    fontSize: 16,
-    lineHeight: 1,
+    background: "var(--accent)",
+    color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: "0.06em",
     flexShrink: 0,
+  },
+  brandName: {
+    color: "var(--ink)",
+    fontSize: 13,
+    fontWeight: 600,
+    letterSpacing: "0.01em",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   nav: {
-    display: "grid",
+    display: "flex",
+    flexDirection: "column",
     gap: 0,
-  },
-  linkDot: {
-    width: 14,
-    textAlign: "center",
-    fontSize: 11,
-    lineHeight: 1,
     flexShrink: 0,
+    paddingTop: 4,
+  },
+  linkCollapsed: {
+    justifyContent: "center",
+    padding: "0",
+  },
+  toggle: {
+    ...toggleBase,
+    padding: "0 14px",
+    gap: 8,
+  },
+  toggleCollapsed: {
+    ...toggleBase,
+    justifyContent: "center",
   },
 };

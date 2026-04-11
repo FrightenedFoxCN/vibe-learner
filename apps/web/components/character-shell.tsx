@@ -22,30 +22,28 @@ export function CharacterShell({ persona, response, pending }: CharacterShellPro
     <div style={styles.wrap}>
       <div style={styles.header}>
         <span style={styles.name}>{persona.name}</span>
-        <span style={styles.meta}>
-          {teachingLabel} · {narrativeLabel}
-        </span>
+        <span style={styles.meta}>{teachingLabel} · {narrativeLabel}</span>
       </div>
 
       <Renderer persona={persona} currentEvent={currentEvent} pending={pending} />
 
       <div style={styles.stateRow}>
-        <span style={styles.stateItem}>
+        <div style={styles.stateItem}>
           <span style={styles.stateKey}>神态</span>
-          {currentEvent?.emotion ?? "calm"}
-        </span>
-        <span style={styles.stateItem}>
+          <span style={styles.stateVal}>{currentEvent?.emotion ?? "calm"}</span>
+        </div>
+        <div style={styles.stateItem}>
           <span style={styles.stateKey}>动作</span>
-          {currentEvent?.action ?? "idle"}
-        </span>
-        <span style={styles.stateItem}>
+          <span style={styles.stateVal}>{currentEvent?.action ?? "idle"}</span>
+        </div>
+        <div style={styles.stateItem}>
           <span style={styles.stateKey}>风格</span>
-          {currentEvent?.speechStyle ?? persona.defaultSpeechStyle}
-        </span>
-        <span style={styles.stateItem}>
+          <span style={styles.stateVal}>{currentEvent?.speechStyle ?? persona.defaultSpeechStyle}</span>
+        </div>
+        <div style={styles.stateItem}>
           <span style={styles.stateKey}>场景</span>
-          {currentEvent?.sceneHint ?? "study_session"}
-        </span>
+          <span style={styles.stateVal}>{currentEvent?.sceneHint ?? "study_session"}</span>
+        </div>
       </div>
 
       {response?.characterEvents.length ? (
@@ -60,52 +58,56 @@ const styles: Record<string, CSSProperties> = {
     borderTop: "1px solid var(--border)",
     paddingTop: 14,
     display: "grid",
-    gap: 12
+    gap: 12,
   },
   header: {
     display: "flex",
     alignItems: "baseline",
     gap: 10,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   meta: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   stateRow: {
     display: "flex",
     gap: 16,
-    fontSize: 13,
-    color: "var(--ink)"
+    flexWrap: "wrap",
   },
   stateItem: {
     display: "flex",
     gap: 6,
-    alignItems: "center"
+    alignItems: "baseline",
   },
   stateKey: {
     fontSize: 11,
+    fontWeight: 600,
     color: "var(--muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em"
+    letterSpacing: "0.07em",
+  },
+  stateVal: {
+    fontSize: 13,
+    color: "var(--ink)",
   },
   pre: {
     margin: 0,
     padding: "10px 12px",
     background: "var(--panel)",
     border: "1px solid var(--border)",
-    borderRadius: 3,
     overflowX: "auto",
     whiteSpace: "pre-wrap",
     fontSize: 11,
     lineHeight: 1.6,
-    color: "var(--ink)"
-  }
+    color: "var(--ink)",
+    fontFamily: "var(--font-mono, monospace)",
+  },
 };
 
 function formatNarrativeMode(mode: string) {

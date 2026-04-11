@@ -33,20 +33,27 @@ export function LearningWorkspace() {
     <main className="with-app-nav" style={styles.page}>
       <TopNav currentPath="/plan" />
 
-      {/* 顶栏 */}
-      <div style={styles.topbar}>
-        <div style={styles.topbarLeft}>
-          <span style={styles.topbarTitle}>计划生成页</span>
-          {notice ? <span style={styles.notice}>{notice}</span> : null}
-        </div>
-        <PersonaSelector
-          personas={personas}
-          selectedPersonaId={selectedPersona.id}
-          onChange={setSelectedPersonaId}
-          compact
-        />
+      {/* ── Heading ── */}
+      <div style={styles.heading}>
+        <h1 style={styles.pageTitle}>计划生成</h1>
+        <p style={styles.pageDesc}>上传教材文件，AI 自动解析章节结构并生成个性化学习计划；右侧可查看与切换历史计划。</p>
       </div>
 
+      {/* ── Toolbar ── */}
+      <div style={styles.toolbar}>
+        <div style={styles.toolbarField}>
+          <span style={styles.toolbarLabel}>教师人格</span>
+          <PersonaSelector
+            personas={personas}
+            selectedPersonaId={selectedPersona.id}
+            onChange={setSelectedPersonaId}
+            compact
+          />
+        </div>
+        {notice ? <span style={styles.notice}>{notice}</span> : null}
+      </div>
+
+      {/* ── Content ── */}
       <div className="plan-content-grid">
         <DocumentSetup
           personas={personas}
@@ -77,10 +84,9 @@ export function LearningWorkspace() {
           onCreateSession={() => { void createSessionForActivePlan(); }}
         />
 
-        {/* 章节对话入口 */}
         <div style={styles.entryRow}>
-          <span style={styles.entryLabel}>章节对话</span>
-          <Link href="/study" style={styles.entryLink}>前往章节对话页 →</Link>
+          <span style={styles.entryHint}>计划生成后，前往章节对话页开始学习。</span>
+          <Link href="/study" style={styles.entryLink}>前往章节对话 →</Link>
         </div>
       </div>
     </main>
@@ -92,50 +98,76 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100vh",
     maxWidth: 1600,
     margin: "0 auto",
-    padding: "20px 32px 48px",
+    padding: "28px 32px 48px",
     display: "grid",
-    gap: 20,
-    alignContent: "start"
+    gap: 0,
+    alignContent: "start",
   },
-  topbar: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-    borderBottom: "1px solid var(--border)",
-    paddingBottom: 14
+  /* Heading */
+  heading: {
+    display: "grid",
+    gap: 6,
+    paddingBottom: 16,
   },
-  topbarLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12
-  },
-  topbarTitle: {
-    fontSize: 16,
+  pageTitle: {
+    margin: 0,
+    fontSize: 20,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
+    lineHeight: 1.2,
+  },
+  pageDesc: {
+    margin: 0,
+    fontSize: 13,
+    color: "var(--muted)",
+    lineHeight: 1.6,
+  },
+  /* Toolbar */
+  toolbar: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: 20,
+    paddingBottom: 20,
+    paddingTop: 4,
+    marginBottom: 24,
+    borderBottom: "1px solid var(--border)",
+    flexWrap: "wrap",
+  },
+  toolbarField: {
+    display: "grid",
+    gap: 5,
+  },
+  toolbarLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
   },
   notice: {
-    fontSize: 13,
-    color: "var(--teal)"
+    fontSize: 12,
+    color: "var(--teal)",
+    alignSelf: "center",
+    paddingBottom: 2,
   },
+  /* Entry row */
   entryRow: {
     gridColumn: "1 / -1",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    paddingTop: 20,
-    marginTop: 20,
-    borderTop: "1px solid var(--border)"
+    padding: "16px 0 0",
+    marginTop: 8,
+    borderTop: "1px solid var(--border)",
   },
-  entryLabel: {
+  entryHint: {
     fontSize: 13,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   entryLink: {
     fontSize: 13,
     color: "var(--accent)",
-    fontWeight: 600
-  }
+    fontWeight: 600,
+  },
 };

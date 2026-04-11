@@ -35,13 +35,11 @@ export function DocumentSetup({
 
   return (
     <div style={styles.wrap}>
-      {/* 标题行 */}
-      <div style={styles.headerRow}>
-        <h2 style={styles.title}>上传教材并生成计划</h2>
-        <span style={styles.persona}>教师人格：{personaName}</span>
+      <div style={styles.sectionHead}>
+        <span style={styles.sectionTitle}>上传教材</span>
+        <span style={styles.personaBadge}>教师：{personaName}</span>
       </div>
 
-      {/* 表单 */}
       <div style={styles.form}>
         <label style={styles.field}>
           <span style={styles.fieldLabel}>教材文件（PDF）</span>
@@ -81,23 +79,27 @@ export function DocumentSetup({
         {isBusy ? "处理中…" : "上传并生成计划"}
       </button>
 
-      {/* 状态行 */}
-      <div style={styles.statusRow}>
-        <span style={styles.statusItem}>
-          <span style={styles.statusKey}>教材状态</span>
-          {document ? formatDocumentSummary(document) : "未上传"}
-        </span>
-        <span style={styles.statusItem}>
-          <span style={styles.statusKey}>计划状态</span>
-          {plan ? `${plan.todayTasks.length} 条任务` : "未生成"}
-        </span>
-        <span style={styles.statusItem}>
-          <span style={styles.statusKey}>会话状态</span>
-          {session ? formatSessionStatus(session.status) : "未创建"}
-        </span>
+      <div style={styles.statusGrid}>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>教材</span>
+          <span style={styles.statusValue}>
+            {document ? formatDocumentSummary(document) : "未上传"}
+          </span>
+        </div>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>计划</span>
+          <span style={styles.statusValue}>
+            {plan ? `${plan.todayTasks.length} 条任务` : "未生成"}
+          </span>
+        </div>
+        <div style={styles.statusItem}>
+          <span style={styles.statusLabel}>会话</span>
+          <span style={styles.statusValue}>
+            {session ? formatSessionStatus(session.status) : "未创建"}
+          </span>
+        </div>
       </div>
 
-      {/* 学习单元列表 */}
       {document?.studyUnits.length ? (
         <div style={styles.unitSection}>
           <span style={styles.unitSectionLabel}>学习单元清单</span>
@@ -121,66 +123,64 @@ export function DocumentSetup({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
-    gap: 0
+    gap: 0,
+    paddingRight: 40,
+    borderRight: "1px solid var(--border)",
   },
-  headerRow: {
+  sectionHead: {
     display: "flex",
     alignItems: "baseline",
     justifyContent: "space-between",
     gap: 12,
     paddingBottom: 14,
-    borderBottom: "1px solid var(--border)"
+    borderBottom: "1px solid var(--border)",
   },
-  title: {
-    margin: 0,
+  sectionTitle: {
     fontSize: 15,
-    fontWeight: 700
+    fontWeight: 700,
+    color: "var(--ink)",
   },
-  persona: {
+  personaBadge: {
     fontSize: 12,
-    color: "var(--muted)"
+    color: "var(--muted)",
   },
   form: {
     display: "grid",
     gap: 14,
-    padding: "16px 0"
+    padding: "16px 0",
   },
   field: {
     display: "grid",
     gap: 6,
-    fontSize: 13,
-    color: "var(--muted)"
   },
   fieldLabel: {
     fontSize: 11,
+    fontWeight: 600,
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    color: "var(--muted)"
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
   },
   textarea: {
     width: "100%",
-    minHeight: 72,
+    minHeight: 80,
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "8px 10px",
     background: "var(--panel)",
     resize: "vertical",
     fontSize: 13,
     lineHeight: 1.6,
-    color: "var(--ink)"
+    color: "var(--ink)",
   },
   fileInput: {
     width: "100%",
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "6px 8px",
     background: "var(--panel)",
     color: "var(--ink)",
-    fontSize: 13
+    fontSize: 13,
   },
   button: {
     border: "none",
-    borderRadius: 3,
     height: 36,
     padding: "0 18px",
     background: "var(--accent)",
@@ -189,54 +189,60 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     fontSize: 13,
     alignSelf: "start",
-    justifySelf: "start"
+    justifySelf: "start",
   },
   buttonDisabled: {
     opacity: 0.45,
-    cursor: "not-allowed"
+    cursor: "not-allowed",
   },
-  statusRow: {
+  statusGrid: {
     display: "flex",
     flexWrap: "wrap",
     gap: "6px 20px",
-    padding: "14px 0",
-    fontSize: 13
+    padding: "12px 0",
+    borderTop: "1px solid var(--border)",
+    marginTop: 14,
   },
   statusItem: {
     display: "flex",
-    gap: 5,
+    gap: 6,
     alignItems: "baseline",
-    color: "var(--ink)"
   },
-  statusKey: {
+  statusLabel: {
     fontSize: 11,
-    color: "var(--muted)",
+    fontWeight: 600,
     textTransform: "uppercase",
-    letterSpacing: "0.06em"
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
+  },
+  statusValue: {
+    fontSize: 13,
+    color: "var(--ink)",
   },
   unitSection: {
     paddingTop: 14,
     borderTop: "1px solid var(--border)",
     display: "grid",
-    gap: 10
+    gap: 10,
   },
   unitSectionLabel: {
     fontSize: 11,
     fontWeight: 700,
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    color: "var(--muted)"
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
   },
   unitList: {
     display: "grid",
-    gap: 6
+    gap: 4,
   },
   unitItem: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "baseline",
     gap: 12,
-    flexWrap: "nowrap"
+    padding: "6px 0",
+    borderBottom: "1px solid var(--border)",
   },
   unitTitle: {
     flex: 1,
@@ -245,14 +251,14 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
   },
   unitMeta: {
     fontSize: 12,
     color: "var(--muted)",
     whiteSpace: "nowrap",
-    flexShrink: 0
-  }
+    flexShrink: 0,
+  },
 };
 
 function formatDocumentSummary(document: DocumentRecord) {

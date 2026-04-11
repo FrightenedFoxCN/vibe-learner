@@ -3,29 +3,52 @@ import Link from "next/link";
 
 import { TopNav } from "../components/top-nav";
 
+const PAGES = [
+  {
+    num: "01",
+    href: "/plan" as const,
+    title: "计划生成",
+    desc: "上传教材、解析章节结构，生成与刷新个性化学习计划。",
+  },
+  {
+    num: "02",
+    href: "/study" as const,
+    title: "章节对话",
+    desc: "左侧对话，右侧 PDF 联动，按章节与 AI 教师深入学习。",
+  },
+  {
+    num: "03",
+    href: "/persona-spectrum" as const,
+    title: "人格色谱",
+    desc: "配置 AI 教师人格、风格调参、情绪预览与导入导出。",
+  },
+];
+
 export default function HomePage() {
   return (
     <main className="with-app-nav" style={styles.page}>
       <TopNav currentPath="/" />
 
-      <div style={styles.topbar}>
-        <span style={styles.topbarTitle}>学习导航</span>
-        <span style={styles.topbarSub}>将计划生成、章节对话、人格配置拆分为并行页面。</span>
-      </div>
+      <header style={styles.header}>
+        <h1 style={styles.title}>学习工作台</h1>
+        <p style={styles.subtitle}>AI 辅助学习系统 · 计划 · 对话 · 人格</p>
+        <div style={styles.rule} />
+      </header>
 
       <nav className="home-nav-grid">
-        <Link href="/plan" style={styles.navItem}>
-          <span style={styles.navTitle}>计划生成页</span>
-          <span style={styles.navDesc}>上传教材、解析章节、生成与刷新学习计划。</span>
-        </Link>
-        <Link href="/study" style={styles.navItem}>
-          <span style={styles.navTitle}>章节对话页</span>
-          <span style={styles.navDesc}>左侧对话，右侧 PDF 联动，按章节进行深入学习。</span>
-        </Link>
-        <Link href="/persona-spectrum" style={styles.navItem}>
-          <span style={styles.navTitle}>人格色谱页</span>
-          <span style={styles.navDesc}>教师人格配置、风格调参与预览。</span>
-        </Link>
+        {PAGES.map((page) => (
+          <Link
+            key={page.href}
+            href={page.href}
+            className="home-nav-item"
+            style={styles.navItem}
+          >
+            <span style={styles.navNum}>{page.num}</span>
+            <span style={styles.navTitle}>{page.title}</span>
+            <span style={styles.navDesc}>{page.desc}</span>
+            <span style={styles.navArrow}>→</span>
+          </Link>
+        ))}
       </nav>
     </main>
   );
@@ -36,47 +59,61 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100vh",
     maxWidth: 1280,
     margin: "0 auto",
-    padding: "20px 32px 48px",
+    padding: "48px 32px 64px",
     display: "grid",
-    gap: 20,
-    alignContent: "start"
+    gap: 40,
+    alignContent: "start",
   },
-  topbar: {
-    display: "flex",
-    alignItems: "baseline",
-    gap: 12,
-    paddingBottom: 16
-  },
-  topbarTitle: {
-    fontSize: 16,
-    fontWeight: 700,
-    color: "var(--ink)"
-  },
-  topbarSub: {
-    fontSize: 13,
-    color: "var(--muted)"
-  },
-  nav: {
+  header: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 1,
-    background: "var(--border)"
+    gap: 8,
+  },
+  title: {
+    margin: 0,
+    fontSize: 28,
+    fontWeight: 800,
+    color: "var(--ink)",
+    letterSpacing: "-0.02em",
+    lineHeight: 1.2,
+  },
+  subtitle: {
+    margin: 0,
+    fontSize: 14,
+    color: "var(--muted)",
+    letterSpacing: "0.01em",
+  },
+  rule: {
+    height: 1,
+    background: "var(--border)",
+    marginTop: 8,
   },
   navItem: {
     display: "grid",
-    gap: 6,
-    padding: "24px 28px",
+    gap: 8,
+    padding: "28px 28px 24px",
     background: "var(--bg)",
-    textDecoration: "none"
+    textDecoration: "none",
+  },
+  navNum: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--accent)",
+    letterSpacing: "0.12em",
   },
   navTitle: {
-    fontSize: 15,
-    fontWeight: 600,
-    color: "var(--ink)"
+    fontSize: 18,
+    fontWeight: 700,
+    color: "var(--ink)",
+    lineHeight: 1.2,
   },
   navDesc: {
     fontSize: 13,
     color: "var(--muted)",
-    lineHeight: 1.6
-  }
+    lineHeight: 1.65,
+  },
+  navArrow: {
+    fontSize: 16,
+    color: "var(--border-strong)",
+    marginTop: 4,
+  },
 };

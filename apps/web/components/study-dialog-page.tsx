@@ -44,17 +44,13 @@ export function StudyDialogPage() {
 
   const resolveSectionIdByTheme = useCallback(
     (theme: string) => {
-      if (!theme) {
-        return "";
-      }
+      if (!theme) return "";
       const themeIndex = themeOptions.findIndex((item) => item === theme);
       const exactFocusMatch = activePlan?.schedule.find((item) => {
         const focus = item.focus?.trim() ?? "";
         return focus === theme || focus.includes(theme) || theme.includes(focus);
       });
-      if (exactFocusMatch?.unitId) {
-        return exactFocusMatch.unitId;
-      }
+      if (exactFocusMatch?.unitId) return exactFocusMatch.unitId;
 
       const chapterScopedUnitIds = (activePlan?.studyUnits ?? [])
         .filter((unit) => unit.includeInPlan)
@@ -63,19 +59,12 @@ export function StudyDialogPage() {
       if (themeIndex >= 0 && chapterScopedUnitIds[themeIndex]) {
         return chapterScopedUnitIds[themeIndex];
       }
-
       if (themeIndex >= 0) {
-        // Prefer de-duplicated chapter sequence for stable theme-to-session switching.
-        if (planSections[themeIndex]?.id) {
-          return planSections[themeIndex].id;
-        }
-
+        if (planSections[themeIndex]?.id) return planSections[themeIndex].id;
         const uniqueUnitIds = Array.from(
           new Set((activePlan?.schedule ?? []).map((item) => item.unitId).filter(Boolean))
         );
-        if (uniqueUnitIds[themeIndex]) {
-          return uniqueUnitIds[themeIndex];
-        }
+        if (uniqueUnitIds[themeIndex]) return uniqueUnitIds[themeIndex];
       }
       return planSections[0]?.id ?? "";
     },
@@ -85,9 +74,7 @@ export function StudyDialogPage() {
   const handleThemeChange = useCallback(
     (theme: string) => {
       setSelectedTheme(theme);
-      if (!studySession) {
-        return;
-      }
+      if (!studySession) return;
       const nextSectionId = resolveSectionIdByTheme(theme);
       if (nextSectionId && nextSectionId !== studySession.sectionId) {
         void handleSwitchSection(nextSectionId);
@@ -99,21 +86,13 @@ export function StudyDialogPage() {
   const resolveThemeStartPage = useCallback(
     (theme: string) => {
       const sectionId = resolveSectionIdByTheme(theme);
-      if (!sectionId) {
-        return 0;
-      }
+      if (!sectionId) return 0;
       const fromPlanSection = planSections.find((section) => section.id === sectionId)?.pageStart;
-      if (fromPlanSection) {
-        return fromPlanSection;
-      }
+      if (fromPlanSection) return fromPlanSection;
       const fromStudyUnit = activeDocument?.studyUnits.find((unit) => unit.id === sectionId)?.pageStart;
-      if (fromStudyUnit) {
-        return fromStudyUnit;
-      }
+      if (fromStudyUnit) return fromStudyUnit;
       const fromRawSection = activeDocument?.sections.find((section) => section.id === sectionId)?.pageStart;
-      if (fromRawSection) {
-        return fromRawSection;
-      }
+      if (fromRawSection) return fromRawSection;
       return 0;
     },
     [activeDocument?.sections, activeDocument?.studyUnits, planSections, resolveSectionIdByTheme]
@@ -121,9 +100,7 @@ export function StudyDialogPage() {
 
   const handleJumpToThemeStart = useCallback(() => {
     const nextPage = resolveThemeStartPage(currentTheme);
-    if (nextPage > 0) {
-      setPdfPage(nextPage);
-    }
+    if (nextPage > 0) setPdfPage(nextPage);
   }, [currentTheme, resolveThemeStartPage]);
 
   const handleAskByCurrentTheme = useCallback(
@@ -139,10 +116,7 @@ export function StudyDialogPage() {
   );
 
   useEffect(() => {
-    if (!themeOptions.length) {
-      setSelectedTheme("");
-      return;
-    }
+    if (!themeOptions.length) { setSelectedTheme(""); return; }
     if (!selectedTheme || !themeOptions.includes(selectedTheme)) {
       setSelectedTheme(themeOptions[0]);
     }
@@ -150,15 +124,11 @@ export function StudyDialogPage() {
 
   useEffect(() => {
     const firstPage = activeDocument?.sections[0]?.pageStart;
-    if (firstPage) {
-      setPdfPage(firstPage);
-    }
+    if (firstPage) setPdfPage(firstPage);
   }, [activeDocument?.id]);
 
   useEffect(() => {
-    if (!studySession || !currentTheme) {
-      return;
-    }
+    if (!studySession || !currentTheme) return;
     const nextSectionId = resolveSectionIdByTheme(currentTheme);
     if (nextSectionId && nextSectionId !== studySession.sectionId) {
       void handleSwitchSection(nextSectionId);
@@ -177,48 +147,36 @@ export function StudyDialogPage() {
     <main className="with-app-nav study-dialog-page" style={styles.page}>
       <TopNav currentPath="/study" />
 
-      <div style={styles.topbar}>
-        <div style={styles.topbarLeft}>
-          <span style={styles.topbarTitle}>章节对话</span>
-          {notice ? <span style={styles.notice}>{notice}</span> : null}
-          {!studySession ? (
-            <>
-              <span style={styles.hint}>尚未创建会话</span>
-              <button
-                type="button"
-                style={{ ...styles.inlineBtn, ...(isBusy || !activePlan || !activeDocument ? styles.inlineBtnDisabled : {}) }}
-                disabled={isBusy || !activePlan || !activeDocument}
-                onClick={() => {
-                  void createSessionForActivePlan();
-                }}
-              >
-                {isBusy ? "创建中…" : "创建会话"}
-              </button>
-            </>
-          ) : null}
+      {/* ── Heading ── */}
+      <div style={styles.heading}>
+        <h1 style={styles.pageTitle}>章节对话</h1>
+        <p style={styles.pageDesc}>基于学习计划开展章节问答；选择教材计划与教师人格，创建会话后开始学习。</p>
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div style={styles.toolbar}>
+        <div style={styles.toolbarField}>
+          <span style={styles.toolbarLabel}>学习计划</span>
+          <select
+            style={styles.planSelect}
+            value={activePlan?.id ?? ""}
+            onChange={(event) => selectPlan(event.target.value, PLAN_SWITCH_NOTICE)}
+            disabled={!planHistory.length}
+          >
+            {planHistoryItems.length ? (
+              planHistoryItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.courseTitle} · {item.documentTitle}
+                </option>
+              ))
+            ) : (
+              <option value="">暂无学习计划</option>
+            )}
+          </select>
         </div>
 
-        <div style={styles.topbarRight}>
-          <label style={styles.planSwitchWrap}>
-            <span style={styles.planSwitchLabel}>Weekly Plan</span>
-            <select
-              style={styles.planSwitchSelect}
-              value={activePlan?.id ?? ""}
-              onChange={(event) => selectPlan(event.target.value, PLAN_SWITCH_NOTICE)}
-              disabled={!planHistory.length}
-            >
-              {planHistoryItems.length ? (
-                planHistoryItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.courseTitle} · {item.documentTitle}
-                  </option>
-                ))
-              ) : (
-                <option value="">暂无 weekly plan</option>
-              )}
-            </select>
-          </label>
-
+        <div style={styles.toolbarField}>
+          <span style={styles.toolbarLabel}>教师人格</span>
           <PersonaSelector
             personas={personas}
             selectedPersonaId={selectedPersona.id}
@@ -226,6 +184,22 @@ export function StudyDialogPage() {
             compact
           />
         </div>
+
+        {!studySession ? (
+          <button
+            type="button"
+            style={{
+              ...styles.createBtn,
+              ...(isBusy || !activePlan || !activeDocument ? styles.createBtnDisabled : {})
+            }}
+            disabled={isBusy || !activePlan || !activeDocument}
+            onClick={() => { void createSessionForActivePlan(); }}
+          >
+            {isBusy ? "创建中…" : "创建会话"}
+          </button>
+        ) : null}
+
+        {notice ? <span style={styles.notice}>{notice}</span> : null}
       </div>
 
       <section className="study-dialog-grid" style={styles.grid}>
@@ -251,7 +225,7 @@ export function StudyDialogPage() {
         <aside className="study-dialog-pdf-pane" style={styles.pdfPane}>
           <div style={styles.pdfHeader}>
             <span style={styles.pdfTitle}>{activeDocument?.title ?? "未选择教材"}</span>
-            <span style={styles.pdfPage}>p.{pdfPage}</span>
+            <span style={styles.pdfPage}>第 {pdfPage} 页</span>
           </div>
           {activeDocument ? (
             <iframe title="textbook-pdf" src={pdfSrc} className="study-dialog-pdf-iframe" style={styles.iframe} />
@@ -269,91 +243,92 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100vh",
     maxWidth: 1600,
     margin: "0 auto",
-    padding: "20px 32px 30px",
+    padding: "28px 32px 48px",
     display: "grid",
-    gap: 16,
-    alignContent: "start"
+    gap: 0,
+    alignContent: "start",
   },
-  topbar: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 16,
-    borderBottom: "1px solid var(--border)",
-    paddingBottom: 14
+  /* Heading */
+  heading: {
+    display: "grid",
+    gap: 6,
+    paddingBottom: 16,
   },
-  topbarLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap"
-  },
-  topbarRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap",
-    justifyContent: "flex-end"
-  },
-  topbarTitle: {
-    fontSize: 16,
+  pageTitle: {
+    margin: 0,
+    fontSize: 20,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--ink)",
+    lineHeight: 1.2,
+  },
+  pageDesc: {
+    margin: 0,
+    fontSize: 13,
+    color: "var(--muted)",
+    lineHeight: 1.6,
+  },
+  /* Toolbar */
+  toolbar: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: 20,
+    paddingBottom: 20,
+    paddingTop: 4,
+    marginBottom: 24,
+    borderBottom: "1px solid var(--border)",
+    flexWrap: "wrap",
+  },
+  toolbarField: {
+    display: "grid",
+    gap: 5,
+  },
+  toolbarLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "var(--muted)",
   },
   notice: {
-    fontSize: 13,
-    color: "var(--teal)"
+    fontSize: 12,
+    color: "var(--teal)",
+    alignSelf: "center",
+    paddingBottom: 2,
   },
-  hint: {
-    fontSize: 13,
-    color: "var(--muted)"
-  },
-  inlineBtn: {
-    border: "1px solid var(--border)",
-    borderRadius: 3,
-    height: 28,
-    padding: "0 10px",
-    background: "var(--accent)",
-    color: "white",
-    fontWeight: 600,
-    cursor: "pointer",
-    fontSize: 12
-  },
-  inlineBtnDisabled: {
-    opacity: 0.45,
-    cursor: "not-allowed"
-  },
-  planSwitchWrap: {
-    display: "grid",
-    gap: 4
-  },
-  planSwitchLabel: {
-    fontSize: 11,
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    color: "var(--muted)"
-  },
-  planSwitchSelect: {
-    minHeight: 30,
-    borderRadius: 3,
+  planSelect: {
+    height: 32,
     border: "1px solid var(--border)",
     background: "var(--panel)",
     color: "var(--ink)",
     padding: "0 8px",
-    minWidth: 280,
-    maxWidth: 520,
-    width: "100%"
+    minWidth: 260,
+    maxWidth: 480,
+    fontSize: 13,
+  },
+  createBtn: {
+    border: "1px solid var(--accent)",
+    height: 32,
+    padding: "0 14px",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 13,
+  },
+  createBtnDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed",
   },
   grid: {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
     gap: 40,
-    alignItems: "start"
+    alignItems: "start",
   },
   leftColumn: {
     display: "grid",
     gap: 24,
-    alignContent: "start"
+    alignContent: "start",
   },
   pdfPane: {
     display: "flex",
@@ -362,7 +337,7 @@ const styles: Record<string, CSSProperties> = {
     height: "clamp(480px, 82vh, 980px)",
     overflow: "hidden",
     borderLeft: "1px solid var(--border)",
-    paddingLeft: 24
+    paddingLeft: 24,
   },
   pdfHeader: {
     display: "flex",
@@ -370,7 +345,7 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 10,
     paddingBottom: 10,
-    borderBottom: "1px solid var(--border)"
+    borderBottom: "1px solid var(--border)",
   },
   pdfTitle: {
     fontSize: 13,
@@ -378,13 +353,16 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
   },
   pdfPage: {
     fontSize: 12,
     color: "var(--muted)",
     whiteSpace: "nowrap",
-    flexShrink: 0
+    flexShrink: 0,
+    background: "var(--panel)",
+    border: "1px solid var(--border)",
+    padding: "1px 8px",
   },
   iframe: {
     width: "100%",
@@ -393,7 +371,7 @@ const styles: Record<string, CSSProperties> = {
     border: "none",
     background: "white",
     display: "block",
-    marginTop: 10
+    marginTop: 10,
   },
   emptyPdf: {
     flex: 1,
@@ -402,6 +380,8 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     padding: 24,
     textAlign: "center",
-    fontSize: 14
-  }
+    fontSize: 14,
+    background: "var(--panel)",
+    marginTop: 10,
+  },
 };
