@@ -1,7 +1,10 @@
 import json
 from pathlib import Path
 import queue
+import socket
 import threading
+import urllib.error
+import urllib.request
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -26,7 +29,11 @@ from app.models.api import (
     LearningPlanListResponse,
     LearningPlanResponse,
     ModelToolConfigResponse,
+    RuntimeSettingsResponse,
+    RuntimeSettingsProbeRequest,
+    RuntimeSettingsProbeResponse,
     UpdateModelToolConfigRequest,
+    UpdateRuntimeSettingsRequest,
     PersonaAssetsResponse,
     PersonaSlotAssistRequest,
     PersonaSlotAssistResponse,
@@ -196,6 +203,83 @@ def update_model_tool_config(payload: UpdateModelToolConfigRequest) -> ModelTool
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return get_model_tool_config()
+
+
+@router.get("/runtime-settings", response_model=RuntimeSettingsResponse)
+def get_runtime_settings() -> RuntimeSettingsResponse:
+    described = container.runtime_settings_service.describe()
+    return _into_response(RuntimeSettingsResponse, described)
+
+
+@router.patch("/runtime-settings", response_model=RuntimeSettingsResponse)
+def update_runtime_settings(payload: UpdateRuntimeSettingsRequest) -> RuntimeSettingsResponse:
+    try:
+        updates = payload.model_dump(mode="json", exclude_none=True)
+        container.update_runtime_settings(updates)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return get_runtime_settings()
+
+
+@router.post("/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse)
+def check_openai_models(payload: RuntimeSettingsProbeRequest) -> RuntimeSettingsProbeResponse:
+    api_key = payload.api_key.strip()
+    base_url = payload.base_url.strip().rstrip("/")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="missing_api_key")
+    if not base_url:
+        raise HTTPException(status_code=400, detail="missing_base_url")
+
+    timeout_seconds = max(5, container.runtime_settings_service.effective_settings().openai_timeout_seconds)
+    request = urllib.request.Request(
+        url=f"{base_url}/models",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            raw_payload = json.loads(response.read().decode("utf-8"))
+        models_raw = raw_payload.get("data") if isinstance(raw_payload, dict) else []
+        model_ids = sorted(
+            {
+                str(item.get("id") or "").strip()
+                for item in (models_raw if isinstance(models_raw, list) else [])
+                if isinstance(item, dict) and str(item.get("id") or "").strip()
+            }
+        )
+        return RuntimeSettingsProbeResponse(
+            available=True,
+            models=model_ids,
+            error="",
+        )
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        return RuntimeSettingsProbeResponse(
+            available=False,
+            models=[],
+            error=f"http_{exc.code}:{body[:180]}",
+        )
+    except urllib.error.URLError as exc:
+        return RuntimeSettingsProbeResponse(
+            available=False,
+            models=[],
+            error=f"network_error:{exc.reason}",
+        )
+    except (TimeoutError, socket.timeout):
+        return RuntimeSettingsProbeResponse(
+            available=False,
+            models=[],
+            error="timeout",
+        )
+    except json.JSONDecodeError:
+        return RuntimeSettingsProbeResponse(
+            available=False,
+            models=[],
+            error="invalid_json_response",
+        )
 
 
 @router.get("/documents", response_model=DocumentListResponse)

@@ -11,6 +11,7 @@ from app.services.performance import PerformanceMapper
 from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
 from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConfigService
+from app.services.runtime_settings import RuntimeSettingsService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
 
@@ -20,11 +21,12 @@ logger = get_logger("vibe_learner.bootstrap")
 class Container:
     def __init__(self) -> None:
         data_root = Path(__file__).resolve().parents[2] / "data"
-        settings = Settings.from_env()
+        self.base_settings = Settings.from_env()
         self.store = LocalJsonStore(data_root)
         self.document_parser = DocumentParser()
         self.model_tool_config_service = ModelToolConfigService(self.store)
-        self.model_provider = self._build_model_provider(settings)
+        self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
+        self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())
         self.performance_mapper = PerformanceMapper()
         self.persona_engine = PersonaEngine()
         self.study_arrangement_service = StudyArrangementService()
@@ -44,21 +46,37 @@ class Container:
             performance_mapper=self.performance_mapper,
         )
 
+    def update_runtime_settings(self, updates: dict[str, object]) -> None:
+        self.runtime_settings_service.update(updates)
+        self.model_provider = self._build_model_provider(
+            self.runtime_settings_service.effective_settings()
+        )
+        self.plan_service.model_provider = self.model_provider
+        self.pedagogy_orchestrator.model_provider = self.model_provider
+
     def _build_model_provider(self, settings: Settings):
         if settings.plan_provider == "openai":
-            if not settings.openai_api_key:
-                logger.warning("bootstrap.model_provider openai requested but OPENAI_API_KEY is missing; falling back to mock")
+            if not (settings.openai_plan_api_key or settings.openai_api_key):
+                logger.warning(
+                    "bootstrap.model_provider openai requested but OPENAI_PLAN_API_KEY/OPENAI_API_KEY missing; falling back to mock"
+                )
                 return MockModelProvider()
             logger.info(
                 "bootstrap.model_provider provider=openai plan_model=%s base_url=%s",
                 settings.openai_plan_model,
-                settings.openai_base_url,
+                settings.openai_plan_base_url,
             )
             return OpenAIModelProvider(
                 api_key=settings.openai_api_key,
                 base_url=settings.openai_base_url,
+                plan_api_key=settings.openai_plan_api_key,
+                plan_base_url=settings.openai_plan_base_url,
                 plan_model=settings.openai_plan_model,
+                setting_api_key=settings.openai_setting_api_key,
+                setting_base_url=settings.openai_setting_base_url,
                 setting_model=settings.openai_setting_model,
+                chat_api_key=settings.openai_chat_api_key,
+                chat_base_url=settings.openai_chat_base_url,
                 chat_model=settings.openai_chat_model,
                 chat_temperature=settings.openai_chat_temperature,
                 setting_temperature=settings.openai_setting_temperature,

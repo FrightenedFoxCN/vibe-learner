@@ -159,6 +159,75 @@ export interface ModelToolToggle {
   enabled: boolean;
 }
 
+export interface RuntimeSettings {
+  updatedAt: string;
+  planProvider: "mock" | "openai";
+  openaiApiKey: string;
+  openaiBaseUrl: string;
+  openaiPlanApiKey: string;
+  openaiPlanBaseUrl: string;
+  openaiPlanModel: string;
+  openaiSettingApiKey: string;
+  openaiSettingBaseUrl: string;
+  openaiSettingModel: string;
+  openaiChatApiKey: string;
+  openaiChatBaseUrl: string;
+  openaiChatModel: string;
+  openaiChatTemperature: number;
+  openaiSettingTemperature: number;
+  openaiSettingMaxTokens: number;
+  openaiChatMaxTokens: number;
+  openaiChatHistoryMessages: number;
+  openaiChatToolMaxRounds: number;
+  openaiChatToolsEnabled: boolean;
+  openaiChatMemoryToolEnabled: boolean;
+  openaiEmbeddingModel: string;
+  openaiChatModelMultimodal: boolean;
+  openaiTimeoutSeconds: number;
+  openaiPlanModelMultimodal: boolean;
+  openaiPlanToolsEnabled: boolean;
+  openaiPlanFallbackModel: string;
+  openaiPlanFallbackDisableTools: boolean;
+  showDebugInfo: boolean;
+}
+
+export interface RuntimeSettingsPatch {
+  planProvider?: "mock" | "openai";
+  openaiApiKey?: string;
+  openaiBaseUrl?: string;
+  openaiPlanApiKey?: string;
+  openaiPlanBaseUrl?: string;
+  openaiPlanModel?: string;
+  openaiSettingApiKey?: string;
+  openaiSettingBaseUrl?: string;
+  openaiSettingModel?: string;
+  openaiChatApiKey?: string;
+  openaiChatBaseUrl?: string;
+  openaiChatModel?: string;
+  openaiChatTemperature?: number;
+  openaiSettingTemperature?: number;
+  openaiSettingMaxTokens?: number;
+  openaiChatMaxTokens?: number;
+  openaiChatHistoryMessages?: number;
+  openaiChatToolMaxRounds?: number;
+  openaiChatToolsEnabled?: boolean;
+  openaiChatMemoryToolEnabled?: boolean;
+  openaiEmbeddingModel?: string;
+  openaiChatModelMultimodal?: boolean;
+  openaiTimeoutSeconds?: number;
+  openaiPlanModelMultimodal?: boolean;
+  openaiPlanToolsEnabled?: boolean;
+  openaiPlanFallbackModel?: string;
+  openaiPlanFallbackDisableTools?: boolean;
+  showDebugInfo?: boolean;
+}
+
+export interface RuntimeOpenAIProbeResult {
+  available: boolean;
+  models: string[];
+  error: string;
+}
+
 export interface PlanToolCallTrace {
   toolCallId: string;
   toolName: string;

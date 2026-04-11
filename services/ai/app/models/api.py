@@ -194,6 +194,80 @@ class ModelToolConfigResponse(BaseModel):
     stages: list[ModelToolStageResponse]
 
 
+class RuntimeSettingsResponse(BaseModel):
+    updated_at: str
+    plan_provider: str
+    openai_api_key: str
+    openai_base_url: str
+    openai_plan_api_key: str
+    openai_plan_base_url: str
+    openai_plan_model: str
+    openai_setting_api_key: str
+    openai_setting_base_url: str
+    openai_setting_model: str
+    openai_chat_api_key: str
+    openai_chat_base_url: str
+    openai_chat_model: str
+    openai_chat_temperature: float
+    openai_setting_temperature: float
+    openai_setting_max_tokens: int
+    openai_chat_max_tokens: int
+    openai_chat_history_messages: int
+    openai_chat_tool_max_rounds: int
+    openai_chat_tools_enabled: bool
+    openai_chat_memory_tool_enabled: bool
+    openai_embedding_model: str
+    openai_chat_model_multimodal: bool
+    openai_timeout_seconds: int
+    openai_plan_model_multimodal: bool
+    openai_plan_tools_enabled: bool
+    openai_plan_fallback_model: str
+    openai_plan_fallback_disable_tools: bool
+    show_debug_info: bool
+
+
+class UpdateRuntimeSettingsRequest(BaseModel):
+    plan_provider: str | None = None
+    openai_api_key: str | None = None
+    openai_base_url: str | None = None
+    openai_plan_api_key: str | None = None
+    openai_plan_base_url: str | None = None
+    openai_plan_model: str | None = None
+    openai_setting_api_key: str | None = None
+    openai_setting_base_url: str | None = None
+    openai_setting_model: str | None = None
+    openai_chat_api_key: str | None = None
+    openai_chat_base_url: str | None = None
+    openai_chat_model: str | None = None
+    openai_chat_temperature: float | None = None
+    openai_setting_temperature: float | None = None
+    openai_setting_max_tokens: int | None = None
+    openai_chat_max_tokens: int | None = None
+    openai_chat_history_messages: int | None = None
+    openai_chat_tool_max_rounds: int | None = None
+    openai_chat_tools_enabled: bool | None = None
+    openai_chat_memory_tool_enabled: bool | None = None
+    openai_embedding_model: str | None = None
+    openai_chat_model_multimodal: bool | None = None
+    openai_timeout_seconds: int | None = None
+    openai_plan_model_multimodal: bool | None = None
+    openai_plan_tools_enabled: bool | None = None
+    openai_plan_fallback_model: str | None = None
+    openai_plan_fallback_disable_tools: bool | None = None
+    show_debug_info: bool | None = None
+
+
+class RuntimeSettingsProbeRequest(BaseModel):
+    api_key: str
+    base_url: str
+
+
+class RuntimeSettingsProbeResponse(BaseModel):
+    available: bool
+    models: list[str]
+    error: str = ""
+
+
 class PlanToolCallTraceResponse(PlanToolCallTraceRecord):
     pass
 

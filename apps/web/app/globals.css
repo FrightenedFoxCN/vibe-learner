@@ -140,6 +140,33 @@ textarea {
   background: var(--panel) !important;
 }
 
+/* Settings page form controls */
+.settings-form input,
+.settings-form select {
+  height: 38px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 0 10px;
+}
+
+.settings-form input:focus,
+.settings-form select:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.settings-form button {
+  border-radius: 0;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.settings-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* PDF pane: sticky on desktop */
 .study-dialog-pdf-pane {
   position: sticky;

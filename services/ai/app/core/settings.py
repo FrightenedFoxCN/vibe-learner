@@ -10,8 +10,14 @@ class Settings:
     plan_provider: str = "mock"
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
+    openai_plan_api_key: str = ""
+    openai_plan_base_url: str = ""
     openai_plan_model: str = "gpt-4.1-mini"
+    openai_setting_api_key: str = ""
+    openai_setting_base_url: str = ""
     openai_setting_model: str = "gpt-4.1-mini"
+    openai_chat_api_key: str = ""
+    openai_chat_base_url: str = ""
     openai_chat_model: str = "gpt-4.1-mini"
     openai_chat_temperature: float = 0.35
     openai_setting_temperature: float = 0.4
@@ -32,13 +38,21 @@ class Settings:
     @classmethod
     def from_env(cls) -> "Settings":
         _load_dotenv()
+        global_api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        global_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         return cls(
             plan_provider=os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock",
-            openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
-            openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
+            openai_api_key=global_api_key,
+            openai_base_url=global_base_url,
+            openai_plan_api_key=(os.getenv("OPENAI_PLAN_API_KEY", "").strip() or global_api_key),
+            openai_plan_base_url=os.getenv("OPENAI_PLAN_BASE_URL", "").strip().rstrip("/"),
             openai_plan_model=os.getenv("OPENAI_PLAN_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
+            openai_setting_api_key=(os.getenv("OPENAI_SETTING_API_KEY", "").strip() or global_api_key),
+            openai_setting_base_url=os.getenv("OPENAI_SETTING_BASE_URL", "").strip().rstrip("/"),
             openai_setting_model=os.getenv("OPENAI_SETTING_MODEL", "gpt-4.1-mini").strip()
             or "gpt-4.1-mini",
+            openai_chat_api_key=(os.getenv("OPENAI_CHAT_API_KEY", "").strip() or global_api_key),
+            openai_chat_base_url=os.getenv("OPENAI_CHAT_BASE_URL", "").strip().rstrip("/"),
             openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini",
             openai_chat_temperature=_to_float(
                 os.getenv("OPENAI_CHAT_TEMPERATURE", "0.35"),

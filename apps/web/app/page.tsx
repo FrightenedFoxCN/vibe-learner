@@ -34,6 +34,12 @@ const PAGES = [
     title: "感官工具",
     desc: "按阶段管理模型工具：分类查看、开启关闭，并对可用性做统一调节。",
   },
+  {
+    num: "06",
+    href: "/settings" as const,
+    title: "统一设置",
+    desc: "通过可视化方式管理运行参数与调试信息开关，不再依赖手工编辑 .env。",
+  },
 ];
 
 export default function HomePage() {
@@ -51,7 +57,7 @@ export default function HomePage() {
         {PAGES.map((page) => (
           <Link
             key={page.href}
-            href={page.href}
+            href={page.href as never}
             className="home-nav-item"
             style={styles.navItem}
           >

@@ -10,6 +10,9 @@ import type {
   LearningGoal,
   LearningPlan,
   PersonaProfile,
+  RuntimeOpenAIProbeResult,
+  RuntimeSettings,
+  RuntimeSettingsPatch,
   StreamReport,
   StudyChatResponse,
   StudySessionRecord
@@ -376,6 +379,40 @@ function normalizeModelToolConfig(record: any): ModelToolConfig {
   };
 }
 
+function normalizeRuntimeSettings(record: any): RuntimeSettings {
+  return {
+    updatedAt: String(record.updated_at ?? ""),
+    planProvider: (record.plan_provider === "openai" ? "openai" : "mock") as "mock" | "openai",
+    openaiApiKey: String(record.openai_api_key ?? ""),
+    openaiBaseUrl: String(record.openai_base_url ?? "https://api.openai.com/v1"),
+    openaiPlanApiKey: String(record.openai_plan_api_key ?? ""),
+    openaiPlanBaseUrl: String(record.openai_plan_base_url ?? "https://api.openai.com/v1"),
+    openaiPlanModel: String(record.openai_plan_model ?? "gpt-4.1-mini"),
+    openaiSettingApiKey: String(record.openai_setting_api_key ?? ""),
+    openaiSettingBaseUrl: String(record.openai_setting_base_url ?? "https://api.openai.com/v1"),
+    openaiSettingModel: String(record.openai_setting_model ?? "gpt-4.1-mini"),
+    openaiChatApiKey: String(record.openai_chat_api_key ?? ""),
+    openaiChatBaseUrl: String(record.openai_chat_base_url ?? "https://api.openai.com/v1"),
+    openaiChatModel: String(record.openai_chat_model ?? "gpt-4.1-mini"),
+    openaiChatTemperature: Number(record.openai_chat_temperature ?? 0.35),
+    openaiSettingTemperature: Number(record.openai_setting_temperature ?? 0.4),
+    openaiSettingMaxTokens: Number(record.openai_setting_max_tokens ?? 900),
+    openaiChatMaxTokens: Number(record.openai_chat_max_tokens ?? 800),
+    openaiChatHistoryMessages: Number(record.openai_chat_history_messages ?? 8),
+    openaiChatToolMaxRounds: Number(record.openai_chat_tool_max_rounds ?? 4),
+    openaiChatToolsEnabled: Boolean(record.openai_chat_tools_enabled),
+    openaiChatMemoryToolEnabled: Boolean(record.openai_chat_memory_tool_enabled),
+    openaiEmbeddingModel: String(record.openai_embedding_model ?? "text-embedding-3-small"),
+    openaiChatModelMultimodal: Boolean(record.openai_chat_model_multimodal),
+    openaiTimeoutSeconds: Number(record.openai_timeout_seconds ?? 30),
+    openaiPlanModelMultimodal: Boolean(record.openai_plan_model_multimodal),
+    openaiPlanToolsEnabled: Boolean(record.openai_plan_tools_enabled),
+    openaiPlanFallbackModel: String(record.openai_plan_fallback_model ?? ""),
+    openaiPlanFallbackDisableTools: Boolean(record.openai_plan_fallback_disable_tools),
+    showDebugInfo: Boolean(record.show_debug_info)
+  };
+}
+
 function normalizeStreamReport(record: any): StreamReport {
   return {
     documentId: record.document_id,
@@ -665,6 +702,82 @@ export async function updateModelToolConfig(
     })
   );
   return normalizeModelToolConfig(payload);
+}
+
+export async function getRuntimeSettings(): Promise<RuntimeSettings> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/runtime-settings`)
+  );
+  return normalizeRuntimeSettings(payload);
+}
+
+export async function updateRuntimeSettings(
+  patch: RuntimeSettingsPatch
+): Promise<RuntimeSettings> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/runtime-settings`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        plan_provider: patch.planProvider,
+        openai_api_key: patch.openaiApiKey,
+        openai_base_url: patch.openaiBaseUrl,
+        openai_plan_api_key: patch.openaiPlanApiKey,
+        openai_plan_base_url: patch.openaiPlanBaseUrl,
+        openai_plan_model: patch.openaiPlanModel,
+        openai_setting_api_key: patch.openaiSettingApiKey,
+        openai_setting_base_url: patch.openaiSettingBaseUrl,
+        openai_setting_model: patch.openaiSettingModel,
+        openai_chat_api_key: patch.openaiChatApiKey,
+        openai_chat_base_url: patch.openaiChatBaseUrl,
+        openai_chat_model: patch.openaiChatModel,
+        openai_chat_temperature: patch.openaiChatTemperature,
+        openai_setting_temperature: patch.openaiSettingTemperature,
+        openai_setting_max_tokens: patch.openaiSettingMaxTokens,
+        openai_chat_max_tokens: patch.openaiChatMaxTokens,
+        openai_chat_history_messages: patch.openaiChatHistoryMessages,
+        openai_chat_tool_max_rounds: patch.openaiChatToolMaxRounds,
+        openai_chat_tools_enabled: patch.openaiChatToolsEnabled,
+        openai_chat_memory_tool_enabled: patch.openaiChatMemoryToolEnabled,
+        openai_embedding_model: patch.openaiEmbeddingModel,
+        openai_chat_model_multimodal: patch.openaiChatModelMultimodal,
+        openai_timeout_seconds: patch.openaiTimeoutSeconds,
+        openai_plan_model_multimodal: patch.openaiPlanModelMultimodal,
+        openai_plan_tools_enabled: patch.openaiPlanToolsEnabled,
+        openai_plan_fallback_model: patch.openaiPlanFallbackModel,
+        openai_plan_fallback_disable_tools: patch.openaiPlanFallbackDisableTools,
+        show_debug_info: patch.showDebugInfo
+      })
+    })
+  );
+  return normalizeRuntimeSettings(payload);
+}
+
+export async function probeRuntimeOpenAIModels(input: {
+  apiKey: string;
+  baseUrl: string;
+}): Promise<RuntimeOpenAIProbeResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/runtime-settings/check-openai-models`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        api_key: input.apiKey,
+        base_url: input.baseUrl
+      })
+    })
+  );
+  return {
+    available: Boolean(payload.available),
+    models: Array.isArray(payload.models)
+      ? payload.models.map((item: unknown) => String(item))
+      : [],
+    error: String(payload.error ?? "")
+  };
 }
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {

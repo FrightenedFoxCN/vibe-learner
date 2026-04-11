@@ -353,8 +353,14 @@ class OpenAIModelProvider(MockModelProvider):
         *,
         api_key: str,
         base_url: str,
+        plan_api_key: str = "",
+        plan_base_url: str = "",
         plan_model: str,
+        setting_api_key: str = "",
+        setting_base_url: str = "",
         setting_model: str | None = None,
+        chat_api_key: str = "",
+        chat_base_url: str = "",
         chat_model: str | None = None,
         chat_temperature: float = 0.35,
         setting_temperature: float = 0.4,
@@ -376,6 +382,12 @@ class OpenAIModelProvider(MockModelProvider):
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
+        self.plan_api_key = (plan_api_key or api_key).strip()
+        self.plan_base_url = (plan_base_url or base_url).rstrip("/")
+        self.setting_api_key = (setting_api_key or api_key).strip()
+        self.setting_base_url = (setting_base_url or base_url).rstrip("/")
+        self.chat_api_key = (chat_api_key or api_key).strip()
+        self.chat_base_url = (chat_base_url or base_url).rstrip("/")
         self.plan_model = plan_model
         self.setting_model = setting_model or chat_model or plan_model
         self.chat_model = chat_model or plan_model
@@ -891,6 +903,7 @@ class OpenAIModelProvider(MockModelProvider):
         request_kind: str,
         model: str,
     ) -> tuple[dict[str, Any], int]:
+        request_base_url, request_api_key = self._resolve_request_endpoint(request_kind)
         tools_enabled = "tools" in payload
         tool_round = len([message for message in payload.get("messages", []) if message.get("role") == "tool"])
         logger.info(
@@ -901,10 +914,10 @@ class OpenAIModelProvider(MockModelProvider):
             tools_enabled,
         )
         request = urllib.request.Request(
-            url=f"{self.base_url}/chat/completions",
+            url=f"{request_base_url}/chat/completions",
             data=json.dumps(payload).encode("utf-8"),
             headers={
-                "Authorization": f"Bearer {self.api_key}",
+                "Authorization": f"Bearer {request_api_key}",
                 "Content-Type": "application/json",
             },
             method="POST",
@@ -965,11 +978,12 @@ class OpenAIModelProvider(MockModelProvider):
         *,
         model: str,
     ) -> tuple[dict[str, Any], int]:
+        request_base_url, request_api_key = self._resolve_request_endpoint("chat")
         request = urllib.request.Request(
-            url=f"{self.base_url}/embeddings",
+            url=f"{request_base_url}/embeddings",
             data=json.dumps(payload).encode("utf-8"),
             headers={
-                "Authorization": f"Bearer {self.api_key}",
+                "Authorization": f"Bearer {request_api_key}",
                 "Content-Type": "application/json",
             },
             method="POST",
@@ -991,6 +1005,15 @@ class OpenAIModelProvider(MockModelProvider):
             raise RuntimeError("openai_embedding_request_network_error") from exc
         except (TimeoutError, socket.timeout) as exc:
             raise RuntimeError("openai_embedding_request_timeout") from exc
+
+    def _resolve_request_endpoint(self, request_kind: str) -> tuple[str, str]:
+        if request_kind == "plan":
+            return self.plan_base_url, self.plan_api_key
+        if request_kind == "setting":
+            return self.setting_base_url, self.setting_api_key
+        if request_kind == "chat":
+            return self.chat_base_url, self.chat_api_key
+        return self.base_url, self.api_key
 
 
 def _chat_tools(

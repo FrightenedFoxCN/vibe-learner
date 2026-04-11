@@ -276,6 +276,39 @@ class ModelToolConfigRecord(BaseModel):
     stage_tool_enabled: dict[str, dict[str, bool]] = Field(default_factory=dict)
 
 
+class RuntimeSettingsRecord(BaseModel):
+    config_id: str = "default"
+    updated_at: str
+    plan_provider: str = "mock"
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_plan_api_key: str = ""
+    openai_plan_base_url: str = ""
+    openai_plan_model: str = "gpt-4.1-mini"
+    openai_setting_api_key: str = ""
+    openai_setting_base_url: str = ""
+    openai_setting_model: str = "gpt-4.1-mini"
+    openai_chat_api_key: str = ""
+    openai_chat_base_url: str = ""
+    openai_chat_model: str = "gpt-4.1-mini"
+    openai_chat_temperature: float = 0.35
+    openai_setting_temperature: float = 0.4
+    openai_setting_max_tokens: int = 900
+    openai_chat_max_tokens: int = 800
+    openai_chat_history_messages: int = 8
+    openai_chat_tool_max_rounds: int = 4
+    openai_chat_tools_enabled: bool = True
+    openai_chat_memory_tool_enabled: bool = True
+    openai_embedding_model: str = "text-embedding-3-small"
+    openai_chat_model_multimodal: bool = False
+    openai_timeout_seconds: int = 30
+    openai_plan_model_multimodal: bool = False
+    openai_plan_tools_enabled: bool = True
+    openai_plan_fallback_model: str = ""
+    openai_plan_fallback_disable_tools: bool = True
+    show_debug_info: bool = True
+
+
 class StreamEventRecord(BaseModel):
     stage: str
     payload: dict[str, Any] = Field(default_factory=dict)
