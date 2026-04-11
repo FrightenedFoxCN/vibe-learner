@@ -20,6 +20,8 @@ class Settings:
     openai_chat_history_messages: int = 8
     openai_chat_tool_max_rounds: int = 4
     openai_chat_tools_enabled: bool = True
+    openai_chat_memory_tool_enabled: bool = True
+    openai_embedding_model: str = "text-embedding-3-small"
     openai_chat_model_multimodal: bool = False
     openai_timeout_seconds: int = 30
     openai_plan_model_multimodal: bool = False
@@ -63,6 +65,12 @@ class Settings:
                 os.getenv("OPENAI_CHAT_TOOLS_ENABLED", "true"),
                 default=True,
             ),
+            openai_chat_memory_tool_enabled=_to_bool(
+                os.getenv("OPENAI_CHAT_MEMORY_TOOL_ENABLED", "true"),
+                default=True,
+            ),
+            openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small").strip()
+            or "text-embedding-3-small",
             openai_chat_model_multimodal=_to_bool(
                 os.getenv("OPENAI_CHAT_MODEL_MULTIMODAL", "false"),
                 default=False,

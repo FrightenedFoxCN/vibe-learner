@@ -73,6 +73,7 @@ def build_learning_plan_messages(
         "document_title": document_title,
         "learning_goal": {
             "objective": goal.objective,
+            "scene_profile_summary": goal.scene_profile_summary,
         },
         "segmentation_hints": segmentation_hints,
         "study_units": planning_context["study_units"],

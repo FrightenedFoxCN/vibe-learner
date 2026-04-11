@@ -6,6 +6,16 @@
 - Frontend reads `NEXT_PUBLIC_AI_BASE_URL`
 - No authentication is implemented in v1
 
+## Runtime Configuration
+
+When `VIBE_LEARNER_PLAN_PROVIDER=openai`, chat/planning behavior is affected by these env vars:
+
+- `OPENAI_CHAT_TOOLS_ENABLED`: enables chat-side tool calling.
+- `OPENAI_CHAT_MEMORY_TOOL_ENABLED`: enables the chat tool `retrieve_memory_context`.
+- `OPENAI_EMBEDDING_MODEL`: embedding model used by cross-session memory retrieval (for example `text-embedding-3-small`).
+
+If embeddings are unavailable, the backend falls back to local hashed-vector retrieval.
+
 ## Response Conventions
 
 - Standard endpoints return JSON.

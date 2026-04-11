@@ -17,6 +17,7 @@ from app.models.domain import (
     StreamEventRecord,
     StreamReportRecord,
     StudySessionRecord,
+    SceneProfileRecord,
 )
 
 
@@ -207,6 +208,7 @@ class LearningPlanListResponse(BaseModel):
 class CreateStudySessionRequest(BaseModel):
     document_id: str
     persona_id: str
+    scene_profile: SceneProfileRecord | None = None
     section_id: str
     section_title: str = ""
     theme_hint: str = ""
@@ -234,6 +236,7 @@ class StudyChatResponse(BaseModel):
     character_events: list[CharacterStateEvent]
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list[dict[str, str]] = []
+    memory_trace: list[dict[str, object]] = []
 
 
 class StudyChatExchangeResponse(StudyChatResponse):

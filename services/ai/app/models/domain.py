@@ -194,6 +194,16 @@ class LearningGoalInput(BaseModel):
             "not the generated header title or summary."
         )
     )
+    scene_profile_summary: str = ""
+
+
+class SceneProfileRecord(BaseModel):
+    scene_id: str
+    title: str
+    summary: str
+    tags: list[str] = Field(default_factory=list)
+    selected_path: list[str] = Field(default_factory=list)
+    focus_object_names: list[str] = Field(default_factory=list)
 
 
 class StudyScheduleRecord(BaseModel):
@@ -217,6 +227,7 @@ class LearningPlanRecord(BaseModel):
             "Learner-authored study goal captured at plan creation time. This is supporting goal text, not the plan header title."
         )
     )
+    scene_profile_summary: str = ""
     overview: str = Field(
         description=(
             "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."
@@ -280,6 +291,7 @@ class StudyChatResult(BaseModel):
     character_events: list[CharacterStateEvent]
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list["PersonaSlotTraceRecord"] = []
+    memory_trace: list["MemoryTraceHitRecord"] = []
 
 
 class PersonaSlotTraceRecord(BaseModel):
@@ -287,6 +299,16 @@ class PersonaSlotTraceRecord(BaseModel):
     label: str
     content_excerpt: str
     reason: str
+
+
+class MemoryTraceHitRecord(BaseModel):
+    session_id: str
+    section_id: str
+    scene_title: str
+    score: float
+    snippet: str
+    created_at: str
+    source: str = "retriever"
 
 
 class InteractiveQuestionOption(BaseModel):
@@ -312,6 +334,7 @@ class DialogueTurnRecord(BaseModel):
     character_events: list[CharacterStateEvent]
     interactive_question: InteractiveQuestion | None = None
     persona_slot_trace: list[PersonaSlotTraceRecord] = []
+    memory_trace: list[MemoryTraceHitRecord] = []
     created_at: str
 
 
@@ -319,6 +342,7 @@ class StudySessionRecord(BaseModel):
     id: str
     document_id: str
     persona_id: str
+    scene_profile: SceneProfileRecord | None = None
     section_id: str
     section_title: str = ""
     theme_hint: str = ""

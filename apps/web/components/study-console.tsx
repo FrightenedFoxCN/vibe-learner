@@ -28,6 +28,11 @@ interface StudyConsoleProps {
   weeklyFocus: string[];
   turns: StudySessionRecord["turns"];
   session: StudyChatResponse | null;
+  companionSnapshot?: {
+    personaName: string;
+    sceneTitle: string;
+    sceneSummary: string;
+  };
   disabled?: boolean;
 }
 
@@ -44,6 +49,7 @@ export function StudyConsole({
   weeklyFocus,
   turns,
   session,
+  companionSnapshot,
   disabled
 }: StudyConsoleProps) {
   const [message, setMessage] = useState("请解释这一章的核心概念，并给我一个复述练习。");
@@ -60,6 +66,17 @@ export function StudyConsole({
 
   return (
     <div style={styles.wrap}>
+      {companionSnapshot ? (
+        <div style={styles.companionCard}>
+          <span style={styles.caption}>当前陪伴设定</span>
+          <div style={styles.companionRow}>
+            <span style={styles.companionChip}>人格: {companionSnapshot.personaName}</span>
+            <span style={styles.companionChip}>场景: {companionSnapshot.sceneTitle || "未设置"}</span>
+          </div>
+          <p style={styles.companionSummary}>{companionSnapshot.sceneSummary || "尚未配置场景摘要。"}</p>
+        </div>
+      ) : null}
+
       {/* Theme selector */}
       <div style={styles.themeRow}>
         <label style={styles.themeLabel}>
@@ -190,6 +207,20 @@ export function StudyConsole({
                       </div>
                     </div>
                   ) : null}
+                  {turn.memoryTrace?.length ? (
+                    <div style={styles.traceWrap}>
+                      <span style={styles.traceTitle}>记忆检索命中</span>
+                      <div style={styles.traceList}>
+                        {turn.memoryTrace.map((hit, idx) => (
+                          <div key={`${turn.createdAt}:memory:${hit.sessionId}:${idx}`} style={styles.traceItem}>
+                            <strong>{hit.sceneTitle || "未设置场景"} · {hit.sectionId}</strong>
+                            <span style={styles.traceReason}>score: {hit.score.toFixed(4)} · {hit.source === "tool_call" ? "tool" : "retriever"}</span>
+                            <span>{hit.snippet}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   {turn.citations.length ? (
                     <div style={styles.citations}>
                       {turn.citations.map((citation, citationIndex) => (
@@ -229,6 +260,20 @@ export function StudyConsole({
               </div>
             </div>
           ) : null}
+          {session.memoryTrace?.length ? (
+            <div style={styles.traceWrap}>
+              <span style={styles.traceTitle}>记忆检索命中</span>
+              <div style={styles.traceList}>
+                {session.memoryTrace.map((hit, idx) => (
+                  <div key={`${hit.sessionId}:${idx}`} style={styles.traceItem}>
+                    <strong>{hit.sceneTitle || "未设置场景"} · {hit.sectionId}</strong>
+                    <span style={styles.traceReason}>score: {hit.score.toFixed(4)} · {hit.source === "tool_call" ? "tool" : "retriever"}</span>
+                    <span>{hit.snippet}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {session.citations.length ? (
             <div style={styles.citations}>
               {session.citations.map((citation, index) => (
@@ -255,6 +300,31 @@ const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
     gap: 14,
+  },
+  companionCard: {
+    display: "grid",
+    gap: 8,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    padding: "10px 12px",
+  },
+  companionRow: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  companionChip: {
+    fontSize: 12,
+    color: "var(--ink-2)",
+    border: "1px solid var(--border)",
+    background: "white",
+    padding: "2px 8px",
+  },
+  companionSummary: {
+    margin: 0,
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.6,
   },
   themeRow: {
     display: "flex",

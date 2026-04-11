@@ -366,6 +366,7 @@ function normalizePlan(plan: any): LearningPlan {
     personaId: plan.persona_id,
     courseTitle: plan.course_title,
     objective: plan.objective,
+    sceneProfileSummary: String(plan.scene_profile_summary ?? ""),
     overview: plan.overview,
     weeklyFocus: plan.weekly_focus,
     todayTasks: plan.today_tasks,
@@ -375,11 +376,43 @@ function normalizePlan(plan: any): LearningPlan {
   };
 }
 
+function normalizeSceneProfile(scene: any) {
+  if (!scene || typeof scene !== "object") {
+    return undefined;
+  }
+  return {
+    sceneId: String(scene.scene_id ?? ""),
+    title: String(scene.title ?? ""),
+    summary: String(scene.summary ?? ""),
+    tags: Array.isArray(scene.tags) ? scene.tags.map((item: unknown) => String(item)) : [],
+    selectedPath: Array.isArray(scene.selected_path)
+      ? scene.selected_path.map((item: unknown) => String(item))
+      : [],
+    focusObjectNames: Array.isArray(scene.focus_object_names)
+      ? scene.focus_object_names.map((item: unknown) => String(item))
+      : []
+  };
+}
+
+function normalizeMemoryTrace(items: any[] | undefined) {
+  const raw = Array.isArray(items) ? items : [];
+  return raw.map((item: any) => ({
+    sessionId: String(item.session_id ?? ""),
+    sectionId: String(item.section_id ?? ""),
+    sceneTitle: String(item.scene_title ?? ""),
+    score: Number(item.score ?? 0),
+    snippet: compactPreviewString(String(item.snippet ?? ""), 240),
+    createdAt: String(item.created_at ?? ""),
+    source: String(item.source ?? "retriever") as "retriever" | "tool_call"
+  }));
+}
+
 function normalizeSession(session: any): StudySessionRecord {
   return {
     id: session.id,
     documentId: session.document_id,
     personaId: session.persona_id,
+    sceneProfile: normalizeSceneProfile(session.scene_profile),
     sectionId: session.section_id,
     sectionTitle: session.section_title ?? "",
     themeHint: session.theme_hint ?? "",
@@ -410,6 +443,7 @@ function normalizeSession(session: any): StudySessionRecord {
         contentExcerpt: compactPreviewString(item.content_excerpt ?? "", 280),
         reason: String(item.reason ?? "")
       })),
+      memoryTrace: normalizeMemoryTrace(turn.memory_trace),
       createdAt: turn.created_at
     })),
     createdAt: session.created_at,
@@ -701,7 +735,8 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
       body: JSON.stringify({
         document_id: goal.documentId,
         persona_id: goal.personaId,
-        objective: goal.objective
+        objective: goal.objective,
+        scene_profile_summary: goal.sceneProfileSummary ?? ""
       })
     })
   );
@@ -727,7 +762,8 @@ export async function createLearningPlanStream(
     body: JSON.stringify({
       document_id: goal.documentId,
       persona_id: goal.personaId,
-      objective: goal.objective
+      objective: goal.objective,
+      scene_profile_summary: goal.sceneProfileSummary ?? ""
     })
   });
   if (!response.ok || !response.body) {
@@ -784,6 +820,7 @@ export async function createLearningPlanStream(
 export async function createStudySession(input: {
   documentId: string;
   personaId: string;
+  sceneProfile?: import("@vibe-learner/shared").SceneProfile;
   sectionId: string;
   sectionTitle?: string;
   themeHint?: string;
@@ -797,6 +834,16 @@ export async function createStudySession(input: {
       body: JSON.stringify({
         document_id: input.documentId,
         persona_id: input.personaId,
+        scene_profile: input.sceneProfile
+          ? {
+              scene_id: input.sceneProfile.sceneId,
+              title: input.sceneProfile.title,
+              summary: input.sceneProfile.summary,
+              tags: input.sceneProfile.tags,
+              selected_path: input.sceneProfile.selectedPath,
+              focus_object_names: input.sceneProfile.focusObjectNames
+            }
+          : null,
         section_id: input.sectionId,
         section_title: input.sectionTitle ?? "",
         theme_hint: input.themeHint ?? ""
@@ -880,6 +927,7 @@ export async function sendStudyMessage(input: {
       contentExcerpt: String(item.content_excerpt ?? ""),
       reason: String(item.reason ?? "")
     })),
+    memoryTrace: normalizeMemoryTrace(payload.memory_trace),
     session: normalizeSession(payload.session)
   };
 }

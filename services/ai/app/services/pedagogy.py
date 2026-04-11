@@ -10,11 +10,14 @@ from app.models.domain import (
     PersonaProfile,
     PersonaSlotTraceRecord,
     StudyChatResult,
+    MemoryTraceHitRecord,
+    StudySessionRecord,
     SubmissionGradeResult,
     persona_sorted_slots,
 )
 from app.services.model_provider import ModelProvider
 from app.services.performance import PerformanceMapper
+from app.services.study_memory import build_memory_context, retrieve_memory_hits
 
 
 class PedagogyOrchestrator:
@@ -35,16 +38,30 @@ class PedagogyOrchestrator:
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
         previous_turns: list[DialogueTurnRecord] | None = None,
+        memory_sessions: list[StudySessionRecord] | None = None,
+        active_scene_summary: str = "",
     ) -> StudyChatResult:
         turns = previous_turns or []
         section_context = _build_section_context(debug_report=debug_report, section_id=section_id)
         conversation_history = _build_conversation_history(turns)
+        memory_hits = retrieve_memory_hits(
+            sessions=memory_sessions or [],
+            current_session_id=session_id,
+            active_section_id=section_id,
+            query=message,
+            active_scene_summary=active_scene_summary,
+            embed_texts=self.model_provider.embed_texts,
+        )
+        memory_context = build_memory_context(memory_hits)
+        memory_hit_payloads = [item.model_dump(mode="json") for item in memory_hits]
         raw_reply = self.model_provider.generate_chat(
             persona=persona,
             section_id=section_id,
             message=message,
             session_prompt=session_system_prompt,
             section_context=section_context,
+            memory_context=memory_context,
+            memory_trace_hits=memory_hit_payloads,
             conversation_history=conversation_history,
             debug_report=debug_report,
             document_path=document_path,
@@ -66,12 +83,14 @@ class PedagogyOrchestrator:
         for event in events:
             event.scene_hint = scene_hint
         slot_trace = _build_persona_slot_trace(persona=persona, message=message)
+        memory_trace = _normalize_memory_trace(raw_reply.memory_trace, memory_hits)
         return StudyChatResult(
             reply=raw_reply.text,
             citations=citations,
             character_events=events,
             interactive_question=raw_reply.interactive_question,
             persona_slot_trace=slot_trace,
+            memory_trace=memory_trace,
         )
 
     def generate_exercise(
@@ -314,3 +333,30 @@ def _build_persona_slot_trace(*, persona: PersonaProfile, message: str) -> list[
         )
     scored.sort(key=lambda item: (item[0], -item[1]), reverse=True)
     return [item[2] for item in scored[:4]]
+
+
+def _normalize_memory_trace(
+    raw_hits: list[dict[str, object]] | None,
+    fallback: list[MemoryTraceHitRecord],
+) -> list[MemoryTraceHitRecord]:
+    if not raw_hits:
+        return fallback
+    result: list[MemoryTraceHitRecord] = []
+    for item in raw_hits:
+        try:
+            result.append(
+                MemoryTraceHitRecord(
+                    session_id=str(item.get("session_id") or ""),
+                    section_id=str(item.get("section_id") or ""),
+                    scene_title=str(item.get("scene_title") or "未设置场景"),
+                    score=float(item.get("score") or 0),
+                    snippet=str(item.get("snippet") or ""),
+                    created_at=str(item.get("created_at") or ""),
+                    source=str(item.get("source") or "tool_call"),
+                )
+            )
+        except Exception:
+            continue
+    return result or fallback
+
+

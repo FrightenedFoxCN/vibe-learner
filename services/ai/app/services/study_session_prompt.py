@@ -20,6 +20,7 @@ def build_study_session_system_prompt(
     section_id: str,
     section_title: str,
     theme_hint: str,
+    scene_profile_summary: str = "",
 ) -> str:
     template = load_study_session_prompt_template().system_prompt
     return (
@@ -29,6 +30,7 @@ def build_study_session_system_prompt(
         .replace("{{SECTION_ID}}", section_id.strip())
         .replace("{{SECTION_TITLE}}", section_title.strip())
         .replace("{{THEME_HINT}}", theme_hint.strip() or "N/A")
+        .replace("{{SCENE_PROFILE_SUMMARY}}", scene_profile_summary.strip() or "N/A")
     )
 
 

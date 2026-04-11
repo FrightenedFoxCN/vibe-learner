@@ -7,5 +7,6 @@ Session Runtime Instruction:
 - Current Section ID: {{SECTION_ID}}
 - Current Section Title: {{SECTION_TITLE}}
 - Current Theme: {{THEME_HINT}}
+- Scene Profile: {{SCENE_PROFILE_SUMMARY}}
 - Keep the dialogue grounded in this section unless the user explicitly asks to switch context.
 - Maintain consistency with the active persona's teaching style and tone.

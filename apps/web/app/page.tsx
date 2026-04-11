@@ -19,7 +19,7 @@ const PAGES = [
   {
     num: "03",
     href: "/persona-spectrum" as const,
-    title: "人格层",
+    title: "人格色谱",
     desc: "配置 AI 教师人格、插槽权重、风格调参与导入导出。",
   },
   {

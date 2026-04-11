@@ -7,6 +7,16 @@ export interface PersonaSlotTraceEntry {
   reason: string;
 }
 
+export interface MemoryTraceHit {
+  sessionId: string;
+  sectionId: string;
+  sceneTitle: string;
+  score: number;
+  snippet: string;
+  createdAt: string;
+  source?: "retriever" | "tool_call";
+}
+
 export interface Citation {
   sectionId: string;
   title: string;
@@ -19,6 +29,17 @@ export interface LearningGoal {
   personaId: string;
   // Learner-authored study goal captured at plan creation time.
   objective: string;
+  // Optional scene summary chosen before planning.
+  sceneProfileSummary?: string;
+}
+
+export interface SceneProfile {
+  sceneId: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  selectedPath: string[];
+  focusObjectNames: string[];
 }
 
 export interface LearningPlan {
@@ -29,6 +50,8 @@ export interface LearningPlan {
   courseTitle: string;
   // Stable learner-authored study goal captured at plan creation time.
   objective: string;
+  // Optional scene summary captured at plan creation time.
+  sceneProfileSummary?: string;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
   // Ordered main themes (coarse-grained) for sequential display.
@@ -166,6 +189,7 @@ export interface StudyChatResponse {
   characterEvents: CharacterStateEvent[];
   interactiveQuestion?: InteractiveQuestion;
   personaSlotTrace?: PersonaSlotTraceEntry[];
+  memoryTrace?: MemoryTraceHit[];
 }
 
 export interface InteractiveQuestionOption {
@@ -238,6 +262,7 @@ export interface DialogueTurnRecord {
   characterEvents: CharacterStateEvent[];
   interactiveQuestion?: InteractiveQuestion;
   personaSlotTrace?: PersonaSlotTraceEntry[];
+  memoryTrace?: MemoryTraceHit[];
   createdAt: string;
 }
 
@@ -263,6 +288,7 @@ export interface StudySessionRecord {
   id: string;
   documentId: string;
   personaId: string;
+  sceneProfile?: SceneProfile;
   sectionId: string;
   sectionTitle?: string;
   themeHint?: string;

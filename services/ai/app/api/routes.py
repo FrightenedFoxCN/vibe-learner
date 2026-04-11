@@ -449,6 +449,10 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
 def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeResponse:
     session = container.study_session_service.require_session(session_id)
+    memory_sessions = container.study_session_service.list_sessions(
+        document_id=session.document_id,
+        persona_id=session.persona_id,
+    )
     persona = container.persona_engine.require_persona(session.persona_id)
     document = container.document_service.require_document(session.document_id)
     debug_report = None
@@ -467,6 +471,8 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
             debug_report=debug_report,
             document_path=document.stored_path,
             previous_turns=session.turns,
+            memory_sessions=memory_sessions,
+            active_scene_summary=_scene_profile_summary(session),
         )
     except RuntimeError as exc:
         http_error = _map_chat_generation_error(exc)
@@ -541,10 +547,11 @@ def update_study_session(
 @router.post("/study-sessions", response_model=StudySessionResponse)
 def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResponse:
     logger.info(
-        "study_sessions.create document_id=%s persona_id=%s section_id=%s",
+        "study_sessions.create document_id=%s persona_id=%s section_id=%s scene_id=%s",
         payload.document_id,
         payload.persona_id,
         payload.section_id,
+        payload.scene_profile.scene_id if payload.scene_profile else "",
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
     document = container.document_service.require_document(payload.document_id)
@@ -560,10 +567,12 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         section_id=payload.section_id,
         section_title=section_title,
         theme_hint=theme_hint,
+        scene_profile_summary=(payload.scene_profile.summary if payload.scene_profile else ""),
     )
     session = container.study_session_service.create_session(
         document_id=payload.document_id,
         persona_id=payload.persona_id,
+        scene_profile=payload.scene_profile,
         section_id=payload.section_id,
         section_title=section_title,
         theme_hint=theme_hint,
@@ -580,6 +589,12 @@ def _resolve_section_title(*, document, section_id: str) -> str:
         if unit.id == section_id:
             return unit.title
     return section_id
+
+
+def _scene_profile_summary(session) -> str:
+    if not session.scene_profile:
+        return ""
+    return session.scene_profile.summary.strip()
 
 
 @router.post("/learning-plans", response_model=LearningPlanResponse)

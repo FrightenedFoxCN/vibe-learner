@@ -39,6 +39,7 @@ class ModelReply:
     mood: str
     action: str
     interactive_question: dict[str, Any] | None = None
+    memory_trace: list[dict[str, Any]] | None = None
 
 
 @dataclass
@@ -69,11 +70,16 @@ class ModelProvider:
         message: str,
         session_prompt: str = "",
         section_context: str = "",
+        memory_context: str = "",
+        memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
     ) -> ModelReply:
         raise NotImplementedError
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        return []
 
     def generate_exercise(
         self, *, persona: PersonaProfile, section_id: str, topic: str
@@ -131,6 +137,8 @@ class MockModelProvider(ModelProvider):
         message: str,
         session_prompt: str = "",
         section_context: str = "",
+        memory_context: str = "",
+        memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
@@ -141,17 +149,19 @@ class MockModelProvider(ModelProvider):
         if conversation_history:
             history_hint = f" 我已读取最近 {len(conversation_history)} 条上下文。"
         section_hint = f" 章节上下文：{section_context[:80]}。" if section_context else ""
+        memory_hint = f" 我还参考了历史互动记忆：{memory_context[:80]}。" if memory_context else ""
         text = (
             f"{persona.name} 正在结合章节 {section_id} 讲解。"
             f" 当前提问是：{message}。"
             f"{section_hint}"
+            f"{memory_hint}"
             f"{history_hint}"
             f"{' 会话约束：' + session_prompt[:80] if session_prompt else ''}"
             f" 我会用 {style} 的方式先解释核心概念，再给你一个复述任务。"
         )
         narrative_mode = persona_slot_content(persona, "narrative_mode", "grounded")
         mood = "playful" if narrative_mode == "light_story" else "calm"
-        return ModelReply(text=text, mood=mood, action="explain")
+        return ModelReply(text=text, mood=mood, action="explain", memory_trace=memory_trace_hits or [])
 
     def generate_exercise(
         self, *, persona: PersonaProfile, section_id: str, topic: str
@@ -341,7 +351,9 @@ class OpenAIModelProvider(MockModelProvider):
         chat_history_messages: int = 8,
         chat_tool_max_rounds: int = 4,
         chat_tools_enabled: bool = True,
+        chat_memory_tool_enabled: bool = True,
         chat_multimodal_enabled: bool = False,
+        embedding_model: str = "text-embedding-3-small",
         timeout_seconds: int = 30,
         multimodal_enabled: bool = False,
         plan_tools_enabled: bool = True,
@@ -360,7 +372,9 @@ class OpenAIModelProvider(MockModelProvider):
         self.chat_history_messages = max(1, chat_history_messages)
         self.chat_tool_max_rounds = max(1, chat_tool_max_rounds)
         self.chat_tools_enabled = chat_tools_enabled
+        self.chat_memory_tool_enabled = chat_memory_tool_enabled
         self.chat_multimodal_enabled = chat_multimodal_enabled
+        self.embedding_model = embedding_model
         self.timeout_seconds = timeout_seconds
         self.multimodal_enabled = multimodal_enabled
         self.plan_tools_enabled = plan_tools_enabled
@@ -378,6 +392,8 @@ class OpenAIModelProvider(MockModelProvider):
         message: str,
         session_prompt: str = "",
         section_context: str = "",
+        memory_context: str = "",
+        memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
@@ -401,6 +417,7 @@ class OpenAIModelProvider(MockModelProvider):
                     "action must be one of explain, point, prompt, reflect, celebrate, idle. "
                     "If the learner asks for practice, a check-up, a quiz, or a question drill, "
                     "you may call ask_multiple_choice_question or ask_fill_blank_question. "
+                    "If prior interactions might help, call retrieve_memory_context before answering. "
                     "If you need deeper grounding from the textbook, call read_page_range_content. "
                     "If diagrams/formulas/layout matter and image tool is available, call read_page_range_images. "
                     "Use the tool result directly in your final JSON reply. "
@@ -417,6 +434,7 @@ class OpenAIModelProvider(MockModelProvider):
                 "content": (
                     f"Section ID: {section_id}\n"
                     f"Section Context:\n{section_context or 'N/A'}\n\n"
+                    f"Retrieved Memory Context:\n{memory_context or 'N/A'}\n\n"
                     f"Learner message: {message}\n"
                     "Answer in Chinese and keep explanations grounded in the section context when possible. "
                     "If you generate a question, focus on subtle distinctions, boundary conditions, causal links, "
@@ -437,6 +455,8 @@ class OpenAIModelProvider(MockModelProvider):
             }
             tool_specs = _chat_tools(
                 tools_enabled=self.chat_tools_enabled,
+                memory_tool_enabled=self.chat_memory_tool_enabled,
+                memory_hits=memory_trace_hits or [],
                 multimodal_enabled=self.chat_multimodal_enabled,
                 debug_report=debug_report,
                 document_path=document_path,
@@ -469,6 +489,7 @@ class OpenAIModelProvider(MockModelProvider):
                         section_id=section_id,
                         section_context=section_context,
                         learner_message=message,
+                        memory_hits=memory_trace_hits or [],
                         debug_report=debug_report,
                         document_path=document_path,
                     )
@@ -491,6 +512,7 @@ class OpenAIModelProvider(MockModelProvider):
             return _parse_chat_model_reply(
                 raw_payload=raw_payload,
                 tool_results=last_tool_results,
+                fallback_memory_trace=memory_trace_hits or [],
             )
         except RuntimeError as exc:
             if str(exc) != "chat_model_invalid_payload":
@@ -521,6 +543,7 @@ class OpenAIModelProvider(MockModelProvider):
             return _parse_chat_model_reply(
                 raw_payload=recovery_raw_payload,
                 tool_results=[],
+                fallback_memory_trace=memory_trace_hits or [],
             )
 
     def assist_persona_setting(
@@ -888,10 +911,62 @@ class OpenAIModelProvider(MockModelProvider):
             )
             raise RuntimeError(f"openai_{request_kind}_request_timeout") from exc
 
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        clean = [text.strip() for text in texts if text and text.strip()]
+        if not clean:
+            return []
+        payload: dict[str, Any] = {
+            "model": self.embedding_model,
+            "input": clean,
+        }
+        raw_payload, _ = self._request_openai_embeddings(payload, model=self.embedding_model)
+        data = raw_payload.get("data") or []
+        vectors: list[list[float]] = []
+        for item in data:
+            embedding = item.get("embedding") if isinstance(item, dict) else None
+            if isinstance(embedding, list):
+                vectors.append([float(value) for value in embedding])
+        return vectors
+
+    def _request_openai_embeddings(
+        self,
+        payload: dict[str, Any],
+        *,
+        model: str,
+    ) -> tuple[dict[str, Any], int]:
+        request = urllib.request.Request(
+            url=f"{self.base_url}/embeddings",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        started_at = time.perf_counter()
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
+                raw_payload = json.loads(response.read().decode("utf-8"))
+            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            logger.info("model.embedding.request provider=openai model=%s elapsed_ms=%s", model, elapsed_ms)
+            return raw_payload, elapsed_ms
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="ignore")
+            error_code, _ = _extract_upstream_error(body)
+            if error_code == "rate_limit":
+                raise RuntimeError("openai_embedding_request_rate_limit") from exc
+            raise RuntimeError(f"openai_embedding_request_failed:{exc.code}:{error_code or 'unknown'}") from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError("openai_embedding_request_network_error") from exc
+        except (TimeoutError, socket.timeout) as exc:
+            raise RuntimeError("openai_embedding_request_timeout") from exc
+
 
 def _chat_tools(
     *,
     tools_enabled: bool,
+    memory_tool_enabled: bool,
+    memory_hits: list[dict[str, Any]],
     multimodal_enabled: bool,
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
@@ -972,6 +1047,31 @@ def _chat_tools(
         },
     ]
 
+    if memory_tool_enabled and memory_hits:
+        tools.append(
+            {
+                "type": "function",
+                "function": {
+                    "name": "retrieve_memory_context",
+                    "description": (
+                        "Retrieve top cross-session memory hits that may help answer the learner's current question."
+                    ),
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "top_k": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 8,
+                                "description": "Number of memory hits to return.",
+                            }
+                        },
+                        "additionalProperties": False,
+                    },
+                },
+            }
+        )
+
     if debug_report is not None:
         tools.append(
             {
@@ -1027,6 +1127,7 @@ def _execute_chat_tool_call(
     section_id: str,
     section_context: str,
     learner_message: str,
+    memory_hits: list[dict[str, Any]],
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
 ) -> dict[str, Any]:
@@ -1082,6 +1183,16 @@ def _execute_chat_tool_call(
                 page_end=max(max(1, page_start), page_end),
                 max_images=max(1, min(max_images, 4)),
             ),
+        }
+    elif tool_name == "retrieve_memory_context":
+        top_k = _coerce_int(arguments.get("top_k"), default=4)
+        top_k = max(1, min(top_k, 8))
+        result = {
+            "ok": True,
+            "tool_name": tool_name,
+            "section_id": section_id,
+            "hit_count": min(len(memory_hits), top_k),
+            "hits": memory_hits[:top_k],
         }
     else:
         result = {
@@ -1362,6 +1473,7 @@ def _parse_chat_model_reply(
     *,
     raw_payload: dict[str, Any],
     tool_results: list[dict[str, Any]],
+    fallback_memory_trace: list[dict[str, Any]],
 ) -> ModelReply:
     content = ""
     try:
@@ -1384,6 +1496,7 @@ def _parse_chat_model_reply(
         parsed=parsed,
         tool_results=tool_results,
     )
+    memory_trace = _extract_memory_trace_payload(tool_results, fallback_memory_trace)
     mood = str(parsed.get("mood") or "calm")
     action = str(parsed.get("action") or "explain")
     text = str(parsed.get("text") or "").strip()
@@ -1409,7 +1522,29 @@ def _parse_chat_model_reply(
         mood=mood,
         action=action,
         interactive_question=interactive_question,
+        memory_trace=memory_trace,
     )
+
+
+def _extract_memory_trace_payload(
+    tool_results: list[dict[str, Any]],
+    fallback_memory_trace: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    for result in reversed(tool_results):
+        if str(result.get("tool_name") or "") != "retrieve_memory_context":
+            continue
+        hits = result.get("hits")
+        if isinstance(hits, list):
+            normalized: list[dict[str, Any]] = []
+            for item in hits:
+                if not isinstance(item, dict):
+                    continue
+                normalized.append({
+                    **item,
+                    "source": "tool_call",
+                })
+            return normalized
+    return [{**item, "source": str(item.get("source") or "retriever")} for item in fallback_memory_trace]
 
 
 def _escape_invalid_backslashes_in_json_strings(raw: str) -> str:

@@ -196,6 +196,7 @@ class StudyArrangementService:
             persona_id=goal.persona_id,
             course_title=course_title,
             objective=goal.objective,
+            scene_profile_summary=goal.scene_profile_summary,
             overview=overview,
             weekly_focus=weekly_focus,
             today_tasks=today_tasks,

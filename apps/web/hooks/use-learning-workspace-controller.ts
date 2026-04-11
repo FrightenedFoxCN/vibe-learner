@@ -21,6 +21,7 @@ import {
   processDocumentStream,
   sendStudyMessage,
   submitStudyQuestionAttempt,
+  updateStudySessionSection,
   uploadDocument
 } from "../lib/api";
 import { mockPersonas } from "../lib/mock-data";
@@ -34,6 +35,7 @@ import {
   resolveWorkspaceSnapshot,
   type WorkspaceSnapshot,
 } from "../lib/learning-workspace-state";
+import { readSceneProfileFromLocalStorage } from "../lib/scene-profile";
 import {
   createInitialLearningWorkspaceState,
   learningWorkspaceReducer
@@ -91,7 +93,6 @@ export function useLearningWorkspaceController({
   const [planStreamStatus, setPlanStreamStatus] = useState("idle");
   const [processStreamDocumentId, setProcessStreamDocumentId] = useState("");
   const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
-  const [sessionRegistry, setSessionRegistry] = useState<Record<string, StudySessionRecord>>({});
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
 
   const selectedPersona =
@@ -136,31 +137,23 @@ export function useLearningWorkspaceController({
     return activePlan.weeklyFocus[0] ?? "";
   };
 
-  const buildSessionRegistryKey = (planId: string, sectionId: string) => `${planId || "no-plan"}:${sectionId}`;
-
-  const registerSession = (session: StudySessionRecord, planIdOverride?: string) => {
-    const key = buildSessionRegistryKey(planIdOverride ?? state.selectedPlanId, session.sectionId);
-    setSessionRegistry((current) => ({
-      ...current,
-      [key]: session,
-    }));
-  };
-
-  const registerSessions = (sessions: StudySessionRecord[], planIdOverride?: string) => {
-    if (!sessions.length) {
-      return;
+  const fetchLatestSessionForPlan = async (): Promise<StudySessionRecord | null> => {
+    if (!activePlan || !activeDocument) {
+      return null;
     }
-    setSessionRegistry((current) => {
-      const next = { ...current };
-      for (const session of sessions) {
-        const key = buildSessionRegistryKey(planIdOverride ?? state.selectedPlanId, session.sectionId);
-        const existing = next[key];
-        if (!existing || existing.updatedAt < session.updatedAt) {
-          next[key] = session;
-        }
-      }
-      return next;
+    const sessions = await listStudySessions({
+      documentId: activeDocument.id,
+      personaId: activePlan.personaId,
     });
+    if (!sessions.length) {
+      return null;
+    }
+    const sorted = [...sessions].sort((a, b) => {
+      const aTime = Date.parse(a.updatedAt || "") || 0;
+      const bTime = Date.parse(b.updatedAt || "") || 0;
+      return bTime - aTime;
+    });
+    return sorted[0] ?? null;
   };
 
   const applyWorkspaceSnapshot = (
@@ -255,8 +248,12 @@ export function useLearningWorkspaceController({
     document: DocumentRecord;
     personaId: string;
   }): Promise<StudySessionRecord> => {
+    const sceneProfile = readSceneProfileFromLocalStorage();
     const nextSession = await createStudySession(
-      buildInitialStudySessionInput(input)
+      {
+        ...buildInitialStudySessionInput(input),
+        sceneProfile,
+      }
     );
     logWorkspaceInfo("workflow:upload:session_ready", {
       sessionId: nextSession.id,
@@ -332,7 +329,8 @@ export function useLearningWorkspaceController({
         {
           documentId: nextDocument.id,
           personaId: selectedPersona.id,
-          objective: input.objective
+          objective: input.objective,
+          sceneProfileSummary: readSceneProfileFromLocalStorage()?.summary ?? ""
         },
         (event) => {
           setPlanStreamEvents((current) => [
@@ -370,7 +368,6 @@ export function useLearningWorkspaceController({
           studySession: nextSession,
           clearResponse: true
         });
-        registerSession(nextSession, nextPlan.id);
         dispatch({
           type: "notice_set",
           notice: PLAN_GENERATED_NOTICE
@@ -408,6 +405,7 @@ export function useLearningWorkspaceController({
             document: activeDocument,
             personaId: activePlan.personaId
           }),
+          sceneProfile: readSceneProfileFromLocalStorage(),
           sectionTitle: resolveSectionTitle(
             planSections[0]?.id ??
               activeDocument.sections[0]?.id ??
@@ -426,7 +424,6 @@ export function useLearningWorkspaceController({
         personaId: activePlan.personaId,
         clearResponse: true
       });
-      registerSession(nextSession, activePlan.id);
       dispatch({
         type: "notice_set",
         notice: SESSION_CREATED_NOTICE
@@ -457,37 +454,34 @@ export function useLearningWorkspaceController({
       return null;
     }
 
-    if (state.studySession?.sectionId === sectionId) {
-      return state.studySession;
+    let workingSession = state.studySession;
+    if (!workingSession) {
+      workingSession = await fetchLatestSessionForPlan();
     }
 
-    const registryKey = buildSessionRegistryKey(activePlan.id, sectionId);
-    const existingSession = sessionRegistry[registryKey];
-    if (existingSession) {
-      dispatch({
-        type: "study_session_set",
-        studySession: existingSession,
-        personaId: existingSession.personaId,
-        clearResponse: options.clearResponseOnSwitch ?? true,
+    if (!workingSession) {
+      workingSession = await createStudySession({
+        documentId: activeDocument.id,
+        personaId: activePlan.personaId,
+        sceneProfile: readSceneProfileFromLocalStorage(),
+        sectionId,
+        sectionTitle: resolveSectionTitle(sectionId),
+        themeHint: resolveThemeHintBySectionId(sectionId),
       });
-      return existingSession;
+    } else if (workingSession.sectionId !== sectionId) {
+      workingSession = await updateStudySessionSection({
+        sessionId: workingSession.id,
+        sectionId,
+      });
     }
 
-    const createdSession = await createStudySession({
-      documentId: activeDocument.id,
-      personaId: activePlan.personaId,
-      sectionId,
-      sectionTitle: resolveSectionTitle(sectionId),
-      themeHint: resolveThemeHintBySectionId(sectionId),
-    });
     dispatch({
       type: "study_session_set",
-      studySession: createdSession,
-      personaId: createdSession.personaId,
+      studySession: workingSession,
+      personaId: workingSession.personaId,
       clearResponse: options.clearResponseOnSwitch ?? true,
     });
-    registerSession(createdSession, activePlan.id);
-    return createdSession;
+    return workingSession;
   };
 
   const handleAskForSection = async (message: string, sectionId: string) => {
@@ -514,7 +508,6 @@ export function useLearningWorkspaceController({
         personaId: next.session.personaId,
         clearResponse: false
       });
-      registerSession(next.session);
       dispatch({
         type: "response_set",
         response: next
@@ -538,6 +531,7 @@ export function useLearningWorkspaceController({
           const recoveredSession = await createStudySession({
             documentId: activeDocument.id,
             personaId: activePlan.personaId,
+            sceneProfile: readSceneProfileFromLocalStorage(),
             sectionId,
             sectionTitle: resolveSectionTitle(sectionId),
             themeHint: resolveThemeHintBySectionId(sectionId),
@@ -548,7 +542,6 @@ export function useLearningWorkspaceController({
             personaId: recoveredSession.personaId,
             clearResponse: false,
           });
-          registerSession(recoveredSession, activePlan.id);
 
           const recovered = await sendStudyMessage({
             sessionId: recoveredSession.id,
@@ -560,7 +553,6 @@ export function useLearningWorkspaceController({
             personaId: recovered.session.personaId,
             clearResponse: false,
           });
-          registerSession(recovered.session, activePlan.id);
           dispatch({
             type: "response_set",
             response: recovered,
@@ -664,7 +656,6 @@ export function useLearningWorkspaceController({
         personaId: nextSession.personaId,
         clearResponse: false
       });
-      registerSession(nextSession);
     } catch (error) {
       const detail = String(error);
       if (detail.includes("session_not_found")) {
@@ -690,7 +681,6 @@ export function useLearningWorkspaceController({
             personaId: nextSession.personaId,
             clearResponse: false
           });
-          registerSession(nextSession);
           dispatch({
             type: "notice_set",
             notice: "已恢复答题会话并写入记录。"
@@ -766,14 +756,16 @@ export function useLearningWorkspaceController({
         return;
       }
       try {
-        const sessions = await listStudySessions({
-          documentId: activeDocument.id,
-          personaId: activePlan.personaId,
-        });
+        const latest = await fetchLatestSessionForPlan();
         if (!active) {
           return;
         }
-        registerSessions(sessions, activePlan.id);
+        dispatch({
+          type: "study_session_set",
+          studySession: latest,
+          personaId: latest?.personaId,
+          clearResponse: true,
+        });
       } catch (error) {
         logWorkspaceError("workflow:study_session:hydrate_error", error);
       }

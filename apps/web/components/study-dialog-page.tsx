@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import { CharacterShell } from "./character-shell";
 import { useLearningWorkspace } from "./learning-workspace-provider";
-import { PersonaSelector } from "./persona-selector";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
@@ -14,9 +13,7 @@ const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:800
 
 export function StudyDialogPage() {
   const {
-    personas,
     selectedPersona,
-    setSelectedPersonaId,
     activePlan,
     activeDocument,
     planHistory,
@@ -176,13 +173,11 @@ export function StudyDialogPage() {
         </div>
 
         <div style={styles.toolbarField}>
-          <span style={styles.toolbarLabel}>教师人格</span>
-          <PersonaSelector
-            personas={personas}
-            selectedPersonaId={selectedPersona.id}
-            onChange={setSelectedPersonaId}
-            compact
-          />
+          <span style={styles.toolbarLabel}>统一陪伴</span>
+          <span style={styles.companionText}>
+            {selectedPersona.name}
+            {studySession?.sceneProfile?.title ? ` · ${studySession.sceneProfile.title}` : ""}
+          </span>
         </div>
 
         {!studySession ? (
@@ -217,6 +212,11 @@ export function StudyDialogPage() {
             weeklyFocus={themeOptions}
             turns={studySession?.turns ?? []}
             session={response}
+            companionSnapshot={{
+              personaName: selectedPersona.name,
+              sceneTitle: studySession?.sceneProfile?.title ?? "",
+              sceneSummary: studySession?.sceneProfile?.summary ?? ""
+            }}
             disabled={!studySession}
           />
           <CharacterShell persona={selectedPersona} response={response} pending={isBusy} />
@@ -304,6 +304,18 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 260,
     maxWidth: 480,
     fontSize: 13,
+  },
+  companionText: {
+    height: 32,
+    display: "inline-flex",
+    alignItems: "center",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    padding: "0 10px",
+    minWidth: 180,
+    fontSize: 13,
+    fontWeight: 600,
   },
   createBtn: {
     border: "1px solid var(--accent)",

@@ -5,7 +5,12 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from app.models.domain import DialogueTurnRecord, StudyChatResult, StudySessionRecord
+from app.models.domain import (
+    DialogueTurnRecord,
+    SceneProfileRecord,
+    StudyChatResult,
+    StudySessionRecord,
+)
 from app.services.local_store import LocalJsonStore
 
 
@@ -18,6 +23,7 @@ class StudySessionService:
         *,
         document_id: str,
         persona_id: str,
+        scene_profile: SceneProfileRecord | None = None,
         section_id: str,
         section_title: str = "",
         theme_hint: str = "",
@@ -27,6 +33,7 @@ class StudySessionService:
             id=f"session-{uuid4().hex[:10]}",
             document_id=document_id,
             persona_id=persona_id,
+            scene_profile=scene_profile,
             section_id=section_id,
             section_title=section_title,
             theme_hint=theme_hint,
@@ -54,6 +61,7 @@ class StudySessionService:
                 character_events=result.character_events,
                 interactive_question=result.interactive_question,
                 persona_slot_trace=result.persona_slot_trace,
+                memory_trace=result.memory_trace,
                 created_at=_now(),
             )
         )
@@ -107,6 +115,7 @@ class StudySessionService:
         *,
         document_id: str | None = None,
         persona_id: str | None = None,
+        scene_id: str | None = None,
         section_id: str | None = None,
     ) -> list[StudySessionRecord]:
         sessions = self._load_sessions()
@@ -115,6 +124,12 @@ class StudySessionService:
             result = [session for session in result if session.document_id == document_id]
         if persona_id:
             result = [session for session in result if session.persona_id == persona_id]
+        if scene_id:
+            result = [
+                session
+                for session in result
+                if session.scene_profile and session.scene_profile.scene_id == scene_id
+            ]
         if section_id:
             result = [session for session in result if session.section_id == section_id]
         return result
