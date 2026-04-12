@@ -562,8 +562,19 @@ class TokenUsageDailyBucket(BaseModel):
     total_tokens: int
 
 
+class TokenUsageCallRecord(BaseModel):
+    id: str
+    created_at: str
+    feature: str
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+
 class TokenUsageStatsResponse(BaseModel):
     buckets: list[TokenUsageDailyBucket]
+    records: list[TokenUsageCallRecord] = []
     total_prompt_tokens: int
     total_completion_tokens: int
     total_tokens: int

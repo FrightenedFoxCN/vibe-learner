@@ -533,8 +533,19 @@ export interface TokenUsageDailyBucket {
   totalTokens: number;
 }
 
+export interface TokenUsageCallRecord {
+  id: string;
+  createdAt: string;
+  feature: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 export interface TokenUsageStats {
   buckets: TokenUsageDailyBucket[];
+  records: TokenUsageCallRecord[];
   totalPromptTokens: number;
   totalCompletionTokens: number;
   totalTokens: number;

@@ -135,6 +135,7 @@ export default function PersonaSpectrumPage() {
   const [cardLongTextInput, setCardLongTextInput] = useState("");
   const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [cardGenerateCount, setCardGenerateCount] = useState("");
+  const [clearBeforeBackfill, setClearBeforeBackfill] = useState(true);
   const [cardActionPending, setCardActionPending] = useState<
     null | "generate_keywords" | "generate_long_text" | "save_generated" | "create_persona"
   >(null);
@@ -225,7 +226,8 @@ export default function PersonaSpectrumPage() {
         { label: "当前人格", value: selectedPersona?.name || "-" },
         { label: "槽位数", value: String(draft.slots.length) },
         { label: "生成卡片", value: String(generatedCards.length) },
-        { label: "卡片库", value: String(personaCards.length) }
+        { label: "卡片库", value: String(personaCards.length) },
+        { label: "回填前清空", value: clearBeforeBackfill ? "开启" : "关闭" }
       ],
       details: [
         { title: "当前选中人格", value: selectedPersona },
@@ -243,6 +245,7 @@ export default function PersonaSpectrumPage() {
       generatedCards,
       generatedPersonaMeta,
       loadError,
+      clearBeforeBackfill,
       personaCards.length,
       saveError,
       selectedCards,
@@ -589,14 +592,16 @@ export default function PersonaSpectrumPage() {
     }
     setCardError("");
     setCardMessage("");
-    const insertion = buildDraftWithInsertedCards(draft, generatedCards);
-    const nextName = draft.name.trim() || "未命名人格";
+    const baseDraft = clearBeforeBackfill ? clearDraftForGeneratedBackfill(draft) : draft;
+    const insertion = buildDraftWithInsertedCards(baseDraft, generatedCards);
+    const nextName = insertion.draft.name.trim() || "未命名人格";
+    const generatedPrompt = generatedCards.length ? buildSystemPromptFromCards(nextName, generatedCards) : "";
     setDraft({
       ...insertion.draft,
       summary: generatedPersonaMeta.summary || insertion.draft.summary,
       relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
       learnerAddress: generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
-      systemPrompt: insertion.draft.systemPrompt.trim() || buildSystemPromptFromCards(nextName, generatedCards),
+      systemPrompt: insertion.draft.systemPrompt.trim() || generatedPrompt,
     });
     const metaParts = [
       generatedPersonaMeta.summary ? "摘要" : "",
@@ -604,6 +609,7 @@ export default function PersonaSpectrumPage() {
       generatedPersonaMeta.learnerAddress ? "称呼" : "",
     ].filter(Boolean);
     const summary = [
+      clearBeforeBackfill ? "已清空原有回填字段" : "",
       metaParts.length ? `已回填${metaParts.join("、")}` : "",
       insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
     ].filter(Boolean).join("，");
@@ -1186,6 +1192,14 @@ export default function PersonaSpectrumPage() {
                   />
                 </label>
                 <p style={styles.sidebarHint}>留空表示不限制卡片数量，由模型根据关键词或长文本的信息密度自由决定。</p>
+                <label style={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={clearBeforeBackfill}
+                    onChange={(event) => setClearBeforeBackfill(event.target.checked)}
+                  />
+                  <span style={styles.checkboxLabel}>应用生成结果到编辑区时，先清空原有人格内容</span>
+                </label>
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabel}>关键词搜索</span>
                   <input
@@ -1407,6 +1421,17 @@ function buildDraftWithInsertedCards(
       slots: nextSlots.map((slot, index) => ({ ...slot, sortOrder: index * 10 })),
     },
     insertedCount: appended.length,
+  };
+}
+
+function clearDraftForGeneratedBackfill(draft: PersonaDraft): PersonaDraft {
+  return {
+    ...draft,
+    summary: "",
+    relationship: "",
+    learnerAddress: "",
+    systemPrompt: "",
+    slots: [],
   };
 }
 
@@ -1674,6 +1699,17 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     color: "var(--muted)",
     lineHeight: 1.6,
+  },
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 12,
+    color: "var(--ink)",
+    lineHeight: 1.4,
+  },
+  checkboxLabel: {
+    color: "var(--muted)",
   },
   panelTitle: {
     fontSize: 11,

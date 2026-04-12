@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import type { TokenUsageDailyBucket, TokenUsageStats } from "@vibe-learner/shared";
+import type { TokenUsageCallRecord, TokenUsageDailyBucket, TokenUsageStats } from "@vibe-learner/shared";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { getModelUsageStats } from "../../lib/api";
@@ -34,6 +34,23 @@ function formatNumber(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
   if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
   return String(n);
+}
+
+function formatDateTime(value: string): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
 }
 
 interface DayData {
@@ -178,6 +195,15 @@ interface FeatureSummary {
   totalTokens: number;
 }
 
+interface FeatureModelSummary {
+  feature: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  callCount: number;
+}
+
 function buildFeatureSummary(buckets: TokenUsageDailyBucket[]): FeatureSummary[] {
   const map = new Map<string, FeatureSummary>();
   for (const b of buckets) {
@@ -188,6 +214,29 @@ function buildFeatureSummary(buckets: TokenUsageDailyBucket[]): FeatureSummary[]
     s.promptTokens += b.promptTokens;
     s.completionTokens += b.completionTokens;
     s.totalTokens += b.totalTokens;
+  }
+  return Array.from(map.values()).sort((a, b) => b.totalTokens - a.totalTokens);
+}
+
+function buildFeatureModelSummary(records: TokenUsageCallRecord[]): FeatureModelSummary[] {
+  const map = new Map<string, FeatureModelSummary>();
+  for (const record of records) {
+    const key = `${record.feature}::${record.model}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        feature: record.feature,
+        model: record.model,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        callCount: 0,
+      });
+    }
+    const item = map.get(key)!;
+    item.promptTokens += record.promptTokens;
+    item.completionTokens += record.completionTokens;
+    item.totalTokens += record.totalTokens;
+    item.callCount += 1;
   }
   return Array.from(map.values()).sort((a, b) => b.totalTokens - a.totalTokens);
 }
@@ -217,6 +266,7 @@ export default function ModelUsagePage() {
 
   const days = useMemo(() => stats ? buildDayMap(stats.buckets) : [], [stats]);
   const featureSummary = useMemo(() => stats ? buildFeatureSummary(stats.buckets) : [], [stats]);
+  const featureModelSummary = useMemo(() => stats ? buildFeatureModelSummary(stats.records) : [], [stats]);
   const debugSnapshot = useMemo(
     () => ({
       title: "用量审计调试面板",
@@ -224,16 +274,19 @@ export default function ModelUsagePage() {
       error,
       summary: [
         { label: "加载状态", value: loading ? "加载中" : "就绪" },
-        { label: "记录条数", value: String(stats?.buckets.length ?? 0) },
+        { label: "调用次数", value: String(stats?.records.length ?? 0) },
+        { label: "聚合桶数", value: String(stats?.buckets.length ?? 0) },
         { label: "总 Token", value: String(stats?.totalTokens ?? 0) },
         { label: "功能数", value: String(featureSummary.length) }
       ],
       details: [
         { title: "Token 统计快照", value: stats },
-        { title: "按日聚合桶", value: days }
+        { title: "按日聚合桶", value: days },
+        { title: "功能模型汇总", value: featureModelSummary },
+        { title: "逐次调用（前 50 条）", value: stats?.records.slice(0, 50) ?? [] }
       ]
     }),
-    [days, error, featureSummary.length, loading, stats]
+    [days, error, featureModelSummary, featureSummary.length, loading, stats]
   );
 
   usePageDebugSnapshot(debugSnapshot);
@@ -268,8 +321,8 @@ export default function ModelUsagePage() {
                 <span style={styles.summaryValue}>{formatNumber(stats.totalCompletionTokens)}</span>
               </div>
               <div style={styles.summaryCard}>
-                <span style={styles.summaryLabel}>记录条数</span>
-                <span style={styles.summaryValue}>{stats.buckets.length}</span>
+                <span style={styles.summaryLabel}>调用次数</span>
+                <span style={styles.summaryValue}>{stats.records.length}</span>
               </div>
             </div>
 
@@ -311,6 +364,43 @@ export default function ModelUsagePage() {
               )}
             </div>
 
+            <div style={styles.section}>
+              <h2 style={styles.sectionTitle}>按功能 × 模型汇总</h2>
+              {featureModelSummary.length === 0 ? (
+                <p style={styles.statusText}>暂无数据</p>
+              ) : (
+                <div style={styles.tableScroll}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>功能</th>
+                        <th style={styles.th}>模型</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>调用次数</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>输入 Token</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>输出 Token</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>合计</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {featureModelSummary.map((row) => (
+                        <tr key={`${row.feature}-${row.model}`}>
+                          <td style={styles.td}>
+                            <span style={{ ...styles.featureDot, background: featureColor(row.feature) }} />
+                            {featureLabel(row.feature)}
+                          </td>
+                          <td style={{ ...styles.td, ...styles.monospaceCell }}>{row.model}</td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.callCount)}</td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.promptTokens)}</td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(row.completionTokens)}</td>
+                          <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(row.totalTokens)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
             {/* Raw buckets table */}
             {stats.buckets.length > 0 && (
               <div style={styles.section}>
@@ -337,12 +427,47 @@ export default function ModelUsagePage() {
                               <span style={{ ...styles.featureDot, background: featureColor(b.feature) }} />
                               {featureLabel(b.feature)}
                             </td>
-                            <td style={{ ...styles.td, fontFamily: "monospace", fontSize: 11 }}>{b.model}</td>
+                            <td style={{ ...styles.td, ...styles.monospaceCell }}>{b.model}</td>
                             <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(b.promptTokens)}</td>
                             <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(b.completionTokens)}</td>
                             <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(b.totalTokens)}</td>
                           </tr>
                         ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {stats.records.length > 0 && (
+              <div style={styles.section}>
+                <h2 style={styles.sectionTitle}>逐次调用明细</h2>
+                <div style={styles.tableScroll}>
+                  <table style={styles.table}>
+                    <thead>
+                      <tr>
+                        <th style={styles.th}>时间</th>
+                        <th style={styles.th}>功能</th>
+                        <th style={styles.th}>模型</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>输入</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>输出</th>
+                        <th style={{ ...styles.th, textAlign: "right" }}>合计</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.records.map((record) => (
+                        <tr key={record.id}>
+                          <td style={styles.td}>{formatDateTime(record.createdAt)}</td>
+                          <td style={styles.td}>
+                            <span style={{ ...styles.featureDot, background: featureColor(record.feature) }} />
+                            {featureLabel(record.feature)}
+                          </td>
+                          <td style={{ ...styles.td, ...styles.monospaceCell }}>{record.model}</td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(record.promptTokens)}</td>
+                          <td style={{ ...styles.td, textAlign: "right" }}>{formatNumber(record.completionTokens)}</td>
+                          <td style={{ ...styles.td, textAlign: "right", fontWeight: 600 }}>{formatNumber(record.totalTokens)}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -494,5 +619,9 @@ const styles: Record<string, CSSProperties> = {
   },
   tableScroll: {
     overflowX: "auto",
+  },
+  monospaceCell: {
+    fontFamily: "monospace",
+    fontSize: 11,
   },
 };

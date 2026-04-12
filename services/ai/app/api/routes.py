@@ -70,6 +70,7 @@ from app.models.api import (
     UpdateStudySessionRequest,
     SubmissionGradeRequest,
     SubmissionGradeResponse,
+    TokenUsageCallRecord,
     TokenUsageStatsResponse,
     TokenUsageDailyBucket,
 )
@@ -1280,11 +1281,23 @@ def grade_submission(payload: SubmissionGradeRequest) -> SubmissionGradeResponse
 def get_model_usage_stats() -> TokenUsageStatsResponse:
     records = container.token_usage_service.load_all()
     buckets_map: dict[tuple[str, str, str], TokenUsageDailyBucket] = {}
+    call_records: list[TokenUsageCallRecord] = []
     total_prompt = 0
     total_completion = 0
     total_all = 0
     for rec in records:
         date_str = rec.created_at[:10]
+        call_records.append(
+            TokenUsageCallRecord(
+                id=rec.id,
+                created_at=rec.created_at,
+                feature=rec.feature,
+                model=rec.model,
+                prompt_tokens=rec.prompt_tokens,
+                completion_tokens=rec.completion_tokens,
+                total_tokens=rec.total_tokens,
+            )
+        )
         key = (date_str, rec.feature, rec.model)
         if key not in buckets_map:
             buckets_map[key] = TokenUsageDailyBucket(
@@ -1308,8 +1321,10 @@ def get_model_usage_stats() -> TokenUsageStatsResponse:
         total_completion += rec.completion_tokens
         total_all += rec.total_tokens
     buckets = sorted(buckets_map.values(), key=lambda b: (b.date, b.feature, b.model))
+    call_records.sort(key=lambda item: item.created_at, reverse=True)
     return TokenUsageStatsResponse(
         buckets=buckets,
+        records=call_records,
         total_prompt_tokens=total_prompt,
         total_completion_tokens=total_completion,
         total_tokens=total_all,
