@@ -8,6 +8,7 @@ coverage
 uv.lock
 .DS_Store
 .claude/*
+.cargo
 .env
 .env.*
 !.env.example
@@ -16,3 +17,5 @@ services/ai/data/uploads
 services/ai/data/*.json
 
 **/data
+target
+data-rs

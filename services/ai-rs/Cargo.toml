@@ -1,0 +1,17 @@
+[package]
+name = "vibe-learner-ai-rs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+axum = { version = "0.8", features = ["multipart", "macros"] }
+serde.workspace = true
+serde_json.workspace = true
+tokio = { version = "1.43", features = ["fs", "macros", "rt-multi-thread", "signal"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid.workspace = true
+vibe-learner-contracts = { path = "../../crates/vibe-learner-contracts" }

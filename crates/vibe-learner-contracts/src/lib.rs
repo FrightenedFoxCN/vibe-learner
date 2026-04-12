@@ -1,0 +1,71 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DocumentStatus {
+    Uploaded,
+    Processing,
+    Processed,
+    Failed,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DocumentRecord {
+    pub id: Uuid,
+    pub title: String,
+    pub original_filename: String,
+    pub stored_path: String,
+    pub status: DocumentStatus,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LearningPlanRecord {
+    pub id: Uuid,
+    pub document_id: Uuid,
+    pub course_title: String,
+    pub study_chapters: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PersonaRecord {
+    pub id: Uuid,
+    pub name: String,
+    pub summary: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CreatePersonaRequest {
+    pub name: String,
+    pub summary: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct StudySessionRecord {
+    pub id: Uuid,
+    pub plan_id: Uuid,
+    pub persona_id: Uuid,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct HealthResponse {
+    pub status: String,
+    pub service: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RewriteSurface {
+    pub id: String,
+    pub status: String,
+    pub scope: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RewriteStatusResponse {
+    pub branch: String,
+    pub goal: String,
+    pub completed_today: Vec<String>,
+    pub next_steps: Vec<String>,
+    pub surfaces: Vec<RewriteSurface>,
+}

@@ -21,4 +21,5 @@
 - [ ] 场景和人格编辑器 UI 优化；
 - [ ] 在 token 统计的地方加细模型功能的划分；
 - [ ] 封包：跨平台桌面分发方案见 `docs/desktop-distribution-plan.md`，当前延后处理；
+- [ ] Rust 重写：见 `docs/rust-rewrite-roadmap.md` 与分支 `rust-rewrite-spike`；
 - [ ] 增加智能体和用户对计划完成度的指标和操作

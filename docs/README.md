@@ -9,6 +9,7 @@
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
 - `learning-plan-prompt-contract.md`: exact learning-plan prompt sections, user payload shape, schema injection, and model transport string
 - `frontend-learning-workspace.md`: frontend responsibility split for `/plan` and `/study` workspace pages
+- `rust-rewrite-roadmap.md`: Rust rewrite spike branch layout, scope boundary, and recommended migration order
 - `persona-spectrum.md`: Persona Spectrum page data chain and API contract
 - `scene-setup.md`: layered scene editor guide for `/scene-setup`
 
@@ -21,8 +22,9 @@
 5. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
 6. Read `api-reference.md` before touching frontend/backend contracts.
 7. Read `desktop-distribution-plan.md` before reviving desktop packaging or executable distribution work.
-8. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-9. Read `../TODO.md` for the active implementation backlog.
+8. Read `rust-rewrite-roadmap.md` before continuing the Rust rewrite spike branch.
+9. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+10. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 
