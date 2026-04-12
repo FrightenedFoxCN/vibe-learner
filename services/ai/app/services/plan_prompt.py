@@ -13,6 +13,7 @@ from app.models.domain import (
     PersonaProfile,
     StudyUnitRecord,
 )
+from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.prompt_loader import load_prompt_template
 
 PLAN_JSON_SCHEMA = (
@@ -54,6 +55,7 @@ def build_learning_plan_messages(
         detail_map=planning_context["detail_map"],
     )
     prompt_template = load_learning_plan_prompt_template()
+    runtime_instruction = render_persona_runtime_instruction(persona)
     user_prompt = {
         "persona": {
             "id": persona.id,
@@ -62,7 +64,9 @@ def build_learning_plan_messages(
             "summary": persona.summary,
             "relationship": persona.relationship,
             "learner_address": persona.learner_address,
-            "system_prompt": persona.system_prompt,
+            "system_prompt": runtime_instruction,
+            "additional_instruction": persona.system_prompt,
+            "runtime_instruction": runtime_instruction,
             "slots": [
                 {"kind": slot.kind, "label": slot.label, "content": slot.content}
                 for slot in persona.slots

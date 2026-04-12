@@ -24,6 +24,7 @@ import {
   type PersonaProfile,
   type PersonaSlot,
   type PersonaSlotKind,
+  renderPersonaRuntimeInstruction,
   type SpeechStyle
 } from "@vibe-learner/shared";
 
@@ -34,6 +35,7 @@ import {
   assistPersonaSetting,
   createPersona,
   createPersonaCardsBatch,
+  deletePersona,
   deletePersonaCard,
   generatePersonaCards,
   listPersonaCards,
@@ -144,6 +146,8 @@ export default function PersonaSpectrumPage() {
   const [cardError, setCardError] = useState("");
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
   const [slotInsertIndex, setSlotInsertIndex] = useState<number | null>(null);
+  const [systemPromptSuggestion, setSystemPromptSuggestion] = useState("");
+  const [systemPromptSuggestionSource, setSystemPromptSuggestionSource] = useState("");
   const [generatedPersonaMeta, setGeneratedPersonaMeta] = useState<GeneratedPersonaMeta>({
     summary: "",
     relationship: "",
@@ -157,6 +161,10 @@ export default function PersonaSpectrumPage() {
   const [basicPaneWidth, setBasicPaneWidth] = useState(260);
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
+  const [personaLibraryQuery, setPersonaLibraryQuery] = useState("");
+  const [personaDeletePendingId, setPersonaDeletePendingId] = useState("");
+  const [personaLibraryMessage, setPersonaLibraryMessage] = useState("");
+  const [personaLibraryError, setPersonaLibraryError] = useState("");
   const colResizeRef = useRef<{ which: "basic" | "sidebar"; startX: number; startWidth: number } | null>(null);
 
   useEffect(() => {
@@ -195,6 +203,8 @@ export default function PersonaSpectrumPage() {
     const selectedPersona = personas.find((p) => p.id === selectedPersonaId);
     if (!selectedPersona) return;
     setDraft(personaToDraft(selectedPersona));
+    setSystemPromptSuggestion("");
+    setSystemPromptSuggestionSource("");
   }, [selectedPersonaId, personas]);
 
   const selectedPersona = useMemo(
@@ -216,22 +226,52 @@ export default function PersonaSpectrumPage() {
     () => personaCards.filter((card) => matchesPersonaCard(card, cardSearchQuery)),
     [personaCards, cardSearchQuery]
   );
+  const filteredPersonas = useMemo(
+    () => personas.filter((persona) => matchesPersonaProfile(persona, personaLibraryQuery)),
+    [personas, personaLibraryQuery]
+  );
+  const builtinPersonas = useMemo(
+    () => filteredPersonas.filter((persona) => persona.source === "builtin"),
+    [filteredPersonas]
+  );
+  const userPersonas = useMemo(
+    () => filteredPersonas.filter((persona) => persona.source === "user"),
+    [filteredPersonas]
+  );
+  const runtimePromptPreview = useMemo(
+    () => renderPersonaRuntimeInstruction({
+      name: draft.name,
+      summary: draft.summary,
+      relationship: draft.relationship,
+      learnerAddress: draft.learnerAddress,
+      systemPrompt: draft.systemPrompt,
+      slots: draft.slots,
+      defaultSpeechStyle: draft.defaultSpeechStyle,
+    }),
+    [draft]
+  );
   const debugSnapshot = useMemo(
     () => ({
       title: "人格页调试面板",
       subtitle: "显示当前编辑区、生成结果、卡片库和各类错误，便于核对人格生成和写回链路。",
-      error: [loadError, saveError, assistError, configError, cardError].filter(Boolean).join("；"),
+      error: [loadError, saveError, assistError, configError, cardError, personaLibraryError]
+        .filter(Boolean)
+        .join("；"),
       summary: [
         { label: "加载状态", value: loadError ? "异常" : "就绪" },
         { label: "当前人格", value: selectedPersona?.name || "-" },
         { label: "槽位数", value: String(draft.slots.length) },
         { label: "生成卡片", value: String(generatedCards.length) },
         { label: "卡片库", value: String(personaCards.length) },
+        { label: "人格库", value: String(personas.length) },
+        { label: "附加约束建议", value: systemPromptSuggestion ? "待确认" : "无" },
         { label: "回填前清空", value: clearBeforeBackfill ? "开启" : "关闭" }
       ],
       details: [
         { title: "当前选中人格", value: selectedPersona },
         { title: "编辑草稿", value: draft },
+        { title: "运行时人格提示词预览", value: runtimePromptPreview },
+        { title: "附加约束建议", value: { source: systemPromptSuggestionSource, value: systemPromptSuggestion } },
         { title: "生成摘要信息", value: generatedPersonaMeta },
         { title: "生成卡片（前 24 条）", value: generatedCards.slice(0, 24) },
         { title: "当前勾选卡片", value: selectedCards }
@@ -246,10 +286,15 @@ export default function PersonaSpectrumPage() {
       generatedPersonaMeta,
       loadError,
       clearBeforeBackfill,
+      personas.length,
+      personaLibraryError,
       personaCards.length,
       saveError,
       selectedCards,
-      selectedPersona
+      selectedPersona,
+      runtimePromptPreview,
+      systemPromptSuggestion,
+      systemPromptSuggestionSource
     ]
   );
 
@@ -263,6 +308,26 @@ export default function PersonaSpectrumPage() {
       }
       return [nextPersona, ...prev];
     });
+  }
+
+  function setPromptSuggestion(value: string, source: string) {
+    const trimmed = value.trim();
+    setSystemPromptSuggestion(trimmed);
+    setSystemPromptSuggestionSource(trimmed ? source : "");
+  }
+
+  function applySystemPromptSuggestion() {
+    if (!systemPromptSuggestion) {
+      return;
+    }
+    updateDraft("systemPrompt", systemPromptSuggestion);
+    setSystemPromptSuggestion("");
+    setSystemPromptSuggestionSource("");
+  }
+
+  function dismissSystemPromptSuggestion() {
+    setSystemPromptSuggestion("");
+    setSystemPromptSuggestionSource("");
   }
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
@@ -468,8 +533,8 @@ export default function PersonaSpectrumPage() {
               };
             })
           : prev.slots,
-        systemPrompt: result.systemPromptSuggestion || prev.systemPrompt
       }));
+      setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
     } catch (error) {
       setAssistError(String(error));
     } finally {
@@ -481,7 +546,6 @@ export default function PersonaSpectrumPage() {
     setConfigError(""); setConfigMessage(""); setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
     if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
-    if (!payload.systemPrompt) { setSaveError("请先填写系统提示词。"); return; }
     setSavingPersona(true);
     try {
       const created = await createPersona(payload);
@@ -490,6 +554,9 @@ export default function PersonaSpectrumPage() {
       setPersonas(latest);
       setSelectedPersonaId(created.id);
       setDraft(personaToDraft(created));
+      dismissSystemPromptSuggestion();
+      setPersonaLibraryMessage(`已创建人格「${created.name}」。`);
+      setPersonaLibraryError("");
     } catch (error) {
       setSaveError(String(error));
     } finally {
@@ -504,7 +571,6 @@ export default function PersonaSpectrumPage() {
     setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
     if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
-    if (!payload.systemPrompt) { setSaveError("请先填写系统提示词。"); return; }
     setSavingPersona(true);
     try {
       const updated = await updatePersona(selectedPersonaId, payload);
@@ -513,6 +579,9 @@ export default function PersonaSpectrumPage() {
       setPersonas(latest);
       setSelectedPersonaId(updated.id);
       setDraft(personaToDraft(updated));
+      dismissSystemPromptSuggestion();
+      setPersonaLibraryMessage(`已更新人格「${updated.name}」。`);
+      setPersonaLibraryError("");
     } catch (error) {
       setSaveError(String(error));
     } finally {
@@ -606,14 +675,11 @@ export default function PersonaSpectrumPage() {
     setCardMessage("");
     const baseDraft = clearBeforeBackfill ? clearDraftForGeneratedBackfill(draft) : draft;
     const insertion = buildDraftWithInsertedCards(baseDraft, generatedCards);
-    const nextName = insertion.draft.name.trim() || "未命名人格";
-    const generatedPrompt = generatedCards.length ? buildSystemPromptFromCards(nextName, generatedCards) : "";
     setDraft({
       ...insertion.draft,
       summary: generatedPersonaMeta.summary || insertion.draft.summary,
       relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
       learnerAddress: generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
-      systemPrompt: insertion.draft.systemPrompt.trim() || generatedPrompt,
     });
     const metaParts = [
       generatedPersonaMeta.summary ? "摘要" : "",
@@ -621,7 +687,7 @@ export default function PersonaSpectrumPage() {
       generatedPersonaMeta.learnerAddress ? "称呼" : "",
     ].filter(Boolean);
     const summary = [
-      clearBeforeBackfill ? "已清空原有回填字段" : "",
+      clearBeforeBackfill ? "已清空摘要、关系、称呼和卡片插槽" : "",
       metaParts.length ? `已回填${metaParts.join("、")}` : "",
       insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
     ].filter(Boolean).join("，");
@@ -739,9 +805,6 @@ export default function PersonaSpectrumPage() {
       payload.relationship = generatedPersonaMeta.relationship || payload.relationship;
       payload.learnerAddress = generatedPersonaMeta.learnerAddress || payload.learnerAddress;
     }
-    if (!payload.systemPrompt) {
-      payload.systemPrompt = buildSystemPromptFromCards(draft.name || payload.name, selectedCards);
-    }
     payload.slots = cardsToPersonaSlots(selectedCards);
     setCardError("");
     setCardMessage("");
@@ -753,11 +816,47 @@ export default function PersonaSpectrumPage() {
       setPersonas(latest);
       setSelectedPersonaId(created.id);
       setDraft(personaToDraft(created));
+      dismissSystemPromptSuggestion();
+      setPersonaLibraryMessage(`已基于卡片创建人格「${created.name}」。`);
+      setPersonaLibraryError("");
       setCardMessage(`已基于 ${selectedCards.length} 张卡片创建新人格。`);
     } catch (error) {
       setCardError(String(error));
     } finally {
       setCardActionPending(null);
+    }
+  }
+
+  async function handleDeletePersona(persona: PersonaProfile) {
+    if (persona.source === "builtin") {
+      setPersonaLibraryError("内置人格不能删除。");
+      return;
+    }
+    setPersonaLibraryError("");
+    setPersonaLibraryMessage("");
+    if (!window.confirm(`确认删除人格「${persona.name}」？该操作不会影响内置人格。`)) {
+      return;
+    }
+    setPersonaDeletePendingId(persona.id);
+    try {
+      await deletePersona(persona.id);
+      const latest = await listPersonas();
+      setPersonas(latest);
+      const nextSelectedId =
+        selectedPersonaId === persona.id || !latest.some((item) => item.id === selectedPersonaId)
+          ? (latest[0]?.id ?? "")
+          : selectedPersonaId;
+      setSelectedPersonaId(nextSelectedId);
+      const nextSelectedPersona = latest.find((item) => item.id === nextSelectedId) ?? null;
+      if (nextSelectedPersona) {
+        setDraft(personaToDraft(nextSelectedPersona));
+      }
+      dismissSystemPromptSuggestion();
+      setPersonaLibraryMessage(`已删除人格「${persona.name}」。`);
+    } catch (error) {
+      setPersonaLibraryError(humanizePersonaDeleteError(error));
+    } finally {
+      setPersonaDeletePendingId("");
     }
   }
 
@@ -814,6 +913,57 @@ export default function PersonaSpectrumPage() {
               onClick={() => void handleDeletePersonaCard(card.id)}
             >
               {cardDeletePendingId === card.id ? "删除中…" : "删除"}
+            </button>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
+  function renderPersonaLibraryCard(persona: PersonaProfile) {
+    const isSelected = persona.id === selectedPersonaId;
+    return (
+      <article
+        key={persona.id}
+        style={{
+          ...styles.personaLibraryCard,
+          ...(isSelected ? styles.personaLibraryCardSelected : null),
+        }}
+      >
+        <div style={styles.libraryCardHeader}>
+          <div style={styles.libraryCardTitleRow}>
+            <span style={styles.libraryCardTitle}>{persona.name}</span>
+          </div>
+          <span style={styles.libraryCardBadge}>
+            {persona.source === "builtin" ? "内置人格" : "用户人格"}
+          </span>
+        </div>
+        <p style={styles.libraryCardContent}>{persona.summary || "未填写摘要"}</p>
+        <div style={styles.libraryCardMetaRow}>
+          <span>{persona.relationship || "未填写关系"}</span>
+          <span>称呼：{persona.learnerAddress || "未填写"}</span>
+          <span>{persona.slots.length} 个插槽</span>
+        </div>
+        <div style={styles.actionsRow}>
+          <button
+            type="button"
+            style={isSelected ? styles.primaryBtn : styles.ghostBtn}
+            onClick={() => {
+              setSelectedPersonaId(persona.id);
+              setPersonaLibraryError("");
+              setPersonaLibraryMessage(`已载入人格「${persona.name}」。`);
+            }}
+          >
+            {isSelected ? "当前编辑中" : "载入编辑区"}
+          </button>
+          {persona.source === "user" ? (
+            <button
+              type="button"
+              style={styles.ghostBtn}
+              disabled={personaDeletePendingId === persona.id}
+              onClick={() => void handleDeletePersona(persona)}
+            >
+              {personaDeletePendingId === persona.id ? "删除中…" : "删除"}
             </button>
           ) : null}
         </div>
@@ -938,8 +1088,46 @@ export default function PersonaSpectrumPage() {
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>系统提示词</label>
-                <textarea style={styles.textareaLg} value={draft.systemPrompt} onChange={(e) => updateDraft("systemPrompt", e.target.value)} />
+                <div style={styles.fieldHeaderRow}>
+                  <label style={styles.fieldLabel}>附加系统约束（可选）</label>
+                  <span style={styles.fieldHint}>这里只写高级附加约束，最终运行时提示词会自动组装</span>
+                </div>
+                <textarea
+                  style={styles.textareaLg}
+                  value={draft.systemPrompt}
+                  onChange={(e) => updateDraft("systemPrompt", e.target.value)}
+                  placeholder="例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。"
+                />
+                {systemPromptSuggestion ? (
+                  <div style={styles.promptSuggestionCard}>
+                    <div style={styles.promptSuggestionHeader}>
+                      <span style={styles.panelTitle}>AI 附加约束建议</span>
+                      <span style={styles.promptSuggestionSource}>{systemPromptSuggestionSource || "AI 生成"}</span>
+                    </div>
+                    <p style={styles.promptSuggestionNote}>
+                      这是对“附加约束”字段的建议，不会改变下方运行时人格主设定。
+                    </p>
+                    <p style={styles.promptSuggestionBody}>{systemPromptSuggestion}</p>
+                    <div style={styles.actionsRow}>
+                      <button type="button" style={styles.primaryBtn} onClick={applySystemPromptSuggestion}>
+                        应用建议
+                      </button>
+                      <button type="button" style={styles.ghostBtn} onClick={dismissSystemPromptSuggestion}>
+                        忽略建议
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <span style={styles.mutedText}>这一栏是可选附加约束，不再直接代表最终运行时人格提示词。</span>
+                )}
+              </div>
+
+              <div style={styles.fieldGroup}>
+                <div style={styles.fieldHeaderRow}>
+                  <label style={styles.fieldLabel}>运行时人格提示词预览</label>
+                  <span style={styles.fieldHint}>只读，由人格元信息、插槽和附加约束自动组装</span>
+                </div>
+                <pre style={styles.runtimePromptPreview}>{runtimePromptPreview}</pre>
               </div>
 
               <div style={styles.actionsRow}>
@@ -1211,7 +1399,7 @@ export default function PersonaSpectrumPage() {
                     checked={clearBeforeBackfill}
                     onChange={(event) => setClearBeforeBackfill(event.target.checked)}
                   />
-                  <span style={styles.checkboxLabel}>应用生成结果到编辑区时，先清空原有人格内容</span>
+                  <span style={styles.checkboxLabel}>应用生成结果到编辑区时，先清空摘要/关系/称呼/卡片插槽，保留附加系统约束</span>
                 </label>
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabel}>关键词搜索</span>
@@ -1307,6 +1495,46 @@ export default function PersonaSpectrumPage() {
                 ) : (
                   <span style={styles.mutedText}>暂无匹配的人格卡片。</span>
                 )}
+              </div>
+            ) : null}
+          </div>
+
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("persona-library")}>
+              <span style={styles.panelTitle}>人格库</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("persona-library") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("persona-library") ? (
+              <div style={styles.sidebarSectionBody}>
+                <input
+                  style={styles.input}
+                  value={personaLibraryQuery}
+                  onChange={(e) => setPersonaLibraryQuery(e.target.value)}
+                  placeholder="搜索人格名称、摘要、关系或称呼"
+                />
+                <span style={styles.mutedText}>
+                  共 {personas.length} 个人格，内置 {personas.filter((persona) => persona.source === "builtin").length} 个，用户 {personas.filter((persona) => persona.source === "user").length} 个。
+                </span>
+                {personaLibraryMessage ? <p style={styles.sidebarHint}>{personaLibraryMessage}</p> : null}
+                {personaLibraryError ? <p style={styles.errorText}>{personaLibraryError}</p> : null}
+
+                {builtinPersonas.length ? <span style={styles.panelTitle}>内置人格</span> : null}
+                {builtinPersonas.length ? (
+                  <div style={styles.cardList}>
+                    {builtinPersonas.map(renderPersonaLibraryCard)}
+                  </div>
+                ) : null}
+
+                {userPersonas.length ? <span style={styles.panelTitle}>用户人格</span> : null}
+                {userPersonas.length ? (
+                  <div style={styles.cardList}>
+                    {userPersonas.map(renderPersonaLibraryCard)}
+                  </div>
+                ) : null}
+
+                {!builtinPersonas.length && !userPersonas.length ? (
+                  <span style={styles.mutedText}>暂无匹配人格。</span>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1443,7 +1671,6 @@ function clearDraftForGeneratedBackfill(draft: PersonaDraft): PersonaDraft {
     summary: "",
     relationship: "",
     learnerAddress: "",
-    systemPrompt: "",
     slots: [],
   };
 }
@@ -1457,20 +1684,6 @@ function cardsToPersonaSlots(cards: PersonaCard[]): PersonaSlot[] {
     locked: false,
     sortOrder: index * 10,
   }));
-}
-
-function buildSystemPromptFromCards(name: string, cards: PersonaCard[]): string {
-  const slotLines = cards
-    .map((card) => `${card.label}：${card.content}`)
-    .slice(0, 6)
-    .join("\n");
-  return [
-    `你是一位教材导学型教师人格「${name.trim() || "未命名人格"}」。`,
-    "请保持结构清晰、反馈具体、语气稳定，并优先帮助学习者推进下一步。",
-    slotLines ? `参考人格卡片：\n${slotLines}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
 }
 
 function matchesPersonaCard(card: PersonaCard, query: string): boolean {
@@ -1489,6 +1702,51 @@ function matchesPersonaCard(card: PersonaCard, query: string): boolean {
     .join("\n")
     .toLowerCase();
   return haystack.includes(trimmed);
+}
+
+function matchesPersonaProfile(persona: PersonaProfile, query: string): boolean {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) {
+    return true;
+  }
+  const haystack = [
+    persona.name,
+    persona.summary,
+    persona.relationship,
+    persona.learnerAddress,
+    persona.systemPrompt,
+    persona.source === "builtin" ? "内置人格" : "用户人格",
+  ]
+    .join("\n")
+    .toLowerCase();
+  return haystack.includes(trimmed);
+}
+
+function humanizePersonaDeleteError(error: unknown): string {
+  const raw = String(error).replace(/^Error:\s*/, "");
+  if (raw.includes("persona_readonly_builtin")) {
+    return "内置人格不能删除。";
+  }
+  if (!raw.includes("persona_in_use")) {
+    return raw;
+  }
+
+  const countSpecs = [
+    { key: "plans", label: "学习计划" },
+    { key: "sessions", label: "学习会话" },
+    { key: "scene_instances", label: "场景实例" },
+  ];
+  const parts = countSpecs.flatMap(({ key, label }) => {
+    const match = raw.match(new RegExp(`${key}=(\\d+)`));
+    const count = Number(match?.[1] ?? 0);
+    if (!count) {
+      return [];
+    }
+    return [`${label} ${count} 条`];
+  });
+  return parts.length
+    ? `该人格仍被${parts.join("、")}引用，暂时不能删除。`
+    : "该人格仍被现有数据引用，暂时不能删除。";
 }
 
 function splitCsv(value: string): string[] {
@@ -1521,7 +1779,6 @@ function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): Create
   const name = String(parsed.name ?? "").trim();
   const systemPrompt = String(parsed.systemPrompt ?? parsed.system_prompt ?? "").trim();
   if (!name) throw new Error("缺少名称字段（name）");
-  if (!systemPrompt) throw new Error("缺少系统提示词字段（systemPrompt）");
 
   let slots: PersonaSlot[] = [];
   if (Array.isArray(parsed.slots)) {
@@ -1737,6 +1994,18 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 6,
   },
+  fieldHeaderRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  fieldHint: {
+    fontSize: 11,
+    color: "var(--muted)",
+    letterSpacing: "0.03em",
+  },
   slotDropZoneActive: {
     boxShadow: "0 0 0 2px var(--accent-soft) inset",
     borderRadius: 4,
@@ -1767,7 +2036,7 @@ const styles: Record<string, CSSProperties> = {
     textAlign: "center",
   },
   emptySlotDropTargetActive: {
-    borderColor: "var(--accent)",
+    border: "1px dashed var(--accent)",
     background: "color-mix(in srgb, white 70%, var(--accent-soft))",
     color: "var(--ink)",
   },
@@ -1871,6 +2140,49 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.6,
   },
+  promptSuggestionCard: {
+    border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--border))",
+    background: "color-mix(in srgb, white 88%, var(--accent-soft))",
+    padding: 12,
+    display: "grid",
+    gap: 8,
+  },
+  promptSuggestionHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  promptSuggestionSource: {
+    fontSize: 11,
+    color: "var(--muted)",
+  },
+  promptSuggestionNote: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "var(--muted)",
+  },
+  promptSuggestionBody: {
+    margin: 0,
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "var(--ink)",
+    whiteSpace: "pre-wrap",
+  },
+  runtimePromptPreview: {
+    margin: 0,
+    minHeight: 180,
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 94%, var(--panel))",
+    padding: "12px 14px",
+    color: "var(--ink)",
+    fontSize: 12,
+    lineHeight: 1.7,
+    whiteSpace: "pre-wrap",
+    overflowX: "auto",
+  },
   range: {
     width: "100%",
   },
@@ -1888,17 +2200,17 @@ const styles: Record<string, CSSProperties> = {
   slotCardDragging: {
     opacity: 0.7,
     transform: "scale(0.99)",
-    borderColor: "var(--teal)",
+    border: "1px solid var(--teal)",
     boxShadow: "0 8px 18px rgba(10, 48, 51, 0.14)",
   },
   slotCardMoveUp: {
     transform: "translateY(-8px)",
-    borderColor: "var(--accent)",
+    border: "1px solid var(--accent)",
     boxShadow: "0 0 0 2px var(--accent-soft) inset",
   },
   slotCardMoveDown: {
     transform: "translateY(8px)",
-    borderColor: "var(--accent)",
+    border: "1px solid var(--accent)",
     boxShadow: "0 0 0 2px var(--accent-soft) inset",
   },
   slotHeader: {
@@ -1938,10 +2250,12 @@ const styles: Record<string, CSSProperties> = {
     height: 30,
     width: 30,
     border: "1px solid var(--border)",
-    background: "var(--bg)",
+    background: "var(--panel)",
     color: "var(--muted)",
     cursor: "pointer",
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: "0.04em",
     lineHeight: 1,
     display: "flex",
     alignItems: "center",
@@ -1987,12 +2301,13 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   slotToggleBtn: {
-    border: "none",
-    background: "transparent",
-    color: "var(--muted)",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--ink)",
     cursor: "pointer",
     fontSize: 12,
-    padding: "0 4px",
+    fontWeight: 700,
+    padding: "0 8px",
     height: 28,
     flexShrink: 0,
   },
@@ -2006,35 +2321,43 @@ const styles: Record<string, CSSProperties> = {
 
   /* Buttons */
   primaryBtn: {
-    border: "none",
-    background: "var(--accent)",
-    color: "white",
+    border: "1px solid color-mix(in srgb, var(--accent) 38%, var(--border))",
+    background: "color-mix(in srgb, white 82%, var(--accent-soft))",
+    color: "var(--ink)",
     height: 36,
     padding: "0 14px",
     cursor: "pointer",
-    fontWeight: 600,
-    fontSize: 13,
+    fontWeight: 700,
+    fontSize: 12,
+    letterSpacing: "0.04em",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   ghostBtn: {
     border: "1px solid var(--border)",
-    background: "transparent",
+    background: "var(--panel)",
     color: "var(--ink)",
     height: 36,
     padding: "0 12px",
     cursor: "pointer",
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.03em",
     display: "inline-flex",
     alignItems: "center",
+    justifyContent: "center",
   },
   iconBtn: {
     border: "1px solid var(--border)",
-    background: "transparent",
-    color: "var(--muted)",
+    background: "var(--panel)",
+    color: "var(--ink)",
     height: 26,
     minWidth: 26,
     padding: "0 6px",
     cursor: "pointer",
     fontSize: 12,
+    fontWeight: 700,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2042,13 +2365,14 @@ const styles: Record<string, CSSProperties> = {
   },
   tagBtn: {
     border: "1px solid var(--border)",
-    background: "var(--panel)",
-    color: "var(--accent)",
+    background: "color-mix(in srgb, white 86%, var(--accent-soft))",
+    color: "var(--ink)",
     height: 28,
     padding: "0 10px",
     cursor: "pointer",
     fontSize: 12,
-    fontWeight: 500,
+    fontWeight: 600,
+    letterSpacing: "0.03em",
   },
   actionsRow: {
     display: "flex",
@@ -2085,7 +2409,7 @@ const styles: Record<string, CSSProperties> = {
   },
   personaSlotLibraryCard: {
     border: "1px solid var(--border)",
-    background: "var(--panel)",
+    background: "linear-gradient(180deg, color-mix(in srgb, white 94%, var(--panel)) 0%, var(--panel) 100%)",
     padding: 12,
     display: "grid",
     gap: 8,
@@ -2093,7 +2417,7 @@ const styles: Record<string, CSSProperties> = {
     transition: "transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, border-color 160ms ease, background 160ms ease",
   },
   personaSlotLibraryCardSelected: {
-    borderColor: "var(--accent)",
+    border: "1px solid var(--accent)",
     boxShadow: "0 0 0 2px var(--accent-soft) inset",
     background: "color-mix(in srgb, white 84%, var(--accent-soft))",
   },
@@ -2101,6 +2425,18 @@ const styles: Record<string, CSSProperties> = {
     opacity: 0.7,
     transform: "scale(0.99)",
     boxShadow: "0 8px 18px rgba(10, 48, 51, 0.14)",
+  },
+  personaLibraryCard: {
+    border: "1px solid var(--border)",
+    background: "linear-gradient(180deg, color-mix(in srgb, white 96%, var(--panel)) 0%, var(--panel) 100%)",
+    padding: 12,
+    display: "grid",
+    gap: 8,
+  },
+  personaLibraryCardSelected: {
+    border: "1px solid var(--accent)",
+    boxShadow: "0 0 0 2px var(--accent-soft) inset",
+    background: "color-mix(in srgb, white 88%, var(--accent-soft))",
   },
   libraryCardHeader: {
     display: "flex",
@@ -2117,12 +2453,14 @@ const styles: Record<string, CSSProperties> = {
   },
   libraryCardDragHandle: {
     border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--muted)",
+    background: "var(--panel)",
+    color: "var(--ink)",
     width: 30,
     height: 30,
     cursor: "grab",
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: 700,
+    letterSpacing: "0.04em",
     lineHeight: 1,
     display: "inline-flex",
     alignItems: "center",

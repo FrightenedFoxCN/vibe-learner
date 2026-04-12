@@ -18,6 +18,7 @@ from app.models.domain import (
     ChatToolCallTraceRecord,
     Citation,
     DocumentDebugRecord,
+    LearningPlanRecord,
     LearningGoalInput,
     PlanGenerationTraceRecord,
     SceneLayerStateRecord,
@@ -46,9 +47,11 @@ from app.services.plan_prompt import load_learning_plan_prompt_template
 from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
 from app.services.persona_cards import PersonaCardLibraryService
+from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning_plan_tool_specs
 from app.services.prompt_loader import load_prompt_template
 from app.services.study_arrangement import StudyArrangementService
+from app.services.study_session_prompt import build_study_session_system_prompt
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -119,6 +122,70 @@ class PersonaPipelineTests(unittest.TestCase):
         reloaded = PersonaEngine(self.store)
         persona = reloaded.require_persona("persisted-mentor")
         self.assertEqual(persona.summary, "Stored on disk.")
+
+    def test_user_persona_delete_removes_from_local_store(self) -> None:
+        created = self.persona_engine.create_persona(
+            CreatePersonaRequest(
+                name="Disposable Mentor",
+                summary="Will be deleted.",
+                system_prompt="Keep it concise.",
+                slots=[],
+            )
+        )
+
+        self.persona_engine.delete_persona(created.id)
+
+        reloaded = PersonaEngine(self.store)
+        with self.assertRaises(HTTPException) as ctx:
+            reloaded.require_persona(created.id)
+        self.assertEqual(ctx.exception.status_code, 404)
+
+    def test_builtin_persona_delete_is_rejected(self) -> None:
+        with self.assertRaises(HTTPException) as ctx:
+            self.persona_engine.delete_persona("mentor-aurora")
+        self.assertEqual(ctx.exception.status_code, 403)
+        self.assertEqual(ctx.exception.detail, "persona_readonly_builtin")
+
+    def test_user_persona_delete_is_blocked_when_records_reference_it(self) -> None:
+        created = self.persona_engine.create_persona(
+            CreatePersonaRequest(
+                name="Referenced Mentor",
+                summary="Referenced by plan and session.",
+                system_prompt="Stay grounded.",
+                slots=[],
+            )
+        )
+        self.store.save_list(
+            "plans",
+            [
+                LearningPlanRecord(
+                    id="plan-1",
+                    document_id="doc-1",
+                    persona_id=created.id,
+                    course_title="课程标题",
+                    objective="完成教材学习",
+                    overview="计划概览",
+                    study_chapters=["第一章"],
+                    today_tasks=["复习核心概念"],
+                    study_units=[],
+                    schedule=[],
+                    created_at="2026-04-12T00:00:00+00:00",
+                )
+            ],
+        )
+        self.study_session_service.create_session(
+            document_id="doc-1",
+            persona_id=created.id,
+            section_id="section-1",
+        )
+
+        with self.assertRaises(HTTPException) as ctx:
+            self.persona_engine.delete_persona(created.id)
+
+        self.assertEqual(ctx.exception.status_code, 409)
+        self.assertIn("persona_in_use", ctx.exception.detail)
+        self.assertIn("plans=1", ctx.exception.detail)
+        self.assertIn("sessions=1", ctx.exception.detail)
 
     def test_persona_card_library_crud_roundtrip(self) -> None:
         created = self.persona_card_library.create_card(
@@ -398,6 +465,32 @@ class PersonaPipelineTests(unittest.TestCase):
         payload = "\n".join(message["content"] for message in messages)
         self.assertIn(persona.relationship, payload)
         self.assertIn(persona.learner_address, payload)
+        self.assertIn("runtime_instruction", payload)
+
+    def test_persona_runtime_instruction_expands_slots_and_additional_instruction(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        prompt = render_persona_runtime_instruction(persona)
+
+        self.assertIn(persona.name, prompt)
+        self.assertIn(persona.summary, prompt)
+        self.assertIn(persona.system_prompt, prompt)
+        self.assertTrue(any(slot.content in prompt for slot in persona.slots if slot.content))
+
+    def test_study_session_prompt_only_adds_session_context(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        prompt = build_study_session_system_prompt(
+            persona_name=persona.name,
+            persona_relationship=persona.relationship,
+            persona_learner_address=persona.learner_address,
+            document_title="Physics",
+            section_id="chapter-1",
+            section_title="Chapter 1",
+            theme_hint="牛顿定律",
+        )
+
+        self.assertIn("会话运行时上下文", prompt)
+        self.assertIn("Chapter 1", prompt)
+        self.assertNotIn(persona.system_prompt, prompt)
 
     def test_chat_reply_returns_character_events(self) -> None:
         persona = self.persona_engine.require_persona("mentor-lyra")

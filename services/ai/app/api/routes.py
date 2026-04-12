@@ -675,6 +675,12 @@ def update_persona(persona_id: str, payload: UpdatePersonaRequest) -> PersonaRes
     return _into_response(PersonaResponse, persona)
 
 
+@router.delete("/personas/{persona_id}")
+def delete_persona(persona_id: str) -> dict[str, str]:
+    container.persona_engine.delete_persona(persona_id)
+    return {"deleted_persona_id": persona_id}
+
+
 @router.get("/personas/{persona_id}/assets", response_model=PersonaAssetsResponse)
 def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
     persona = container.persona_engine.require_persona(persona_id)
@@ -941,7 +947,6 @@ def update_study_session(
         persona_name=persona.name,
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
-        persona_system_prompt=persona.system_prompt,
         document_title=document.title,
         section_id=next_section_id,
         section_title=next_section_title,
@@ -989,7 +994,6 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         persona_name=persona.name,
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
-        persona_system_prompt=persona.system_prompt,
         document_title=document.title,
         section_id=payload.section_id,
         section_title=section_title,

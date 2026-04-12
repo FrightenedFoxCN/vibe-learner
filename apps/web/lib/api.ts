@@ -982,6 +982,14 @@ export async function updatePersona(
   return normalizePersona(payload);
 }
 
+export async function deletePersona(personaId: string): Promise<void> {
+  await readJson<{ deleted_persona_id: string }>(
+    await request(`${AI_BASE_URL}/personas/${personaId}`, {
+      method: "DELETE"
+    })
+  );
+}
+
 export async function getPersonaAssets(personaId: string): Promise<PersonaAssets> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/personas/${personaId}/assets`)

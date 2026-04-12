@@ -4,8 +4,11 @@ from fastapi import HTTPException
 
 from app.models.api import CreatePersonaRequest, UpdatePersonaRequest
 from app.models.domain import (
+    LearningPlanRecord,
     PersonaProfile,
+    SessionSceneRecord,
     PersonaSlot,
+    StudySessionRecord,
     persona_narrative_mode_label,
     persona_slot_content,
     persona_slot_list,
@@ -103,6 +106,25 @@ class PersonaEngine:
         self._save_persona(updated)
         return updated
 
+    def delete_persona(self, persona_id: str) -> None:
+        current = self.require_persona(persona_id)
+        if current.source == "builtin":
+            raise HTTPException(status_code=403, detail="persona_readonly_builtin")
+
+        reference_counts = self._reference_counts(persona_id)
+        reference_parts = [
+            f"{key}={count}" for key, count in reference_counts.items() if count > 0
+        ]
+        if reference_parts:
+            raise HTTPException(
+                status_code=409,
+                detail=f"persona_in_use:{':'.join(reference_parts)}",
+            )
+
+        self._personas.pop(current.id, None)
+        if self._store is not None:
+            self._store.delete_item("personas", current.id)
+
     def _allocate_persona_id(self, name: str) -> str:
         base = name.strip().lower().replace(" ", "-")
         base = base or "persona"
@@ -117,6 +139,32 @@ class PersonaEngine:
         if self._store is None or persona.source == "builtin":
             return
         self._store.save_item("personas", persona.id, persona)
+
+    def _reference_counts(self, persona_id: str) -> dict[str, int]:
+        if self._store is None:
+            return {
+                "plans": 0,
+                "sessions": 0,
+                "scene_instances": 0,
+            }
+
+        return {
+            "plans": sum(
+                1
+                for plan in self._store.load_list("plans", LearningPlanRecord)
+                if plan.persona_id == persona_id
+            ),
+            "sessions": sum(
+                1
+                for session in self._store.load_list("sessions", StudySessionRecord)
+                if session.persona_id == persona_id
+            ),
+            "scene_instances": sum(
+                1
+                for scene in self._store.load_category_items("session_scenes", SessionSceneRecord)
+                if scene.persona_id == persona_id
+            ),
+        }
 
     def assist_setting(
         self,

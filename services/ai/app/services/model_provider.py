@@ -31,6 +31,7 @@ from app.models.domain import (
     persona_sorted_slots,
 )
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.token_usage import TokenUsageService
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
@@ -939,19 +940,7 @@ class OpenAIModelProvider(MockModelProvider):
         document_path: str | None = None,
     ) -> ModelReply:
         history = conversation_history or []
-        persona_slots_text = "\n".join(
-            f"- [{slot.kind}] {slot.label}: {slot.content}"
-            for slot in persona_sorted_slots(persona.slots)
-            if slot.content.strip()
-        )
-        persona_context_text = "\n".join(
-            line
-            for line in [
-                f"人格关系：{persona.relationship.strip() or '无'}",
-                f"学习者称呼：{persona.learner_address.strip() or '无'}",
-            ]
-            if line
-        )
+        persona_runtime_prompt = render_persona_runtime_instruction(persona)
         scene_tool_instruction = (
             "如需读取或修改当前会话绑定场景，可调用 read_scene_overview、add_scene、move_to_scene、add_object、update_object_description、delete_object；所有场景修改都必须限制在当前会话绑定场景内。"
             if scene_tool_runtime is not None
@@ -962,11 +951,9 @@ class OpenAIModelProvider(MockModelProvider):
             {
                 "role": "system",
                 "content": prompt_sections["system"]
-                .replace("{{PERSONA_SYSTEM_PROMPT}}", persona.system_prompt)
-                .replace("{{PERSONA_CONTEXT}}", persona_context_text or "")
-                .replace("{{SESSION_SYSTEM_PROMPT}}", session_prompt.strip())
+                .replace("{{PERSONA_RUNTIME_PROMPT}}", persona_runtime_prompt)
+                .replace("{{SESSION_RUNTIME_CONTEXT}}", session_prompt.strip())
                 .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
-                .replace("{{PERSONA_SLOTS}}", persona_slots_text or "无")
                 .replace("{{PERSONA_EVENT_GUIDANCE}}", _build_persona_event_guidance(persona))
                 .replace("{{SCENE_TOOL_INSTRUCTION}}", scene_tool_instruction),
             }
