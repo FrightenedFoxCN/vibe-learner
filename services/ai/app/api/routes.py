@@ -92,6 +92,20 @@ def _into_response(response_model: type[BaseModel], value: BaseModel | dict) -> 
     payload = value.model_dump() if isinstance(value, BaseModel) else value
     return response_model.model_validate(payload)
 
+def _map_openai_upstream_error(detail_prefix: str, exc: RuntimeError) -> HTTPException:
+    detail = str(exc)
+    if not detail.startswith("openai_") or "_request_failed:" not in detail:
+        return HTTPException(status_code=502, detail=f"{detail_prefix}_upstream_error")
+
+    tail = detail.split("_request_failed:", 1)[1]
+    parts = tail.split(":", 2)
+    status_code = parts[0] if parts and parts[0].isdigit() else "unknown"
+    upstream_code = parts[1] if len(parts) > 1 and parts[1] else "unknown"
+    return HTTPException(
+        status_code=502,
+        detail=f"{detail_prefix}_upstream_error:{status_code}:{upstream_code}",
+    )
+
 
 def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
@@ -102,7 +116,7 @@ def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
     if detail == "openai_plan_request_network_error":
         return HTTPException(status_code=502, detail="plan_model_network_error")
     if detail.startswith("openai_plan_request_failed:"):
-        return HTTPException(status_code=502, detail="plan_model_upstream_error")
+        return _map_openai_upstream_error("plan_model", exc)
     if detail == "plan_model_invalid_json":
         return HTTPException(status_code=502, detail="plan_model_invalid_json")
     if detail == "plan_model_invalid_payload":
@@ -123,7 +137,7 @@ def _map_chat_generation_error(exc: RuntimeError) -> HTTPException:
     if detail == "openai_chat_request_network_error":
         return HTTPException(status_code=502, detail="chat_model_network_error")
     if detail.startswith("openai_chat_request_failed:"):
-        return HTTPException(status_code=502, detail="chat_model_upstream_error")
+        return _map_openai_upstream_error("chat_model", exc)
     if detail == "chat_model_invalid_payload":
         return HTTPException(status_code=502, detail="chat_model_invalid_payload")
     return HTTPException(status_code=500, detail="chat_generation_failed")
@@ -138,7 +152,7 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
     if detail == "openai_setting_request_network_error":
         return HTTPException(status_code=502, detail="setting_model_network_error")
     if detail.startswith("openai_setting_request_failed:"):
-        return HTTPException(status_code=502, detail="setting_model_upstream_error")
+        return _map_openai_upstream_error("setting_model", exc)
     if detail == "setting_model_invalid_json":
         return HTTPException(status_code=502, detail="setting_model_invalid_json")
     if detail == "setting_model_invalid_payload":

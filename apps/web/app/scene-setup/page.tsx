@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import type { SceneProfile } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
+import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import {
   assistPersonaSlot,
   createReusableSceneNode,
@@ -352,6 +353,43 @@ export default function SceneSetupPage() {
       active = false;
     };
   }, []);
+
+  const debugSnapshot = useMemo(
+    () => ({
+      title: "场景页调试面板",
+      subtitle: "展示当前场景树、生成候选、已保存场景和错误信息，便于检查场景搭建链路。",
+      error: [rewriteError, sceneGenerateError, reusableError].filter(Boolean).join("；"),
+      summary: [
+        { label: "场景名称", value: sceneName || "-" },
+        { label: "选中层级", value: selectedLayer?.title || selectedLayerId || "-" },
+        { label: "已保存场景", value: String(savedScenes.length) },
+        { label: "可复用节点", value: String(reusableNodes.length) },
+        { label: "生成候选", value: generatedSceneCandidate ? "是" : "否" }
+      ],
+      details: [
+        { title: "场景快照预览", value: sceneProfilePreview },
+        { title: "当前选中路径", value: selectedPath },
+        { title: "生成候选场景", value: generatedSceneCandidate },
+        { title: "已保存场景列表", value: savedScenes },
+        { title: "可复用节点列表", value: reusableNodes.slice(0, 24) }
+      ]
+    }),
+    [
+      generatedSceneCandidate,
+      reusableError,
+      reusableNodes,
+      rewriteError,
+      savedScenes,
+      sceneGenerateError,
+      sceneName,
+      sceneProfilePreview,
+      selectedLayer,
+      selectedLayerId,
+      selectedPath
+    ]
+  );
+
+  usePageDebugSnapshot(debugSnapshot);
 
   useEffect(() => {
     let active = true;
@@ -1516,6 +1554,7 @@ export default function SceneSetupPage() {
           </div>
         </div>
       ) : null}
+
     </main>
   );
 }

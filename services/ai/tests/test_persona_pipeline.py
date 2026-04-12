@@ -7,7 +7,12 @@ from unittest.mock import patch
 
 import fitz
 from fastapi import HTTPException
-from app.api.routes import _map_plan_generation_error, get_document_planning_trace
+from app.api.routes import (
+    _map_chat_generation_error,
+    _map_plan_generation_error,
+    _map_setting_generation_error,
+    get_document_planning_trace,
+)
 from app.models.api import CreatePersonaCardRequest, CreatePersonaRequest, DocumentResponse, PersonaCardGenerateRequest
 from app.models.domain import (
     ChatToolCallTraceRecord,
@@ -2571,7 +2576,21 @@ class PersonaPipelineTests(unittest.TestCase):
         )
 
         self.assertEqual(error.status_code, 502)
-        self.assertEqual(error.detail, "plan_model_upstream_error")
+        self.assertEqual(error.detail, "plan_model_upstream_error:500:rate_limit")
+
+    def test_route_maps_upstream_chat_error_with_detail(self) -> None:
+        error = _map_chat_generation_error(RuntimeError("openai_chat_request_failed:503:overloaded"))
+
+        self.assertEqual(error.status_code, 502)
+        self.assertEqual(error.detail, "chat_model_upstream_error:503:overloaded")
+
+    def test_route_maps_upstream_setting_error_with_detail(self) -> None:
+        error = _map_setting_generation_error(
+            RuntimeError("openai_setting_request_failed:401:invalid_api_key")
+        )
+
+        self.assertEqual(error.status_code, 502)
+        self.assertEqual(error.detail, "setting_model_upstream_error:401:invalid_api_key")
 
     def test_plan_service_uses_model_provider_output_for_plan(self) -> None:
         arrangement_service = StudyArrangementService()

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { TokenUsageDailyBucket, TokenUsageStats } from "@vibe-learner/shared";
 import { TopNav } from "../../components/top-nav";
+import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { getModelUsageStats } from "../../lib/api";
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -216,6 +217,26 @@ export default function ModelUsagePage() {
 
   const days = useMemo(() => stats ? buildDayMap(stats.buckets) : [], [stats]);
   const featureSummary = useMemo(() => stats ? buildFeatureSummary(stats.buckets) : [], [stats]);
+  const debugSnapshot = useMemo(
+    () => ({
+      title: "用量审计调试面板",
+      subtitle: "显示 token 统计请求状态和原始统计载荷，便于定位聚合数据是否丢失或被截断。",
+      error,
+      summary: [
+        { label: "加载状态", value: loading ? "加载中" : "就绪" },
+        { label: "记录条数", value: String(stats?.buckets.length ?? 0) },
+        { label: "总 Token", value: String(stats?.totalTokens ?? 0) },
+        { label: "功能数", value: String(featureSummary.length) }
+      ],
+      details: [
+        { title: "Token 统计快照", value: stats },
+        { title: "按日聚合桶", value: days }
+      ]
+    }),
+    [days, error, featureSummary.length, loading, stats]
+  );
+
+  usePageDebugSnapshot(debugSnapshot);
 
   return (
     <main className="with-app-nav" style={styles.page}>
@@ -329,6 +350,7 @@ export default function ModelUsagePage() {
             )}
           </>
         )}
+
       </div>
     </main>
   );

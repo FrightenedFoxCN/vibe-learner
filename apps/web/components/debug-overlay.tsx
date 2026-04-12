@@ -6,6 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useDocumentDebugData } from "../hooks/use-document-debug-data";
 import { DocumentDebugPanels } from "./document-debug-panels";
+import { PageDebugPanel } from "./page-debug-panel";
+import { useCurrentPageDebugSnapshot } from "./page-debug-context";
 import { useLearningWorkspace } from "./learning-workspace-provider";
 import { useRuntimeSettings } from "./runtime-settings-provider";
 import { StudyDebugPanels } from "./study-debug-panels";
@@ -16,13 +18,13 @@ export function DebugOverlay() {
   const pathname = usePathname();
   const { showDebugInfo } = useRuntimeSettings();
   const workspace = useLearningWorkspace();
+  const pageSnapshot = useCurrentPageDebugSnapshot();
   const [open, setOpen] = useState(false);
 
-  const supportedPath = pathname === "/plan" || pathname === "/study";
   const activeDocumentId = workspace.activeDocument?.id ?? "";
   const debugData = useDocumentDebugData(
     activeDocumentId,
-    showDebugInfo && open && supportedPath && pathname === "/plan" && Boolean(activeDocumentId),
+    showDebugInfo && open && pathname === "/plan" && Boolean(activeDocumentId),
     Boolean(workspace.activeDocument?.debugReady)
   );
 
@@ -58,19 +60,13 @@ export function DebugOverlay() {
     };
   }, [open]);
 
-  const title = useMemo(() => {
-    if (pathname === "/plan") {
-      return "计划调试浮窗";
-    }
-    if (pathname === "/study") {
-      return "章节对话调试浮窗";
-    }
-    return "调试浮窗";
-  }, [pathname]);
+  const title = useMemo(() => getDebugTitle(pathname), [pathname]);
 
-  if (!showDebugInfo || !supportedPath) {
+  if (!showDebugInfo) {
     return null;
   }
+
+  const pageLabel = getDebugPageLabel(pathname);
 
   return (
     <>
@@ -80,7 +76,7 @@ export function DebugOverlay() {
         {!open ? (
           <button type="button" style={styles.fab} onClick={() => setOpen(true)}>
             <span style={styles.fabLabel}>Debug</span>
-            <span style={styles.fabMeta}>{pathname === "/plan" ? "plan" : "study"}</span>
+            <span style={styles.fabMeta}>{getFabMeta(pathname)}</span>
           </button>
         ) : null}
 
@@ -90,7 +86,7 @@ export function DebugOverlay() {
               <div style={styles.headerCopy}>
                 <span style={styles.title}>{title}</span>
                 <span style={styles.subtitle}>
-                  {workspace.activeDocument?.title ?? "未关联文档"}
+                  {pageLabel} · {workspace.activeDocument?.title ?? pageSnapshot?.title ?? "未关联上下文"}
                 </span>
               </div>
               <div style={styles.headerActions}>
@@ -130,13 +126,23 @@ export function DebugOverlay() {
                   loading={debugData.loading}
                   error={debugData.error}
                 />
-              ) : (
+              ) : pathname === "/study" ? (
                 <StudyDebugPanels
                   document={workspace.activeDocument}
                   persona={workspace.selectedPersona ?? null}
                   session={workspace.studySession}
                   response={workspace.response}
                 />
+              ) : pageSnapshot ? (
+                <PageDebugPanel
+                  title={pageSnapshot.title}
+                  subtitle={pageSnapshot.subtitle}
+                  error={pageSnapshot.error}
+                  summary={pageSnapshot.summary}
+                  details={pageSnapshot.details}
+                />
+              ) : (
+                <div style={styles.emptyState}>当前页面还没有注册调试面板。</div>
               )}
             </div>
           </section>
@@ -253,5 +259,88 @@ const styles: Record<string, CSSProperties> = {
   overlayBody: {
     overflowY: "auto",
     padding: 16
+  },
+  emptyState: {
+    border: "1px dashed var(--border)",
+    borderRadius: 16,
+    padding: "18px 16px",
+    fontSize: 13,
+    color: "var(--muted)",
+    background: "var(--bg)"
   }
 };
+
+function getDebugTitle(pathname: string) {
+  if (pathname === "/plan") {
+    return "计划调试浮窗";
+  }
+  if (pathname === "/study") {
+    return "章节对话调试浮窗";
+  }
+  if (pathname === "/settings") {
+    return "设置调试浮窗";
+  }
+  if (pathname === "/model-usage") {
+    return "用量审计调试浮窗";
+  }
+  if (pathname === "/persona-spectrum") {
+    return "人格页调试浮窗";
+  }
+  if (pathname === "/scene-setup") {
+    return "场景页调试浮窗";
+  }
+  if (pathname === "/sensory-tools") {
+    return "感官工具调试浮窗";
+  }
+  return "调试浮窗";
+}
+
+function getDebugPageLabel(pathname: string) {
+  if (pathname === "/plan") {
+    return "计划生成";
+  }
+  if (pathname === "/study") {
+    return "章节对话";
+  }
+  if (pathname === "/settings") {
+    return "统一设置";
+  }
+  if (pathname === "/model-usage") {
+    return "用量审计";
+  }
+  if (pathname === "/persona-spectrum") {
+    return "人格色谱";
+  }
+  if (pathname === "/scene-setup") {
+    return "场景搭建";
+  }
+  if (pathname === "/sensory-tools") {
+    return "感官工具";
+  }
+  return pathname || "当前页面";
+}
+
+function getFabMeta(pathname: string) {
+  if (pathname === "/plan") {
+    return "计划页";
+  }
+  if (pathname === "/study") {
+    return "对话页";
+  }
+  if (pathname === "/settings") {
+    return "设置页";
+  }
+  if (pathname === "/model-usage") {
+    return "审计页";
+  }
+  if (pathname === "/persona-spectrum") {
+    return "人格页";
+  }
+  if (pathname === "/scene-setup") {
+    return "场景页";
+  }
+  if (pathname === "/sensory-tools") {
+    return "工具页";
+  }
+  return "页面";
+}

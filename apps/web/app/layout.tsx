@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DebugOverlay } from "../components/debug-overlay";
 import { LearningWorkspaceProvider } from "../components/learning-workspace-provider";
+import { PageDebugProvider } from "../components/page-debug-context";
 import { RuntimeSettingsProvider } from "../components/runtime-settings-provider";
 
 export const metadata: Metadata = {
@@ -15,10 +16,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="zh-CN">
       <body>
         <RuntimeSettingsProvider>
-          <LearningWorkspaceProvider>
-            {children}
-            <DebugOverlay />
-          </LearningWorkspaceProvider>
+          <PageDebugProvider>
+            <LearningWorkspaceProvider>
+              {children}
+              <DebugOverlay />
+            </LearningWorkspaceProvider>
+          </PageDebugProvider>
         </RuntimeSettingsProvider>
       </body>
     </html>

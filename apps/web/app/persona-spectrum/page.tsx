@@ -28,6 +28,7 @@ import {
 } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
+import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import {
   assistPersonaSlot,
   assistPersonaSetting,
@@ -214,6 +215,42 @@ export default function PersonaSpectrumPage() {
     () => personaCards.filter((card) => matchesPersonaCard(card, cardSearchQuery)),
     [personaCards, cardSearchQuery]
   );
+  const debugSnapshot = useMemo(
+    () => ({
+      title: "人格页调试面板",
+      subtitle: "显示当前编辑区、生成结果、卡片库和各类错误，便于核对人格生成和写回链路。",
+      error: [loadError, saveError, assistError, configError, cardError].filter(Boolean).join("；"),
+      summary: [
+        { label: "加载状态", value: loadError ? "异常" : "就绪" },
+        { label: "当前人格", value: selectedPersona?.name || "-" },
+        { label: "槽位数", value: String(draft.slots.length) },
+        { label: "生成卡片", value: String(generatedCards.length) },
+        { label: "卡片库", value: String(personaCards.length) }
+      ],
+      details: [
+        { title: "当前选中人格", value: selectedPersona },
+        { title: "编辑草稿", value: draft },
+        { title: "生成摘要信息", value: generatedPersonaMeta },
+        { title: "生成卡片（前 24 条）", value: generatedCards.slice(0, 24) },
+        { title: "当前勾选卡片", value: selectedCards }
+      ]
+    }),
+    [
+      assistError,
+      cardError,
+      configError,
+      draft,
+      generatedCards,
+      generatedPersonaMeta,
+      loadError,
+      personaCards.length,
+      saveError,
+      selectedCards,
+      selectedPersona
+    ]
+  );
+
+  usePageDebugSnapshot(debugSnapshot);
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
     if (assistError) setAssistError("");
@@ -1246,6 +1283,7 @@ export default function PersonaSpectrumPage() {
               </div>
             ) : null}
           </div>
+
         </aside>
       </div>
     </main>

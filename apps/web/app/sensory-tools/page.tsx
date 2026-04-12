@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { ModelToolConfig, ModelToolConfigItem, ModelToolStageConfig } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
+import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { getModelToolConfig, updateModelToolConfig } from "../../lib/api";
 
 export default function SensoryToolsPage() {
@@ -11,6 +12,30 @@ export default function SensoryToolsPage() {
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState("");
   const [error, setError] = useState("");
+
+  const debugSnapshot = useMemo(
+    () => ({
+      title: "感官工具调试面板",
+      subtitle: "展示当前模型工具配置、阶段可用性和本页操作错误，便于核对工具链是否被正确下发。",
+      error,
+      summary: [
+        { label: "加载状态", value: loading ? "加载中" : "就绪" },
+        { label: "阶段数", value: String(config?.stages.length ?? 0) },
+        { label: "保存中", value: savingKey || "-" },
+        {
+          label: "可用工具",
+          value: String(config?.stages.reduce((count, stage) => count + stage.tools.filter((tool) => tool.enabled && tool.available).length, 0) ?? 0)
+        }
+      ],
+      details: [
+        { title: "模型工具配置", value: config },
+        { title: "保存任务键", value: savingKey }
+      ]
+    }),
+    [config, error, loading, savingKey]
+  );
+
+  usePageDebugSnapshot(debugSnapshot);
 
   useEffect(() => {
     let cancelled = false;
