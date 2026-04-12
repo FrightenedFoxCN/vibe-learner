@@ -368,6 +368,16 @@ class ModelToolConfigRecord(BaseModel):
     stage_tool_enabled: dict[str, dict[str, bool]] = Field(default_factory=dict)
 
 
+class TokenUsageRecord(BaseModel):
+    id: str
+    feature: str
+    model: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    created_at: str
+
+
 class RuntimeSettingsRecord(BaseModel):
     config_id: str = "default"
     updated_at: str

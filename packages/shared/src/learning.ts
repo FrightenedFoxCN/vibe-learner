@@ -504,3 +504,20 @@ export interface DocumentDebugRecord {
   warnings: ParseWarning[];
   dominantLanguageHint: string;
 }
+
+
+export interface TokenUsageDailyBucket {
+  date: string;
+  feature: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface TokenUsageStats {
+  buckets: TokenUsageDailyBucket[];
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+}

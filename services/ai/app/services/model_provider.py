@@ -29,6 +29,7 @@ from app.models.domain import (
     persona_sorted_slots,
 )
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+from app.services.token_usage import TokenUsageService
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
     build_learning_plan_context,
@@ -762,6 +763,7 @@ class OpenAIModelProvider(MockModelProvider):
         fallback_disable_tools: bool = True,
         plan_disabled_tools_provider: Callable[[], set[str]] | None = None,
         chat_disabled_tools_provider: Callable[[], set[str]] | None = None,
+        token_usage_service: TokenUsageService | None = None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
@@ -792,6 +794,7 @@ class OpenAIModelProvider(MockModelProvider):
         self.fallback_disable_tools = fallback_disable_tools
         self.plan_disabled_tools_provider = plan_disabled_tools_provider
         self.chat_disabled_tools_provider = chat_disabled_tools_provider
+        self.token_usage_service = token_usage_service
 
     def supports_page_image_tools(self) -> bool:
         return self.multimodal_enabled
@@ -1474,6 +1477,7 @@ class OpenAIModelProvider(MockModelProvider):
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                 raw_payload = json.loads(response.read().decode("utf-8"))
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            self._record_token_usage(raw_payload, feature=request_kind, model=model)
             return raw_payload, elapsed_ms
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="ignore")
@@ -1530,6 +1534,7 @@ class OpenAIModelProvider(MockModelProvider):
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                 raw_payload = json.loads(response.read().decode("utf-8"))
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+            self._record_token_usage_responses(raw_payload, feature=request_kind, model=model)
             return raw_payload, elapsed_ms
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="ignore")
@@ -1597,6 +1602,7 @@ class OpenAIModelProvider(MockModelProvider):
                 raw_payload = json.loads(response.read().decode("utf-8"))
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
             logger.info("model.embedding.request provider=openai model=%s elapsed_ms=%s", model, elapsed_ms)
+            self._record_token_usage(raw_payload, feature="embedding", model=model)
             return raw_payload, elapsed_ms
         except urllib.error.HTTPError as exc:
             body = exc.read().decode("utf-8", errors="ignore")
@@ -1608,6 +1614,43 @@ class OpenAIModelProvider(MockModelProvider):
             raise RuntimeError("openai_embedding_request_network_error") from exc
         except (TimeoutError, socket.timeout) as exc:
             raise RuntimeError("openai_embedding_request_timeout") from exc
+
+    def _record_token_usage(
+        self,
+        raw_payload: dict[str, Any],
+        *,
+        feature: str,
+        model: str,
+        prompt_key: str = "prompt_tokens",
+        completion_key: str = "completion_tokens",
+    ) -> None:
+        if self.token_usage_service is None:
+            return
+        usage = raw_payload.get("usage") if isinstance(raw_payload, dict) else None
+        if not isinstance(usage, dict):
+            return
+        prompt_tokens = _coerce_int(usage.get(prompt_key) or usage.get("prompt_tokens"), default=0)
+        completion_tokens = _coerce_int(usage.get(completion_key) or usage.get("completion_tokens"), default=0)
+        total_tokens = _coerce_int(usage.get("total_tokens"), default=prompt_tokens + completion_tokens)
+        try:
+            self.token_usage_service.record(
+                feature=feature,
+                model=model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+            )
+        except Exception:
+            logger.exception("token_usage.record failed feature=%s model=%s", feature, model)
+
+    def _record_token_usage_responses(self, raw_payload: dict[str, Any], *, feature: str, model: str) -> None:
+        self._record_token_usage(
+            raw_payload,
+            feature=feature,
+            model=model,
+            prompt_key="input_tokens",
+            completion_key="output_tokens",
+        )
 
     def _resolve_request_endpoint(self, request_kind: str) -> tuple[str, str]:
         if request_kind == "plan":

@@ -18,7 +18,8 @@ import type {
   RuntimeSettingsPatch,
   StreamReport,
   StudyChatResponse,
-  StudySessionRecord
+  StudySessionRecord,
+  TokenUsageStats
 } from "@vibe-learner/shared";
 
 import { compactPreviewString, compactPreviewValue } from "./preview";
@@ -1740,5 +1741,23 @@ function normalizeInteractiveQuestion(raw: any) {
     submittedAnswer: String(raw.submitted_answer ?? "").trim() || undefined,
     isCorrect: typeof raw.is_correct === "boolean" ? raw.is_correct : undefined,
     feedbackText: String(raw.feedback_text ?? "").trim() || undefined,
+  };
+}
+
+export async function getModelUsageStats(): Promise<TokenUsageStats> {
+  const response = await request(`${AI_BASE_URL}/model-usage/stats`);
+  const raw = await readJson<any>(response);
+  return {
+    buckets: (raw.buckets ?? []).map((b: any) => ({
+      date: String(b.date ?? ""),
+      feature: String(b.feature ?? ""),
+      model: String(b.model ?? ""),
+      promptTokens: Number(b.prompt_tokens ?? 0),
+      completionTokens: Number(b.completion_tokens ?? 0),
+      totalTokens: Number(b.total_tokens ?? 0),
+    })),
+    totalPromptTokens: Number(raw.total_prompt_tokens ?? 0),
+    totalCompletionTokens: Number(raw.total_completion_tokens ?? 0),
+    totalTokens: Number(raw.total_tokens ?? 0),
   };
 }

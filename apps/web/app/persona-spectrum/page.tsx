@@ -833,7 +833,7 @@ export default function PersonaSpectrumPage() {
           </div>
         ) : null}
         <p style={styles.libraryCardContent}>{card.content}</p>
-        {card.sourceNote ? <p style={styles.libraryCardNote}>{card.sourceNote}</p> : null}
+        {generated && card.sourceNote ? <p style={styles.libraryCardNote}>{card.sourceNote}</p> : null}
         <div style={styles.actionsRow}>
           <button data-card-action="true" style={styles.ghostBtn} type="button" onClick={() => insertCardsIntoDraft([card])}>
             插入当前人格

@@ -18,6 +18,7 @@ from app.services.scene_setup import SceneSetupService
 from app.services.session_scene import SessionSceneService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
+from app.services.token_usage import TokenUsageService
 
 logger = get_logger("vibe_learner.bootstrap")
 
@@ -30,6 +31,7 @@ class Container:
         self.document_parser = DocumentParser()
         self.model_tool_config_service = ModelToolConfigService(self.store)
         self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
+        self.token_usage_service = TokenUsageService(data_root)
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
         self.persona_card_library_service = PersonaCardLibraryService(self.store)
@@ -108,6 +110,7 @@ class Container:
                 chat_disabled_tools_provider=(
                     lambda: self.model_tool_config_service.disabled_tools_for_stage(CHAT_STAGE)
                 ),
+                token_usage_service=self.token_usage_service,
             )
 
         logger.info("bootstrap.model_provider provider=mock")

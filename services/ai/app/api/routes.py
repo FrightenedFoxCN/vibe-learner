@@ -68,6 +68,8 @@ from app.models.api import (
     UpdateStudySessionRequest,
     SubmissionGradeRequest,
     SubmissionGradeResponse,
+    TokenUsageStatsResponse,
+    TokenUsageDailyBucket,
 )
 from app.models.domain import PersonaCardRecord, PlanGenerationTraceRecord
 from app.services.stream_reports import (
@@ -1255,6 +1257,46 @@ def grade_submission(payload: SubmissionGradeRequest) -> SubmissionGradeResponse
         answer=payload.answer,
     )
     return _into_response(SubmissionGradeResponse, response)
+
+
+@router.get("/model-usage/stats", response_model=TokenUsageStatsResponse)
+def get_model_usage_stats() -> TokenUsageStatsResponse:
+    records = container.token_usage_service.load_all()
+    buckets_map: dict[tuple[str, str, str], TokenUsageDailyBucket] = {}
+    total_prompt = 0
+    total_completion = 0
+    total_all = 0
+    for rec in records:
+        date_str = rec.created_at[:10]
+        key = (date_str, rec.feature, rec.model)
+        if key not in buckets_map:
+            buckets_map[key] = TokenUsageDailyBucket(
+                date=date_str,
+                feature=rec.feature,
+                model=rec.model,
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0,
+            )
+        bucket = buckets_map[key]
+        buckets_map[key] = TokenUsageDailyBucket(
+            date=bucket.date,
+            feature=bucket.feature,
+            model=bucket.model,
+            prompt_tokens=bucket.prompt_tokens + rec.prompt_tokens,
+            completion_tokens=bucket.completion_tokens + rec.completion_tokens,
+            total_tokens=bucket.total_tokens + rec.total_tokens,
+        )
+        total_prompt += rec.prompt_tokens
+        total_completion += rec.completion_tokens
+        total_all += rec.total_tokens
+    buckets = sorted(buckets_map.values(), key=lambda b: (b.date, b.feature, b.model))
+    return TokenUsageStatsResponse(
+        buckets=buckets,
+        total_prompt_tokens=total_prompt,
+        total_completion_tokens=total_completion,
+        total_tokens=total_all,
+    )
 
 
 def _stringify_error(exc: Exception) -> str:

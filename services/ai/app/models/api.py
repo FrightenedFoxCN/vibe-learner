@@ -505,4 +505,20 @@ class SubmissionGradeResponse(BaseModel):
     character_events: list[CharacterStateEvent]
 
 
+class TokenUsageDailyBucket(BaseModel):
+    date: str
+    feature: str
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+
+class TokenUsageStatsResponse(BaseModel):
+    buckets: list[TokenUsageDailyBucket]
+    total_prompt_tokens: int
+    total_completion_tokens: int
+    total_tokens: int
+
+
 DocumentStudyUnitUpdateResponse.model_rebuild()
