@@ -161,12 +161,15 @@ class StudyArrangementService:
             units=plannable_units,
         )
         study_chapters = [unit.title for unit in plannable_units[:4]] or [document.title]
+        objective_hint = self._summarize_objective(goal.objective)
         today_tasks = [
             f"{item.title} · {item.focus}"
             for item in schedule[:3]
         ] or [
             f"阅读 {document.title} 的第一页内容，确认学习目标与术语。",
         ]
+        if objective_hint:
+            today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
         if persona is not None:
             from app.models.domain import persona_slot_content
             enc_style = persona_slot_content(persona, "encouragement_style")
@@ -187,6 +190,7 @@ class StudyArrangementService:
         overview = (
             f"{persona_name} 将带你完成 {document.title} 的"
             f" {len(plannable_units)} 个学习单元，先从 {plannable_units[0].title if plannable_units else document.title} 开始。"
+            f"{f' 目标优先：{objective_hint}。' if objective_hint else ''}"
             f"{persona_hint}"
         )
         course_title = " / ".join(
@@ -206,6 +210,14 @@ class StudyArrangementService:
             schedule=schedule,
             created_at="",
         )
+
+    def _summarize_objective(self, objective: str) -> str:
+        normalized = re.sub(r"\s+", " ", objective or "").strip(" 。.!！?？;；：:")
+        if not normalized:
+            return ""
+        if len(normalized) <= 24:
+            return normalized
+        return f"{normalized[:24].rstrip()}…"
 
     def _derive_anchor_title(
         self,

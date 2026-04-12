@@ -190,6 +190,50 @@ def _registered_plan_tools() -> list[PlanToolDefinition]:
             execute=_execute_get_study_unit_detail,
         ),
         PlanToolDefinition(
+            name="ask_planning_question",
+            description=TOOL_CATALOG[PLAN_STAGE]["ask_planning_question"]["description"],
+            parameters={
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "description": "需要向学习者确认的一个具体问题。",
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "可选。说明为什么当前需要确认这个问题。",
+                    },
+                    "assumptions": {
+                        "type": "array",
+                        "description": "可选。若暂时无法等待回答，先采用的保守假设。",
+                        "items": {
+                            "type": "string",
+                        },
+                    },
+                },
+                "required": ["question"],
+                "additionalProperties": False,
+            },
+            is_available=lambda context: True,
+            execute=_execute_ask_planning_question,
+        ),
+        PlanToolDefinition(
+            name="estimate_plan_completion",
+            description=TOOL_CATALOG[PLAN_STAGE]["estimate_plan_completion"]["description"],
+            parameters={
+                "type": "object",
+                "properties": {
+                    "focus": {
+                        "type": "string",
+                        "description": "可选。提示当前最需要检查的维度，例如目录细度、目标覆盖或行动可执行性。",
+                    },
+                },
+                "additionalProperties": False,
+            },
+            is_available=lambda context: True,
+            execute=_execute_estimate_plan_completion,
+        ),
+        PlanToolDefinition(
             name="revise_study_units",
             description=TOOL_CATALOG[PLAN_STAGE]["revise_study_units"]["description"],
             parameters={
@@ -323,6 +367,144 @@ def _execute_get_study_unit_detail(
             "detail": detail,
         },
         trace_summary=f"已读取学习单元详情：{target_id}",
+        follow_up_messages=[],
+    )
+
+
+def _execute_ask_planning_question(
+    arguments: dict[str, Any],
+    context: PlanToolRuntimeContext,
+) -> PlanToolResult:
+    question = str(arguments.get("question") or "").strip()
+    if not question:
+        return PlanToolResult(
+            payload={
+                "ok": False,
+                "error": "missing_question",
+            },
+            trace_summary="缺少需要向学习者确认的问题",
+            follow_up_messages=[],
+        )
+    reason = str(arguments.get("reason") or "").strip()
+    assumptions: list[str] = []
+    assumptions_raw = arguments.get("assumptions")
+    if isinstance(assumptions_raw, list):
+        for item in assumptions_raw:
+            text = str(item).strip()
+            if text:
+                assumptions.append(text)
+    follow_up_text = [f"需要向学习者确认：{question}"]
+    if reason:
+        follow_up_text.append(f"原因：{reason}")
+    if assumptions:
+        follow_up_text.append("若暂时无法等待回答，可先按以下保守假设继续：")
+        follow_up_text.extend(f"- {item}" for item in assumptions)
+    else:
+        follow_up_text.append("若暂时无法等待回答，可先按保守假设继续，并在 today_tasks 中保留一个确认项。")
+    return PlanToolResult(
+        payload={
+            "ok": True,
+            "tool_name": "ask_planning_question",
+            "question": question,
+            "reason": reason,
+            "assumptions": assumptions,
+        },
+        trace_summary=f"已提出待确认问题：{question}",
+        follow_up_messages=[
+            {
+                "role": "assistant",
+                "content": "\n".join(follow_up_text),
+            }
+        ],
+    )
+
+
+def _execute_estimate_plan_completion(
+    arguments: dict[str, Any],
+    context: PlanToolRuntimeContext,
+) -> PlanToolResult:
+    focus = str(arguments.get("focus") or "").strip()
+    plannable_units = [unit for unit in context.study_units if unit.include_in_plan] or list(context.study_units)
+    if not plannable_units:
+        return PlanToolResult(
+            payload={
+                "ok": True,
+                "tool_name": "estimate_plan_completion",
+                "completion_score": 20,
+                "completion_label": "需要补充学习单元",
+                "signals": {
+                    "plannable_unit_count": 0,
+                    "units_with_subsections": 0,
+                    "detail_coverage_ratio": 0.0,
+                },
+                "missing_items": ["study_units"],
+                "recommendations": ["先建立最小可执行的章节结构，再生成计划。"],
+            },
+            trace_summary="计划完成度偏低：当前没有可用的学习单元",
+            follow_up_messages=[],
+        )
+
+    subsection_counts = [
+        len(context.detail_map.get(unit.id, {}).get("subsection_titles", []) or [])
+        for unit in plannable_units
+    ]
+    units_with_subsections = sum(1 for count in subsection_counts if count > 0)
+    total_subsections = sum(subsection_counts)
+    detail_coverage_ratio = units_with_subsections / max(1, len(plannable_units))
+    richness_ratio = min(1.0, total_subsections / max(1, len(plannable_units) * 2))
+    span_penalty = 0.0
+    if any((unit.page_end - unit.page_start + 1) >= 80 for unit in plannable_units):
+        span_penalty = 0.18
+    if len(plannable_units) <= 2:
+        span_penalty += 0.08
+    score = int(
+        max(
+            25,
+            min(
+                96,
+                round((0.42 + (detail_coverage_ratio * 0.28) + (richness_ratio * 0.22) - span_penalty) * 100),
+            ),
+        )
+    )
+    if score >= 80:
+        label = "可以收束成稿"
+    elif score >= 60:
+        label = "还需要一轮打磨"
+    else:
+        label = "建议继续细化"
+    missing_items: list[str] = []
+    recommendations: list[str] = []
+    if detail_coverage_ratio < 0.7:
+        missing_items.append("subsection_detail")
+        recommendations.append("再读取代表性学习单元详情，补足子章节边界。")
+    if richness_ratio < 0.6:
+        missing_items.append("page_range_evidence")
+        recommendations.append("再读取一段页范围文本，核对目录与正文是否一致。")
+    if span_penalty > 0:
+        missing_items.append("coarse_segmentation")
+        recommendations.append("把过宽的学习单元拆细，再重新估分。")
+    if focus:
+        recommendations.insert(0, f"当前重点：{focus}。")
+    if not recommendations:
+        recommendations.append("目录细度和行动性已经足够，可以开始生成最终计划。")
+    return PlanToolResult(
+        payload={
+            "ok": True,
+            "tool_name": "estimate_plan_completion",
+            "completion_score": score,
+            "completion_label": label,
+            "focus": focus,
+            "signals": {
+                "plannable_unit_count": len(plannable_units),
+                "units_with_subsections": units_with_subsections,
+                "total_subsections": total_subsections,
+                "detail_coverage_ratio": round(detail_coverage_ratio, 3),
+                "richness_ratio": round(richness_ratio, 3),
+            },
+            "missing_items": missing_items,
+            "recommendations": recommendations,
+        },
+        trace_summary=f"计划完成度 {score}/100：{label}",
         follow_up_messages=[],
     )
 

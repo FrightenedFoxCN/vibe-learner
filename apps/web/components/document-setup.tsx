@@ -148,7 +148,7 @@ export function DocumentSetup({
       <section style={styles.card}>
         <div style={styles.cardHead}>
           <span style={styles.cardTitle}>教材上传与分析</span>
-          <span style={styles.cardMeta}>上传 PDF 并生成新的学习计划</span>
+          <span style={styles.cardMeta}>上传 PDF 生成计划，学习目标会参与标题、任务和章节取舍</span>
         </div>
 
         <div style={styles.form}>

@@ -17,6 +17,18 @@ TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category": "planning",
             "category_label": "规划分析",
         },
+        "ask_planning_question": {
+            "label": "计划澄清提问",
+            "description": "在目标或边界不清时，向学习者提出一个具体确认问题，并保留保守假设。",
+            "category": "planning",
+            "category_label": "规划分析",
+        },
+        "estimate_plan_completion": {
+            "label": "计划完成度评估",
+            "description": "根据当前学习单元与目录细度估计计划完成度，判断是否还需要继续打磨。",
+            "category": "planning",
+            "category_label": "规划分析",
+        },
         "revise_study_units": {
             "label": "学习单元重编排",
             "description": "在章节切分明显错误时，允许模型重写完整学习单元列表。",

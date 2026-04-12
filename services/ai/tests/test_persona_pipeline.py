@@ -1079,14 +1079,24 @@ class PersonaPipelineTests(unittest.TestCase):
         all_specs = get_learning_plan_tool_specs()
         self.assertEqual(
             [spec["name"] for spec in all_specs],
-            ["get_study_unit_detail", "revise_study_units", "read_page_range_content", "read_page_range_images"],
+            [
+                "get_study_unit_detail",
+                "ask_planning_question",
+                "estimate_plan_completion",
+                "revise_study_units",
+                "read_page_range_content",
+                "read_page_range_images",
+            ],
         )
 
         contextual_specs = get_learning_plan_tool_specs(
             detail_map={"unit-1": {"unit_id": "unit-1"}},
             debug_report=None,
         )
-        self.assertEqual([spec["name"] for spec in contextual_specs], ["get_study_unit_detail"])
+        self.assertEqual(
+            [spec["name"] for spec in contextual_specs],
+            ["get_study_unit_detail", "ask_planning_question", "estimate_plan_completion"],
+        )
 
         multimodal_specs = get_learning_plan_tool_specs(
             study_units=[
@@ -1121,8 +1131,100 @@ class PersonaPipelineTests(unittest.TestCase):
         )
         self.assertEqual(
             [spec["name"] for spec in multimodal_specs],
-            ["get_study_unit_detail", "revise_study_units", "read_page_range_content", "read_page_range_images"],
+            [
+                "get_study_unit_detail",
+                "ask_planning_question",
+                "estimate_plan_completion",
+                "revise_study_units",
+                "read_page_range_content",
+                "read_page_range_images",
+            ],
         )
+
+    def test_planning_question_tool_emits_follow_up_prompt(self) -> None:
+        runtime = build_plan_tool_runtime()
+
+        execution = runtime.execute_tool_call(
+            {
+                "id": "call-question-1",
+                "type": "function",
+                "function": {
+                    "name": "ask_planning_question",
+                    "arguments": json.dumps(
+                        {
+                            "question": "这次学习更想追求考试提分还是概念打底？",
+                            "reason": "目标描述还不够具体。",
+                            "assumptions": ["先按概念打底来规划", "把今日任务控制在 3 步以内"],
+                        }
+                    ),
+                },
+            }
+        )
+
+        self.assertTrue(execution.result["ok"])
+        self.assertEqual(execution.result["tool_name"], "ask_planning_question")
+        self.assertEqual(len(execution.follow_up_messages), 1)
+        self.assertIn("需要向学习者确认", execution.follow_up_messages[0]["content"])
+
+    def test_plan_completion_tool_scores_coarse_structure(self) -> None:
+        runtime = build_plan_tool_runtime(
+            study_units=[
+                StudyUnitRecord(
+                    id="unit-1",
+                    document_id="doc-1",
+                    title="Combined Unit",
+                    page_start=1,
+                    page_end=100,
+                    summary="过宽的学习单元。",
+                    confidence=0.5,
+                )
+            ]
+        )
+
+        execution = runtime.execute_tool_call(
+            {
+                "id": "call-completion-1",
+                "type": "function",
+                "function": {
+                    "name": "estimate_plan_completion",
+                    "arguments": json.dumps({"focus": "目录细度"}),
+                },
+            }
+        )
+
+        self.assertTrue(execution.result["ok"])
+        self.assertIn("completion_score", execution.result)
+        self.assertLessEqual(int(execution.result["completion_score"]), 50)
+        self.assertIn("目录细度", execution.result["focus"])
+
+    def test_mock_provider_prioritizes_learning_goal_in_plan_summary(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        provider = MockModelProvider()
+        goal = LearningGoalInput(
+            document_id="doc-1",
+            persona_id=persona.id,
+            objective="先把集合与命题逻辑的基础概念讲清楚",
+        )
+
+        reply = provider.generate_learning_plan(
+            persona=persona,
+            document_title="Discrete Mathematics",
+            goal=goal,
+            study_units=[
+                StudyUnitRecord(
+                    id="unit-1",
+                    document_id="doc-1",
+                    title="Chapter 1 Foundations",
+                    page_start=1,
+                    page_end=18,
+                    summary="聚焦集合与命题逻辑。",
+                    confidence=0.9,
+                )
+            ],
+        )
+
+        self.assertIn("目标优先", reply.overview)
+        self.assertIn("先把集合与命题逻辑的基础概念讲清楚", reply.today_tasks[0])
 
     def test_multimodal_page_image_tool_creates_follow_up_message(self) -> None:
         runtime = build_plan_tool_runtime(

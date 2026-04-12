@@ -577,12 +577,15 @@ class MockModelProvider(ModelProvider):
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ) -> PlanModelReply:
         plannable_units = [unit for unit in study_units if unit.include_in_plan] or study_units
+        objective_hint = self._compact_objective(goal.objective)
         today_tasks = [
             f"阅读 {unit.title}，提取 2 条定义或结论。"
             for unit in plannable_units[:2]
         ]
         if not today_tasks:
             today_tasks = [f"阅读 {document_title}，确认学习章节顺序与关键知识点。"]
+        if objective_hint:
+            today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
         schedule: list[PlanScheduleItem] = []
         for unit in plannable_units[:4]:
             schedule.append(
@@ -602,11 +605,20 @@ class MockModelProvider(ModelProvider):
             overview=(
                 f"{persona.name} 将围绕 {document_title} 生成首轮学习计划，"
                 f"覆盖 {len(plannable_units)} 个学习单元。"
+                f"{' 目标优先：' + objective_hint + '。' if objective_hint else ''}"
             ),
             study_chapters=[unit.title for unit in plannable_units[:4]],
             today_tasks=today_tasks,
             schedule=schedule,
         )
+
+    def _compact_objective(self, objective: str) -> str:
+        cleaned = re.sub(r"\s+", " ", objective or "").strip(" 。.!！?？;；：:")
+        if not cleaned:
+            return ""
+        if len(cleaned) <= 20:
+            return cleaned
+        return f"{cleaned[:20].rstrip()}…"
     def assist_persona_setting(
         self,
         *,
