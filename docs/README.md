@@ -2,6 +2,7 @@
 
 ## Current Docs
 
+- `user_manual.md`: end-user product manual with page-by-page and block-by-block usage instructions
 - `architecture.md`: current monorepo boundaries, runtime flow, and storage model
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
 - `desktop-distribution-plan.md`: deferred plan for future cross-platform desktop packaging and app-shell architecture
@@ -14,15 +15,16 @@
 
 ## Reading Order
 
-1. Read `architecture.md` for the high-level system split.
-2. Read `parsing-and-planning-data-flow.md` before changing PDF parsing, study-unit cleanup, planning context, or tool-enabled plan generation.
-3. Read `frontend-learning-workspace.md` before changing `apps/web/components/learning-workspace.tsx` or its controller/state helpers.
-4. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
-5. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
-6. Read `api-reference.md` before touching frontend/backend contracts.
-7. Read `desktop-distribution-plan.md` before reviving desktop packaging or executable distribution work.
-8. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-9. Read `../TODO.md` for the active implementation backlog.
+1. Read `user_manual.md` to understand the current page-level product behavior and operation flow.
+2. Read `architecture.md` for the high-level system split.
+3. Read `parsing-and-planning-data-flow.md` before changing PDF parsing, study-unit cleanup, planning context, or tool-enabled plan generation.
+4. Read `frontend-learning-workspace.md` before changing `apps/web/components/learning-workspace.tsx` or its controller/state helpers.
+5. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
+6. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
+7. Read `api-reference.md` before touching frontend/backend contracts.
+8. Read `desktop-distribution-plan.md` before reviving desktop packaging or executable distribution work.
+9. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+10. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 
