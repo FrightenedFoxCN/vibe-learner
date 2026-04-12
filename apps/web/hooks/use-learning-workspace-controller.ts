@@ -278,7 +278,6 @@ export function useLearningWorkspaceController({
     dispatch({
       type: "plan_selected",
       planId: nextPlan.id,
-      personaId: nextPlan.personaId,
       notice: noticeMessage
     });
   };
@@ -473,12 +472,11 @@ export function useLearningWorkspaceController({
             `${activeDocument.id}:intro`
         }
       );
-      dispatch({
-        type: "study_session_set",
-        studySession: nextSession,
-        personaId: activePlan.personaId,
-        clearResponse: true
-      });
+        dispatch({
+          type: "study_session_set",
+          studySession: nextSession,
+          clearResponse: true
+        });
       dispatch({
         type: "notice_set",
         notice: SESSION_CREATED_NOTICE
@@ -663,7 +661,6 @@ export function useLearningWorkspaceController({
     dispatch({
       type: "study_session_set",
       studySession: workingSession,
-      personaId: workingSession.personaId,
       clearResponse: options.clearResponseOnSwitch ?? true,
     });
     return workingSession;
@@ -690,7 +687,6 @@ export function useLearningWorkspaceController({
       dispatch({
         type: "study_session_set",
         studySession: next.session,
-        personaId: next.session.personaId,
         clearResponse: false
       });
       dispatch({
@@ -724,7 +720,6 @@ export function useLearningWorkspaceController({
           dispatch({
             type: "study_session_set",
             studySession: recoveredSession,
-            personaId: recoveredSession.personaId,
             clearResponse: false,
           });
 
@@ -735,7 +730,6 @@ export function useLearningWorkspaceController({
           dispatch({
             type: "study_session_set",
             studySession: recovered.session,
-            personaId: recovered.session.personaId,
             clearResponse: false,
           });
           dispatch({
@@ -839,7 +833,6 @@ export function useLearningWorkspaceController({
       dispatch({
         type: "study_session_set",
         studySession: nextSession,
-        personaId: nextSession.personaId,
         clearResponse: false
       });
       if (input.callBack) {
@@ -852,7 +845,6 @@ export function useLearningWorkspaceController({
           dispatch({
             type: "study_session_set",
             studySession: callbackResponse.session,
-            personaId: callbackResponse.session.personaId,
             clearResponse: false
           });
           dispatch({
@@ -891,7 +883,6 @@ export function useLearningWorkspaceController({
           dispatch({
             type: "study_session_set",
             studySession: nextSession,
-            personaId: nextSession.personaId,
             clearResponse: false
           });
           dispatch({
@@ -993,7 +984,6 @@ export function useLearningWorkspaceController({
         dispatch({
           type: "study_session_set",
           studySession: latest,
-          personaId: latest?.personaId,
           clearResponse: true,
         });
       } catch (error) {

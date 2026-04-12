@@ -43,7 +43,6 @@ type LearningWorkspaceAction =
   | {
       type: "plan_selected";
       planId: string;
-      personaId: string;
       notice?: string;
     }
   | {
@@ -71,7 +70,6 @@ type LearningWorkspaceAction =
   | {
       type: "study_session_set";
       studySession: StudySessionRecord | null;
-      personaId?: string;
       clearResponse?: boolean;
     }
   | {
@@ -156,7 +154,6 @@ export function learningWorkspaceReducer(
       return {
         ...state,
         selectedPlanId: action.planId,
-        selectedPersonaId: action.personaId,
         studySession: null,
         response: null,
         notice: action.notice ?? state.notice
@@ -184,7 +181,6 @@ export function learningWorkspaceReducer(
         documents: nextDocuments,
         planHistory: upsertLearningPlan(state.planHistory, action.plan),
         selectedPlanId: action.plan.id,
-        selectedPersonaId: action.plan.personaId,
         studySession: null,
         response: null
       };
@@ -230,7 +226,6 @@ export function learningWorkspaceReducer(
     case "study_session_set":
       return {
         ...state,
-        selectedPersonaId: action.personaId ?? state.selectedPersonaId,
         studySession: action.studySession,
         response: action.clearResponse ? null : state.response
       };

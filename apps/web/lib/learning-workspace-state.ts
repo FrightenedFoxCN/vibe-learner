@@ -24,12 +24,14 @@ export function resolveWorkspaceSnapshot(input: {
 }): WorkspaceSnapshotResolution {
   const sortedPlans = sortLearningPlans(input.snapshot.plans);
   const nextSelectedPlanId = resolveSelectedPlanId(sortedPlans, input.preferredPlanId);
-  const nextPlan = findLearningPlan(sortedPlans, nextSelectedPlanId);
-  const nextSelectedPersonaId = nextPlan?.personaId
-    ? nextPlan.personaId
-    : input.currentSelectedPersonaId
-      ? input.currentSelectedPersonaId
-      : input.snapshot.personas?.[0]?.id ?? "";
+  const hasCurrentPersonaInSnapshot = input.snapshot.personas?.some(
+    (persona) => persona.id === input.currentSelectedPersonaId
+  );
+  const nextSelectedPersonaId = input.currentSelectedPersonaId
+    ? (input.snapshot.personas && !hasCurrentPersonaInSnapshot
+      ? input.snapshot.personas[0]?.id ?? ""
+      : input.currentSelectedPersonaId)
+    : input.snapshot.personas?.[0]?.id ?? "";
 
   return {
     documents: input.snapshot.documents,
