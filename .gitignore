@@ -16,3 +16,5 @@ services/ai/data/uploads
 services/ai/data/*.json
 
 **/data
+**/target
+**/data-rs

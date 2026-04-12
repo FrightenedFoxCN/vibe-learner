@@ -467,7 +467,7 @@ class ModelProvider:
         self,
         *,
         keywords: str,
-        layer_count: int,
+        layer_count: int | None,
     ) -> dict[str, object]:
         raise NotImplementedError
 
@@ -475,7 +475,7 @@ class ModelProvider:
         self,
         *,
         text: str,
-        layer_count: int,
+        layer_count: int | None,
     ) -> dict[str, object]:
         raise NotImplementedError
 
@@ -768,7 +768,7 @@ class MockModelProvider(ModelProvider):
         self,
         *,
         keywords: str,
-        layer_count: int,
+        layer_count: int | None,
     ) -> dict[str, object]:
         keyword_parts = [
             part.strip()
@@ -780,7 +780,7 @@ class MockModelProvider(ModelProvider):
         seed_name = " / ".join(keyword_parts[:2])
         theme = "、".join(keyword_parts[:4])
         layers = _build_mock_scene_layers(
-            layer_count=max(3, min(8, layer_count)),
+            layer_count=_resolve_scene_layer_count_hint(layer_count, default=5),
             anchors=keyword_parts,
             fragments=[
                 f"围绕 {theme} 展开教学场景，强调从宏观规则一路收束到局部互动。",
@@ -801,7 +801,7 @@ class MockModelProvider(ModelProvider):
         self,
         *,
         text: str,
-        layer_count: int,
+        layer_count: int | None,
     ) -> dict[str, object]:
         fragments = [
             segment.strip()
@@ -812,7 +812,7 @@ class MockModelProvider(ModelProvider):
             raise RuntimeError("setting_model_invalid_payload")
         anchors = _extract_scene_anchors_from_text(text)
         layers = _build_mock_scene_layers(
-            layer_count=max(3, min(8, layer_count)),
+            layer_count=_resolve_scene_layer_count_hint(layer_count, default=5),
             anchors=anchors,
             fragments=fragments,
         )
@@ -1379,9 +1379,10 @@ class OpenAIModelProvider(MockModelProvider):
         self,
         *,
         keywords: str,
-        layer_count: int,
+        layer_count: int | None,
     ) -> dict[str, object]:
         prompt_sections = _setting_prompt_sections()
+        layer_count_hint = _render_scene_layer_count_hint(layer_count)
         if self.setting_web_search_enabled:
             payload: dict[str, Any] = {
                 "model": self.setting_model,
@@ -1389,10 +1390,10 @@ class OpenAIModelProvider(MockModelProvider):
                 "max_output_tokens": max(self.setting_max_tokens, 1400),
                 "instructions": prompt_sections["generate_scene_keywords_system"]
                 .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
-                .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count)))),
+                .replace("{{LAYER_COUNT}}", layer_count_hint),
                 "input": prompt_sections["generate_scene_keywords_user"]
                 .replace("{{KEYWORDS}}", keywords.strip())
-                .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count))))
+                .replace("{{LAYER_COUNT}}", layer_count_hint)
                 .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA),
                 "tools": [{"type": "web_search"}],
             }
@@ -1417,14 +1418,14 @@ class OpenAIModelProvider(MockModelProvider):
                         "role": "system",
                         "content": prompt_sections["generate_scene_keywords_system"]
                         .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
-                        .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count)))),
+                        .replace("{{LAYER_COUNT}}", layer_count_hint),
                     },
                     {
                         "role": "user",
                         "content": (
                             prompt_sections["generate_scene_keywords_user"]
                             .replace("{{KEYWORDS}}", keywords.strip())
-                            .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count))))
+                            .replace("{{LAYER_COUNT}}", layer_count_hint)
                             .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
                             + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
                         ),
@@ -1451,9 +1452,10 @@ class OpenAIModelProvider(MockModelProvider):
         self,
         *,
         text: str,
-        layer_count: int,
+        layer_count: int | None,
     ) -> dict[str, object]:
         prompt_sections = _setting_prompt_sections()
+        layer_count_hint = _render_scene_layer_count_hint(layer_count)
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
@@ -1464,13 +1466,13 @@ class OpenAIModelProvider(MockModelProvider):
                     "role": "system",
                     "content": prompt_sections["generate_scene_long_text_system"]
                     .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
-                    .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count)))),
+                    .replace("{{LAYER_COUNT}}", layer_count_hint),
                 },
                 {
                     "role": "user",
                     "content": prompt_sections["generate_scene_long_text_user"]
                     .replace("{{SOURCE_TEXT}}", text.strip())
-                    .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count))))
+                    .replace("{{LAYER_COUNT}}", layer_count_hint)
                     .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA),
                 },
             ],
@@ -2550,10 +2552,14 @@ def _normalize_generated_scene_layer(
 
 
 def _select_deepest_layer_id(layers: list[SceneLayerStateRecord]) -> str:
-    current = layers[0] if layers else None
-    while current and current.children:
-        current = current.children[-1]
-    return current.id if current is not None else ""
+    deepest_id = ""
+    deepest_depth = -1
+    for root in layers:
+        for layer, depth in _iter_scene_layers_with_depth(root):
+            if depth > deepest_depth:
+                deepest_id = layer.id
+                deepest_depth = depth
+    return deepest_id
 
 
 def _normalize_generated_scene_result(
@@ -2598,6 +2604,24 @@ def _iter_scene_layers(layer: SceneLayerStateRecord):
     yield layer
     for child in layer.children:
         yield from _iter_scene_layers(child)
+
+
+def _iter_scene_layers_with_depth(layer: SceneLayerStateRecord, depth: int = 0):
+    yield layer, depth
+    for child in layer.children:
+        yield from _iter_scene_layers_with_depth(child, depth + 1)
+
+
+def _render_scene_layer_count_hint(layer_count: int | None) -> str:
+    if layer_count is None or layer_count < 1:
+        return "未指定"
+    return str(layer_count)
+
+
+def _resolve_scene_layer_count_hint(layer_count: int | None, *, default: int) -> int:
+    if layer_count is None or layer_count < 1:
+        return default
+    return layer_count
 
 
 def _extract_scene_anchors_from_text(text: str) -> list[str]:

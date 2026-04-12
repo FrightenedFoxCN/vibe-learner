@@ -1013,19 +1013,22 @@ export async function generatePersonaCards(input: {
 export async function generateSceneTree(input: {
   mode: "keywords" | "long_text";
   inputText: string;
-  layerCount: number;
+  layerCount?: number | null;
 }): Promise<SceneTreeGenerateResult> {
+  const requestBody: Record<string, unknown> = {
+    mode: input.mode,
+    input_text: input.inputText
+  };
+  if (typeof input.layerCount === "number" && Number.isFinite(input.layerCount)) {
+    requestBody.layer_count = input.layerCount;
+  }
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/scene-setup/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        mode: input.mode,
-        input_text: input.inputText,
-        layer_count: input.layerCount
-      })
+      body: JSON.stringify(requestBody)
     })
   );
   return {

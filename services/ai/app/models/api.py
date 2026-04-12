@@ -132,7 +132,7 @@ class PersonaCardGenerateResponse(BaseModel):
 class SceneTreeGenerateRequest(BaseModel):
     mode: str
     input_text: str
-    layer_count: int = Field(default=5, ge=3, le=8)
+    layer_count: int | None = Field(default=None, ge=1)
 
 
 class SceneTreeGenerateResponse(BaseModel):

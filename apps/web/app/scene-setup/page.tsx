@@ -274,7 +274,7 @@ export default function SceneSetupPage() {
   const [sceneIoMessage, setSceneIoMessage] = useState("");
   const [sceneKeywordInput, setSceneKeywordInput] = useState("");
   const [sceneLongTextInput, setSceneLongTextInput] = useState("");
-  const [sceneGenerateLayerCount, setSceneGenerateLayerCount] = useState(5);
+  const [sceneGenerateLayerCount, setSceneGenerateLayerCount] = useState("");
   const [sceneGeneratePending, setSceneGeneratePending] = useState<null | "keywords" | "long_text">(null);
   const [sceneGenerateError, setSceneGenerateError] = useState("");
   const [sceneGenerateMessage, setSceneGenerateMessage] = useState("");
@@ -759,6 +759,16 @@ export default function SceneSetupPage() {
       setSceneGenerateError(mode === "keywords" ? "请先输入关键词。" : "请先输入长文本。");
       return;
     }
+    const layerCountText = sceneGenerateLayerCount.trim();
+    let layerCount: number | null = null;
+    if (layerCountText) {
+      const parsedLayerCount = Number(layerCountText);
+      if (!Number.isInteger(parsedLayerCount) || parsedLayerCount < 1) {
+        setSceneGenerateError("层级偏好必须是大于 0 的整数，或留空交给模型决定。");
+        return;
+      }
+      layerCount = parsedLayerCount;
+    }
     setSceneGenerateError("");
     setSceneGenerateMessage("");
     setSceneGeneratePending(mode);
@@ -766,7 +776,7 @@ export default function SceneSetupPage() {
       const result = await generateSceneTree({
         mode,
         inputText,
-        layerCount: sceneGenerateLayerCount,
+        layerCount,
       });
       const imported = parseSceneImportPayload({
         sceneName: result.sceneName,
@@ -1309,17 +1319,18 @@ export default function SceneSetupPage() {
             {!collapsedSidebarSections.includes("generate") ? (
               <div style={styles.sidebarSectionBody}>
                 <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>目标层数 {sceneGenerateLayerCount}</span>
+                  <span style={styles.fieldLabel}>层级偏好（可选）</span>
                   <input
-                    style={styles.rewriteSlider}
-                    type="range"
-                    min={3}
-                    max={8}
+                    style={styles.input}
+                    type="number"
+                    min={1}
                     step={1}
                     value={sceneGenerateLayerCount}
-                    onChange={(event) => setSceneGenerateLayerCount(Number(event.target.value))}
+                    onChange={(event) => setSceneGenerateLayerCount(event.target.value)}
+                    placeholder="留空表示不限制层级数"
                   />
                 </label>
+                <p style={styles.sidebarHint}>留空表示不限制层级深度，模型也可以在同一父节点下生成多个平行兄弟区域。</p>
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabel}>关键词搜索</span>
                   <textarea
