@@ -61,15 +61,34 @@ fn Home() -> Element {
         response.json::<HealthResponse>().await.ok()
     });
     let health_label = match &*health.read_unchecked() {
-        Some(Some(response)) => format!("Backend reachable: {} {}", response.service, response.version),
+        Some(Some(response)) => format!(
+            "Backend reachable: {} {}",
+            response.service, response.version
+        ),
         Some(None) => format!("Backend probe failed at {api_base_url}"),
         None => format!("Probing Rust backend at {api_base_url}"),
     };
     let pages = [
-        ("Plan", Route::Plan {}, "Document ingest, study-unit cleanup, and learning plan orchestration."),
-        ("Persona Spectrum", Route::PersonaSpectrum {}, "Persona editing, card generation, and profile management."),
-        ("Scene Setup", Route::SceneSetup {}, "Scene graph editing, reuse nodes, and saved scene libraries."),
-        ("Settings", Route::Settings {}, "Model/provider configuration, capabilities, and tool policies."),
+        (
+            "Plan",
+            Route::Plan {},
+            "Document ingest, study-unit cleanup, and learning plan orchestration.",
+        ),
+        (
+            "Persona Spectrum",
+            Route::PersonaSpectrum {},
+            "Persona editing, card generation, and profile management.",
+        ),
+        (
+            "Scene Setup",
+            Route::SceneSetup {},
+            "Scene graph editing, reuse nodes, and saved scene libraries.",
+        ),
+        (
+            "Settings",
+            Route::Settings {},
+            "Model/provider configuration, capabilities, and tool policies.",
+        ),
     ];
 
     rsx! {

@@ -23,7 +23,18 @@ pub struct DocumentRecord {
 pub struct LearningPlanRecord {
     pub id: Uuid,
     pub document_id: Uuid,
+    pub persona_id: Uuid,
     pub course_title: String,
+    pub objective: String,
+    pub study_chapters: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CreateLearningPlanRequest {
+    pub document_id: Uuid,
+    pub persona_id: Uuid,
+    pub course_title: String,
+    pub objective: String,
     pub study_chapters: Vec<String>,
 }
 

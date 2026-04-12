@@ -6,7 +6,10 @@ use std::sync::Mutex;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use uuid::Uuid;
-use vibe_learner_contracts::{CreatePersonaRequest, DocumentRecord, DocumentStatus, PersonaRecord};
+use vibe_learner_contracts::{
+    CreateLearningPlanRequest, CreatePersonaRequest, DocumentRecord, DocumentStatus,
+    LearningPlanRecord, PersonaRecord,
+};
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -112,6 +115,10 @@ impl JsonStore {
         self.load_list("personas.json")
     }
 
+    pub fn list_learning_plans(&self) -> Result<Vec<LearningPlanRecord>, StoreError> {
+        self.load_list("learning_plans.json")
+    }
+
     pub fn create_persona(
         &self,
         payload: CreatePersonaRequest,
@@ -125,6 +132,30 @@ impl JsonStore {
         };
         personas.push(record.clone());
         self.save_list("personas.json", &personas)?;
+        Ok(record)
+    }
+
+    pub fn create_learning_plan(
+        &self,
+        payload: CreateLearningPlanRequest,
+    ) -> Result<LearningPlanRecord, StoreError> {
+        let _guard = self.write_lock.lock().expect("learning plan store lock");
+        let mut plans = self.load_list("learning_plans.json")?;
+        let record = LearningPlanRecord {
+            id: Uuid::new_v4(),
+            document_id: payload.document_id,
+            persona_id: payload.persona_id,
+            course_title: payload.course_title.trim().to_string(),
+            objective: payload.objective.trim().to_string(),
+            study_chapters: payload
+                .study_chapters
+                .into_iter()
+                .map(|chapter| chapter.trim().to_string())
+                .filter(|chapter| !chapter.is_empty())
+                .collect(),
+        };
+        plans.push(record.clone());
+        self.save_list("learning_plans.json", &plans)?;
         Ok(record)
     }
 
@@ -145,7 +176,9 @@ impl JsonStore {
         T: Serialize,
     {
         let path = self.root.join(file_name);
-        let temp_path = self.root.join(format!("{file_name}.{}.tmp", Uuid::new_v4()));
+        let temp_path = self
+            .root
+            .join(format!("{file_name}.{}.tmp", Uuid::new_v4()));
         let payload = serde_json::to_string_pretty(items)?;
         fs::write(&temp_path, payload)?;
         fs::rename(temp_path, path)?;
@@ -225,6 +258,36 @@ mod tests {
         let documents = store.list_documents().expect("list documents");
         assert_eq!(documents.len(), 1);
         assert_eq!(documents[0], created);
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn create_learning_plan_persists_trimmed_fields() {
+        let root = temp_root();
+        let store = JsonStore::new(root.clone()).expect("create store");
+
+        let created = store
+            .create_learning_plan(CreateLearningPlanRequest {
+                document_id: Uuid::new_v4(),
+                persona_id: Uuid::new_v4(),
+                course_title: "  Chapter Sprint  ".to_string(),
+                objective: "  Master core derivations  ".to_string(),
+                study_chapters: vec![
+                    " Intro ".to_string(),
+                    " ".to_string(),
+                    "Integrals".to_string(),
+                ],
+            })
+            .expect("create learning plan");
+
+        assert_eq!(created.course_title, "Chapter Sprint");
+        assert_eq!(created.objective, "Master core derivations");
+        assert_eq!(created.study_chapters, vec!["Intro", "Integrals"]);
+
+        let plans = store.list_learning_plans().expect("list plans");
+        assert_eq!(plans.len(), 1);
+        assert_eq!(plans[0], created);
 
         let _ = fs::remove_dir_all(root);
     }

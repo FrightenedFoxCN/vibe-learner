@@ -6,8 +6,8 @@ use axum::{Json, Router};
 use serde_json::json;
 use uuid::Uuid;
 use vibe_learner_contracts::{
-    CreatePersonaRequest, DocumentRecord, HealthResponse, PersonaRecord, RewriteStatusResponse,
-    RewriteSurface,
+    CreateLearningPlanRequest, CreatePersonaRequest, DocumentRecord, HealthResponse,
+    LearningPlanRecord, PersonaRecord, RewriteStatusResponse, RewriteSurface,
 };
 
 use crate::state::AppState;
@@ -19,6 +19,10 @@ pub fn router() -> Router<AppState> {
         .route("/api/rewrite-status", get(rewrite_status))
         .route("/api/documents", get(list_documents).post(create_document))
         .route("/api/documents/{document_id}/file", get(get_document_file))
+        .route(
+            "/api/learning-plans",
+            get(list_learning_plans).post(create_learning_plan),
+        )
         .route("/api/personas", get(list_personas).post(create_persona))
 }
 
@@ -80,8 +84,14 @@ async fn rewrite_status(State(state): State<AppState>) -> Json<RewriteStatusResp
     })
 }
 
-async fn list_documents(State(state): State<AppState>) -> Result<Json<Vec<DocumentRecord>>, AppError> {
-    state.store.list_documents().map(Json).map_err(map_store_error)
+async fn list_documents(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<DocumentRecord>>, AppError> {
+    state
+        .store
+        .list_documents()
+        .map(Json)
+        .map_err(map_store_error)
 }
 
 async fn create_document(
@@ -103,10 +113,9 @@ async fn create_document(
             .file_name()
             .map(|value| value.to_string())
             .unwrap_or_else(|| "document.pdf".to_string());
-        let bytes = field
-            .bytes()
-            .await
-            .map_err(|error| AppError::bad_request(format!("cannot read uploaded file: {error}")))?;
+        let bytes = field.bytes().await.map_err(|error| {
+            AppError::bad_request(format!("cannot read uploaded file: {error}"))
+        })?;
 
         upload = Some((file_name, bytes.to_vec()));
         break;
@@ -126,13 +135,20 @@ async fn get_document_file(
     State(state): State<AppState>,
     Path(document_id): Path<Uuid>,
 ) -> Result<Response, AppError> {
-    let document = state.store.find_document(document_id).map_err(map_store_error)?;
+    let document = state
+        .store
+        .find_document(document_id)
+        .map_err(map_store_error)?;
     let bytes = state
         .store
         .read_document_bytes(document_id)
         .map_err(map_store_error)?;
 
-    let media_type = if document.original_filename.to_ascii_lowercase().ends_with(".pdf") {
+    let media_type = if document
+        .original_filename
+        .to_ascii_lowercase()
+        .ends_with(".pdf")
+    {
         "application/pdf"
     } else {
         "application/octet-stream"
@@ -154,8 +170,24 @@ async fn get_document_file(
     Ok((headers, bytes).into_response())
 }
 
-async fn list_personas(State(state): State<AppState>) -> Result<Json<Vec<PersonaRecord>>, AppError> {
-    state.store.list_personas().map(Json).map_err(map_store_error)
+async fn list_personas(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<PersonaRecord>>, AppError> {
+    state
+        .store
+        .list_personas()
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn list_learning_plans(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<LearningPlanRecord>>, AppError> {
+    state
+        .store
+        .list_learning_plans()
+        .map(Json)
+        .map_err(map_store_error)
 }
 
 async fn create_persona(
@@ -172,6 +204,24 @@ async fn create_persona(
     state
         .store
         .create_persona(payload)
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn create_learning_plan(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateLearningPlanRequest>,
+) -> Result<Json<LearningPlanRecord>, AppError> {
+    if payload.course_title.trim().is_empty() {
+        return Err(AppError::bad_request("course title is required"));
+    }
+    if payload.objective.trim().is_empty() {
+        return Err(AppError::bad_request("learning objective is required"));
+    }
+
+    state
+        .store
+        .create_learning_plan(payload)
         .map(Json)
         .map_err(map_store_error)
 }
