@@ -255,6 +255,16 @@ export default function PersonaSpectrumPage() {
 
   usePageDebugSnapshot(debugSnapshot);
 
+  function mergePersonaIntoList(nextPersona: PersonaProfile) {
+    setPersonas((prev) => {
+      const exists = prev.some((item) => item.id === nextPersona.id);
+      if (exists) {
+        return prev.map((item) => (item.id === nextPersona.id ? nextPersona : item));
+      }
+      return [nextPersona, ...prev];
+    });
+  }
+
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
     if (assistError) setAssistError("");
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -475,6 +485,7 @@ export default function PersonaSpectrumPage() {
     setSavingPersona(true);
     try {
       const created = await createPersona(payload);
+      mergePersonaIntoList(created);
       const latest = await listPersonas();
       setPersonas(latest);
       setSelectedPersonaId(created.id);
@@ -497,6 +508,7 @@ export default function PersonaSpectrumPage() {
     setSavingPersona(true);
     try {
       const updated = await updatePersona(selectedPersonaId, payload);
+      mergePersonaIntoList(updated);
       const latest = await listPersonas();
       setPersonas(latest);
       setSelectedPersonaId(updated.id);
@@ -736,6 +748,7 @@ export default function PersonaSpectrumPage() {
     setCardActionPending("create_persona");
     try {
       const created = await createPersona(payload);
+      mergePersonaIntoList(created);
       const latest = await listPersonas();
       setPersonas(latest);
       setSelectedPersonaId(created.id);
