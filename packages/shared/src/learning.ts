@@ -211,13 +211,10 @@ export interface RuntimeSettings {
   openaiChatMaxTokens: number;
   openaiChatHistoryMessages: number;
   openaiChatToolMaxRounds: number;
-  openaiChatToolsEnabled: boolean;
-  openaiChatMemoryToolEnabled: boolean;
   openaiEmbeddingModel: string;
   openaiChatModelMultimodal: boolean;
   openaiTimeoutSeconds: number;
   openaiPlanModelMultimodal: boolean;
-  openaiPlanToolsEnabled: boolean;
   openaiPlanFallbackModel: string;
   openaiPlanFallbackDisableTools: boolean;
   showDebugInfo: boolean;
@@ -243,13 +240,10 @@ export interface RuntimeSettingsPatch {
   openaiChatMaxTokens?: number;
   openaiChatHistoryMessages?: number;
   openaiChatToolMaxRounds?: number;
-  openaiChatToolsEnabled?: boolean;
-  openaiChatMemoryToolEnabled?: boolean;
   openaiEmbeddingModel?: string;
   openaiChatModelMultimodal?: boolean;
   openaiTimeoutSeconds?: number;
   openaiPlanModelMultimodal?: boolean;
-  openaiPlanToolsEnabled?: boolean;
   openaiPlanFallbackModel?: string;
   openaiPlanFallbackDisableTools?: boolean;
   showDebugInfo?: boolean;

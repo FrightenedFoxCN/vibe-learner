@@ -225,6 +225,29 @@ function normalizeChatToolCalls(toolCalls: any): import("@vibe-learner/shared").
   }));
 }
 
+function extractErrorMessage(payload: unknown, fallbackMessage: string) {
+  if (typeof payload === "string") {
+    const trimmed = payload.trim();
+    return trimmed || fallbackMessage;
+  }
+  if (!payload || typeof payload !== "object") {
+    return fallbackMessage;
+  }
+  const record = payload as Record<string, unknown>;
+  const detail = record.detail ?? record.error ?? record.message;
+  if (typeof detail === "string") {
+    const trimmed = detail.trim();
+    return trimmed || fallbackMessage;
+  }
+  if (detail !== undefined && detail !== null) {
+    const text = String(detail).trim();
+    if (text) {
+      return text;
+    }
+  }
+  return fallbackMessage;
+}
+
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
@@ -258,7 +281,15 @@ async function request(input: string, init?: RequestInit): Promise<Response> {
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || `HTTP ${response.status}`);
+    const fallbackMessage = text.trim() || `HTTP ${response.status}`;
+    let message = fallbackMessage;
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      message = extractErrorMessage(parsed, fallbackMessage);
+    } catch {
+      // Keep the raw body when it is not JSON.
+    }
+    throw new Error(message);
   }
   return (await response.json()) as T;
 }
@@ -618,13 +649,10 @@ function normalizeRuntimeSettings(record: any): RuntimeSettings {
     openaiChatMaxTokens: Number(record.openai_chat_max_tokens ?? 800),
     openaiChatHistoryMessages: Number(record.openai_chat_history_messages ?? 8),
     openaiChatToolMaxRounds: Number(record.openai_chat_tool_max_rounds ?? 4),
-    openaiChatToolsEnabled: Boolean(record.openai_chat_tools_enabled),
-    openaiChatMemoryToolEnabled: Boolean(record.openai_chat_memory_tool_enabled),
     openaiEmbeddingModel: String(record.openai_embedding_model ?? "text-embedding-3-small"),
     openaiChatModelMultimodal: Boolean(record.openai_chat_model_multimodal),
     openaiTimeoutSeconds: Number(record.openai_timeout_seconds ?? 30),
     openaiPlanModelMultimodal: Boolean(record.openai_plan_model_multimodal),
-    openaiPlanToolsEnabled: Boolean(record.openai_plan_tools_enabled),
     openaiPlanFallbackModel: String(record.openai_plan_fallback_model ?? ""),
     openaiPlanFallbackDisableTools: Boolean(record.openai_plan_fallback_disable_tools),
     showDebugInfo: Boolean(record.show_debug_info)
@@ -1394,13 +1422,10 @@ export async function updateRuntimeSettings(
         openai_chat_max_tokens: patch.openaiChatMaxTokens,
         openai_chat_history_messages: patch.openaiChatHistoryMessages,
         openai_chat_tool_max_rounds: patch.openaiChatToolMaxRounds,
-        openai_chat_tools_enabled: patch.openaiChatToolsEnabled,
-        openai_chat_memory_tool_enabled: patch.openaiChatMemoryToolEnabled,
         openai_embedding_model: patch.openaiEmbeddingModel,
         openai_chat_model_multimodal: patch.openaiChatModelMultimodal,
         openai_timeout_seconds: patch.openaiTimeoutSeconds,
         openai_plan_model_multimodal: patch.openaiPlanModelMultimodal,
-        openai_plan_tools_enabled: patch.openaiPlanToolsEnabled,
         openai_plan_fallback_model: patch.openaiPlanFallbackModel,
         openai_plan_fallback_disable_tools: patch.openaiPlanFallbackDisableTools,
         show_debug_info: patch.showDebugInfo

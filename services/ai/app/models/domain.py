@@ -421,13 +421,10 @@ class RuntimeSettingsRecord(BaseModel):
     openai_chat_max_tokens: int = 800
     openai_chat_history_messages: int = 8
     openai_chat_tool_max_rounds: int = 4
-    openai_chat_tools_enabled: bool = True
-    openai_chat_memory_tool_enabled: bool = True
     openai_embedding_model: str = "text-embedding-3-small"
     openai_chat_model_multimodal: bool = False
     openai_timeout_seconds: int = 30
     openai_plan_model_multimodal: bool = False
-    openai_plan_tools_enabled: bool = True
     openai_plan_fallback_model: str = ""
     openai_plan_fallback_disable_tools: bool = True
     show_debug_info: bool = True

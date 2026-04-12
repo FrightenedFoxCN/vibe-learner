@@ -118,13 +118,10 @@ export function buildRuntimeSettingsPatch(settings: RuntimeSettings): RuntimeSet
     openaiChatMaxTokens: settings.openaiChatMaxTokens,
     openaiChatHistoryMessages: settings.openaiChatHistoryMessages,
     openaiChatToolMaxRounds: settings.openaiChatToolMaxRounds,
-    openaiChatToolsEnabled: settings.openaiChatToolsEnabled,
-    openaiChatMemoryToolEnabled: settings.openaiChatMemoryToolEnabled,
     openaiEmbeddingModel: settings.openaiEmbeddingModel,
     openaiChatModelMultimodal: settings.openaiChatModelMultimodal,
     openaiTimeoutSeconds: settings.openaiTimeoutSeconds,
     openaiPlanModelMultimodal: settings.openaiPlanModelMultimodal,
-    openaiPlanToolsEnabled: settings.openaiPlanToolsEnabled,
     openaiPlanFallbackModel: settings.openaiPlanFallbackModel,
     openaiPlanFallbackDisableTools: settings.openaiPlanFallbackDisableTools,
     showDebugInfo: settings.showDebugInfo

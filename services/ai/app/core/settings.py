@@ -26,13 +26,10 @@ class Settings:
     openai_chat_max_tokens: int = 800
     openai_chat_history_messages: int = 8
     openai_chat_tool_max_rounds: int = 4
-    openai_chat_tools_enabled: bool = True
-    openai_chat_memory_tool_enabled: bool = True
     openai_embedding_model: str = "text-embedding-3-small"
     openai_chat_model_multimodal: bool = False
     openai_timeout_seconds: int = 30
     openai_plan_model_multimodal: bool = False
-    openai_plan_tools_enabled: bool = True
     openai_plan_fallback_model: str = ""
     openai_plan_fallback_disable_tools: bool = True
 
@@ -80,14 +77,6 @@ class Settings:
                 os.getenv("OPENAI_CHAT_TOOL_MAX_ROUNDS", "4"),
                 default=4,
             ),
-            openai_chat_tools_enabled=_to_bool(
-                os.getenv("OPENAI_CHAT_TOOLS_ENABLED", "true"),
-                default=True,
-            ),
-            openai_chat_memory_tool_enabled=_to_bool(
-                os.getenv("OPENAI_CHAT_MEMORY_TOOL_ENABLED", "true"),
-                default=True,
-            ),
             openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small").strip()
             or "text-embedding-3-small",
             openai_chat_model_multimodal=_to_bool(
@@ -98,10 +87,6 @@ class Settings:
             openai_plan_model_multimodal=_to_bool(
                 os.getenv("OPENAI_PLAN_MODEL_MULTIMODAL", "false"),
                 default=False,
-            ),
-            openai_plan_tools_enabled=_to_bool(
-                os.getenv("OPENAI_PLAN_TOOLS_ENABLED", "true"),
-                default=True,
             ),
             openai_plan_fallback_model=os.getenv("OPENAI_PLAN_FALLBACK_MODEL", "").strip(),
             openai_plan_fallback_disable_tools=_to_bool(

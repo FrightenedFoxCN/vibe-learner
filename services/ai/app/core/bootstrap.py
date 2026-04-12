@@ -97,13 +97,10 @@ class Container:
                 chat_max_tokens=settings.openai_chat_max_tokens,
                 chat_history_messages=settings.openai_chat_history_messages,
                 chat_tool_max_rounds=settings.openai_chat_tool_max_rounds,
-                chat_tools_enabled=settings.openai_chat_tools_enabled,
-                chat_memory_tool_enabled=settings.openai_chat_memory_tool_enabled,
                 chat_multimodal_enabled=settings.openai_chat_model_multimodal,
                 embedding_model=settings.openai_embedding_model,
                 timeout_seconds=settings.openai_timeout_seconds,
                 multimodal_enabled=settings.openai_plan_model_multimodal,
-                plan_tools_enabled=settings.openai_plan_tools_enabled,
                 fallback_plan_model=settings.openai_plan_fallback_model,
                 fallback_disable_tools=settings.openai_plan_fallback_disable_tools,
                 plan_disabled_tools_provider=(

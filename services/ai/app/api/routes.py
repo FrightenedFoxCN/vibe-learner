@@ -164,14 +164,8 @@ def get_model_tool_config() -> ModelToolConfigResponse:
     provider = container.model_provider
 
     stage_enabled: dict[str, tuple[bool, str]] = {
-        "plan_generation": (
-            provider.plan_tools_runtime_enabled(),
-            "当前环境已关闭计划阶段工具总开关。" if not provider.plan_tools_runtime_enabled() else "",
-        ),
-        "study_chat": (
-            provider.chat_tools_runtime_enabled(),
-            "当前环境已关闭对话阶段工具总开关。" if not provider.chat_tools_runtime_enabled() else "",
-        ),
+        "plan_generation": (True, ""),
+        "study_chat": (True, ""),
     }
 
     for stage in described["stages"]:
@@ -208,12 +202,8 @@ def get_model_tool_config() -> ModelToolConfigResponse:
                     audit_basis.append("chat_multimodal=off")
                 elif current_stage_name == "study_chat":
                     audit_basis.append("chat_multimodal=on")
-            elif tool_name == "retrieve_memory_context" and not provider.chat_memory_tool_runtime_enabled():
-                available = False
-                unavailable_reason = "当前环境已关闭记忆检索工具。"
-                audit_basis.append("chat_memory_gate=off")
             elif tool_name == "retrieve_memory_context":
-                audit_basis.append("chat_memory_gate=on")
+                audit_basis.append("chat_memory_gate=managed_by_model_tools")
             tool["available"] = available
             tool["unavailable_reason"] = unavailable_reason
             tool["effective_enabled"] = bool(tool.get("enabled")) and available

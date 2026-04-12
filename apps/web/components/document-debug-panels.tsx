@@ -18,11 +18,17 @@ type LiveStreamEvent = {
 interface DocumentDebugPanelsProps {
   document: DocumentRecord | null;
   debugRecord: DocumentDebugRecord | null;
+  debugRecordError?: string;
   planningContext: DocumentPlanningContext | null;
+  planningContextError?: string;
   planningTrace: DocumentPlanningTraceResponse | null;
+  planningTraceError?: string;
   modelToolConfig: ModelToolConfig | null;
+  modelToolConfigError?: string;
   processReport: StreamReport | null;
+  processReportError?: string;
   planReport: StreamReport | null;
+  planReportError?: string;
   processLiveDocumentId?: string;
   processLiveEvents?: LiveStreamEvent[];
   processLiveStatus?: string;
@@ -36,11 +42,17 @@ interface DocumentDebugPanelsProps {
 export function DocumentDebugPanels({
   document,
   debugRecord,
+  debugRecordError = "",
   planningContext,
+  planningContextError = "",
   planningTrace,
+  planningTraceError = "",
   modelToolConfig,
+  modelToolConfigError = "",
   processReport,
+  processReportError = "",
   planReport,
+  planReportError = "",
   processLiveDocumentId = "",
   processLiveEvents = [],
   processLiveStatus = "idle",
@@ -106,6 +118,7 @@ export function DocumentDebugPanels({
         <StreamPanel
           status={displayProcessStatus}
           events={displayProcessEvents}
+          error={processReportError}
           emptyMessage="还没有文档处理流事件。"
         />
       </details>
@@ -115,12 +128,14 @@ export function DocumentDebugPanels({
         <StreamPanel
           status={displayPlanStatus}
           events={displayPlanEvents}
+          error={planReportError}
           emptyMessage="还没有计划生成流事件。"
         />
       </details>
 
       <details style={styles.card}>
         <summary style={styles.summary}>章节猜测</summary>
+        {debugRecordError ? <PanelError message={debugRecordError} /> : null}
         {debugRecord?.sections.length ? (
           <div style={styles.list}>
             {debugRecord.sections.map((section) => (
@@ -139,6 +154,7 @@ export function DocumentDebugPanels({
 
       <details style={styles.card}>
         <summary style={styles.summary}>学习编排清洗结果</summary>
+        {debugRecordError ? <PanelError message={debugRecordError} /> : null}
         {debugRecord?.studyUnits.length ? (
           <div style={styles.list}>
             {debugRecord.studyUnits.map((unit) => (
@@ -159,6 +175,7 @@ export function DocumentDebugPanels({
 
       <details style={styles.card}>
         <summary style={styles.summary}>计划输入目录</summary>
+        {planningContextError ? <PanelError message={planningContextError} /> : null}
         {planningContext?.courseOutline.length ? (
           <div style={styles.list}>
             {planningContext.courseOutline.map((node) => (
@@ -186,10 +203,11 @@ export function DocumentDebugPanels({
 
       <details style={styles.card}>
         <summary style={styles.summary}>计划工具与章节详情</summary>
-        {planningContext || modelToolConfig ? (
+        {planningContext || modelToolConfig || planningContextError || modelToolConfigError ? (
           <div style={styles.sectionStack}>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>当前可用工具</span>
+              {planningContextError ? <PanelError message={planningContextError} /> : null}
               {planningContext?.availableTools.length ? (
                 <div style={styles.tagRow}>
                   {planningContext.availableTools.map((tool) => (
@@ -204,6 +222,7 @@ export function DocumentDebugPanels({
             </div>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>模型工具开关</span>
+              {modelToolConfigError ? <PanelError message={modelToolConfigError} /> : null}
               {modelToolConfig?.stages.length ? (
                 <div style={styles.list}>
                   {modelToolConfig.stages.map((stage) => (
@@ -228,6 +247,7 @@ export function DocumentDebugPanels({
             </div>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>Study Unit Detail</span>
+              {planningContextError ? <PanelError message={planningContextError} /> : null}
               {planningContext?.studyUnits.length ? (
                 <div style={styles.list}>
                   {planningContext.studyUnits.map((unit) => {
@@ -267,6 +287,7 @@ export function DocumentDebugPanels({
 
       <details style={styles.card}>
         <summary style={styles.summary}>计划模型 Trace</summary>
+        {planningTraceError ? <PanelError message={planningTraceError} /> : null}
         {planningTrace?.trace?.rounds.length ? (
           <div style={styles.list}>
             <div style={styles.itemCard}>
@@ -377,15 +398,20 @@ export function DocumentDebugPanels({
 function StreamPanel({
   status,
   events,
+  error,
   emptyMessage
 }: {
   status: string;
   events: Array<{ stage: string; payload: Record<string, unknown>; createdAt?: string }>;
+  error?: string;
   emptyMessage: string;
 }) {
   const visibleEvents = events.slice(-8).reverse();
+  const streamErrorEvent = [...events].reverse().find((event) => event.stage === "stream_error");
+  const streamError = error || extractEventError(streamErrorEvent?.payload);
   return (
     <div style={styles.sectionStack}>
+      {streamError ? <PanelError message={streamError} /> : null}
       <div style={styles.statusRow}>
         <span style={styles.badge}>status: {status}</span>
         <span style={styles.caption}>
@@ -422,8 +448,26 @@ function DebugEmptyState({ message }: { message: string }) {
   return <p style={styles.empty}>{message}</p>;
 }
 
+function PanelError({ message }: { message: string }) {
+  return <div style={styles.errorPanel}>{message}</div>;
+}
+
 function truncateJson(value: Record<string, unknown>, maxLength: number) {
   return truncateText(JSON.stringify(value, null, 2), maxLength);
+}
+
+function extractEventError(payload?: Record<string, unknown>) {
+  if (!payload) {
+    return "";
+  }
+  const value = payload.detail ?? payload.error ?? payload.message;
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  if (value !== undefined && value !== null) {
+    return String(value).trim();
+  }
+  return "";
 }
 
 function truncateText(value: string, maxLength: number) {
@@ -598,6 +642,17 @@ const styles: Record<string, CSSProperties> = {
     margin: "12px 0 0",
     fontSize: 13,
     color: "var(--muted)"
+  },
+  errorPanel: {
+    marginTop: 12,
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid color-mix(in srgb, var(--negative) 24%, var(--border))",
+    background: "color-mix(in srgb, var(--negative) 10%, white)",
+    color: "var(--negative)",
+    fontSize: 13,
+    lineHeight: 1.6,
+    whiteSpace: "pre-wrap"
   },
   error: {
     margin: "12px 0 0",

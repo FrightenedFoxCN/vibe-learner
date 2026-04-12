@@ -165,8 +165,9 @@ Chat model runtime behavior is configurable through environment variables, inclu
 - `OPENAI_CHAT_MAX_TOKENS`
 - `OPENAI_CHAT_HISTORY_MESSAGES`
 - `OPENAI_CHAT_TOOL_MAX_ROUNDS`
-- `OPENAI_CHAT_TOOLS_ENABLED`
 - `OPENAI_CHAT_MODEL_MULTIMODAL`
+
+Per-tool enablement is managed by `ModelToolConfig` rather than runtime environment toggles.
 
 This is the main mechanism used to keep plans grounded in OCR-cleaned textbook structure while still allowing a model to inspect details before scheduling.
 

@@ -386,32 +386,6 @@ export function AdvancedSettingsCard({
             <label style={styles.switchField}>
               <input
                 type="checkbox"
-                checked={settings.openaiChatToolsEnabled}
-                onChange={(event) => controller.setSettingField("openaiChatToolsEnabled", event.target.checked)}
-              />
-              <span>启用学习对话工具</span>
-            </label>
-            <label style={styles.switchField}>
-              <input
-                type="checkbox"
-                checked={settings.openaiChatMemoryToolEnabled}
-                onChange={(event) =>
-                  controller.setSettingField("openaiChatMemoryToolEnabled", event.target.checked)
-                }
-              />
-              <span>启用跨会话记忆检索</span>
-            </label>
-            <label style={styles.switchField}>
-              <input
-                type="checkbox"
-                checked={settings.openaiPlanToolsEnabled}
-                onChange={(event) => controller.setSettingField("openaiPlanToolsEnabled", event.target.checked)}
-              />
-              <span>启用计划工具链</span>
-            </label>
-            <label style={styles.switchField}>
-              <input
-                type="checkbox"
                 checked={settings.openaiPlanFallbackDisableTools}
                 onChange={(event) =>
                   controller.setSettingField("openaiPlanFallbackDisableTools", event.target.checked)

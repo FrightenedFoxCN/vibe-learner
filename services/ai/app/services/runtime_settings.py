@@ -36,13 +36,10 @@ class RuntimeSettingsService:
             "openai_chat_max_tokens": self._record.openai_chat_max_tokens,
             "openai_chat_history_messages": self._record.openai_chat_history_messages,
             "openai_chat_tool_max_rounds": self._record.openai_chat_tool_max_rounds,
-            "openai_chat_tools_enabled": self._record.openai_chat_tools_enabled,
-            "openai_chat_memory_tool_enabled": self._record.openai_chat_memory_tool_enabled,
             "openai_embedding_model": self._record.openai_embedding_model,
             "openai_chat_model_multimodal": self._record.openai_chat_model_multimodal,
             "openai_timeout_seconds": self._record.openai_timeout_seconds,
             "openai_plan_model_multimodal": self._record.openai_plan_model_multimodal,
-            "openai_plan_tools_enabled": self._record.openai_plan_tools_enabled,
             "openai_plan_fallback_model": self._record.openai_plan_fallback_model,
             "openai_plan_fallback_disable_tools": self._record.openai_plan_fallback_disable_tools,
             "show_debug_info": self._record.show_debug_info,
@@ -70,13 +67,10 @@ class RuntimeSettingsService:
             openai_chat_max_tokens=record.openai_chat_max_tokens,
             openai_chat_history_messages=record.openai_chat_history_messages,
             openai_chat_tool_max_rounds=record.openai_chat_tool_max_rounds,
-            openai_chat_tools_enabled=record.openai_chat_tools_enabled,
-            openai_chat_memory_tool_enabled=record.openai_chat_memory_tool_enabled,
             openai_embedding_model=record.openai_embedding_model,
             openai_chat_model_multimodal=record.openai_chat_model_multimodal,
             openai_timeout_seconds=record.openai_timeout_seconds,
             openai_plan_model_multimodal=record.openai_plan_model_multimodal,
-            openai_plan_tools_enabled=record.openai_plan_tools_enabled,
             openai_plan_fallback_model=record.openai_plan_fallback_model,
             openai_plan_fallback_disable_tools=record.openai_plan_fallback_disable_tools,
         )
@@ -159,14 +153,6 @@ class RuntimeSettingsService:
             min_value=1,
             max_value=12,
         )
-        openai_chat_tools_enabled = _normalize_bool(
-            updates.get("openai_chat_tools_enabled", self._record.openai_chat_tools_enabled),
-            code="invalid_openai_chat_tools_enabled",
-        )
-        openai_chat_memory_tool_enabled = _normalize_bool(
-            updates.get("openai_chat_memory_tool_enabled", self._record.openai_chat_memory_tool_enabled),
-            code="invalid_openai_chat_memory_tool_enabled",
-        )
         openai_chat_model_multimodal = _normalize_bool(
             updates.get("openai_chat_model_multimodal", self._record.openai_chat_model_multimodal),
             code="invalid_openai_chat_model_multimodal",
@@ -174,10 +160,6 @@ class RuntimeSettingsService:
         openai_plan_model_multimodal = _normalize_bool(
             updates.get("openai_plan_model_multimodal", self._record.openai_plan_model_multimodal),
             code="invalid_openai_plan_model_multimodal",
-        )
-        openai_plan_tools_enabled = _normalize_bool(
-            updates.get("openai_plan_tools_enabled", self._record.openai_plan_tools_enabled),
-            code="invalid_openai_plan_tools_enabled",
         )
         openai_plan_fallback_disable_tools = _normalize_bool(
             updates.get("openai_plan_fallback_disable_tools", self._record.openai_plan_fallback_disable_tools),
@@ -221,13 +203,10 @@ class RuntimeSettingsService:
             openai_chat_max_tokens=openai_chat_max_tokens,
             openai_chat_history_messages=openai_chat_history_messages,
             openai_chat_tool_max_rounds=openai_chat_tool_max_rounds,
-            openai_chat_tools_enabled=openai_chat_tools_enabled,
-            openai_chat_memory_tool_enabled=openai_chat_memory_tool_enabled,
             openai_embedding_model=openai_embedding_model,
             openai_chat_model_multimodal=openai_chat_model_multimodal,
             openai_timeout_seconds=openai_timeout_seconds,
             openai_plan_model_multimodal=openai_plan_model_multimodal,
-            openai_plan_tools_enabled=openai_plan_tools_enabled,
             openai_plan_fallback_model=openai_plan_fallback_model,
             openai_plan_fallback_disable_tools=openai_plan_fallback_disable_tools,
             show_debug_info=show_debug_info,
@@ -264,13 +243,10 @@ class RuntimeSettingsService:
             openai_chat_max_tokens=self._base_settings.openai_chat_max_tokens,
             openai_chat_history_messages=self._base_settings.openai_chat_history_messages,
             openai_chat_tool_max_rounds=self._base_settings.openai_chat_tool_max_rounds,
-            openai_chat_tools_enabled=self._base_settings.openai_chat_tools_enabled,
-            openai_chat_memory_tool_enabled=self._base_settings.openai_chat_memory_tool_enabled,
             openai_embedding_model=self._base_settings.openai_embedding_model,
             openai_chat_model_multimodal=self._base_settings.openai_chat_model_multimodal,
             openai_timeout_seconds=self._base_settings.openai_timeout_seconds,
             openai_plan_model_multimodal=self._base_settings.openai_plan_model_multimodal,
-            openai_plan_tools_enabled=self._base_settings.openai_plan_tools_enabled,
             openai_plan_fallback_model=self._base_settings.openai_plan_fallback_model,
             openai_plan_fallback_disable_tools=self._base_settings.openai_plan_fallback_disable_tools,
             show_debug_info=True,
@@ -302,13 +278,10 @@ class RuntimeSettingsService:
             "openai_chat_max_tokens": self._base_settings.openai_chat_max_tokens,
             "openai_chat_history_messages": self._base_settings.openai_chat_history_messages,
             "openai_chat_tool_max_rounds": self._base_settings.openai_chat_tool_max_rounds,
-            "openai_chat_tools_enabled": self._base_settings.openai_chat_tools_enabled,
-            "openai_chat_memory_tool_enabled": self._base_settings.openai_chat_memory_tool_enabled,
             "openai_embedding_model": self._base_settings.openai_embedding_model,
             "openai_chat_model_multimodal": self._base_settings.openai_chat_model_multimodal,
             "openai_timeout_seconds": self._base_settings.openai_timeout_seconds,
             "openai_plan_model_multimodal": self._base_settings.openai_plan_model_multimodal,
-            "openai_plan_tools_enabled": self._base_settings.openai_plan_tools_enabled,
             "openai_plan_fallback_model": self._base_settings.openai_plan_fallback_model,
             "openai_plan_fallback_disable_tools": self._base_settings.openai_plan_fallback_disable_tools,
         }

@@ -110,11 +110,17 @@ export function DebugOverlay() {
                 <DocumentDebugPanels
                   document={workspace.activeDocument}
                   debugRecord={debugData.debugRecord}
+                  debugRecordError={debugData.debugRecordError}
                   planningContext={debugData.planningContext}
+                  planningContextError={debugData.planningContextError}
                   planningTrace={debugData.planningTrace}
+                  planningTraceError={debugData.planningTraceError}
                   modelToolConfig={debugData.modelToolConfig}
+                  modelToolConfigError={debugData.modelToolConfigError}
                   processReport={debugData.processReport}
+                  processReportError={debugData.processReportError}
                   planReport={debugData.planReport}
+                  planReportError={debugData.planReportError}
                   processLiveDocumentId={workspace.processStreamDocumentId}
                   processLiveEvents={workspace.processStreamEvents}
                   processLiveStatus={workspace.processStreamStatus}

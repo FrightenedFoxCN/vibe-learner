@@ -39,8 +39,6 @@ OPENAI_SETTING_MAX_TOKENS=900
 OPENAI_CHAT_MAX_TOKENS=800
 OPENAI_CHAT_HISTORY_MESSAGES=8
 OPENAI_CHAT_TOOL_MAX_ROUNDS=4
-OPENAI_CHAT_TOOLS_ENABLED=true
-OPENAI_CHAT_MEMORY_TOOL_ENABLED=true
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_CHAT_MODEL_MULTIMODAL=false
 OPENAI_TIMEOUT_SECONDS=30
@@ -53,7 +51,6 @@ Persona setting assistant uses `OPENAI_SETTING_MODEL` when provider is `openai`.
 Memory retrieval notes:
 
 - `OPENAI_EMBEDDING_MODEL` controls the embedding model used by cross-session memory retrieval.
-- `OPENAI_CHAT_MEMORY_TOOL_ENABLED=true` allows chat model tool-calls to actively invoke `retrieve_memory_context`.
 - If embedding endpoint is unavailable, the backend will gracefully fall back to local hashed-vector retrieval.
 
 ## Chat Payload Troubleshooting

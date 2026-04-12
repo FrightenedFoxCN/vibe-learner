@@ -282,13 +282,10 @@ class RuntimeSettingsResponse(BaseModel):
     openai_chat_max_tokens: int
     openai_chat_history_messages: int
     openai_chat_tool_max_rounds: int
-    openai_chat_tools_enabled: bool
-    openai_chat_memory_tool_enabled: bool
     openai_embedding_model: str
     openai_chat_model_multimodal: bool
     openai_timeout_seconds: int
     openai_plan_model_multimodal: bool
-    openai_plan_tools_enabled: bool
     openai_plan_fallback_model: str
     openai_plan_fallback_disable_tools: bool
     show_debug_info: bool
@@ -314,13 +311,10 @@ class UpdateRuntimeSettingsRequest(BaseModel):
     openai_chat_max_tokens: int | None = None
     openai_chat_history_messages: int | None = None
     openai_chat_tool_max_rounds: int | None = None
-    openai_chat_tools_enabled: bool | None = None
-    openai_chat_memory_tool_enabled: bool | None = None
     openai_embedding_model: str | None = None
     openai_chat_model_multimodal: bool | None = None
     openai_timeout_seconds: int | None = None
     openai_plan_model_multimodal: bool | None = None
-    openai_plan_tools_enabled: bool | None = None
     openai_plan_fallback_model: str | None = None
     openai_plan_fallback_disable_tools: bool | None = None
     show_debug_info: bool | None = None
