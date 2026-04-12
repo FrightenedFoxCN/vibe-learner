@@ -104,3 +104,20 @@ pub struct RuntimeSettingsPatch {
     pub openai_chat_model: Option<String>,
     pub show_debug_info: Option<bool>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PlanningStudyUnit {
+    pub unit_id: String,
+    pub title: String,
+    pub summary: String,
+    pub page_start: u32,
+    pub page_end: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DocumentPlanningContext {
+    pub document_id: Uuid,
+    pub course_outline: Vec<String>,
+    pub study_units: Vec<PlanningStudyUnit>,
+    pub available_tools: Vec<String>,
+}

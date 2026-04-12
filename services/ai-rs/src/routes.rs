@@ -6,9 +6,9 @@ use axum::{Json, Router};
 use serde_json::json;
 use uuid::Uuid;
 use vibe_learner_contracts::{
-    CreateLearningPlanRequest, CreatePersonaRequest, DocumentRecord, HealthResponse,
-    LearningPlanRecord, PersonaRecord, RewriteStatusResponse, RewriteSurface, RuntimeSettingsPatch,
-    RuntimeSettingsRecord,
+    CreateLearningPlanRequest, CreatePersonaRequest, DocumentPlanningContext, DocumentRecord,
+    HealthResponse, LearningPlanRecord, PersonaRecord, PlanningStudyUnit, RewriteStatusResponse,
+    RewriteSurface, RuntimeSettingsPatch, RuntimeSettingsRecord,
 };
 
 use crate::state::AppState;
@@ -20,6 +20,10 @@ pub fn router() -> Router<AppState> {
         .route("/api/rewrite-status", get(rewrite_status))
         .route("/api/documents", get(list_documents).post(create_document))
         .route("/api/documents/{document_id}/file", get(get_document_file))
+        .route(
+            "/api/documents/{document_id}/planning-context",
+            get(get_document_planning_context),
+        )
         .route(
             "/api/learning-plans",
             get(list_learning_plans).post(create_learning_plan),
@@ -173,6 +177,61 @@ async fn get_document_file(
     );
 
     Ok((headers, bytes).into_response())
+}
+
+async fn get_document_planning_context(
+    State(state): State<AppState>,
+    Path(document_id): Path<Uuid>,
+) -> Result<Json<DocumentPlanningContext>, AppError> {
+    let document = state
+        .store
+        .find_document(document_id)
+        .map_err(map_store_error)?;
+    let related_plans = state
+        .store
+        .list_learning_plans()
+        .map_err(map_store_error)?
+        .into_iter()
+        .filter(|plan| plan.document_id == document_id)
+        .collect::<Vec<_>>();
+
+    let outline = related_plans
+        .iter()
+        .flat_map(|plan| plan.study_chapters.iter().cloned())
+        .collect::<Vec<_>>();
+
+    let study_units = if outline.is_empty() {
+        vec![PlanningStudyUnit {
+            unit_id: format!("{}-overview", document_id),
+            title: document.title,
+            summary: "Initial planning context generated from uploaded document metadata."
+                .to_string(),
+            page_start: 1,
+            page_end: 1,
+        }]
+    } else {
+        outline
+            .iter()
+            .enumerate()
+            .map(|(index, chapter)| PlanningStudyUnit {
+                unit_id: format!("{}-{}", document_id, index + 1),
+                title: chapter.clone(),
+                summary: format!("Study unit scaffold for chapter `{chapter}`."),
+                page_start: (index as u32) + 1,
+                page_end: (index as u32) + 1,
+            })
+            .collect()
+    };
+
+    Ok(Json(DocumentPlanningContext {
+        document_id,
+        course_outline: outline,
+        study_units,
+        available_tools: vec![
+            "get_study_unit_detail".to_string(),
+            "read_page_range_content".to_string(),
+        ],
+    }))
 }
 
 async fn list_personas(
