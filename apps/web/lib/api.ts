@@ -631,6 +631,22 @@ function normalizeRuntimeSettings(record: any): RuntimeSettings {
   };
 }
 
+function normalizeRuntimeCapabilitySignal(record: any): import("@vibe-learner/shared").RuntimeCapabilitySignal {
+  const status = String(record?.status ?? "unknown");
+  const source = String(record?.source ?? "unavailable");
+  return {
+    status:
+      status === "supported" || status === "unsupported" || status === "unknown"
+        ? status
+        : "unknown",
+    source:
+      source === "metadata" || source === "model_name" || source === "unavailable"
+        ? source
+        : "unavailable",
+    note: String(record?.note ?? "")
+  };
+}
+
 function normalizeStreamReport(record: any): StreamReport {
   return {
     documentId: record.document_id,
@@ -1415,6 +1431,27 @@ export async function probeRuntimeOpenAIModels(input: {
     models: Array.isArray(payload.models)
       ? payload.models.map((item: unknown) => String(item))
       : [],
+    capabilities:
+      payload.capabilities && typeof payload.capabilities === "object"
+        ? Object.fromEntries(
+            Object.entries(payload.capabilities).map(([modelId, capability]) => [
+              String(modelId),
+              {
+                inputModalities: Array.isArray((capability as any)?.input_modalities)
+                  ? (capability as any).input_modalities.map((item: unknown) => String(item))
+                  : [],
+                outputModalities: Array.isArray((capability as any)?.output_modalities)
+                  ? (capability as any).output_modalities.map((item: unknown) => String(item))
+                  : [],
+                toolTypes: Array.isArray((capability as any)?.tool_types)
+                  ? (capability as any).tool_types.map((item: unknown) => String(item))
+                  : [],
+                multimodal: normalizeRuntimeCapabilitySignal((capability as any)?.multimodal),
+                webSearch: normalizeRuntimeCapabilitySignal((capability as any)?.web_search)
+              }
+            ])
+          )
+        : {},
     error: String(payload.error ?? "")
   };
 }

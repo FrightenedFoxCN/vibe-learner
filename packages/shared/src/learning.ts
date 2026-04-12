@@ -255,9 +255,28 @@ export interface RuntimeSettingsPatch {
   showDebugInfo?: boolean;
 }
 
+export type RuntimeCapabilityStatus = "supported" | "unsupported" | "unknown";
+
+export type RuntimeCapabilitySource = "metadata" | "model_name" | "unavailable";
+
+export interface RuntimeCapabilitySignal {
+  status: RuntimeCapabilityStatus;
+  source: RuntimeCapabilitySource;
+  note: string;
+}
+
+export interface RuntimeModelCapability {
+  inputModalities: string[];
+  outputModalities: string[];
+  toolTypes: string[];
+  multimodal: RuntimeCapabilitySignal;
+  webSearch: RuntimeCapabilitySignal;
+}
+
 export interface RuntimeOpenAIProbeResult {
   available: boolean;
   models: string[];
+  capabilities: Record<string, RuntimeModelCapability>;
   error: string;
 }
 

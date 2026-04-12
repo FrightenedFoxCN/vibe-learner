@@ -2,10 +2,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 import queue
-import socket
 import threading
-import urllib.error
-import urllib.request
 from uuid import uuid4
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -84,6 +81,7 @@ from app.services.stream_reports import (
 )
 from app.services.plan_prompt import build_learning_plan_context
 from app.services.plan_tool_runtime import get_learning_plan_tool_specs
+from app.services.runtime_model_probe import probe_openai_models
 from app.services.study_session_prompt import build_study_session_system_prompt
 
 router = APIRouter()
@@ -378,55 +376,13 @@ def check_openai_models(payload: RuntimeSettingsProbeRequest) -> RuntimeSettings
         raise HTTPException(status_code=400, detail="missing_base_url")
 
     timeout_seconds = max(5, container.runtime_settings_service.effective_settings().openai_timeout_seconds)
-    request = urllib.request.Request(
-        url=f"{base_url}/models",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="GET",
+    return RuntimeSettingsProbeResponse.model_validate(
+        probe_openai_models(
+            api_key=api_key,
+            base_url=base_url,
+            timeout_seconds=timeout_seconds,
+        )
     )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-            raw_payload = json.loads(response.read().decode("utf-8"))
-        models_raw = raw_payload.get("data") if isinstance(raw_payload, dict) else []
-        model_ids = sorted(
-            {
-                str(item.get("id") or "").strip()
-                for item in (models_raw if isinstance(models_raw, list) else [])
-                if isinstance(item, dict) and str(item.get("id") or "").strip()
-            }
-        )
-        return RuntimeSettingsProbeResponse(
-            available=True,
-            models=model_ids,
-            error="",
-        )
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="ignore")
-        return RuntimeSettingsProbeResponse(
-            available=False,
-            models=[],
-            error=f"http_{exc.code}:{body[:180]}",
-        )
-    except urllib.error.URLError as exc:
-        return RuntimeSettingsProbeResponse(
-            available=False,
-            models=[],
-            error=f"network_error:{exc.reason}",
-        )
-    except (TimeoutError, socket.timeout):
-        return RuntimeSettingsProbeResponse(
-            available=False,
-            models=[],
-            error="timeout",
-        )
-    except json.JSONDecodeError:
-        return RuntimeSettingsProbeResponse(
-            available=False,
-            models=[],
-            error="invalid_json_response",
-        )
 
 
 @router.get("/documents", response_model=DocumentListResponse)

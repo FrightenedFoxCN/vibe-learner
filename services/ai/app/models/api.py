@@ -331,9 +331,24 @@ class RuntimeSettingsProbeRequest(BaseModel):
     base_url: str
 
 
+class RuntimeCapabilitySignalResponse(BaseModel):
+    status: str = "unknown"
+    source: str = "unavailable"
+    note: str = ""
+
+
+class RuntimeModelCapabilityResponse(BaseModel):
+    input_modalities: list[str] = Field(default_factory=list)
+    output_modalities: list[str] = Field(default_factory=list)
+    tool_types: list[str] = Field(default_factory=list)
+    multimodal: RuntimeCapabilitySignalResponse = Field(default_factory=RuntimeCapabilitySignalResponse)
+    web_search: RuntimeCapabilitySignalResponse = Field(default_factory=RuntimeCapabilitySignalResponse)
+
+
 class RuntimeSettingsProbeResponse(BaseModel):
     available: bool
     models: list[str]
+    capabilities: dict[str, RuntimeModelCapabilityResponse] = Field(default_factory=dict)
     error: str = ""
 
 
