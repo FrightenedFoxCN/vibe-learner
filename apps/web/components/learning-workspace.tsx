@@ -36,6 +36,8 @@ export function LearningWorkspace() {
     createSessionForActivePlan,
     renamePlanTitle,
     updatePlanStudyChapters,
+    updatePlanProgress,
+    answerPlanQuestion,
     renameStudyUnitTitle,
     removePlan,
     refreshPlanSnapshot
@@ -77,7 +79,7 @@ export function LearningWorkspace() {
           sceneProfile={selectedSceneProfile ?? activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
           onGenerate={(input) => { void generatePlanWorkflow(input); }}
           onOpenStudyDialog={() => { void handleOpenStudyDialog(); }}
-          canOpenStudyDialog={Boolean(activePlan || studySession)}
+          canOpenStudyDialog={Boolean(studySession || (activePlan && activeDocument))}
           hasStudySession={Boolean(studySession)}
           onRenameStudyUnitTitle={renameStudyUnitTitle}
           planStreamEvents={planStreamEvents}
@@ -101,6 +103,8 @@ export function LearningWorkspace() {
             onCreateSession={() => { void createSessionForActivePlan(); }}
             onRenamePlan={renamePlanTitle}
             onUpdateStudyChapters={updatePlanStudyChapters}
+            onUpdatePlanProgress={updatePlanProgress}
+            onAnswerPlanningQuestion={answerPlanQuestion}
           />
 
           <PlanHistory

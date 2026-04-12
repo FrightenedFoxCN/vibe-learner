@@ -13,6 +13,7 @@ import type {
 } from "@vibe-learner/shared";
 
 import {
+  answerLearningPlanQuestion,
   createLearningPlanStream,
   deleteLearningPlan as deleteLearningPlanRequest,
   createStudySession,
@@ -26,6 +27,7 @@ import {
   submitStudyQuestionAttempt,
   type SceneLibraryItemPayload,
   updateDocumentStudyUnitTitle as updateDocumentStudyUnitTitleRequest,
+  updateLearningPlanProgress as updateLearningPlanProgressRequest,
   updateLearningPlanStudyChapters as updateLearningPlanStudyChaptersRequest,
   updateLearningPlanTitle as updateLearningPlanTitleRequest,
   updateStudySessionSection,
@@ -62,7 +64,8 @@ import {
 import { compactPreviewValue } from "../lib/preview";
 
 export interface GeneratePlanInput {
-  file: File;
+  mode: "document" | "goal_only";
+  file?: File | null;
   objective: string;
 }
 
@@ -181,6 +184,7 @@ export function useLearningWorkspaceController({
     const sessions = await listStudySessions({
       documentId: activeDocument.id,
       personaId: activePlan.personaId,
+      planId: activePlan.id,
     });
     if (!sessions.length) {
       return null;
@@ -298,6 +302,7 @@ export function useLearningWorkspaceController({
 
   const createInitialStudySession = async (input: {
     document: DocumentRecord;
+    planId: string;
     personaId: string;
   }): Promise<StudySessionRecord> => {
     const sceneProfile = resolveActiveSceneProfile();
@@ -320,67 +325,85 @@ export function useLearningWorkspaceController({
     dispatch({ type: "busy_started" });
     setProcessStreamEvents([]);
     setPlanStreamEvents([]);
-    setProcessStreamStatus("running");
+    setProcessStreamStatus(input.mode === "document" ? "running" : "idle");
     setPlanStreamStatus("idle");
     try {
-      logWorkspaceInfo("workflow:upload:start", {
-        filename: input.file.name,
-        sizeBytes: input.file.size,
-        personaId: selectedPersona.id
-      });
-
-      const uploadedDocument = await uploadDocument(input.file);
-      setProcessStreamDocumentId(uploadedDocument.id);
-      setPlanStreamDocumentId(uploadedDocument.id);
-      dispatch({
-        type: "notice_set",
-        notice: "教材已上传，正在解析内容与章节结构。"
-      });
-      logWorkspaceInfo("workflow:upload:document_uploaded", {
-        documentId: uploadedDocument.id,
-        status: uploadedDocument.status
-      });
-
-      const nextDocument = await processDocumentStream(
-        uploadedDocument.id,
-        {},
-        (event) => {
-          setProcessStreamEvents((current) => [
-            ...current.slice(-79),
-            {
-              stage: event.stage,
-              payload: compactPreviewValue(event.payload) as Record<string, unknown>
-            }
-          ]);
-          setProcessStreamStatus(resolveStreamStatus(event.stage));
-          dispatch({
-            type: "notice_set",
-            notice: `教材处理中: ${event.stage}`
-          });
-          logWorkspaceInfo("workflow:upload:process_event", {
-            documentId: uploadedDocument.id,
-            stage: event.stage,
-            ...event.payload
-          });
-        }
-      );
-      logWorkspaceInfo("workflow:upload:document_ready", {
-        documentId: nextDocument.id,
-        pageCount: nextDocument.pageCount,
-        chunkCount: nextDocument.chunkCount,
-        ocrStatus: nextDocument.ocrStatus
-      });
-      applyGeneratedDocument(nextDocument);
-
-      dispatch({
-        type: "notice_set",
-        notice: "教材解析完成，正在生成学习计划。"
-      });
-      setPlanStreamStatus("running");
       const sceneProfile = resolveActiveSceneProfile();
+      let nextDocument: DocumentRecord | null = null;
+
+      if (input.mode === "document") {
+        if (!input.file) {
+          throw new Error("missing_plan_source_document");
+        }
+        logWorkspaceInfo("workflow:upload:start", {
+          filename: input.file.name,
+          sizeBytes: input.file.size,
+          personaId: selectedPersona.id
+        });
+
+        const uploadedDocument = await uploadDocument(input.file);
+        setProcessStreamDocumentId(uploadedDocument.id);
+        setPlanStreamDocumentId(uploadedDocument.id);
+        dispatch({
+          type: "notice_set",
+          notice: "教材已上传，正在解析内容与章节结构。"
+        });
+        logWorkspaceInfo("workflow:upload:document_uploaded", {
+          documentId: uploadedDocument.id,
+          status: uploadedDocument.status
+        });
+
+        nextDocument = await processDocumentStream(
+          uploadedDocument.id,
+          {},
+          (event) => {
+            setProcessStreamEvents((current) => [
+              ...current.slice(-79),
+              {
+                stage: event.stage,
+                payload: compactPreviewValue(event.payload) as Record<string, unknown>
+              }
+            ]);
+            setProcessStreamStatus(resolveStreamStatus(event.stage));
+            dispatch({
+              type: "notice_set",
+              notice: `教材处理中: ${event.stage}`
+            });
+            logWorkspaceInfo("workflow:upload:process_event", {
+              documentId: uploadedDocument.id,
+              stage: event.stage,
+              ...event.payload
+            });
+          }
+        );
+        logWorkspaceInfo("workflow:upload:document_ready", {
+          documentId: nextDocument.id,
+          pageCount: nextDocument.pageCount,
+          chunkCount: nextDocument.chunkCount,
+          ocrStatus: nextDocument.ocrStatus
+        });
+        applyGeneratedDocument(nextDocument);
+        dispatch({
+          type: "notice_set",
+          notice: "教材解析完成，正在生成学习计划。"
+        });
+      } else {
+        setProcessStreamDocumentId("");
+        setPlanStreamDocumentId("");
+        dispatch({
+          type: "notice_set",
+          notice: "正在根据学习目标生成计划骨架。"
+        });
+        logWorkspaceInfo("workflow:goal_only:start", {
+          personaId: selectedPersona.id,
+          objectiveLength: input.objective.length
+        });
+      }
+
+      setPlanStreamStatus("running");
       const nextPlan = await createLearningPlanStream(
         {
-          documentId: nextDocument.id,
+          documentId: nextDocument?.id ?? "",
           personaId: selectedPersona.id,
           objective: input.objective,
           sceneProfileSummary: sceneProfile?.summary ?? "",
@@ -399,8 +422,8 @@ export function useLearningWorkspaceController({
             type: "notice_set",
             notice: `学习计划处理中: ${event.stage}`
           });
-          logWorkspaceInfo("workflow:upload:plan_event", {
-            documentId: nextDocument.id,
+          logWorkspaceInfo("workflow:plan_event", {
+            documentId: nextDocument?.id ?? "",
             stage: event.stage,
             ...event.payload
           });
@@ -412,33 +435,41 @@ export function useLearningWorkspaceController({
       });
       applyGeneratedPlan(nextPlan);
 
-      try {
-        const nextSession = await createInitialStudySession({
-          document: nextDocument,
-          personaId: selectedPersona.id
-        });
-        dispatch({
-          type: "study_session_set",
-          studySession: nextSession,
-          clearResponse: true
-        });
+      if (nextDocument) {
+        try {
+          const nextSession = await createInitialStudySession({
+            document: nextDocument,
+            planId: nextPlan.id,
+            personaId: selectedPersona.id
+          });
+          dispatch({
+            type: "study_session_set",
+            studySession: nextSession,
+            clearResponse: true
+          });
+          dispatch({
+            type: "notice_set",
+            notice: PLAN_GENERATED_NOTICE
+          });
+        } catch (sessionError) {
+          dispatch({
+            type: "notice_set",
+            notice: PLAN_GENERATED_SESSION_FAILED_NOTICE
+          });
+          logWorkspaceError("workflow:upload:session_error", sessionError);
+        }
+      } else {
         dispatch({
           type: "notice_set",
-          notice: PLAN_GENERATED_NOTICE
+          notice: "目标计划已生成。当前未关联教材，因此不会自动创建章节会话。"
         });
-      } catch (sessionError) {
-        dispatch({
-          type: "notice_set",
-          notice: PLAN_GENERATED_SESSION_FAILED_NOTICE
-        });
-        logWorkspaceError("workflow:upload:session_error", sessionError);
       }
     } catch (error) {
       setProcessStreamStatus((current) => (current === "running" ? "error" : current));
       setPlanStreamStatus((current) => (current === "running" ? "error" : current));
       dispatch({
         type: "notice_set",
-        notice: `教材处理失败: ${String(error)}`
+        notice: `${input.mode === "document" ? "教材处理失败" : "目标计划生成失败"}: ${String(error)}`
       });
       logWorkspaceError("workflow:upload:error", error);
     } finally {
@@ -457,6 +488,7 @@ export function useLearningWorkspaceController({
         {
           ...buildInitialStudySessionInput({
             document: activeDocument,
+            planId: activePlan.id,
             personaId: activePlan.personaId
           }),
           sceneProfile: resolveActiveSceneProfile(),
@@ -472,11 +504,11 @@ export function useLearningWorkspaceController({
             `${activeDocument.id}:intro`
         }
       );
-        dispatch({
-          type: "study_session_set",
-          studySession: nextSession,
-          clearResponse: true
-        });
+      dispatch({
+        type: "study_session_set",
+        studySession: nextSession,
+        clearResponse: true
+      });
       dispatch({
         type: "notice_set",
         notice: SESSION_CREATED_NOTICE
@@ -621,6 +653,71 @@ export function useLearningWorkspaceController({
     }
   };
 
+  const updatePlanProgress = async (input: {
+    planId: string;
+    scheduleIds: string[];
+    status: string;
+    note?: string;
+  }) => {
+    if (!input.planId || !input.scheduleIds.length || !input.status.trim()) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const updatedPlan = await updateLearningPlanProgressRequest(input);
+      dispatch({
+        type: "plan_updated",
+        plan: updatedPlan
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "已更新计划完成度。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `更新计划完成度失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:plan_progress_update:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const answerPlanQuestion = async (input: {
+    planId: string;
+    questionId: string;
+    answer: string;
+  }) => {
+    if (!input.planId || !input.questionId || !input.answer.trim()) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const updatedPlan = await answerLearningPlanQuestion(input);
+      dispatch({
+        type: "plan_updated",
+        plan: updatedPlan
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "已保存规划问题回答。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `保存规划问题回答失败: ${String(error)}`
+      });
+      logWorkspaceError("workflow:plan_question_answer:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
   const handleAsk = async (message: string) => {
     if (!state.studySession) {
       return;
@@ -646,6 +743,7 @@ export function useLearningWorkspaceController({
       workingSession = await createStudySession({
         documentId: activeDocument.id,
         personaId: activePlan.personaId,
+        planId: activePlan.id,
         sceneProfile: activeSceneProfile ?? null,
         sectionId,
         sectionTitle: resolveSectionTitle(sectionId),
@@ -712,6 +810,7 @@ export function useLearningWorkspaceController({
           const recoveredSession = await createStudySession({
             documentId: activeDocument.id,
             personaId: activePlan.personaId,
+            planId: activePlan.id,
             sceneProfile: resolveActiveSceneProfile(),
             sectionId,
             sectionTitle: resolveSectionTitle(sectionId),
@@ -1037,6 +1136,8 @@ export function useLearningWorkspaceController({
     createSessionForActivePlan,
     renamePlanTitle,
     updatePlanStudyChapters,
+    updatePlanProgress,
+    answerPlanQuestion,
     renameStudyUnitTitle,
     removePlan,
     handleSwitchSection,

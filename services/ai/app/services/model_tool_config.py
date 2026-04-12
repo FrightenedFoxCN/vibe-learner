@@ -67,6 +67,18 @@ TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category": "memory",
             "category_label": "记忆工具",
         },
+        "read_learning_plan_progress": {
+            "label": "计划进度读取",
+            "description": "读取当前学习计划的完成度、排期状态和待补充规划问题。",
+            "category": "planning",
+            "category_label": "计划工具",
+        },
+        "update_learning_plan_progress": {
+            "label": "计划进度更新",
+            "description": "更新当前学习计划的排期项状态，例如开始、完成或阻塞。",
+            "category": "planning",
+            "category_label": "计划工具",
+        },
         "read_page_range_content": {
             "label": "页范围文本读取",
             "description": "读取教材页范围文本，增强章节讲解的教材依据。",

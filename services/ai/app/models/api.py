@@ -10,11 +10,14 @@ from app.models.domain import (
     InteractiveQuestionOption,
     LearningGoalInput,
     LearningPlanRecord,
+    PlanProgressEventRecord,
+    PlanProgressSummaryRecord,
     PlanGenerationTraceRecord,
     PlanGenerationRoundRecord,
     PlanToolCallTraceRecord,
     PersonaProfile,
     PersonaCardRecord,
+    PlanningQuestionRecord,
     PersonaSlot,
     SceneLibraryRecord,
     ReusableSceneNodeRecord,
@@ -396,6 +399,16 @@ class LearningPlanUpdateRequest(BaseModel):
     study_chapters: list[str] | None = None
 
 
+class LearningPlanProgressUpdateRequest(BaseModel):
+    schedule_ids: list[str] = Field(default_factory=list)
+    status: str = Field(min_length=1)
+    note: str = ""
+
+
+class PlanningQuestionAnswerRequest(BaseModel):
+    answer: str = Field(min_length=1)
+
+
 class DocumentStudyUnitUpdateResponse(BaseModel):
     document: DocumentResponse
     plans: list["LearningPlanResponse"]
@@ -467,6 +480,7 @@ class UpsertSceneLibraryRequest(BaseModel):
 class CreateStudySessionRequest(BaseModel):
     document_id: str
     persona_id: str
+    plan_id: str | None = None
     scene_profile: SceneProfileRecord | None = None
     section_id: str
     section_title: str = ""

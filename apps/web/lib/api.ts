@@ -695,6 +695,7 @@ function normalizePlan(plan: any): LearningPlan {
     id: plan.id,
     documentId: plan.document_id,
     personaId: plan.persona_id,
+    creationMode: plan.creation_mode === "goal_only" ? "goal_only" : "document",
     courseTitle: plan.course_title,
     objective: plan.objective,
     sceneProfileSummary: String(plan.scene_profile_summary ?? ""),
@@ -706,6 +707,42 @@ function normalizePlan(plan: any): LearningPlan {
     todayTasks: plan.today_tasks,
     studyUnits: plan.study_units.map(normalizeStudyUnit),
     schedule: plan.schedule.map(normalizeScheduleItem),
+    progressSummary: {
+      totalScheduleCount: Number(plan.progress_summary?.total_schedule_count ?? 0),
+      completedScheduleCount: Number(plan.progress_summary?.completed_schedule_count ?? 0),
+      inProgressScheduleCount: Number(plan.progress_summary?.in_progress_schedule_count ?? 0),
+      pendingScheduleCount: Number(plan.progress_summary?.pending_schedule_count ?? 0),
+      blockedScheduleCount: Number(plan.progress_summary?.blocked_schedule_count ?? 0),
+      completionPercent: Number(plan.progress_summary?.completion_percent ?? 0),
+    },
+    progressEvents: Array.isArray(plan.progress_events)
+      ? plan.progress_events.map((item: any) => ({
+          id: String(item.id ?? ""),
+          actor: String(item.actor ?? "user"),
+          source: String(item.source ?? "ui"),
+          scheduleIds: Array.isArray(item.schedule_ids)
+            ? item.schedule_ids.map((entry: unknown) => String(entry))
+            : [],
+          status: String(item.status ?? "planned"),
+          note: String(item.note ?? ""),
+          createdAt: String(item.created_at ?? ""),
+        }))
+      : [],
+    planningQuestions: Array.isArray(plan.planning_questions)
+      ? plan.planning_questions.map((item: any) => ({
+          id: String(item.id ?? ""),
+          question: String(item.question ?? ""),
+          reason: String(item.reason ?? ""),
+          assumptions: Array.isArray(item.assumptions)
+            ? item.assumptions.map((entry: unknown) => String(entry))
+            : [],
+          answer: String(item.answer ?? ""),
+          status: String(item.status ?? "pending"),
+          sourceToolName: String(item.source_tool_name ?? "ask_planning_question"),
+          createdAt: String(item.created_at ?? ""),
+          answeredAt: String(item.answered_at ?? ""),
+        }))
+      : [],
     createdAt: plan.created_at
   };
 }
@@ -894,6 +931,7 @@ function normalizeSession(session: any): StudySessionRecord {
     id: session.id,
     documentId: session.document_id,
     personaId: session.persona_id,
+    planId: session.plan_id ?? null,
     sceneInstanceId: String(session.scene_instance_id ?? ""),
     sceneProfile: normalizeSceneProfile(session.scene_profile),
     sectionId: session.section_id,
@@ -1616,7 +1654,7 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        document_id: goal.documentId,
+        document_id: goal.documentId ?? "",
         persona_id: goal.personaId,
         objective: goal.objective,
         scene_profile_summary: sceneSummary,
@@ -1695,6 +1733,50 @@ export async function updateLearningPlanStudyChapters(
   return normalizePlan(payload);
 }
 
+export async function updateLearningPlanProgress(input: {
+  planId: string;
+  scheduleIds: string[];
+  status: string;
+  note?: string;
+}): Promise<LearningPlan> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/learning-plans/${input.planId}/progress`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        schedule_ids: input.scheduleIds,
+        status: input.status,
+        note: input.note ?? ""
+      })
+    })
+  );
+  return normalizePlan(payload);
+}
+
+export async function answerLearningPlanQuestion(input: {
+  planId: string;
+  questionId: string;
+  answer: string;
+}): Promise<LearningPlan> {
+  const payload = await readJson<any>(
+    await request(
+      `${AI_BASE_URL}/learning-plans/${input.planId}/planning-questions/${input.questionId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          answer: input.answer
+        })
+      }
+    )
+  );
+  return normalizePlan(payload);
+}
+
 export async function deleteLearningPlan(planId: string): Promise<void> {
   await readJson<{ deleted_plan_id: string }>(
     await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
@@ -1714,7 +1796,7 @@ export async function createLearningPlanStream(
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      document_id: goal.documentId,
+      document_id: goal.documentId ?? "",
       persona_id: goal.personaId,
       objective: goal.objective,
       scene_profile_summary: sceneSummary,
@@ -1775,6 +1857,7 @@ export async function createLearningPlanStream(
 export async function createStudySession(input: {
   documentId: string;
   personaId: string;
+  planId?: string | null;
   sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
   sectionId: string;
   sectionTitle?: string;
@@ -1789,6 +1872,7 @@ export async function createStudySession(input: {
       body: JSON.stringify({
         document_id: input.documentId,
         persona_id: input.personaId,
+        plan_id: input.planId ?? null,
         scene_profile: serializeSceneProfile(input.sceneProfile),
         section_id: input.sectionId,
         section_title: input.sectionTitle ?? "",
@@ -1802,11 +1886,13 @@ export async function createStudySession(input: {
 export async function listStudySessions(input: {
   documentId?: string;
   personaId?: string;
+  planId?: string;
   sectionId?: string;
 }): Promise<StudySessionRecord[]> {
   const query = new URLSearchParams();
   if (input.documentId) query.set("document_id", input.documentId);
   if (input.personaId) query.set("persona_id", input.personaId);
+  if (input.planId) query.set("plan_id", input.planId);
   if (input.sectionId) query.set("section_id", input.sectionId);
   const suffix = query.toString();
   const payload = await readJson<{ items: any[] }>(

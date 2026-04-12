@@ -17,7 +17,7 @@ interface DocumentSetupProps {
   personas: PersonaProfile[];
   selectedPersonaId: string;
   onSelectPersonaId: (personaId: string) => void;
-  onGenerate: (input: { file: File; objective: string }) => void;
+  onGenerate: (input: { mode: "document" | "goal_only"; file?: File | null; objective: string }) => void;
   onOpenStudyDialog: () => void;
   canOpenStudyDialog: boolean;
   hasStudySession: boolean;
@@ -64,6 +64,7 @@ export function DocumentSetup({
   planStreamStatus
 }: DocumentSetupProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [generationMode, setGenerationMode] = useState<"document" | "goal_only">("document");
   const [objective, setObjective] = useState("请基于教材结构生成首轮学习计划，先给出学习章节顺序，再拆分每章的细分学习要点。");
   const [editingUnitId, setEditingUnitId] = useState("");
   const [unitTitleDraft, setUnitTitleDraft] = useState("");
@@ -82,6 +83,9 @@ export function DocumentSetup({
   const planRoundSummary = summarizePlanRounds(planStreamEvents);
   const shouldShowPlanRounds =
     planStreamStatus !== "idle" || planStreamEvents.length > 0 || planRoundSummary.rounds.length > 0;
+  const displayedStudyUnits = document?.studyUnits.length
+    ? document.studyUnits
+    : (plan?.studyUnits ?? []);
 
   return (
     <div className="plan-setup-column" style={styles.wrap}>
@@ -155,13 +159,33 @@ export function DocumentSetup({
 
         <div style={styles.form}>
           <label style={styles.field}>
+            <span style={styles.fieldLabel}>创建方式</span>
+            <select
+              value={generationMode}
+              onChange={(event) => setGenerationMode(event.target.value === "goal_only" ? "goal_only" : "document")}
+              style={styles.select}
+            >
+              <option value="document">教材 + 目标</option>
+              <option value="goal_only">仅学习目标</option>
+            </select>
+            <span style={styles.fieldHint}>
+              {generationMode === "document"
+                ? "标准模式：先解析教材，再结合目标生成学习计划。"
+                : "轻量模式：不上传教材，直接围绕目标生成一版阶段性计划。"}
+            </span>
+          </label>
+          <label style={styles.field}>
             <span style={styles.fieldLabel}>教材文件（PDF）</span>
             <input
               type="file"
               accept=".pdf"
               style={styles.fileInput}
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              disabled={generationMode === "goal_only"}
             />
+            {generationMode === "goal_only" ? (
+              <span style={styles.fieldHint}>当前为仅目标模式，本轮不会上传教材。</span>
+            ) : null}
           </label>
           <label style={styles.field}>
             <span style={styles.fieldLabel}>学习目标</span>
@@ -177,21 +201,22 @@ export function DocumentSetup({
           type="button"
           style={{
             ...styles.primaryButton,
-            ...((isBusy || !file) ? styles.buttonDisabled : {})
+            ...((isBusy || (generationMode === "document" && !file)) ? styles.buttonDisabled : {})
           }}
-          disabled={isBusy || !file}
+          disabled={isBusy || (generationMode === "document" && !file)}
           onClick={() => {
-            if (!file) return;
+            if (generationMode === "document" && !file) return;
             console.info("[vibe-learner] ui:upload_click", {
-              filename: file.name,
-              sizeBytes: file.size,
+              mode: generationMode,
+              filename: file?.name ?? "",
+              sizeBytes: file?.size ?? 0,
               selectedPersonaId
             });
-            onGenerate({ file, objective });
+            onGenerate({ mode: generationMode, file, objective });
           }}
         >
           <IconUpload />
-          {isBusy ? "处理中…" : "上传并生成计划"}
+          {isBusy ? "处理中…" : generationMode === "document" ? "上传并生成计划" : "直接生成目标计划"}
         </button>
 
         {shouldShowPlanRounds ? (
@@ -210,10 +235,23 @@ export function DocumentSetup({
               <span style={styles.progressStat}>已见轮次 {planRoundSummary.rounds.length}</span>
               <span style={styles.progressStat}>工具调用 {planRoundSummary.totalToolCalls}</span>
               <span style={styles.progressStat}>恢复尝试 {planRoundSummary.recoveryCount}</span>
+              <span style={styles.progressStat}>规划提问 {planRoundSummary.planningQuestions.length}</span>
             </div>
 
             {planRoundSummary.latestMessage ? (
               <div style={styles.progressNotice}>{planRoundSummary.latestMessage}</div>
+            ) : null}
+
+            {planRoundSummary.planningQuestions.length ? (
+              <div style={styles.questionNotice}>
+                {planRoundSummary.planningQuestions.map((item) => (
+                  <div key={item.id} style={styles.questionNoticeItem}>
+                    <strong style={styles.questionNoticeLabel}>待确认</strong>
+                    <span>{item.question}</span>
+                    {item.reason ? <span style={styles.questionNoticeReason}>原因：{item.reason}</span> : null}
+                  </div>
+                ))}
+              </div>
             ) : null}
 
             {planRoundSummary.rounds.length ? (
@@ -260,7 +298,11 @@ export function DocumentSetup({
         <div style={styles.statusItem}>
           <span style={styles.statusLabel}>教材</span>
           <span style={styles.statusValue}>
-            {document ? formatDocumentSummary(document) : "未上传"}
+            {document
+              ? formatDocumentSummary(document)
+              : plan?.creationMode === "goal_only"
+                ? "仅目标模式"
+                : "未上传"}
           </span>
         </div>
         <div style={styles.statusItem}>
@@ -283,11 +325,11 @@ export function DocumentSetup({
         </div>
       </div>
 
-      {document?.studyUnits.length ? (
+      {displayedStudyUnits.length ? (
         <div style={styles.unitSection}>
           <span style={styles.unitSectionLabel}>学习单元清单</span>
           <div style={styles.unitList}>
-            {document.studyUnits.map((unit) => (
+            {displayedStudyUnits.map((unit) => (
               <div key={unit.id} style={styles.unitItem}>
                 {editingUnitId === unit.id ? (
                   <div style={styles.unitEditWrap}>
@@ -339,7 +381,7 @@ export function DocumentSetup({
                     <button
                       type="button"
                       style={styles.unitEditButton}
-                      disabled={isBusy}
+                      disabled={isBusy || !document}
                       onClick={() => {
                         setEditingUnitId(unit.id);
                         setUnitTitleDraft(unit.title);
@@ -534,6 +576,29 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--ink)",
     fontSize: 12,
     lineHeight: 1.6
+  },
+  questionNotice: {
+    display: "grid",
+    gap: 8
+  },
+  questionNoticeItem: {
+    display: "grid",
+    gap: 4,
+    padding: "10px 12px",
+    border: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border))",
+    background: "white",
+    fontSize: 12,
+    color: "var(--ink)",
+    lineHeight: 1.6
+  },
+  questionNoticeLabel: {
+    fontSize: 11,
+    color: "var(--accent)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
+  },
+  questionNoticeReason: {
+    color: "var(--muted)"
   },
   roundList: {
     display: "grid",
@@ -766,8 +831,15 @@ interface PlanRoundSummaryItem {
   error?: string;
 }
 
+interface PlanningQuestionSummaryItem {
+  id: string;
+  question: string;
+  reason: string;
+}
+
 function summarizePlanRounds(events: StreamEventItem[]) {
   const rounds = new Map<number, PlanRoundSummaryItem>();
+  const planningQuestions = new Map<string, PlanningQuestionSummaryItem>();
   let totalToolCalls = 0;
   let recoveryCount = 0;
   let latestMessage = "";
@@ -823,6 +895,20 @@ function summarizePlanRounds(events: StreamEventItem[]) {
       continue;
     }
 
+    if (event.stage === "planning_question_asked") {
+      const questionId = String(event.payload.question_id ?? "").trim();
+      const question = String(event.payload.question ?? "").trim();
+      if (questionId && question) {
+        planningQuestions.set(questionId, {
+          id: questionId,
+          question,
+          reason: String(event.payload.reason ?? "").trim()
+        });
+        latestMessage = "计划器提出了一个待确认问题。";
+      }
+      continue;
+    }
+
     if (event.stage === "model_round_completed") {
       const round = ensureRound();
       if (round) {
@@ -863,6 +949,7 @@ function summarizePlanRounds(events: StreamEventItem[]) {
 
   return {
     rounds: [...rounds.values()].sort((a, b) => a.roundIndex - b.roundIndex),
+    planningQuestions: [...planningQuestions.values()],
     totalToolCalls,
     recoveryCount,
     latestMessage,

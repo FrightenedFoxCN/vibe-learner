@@ -165,25 +165,27 @@ export function learningWorkspaceReducer(
       };
     case "generated_plan_applied":
       {
-        const nextDocuments = state.documents.map((document) => {
-          if (document.id !== action.plan.documentId) {
-            return document;
-          }
-          return {
-            ...document,
-            studyUnits: action.plan.studyUnits,
-            studyUnitCount: action.plan.studyUnits.length,
-            sections: projectSectionsFromStudyUnits(document, action.plan.studyUnits)
-          };
-        });
-      return {
-        ...state,
-        documents: nextDocuments,
-        planHistory: upsertLearningPlan(state.planHistory, action.plan),
-        selectedPlanId: action.plan.id,
-        studySession: null,
-        response: null
-      };
+        const nextDocuments = action.plan.documentId
+          ? state.documents.map((document) => {
+              if (document.id !== action.plan.documentId) {
+                return document;
+              }
+              return {
+                ...document,
+                studyUnits: action.plan.studyUnits,
+                studyUnitCount: action.plan.studyUnits.length,
+                sections: projectSectionsFromStudyUnits(document, action.plan.studyUnits)
+              };
+            })
+          : state.documents;
+        return {
+          ...state,
+          documents: nextDocuments,
+          planHistory: upsertLearningPlan(state.planHistory, action.plan),
+          selectedPlanId: action.plan.id,
+          studySession: null,
+          response: null
+        };
       }
     case "plan_updated":
       return {

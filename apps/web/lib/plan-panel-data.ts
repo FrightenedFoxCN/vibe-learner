@@ -67,7 +67,9 @@ export function buildPlanHistoryItems(input: {
   return input.plans.map((plan) => ({
     id: plan.id,
     courseTitle: plan.courseTitle,
-    documentTitle: documentTitleById.get(plan.documentId) ?? plan.documentId,
+    documentTitle:
+      documentTitleById.get(plan.documentId) ??
+      (plan.creationMode === "goal_only" ? "仅目标计划" : plan.documentId),
     personaName: personaNameById.get(plan.personaId) ?? plan.personaId,
     createdAt: plan.createdAt,
     overview: plan.overview

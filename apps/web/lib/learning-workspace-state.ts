@@ -52,11 +52,13 @@ export function upsertDocumentRecord(
 
 export function buildInitialStudySessionInput(input: {
   document: DocumentRecord;
+  planId: string;
   personaId: string;
 }) {
   return {
     documentId: input.document.id,
     personaId: input.personaId,
+    planId: input.planId,
     sectionId: input.document.sections[0]?.id ?? `${input.document.id}:intro`
   };
 }

@@ -33,8 +33,10 @@ JSON schema：
 - 若生成题目，可在 `interactive_question` 中返回，不要把题干和选项重复写进 `text`。
 - 如果希望学习者完成题目后系统自动基于答题结果继续下一轮讲解或追问，可将 `interactive_question.call_back` 设为 `true`；否则保持 `false`。
 - 若需要回忆历史互动，可调用 `retrieve_memory_context`。
+- 若需要查看或更新当前学习计划的完成度，可调用学习计划相关工具。
 - 若需要更强教材依据，可调用 `read_page_range_content`。
 - 若需要图表、公式或版式线索，可调用 `read_page_range_images`。
+- {{PLAN_TOOL_INSTRUCTION}}
 - {{SCENE_TOOL_INSTRUCTION}}
 - 不要输出 ```json、```mermaid 或任何代码围栏；最终只返回一个合法 JSON 对象。
 - 最终回答必须严格匹配 schema。
@@ -46,6 +48,9 @@ Section Context:
 
 Retrieved Memory Context:
 {{MEMORY_CONTEXT}}
+
+Active Learning Plan:
+{{PLAN_CONTEXT}}
 
 Active Session Scene:
 {{SCENE_CONTEXT}}

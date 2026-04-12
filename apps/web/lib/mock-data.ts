@@ -45,6 +45,7 @@ export const mockPlan: LearningPlan = {
   id: "plan-1",
   documentId: "doc-1",
   personaId: "mentor-aurora",
+  creationMode: "document",
   courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
   overview: "先完成力学导论与牛顿定律两个学习章节，再在每章下推进定义、受力分析与例题复述等细分要点。",
@@ -78,5 +79,15 @@ export const mockPlan: LearningPlan = {
       status: "planned"
     }
   ],
+  progressSummary: {
+    totalScheduleCount: 1,
+    completedScheduleCount: 0,
+    inProgressScheduleCount: 0,
+    pendingScheduleCount: 1,
+    blockedScheduleCount: 0,
+    completionPercent: 0
+  },
+  progressEvents: [],
+  planningQuestions: [],
   createdAt: "2026-04-09T00:00:00+00:00"
 };

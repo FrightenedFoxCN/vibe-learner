@@ -218,7 +218,7 @@ class DocumentRecord(BaseModel):
 
 
 class LearningGoalInput(BaseModel):
-    document_id: str
+    document_id: str = ""
     persona_id: str
     objective: str = Field(
         description=(
@@ -326,10 +326,42 @@ class StudyScheduleRecord(BaseModel):
     status: str = "planned"
 
 
+class PlanProgressSummaryRecord(BaseModel):
+    total_schedule_count: int = 0
+    completed_schedule_count: int = 0
+    in_progress_schedule_count: int = 0
+    pending_schedule_count: int = 0
+    blocked_schedule_count: int = 0
+    completion_percent: int = 0
+
+
+class PlanProgressEventRecord(BaseModel):
+    id: str
+    actor: str
+    source: str
+    schedule_ids: list[str] = Field(default_factory=list)
+    status: str
+    note: str = ""
+    created_at: str
+
+
+class PlanningQuestionRecord(BaseModel):
+    id: str
+    question: str
+    reason: str = ""
+    assumptions: list[str] = Field(default_factory=list)
+    answer: str = ""
+    status: str = "pending"
+    source_tool_name: str = "ask_planning_question"
+    created_at: str
+    answered_at: str = ""
+
+
 class LearningPlanRecord(BaseModel):
     id: str
     document_id: str
     persona_id: str
+    creation_mode: str = "document"
     course_title: str = Field(
         description="系统生成的教材贴合型课程标题，用于学习计划头部展示。"
     )
@@ -353,6 +385,9 @@ class LearningPlanRecord(BaseModel):
     )
     study_units: list[StudyUnitRecord] = []
     schedule: list[StudyScheduleRecord] = []
+    progress_summary: PlanProgressSummaryRecord = Field(default_factory=PlanProgressSummaryRecord)
+    progress_events: list[PlanProgressEventRecord] = Field(default_factory=list)
+    planning_questions: list[PlanningQuestionRecord] = Field(default_factory=list)
     created_at: str
 
 
@@ -525,6 +560,7 @@ class StudySessionRecord(BaseModel):
     id: str
     document_id: str
     persona_id: str
+    plan_id: str | None = None
     scene_instance_id: str = ""
     scene_profile: SceneProfileRecord | None = None
     section_id: str

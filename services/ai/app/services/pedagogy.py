@@ -39,8 +39,10 @@ class PedagogyOrchestrator:
         document_path: str | None = None,
         previous_turns: list[DialogueTurnRecord] | None = None,
         memory_sessions: list[StudySessionRecord] | None = None,
+        active_plan_context: str = "",
         active_scene_summary: str = "",
         active_scene_context: str = "",
+        plan_tool_runtime=None,
         scene_tool_runtime=None,
     ) -> StudyChatResult:
         turns = previous_turns or []
@@ -64,6 +66,8 @@ class PedagogyOrchestrator:
             section_context=section_context,
             memory_context=memory_context,
             scene_context=active_scene_context,
+            active_plan_context=active_plan_context,
+            plan_tool_runtime=plan_tool_runtime,
             scene_tool_runtime=scene_tool_runtime,
             memory_trace_hits=memory_hit_payloads,
             conversation_history=conversation_history,

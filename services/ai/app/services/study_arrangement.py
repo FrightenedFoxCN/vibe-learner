@@ -17,6 +17,55 @@ from app.models.domain import (
 
 
 class StudyArrangementService:
+    def build_goal_only_study_units(
+        self,
+        *,
+        goal: LearningGoalInput,
+        base_document_id: str,
+    ) -> list[StudyUnitRecord]:
+        objective = re.sub(r"\s+", " ", goal.objective or "").strip()
+        fragments = [
+            item.strip(" 。.!！?？;；：:")
+            for item in re.split(r"[，、；;。\n]+", objective)
+            if item.strip(" 。.!！?？;；：:")
+        ]
+        unit_titles: list[str]
+        if len(fragments) >= 3:
+            unit_titles = [self._goal_unit_title(item, index + 1) for index, item in enumerate(fragments[:3])]
+        elif len(fragments) == 2:
+            unit_titles = [
+                self._goal_unit_title(fragments[0], 1),
+                self._goal_unit_title(fragments[1], 2),
+                "综合应用与复盘",
+            ]
+        elif len(fragments) == 1:
+            unit_titles = [
+                f"目标拆解：{self._compact_goal_fragment(fragments[0])}",
+                f"核心攻克：{self._compact_goal_fragment(fragments[0])}",
+                "巩固练习与复盘",
+            ]
+        else:
+            unit_titles = [
+                "目标拆解与范围确认",
+                "核心概念与方法路径",
+                "巩固练习与复盘",
+            ]
+        return [
+            StudyUnitRecord(
+                id=f"{base_document_id}:study-unit:goal:{index}",
+                document_id=base_document_id,
+                title=title,
+                page_start=index,
+                page_end=index,
+                unit_kind="chapter",
+                include_in_plan=True,
+                source_section_ids=[],
+                summary=self._build_goal_unit_summary(title=title, objective=objective),
+                confidence=0.58,
+            )
+            for index, title in enumerate(unit_titles, start=1)
+        ]
+
     def build_study_units(
         self, *, document: DocumentRecord, debug_report: DocumentDebugRecord
     ) -> list[StudyUnitRecord]:
@@ -200,6 +249,52 @@ class StudyArrangementService:
             id="",
             document_id=document.id,
             persona_id=goal.persona_id,
+            creation_mode="document",
+            course_title=course_title,
+            objective=goal.objective,
+            scene_profile_summary=goal.scene_profile_summary,
+            overview=overview,
+            study_chapters=study_chapters,
+            today_tasks=today_tasks,
+            study_units=units,
+            schedule=schedule,
+            created_at="",
+        )
+
+    def build_goal_only_plan(
+        self,
+        *,
+        goal: LearningGoalInput,
+        base_document_id: str,
+        persona_name: str,
+        persona: PersonaProfile | None = None,
+    ) -> LearningPlanRecord:
+        units = self.build_goal_only_study_units(goal=goal, base_document_id=base_document_id)
+        schedule = self._build_schedule(units=units)
+        study_chapters = [unit.title for unit in units]
+        objective_hint = self._summarize_objective(goal.objective)
+        today_tasks = [
+            f"{item.title} · {item.focus}"
+            for item in schedule[:3]
+        ] or ["先拆出目标边界，再确认第一轮学习动作。"]
+        if objective_hint:
+            today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
+        if persona is not None:
+            from app.models.domain import persona_slot_content
+            enc_style = persona_slot_content(persona, "encouragement_style")
+            if enc_style:
+                today_tasks = [f"[{enc_style}] {task}" for task in today_tasks]
+        overview = (
+            f"{persona_name} 将围绕你的单一学习目标先搭出 {len(units)} 个可执行阶段，"
+            f"从 {units[0].title if units else '目标拆解'} 开始推进。"
+            f"{f' 当前聚焦：{objective_hint}。' if objective_hint else ''}"
+        )
+        course_title = objective_hint or "目标导向学习计划"
+        return LearningPlanRecord(
+            id="",
+            document_id="",
+            persona_id=goal.persona_id,
+            creation_mode="goal_only",
             course_title=course_title,
             objective=goal.objective,
             scene_profile_summary=goal.scene_profile_summary,
@@ -441,6 +536,26 @@ class StudyArrangementService:
             )
 
         return schedule
+
+    def _build_goal_unit_summary(self, *, title: str, objective: str) -> str:
+        objective_hint = self._summarize_objective(objective)
+        if objective_hint:
+            return f"围绕学习目标“{objective_hint}”推进阶段 {title}。"
+        return f"围绕单一学习目标推进阶段 {title}。"
+
+    def _compact_goal_fragment(self, text: str) -> str:
+        cleaned = re.sub(r"\s+", " ", text).strip(" 。.!！?？;；：:")
+        if len(cleaned) <= 18:
+            return cleaned
+        return f"{cleaned[:18].rstrip()}…"
+
+    def _goal_unit_title(self, fragment: str, index: int) -> str:
+        compact = self._compact_goal_fragment(fragment)
+        if index == 1:
+            return f"目标一：{compact}"
+        if index == 2:
+            return f"目标二：{compact}"
+        return f"综合巩固：{compact}"
 
     def _fallback_units_from_sections(self, document: DocumentRecord) -> list[StudyUnitRecord]:
         if document.study_units:

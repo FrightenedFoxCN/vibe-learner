@@ -17,6 +17,17 @@ interface PlanOverviewProps {
   onCreateSession: () => void;
   onRenamePlan: (planId: string, courseTitle: string) => Promise<boolean>;
   onUpdateStudyChapters: (planId: string, studyChapters: string[]) => Promise<boolean>;
+  onUpdatePlanProgress: (input: {
+    planId: string;
+    scheduleIds: string[];
+    status: string;
+    note?: string;
+  }) => Promise<boolean>;
+  onAnswerPlanningQuestion: (input: {
+    planId: string;
+    questionId: string;
+    answer: string;
+  }) => Promise<boolean>;
 }
 
 export function PlanOverview({
@@ -31,11 +42,14 @@ export function PlanOverview({
   onCreateSession,
   onRenamePlan,
   onUpdateStudyChapters,
+  onUpdatePlanProgress,
+  onAnswerPlanningQuestion,
 }: PlanOverviewProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingStudyChapters, setIsEditingStudyChapters] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [studyChaptersDraft, setStudyChaptersDraft] = useState("");
+  const [planningAnswerDrafts, setPlanningAnswerDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setTitleDraft(plan?.courseTitle ?? "");
@@ -44,8 +58,18 @@ export function PlanOverview({
     setIsEditingStudyChapters(false);
   }, [plan?.courseTitle, plan?.id, plan?.studyChapters]);
 
+  useEffect(() => {
+    const nextDrafts = Object.fromEntries(
+      (plan?.planningQuestions ?? []).map((item) => [item.id, item.answer ?? ""])
+    );
+    setPlanningAnswerDrafts(nextDrafts);
+  }, [plan?.id, plan?.planningQuestions]);
+
   const activeCourseTitle = plan
-    ? resolveCourseTitle(plan.courseTitle, documentTitle)
+    ? resolveCourseTitle(
+        plan.courseTitle,
+        plan.creationMode === "goal_only" ? "目标导向学习计划" : documentTitle
+      )
     : "上传教材后，这里会显示当前计划。";
 
   const handleSaveTitle = async () => {
@@ -71,6 +95,10 @@ export function PlanOverview({
       setIsEditingStudyChapters(false);
     }
   };
+
+  const pendingPlanningQuestions = (plan?.planningQuestions ?? []).filter(
+    (item) => item.status !== "answered"
+  );
 
   return (
     <section style={styles.wrap}>
@@ -145,7 +173,9 @@ export function PlanOverview({
             </div>
             <div style={styles.metaItem}>
               <dt style={styles.metaKey}>教材</dt>
-              <dd style={styles.metaVal}>{documentTitle}</dd>
+              <dd style={styles.metaVal}>
+                {plan.creationMode === "goal_only" ? "仅学习目标" : documentTitle}
+              </dd>
             </div>
             <div style={styles.metaItem}>
               <dt style={styles.metaKey}>教师人格</dt>
@@ -189,6 +219,148 @@ export function PlanOverview({
             </div>
           ) : null}
 
+          <div style={styles.progressCard}>
+            <div style={styles.progressHead}>
+              <div style={styles.sectionHeadMeta}>
+                <span style={styles.sectionLabel}>完成度</span>
+                <span style={styles.count}>
+                  {plan.progressSummary.completedScheduleCount}/{plan.progressSummary.totalScheduleCount}
+                </span>
+              </div>
+              <span style={styles.progressPercent}>
+                {plan.progressSummary.completionPercent}%
+              </span>
+            </div>
+            <div style={styles.progressBarTrack}>
+              <div
+                style={{
+                  ...styles.progressBarFill,
+                  width: `${Math.max(0, Math.min(100, plan.progressSummary.completionPercent))}%`
+                }}
+              />
+            </div>
+            <div style={styles.progressStats}>
+              <span style={styles.progressStat}>进行中 {plan.progressSummary.inProgressScheduleCount}</span>
+              <span style={styles.progressStat}>待处理 {plan.progressSummary.pendingScheduleCount}</span>
+              <span style={styles.progressStat}>阻塞 {plan.progressSummary.blockedScheduleCount}</span>
+            </div>
+            <div style={styles.scheduleList}>
+              {plan.schedule.map((item) => (
+                <div key={item.id} style={styles.scheduleItem}>
+                  <div style={styles.scheduleMeta}>
+                    <span style={styles.scheduleTitle}>{item.title}</span>
+                    <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
+                  </div>
+                  <span style={styles.scheduleFocus}>{item.focus}</span>
+                  <div style={styles.scheduleActions}>
+                    <button
+                      type="button"
+                      style={styles.ghostButton}
+                      disabled={isBusy || item.status === "in_progress"}
+                      onClick={() => {
+                        void onUpdatePlanProgress({
+                          planId: plan.id,
+                          scheduleIds: [item.id],
+                          status: "in_progress"
+                        });
+                      }}
+                    >
+                      开始
+                    </button>
+                    <button
+                      type="button"
+                      style={styles.primaryButton}
+                      disabled={isBusy || item.status === "completed"}
+                      onClick={() => {
+                        void onUpdatePlanProgress({
+                          planId: plan.id,
+                          scheduleIds: [item.id],
+                          status: "completed"
+                        });
+                      }}
+                    >
+                      完成
+                    </button>
+                    <button
+                      type="button"
+                      style={styles.ghostButton}
+                      disabled={isBusy || item.status === "planned"}
+                      onClick={() => {
+                        void onUpdatePlanProgress({
+                          planId: plan.id,
+                          scheduleIds: [item.id],
+                          status: "planned"
+                        });
+                      }}
+                    >
+                      重置
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {plan.planningQuestions.length ? (
+            <div style={styles.questionCard}>
+              <div style={styles.sectionHead}>
+                <div style={styles.sectionHeadMeta}>
+                  <span style={styles.sectionLabel}>规划问题</span>
+                  <span style={styles.count}>{pendingPlanningQuestions.length} 条待答</span>
+                </div>
+              </div>
+              <div style={styles.questionList}>
+                {plan.planningQuestions.map((item) => (
+                  <div key={item.id} style={styles.questionItem}>
+                    <div style={styles.questionHeader}>
+                      <strong style={styles.questionTitle}>{item.question}</strong>
+                      <span style={scheduleStatusStyle(item.status === "answered" ? "completed" : "planned")}>
+                        {item.status === "answered" ? "已回答" : "待回答"}
+                      </span>
+                    </div>
+                    {item.reason ? <span style={styles.questionReason}>原因：{item.reason}</span> : null}
+                    {item.assumptions.length ? (
+                      <span style={styles.questionReason}>
+                        继续规划时采用的保守假设：{item.assumptions.join("；")}
+                      </span>
+                    ) : null}
+                    <textarea
+                      value={planningAnswerDrafts[item.id] ?? ""}
+                      onChange={(event) =>
+                        setPlanningAnswerDrafts((current) => ({
+                          ...current,
+                          [item.id]: event.target.value
+                        }))
+                      }
+                      style={styles.focusTextarea}
+                      placeholder="补充你的回答，后续可用于继续修订计划。"
+                      disabled={isBusy}
+                    />
+                    <div style={styles.titleActions}>
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.primaryButton,
+                          ...((isBusy || !(planningAnswerDrafts[item.id] ?? "").trim()) ? styles.buttonDisabled : {})
+                        }}
+                        disabled={isBusy || !(planningAnswerDrafts[item.id] ?? "").trim()}
+                        onClick={() => {
+                          void onAnswerPlanningQuestion({
+                            planId: plan.id,
+                            questionId: item.id,
+                            answer: planningAnswerDrafts[item.id] ?? ""
+                          });
+                        }}
+                      >
+                        保存回答
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div style={styles.actionRow}>
             {hasSession ? (
               <span style={styles.sessionConnected}>章节会话已连接</span>
@@ -197,12 +369,12 @@ export function PlanOverview({
                 type="button"
                 style={{
                   ...styles.primaryButton,
-                  ...(isBusy ? styles.buttonDisabled : {})
+                  ...((isBusy || plan.creationMode === "goal_only") ? styles.buttonDisabled : {})
                 }}
                 onClick={onCreateSession}
-                disabled={isBusy}
+                disabled={isBusy || plan.creationMode === "goal_only"}
               >
-                {isBusy ? "创建中…" : "创建章节会话"}
+                {plan.creationMode === "goal_only" ? "仅目标计划暂不支持章节会话" : isBusy ? "创建中…" : "创建章节会话"}
               </button>
             )}
           </div>
@@ -275,7 +447,7 @@ export function PlanOverview({
               <span style={styles.idx}>{index + 1}</span>
               <div style={styles.chapterItem}>
                 <span style={styles.chapterTitle}>{focus}</span>
-                {plan ? (
+                {plan && document ? (
                   (() => {
                     const studyUnit = resolveStudyUnitForChapter(plan, focus, index);
                     if (!studyUnit) return null;
@@ -508,6 +680,114 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     fontSize: 11
   },
+  progressCard: {
+    display: "grid",
+    gap: 10,
+    padding: 12,
+    border: "1px solid var(--border)",
+    background: "white",
+    marginBottom: 14
+  },
+  progressHead: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12
+  },
+  progressPercent: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: "var(--accent)"
+  },
+  progressBarTrack: {
+    height: 8,
+    background: "color-mix(in srgb, var(--accent-soft) 35%, white)",
+    overflow: "hidden"
+  },
+  progressBarFill: {
+    height: "100%",
+    background: "var(--accent)"
+  },
+  progressStats: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  progressStat: {
+    padding: "4px 8px",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    fontSize: 12,
+    color: "var(--muted)"
+  },
+  scheduleList: {
+    display: "grid",
+    gap: 8
+  },
+  scheduleItem: {
+    display: "grid",
+    gap: 6,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    background: "var(--panel)"
+  },
+  scheduleMeta: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap"
+  },
+  scheduleTitle: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--ink)"
+  },
+  scheduleFocus: {
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)"
+  },
+  scheduleActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  questionCard: {
+    display: "grid",
+    gap: 10,
+    padding: 12,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    marginBottom: 14
+  },
+  questionList: {
+    display: "grid",
+    gap: 10
+  },
+  questionItem: {
+    display: "grid",
+    gap: 8,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    background: "white"
+  },
+  questionHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexWrap: "wrap"
+  },
+  questionTitle: {
+    fontSize: 13,
+    color: "var(--ink)"
+  },
+  questionReason: {
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--muted)"
+  },
   section: {
     paddingTop: 16,
     paddingBottom: 4,
@@ -662,6 +942,58 @@ function formatDate(value: string) {
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+function formatScheduleStatus(status: string) {
+  switch (status) {
+    case "completed":
+      return "已完成";
+    case "in_progress":
+      return "进行中";
+    case "blocked":
+      return "阻塞";
+    case "skipped":
+      return "已跳过";
+    default:
+      return "待开始";
+  }
+}
+
+function scheduleStatusStyle(status: string): CSSProperties {
+  if (status === "completed") {
+    return {
+      padding: "3px 8px",
+      border: "1px solid color-mix(in srgb, var(--accent) 20%, var(--border))",
+      background: "color-mix(in srgb, var(--accent-soft) 65%, white)",
+      color: "var(--accent)",
+      fontSize: 11
+    };
+  }
+  if (status === "in_progress") {
+    return {
+      padding: "3px 8px",
+      border: "1px solid color-mix(in srgb, #c97a00 24%, var(--border))",
+      background: "rgba(201, 122, 0, 0.08)",
+      color: "#8a5700",
+      fontSize: 11
+    };
+  }
+  if (status === "blocked") {
+    return {
+      padding: "3px 8px",
+      border: "1px solid rgba(180, 35, 24, 0.24)",
+      background: "rgba(180, 35, 24, 0.06)",
+      color: "var(--danger, #b42318)",
+      fontSize: 11
+    };
+  }
+  return {
+    padding: "3px 8px",
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--muted)",
+    fontSize: 11
+  };
 }
 
 function countSceneNodes(nodes: import("@vibe-learner/shared").SceneTreeNode[]): number {

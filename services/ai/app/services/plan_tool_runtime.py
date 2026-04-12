@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Callable
+from uuid import uuid4
 
-from app.models.domain import DocumentDebugRecord, StudyUnitRecord
+from app.models.domain import DocumentDebugRecord, PlanningQuestionRecord, StudyUnitRecord
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.plan_prompt import (
     build_study_unit_detail_map,
@@ -29,6 +31,8 @@ class PlanToolRuntimeContext:
     debug_report: DocumentDebugRecord | None
     document_path: str | None
     multimodal_enabled: bool
+    planning_questions: list[PlanningQuestionRecord]
+    progress_callback: Callable[[str, dict[str, object]], None] | None
 
 
 @dataclass(frozen=True)
@@ -63,6 +67,9 @@ class PlanToolRuntime:
 
     def current_study_units(self) -> list[StudyUnitRecord]:
         return list(self.context.study_units)
+
+    def current_planning_questions(self) -> list[PlanningQuestionRecord]:
+        return list(self.context.planning_questions)
 
     def public_specs(self) -> list[dict[str, str]]:
         return [
@@ -126,6 +133,7 @@ def build_plan_tool_runtime(
     debug_report: DocumentDebugRecord | None = None,
     document_path: str | None = None,
     multimodal_enabled: bool = False,
+    progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     disabled_tools: set[str] | None = None,
 ) -> PlanToolRuntime:
     return PlanToolRuntime(
@@ -135,6 +143,8 @@ def build_plan_tool_runtime(
             debug_report=debug_report,
             document_path=document_path,
             multimodal_enabled=multimodal_enabled,
+            planning_questions=[],
+            progress_callback=progress_callback,
         ),
         disabled_tools=disabled_tools,
     )
@@ -393,6 +403,24 @@ def _execute_ask_planning_question(
             text = str(item).strip()
             if text:
                 assumptions.append(text)
+    question_record = PlanningQuestionRecord(
+        id=f"planning-question-{uuid4().hex[:10]}",
+        question=question,
+        reason=reason,
+        assumptions=assumptions,
+        created_at=_now(),
+    )
+    context.planning_questions.append(question_record)
+    _emit_progress(
+        context.progress_callback,
+        "planning_question_asked",
+        {
+            "question_id": question_record.id,
+            "question": question,
+            "reason": reason,
+            "assumptions": assumptions,
+        },
+    )
     follow_up_text = [f"需要向学习者确认：{question}"]
     if reason:
         follow_up_text.append(f"原因：{reason}")
@@ -405,6 +433,7 @@ def _execute_ask_planning_question(
         payload={
             "ok": True,
             "tool_name": "ask_planning_question",
+            "question_id": question_record.id,
             "question": question,
             "reason": reason,
             "assumptions": assumptions,
@@ -730,3 +759,17 @@ def _build_study_unit_revision_summary(
     if rationale:
         summary += f"；原因：{rationale}"
     return summary
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _emit_progress(
+    callback: Callable[[str, dict[str, object]], None] | None,
+    stage: str,
+    payload: dict[str, object],
+) -> None:
+    if callback is None:
+        return
+    callback(stage, payload)

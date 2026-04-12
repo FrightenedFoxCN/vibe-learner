@@ -18,6 +18,7 @@ from app.models.domain import (
     DocumentDebugRecord,
     LearningGoalInput,
     PlanGenerationTraceRecord,
+    PlanningQuestionRecord,
     PersonaProfile,
     PersonaSlot,
     RichTextBlockRecord,
@@ -365,6 +366,7 @@ class PlanModelReply:
     today_tasks: list[str]
     schedule: list[PlanScheduleItem]
     revised_study_units: list[StudyUnitRecord] | None = None
+    planning_questions: list[PlanningQuestionRecord] | None = None
     debug_trace: PlanGenerationTraceRecord | None = None
 
 
@@ -379,7 +381,9 @@ class ModelProvider:
         section_context: str = "",
         memory_context: str = "",
         scene_context: str = "",
+        active_plan_context: str = "",
         scene_tool_runtime: Any | None = None,
+        plan_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
@@ -492,7 +496,9 @@ class MockModelProvider(ModelProvider):
         section_context: str = "",
         memory_context: str = "",
         scene_context: str = "",
+        active_plan_context: str = "",
         scene_tool_runtime: Any | None = None,
+        plan_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
@@ -933,7 +939,9 @@ class OpenAIModelProvider(MockModelProvider):
         section_context: str = "",
         memory_context: str = "",
         scene_context: str = "",
+        active_plan_context: str = "",
         scene_tool_runtime: Any | None = None,
+        plan_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
         conversation_history: list[dict[str, str]] | None = None,
         debug_report: DocumentDebugRecord | None = None,
@@ -941,6 +949,11 @@ class OpenAIModelProvider(MockModelProvider):
     ) -> ModelReply:
         history = conversation_history or []
         persona_runtime_prompt = render_persona_runtime_instruction(persona)
+        plan_tool_instruction = (
+            "如需读取或更新当前学习计划的完成度，可调用 read_learning_plan_progress、update_learning_plan_progress；更新时必须引用排期项 ID，并只修改当前会话绑定计划。"
+            if plan_tool_runtime is not None
+            else "当前会话没有绑定可操作的学习计划进度。"
+        )
         scene_tool_instruction = (
             "如需读取或修改当前会话绑定场景，可调用 read_scene_overview、add_scene、move_to_scene、add_object、update_object_description、delete_object；所有场景修改都必须限制在当前会话绑定场景内。"
             if scene_tool_runtime is not None
@@ -955,6 +968,7 @@ class OpenAIModelProvider(MockModelProvider):
                 .replace("{{SESSION_RUNTIME_CONTEXT}}", session_prompt.strip())
                 .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
                 .replace("{{PERSONA_EVENT_GUIDANCE}}", _build_persona_event_guidance(persona))
+                .replace("{{PLAN_TOOL_INSTRUCTION}}", plan_tool_instruction)
                 .replace("{{SCENE_TOOL_INSTRUCTION}}", scene_tool_instruction),
             }
         ]
@@ -966,6 +980,7 @@ class OpenAIModelProvider(MockModelProvider):
                 .replace("{{SECTION_ID}}", section_id)
                 .replace("{{SECTION_CONTEXT}}", section_context or "无")
                 .replace("{{MEMORY_CONTEXT}}", memory_context or "无")
+                .replace("{{PLAN_CONTEXT}}", active_plan_context or "无")
                 .replace("{{SCENE_CONTEXT}}", scene_context or "无")
                 .replace("{{LEARNER_MESSAGE}}", message)
                 .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
@@ -1002,6 +1017,7 @@ class OpenAIModelProvider(MockModelProvider):
                 multimodal_enabled=self.chat_multimodal_enabled,
                 debug_report=debug_report,
                 document_path=document_path,
+                plan_tool_runtime=plan_tool_runtime,
                 scene_tool_runtime=scene_tool_runtime,
                 disabled_tools=round_disabled_tools,
             )
@@ -1036,6 +1052,7 @@ class OpenAIModelProvider(MockModelProvider):
                         memory_hits=memory_trace_hits or [],
                         debug_report=debug_report,
                         document_path=document_path,
+                        plan_tool_runtime=plan_tool_runtime,
                         scene_tool_runtime=scene_tool_runtime,
                         disabled_tools=round_disabled_tools,
                     )
@@ -1525,6 +1542,7 @@ class OpenAIModelProvider(MockModelProvider):
             debug_report=debug_report,
             document_path=document_path,
             tools_enabled=self.plan_tools_enabled,
+            progress_callback=progress_callback,
         )
         active_tool_runtime = tool_runtime
         run_result = self._run_plan_model(
@@ -1546,6 +1564,7 @@ class OpenAIModelProvider(MockModelProvider):
                 debug_report=debug_report,
                 document_path=document_path,
                 tools_enabled=fallback_tools_enabled,
+                progress_callback=progress_callback,
             )
             logger.warning(
                 "model.plan.fallback start primary=%s fallback=%s tools_enabled=%s",
@@ -1592,6 +1611,7 @@ class OpenAIModelProvider(MockModelProvider):
             for item in parsed.get("schedule", [])
         ]
         active_study_units = active_tool_runtime.current_study_units()
+        planning_questions = active_tool_runtime.current_planning_questions()
         return PlanModelReply(
             course_title=str(
                 parsed.get("course_title")
@@ -1608,6 +1628,7 @@ class OpenAIModelProvider(MockModelProvider):
             today_tasks=[str(item) for item in parsed.get("today_tasks", [])],
             schedule=schedule_items,
             revised_study_units=active_study_units if _study_units_changed(study_units, active_study_units) else None,
+            planning_questions=planning_questions,
             debug_trace=run_result.trace,
         )
 
@@ -1619,6 +1640,7 @@ class OpenAIModelProvider(MockModelProvider):
         debug_report: DocumentDebugRecord | None,
         document_path: str | None,
         tools_enabled: bool,
+        progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ):
         if not tools_enabled:
             return build_plan_tool_runtime()
@@ -1628,6 +1650,7 @@ class OpenAIModelProvider(MockModelProvider):
             debug_report=debug_report,
             document_path=document_path,
             multimodal_enabled=self.multimodal_enabled,
+            progress_callback=progress_callback,
             disabled_tools=(self.plan_disabled_tools_provider() if self.plan_disabled_tools_provider else set()),
         )
 
@@ -1888,6 +1911,7 @@ def _chat_tools(
     multimodal_enabled: bool,
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
+    plan_tool_runtime: Any | None = None,
     scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
 ) -> list[dict[str, object]]:
@@ -2030,6 +2054,9 @@ def _chat_tools(
             }
         )
 
+    if plan_tool_runtime is not None:
+        tools.extend(plan_tool_runtime.tool_specs())
+
     if scene_tool_runtime is not None:
         tools.extend(scene_tool_runtime.tool_specs())
 
@@ -2049,6 +2076,7 @@ def _execute_chat_tool_call(
     memory_hits: list[dict[str, Any]],
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
+    plan_tool_runtime: Any | None = None,
     scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
 ) -> dict[str, Any]:
@@ -2128,6 +2156,15 @@ def _execute_chat_tool_call(
             "hit_count": min(len(memory_hits), top_k),
             "hits": memory_hits[:top_k],
         }
+    elif plan_tool_runtime is not None and bool(getattr(plan_tool_runtime, "has_tool", lambda _name: False)(tool_name)):
+        try:
+            result = plan_tool_runtime.execute_tool(tool_name, arguments)
+        except HTTPException as exc:
+            result = {
+                "ok": False,
+                "error": str(exc.detail),
+                "tool_name": tool_name,
+            }
     elif scene_tool_runtime is not None:
         try:
             result = scene_tool_runtime.execute_tool(tool_name, arguments)

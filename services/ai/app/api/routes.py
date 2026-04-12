@@ -30,9 +30,11 @@ from app.models.api import (
     ExerciseGenerateResponse,
     LearningPlanCreateRequest,
     LearningPlanListResponse,
+    LearningPlanProgressUpdateRequest,
     LearningPlanResponse,
     LearningPlanUpdateRequest,
     ModelToolConfigResponse,
+    PlanningQuestionAnswerRequest,
     RuntimeSettingsResponse,
     RuntimeSettingsProbeRequest,
     RuntimeSettingsProbeResponse,
@@ -75,6 +77,7 @@ from app.models.api import (
     TokenUsageDailyBucket,
 )
 from app.models.domain import PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
+from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -841,6 +844,22 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
         if session.scene_instance_id
         else None
     )
+    active_plan = None
+    if session.plan_id:
+        try:
+            active_plan = container.plan_service.require_plan(session.plan_id)
+        except HTTPException:
+            active_plan = None
+    if active_plan is None:
+        active_plan = container.plan_service.find_latest_plan(
+            document_id=session.document_id,
+            persona_id=session.persona_id,
+        )
+    plan_tool_runtime = (
+        LearningPlanChatToolRuntime(container.plan_service, active_plan.id)
+        if active_plan is not None
+        else None
+    )
     try:
         response = container.pedagogy_orchestrator.generate_chat_reply(
             session_id=session_id,
@@ -852,8 +871,10 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
             document_path=document.stored_path,
             previous_turns=session.turns,
             memory_sessions=memory_sessions,
+            active_plan_context=plan_tool_runtime.plan_context() if plan_tool_runtime else "",
             active_scene_summary=_scene_profile_summary(session),
             active_scene_context=scene_tool_runtime.scene_context() if scene_tool_runtime else "",
+            plan_tool_runtime=plan_tool_runtime,
             scene_tool_runtime=scene_tool_runtime,
         )
     except RuntimeError as exc:
@@ -878,11 +899,13 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
 def list_study_sessions(
     document_id: str | None = None,
     persona_id: str | None = None,
+    plan_id: str | None = None,
     section_id: str | None = None,
 ) -> StudySessionListResponse:
     sessions = container.study_session_service.list_sessions(
         document_id=document_id,
         persona_id=persona_id,
+        plan_id=plan_id,
         section_id=section_id,
     )
     return StudySessionListResponse(
@@ -978,6 +1001,11 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
     document = container.document_service.require_document(payload.document_id)
+    plan_id = payload.plan_id.strip() if payload.plan_id else None
+    if plan_id:
+        plan = container.plan_service.require_plan(plan_id)
+        if plan.document_id != payload.document_id or plan.persona_id != payload.persona_id:
+            raise HTTPException(status_code=400, detail="plan_session_binding_mismatch")
     section_title = payload.section_title.strip() or _resolve_section_title(
         document=document,
         section_id=payload.section_id,
@@ -1004,6 +1032,7 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         session_id=session_id,
         document_id=payload.document_id,
         persona_id=payload.persona_id,
+        plan_id=plan_id,
         scene_instance_id=bound_scene.scene_instance_id if bound_scene else "",
         scene_profile=session_scene_profile,
         section_id=payload.section_id,
@@ -1051,10 +1080,11 @@ def _ensure_session_scene_binding(session):
 
 @router.post("/learning-plans", response_model=LearningPlanResponse)
 def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResponse:
+    stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
     recorder = StreamReportRecorder(
         store=container.store,
         category=LEARNING_PLAN_STREAM_CATEGORY,
-        document_id=payload.document_id,
+        document_id=stream_document_id,
         stream_kind="learning_plan",
     )
     logger.info(
@@ -1063,17 +1093,21 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
         payload.persona_id,
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
-    document = container.document_service.require_document(payload.document_id)
-    debug_report = (
-        container.document_service.require_debug_report(payload.document_id)
-        if document.debug_ready
-        else None
-    )
+    document = None
+    debug_report = None
+    if payload.document_id:
+        document = container.document_service.require_document(payload.document_id)
+        debug_report = (
+            container.document_service.require_debug_report(payload.document_id)
+            if document.debug_ready
+            else None
+        )
     recorder.emit(
         "learning_plan_started",
         {
             "document_id": payload.document_id,
             "persona_id": payload.persona_id,
+            "creation_mode": "document" if payload.document_id else "goal_only",
         },
     )
     try:
@@ -1110,6 +1144,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
         {
             "document_id": payload.document_id,
             "plan_id": plan.id,
+            "creation_mode": plan.creation_mode,
         },
     )
     return _into_response(LearningPlanResponse, plan)
@@ -1128,17 +1163,21 @@ def create_learning_plan_stream(
     payload: LearningPlanCreateRequest,
 ) -> StreamingResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
-    document = container.document_service.require_document(payload.document_id)
-    debug_report = (
-        container.document_service.require_debug_report(payload.document_id)
-        if document.debug_ready
-        else None
-    )
+    document = None
+    debug_report = None
+    if payload.document_id:
+        document = container.document_service.require_document(payload.document_id)
+        debug_report = (
+            container.document_service.require_debug_report(payload.document_id)
+            if document.debug_ready
+            else None
+        )
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
+    stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
     recorder = StreamReportRecorder(
         store=container.store,
         category=LEARNING_PLAN_STREAM_CATEGORY,
-        document_id=payload.document_id,
+        document_id=stream_document_id,
         stream_kind="learning_plan",
     )
 
@@ -1153,6 +1192,7 @@ def create_learning_plan_stream(
                 {
                     "document_id": payload.document_id,
                     "persona_id": payload.persona_id,
+                    "creation_mode": "document" if payload.document_id else "goal_only",
                 },
             )
             plan = container.plan_service.create_plan(
@@ -1168,6 +1208,7 @@ def create_learning_plan_stream(
                 {
                     "document_id": payload.document_id,
                     "plan_id": plan.id,
+                    "creation_mode": plan.creation_mode,
                 },
             )
             event_queue.put(
@@ -1176,6 +1217,7 @@ def create_learning_plan_stream(
                     "payload": {
                         "document_id": payload.document_id,
                         "plan_id": plan.id,
+                        "creation_mode": plan.creation_mode,
                     },
                     "plan": plan.model_dump(mode="json"),
                 }
@@ -1249,6 +1291,36 @@ def update_learning_plan(
         plan_id=plan_id,
         course_title=payload.course_title,
         study_chapters=payload.study_chapters,
+    )
+    return _into_response(LearningPlanResponse, plan)
+
+
+@router.patch("/learning-plans/{plan_id}/progress", response_model=LearningPlanResponse)
+def update_learning_plan_progress(
+    plan_id: str,
+    payload: LearningPlanProgressUpdateRequest,
+) -> LearningPlanResponse:
+    plan = container.plan_service.update_progress(
+        plan_id=plan_id,
+        schedule_ids=payload.schedule_ids,
+        status=payload.status,
+        note=payload.note,
+        actor="user",
+        source="ui",
+    )
+    return _into_response(LearningPlanResponse, plan)
+
+
+@router.patch("/learning-plans/{plan_id}/planning-questions/{question_id}", response_model=LearningPlanResponse)
+def answer_learning_plan_question(
+    plan_id: str,
+    question_id: str,
+    payload: PlanningQuestionAnswerRequest,
+) -> LearningPlanResponse:
+    plan = container.plan_service.answer_planning_question(
+        plan_id=plan_id,
+        question_id=question_id,
+        answer=payload.answer,
     )
     return _into_response(LearningPlanResponse, plan)
 

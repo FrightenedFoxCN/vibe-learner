@@ -21,6 +21,7 @@ from app.models.domain import (
     LearningPlanRecord,
     LearningGoalInput,
     PlanGenerationTraceRecord,
+    PlanningQuestionRecord,
     SceneLayerStateRecord,
     SceneObjectStateRecord,
     SceneProfileRecord,
@@ -30,6 +31,7 @@ from app.models.domain import (
 )
 from app.services.documents import DocumentService
 from app.services.document_parser import DocumentParser, ParsedPage
+from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import (
     MockModelProvider,
@@ -3112,6 +3114,223 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(updated.study_chapters, ["图形基础", "三角形证明"])
         persisted = self.plan_service.require_plan(plan.id)
         self.assertEqual(persisted.study_chapters, ["图形基础", "三角形证明"])
+
+    def test_plan_service_can_create_goal_only_plan(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+
+        plan = self.plan_service.create_plan(
+            goal=LearningGoalInput(
+                document_id="",
+                persona_id=persona.id,
+                objective="先掌握极限的定义，再补上左右极限与连续性的联系",
+            ),
+            document=None,
+            persona_name=persona.name,
+            persona=persona,
+        )
+
+        self.assertEqual(plan.creation_mode, "goal_only")
+        self.assertEqual(plan.document_id, "")
+        self.assertGreaterEqual(len(plan.study_units), 3)
+        self.assertTrue(plan.schedule)
+        self.assertEqual(plan.progress_summary.total_schedule_count, len(plan.schedule))
+
+    def test_plan_service_updates_progress_summary_and_events(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        document = DocumentResponse.model_validate(
+            {
+                "id": "doc-progress-plan",
+                "title": "Statistics",
+                "original_filename": "statistics.pdf",
+                "stored_path": "/tmp/statistics.pdf",
+                "status": "processed",
+                "ocr_status": "completed",
+                "created_at": "2026-04-09T00:00:00+00:00",
+                "updated_at": "2026-04-09T00:00:00+00:00",
+                "sections": [],
+                "study_units": [
+                    {
+                        "id": "doc-progress-plan:study-unit:1",
+                        "document_id": "doc-progress-plan",
+                        "title": "Distributions",
+                        "page_start": 1,
+                        "page_end": 16,
+                        "unit_kind": "chapter",
+                        "include_in_plan": True,
+                        "source_section_ids": [],
+                        "summary": "分布概念。",
+                        "confidence": 0.9,
+                    }
+                ],
+                "study_unit_count": 1,
+                "page_count": 16,
+                "chunk_count": 4,
+                "preview_excerpt": "sample",
+                "debug_ready": True,
+            }
+        )
+
+        plan = self.plan_service.create_plan(
+            goal=LearningGoalInput(
+                document_id=document.id,
+                persona_id=persona.id,
+                objective="理解离散分布",
+            ),
+            document=document,
+            persona_name=persona.name,
+            persona=persona,
+        )
+
+        updated = self.plan_service.update_progress(
+            plan_id=plan.id,
+            schedule_ids=[plan.schedule[0].id],
+            status="completed",
+            note="Learner finished the first reading cycle.",
+            actor="user",
+            source="ui",
+        )
+
+        self.assertEqual(updated.schedule[0].status, "completed")
+        self.assertEqual(updated.progress_summary.completed_schedule_count, 1)
+        self.assertGreaterEqual(updated.progress_summary.completion_percent, 50)
+        self.assertEqual(updated.progress_events[-1].actor, "user")
+        self.assertEqual(updated.progress_events[-1].source, "ui")
+
+    def test_plan_service_persists_planning_questions_from_model(self) -> None:
+        arrangement_service = StudyArrangementService()
+        store = LocalJsonStore(Path(self.temp_dir.name) / "plan-question-case")
+        provider = MockModelProvider()
+        service = LearningPlanService(store, arrangement_service, provider)
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        document = DocumentResponse.model_validate(
+            {
+                "id": "doc-question-plan",
+                "title": "Calculus",
+                "original_filename": "calculus.pdf",
+                "stored_path": "/tmp/calculus.pdf",
+                "status": "processed",
+                "ocr_status": "completed",
+                "created_at": "2026-04-09T00:00:00+00:00",
+                "updated_at": "2026-04-09T00:00:00+00:00",
+                "sections": [],
+                "study_units": [
+                    {
+                        "id": "doc-question-plan:study-unit:1",
+                        "document_id": "doc-question-plan",
+                        "title": "Limits",
+                        "page_start": 1,
+                        "page_end": 10,
+                        "unit_kind": "chapter",
+                        "include_in_plan": True,
+                        "source_section_ids": [],
+                        "summary": "极限基础。",
+                        "confidence": 0.9,
+                    }
+                ],
+                "study_unit_count": 1,
+                "page_count": 10,
+                "chunk_count": 3,
+                "preview_excerpt": "sample",
+                "debug_ready": True,
+            }
+        )
+
+        with patch.object(
+            provider,
+            "generate_learning_plan",
+            return_value=PlanModelReply(
+                course_title="Calculus / Limits",
+                overview="Need one clarification.",
+                study_chapters=["Limits"],
+                today_tasks=["Clarify the learner preference."],
+                schedule=[],
+                planning_questions=[
+                    PlanningQuestionRecord(
+                        id="planning-question-1",
+                        question="这次更偏向概念打底还是刷题提分？",
+                        reason="学习目标需要进一步聚焦。",
+                        assumptions=["先按概念打底推进。"],
+                        created_at="2026-04-09T00:00:00+00:00",
+                    )
+                ],
+            ),
+        ):
+            plan = service.create_plan(
+                goal=LearningGoalInput(
+                    document_id=document.id,
+                    persona_id=persona.id,
+                    objective="掌握极限",
+                ),
+                document=document,
+                persona_name=persona.name,
+                persona=persona,
+            )
+
+        self.assertEqual(len(plan.planning_questions), 1)
+        self.assertEqual(plan.planning_questions[0].status, "pending")
+        persisted = service.require_plan(plan.id)
+        self.assertEqual(persisted.planning_questions[0].question, "这次更偏向概念打底还是刷题提分？")
+
+    def test_learning_plan_chat_tool_runtime_updates_progress(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        document = DocumentResponse.model_validate(
+            {
+                "id": "doc-plan-runtime",
+                "title": "Algebra",
+                "original_filename": "algebra.pdf",
+                "stored_path": "/tmp/algebra.pdf",
+                "status": "processed",
+                "ocr_status": "completed",
+                "created_at": "2026-04-09T00:00:00+00:00",
+                "updated_at": "2026-04-09T00:00:00+00:00",
+                "sections": [],
+                "study_units": [
+                    {
+                        "id": "doc-plan-runtime:study-unit:1",
+                        "document_id": "doc-plan-runtime",
+                        "title": "Matrices",
+                        "page_start": 1,
+                        "page_end": 12,
+                        "unit_kind": "chapter",
+                        "include_in_plan": True,
+                        "source_section_ids": [],
+                        "summary": "矩阵基础。",
+                        "confidence": 0.9,
+                    }
+                ],
+                "study_unit_count": 1,
+                "page_count": 12,
+                "chunk_count": 3,
+                "preview_excerpt": "sample",
+                "debug_ready": True,
+            }
+        )
+
+        plan = self.plan_service.create_plan(
+            goal=LearningGoalInput(
+                document_id=document.id,
+                persona_id=persona.id,
+                objective="掌握矩阵基础",
+            ),
+            document=document,
+            persona_name=persona.name,
+            persona=persona,
+        )
+
+        runtime = LearningPlanChatToolRuntime(self.plan_service, plan.id)
+        payload = runtime.execute_tool(
+            "update_learning_plan_progress",
+            {
+                "schedule_id": plan.schedule[0].id,
+                "status": "completed",
+                "note": "The learner finished the first task.",
+            },
+        )
+
+        self.assertEqual(payload["tool_name"], "update_learning_plan_progress")
+        self.assertEqual(payload["progress_summary"]["completed_schedule_count"], 1)
+        refreshed = self.plan_service.require_plan(plan.id)
+        self.assertEqual(refreshed.schedule[0].status, "completed")
 
     def test_plan_service_deletes_plan(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")

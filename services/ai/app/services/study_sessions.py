@@ -24,6 +24,7 @@ class StudySessionService:
         session_id: str | None = None,
         document_id: str,
         persona_id: str,
+        plan_id: str | None = None,
         scene_instance_id: str = "",
         scene_profile: SceneProfileRecord | None = None,
         section_id: str,
@@ -35,6 +36,7 @@ class StudySessionService:
             id=session_id or f"session-{uuid4().hex[:10]}",
             document_id=document_id,
             persona_id=persona_id,
+            plan_id=plan_id,
             scene_instance_id=scene_instance_id,
             scene_profile=scene_profile,
             section_id=section_id,
@@ -150,6 +152,7 @@ class StudySessionService:
         *,
         document_id: str | None = None,
         persona_id: str | None = None,
+        plan_id: str | None = None,
         scene_id: str | None = None,
         section_id: str | None = None,
     ) -> list[StudySessionRecord]:
@@ -159,6 +162,8 @@ class StudySessionService:
             result = [session for session in result if session.document_id == document_id]
         if persona_id:
             result = [session for session in result if session.persona_id == persona_id]
+        if plan_id:
+            result = [session for session in result if session.plan_id == plan_id]
         if scene_id:
             result = [
                 session

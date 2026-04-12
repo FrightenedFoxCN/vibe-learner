@@ -75,6 +75,7 @@ export interface LearningPlan {
   id: string;
   documentId: string;
   personaId: string;
+  creationMode: "document" | "goal_only";
   // 系统生成的教材贴合型课程标题，用于计划头部展示。
   courseTitle: string;
   // Stable learner-authored study goal captured at plan creation time.
@@ -91,7 +92,41 @@ export interface LearningPlan {
   todayTasks: string[];
   studyUnits: StudyUnit[];
   schedule: StudyScheduleItem[];
+  progressSummary: LearningPlanProgressSummary;
+  progressEvents: LearningPlanProgressEvent[];
+  planningQuestions: PlanningQuestion[];
   createdAt: string;
+}
+
+export interface LearningPlanProgressSummary {
+  totalScheduleCount: number;
+  completedScheduleCount: number;
+  inProgressScheduleCount: number;
+  pendingScheduleCount: number;
+  blockedScheduleCount: number;
+  completionPercent: number;
+}
+
+export interface LearningPlanProgressEvent {
+  id: string;
+  actor: string;
+  source: string;
+  scheduleIds: string[];
+  status: string;
+  note: string;
+  createdAt: string;
+}
+
+export interface PlanningQuestion {
+  id: string;
+  question: string;
+  reason: string;
+  assumptions: string[];
+  answer: string;
+  status: string;
+  sourceToolName: string;
+  createdAt: string;
+  answeredAt: string;
 }
 
 export interface PlanningSectionRef {
@@ -460,6 +495,7 @@ export interface StudySessionRecord {
   id: string;
   documentId: string;
   personaId: string;
+  planId?: string | null;
   sceneInstanceId?: string;
   sceneProfile?: SceneProfile;
   sectionId: string;
