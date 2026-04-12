@@ -128,19 +128,21 @@ export function DocumentSetup({
         </label>
 
         <div style={styles.actionRow}>
-          <Link href="/scene-setup" style={styles.linkButton}>
-            去场景编辑
+          <Link href="/scene-setup" style={styles.iconButton} aria-label="打开场景编辑" title="去场景编辑">
+            <IconScene />
           </Link>
           <button
             type="button"
             style={{
-              ...styles.secondaryButton,
+              ...styles.iconButton,
               ...((!canOpenStudyDialog || isBusy) ? styles.buttonDisabled : {})
             }}
             disabled={!canOpenStudyDialog || isBusy}
             onClick={onOpenStudyDialog}
+            aria-label={hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
+            title={hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
           >
-            {hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
+            <IconChat />
           </button>
         </div>
       </section>
@@ -188,6 +190,7 @@ export function DocumentSetup({
             onGenerate({ file, objective });
           }}
         >
+          <IconUpload />
           {isBusy ? "处理中…" : "上传并生成计划"}
         </button>
 
@@ -452,38 +455,32 @@ const styles: Record<string, CSSProperties> = {
     flexWrap: "wrap",
     gap: 10
   },
-  linkButton: {
+  iconButton: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 36,
-    padding: "0 14px",
+    width: 34,
+    height: 34,
     border: "1px solid var(--border)",
     background: "white",
     color: "var(--accent)",
     fontSize: 13,
-    fontWeight: 600
-  },
-  secondaryButton: {
-    border: "1px solid var(--border-strong)",
-    minHeight: 36,
-    padding: "0 14px",
-    background: "var(--accent-soft)",
-    color: "var(--accent)",
-    fontWeight: 600,
     cursor: "pointer",
-    fontSize: 13
+    flexShrink: 0
   },
   primaryButton: {
     border: "none",
-    minHeight: 38,
-    padding: "0 18px",
+    minHeight: 36,
+    padding: "0 14px",
     background: "var(--accent)",
     color: "white",
     fontWeight: 600,
     cursor: "pointer",
     fontSize: 13,
-    justifySelf: "start"
+    justifySelf: "start",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8
   },
   buttonDisabled: {
     opacity: 0.45,
@@ -698,6 +695,36 @@ const styles: Record<string, CSSProperties> = {
 
 function formatDocumentSummary(document: DocumentRecord) {
   return `${document.title} · ${document.studyUnitCount || document.sections.length} 个单元`;
+}
+
+function IconScene() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 12l3.5-4.5L9 10l2.5-3L14 12" />
+      <path d="M2 3h12v10H2z" />
+      <circle cx="5" cy="6" r="0.8" />
+    </svg>
+  );
+}
+
+function IconChat() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 2.5h12v7H6l-4 3v-10Z" />
+      <path d="M6 5.5h4" />
+      <path d="M6 7.5h3" />
+    </svg>
+  );
+}
+
+function IconUpload() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 11V3.5" />
+      <path d="M5.5 6 8 3.5 10.5 6" />
+      <path d="M2.5 11.5v2h11v-2" />
+    </svg>
+  );
 }
 
 function formatSceneSummary(sceneProfile: SceneProfile) {

@@ -34,8 +34,10 @@ export function PlanHistory({
           style={styles.ghostButton}
           onClick={onRefresh}
           disabled={isRefreshing || isBusy}
+          aria-label={isRefreshing ? "刷新中" : "刷新计划历史"}
+          title={isRefreshing ? "刷新中…" : "刷新"}
         >
-          {isRefreshing ? "刷新中…" : "刷新"}
+          <IconRefresh />
         </button>
       </div>
       {items.length ? (
@@ -67,7 +69,8 @@ export function PlanHistory({
                     onClick={() => { if (!selected) onSelect(item.id); }}
                     disabled={selected || isBusy}
                   >
-                    {selected ? "当前计划" : "查看计划"}
+                    <IconOpenInPanel />
+                    <span>{selected ? "当前计划" : "查看计划"}</span>
                   </button>
                   <button
                     type="button"
@@ -81,8 +84,10 @@ export function PlanHistory({
                         onDelete(item.id);
                       }
                     }}
+                    aria-label={`删除计划 ${item.courseTitle || item.documentTitle}`}
+                    title="删除计划"
                   >
-                    删除
+                    <IconTrash />
                   </button>
                 </div>
               </div>
@@ -124,13 +129,17 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)"
   },
   ghostButton: {
-    minHeight: 30,
+    width: 30,
+    height: 30,
     border: "1px solid var(--border)",
-    padding: "0 10px",
+    padding: 0,
     background: "transparent",
     color: "var(--muted)",
     fontSize: 12,
-    cursor: "pointer"
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center"
   },
   list: {
     display: "grid",
@@ -183,28 +192,35 @@ const styles: Record<string, CSSProperties> = {
     gap: 8
   },
   itemButton: {
-    minHeight: 32,
+    minHeight: 30,
     border: "1px solid var(--border)",
-    padding: "0 12px",
+    padding: "0 10px",
     background: "white",
     color: "var(--ink)",
     fontSize: 12,
     fontWeight: 600,
-    cursor: "pointer"
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6
   },
   itemButtonSelected: {
     background: "var(--accent-soft)",
     color: "var(--accent)"
   },
   itemDeleteButton: {
-    minHeight: 32,
+    width: 30,
+    height: 30,
     border: "1px solid color-mix(in srgb, var(--negative) 28%, var(--border))",
-    padding: "0 12px",
+    padding: 0,
     background: "white",
     color: "var(--negative)",
     fontSize: 12,
     fontWeight: 600,
-    cursor: "pointer"
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center"
   },
   buttonDisabled: {
     opacity: 0.45,
@@ -217,6 +233,37 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13
   }
 };
+
+function IconRefresh() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 8A6 6 0 1 1 12.24 3.76" />
+      <path d="M14 2v4h-4" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4.5h11" />
+      <path d="M6 2.5h4" />
+      <rect x="4" y="4.5" width="8" height="9" />
+      <path d="M6.5 7v4" />
+      <path d="M9.5 7v4" />
+    </svg>
+  );
+}
+
+function IconOpenInPanel() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="2.5" width="12" height="11" />
+      <path d="M6 6h4" />
+      <path d="M6 9h3" />
+    </svg>
+  );
+}
 
 function formatDate(value: string) {
   if (!value) return "未知时间";
