@@ -8,7 +8,7 @@ from unittest.mock import patch
 import fitz
 from fastapi import HTTPException
 from app.api.routes import _map_plan_generation_error, get_document_planning_trace
-from app.models.api import CreatePersonaCardRequest, CreatePersonaRequest, DocumentResponse
+from app.models.api import CreatePersonaCardRequest, CreatePersonaRequest, DocumentResponse, PersonaCardGenerateRequest
 from app.models.domain import (
     ChatToolCallTraceRecord,
     Citation,
@@ -42,6 +42,7 @@ from app.services.plans import LearningPlanService
 from app.services.persona import PersonaEngine
 from app.services.persona_cards import PersonaCardLibraryService
 from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning_plan_tool_specs
+from app.services.prompt_loader import load_prompt_template
 from app.services.study_arrangement import StudyArrangementService
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
@@ -277,6 +278,96 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertNotIn("tools", payload)
         self.assertFalse(result["used_web_search"])
         self.assertEqual(result["summary"], "由关键词直接生成的导学人格。")
+
+    def test_persona_card_generate_request_allows_missing_count(self) -> None:
+        request = PersonaCardGenerateRequest(mode="keywords", input_text="学院派导师, 冷静推理")
+        self.assertIsNone(request.count)
+
+    def test_mock_text_card_generation_no_longer_clamps_to_minimum_count(self) -> None:
+        result = MockModelProvider().generate_persona_cards_from_text(
+            text="冷静分析。先给框架。",
+            count=1,
+        )
+
+        self.assertEqual(len(result["cards"]), 1)
+        self.assertEqual(result["cards"][0]["content"], "冷静分析")
+
+    def test_openai_provider_keyword_card_generation_uses_soft_count_hint(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            setting_model="gpt-setting-test",
+            timeout_seconds=3,
+        )
+
+        class FakeResponse:
+            def __init__(self, payload: dict[str, object]) -> None:
+                self.payload = payload
+
+            def read(self) -> bytes:
+                return json.dumps(self.payload).encode("utf-8")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        with patch(
+            "urllib.request.urlopen",
+            return_value=FakeResponse(
+                {
+                    "output": [
+                        {
+                            "type": "message",
+                            "content": [
+                                {
+                                    "type": "output_text",
+                                    "text": json.dumps(
+                                        {
+                                            "summary": "冷静推理型导师，擅长把复杂问题拆成线索链。",
+                                            "relationship": "并肩破案的导师",
+                                            "learner_address": "搭档",
+                                            "cards": [
+                                                {
+                                                    "title": "冷静推理式教学",
+                                                    "kind": "thinking_style",
+                                                    "label": "思维风格",
+                                                    "content": "先整理线索，再逐步排除错误路径。",
+                                                }
+                                            ],
+                                        },
+                                        ensure_ascii=False,
+                                    ),
+                                }
+                            ],
+                        }
+                    ]
+                }
+            ),
+        ) as mocked_urlopen:
+            provider.generate_persona_cards_from_keywords(
+                keywords="侦探导师, 冷静推理",
+                count=None,
+            )
+
+        request = mocked_urlopen.call_args.args[0]
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertIn("card_count_hint: 未指定", payload["input"])
+        self.assertIn("只是数量偏好", payload["instructions"])
+
+    def test_persona_card_prompt_mentions_soft_count_and_freedom(self) -> None:
+        template = load_prompt_template("openai_setting_prompt.txt")
+        keywords_system = template.require("generate_keywords_system")
+        keywords_user = template.require("generate_keywords_user")
+        long_text_system = template.require("generate_long_text_system")
+
+        self.assertIn("只是数量偏好", keywords_system)
+        self.assertIn("不要为了凑满类别而生成低价值卡片", keywords_system)
+        self.assertIn("card_count_hint", keywords_user)
+        self.assertIn("可以更少，也可以更多", keywords_user)
+        self.assertIn("允许同一种 kind 拆成多张细分卡片", long_text_system)
 
     def test_learning_plan_prompt_includes_persona_identity_fields(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")

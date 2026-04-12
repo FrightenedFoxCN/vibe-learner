@@ -984,19 +984,22 @@ export async function deletePersonaCard(cardId: string): Promise<void> {
 export async function generatePersonaCards(input: {
   mode: PersonaCardGenerationMode;
   inputText: string;
-  count: number;
+  count?: number | null;
 }): Promise<PersonaCardGenerateResult> {
+  const requestBody: Record<string, unknown> = {
+    mode: input.mode,
+    input_text: input.inputText
+  };
+  if (typeof input.count === "number" && Number.isFinite(input.count)) {
+    requestBody.count = input.count;
+  }
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL}/persona-cards/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        mode: input.mode,
-        input_text: input.inputText,
-        count: input.count
-      })
+      body: JSON.stringify(requestBody)
     })
   );
   return {

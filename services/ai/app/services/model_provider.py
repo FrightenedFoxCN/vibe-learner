@@ -451,7 +451,7 @@ class ModelProvider:
         self,
         *,
         keywords: str,
-        count: int,
+        count: int | None,
     ) -> dict[str, object]:
         raise NotImplementedError
 
@@ -459,7 +459,7 @@ class ModelProvider:
         self,
         *,
         text: str,
-        count: int,
+        count: int | None,
     ) -> dict[str, object]:
         raise NotImplementedError
 
@@ -719,7 +719,7 @@ class MockModelProvider(ModelProvider):
         self,
         *,
         keywords: str,
-        count: int,
+        count: int | None,
     ) -> dict[str, object]:
         raise RuntimeError("setting_keyword_generation_requires_openai")
 
@@ -727,10 +727,11 @@ class MockModelProvider(ModelProvider):
         self,
         *,
         text: str,
-        count: int,
+        count: int | None,
     ) -> dict[str, object]:
         sentences = [segment.strip() for segment in re.split(r"[。！？\n]+", text) if segment.strip()]
-        seed = sentences[: max(3, min(count, 6))]
+        target_count = _resolve_persona_card_count_hint(count, default=6)
+        seed = sentences[:target_count]
         if not seed:
             raise RuntimeError("setting_model_invalid_payload")
         cards: list[dict[str, object]] = []
@@ -743,7 +744,7 @@ class MockModelProvider(ModelProvider):
             ("correction_style", "纠错策略"),
             ("narrative_mode", "叙事模式"),
         ]
-        for index, fragment in enumerate(seed[:count]):
+        for index, fragment in enumerate(seed):
             kind, label = slot_cycle[index % len(slot_cycle)]
             cards.append(
                 {
@@ -1250,9 +1251,10 @@ class OpenAIModelProvider(MockModelProvider):
         self,
         *,
         keywords: str,
-        count: int,
+        count: int | None,
     ) -> dict[str, object]:
         prompt_sections = _setting_prompt_sections()
+        card_count_hint = _render_persona_card_count_hint(count)
         if self.setting_web_search_enabled:
             payload: dict[str, Any] = {
                 "model": self.setting_model,
@@ -1260,10 +1262,10 @@ class OpenAIModelProvider(MockModelProvider):
                 "max_output_tokens": max(self.setting_max_tokens, 1200),
                 "instructions": prompt_sections["generate_keywords_system"]
                 .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
-                .replace("{{CARD_COUNT}}", str(max(1, min(12, count)))),
+                .replace("{{CARD_COUNT}}", card_count_hint),
                 "input": prompt_sections["generate_keywords_user"]
                 .replace("{{KEYWORDS}}", keywords.strip())
-                .replace("{{CARD_COUNT}}", str(max(1, min(12, count))))
+                .replace("{{CARD_COUNT}}", card_count_hint)
                 .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA),
                 "tools": [{"type": "web_search"}],
                 "text": {
@@ -1295,14 +1297,14 @@ class OpenAIModelProvider(MockModelProvider):
                         "role": "system",
                         "content": prompt_sections["generate_keywords_system"]
                         .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
-                        .replace("{{CARD_COUNT}}", str(max(1, min(12, count)))),
+                        .replace("{{CARD_COUNT}}", card_count_hint),
                     },
                     {
                         "role": "user",
                         "content": (
                             prompt_sections["generate_keywords_user"]
                             .replace("{{KEYWORDS}}", keywords.strip())
-                            .replace("{{CARD_COUNT}}", str(max(1, min(12, count))))
+                            .replace("{{CARD_COUNT}}", card_count_hint)
                             .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
                             + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
                         ),
@@ -1332,9 +1334,10 @@ class OpenAIModelProvider(MockModelProvider):
         self,
         *,
         text: str,
-        count: int,
+        count: int | None,
     ) -> dict[str, object]:
         prompt_sections = _setting_prompt_sections()
+        card_count_hint = _render_persona_card_count_hint(count)
         payload: dict[str, Any] = {
             "model": self.setting_model,
             "temperature": self.setting_temperature,
@@ -1345,13 +1348,13 @@ class OpenAIModelProvider(MockModelProvider):
                     "role": "system",
                     "content": prompt_sections["generate_long_text_system"]
                     .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
-                    .replace("{{CARD_COUNT}}", str(max(1, min(12, count)))),
+                    .replace("{{CARD_COUNT}}", card_count_hint),
                 },
                 {
                     "role": "user",
                     "content": prompt_sections["generate_long_text_user"]
                     .replace("{{SOURCE_TEXT}}", text.strip())
-                    .replace("{{CARD_COUNT}}", str(max(1, min(12, count))))
+                    .replace("{{CARD_COUNT}}", card_count_hint)
                     .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA),
                 },
             ],
@@ -2610,6 +2613,18 @@ def _iter_scene_layers_with_depth(layer: SceneLayerStateRecord, depth: int = 0):
     yield layer, depth
     for child in layer.children:
         yield from _iter_scene_layers_with_depth(child, depth + 1)
+
+
+def _render_persona_card_count_hint(count: int | None) -> str:
+    if count is None or count < 1:
+        return "未指定"
+    return str(count)
+
+
+def _resolve_persona_card_count_hint(count: int | None, *, default: int) -> int:
+    if count is None or count < 1:
+        return default
+    return count
 
 
 def _render_scene_layer_count_hint(layer_count: int | None) -> str:

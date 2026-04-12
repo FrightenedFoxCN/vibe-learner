@@ -133,7 +133,7 @@ export default function PersonaSpectrumPage() {
   const [cardKeywordInput, setCardKeywordInput] = useState("");
   const [cardLongTextInput, setCardLongTextInput] = useState("");
   const [cardSearchQuery, setCardSearchQuery] = useState("");
-  const [cardGenerateCount, setCardGenerateCount] = useState(6);
+  const [cardGenerateCount, setCardGenerateCount] = useState("");
   const [cardActionPending, setCardActionPending] = useState<
     null | "generate_keywords" | "generate_long_text" | "save_generated" | "create_persona"
   >(null);
@@ -154,6 +154,7 @@ export default function PersonaSpectrumPage() {
 
   const [basicPaneWidth, setBasicPaneWidth] = useState(260);
   const [sidebarWidth, setSidebarWidth] = useState(380);
+  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
   const colResizeRef = useRef<{ which: "basic" | "sidebar"; startX: number; startWidth: number } | null>(null);
 
   useEffect(() => {
@@ -536,6 +537,42 @@ export default function PersonaSpectrumPage() {
     setSlotInsertIndex(null);
   }
 
+  function toggleSidebarSection(key: string) {
+    setCollapsedSidebarSections((current) => (
+      current.includes(key)
+        ? current.filter((item) => item !== key)
+        : [...current, key]
+    ));
+  }
+
+  function applyGeneratedCardsToDraft() {
+    if (!generatedCards.length && !generatedPersonaMeta.summary && !generatedPersonaMeta.relationship && !generatedPersonaMeta.learnerAddress) {
+      setCardError("当前没有可回填的生成人格内容。");
+      return;
+    }
+    setCardError("");
+    setCardMessage("");
+    const insertion = buildDraftWithInsertedCards(draft, generatedCards);
+    const nextName = draft.name.trim() || "未命名人格";
+    setDraft({
+      ...insertion.draft,
+      summary: generatedPersonaMeta.summary || insertion.draft.summary,
+      relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
+      learnerAddress: generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
+      systemPrompt: insertion.draft.systemPrompt.trim() || buildSystemPromptFromCards(nextName, generatedCards),
+    });
+    const metaParts = [
+      generatedPersonaMeta.summary ? "摘要" : "",
+      generatedPersonaMeta.relationship ? "关系" : "",
+      generatedPersonaMeta.learnerAddress ? "称呼" : "",
+    ].filter(Boolean);
+    const summary = [
+      metaParts.length ? `已回填${metaParts.join("、")}` : "",
+      insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
+    ].filter(Boolean).join("，");
+    setCardMessage(summary || "已将本轮生成内容应用到当前编辑区。");
+  }
+
   function insertCardsIntoDraft(cards: PersonaCard[], insertIndex?: number) {
     if (!cards.length) {
       setCardError("请先选择至少一张人格卡片。");
@@ -543,45 +580,13 @@ export default function PersonaSpectrumPage() {
     }
     setCardError("");
     setCardMessage("");
-    let insertedCount = 0;
-    setDraft((prev) => {
-      const safeInsertIndex = Math.max(0, Math.min(insertIndex ?? prev.slots.length, prev.slots.length));
-      const existingKeys = new Set(
-        prev.slots.map((slot) => `${slot.kind}::${slot.label}::${slot.content.trim()}`)
-      );
-      const appended = cards
-        .filter((card) => {
-          const key = `${card.kind}::${card.label}::${card.content.trim()}`;
-          if (existingKeys.has(key)) {
-            return false;
-          }
-          existingKeys.add(key);
-          return true;
-        })
-        .map((card, index) => ({
-          kind: card.kind,
-          label: card.label,
-          content: card.content,
-          weight: 50,
-          locked: false,
-          sortOrder: (safeInsertIndex + index) * 10,
-        }));
-      insertedCount = appended.length;
-      if (!insertedCount) {
-        return prev;
-      }
-      const nextSlots = [...prev.slots];
-      nextSlots.splice(safeInsertIndex, 0, ...appended);
-      return {
-        ...prev,
-        slots: nextSlots.map((slot, index) => ({ ...slot, sortOrder: index * 10 })),
-      };
-    });
-    if (!insertedCount) {
+    const insertion = buildDraftWithInsertedCards(draft, cards, insertIndex);
+    setDraft(insertion.draft);
+    if (!insertion.insertedCount) {
       setCardMessage("所选卡片已存在于当前人格中，未重复插入。");
       return;
     }
-    setCardMessage(`已将 ${insertedCount} 张卡片插入当前人格编辑区。`);
+    setCardMessage(`已将 ${insertion.insertedCount} 张卡片插入当前人格编辑区。`);
   }
 
   async function handleGenerateCards(mode: "keywords" | "long_text") {
@@ -590,6 +595,16 @@ export default function PersonaSpectrumPage() {
       setCardError(mode === "keywords" ? "请先输入关键词。" : "请先输入长文本。");
       return;
     }
+    const countText = cardGenerateCount.trim();
+    let count: number | null = null;
+    if (countText) {
+      const parsedCount = Number(countText);
+      if (!Number.isInteger(parsedCount) || parsedCount < 1) {
+        setCardError("卡片数量偏好必须是大于 0 的整数，或留空交给模型决定。");
+        return;
+      }
+      count = parsedCount;
+    }
     setCardError("");
     setCardMessage("");
     setCardActionPending(mode === "keywords" ? "generate_keywords" : "generate_long_text");
@@ -597,7 +612,7 @@ export default function PersonaSpectrumPage() {
       const result = await generatePersonaCards({
         mode,
         inputText,
-        count: cardGenerateCount,
+        count,
       });
       setGeneratedCards(result.items);
       setGeneratedPersonaMeta({
@@ -1095,112 +1110,141 @@ export default function PersonaSpectrumPage() {
         <div style={styles.resizer} onMouseDown={(e) => startColumnResize("sidebar", e)} />
         <aside style={{ ...styles.sidebarPane, width: sidebarWidth, flexShrink: 0 }}>
           <div style={styles.sidebarSection}>
-            <div style={styles.panelHead}><span style={styles.panelTitle}>人格卡片库</span></div>
-            <input
-              style={styles.input}
-              value={cardSearchQuery}
-              onChange={(e) => setCardSearchQuery(e.target.value)}
-              placeholder="搜索标题、内容、标签、关键词"
-            />
-            <span style={styles.mutedText}>
-              共 {personaCards.length} 张库卡片，{generatedCards.length} 张本轮生成结果，当前选中 {selectedCards.length} 张。
-            </span>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("library")}>
+              <span style={styles.panelTitle}>人格卡片库</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("library") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("library") ? (
+              <div style={styles.sidebarSectionBody}>
+                <input
+                  style={styles.input}
+                  value={cardSearchQuery}
+                  onChange={(e) => setCardSearchQuery(e.target.value)}
+                  placeholder="搜索标题、内容、标签、关键词"
+                />
+                <span style={styles.mutedText}>
+                  共 {personaCards.length} 张库卡片，{generatedCards.length} 张本轮生成结果，当前选中 {selectedCards.length} 张。
+                </span>
+              </div>
+            ) : null}
           </div>
 
           <div style={styles.sidebarSection}>
-            <div style={styles.panelHead}><span style={styles.panelTitle}>关键词生成 / 长文本提取</span></div>
-            <input
-              style={styles.input}
-              value={cardKeywordInput}
-              onChange={(e) => setCardKeywordInput(e.target.value)}
-              placeholder="例如：冷静学术、学院派导师、侦探式推理"
-            />
-            <textarea
-              style={styles.textarea}
-              value={cardLongTextInput}
-              onChange={(e) => setCardLongTextInput(e.target.value)}
-              placeholder="输入长文本设定，拆解为可复用的人格卡片。"
-            />
-            <div style={styles.actionsRow}>
-              <select
-                style={styles.selectCompact}
-                value={String(cardGenerateCount)}
-                onChange={(e) => setCardGenerateCount(Number(e.target.value))}
-              >
-                {[4, 6, 8, 10].map((count) => (
-                  <option key={count} value={count}>{count} 张</option>
-                ))}
-              </select>
-              <button
-                style={styles.primaryBtn}
-                type="button"
-                disabled={cardActionPending !== null}
-                onClick={() => void handleGenerateCards("keywords")}
-              >
-                {cardActionPending === "generate_keywords" ? "生成中…" : "关键词生成"}
-              </button>
-              <button
-                style={styles.ghostBtn}
-                type="button"
-                disabled={cardActionPending !== null}
-                onClick={() => void handleGenerateCards("long_text")}
-              >
-                {cardActionPending === "generate_long_text" ? "提取中…" : "长文本生成"}
-              </button>
-            </div>
-            <div style={styles.actionsRow}>
-              <button style={styles.ghostBtn} type="button" disabled={!selectedCards.length} onClick={() => insertCardsIntoDraft(selectedCards)}>
-                插入当前人格
-              </button>
-              <button style={styles.ghostBtn} type="button" disabled={cardActionPending !== null} onClick={() => void handleSaveGeneratedCardsToLibrary()}>
-                {cardActionPending === "save_generated" ? "保存中…" : "加入卡片库"}
-              </button>
-              <button style={styles.ghostBtn} type="button" disabled={cardActionPending !== null} onClick={() => void handleCreatePersonaFromSelectedCards()}>
-                {cardActionPending === "create_persona" ? "创建中…" : "直接组装"}
-              </button>
-            </div>
-            {cardMessage ? <span style={styles.mutedText}>{cardMessage}</span> : null}
-            {cardError ? <span style={styles.errorInline}>{cardError}</span> : null}
-            {(generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress) ? (
-              <div style={styles.assetCard}>
-                <div style={styles.assetRow}><span style={styles.assetLabel}>生成人格摘要</span><span>{generatedPersonaMeta.summary || "-"}</span></div>
-                <div style={styles.assetRow}><span style={styles.assetLabel}>生成关系</span><span>{generatedPersonaMeta.relationship || "-"}</span></div>
-                <div style={styles.assetRow}><span style={styles.assetLabel}>学习者称呼</span><span>{generatedPersonaMeta.learnerAddress || "-"}</span></div>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
+              <span style={styles.panelTitle}>关键词生成 / 长文本提取</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("generate") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("generate") ? (
+              <div style={styles.sidebarSectionBody}>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>卡片数量偏好（可选）</span>
+                  <input
+                    style={styles.input}
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={cardGenerateCount}
+                    onChange={(e) => setCardGenerateCount(e.target.value)}
+                    placeholder="留空表示不限制卡片数量"
+                  />
+                </label>
+                <p style={styles.sidebarHint}>留空表示不限制卡片数量，由模型根据关键词或长文本的信息密度自由决定。</p>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>关键词搜索</span>
+                  <input
+                    style={styles.input}
+                    value={cardKeywordInput}
+                    onChange={(e) => setCardKeywordInput(e.target.value)}
+                    placeholder="例如：冷静学术、学院派导师、侦探式推理"
+                  />
+                </label>
+                <button
+                  style={styles.primaryBtn}
+                  type="button"
+                  disabled={cardActionPending !== null}
+                  onClick={() => void handleGenerateCards("keywords")}
+                >
+                  {cardActionPending === "generate_keywords" ? "生成中…" : "根据关键词生成人格卡片"}
+                </button>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>长文本提取</span>
+                  <textarea
+                    style={styles.textarea}
+                    value={cardLongTextInput}
+                    onChange={(e) => setCardLongTextInput(e.target.value)}
+                    placeholder="输入长文本设定，提取成可复用的人格卡片。"
+                  />
+                </label>
+                <button
+                  style={styles.ghostBtn}
+                  type="button"
+                  disabled={cardActionPending !== null}
+                  onClick={() => void handleGenerateCards("long_text")}
+                >
+                  {cardActionPending === "generate_long_text" ? "提取中…" : "根据长文本提取人格卡片"}
+                </button>
+                {cardError ? <p style={styles.errorText}>{cardError}</p> : null}
+                {cardMessage ? <p style={styles.sidebarHint}>{cardMessage}</p> : null}
+                {(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress) ? (
+                  <div style={styles.generatedResultCard}>
+                    <strong style={styles.generatedResultTitle}>{generatedPersonaMeta.summary || "本轮生成人格草案"}</strong>
+                    <p style={styles.generatedResultSummary}>
+                      {generatedPersonaMeta.summary || "已生成一组可继续筛选、写回或组装的人格卡片。"}
+                    </p>
+                    <p style={styles.generatedResultMeta}>
+                      {generatedCards.length} 张卡片
+                      {generatedPersonaMeta.relationship ? ` · ${generatedPersonaMeta.relationship}` : ""}
+                      {generatedPersonaMeta.learnerAddress ? ` · 称呼：${generatedPersonaMeta.learnerAddress}` : ""}
+                    </p>
+                    <button
+                      style={styles.primaryBtn}
+                      type="button"
+                      onClick={applyGeneratedCardsToDraft}
+                    >
+                      应用到当前编辑区
+                    </button>
+                  </div>
+                ) : null}
                 <div style={styles.actionsRow}>
-                  <button
-                    style={styles.ghostBtn}
-                    type="button"
-                    onClick={() => {
-                      if (generatedPersonaMeta.summary) updateDraft("summary", generatedPersonaMeta.summary);
-                      if (generatedPersonaMeta.relationship) updateDraft("relationship", generatedPersonaMeta.relationship);
-                      if (generatedPersonaMeta.learnerAddress) updateDraft("learnerAddress", generatedPersonaMeta.learnerAddress);
-                      setCardMessage("已将生成的人格摘要、关系和学习者称呼填入左侧编辑区。");
-                    }}
-                  >
-                    填入当前编辑区
+                  <button style={styles.ghostBtn} type="button" disabled={!selectedCards.length} onClick={() => insertCardsIntoDraft(selectedCards)}>
+                    插入当前人格
+                  </button>
+                  <button style={styles.ghostBtn} type="button" disabled={cardActionPending !== null} onClick={() => void handleSaveGeneratedCardsToLibrary()}>
+                    {cardActionPending === "save_generated" ? "保存中…" : "加入卡片库"}
+                  </button>
+                  <button style={styles.ghostBtn} type="button" disabled={cardActionPending !== null} onClick={() => void handleCreatePersonaFromSelectedCards()}>
+                    {cardActionPending === "create_persona" ? "创建中…" : "直接组装"}
                   </button>
                 </div>
               </div>
             ) : null}
           </div>
 
-          <div style={{ ...styles.sidebarSection, ...styles.sidebarListSection }}>
-            <span style={styles.panelTitle}>生成结果</span>
-            {filteredGeneratedCards.length ? (
-              <div style={styles.cardList}>
-                {filteredGeneratedCards.map((card) => renderPersonaCard(card, "生成", true))}
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("results")}>
+              <span style={styles.panelTitle}>生成结果 / 卡片库</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("results") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("results") ? (
+              <div style={styles.sidebarSectionBody}>
+                <span style={styles.panelTitle}>生成结果</span>
+                {filteredGeneratedCards.length ? (
+                  <div style={styles.cardList}>
+                    {filteredGeneratedCards.map((card) => renderPersonaCard(card, "生成", true))}
+                  </div>
+                ) : (
+                  <span style={styles.mutedText}>暂无匹配的生成结果。</span>
+                )}
+                <span style={styles.panelTitle}>卡片库</span>
+                {filteredPersonaCards.length ? (
+                  <div style={styles.cardList}>
+                    {filteredPersonaCards.map((card) => renderPersonaCard(card, "卡片库", false))}
+                  </div>
+                ) : (
+                  <span style={styles.mutedText}>暂无匹配的人格卡片。</span>
+                )}
               </div>
-            ) : (
-              <span style={styles.mutedText}>暂无匹配的生成结果。</span>
-            )}
-            <span style={styles.panelTitle}>卡片库</span>
-            {filteredPersonaCards.length ? (
-              <div style={styles.cardList}>
-                {filteredPersonaCards.map((card) => renderPersonaCard(card, "卡片库", false))}
-              </div>
-            ) : (
-              <span style={styles.mutedText}>暂无匹配的人格卡片。</span>
-            )}
+            ) : null}
           </div>
         </aside>
       </div>
@@ -1285,6 +1329,46 @@ function createPersonaCardInputFromCard(card: PersonaCard): CreatePersonaCardInp
     searchKeywords: card.searchKeywords,
     source: card.source,
     sourceNote: card.sourceNote,
+  };
+}
+
+function buildDraftWithInsertedCards(
+  draft: PersonaDraft,
+  cards: PersonaCard[],
+  insertIndex?: number,
+): { draft: PersonaDraft; insertedCount: number } {
+  const safeInsertIndex = Math.max(0, Math.min(insertIndex ?? draft.slots.length, draft.slots.length));
+  const existingKeys = new Set(
+    draft.slots.map((slot) => `${slot.kind}::${slot.label}::${slot.content.trim()}`)
+  );
+  const appended = cards
+    .filter((card) => {
+      const key = `${card.kind}::${card.label}::${card.content.trim()}`;
+      if (existingKeys.has(key)) {
+        return false;
+      }
+      existingKeys.add(key);
+      return true;
+    })
+    .map((card, index) => ({
+      kind: card.kind,
+      label: card.label,
+      content: card.content,
+      weight: 50,
+      locked: false,
+      sortOrder: (safeInsertIndex + index) * 10,
+    }));
+  if (!appended.length) {
+    return { draft, insertedCount: 0 };
+  }
+  const nextSlots = [...draft.slots];
+  nextSlots.splice(safeInsertIndex, 0, ...appended);
+  return {
+    draft: {
+      ...draft,
+      slots: nextSlots.map((slot, index) => ({ ...slot, sortOrder: index * 10 })),
+    },
+    insertedCount: appended.length,
   };
 }
 
@@ -1500,7 +1584,7 @@ const styles: Record<string, CSSProperties> = {
   sidebarPane: {
     display: "flex",
     flexDirection: "column",
-    overflow: "hidden",
+    overflowY: "auto",
     background: "var(--bg)",
   },
   resizer: {
@@ -1510,8 +1594,22 @@ const styles: Record<string, CSSProperties> = {
     cursor: "col-resize",
   },
   sidebarSection: {
-    padding: "14px 16px",
     borderBottom: "1px solid var(--border)",
+    flexShrink: 0,
+  },
+  sidebarSectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    padding: "14px 16px",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  sidebarSectionBody: {
+    padding: "0 16px 14px",
     display: "grid",
     gap: 10,
     alignContent: "start",
@@ -1522,12 +1620,22 @@ const styles: Record<string, CSSProperties> = {
     minHeight: 0,
     alignContent: "start",
   },
+  sidebarToggleIcon: {
+    fontSize: 12,
+    color: "var(--muted)",
+  },
 
   /* Panel header */
   panelHead: {
     paddingBottom: 10,
     borderBottom: "1px solid var(--border)",
     marginBottom: 2,
+  },
+  sidebarHint: {
+    margin: 0,
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.6,
   },
   panelTitle: {
     fontSize: 11,
@@ -1975,6 +2083,29 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 6,
   },
+  generatedResultCard: {
+    display: "grid",
+    gap: 6,
+    padding: 10,
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+  },
+  generatedResultTitle: {
+    fontSize: 13,
+    color: "var(--ink)",
+  },
+  generatedResultSummary: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "var(--muted)",
+  },
+  generatedResultMeta: {
+    margin: 0,
+    fontSize: 11,
+    lineHeight: 1.4,
+    color: "var(--muted)",
+  },
   assetRow: {
     display: "grid",
     gridTemplateColumns: "80px 1fr",
@@ -2006,5 +2137,6 @@ const styles: Record<string, CSSProperties> = {
     padding: "8px 12px",
     fontSize: 13,
   },
+  errorText: { fontSize: 12, color: "var(--negative)", lineHeight: 1.5, margin: 0 },
   errorInline: { color: "var(--negative)", fontSize: 12 },
 };

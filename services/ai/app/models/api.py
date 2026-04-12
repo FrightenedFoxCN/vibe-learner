@@ -108,7 +108,7 @@ class BatchCreatePersonaCardsRequest(BaseModel):
 class PersonaCardGenerateRequest(BaseModel):
     mode: str
     input_text: str
-    count: int = Field(default=6, ge=1, le=12)
+    count: int | None = Field(default=None, ge=1)
 
 
 class PersonaCardResponse(PersonaCardRecord):
