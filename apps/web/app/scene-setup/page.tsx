@@ -7,8 +7,12 @@ import type { SceneProfile } from "@vibe-learner/shared";
 import { TopNav } from "../../components/top-nav";
 import {
   assistPersonaSlot,
+  createReusableSceneNode,
   createSceneLibraryItem,
+  deleteReusableSceneNode,
   deleteSceneLibraryItem,
+  generateSceneTree,
+  listReusableSceneNodes,
   listSceneLibrary,
   updateSceneLibraryItem,
 } from "../../lib/api";
@@ -19,6 +23,8 @@ interface SceneObject {
   description: string;
   interaction: string;
   tags: string;
+  reuseId: string;
+  reuseHint: string;
 }
 
 interface SceneLayer {
@@ -29,8 +35,19 @@ interface SceneLayer {
   atmosphere: string;
   rules: string;
   entrance: string;
+  tags: string;
+  reuseId: string;
+  reuseHint: string;
   objects: SceneObject[];
   children: SceneLayer[];
+}
+
+interface SceneImportPayload {
+  sceneName: string;
+  sceneSummary: string;
+  sceneLayers: SceneLayer[];
+  selectedLayerId: string;
+  collapsedLayerIds: string[];
 }
 
 type RewriteUndoEntry =
@@ -138,13 +155,31 @@ function createId(prefix: string) {
   return `${prefix}-${suffix}`;
 }
 
+function createStableSceneToken(seed: string, prefix: string) {
+  let value = 0;
+  for (const char of seed) {
+    value = ((value * 131) + char.charCodeAt(0)) >>> 0;
+  }
+  return `${prefix}-${value.toString(16).padStart(8, "0")}`;
+}
+
+function defaultLayerReuseId(title: string, scopeLabel: string) {
+  return createStableSceneToken(`${title}:${scopeLabel}`, "scene-layer-reuse");
+}
+
+function defaultObjectReuseId(name: string, tags = "") {
+  return createStableSceneToken(`${name}:${tags}`, "scene-object-reuse");
+}
+
 function createSceneObject(name = "新物体", fixedId?: string): SceneObject {
   return {
     id: fixedId ?? createId("scene-object"),
     name,
     description: "补充这个物体在场景中的外观、状态或用途。",
     interaction: "说明学习者或角色如何与它交互。",
-    tags: ""
+    tags: "",
+    reuseId: defaultObjectReuseId(name),
+    reuseHint: `可复用为“${name}”这一类交互物体。`
   };
 }
 
@@ -158,16 +193,54 @@ function createSceneLayer(templateIndex: number, childLayers: SceneLayer[] = [],
     atmosphere: template.atmosphere,
     rules: template.rules,
     entrance: template.entrance,
+    tags: `${template.scopeLabel},可复用节点`,
+    reuseId: defaultLayerReuseId(template.title, template.scopeLabel),
+    reuseHint: `可复用为“${template.title}”这一层场景模板，保留其规则、氛围和进入方式。`,
     objects: [
       {
         id: fixedObjectId ?? createId("scene-object"),
         name: template.objectName,
         description: template.objectDescription,
         interaction: template.objectInteraction,
-        tags: template.objectTags
+        tags: template.objectTags,
+        reuseId: defaultObjectReuseId(template.objectName, template.objectTags),
+        reuseHint: `可复用为“${template.objectName}”这一类核心交互物体。`
       }
     ],
     children: childLayers
+  };
+}
+
+function cloneSceneObjectFromLibrary(
+  object: Pick<SceneObject, "name" | "description" | "interaction" | "tags" | "reuseId" | "reuseHint">
+): SceneObject {
+  return {
+    id: createId("scene-object"),
+    name: object.name,
+    description: object.description,
+    interaction: object.interaction,
+    tags: object.tags,
+    reuseId: object.reuseId || defaultObjectReuseId(object.name, object.tags),
+    reuseHint: object.reuseHint || `可复用为“${object.name}”这一类交互物体。`,
+  };
+}
+
+function cloneSceneLayerFromLibrary(
+  layer: import("@vibe-learner/shared").SceneTreeNode
+): SceneLayer {
+  return {
+    id: createId("scene-layer"),
+    title: layer.title,
+    scopeLabel: layer.scopeLabel,
+    summary: layer.summary,
+    atmosphere: layer.atmosphere,
+    rules: layer.rules,
+    entrance: layer.entrance,
+    tags: layer.tags,
+    reuseId: layer.reuseId || defaultLayerReuseId(layer.title, layer.scopeLabel),
+    reuseHint: layer.reuseHint || `可复用为“${layer.title}”这一层场景模板，保留其规则、氛围和进入方式。`,
+    objects: (layer.objects ?? []).map((object) => cloneSceneObjectFromLibrary(object)),
+    children: (layer.children ?? []).map((child) => cloneSceneLayerFromLibrary(child)),
   };
 }
 
@@ -199,7 +272,33 @@ export default function SceneSetupPage() {
   const [lastRewrite, setLastRewrite] = useState<RewriteUndoEntry | null>(null);
   const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
   const [sceneIoMessage, setSceneIoMessage] = useState("");
+  const [sceneKeywordInput, setSceneKeywordInput] = useState("");
+  const [sceneLongTextInput, setSceneLongTextInput] = useState("");
+  const [sceneGenerateLayerCount, setSceneGenerateLayerCount] = useState(5);
+  const [sceneGeneratePending, setSceneGeneratePending] = useState<null | "keywords" | "long_text">(null);
+  const [sceneGenerateError, setSceneGenerateError] = useState("");
+  const [sceneGenerateMessage, setSceneGenerateMessage] = useState("");
+  const [reusableNodes, setReusableNodes] = useState<import("../../lib/api").ReusableSceneNodePayload[]>([]);
+  const [reusableSearchQuery, setReusableSearchQuery] = useState("");
+  const [reusableActionPendingId, setReusableActionPendingId] = useState("");
+  const [reusableMessage, setReusableMessage] = useState("");
+  const [reusableError, setReusableError] = useState("");
+  const [generatedSceneCandidate, setGeneratedSceneCandidate] = useState<{
+    sceneName: string;
+    sceneSummary: string;
+    sceneLayers: SceneLayer[];
+    selectedLayerId: string;
+    collapsedLayerIds: string[];
+    usedModel: string;
+    usedWebSearch: boolean;
+    mode: "keywords" | "long_text";
+  } | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [leftColWidth, setLeftColWidth] = useState(260);
+  const [rightColWidth, setRightColWidth] = useState(300);
+  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
+  const colResizeRef = useRef<{ which: "left" | "right"; startX: number; startWidth: number } | null>(null);
 
   const selectedLayer = useMemo(() => findLayerById(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
   const selectedPath = useMemo(() => findLayerPath(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
@@ -207,6 +306,22 @@ export default function SceneSetupPage() {
     () => deriveSceneProfile(sceneLayers, selectedLayerId, sceneName.trim(), sceneSummary.trim()),
     [sceneLayers, selectedLayerId, sceneName, sceneSummary]
   );
+  const filteredReusableNodes = useMemo(() => {
+    const query = reusableSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return reusableNodes;
+    }
+    return reusableNodes.filter((item) => {
+      const haystack = [
+        item.title,
+        item.summary,
+        item.tags.join(","),
+        item.reuseHint,
+        item.sourceSceneName,
+      ].join("\n").toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [reusableNodes, reusableSearchQuery]);
 
   useEffect(() => {
     if (!selectedLayer && sceneLayers[0]?.id) {
@@ -224,16 +339,7 @@ export default function SceneSetupPage() {
         }
         const parsed = JSON.parse(raw);
         const imported = parseSceneImportPayload(parsed);
-        setSceneLayers(imported.sceneLayers);
-        setSceneName(String(imported.sceneName || ""));
-        setSceneSummary(String(imported.sceneSummary || ""));
-        const knownIds = new Set(collectLayerIds(imported.sceneLayers));
-        const preferredId = imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
-          ? imported.selectedLayerId
-          : imported.sceneLayers[0]?.id ?? "";
-        setSelectedLayerId(preferredId);
-        setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
-        setSceneIoMessage("已加载本地保存场景。");
+        applySceneImport(imported, "已加载本地保存场景。");
       } catch {
         if (active) {
           setSceneIoMessage("本地保存内容解析失败，已忽略。");
@@ -251,17 +357,22 @@ export default function SceneSetupPage() {
     let active = true;
     const hydrateLibrary = async () => {
       try {
-        const items = await listSceneLibrary();
+        const [items, reusableItems] = await Promise.all([
+          listSceneLibrary(),
+          listReusableSceneNodes(),
+        ]);
         if (!active) {
           return;
         }
         setSavedScenes(items);
+        setReusableNodes(reusableItems);
         if (!selectedSavedSceneId && items[0]) {
           setSelectedSavedSceneId(items[0].sceneId);
         }
       } catch {
         if (active) {
           setSavedScenes([]);
+          setReusableNodes([]);
         }
       }
     };
@@ -295,8 +406,136 @@ export default function SceneSetupPage() {
     };
   }, [sceneLayers, sceneName, sceneSummary, selectedLayerId, collapsedLayerIds]);
 
+  function applySceneImport(imported: SceneImportPayload, message: string) {
+    const knownIds = new Set(collectLayerIds(imported.sceneLayers));
+    setSceneLayers(imported.sceneLayers);
+    setSceneName(String(imported.sceneName || ""));
+    setSceneSummary(String(imported.sceneSummary || ""));
+    setSelectedLayerId(
+      imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
+        ? imported.selectedLayerId
+        : imported.sceneLayers[0]?.id ?? ""
+    );
+    setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
+    setSceneIoMessage(message);
+  }
+
   function updateLayer(targetId: string, updater: (layer: SceneLayer) => SceneLayer) {
     setSceneLayers((current) => updateLayerTree(current, targetId, updater));
+  }
+
+  function parseTagList(text: string) {
+    return text.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+
+  async function saveSelectedLayerToReusableLibrary() {
+    if (!selectedLayer) {
+      return;
+    }
+    setReusableError("");
+    setReusableMessage("");
+    setReusableActionPendingId(selectedLayer.id);
+    try {
+      const created = await createReusableSceneNode({
+        nodeType: "layer",
+        title: selectedLayer.title,
+        summary: selectedLayer.summary,
+        tags: parseTagList(selectedLayer.tags),
+        reuseId: selectedLayer.reuseId,
+        reuseHint: selectedLayer.reuseHint,
+        sourceSceneId: sceneProfilePreview?.sceneId ?? "",
+        sourceSceneName: sceneName.trim(),
+        layerNode: normalizeSceneTreeNodeForProfile(selectedLayer),
+      });
+      setReusableNodes((current) => [created, ...current]);
+      setReusableMessage(`已将层级 "${selectedLayer.title}" 加入可复用节点库。`);
+    } catch (error) {
+      setReusableError(String(error));
+    } finally {
+      setReusableActionPendingId("");
+    }
+  }
+
+  async function saveObjectToReusableLibrary(object: SceneObject) {
+    setReusableError("");
+    setReusableMessage("");
+    setReusableActionPendingId(object.id);
+    try {
+      const created = await createReusableSceneNode({
+        nodeType: "object",
+        title: object.name,
+        summary: object.description,
+        tags: parseTagList(object.tags),
+        reuseId: object.reuseId,
+        reuseHint: object.reuseHint,
+        sourceSceneId: sceneProfilePreview?.sceneId ?? "",
+        sourceSceneName: sceneName.trim(),
+        objectNode: {
+          id: object.id,
+          name: object.name,
+          description: object.description,
+          interaction: object.interaction,
+          tags: object.tags,
+          reuseId: object.reuseId,
+          reuseHint: object.reuseHint,
+        },
+      });
+      setReusableNodes((current) => [created, ...current]);
+      setReusableMessage(`已将物体 "${object.name}" 加入可复用节点库。`);
+    } catch (error) {
+      setReusableError(String(error));
+    } finally {
+      setReusableActionPendingId("");
+    }
+  }
+
+  async function deleteReusableNode(nodeId: string) {
+    setReusableError("");
+    setReusableMessage("");
+    setReusableActionPendingId(nodeId);
+    try {
+      await deleteReusableSceneNode(nodeId);
+      setReusableNodes((current) => current.filter((item) => item.nodeId !== nodeId));
+    } catch (error) {
+      setReusableError(String(error));
+    } finally {
+      setReusableActionPendingId("");
+    }
+  }
+
+  function insertReusableNode(item: import("../../lib/api").ReusableSceneNodePayload) {
+    if (!selectedLayer) {
+      setReusableError("请先选择一个目标层级，再插入节点。");
+      return;
+    }
+    setReusableError("");
+    setReusableMessage("");
+    const objectNode = item.objectNode;
+    const layerNode = item.layerNode;
+    if (item.nodeType === "object" && objectNode) {
+      updateLayer(selectedLayer.id, (layer) => ({
+        ...layer,
+        objects: [
+          ...layer.objects,
+          cloneSceneObjectFromLibrary(objectNode),
+        ],
+      }));
+      setReusableMessage(`已把物体 "${item.title}" 插入到 "${selectedLayer.title}"。`);
+      return;
+    }
+    if (item.nodeType === "layer" && layerNode) {
+      updateLayer(selectedLayer.id, (layer) => ({
+        ...layer,
+        children: [
+          ...layer.children,
+          cloneSceneLayerFromLibrary(layerNode),
+        ],
+      }));
+      setCollapsedLayerIds((current) => current.filter((id) => id !== selectedLayer.id));
+      setReusableMessage(`已把层级 "${item.title}" 作为 "${selectedLayer.title}" 的子层插入。`);
+      return;
+    }
+    setReusableError("所选节点数据不完整，无法插入。");
   }
 
   function addChildLayer(parentId: string) {
@@ -440,18 +679,8 @@ export default function SceneSetupPage() {
         selectedLayerId: target.selectedLayerId,
         collapsedLayerIds: target.collapsedLayerIds,
       });
-      const knownIds = new Set(collectLayerIds(imported.sceneLayers));
-      setSceneLayers(imported.sceneLayers);
-      setSceneName(String(imported.sceneName || ""));
-      setSceneSummary(String(imported.sceneSummary || ""));
-      setSelectedLayerId(
-        imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
-          ? imported.selectedLayerId
-          : imported.sceneLayers[0]?.id ?? ""
-      );
-      setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
+      applySceneImport(imported, `已载入场景”${target.sceneName}”。`);
       setSelectedSavedSceneId(target.sceneId);
-      setSceneIoMessage(`已载入场景”${target.sceneName}”。`);
     } catch {
       setSceneIoMessage(`载入场景”${target.sceneName}”时数据格式异常。`);
     }
@@ -516,22 +745,57 @@ export default function SceneSetupPage() {
       const content = await file.text();
       const parsed = JSON.parse(content);
       const imported = parseSceneImportPayload(parsed);
-      const knownIds = new Set(collectLayerIds(imported.sceneLayers));
-      setSceneLayers(imported.sceneLayers);
-      setSceneName(String(imported.sceneName || ""));
-      setSceneSummary(String(imported.sceneSummary || ""));
-      setSelectedLayerId(
-        imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
-          ? imported.selectedLayerId
-          : imported.sceneLayers[0]?.id ?? ""
-      );
-      setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
-      setSceneIoMessage("场景导入成功。");
+      applySceneImport(imported, "场景导入成功。");
     } catch {
       setSceneIoMessage("导入失败：文件格式不正确。");
     } finally {
       event.target.value = "";
     }
+  }
+
+  async function handleGenerateScene(mode: "keywords" | "long_text") {
+    const inputText = mode === "keywords" ? sceneKeywordInput.trim() : sceneLongTextInput.trim();
+    if (!inputText) {
+      setSceneGenerateError(mode === "keywords" ? "请先输入关键词。" : "请先输入长文本。");
+      return;
+    }
+    setSceneGenerateError("");
+    setSceneGenerateMessage("");
+    setSceneGeneratePending(mode);
+    try {
+      const result = await generateSceneTree({
+        mode,
+        inputText,
+        layerCount: sceneGenerateLayerCount,
+      });
+      const imported = parseSceneImportPayload({
+        sceneName: result.sceneName,
+        sceneSummary: result.sceneSummary,
+        sceneLayers: result.sceneLayers,
+        selectedLayerId: result.selectedLayerId,
+        collapsedLayerIds: [],
+      });
+      setGeneratedSceneCandidate({
+        ...imported,
+        usedModel: result.usedModel,
+        usedWebSearch: result.usedWebSearch,
+        mode: result.mode,
+      });
+      setSceneGenerateMessage(
+        `已生成 ${countSceneNodes(imported.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 个节点。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
+      );
+    } catch (error) {
+      setSceneGenerateError(String(error));
+    } finally {
+      setSceneGeneratePending(null);
+    }
+  }
+
+  function applyGeneratedSceneCandidateToEditor() {
+    if (!generatedSceneCandidate) {
+      return;
+    }
+    applySceneImport(generatedSceneCandidate, "已将生成场景树应用到当前编辑区。");
   }
 
   async function rewriteLayerField(layerId: string, field: "summary" | "atmosphere" | "rules" | "entrance", label: string) {
@@ -629,21 +893,47 @@ export default function SceneSetupPage() {
     }
   }
 
+  function startColumnResize(which: "left" | "right", e: React.MouseEvent) {
+    e.preventDefault();
+    colResizeRef.current = { which, startX: e.clientX, startWidth: which === "left" ? leftColWidth : rightColWidth };
+    function onMove(me: MouseEvent) {
+      const s = colResizeRef.current;
+      if (!s) return;
+      const delta = me.clientX - s.startX;
+      const w = Math.max(160, Math.min(560, s.startWidth + (s.which === "left" ? delta : -delta)));
+      if (s.which === "left") setLeftColWidth(w); else setRightColWidth(w);
+    }
+    function onUp() {
+      colResizeRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  function toggleSidebarSection(key: string) {
+    setCollapsedSidebarSections((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
+
   return (
     <main className="with-app-nav" style={styles.page}>
-      <div style={styles.workspaceShell}>
-        <div style={styles.mainColumn}>
-          <TopNav currentPath="/scene-setup" />
-          <div style={styles.heading}>
-            <h1 style={styles.pageTitle}>场景搭建</h1>
-            <p style={styles.pageDesc}>从世界整体一路搭到具体教室。每一层都可以写设定、补互动物体，并把层级之间的过渡关系说明清楚。先选层级，再在右侧补细节。</p>
-          </div>
+      <div style={styles.pageHeader}>
+        <TopNav currentPath="/scene-setup" />
+        <div style={styles.titleBar}>
+          <h1 style={styles.pageTitle}>场景搭建</h1>
+        </div>
+      </div>
 
-          <section style={styles.editorShell}>
-            <div style={styles.treePane}>
-          <div style={styles.panelHead}>
+      <div style={styles.workspaceShell}>
+        {/* ── Panel 1: Layer Tree ── */}
+        <div style={{ ...styles.panel, width: leftColWidth, flexShrink: 0 }}>
+          <div style={styles.panelHeader}>
             <span style={styles.panelTitle}>层级结构</span>
           </div>
+          <div style={styles.panelBody}>
           <input
             ref={importInputRef}
             type="file"
@@ -662,18 +952,20 @@ export default function SceneSetupPage() {
                 onSelect={setSelectedLayerId}
                 onToggleCollapse={toggleLayerCollapsed}
                 onAddChild={addChildLayer}
-                onAddObject={addObject}
-                onDeleteLayer={requestDeleteLayer}
                 canDeleteLayerForId={(layerId) => canDeleteLayerSafely(sceneLayers, layerId)}
               />
             ))}
           </div>
+          </div>
         </div>
+        <div style={styles.resizer} onMouseDown={(e) => startColumnResize("left", e)} />
 
-        <aside style={styles.editorPane}>
-          <div style={styles.panelHead}>
+        {/* ── Panel 2: Layer Editor ── */}
+        <div style={{ ...styles.panel, flex: 1, minWidth: 0 }}>
+          <div style={styles.panelHeader}>
             <span style={styles.panelTitle}>层级编辑器</span>
           </div>
+          <div style={styles.panelBody}>
 
           {selectedLayer ? (
             <>
@@ -723,6 +1015,16 @@ export default function SceneSetupPage() {
                     style={styles.input}
                     value={selectedLayer.scopeLabel}
                     onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, scopeLabel: event.target.value }))}
+                  />
+                </label>
+
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>层级标签</span>
+                  <input
+                    style={styles.input}
+                    value={selectedLayer.tags}
+                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, tags: event.target.value }))}
+                    placeholder="用逗号分隔，便于后续搜索和复用。"
                   />
                 </label>
 
@@ -801,13 +1103,35 @@ export default function SceneSetupPage() {
                     onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, rules: event.target.value }))}
                   />
                 </label>
+
+                <details style={styles.detailsGroup}>
+                  <summary style={styles.detailsSummary}>复用设置（高级）</summary>
+                  <div style={styles.detailsContent}>
+                    <label style={styles.fieldGroup}>
+                      <span style={styles.fieldLabel}>复用 ID</span>
+                      <input
+                        style={styles.input}
+                        value={selectedLayer.reuseId}
+                        onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, reuseId: event.target.value }))}
+                      />
+                    </label>
+                    <label style={styles.fieldGroup}>
+                      <span style={styles.fieldLabel}>复用说明</span>
+                      <textarea
+                        style={styles.textarea}
+                        value={selectedLayer.reuseHint}
+                        onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, reuseHint: event.target.value }))}
+                        placeholder="说明这个层级节点以后保留什么结构即可被再次复用。"
+                      />
+                    </label>
+                  </div>
+                </details>
               </div>
 
               <div style={styles.objectsSection}>
                 <div style={styles.objectsHead}>
                   <div>
                     <p style={styles.objectsTitle}>可互动物体</p>
-                    <p style={styles.objectsHint}>在当前层级里继续补充可见、可触发、可移动或可交谈的对象。</p>
                   </div>
                   <button type="button" style={styles.btnPrimary} onClick={() => addObject(selectedLayer.id)}>
                     添加物体
@@ -877,6 +1201,39 @@ export default function SceneSetupPage() {
                           onChange={(event) => updateObject(selectedLayer.id, object.id, "tags", event.target.value)}
                         />
                       </label>
+
+                      <details style={styles.detailsGroup}>
+                        <summary style={styles.detailsSummary}>复用设置（高级）</summary>
+                        <div style={styles.detailsContent}>
+                          <label style={styles.fieldGroup}>
+                            <span style={styles.fieldLabel}>复用 ID</span>
+                            <input
+                              style={styles.input}
+                              value={object.reuseId}
+                              onChange={(event) => updateObject(selectedLayer.id, object.id, "reuseId", event.target.value)}
+                            />
+                          </label>
+                          <label style={styles.fieldGroup}>
+                            <span style={styles.fieldLabel}>复用说明</span>
+                            <textarea
+                              style={styles.textarea}
+                              value={object.reuseHint}
+                              onChange={(event) => updateObject(selectedLayer.id, object.id, "reuseHint", event.target.value)}
+                              placeholder="说明这个物体抽离出来后适合在哪些场景继续使用。"
+                            />
+                          </label>
+                        </div>
+                      </details>
+                      <div style={styles.actionsRowInline}>
+                        <button
+                          type="button"
+                          style={styles.btnSmall}
+                          onClick={() => void saveObjectToReusableLibrary(object)}
+                          disabled={reusableActionPendingId === object.id}
+                        >
+                          {reusableActionPendingId === object.id ? "保存中…" : "加入节点库"}
+                        </button>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -889,26 +1246,39 @@ export default function SceneSetupPage() {
                 <button
                   type="button"
                   style={styles.btnGhost}
+                  onClick={() => void saveSelectedLayerToReusableLibrary()}
+                  disabled={reusableActionPendingId === selectedLayer.id}
+                >
+                  {reusableActionPendingId === selectedLayer.id ? "保存中…" : "加入节点库"}
+                </button>
+                <button
+                  type="button"
+                  style={styles.btnGhost}
                   onClick={() => requestDeleteLayer(selectedLayer.id)}
                   disabled={!canDeleteLayerSafely(sceneLayers, selectedLayer.id)}
                 >
                   删除当前层级
                 </button>
-                <span style={styles.helperText}>下级层级会沿用当前层级的语义，再根据更细粒度的空间做收敛。</span>
               </div>
             </>
           ) : (
             <p style={styles.emptyState}>选择一个层级后，这里会显示它的设定、对象和子层级操作。</p>
           )}
-        </aside>
-          </section>
+          </div>
         </div>
+        <div style={styles.resizer} onMouseDown={(e) => startColumnResize("right", e)} />
 
-        <aside style={styles.sidebarPane}>
+        {/* ── Panel 3: Sidebar ── */}
+        <aside style={{ ...styles.sidebarPane, width: rightColWidth, flexShrink: 0 }}>
           {sceneIoMessage && <p style={styles.sidebarStatusMsg}>{sceneIoMessage}</p>}
 
-              <div style={styles.sidebarSection}>
-                <span style={styles.panelTitle}>当前草稿</span>
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("draft")}>
+              <span style={styles.panelTitle}>当前草稿</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("draft") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("draft") ? (
+              <div style={styles.sidebarSectionBody}>
                 <label style={styles.sceneNameLabel}>
                   <span style={styles.fieldLabel}>场景名称</span>
                   <input
@@ -928,18 +1298,147 @@ export default function SceneSetupPage() {
                   />
                 </label>
               </div>
+            ) : null}
+          </div>
 
-              <div style={styles.sidebarSection}>
-                <span style={styles.panelTitle}>场景库 / 导入 / 导出</span>
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
+              <span style={styles.panelTitle}>场景树生成器</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("generate") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("generate") ? (
+              <div style={styles.sidebarSectionBody}>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>目标层数 {sceneGenerateLayerCount}</span>
+                  <input
+                    style={styles.rewriteSlider}
+                    type="range"
+                    min={3}
+                    max={8}
+                    step={1}
+                    value={sceneGenerateLayerCount}
+                    onChange={(event) => setSceneGenerateLayerCount(Number(event.target.value))}
+                  />
+                </label>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>关键词搜索</span>
+                  <textarea
+                    style={styles.sceneSummaryInput}
+                    value={sceneKeywordInput}
+                    onChange={(event) => setSceneKeywordInput(event.target.value)}
+                    placeholder="输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
+                  />
+                </label>
+                <button
+                  type="button"
+                  style={styles.btnPrimary}
+                  onClick={() => void handleGenerateScene("keywords")}
+                  disabled={sceneGeneratePending !== null}
+                >
+                  {sceneGeneratePending === "keywords" ? "生成中…" : "根据关键词生成场景树"}
+                </button>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>长文本提取</span>
+                  <textarea
+                    style={styles.sceneSummaryInput}
+                    value={sceneLongTextInput}
+                    onChange={(event) => setSceneLongTextInput(event.target.value)}
+                    placeholder="输入较长的设定描述，提取成可编辑、可复用的场景树。"
+                  />
+                </label>
+                <button
+                  type="button"
+                  style={styles.btnGhost}
+                  onClick={() => void handleGenerateScene("long_text")}
+                  disabled={sceneGeneratePending !== null}
+                >
+                  {sceneGeneratePending === "long_text" ? "提取中…" : "根据长文本提取场景树"}
+                </button>
+                {sceneGenerateError ? <p style={styles.errorText}>{sceneGenerateError}</p> : null}
+                {sceneGenerateMessage ? <p style={styles.sidebarHint}>{sceneGenerateMessage}</p> : null}
+                {generatedSceneCandidate ? (
+                  <div style={styles.generatedSceneCard}>
+                    <strong style={styles.generatedSceneTitle}>{generatedSceneCandidate.sceneName}</strong>
+                    <p style={styles.generatedSceneSummary}>{generatedSceneCandidate.sceneSummary}</p>
+                    <p style={styles.generatedSceneMeta}>
+                      {generatedSceneCandidate.mode === "keywords" ? "关键词生成" : "长文本提取"} ·
+                      {generatedSceneCandidate.usedModel || "unknown"} ·
+                      {countSceneNodes(generatedSceneCandidate.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 节点
+                    </p>
+                    <button type="button" style={styles.btnPrimary} onClick={applyGeneratedSceneCandidateToEditor}>
+                      应用到当前编辑区
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("reuse")}>
+              <span style={styles.panelTitle}>可复用节点库</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("reuse") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("reuse") ? (
+              <div style={styles.sidebarSectionBody}>
+                <label style={styles.fieldGroup}>
+                  <span style={styles.fieldLabel}>搜索节点</span>
+                  <input
+                    style={styles.input}
+                    value={reusableSearchQuery}
+                    onChange={(event) => setReusableSearchQuery(event.target.value)}
+                    placeholder="按标题、标签、复用说明搜索"
+                  />
+                </label>
+                {reusableError ? <p style={styles.errorText}>{reusableError}</p> : null}
+                {reusableMessage ? <p style={styles.sidebarHint}>{reusableMessage}</p> : null}
+                <div style={styles.reusableNodeList}>
+                  {filteredReusableNodes.length ? filteredReusableNodes.map((item) => (
+                    <article key={item.nodeId} style={styles.reusableNodeCard}>
+                      <div style={styles.savedSceneTitleRow}>
+                        <strong style={styles.savedSceneTitle}>{item.title}</strong>
+                        <span style={styles.savedSceneMeta}>{item.nodeType === "layer" ? "层级" : "物体"}</span>
+                      </div>
+                      {item.summary ? <p style={styles.savedSceneSummary}>{item.summary}</p> : null}
+                      <p style={styles.savedSceneMeta}>{item.reuseHint || "未填写复用说明"}</p>
+                      <p style={styles.savedSceneMeta}>
+                        {(item.tags.length ? item.tags.join(" · ") : "无标签")}
+                        {item.sourceSceneName ? ` · 来自 ${item.sourceSceneName}` : ""}
+                      </p>
+                      <div style={styles.savedSceneActions}>
+                        <button type="button" style={styles.btnSmall} onClick={() => insertReusableNode(item)}>
+                          插入当前层级
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.btnSmallDanger}
+                          onClick={() => void deleteReusableNode(item.nodeId)}
+                          disabled={reusableActionPendingId === item.nodeId}
+                        >
+                          {reusableActionPendingId === item.nodeId ? "删除中…" : "删除"}
+                        </button>
+                      </div>
+                    </article>
+                  )) : (
+                    <p style={styles.sidebarHint}>节点库还是空的。先把右侧当前层级或物体加入节点库，再从这里复用。</p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("io")}>
+              <span style={styles.panelTitle}>场景库 / 导入 / 导出</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("io") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("io") ? (
+              <div style={styles.sidebarSectionBody}>
                 <div style={styles.sceneActionButtons}>
                   <button type="button" style={styles.btnPrimary} onClick={() => void saveLibraryScene("upsert")}>
                     {selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
                   </button>
-                  <button
-                    type="button"
-                    style={styles.btnGhost}
-                    onClick={() => void saveLibraryScene("create")}
-                  >
+                  <button type="button" style={styles.btnGhost} onClick={() => void saveLibraryScene("create")}>
                     另存为新场景
                   </button>
                 </div>
@@ -948,9 +1447,16 @@ export default function SceneSetupPage() {
                   <button type="button" style={styles.btnGhost} onClick={exportScene}>导出 JSON</button>
                 </div>
               </div>
+            ) : null}
+          </div>
 
-              <div style={{ ...styles.sidebarSection, flex: 1, overflowY: "auto", minHeight: 0 }}>
-                <span style={styles.panelTitle}>已保存场景</span>
+          <div style={styles.sidebarSection}>
+            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("saved")}>
+              <span style={styles.panelTitle}>已保存场景</span>
+              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("saved") ? "▸" : "▾"}</span>
+            </button>
+            {!collapsedSidebarSections.includes("saved") ? (
+              <div style={styles.sidebarSectionBody}>
                 {savedScenes.length ? (
                   <div style={styles.savedSceneList}>
                     {savedScenes.map((item) => {
@@ -980,6 +1486,8 @@ export default function SceneSetupPage() {
                   </div>
                 ) : null}
               </div>
+            ) : null}
+          </div>
         </aside>
       </div>
 
@@ -1009,8 +1517,6 @@ function SceneLayerCard({
   onSelect,
   onToggleCollapse,
   onAddChild,
-  onAddObject,
-  onDeleteLayer,
   canDeleteLayerForId
 }: {
   layer: SceneLayer;
@@ -1020,8 +1526,6 @@ function SceneLayerCard({
   onSelect: (layerId: string) => void;
   onToggleCollapse: (layerId: string) => void;
   onAddChild: (layerId: string) => void;
-  onAddObject: (layerId: string) => void;
-  onDeleteLayer: (layerId: string) => void;
   canDeleteLayerForId: (layerId: string) => boolean;
 }) {
   const isSelected = layer.id === selectedLayerId;
@@ -1047,6 +1551,9 @@ function SceneLayerCard({
         <p style={styles.layerSummary}>{layer.summary}</p>
 
         <div style={styles.objectChipRow}>
+          {layer.tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2).map((tag) => (
+            <span key={`${layer.id}:${tag}`} style={styles.tagChip}>#{tag}</span>
+          ))}
           {layer.objects.slice(0, 3).map((object) => (
             <span key={object.id} style={styles.objectChip}>{object.name}</span>
           ))}
@@ -1054,28 +1561,18 @@ function SceneLayerCard({
         </div>
 
         <div style={styles.cardActions}>
-          <button type="button" style={styles.btnMicro} onClick={(event) => { event.stopPropagation(); onAddObject(layer.id); }}>
-            添加物体
-          </button>
           <button type="button" style={styles.btnMicro} onClick={(event) => { event.stopPropagation(); onAddChild(layer.id); }}>
             添加子层
           </button>
-          <button
-            type="button"
-            style={styles.btnMicro}
-            onClick={(event) => { event.stopPropagation(); onToggleCollapse(layer.id); }}
-            disabled={!hasChildren}
-          >
-            {isCollapsed ? "展开子树" : "收起子树"}
-          </button>
-          <button
-            type="button"
-            style={styles.btnMicro}
-            onClick={(event) => { event.stopPropagation(); onDeleteLayer(layer.id); }}
-            disabled={!canDeleteLayerForId(layer.id)}
-          >
-            删除层级
-          </button>
+          {hasChildren ? (
+            <button
+              type="button"
+              style={styles.btnMicro}
+              onClick={(event) => { event.stopPropagation(); onToggleCollapse(layer.id); }}
+            >
+              {isCollapsed ? "展开子树" : "收起子树"}
+            </button>
+          ) : null}
         </div>
       </article>
 
@@ -1091,8 +1588,6 @@ function SceneLayerCard({
               onSelect={onSelect}
               onToggleCollapse={onToggleCollapse}
               onAddChild={onAddChild}
-              onAddObject={onAddObject}
-              onDeleteLayer={onDeleteLayer}
               canDeleteLayerForId={canDeleteLayerForId}
             />
           ))}
@@ -1118,8 +1613,8 @@ function deriveSceneProfile(
     .slice(0, 4)
     .map((item) => item.name.trim())
     .filter(Boolean);
-  const tags = selectedLayer.objects
-    .flatMap((item) => item.tags.split(","))
+  const tags = [selectedLayer.tags, ...selectedLayer.objects.map((item) => item.tags)]
+    .flatMap((item) => item.split(","))
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, 8);
@@ -1146,12 +1641,17 @@ function normalizeSceneTreeNodeForProfile(layer: SceneLayer): import("@vibe-lear
     atmosphere: layer.atmosphere,
     rules: layer.rules,
     entrance: layer.entrance,
+    tags: layer.tags,
+    reuseId: layer.reuseId,
+    reuseHint: layer.reuseHint,
     objects: layer.objects.map((object) => ({
       id: object.id,
       name: object.name,
       description: object.description,
       interaction: object.interaction,
       tags: object.tags,
+      reuseId: object.reuseId,
+      reuseHint: object.reuseHint,
     })),
     children: layer.children.map((child) => normalizeSceneTreeNodeForProfile(child)),
   };
@@ -1189,13 +1689,7 @@ function collectLayerIds(layers: SceneLayer[]): string[] {
   return result;
 }
 
-function parseSceneImportPayload(input: unknown): {
-  sceneName: string;
-  sceneSummary: string;
-  sceneLayers: SceneLayer[];
-  selectedLayerId: string;
-  collapsedLayerIds: string[];
-} {
+function parseSceneImportPayload(input: unknown): SceneImportPayload {
   const container = input as {
     sceneName?: unknown;
     scene_name?: unknown;
@@ -1264,6 +1758,24 @@ function normalizeSceneLayer(input: unknown): SceneLayer {
     atmosphere: typeof record.atmosphere === "string" ? record.atmosphere : "",
     rules: typeof record.rules === "string" ? record.rules : "",
     entrance: typeof record.entrance === "string" ? record.entrance : "",
+    tags: typeof record.tags === "string" ? record.tags : "",
+    reuseId: typeof record.reuseId === "string"
+      ? record.reuseId
+      : typeof record.reuse_id === "string" && record.reuse_id
+        ? record.reuse_id
+        : defaultLayerReuseId(
+            typeof record.title === "string" ? record.title : "未命名层级",
+            typeof record.scopeLabel === "string"
+              ? record.scopeLabel
+              : typeof record.scope_label === "string"
+                ? record.scope_label
+                : "未定义范围"
+          ),
+    reuseHint: typeof record.reuseHint === "string"
+      ? record.reuseHint
+      : typeof record.reuse_hint === "string" && record.reuse_hint
+        ? record.reuse_hint
+        : `可复用为“${typeof record.title === "string" ? record.title : "未命名层级"}”这一层场景模板，保留其规则、氛围和进入方式。`,
     objects: rawObjects.map((entry) => normalizeSceneObject(entry)),
     children: rawChildren.map((entry) => normalizeSceneLayer(entry)),
   };
@@ -1277,6 +1789,19 @@ function normalizeSceneObject(input: unknown): SceneObject {
     description: typeof record.description === "string" ? record.description : "",
     interaction: typeof record.interaction === "string" ? record.interaction : "",
     tags: typeof record.tags === "string" ? record.tags : "",
+    reuseId: typeof record.reuseId === "string"
+      ? record.reuseId
+      : typeof record.reuse_id === "string" && record.reuse_id
+        ? record.reuse_id
+        : defaultObjectReuseId(
+            typeof record.name === "string" ? record.name : "未命名物体",
+            typeof record.tags === "string" ? record.tags : ""
+          ),
+    reuseHint: typeof record.reuseHint === "string"
+      ? record.reuseHint
+      : typeof record.reuse_hint === "string" && record.reuse_hint
+        ? record.reuse_hint
+        : `可复用为“${typeof record.name === "string" ? record.name : "未命名物体"}”这一类交互物体。`,
   };
 }
 
@@ -1336,33 +1861,59 @@ function inferTemplateIndexFromLayer(layer: SceneLayer): number {
 const styles: Record<string, CSSProperties> = {
   // ── page shell ────────────────────────────────────────────
   page: {
-    minHeight: "100vh",
-    maxWidth: 1460,
+    height: "100vh",
+    maxWidth: 1400,
     margin: "0 auto",
     padding: 0,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
   },
-  workspaceShell: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 300px",
-    alignItems: "stretch",
-    minHeight: "100vh",
-  },
-  mainColumn: {
-    display: "grid",
-    alignContent: "start",
-    minHeight: "100vh",
-  },
-  heading: {
-    display: "grid",
-    gap: 4,
-    padding: "16px 24px 12px",
+  pageHeader: {
+    flexShrink: 0,
     borderBottom: "1px solid var(--border)",
   },
-  editorShell: {
+  titleBar: {
+    padding: "8px 24px",
+    display: "flex",
+    alignItems: "center",
+  },
+  workspaceShell: {
+    display: "flex",
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  panel: {
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  resizer: {
+    width: 4,
+    flexShrink: 0,
+    background: "var(--border)",
+    cursor: "col-resize",
+  },
+  panelHeader: {
+    flexShrink: 0,
+    padding: "8px 16px",
+    borderBottom: "1px solid var(--border)",
+    background: "var(--panel)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 36,
+    gap: 8,
+  },
+  panelBody: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    padding: "16px 20px",
     display: "grid",
-    gridTemplateColumns: "minmax(280px, 1fr) minmax(0, 1.6fr)",
-    alignItems: "start",
-    minHeight: "calc(100vh - 120px)",
+    gap: 14,
+    alignContent: "start",
   },
   pageTitle: {
     margin: 0,
@@ -1443,18 +1994,33 @@ const styles: Record<string, CSSProperties> = {
   savedSceneMeta: { fontSize: 11, color: "var(--muted)", margin: 0, lineHeight: 1.4 },
   savedSceneSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
   savedSceneActions: { display: "flex", flexWrap: "wrap", gap: 4 },
-  sidebarPane: { borderLeft: "1px solid var(--border)", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" },
+  sidebarPane: { display: "flex", flexDirection: "column", overflowY: "auto" },
   sidebarSection: {
-    padding: "14px 16px",
     borderBottom: "1px solid var(--border)",
+    flexShrink: 0,
+  },
+  sidebarSectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    padding: "14px 16px",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  sidebarSectionBody: {
+    padding: "0 16px 14px",
     display: "grid",
     gap: 10,
     alignContent: "start",
-    justifyItems: "stretch",
   },
+  sidebarToggleIcon: { fontSize: 12, color: "var(--muted)" },
+  sidebarHint: { margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.6 },
   sidebarStatusMsg: { margin: 0, padding: "8px 16px", fontSize: 12, color: "var(--muted)", borderBottom: "1px solid var(--border)" },
-  treePane: { padding: "16px 20px", display: "grid", gap: 14, alignContent: "start" },
-  editorPane: { borderLeft: "1px solid var(--border)", padding: "16px 20px", display: "grid", gap: 16, alignContent: "start", position: "sticky", top: 0 },
+  treePane: { padding: "16px 20px", display: "grid", gap: 14, alignContent: "start", overflowY: "auto" },
+  editorPane: { borderLeft: "1px solid var(--border)", padding: "16px 20px", display: "grid", gap: 16, alignContent: "start", overflowY: "auto" },
   panelHead: { paddingBottom: 10, borderBottom: "1px solid var(--border)", display: "grid", gap: 3 },
   panelTitle: { fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" },
   hiddenInput: { display: "none" },
@@ -1468,7 +2034,9 @@ const styles: Record<string, CSSProperties> = {
   layerScope: { fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)" },
   layerTitle: { margin: 0, fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2 },
   layerSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
+  layerReuseHint: { margin: 0, fontSize: 11, lineHeight: 1.5, color: "var(--ink)" },
   objectChipRow: { display: "flex", flexWrap: "wrap", gap: 4 },
+  tagChip: { padding: "2px 6px", border: "1px solid var(--accent-soft)", background: "var(--accent-soft)", fontSize: 10, color: "var(--accent)" },
   objectChip: { padding: "2px 6px", border: "1px solid var(--border)", background: "var(--bg)", fontSize: 10, color: "var(--muted)" },
   cardActions: { display: "flex", flexWrap: "wrap", gap: 4 },
   childStack: { paddingLeft: 12, borderLeft: "2px solid var(--border)", display: "grid", gap: 6 },
@@ -1480,6 +2048,9 @@ const styles: Record<string, CSSProperties> = {
   formGrid: { display: "grid", gap: 12 },
   fieldGroup: { display: "grid", gap: 6 },
   compactField: { display: "grid", gap: 6, flex: 1 },
+  detailsGroup: { borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 2 },
+  detailsSummary: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", cursor: "pointer", userSelect: "none", listStyle: "none", display: "flex", alignItems: "center", gap: 4 },
+  detailsContent: { display: "grid", gap: 12, paddingTop: 10 },
   fieldLabel: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)" },
   fieldLabelRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 },
   input: { width: "100%", height: 36, border: "1px solid var(--border)", background: "var(--panel)", padding: "0 10px", color: "var(--ink)", fontSize: 13, outline: "none" },
@@ -1491,10 +2062,17 @@ const styles: Record<string, CSSProperties> = {
   objectList: { display: "grid", gap: 8 },
   objectCard: { padding: 12, border: "1px solid var(--border)", background: "var(--panel)", display: "grid", gap: 10 },
   objectRow: { display: "flex", alignItems: "end", gap: 10 },
+  actionsRowInline: { display: "flex", justifyContent: "flex-end", gap: 8 },
   editorActions: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", paddingTop: 4, borderTop: "1px solid var(--border)" },
   helperText: { fontSize: 12, color: "var(--muted)" },
   emptyState: { margin: 0, padding: "20px 0", color: "var(--muted)", lineHeight: 1.7, fontSize: 13 },
   errorText: { fontSize: 12, color: "var(--danger, #b42318)", lineHeight: 1.5 },
+  generatedSceneCard: { display: "grid", gap: 6, padding: 10, border: "1px solid var(--border)", background: "var(--panel)" },
+  generatedSceneTitle: { fontSize: 13, color: "var(--ink)" },
+  generatedSceneSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
+  generatedSceneMeta: { margin: 0, fontSize: 11, lineHeight: 1.4, color: "var(--muted)" },
+  reusableNodeList: { display: "grid", gap: 8, maxHeight: 320, overflowY: "auto" },
+  reusableNodeCard: { display: "grid", gap: 6, padding: 10, border: "1px solid var(--border)", background: "var(--panel)" },
   btnPrimary: { border: "none", background: "var(--accent)", color: "white", height: 34, padding: "0 14px", fontWeight: 600, cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnGhost: { border: "1px solid var(--border)", background: "transparent", color: "var(--ink)", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnDanger: { border: "none", background: "var(--danger, #b42318)", color: "white", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" },
@@ -1502,7 +2080,7 @@ const styles: Record<string, CSSProperties> = {
   btnSmallDanger: { border: "1px solid var(--danger, #b42318)", background: "transparent", color: "var(--danger, #b42318)", height: 26, padding: "0 8px", cursor: "pointer", fontSize: 11, display: "inline-flex", alignItems: "center" },
   btnMicro: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", padding: "1px 6px", fontSize: 11, cursor: "pointer", height: 22, display: "inline-flex", alignItems: "center" },
   confirmOverlay: { position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", display: "grid", placeItems: "center", zIndex: 30, padding: 16 },
-  confirmDialog: { width: "min(480px, 100%)", background: "white", border: "1px solid var(--border)", display: "grid", gap: 12, padding: 20, boxShadow: "0 14px 28px rgba(15, 23, 42, 0.12)" },
+  confirmDialog: { width: "min(480px, 100%)", background: "var(--bg)", border: "1px solid var(--border)", display: "grid", gap: 12, padding: 20, boxShadow: "0 14px 28px rgba(15, 23, 42, 0.12)" },
   confirmTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "var(--ink)" },
   confirmText: { margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--muted)" },
   confirmActions: { display: "flex", justifyContent: "flex-end", gap: 8 },

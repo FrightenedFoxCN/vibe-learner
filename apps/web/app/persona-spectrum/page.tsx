@@ -4,6 +4,7 @@ import {
   Fragment,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type DragEvent as ReactDragEvent,
@@ -19,7 +20,6 @@ import {
   PERSONA_SLOT_KINDS,
   type CreatePersonaInput,
   type CreatePersonaCardInput,
-  type DocumentRecord,
   type PersonaCard,
   type PersonaProfile,
   type PersonaSlot,
@@ -27,24 +27,17 @@ import {
   type SpeechStyle
 } from "@vibe-learner/shared";
 
-import { CharacterShell } from "../../components/character-shell";
 import { TopNav } from "../../components/top-nav";
 import {
   assistPersonaSlot,
   assistPersonaSetting,
   createPersona,
   createPersonaCardsBatch,
-  createStudySession,
   deletePersonaCard,
   generatePersonaCards,
-  getPersonaAssets,
   listPersonaCards,
-  listDocuments,
   listPersonas,
-  sendStudyMessage,
   updatePersona,
-  type PersonaAssets,
-  type StudyChatExchangeResponse
 } from "../../lib/api";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
@@ -121,16 +114,10 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
 
 export default function PersonaSpectrumPage() {
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
-  const [selectedDocumentId, setSelectedDocumentId] = useState("");
-  const [selectedSectionId, setSelectedSectionId] = useState("");
 
   const [draft, setDraft] = useState<PersonaDraft>(EMPTY_DRAFT);
   const [savingPersona, setSavingPersona] = useState(false);
-
-  const [assets, setAssets] = useState<PersonaAssets | null>(null);
-  const [assetsError, setAssetsError] = useState("");
 
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -161,13 +148,13 @@ export default function PersonaSpectrumPage() {
     learnerAddress: "",
   });
 
-  const [previewSessionId, setPreviewSessionId] = useState("");
-  const [previewMessage, setPreviewMessage] = useState("请用这个人格风格解释当前章节的核心概念。");
-  const [previewPending, setPreviewPending] = useState(false);
-  const [previewError, setPreviewError] = useState("");
-  const [previewChat, setPreviewChat] = useState<StudyChatExchangeResponse | null>(null);
   const [draggingSlotIndex, setDraggingSlotIndex] = useState<number | null>(null);
+  const [expandedSlotIndex, setExpandedSlotIndex] = useState<number | null>(null);
   const [movePulse, setMovePulse] = useState<{ index: number; direction: -1 | 1 } | null>(null);
+
+  const [basicPaneWidth, setBasicPaneWidth] = useState(260);
+  const [sidebarWidth, setSidebarWidth] = useState(380);
+  const colResizeRef = useRef<{ which: "basic" | "sidebar"; startX: number; startWidth: number } | null>(null);
 
   useEffect(() => {
     if (!movePulse) {
@@ -184,23 +171,15 @@ export default function PersonaSpectrumPage() {
     async function bootstrap() {
       setLoadError("");
       try {
-        const [personaList, documentList, cardList] = await Promise.all([
+        const [personaList, cardList] = await Promise.all([
           listPersonas(),
-          listDocuments(),
           listPersonaCards()
         ]);
         if (cancelled) return;
         setPersonas(personaList);
-        setDocuments(documentList);
         setPersonaCards(cardList);
         const initialPersona = personaList[0];
         if (initialPersona) { setSelectedPersonaId(initialPersona.id); setDraft(personaToDraft(initialPersona)); }
-        const initialDocument = documentList[0];
-        if (initialDocument) {
-          setSelectedDocumentId(initialDocument.id);
-          const firstSection = resolveSections(initialDocument)[0];
-          setSelectedSectionId(firstSection?.id ?? "");
-        }
       } catch (error) {
         if (!cancelled) setLoadError(String(error));
       }
@@ -213,64 +192,13 @@ export default function PersonaSpectrumPage() {
     const selectedPersona = personas.find((p) => p.id === selectedPersonaId);
     if (!selectedPersona) return;
     setDraft(personaToDraft(selectedPersona));
-    setPreviewChat(null);
-    setPreviewSessionId("");
   }, [selectedPersonaId, personas]);
-
-  useEffect(() => {
-    if (!selectedPersonaId) { setAssets(null); setAssetsError(""); return; }
-    let cancelled = false;
-    async function loadAssets() {
-      setAssetsError("");
-      try {
-        const a = await getPersonaAssets(selectedPersonaId);
-        if (!cancelled) setAssets(a);
-      } catch (error) {
-        if (!cancelled) { setAssets(null); setAssetsError(String(error)); }
-      }
-    }
-    loadAssets();
-    return () => { cancelled = true; };
-  }, [selectedPersonaId]);
-
-  useEffect(() => {
-    if (!selectedDocumentId) { setSelectedSectionId(""); return; }
-    const doc = documents.find((d) => d.id === selectedDocumentId);
-    if (!doc) return;
-    const opts = resolveSections(doc);
-    if (!opts.find((o) => o.id === selectedSectionId)) {
-      setSelectedSectionId(opts[0]?.id ?? "");
-    }
-  }, [documents, selectedDocumentId, selectedSectionId]);
-
-  const sectionOptions = useMemo(() => {
-    const doc = documents.find((d) => d.id === selectedDocumentId);
-    return doc ? resolveSections(doc) : [];
-  }, [documents, selectedDocumentId]);
 
   const selectedPersona = useMemo(
     () => personas.find((p) => p.id === selectedPersonaId) ?? null,
     [personas, selectedPersonaId]
   );
   const isReadonlyPersona = selectedPersona?.source === "builtin";
-
-  const draftPersona = useMemo<PersonaProfile>(() => {
-    const emotions = coerceEmotions(draft.availableEmotionsText);
-    const actions = coerceActions(draft.availableActionsText);
-    return {
-      id: selectedPersonaId || "persona-draft",
-      name: draft.name || "未命名人格",
-      source: "user",
-      summary: draft.summary,
-      relationship: draft.relationship,
-      learnerAddress: draft.learnerAddress,
-      systemPrompt: draft.systemPrompt,
-      slots: draft.slots,
-      availableEmotions: emotions.length ? emotions : ["calm"],
-      availableActions: actions.length ? actions : ["idle"],
-      defaultSpeechStyle: draft.defaultSpeechStyle
-    };
-  }, [draft, selectedPersonaId]);
 
   const allCards = useMemo(() => [...generatedCards, ...personaCards], [generatedCards, personaCards]);
   const selectedCards = useMemo(
@@ -762,38 +690,6 @@ export default function PersonaSpectrumPage() {
     }
   }
 
-  async function ensurePreviewSession(): Promise<string> {
-    if (previewSessionId) return previewSessionId;
-    if (!selectedDocumentId || !selectedSectionId || !selectedPersonaId) {
-      throw new Error("请先选择人格、文档与章节。需要先处理文档，才能创建章节联动预览。");
-    }
-    const sectionTitle = sectionOptions.find((s) => s.id === selectedSectionId)?.title ?? "";
-    const session = await createStudySession({
-      documentId: selectedDocumentId,
-      personaId: selectedPersonaId,
-      sectionId: selectedSectionId,
-      sectionTitle,
-      themeHint: "人格色谱预览"
-    });
-    setPreviewSessionId(session.id);
-    return session.id;
-  }
-
-  async function handleSendPreviewMessage() {
-    if (!previewMessage.trim()) { setPreviewError("请输入预览消息。"); return; }
-    setPreviewError("");
-    setPreviewPending(true);
-    try {
-      const sessionId = await ensurePreviewSession();
-      const response = await sendStudyMessage({ sessionId, message: previewMessage.trim() });
-      setPreviewChat(response);
-    } catch (error) {
-      setPreviewError(String(error));
-    } finally {
-      setPreviewPending(false);
-    }
-  }
-
   function renderPersonaCard(card: PersonaCard, badge: string, generated: boolean) {
     const isSelected = selectedCardIds.includes(card.id);
     return (
@@ -854,372 +750,352 @@ export default function PersonaSpectrumPage() {
     );
   }
 
+  function startColumnResize(which: "basic" | "sidebar", e: ReactMouseEvent) {
+    e.preventDefault();
+    colResizeRef.current = {
+      which,
+      startX: e.clientX,
+      startWidth: which === "basic" ? basicPaneWidth : sidebarWidth,
+    };
+    function onMove(me: MouseEvent) {
+      const s = colResizeRef.current;
+      if (!s) return;
+      const delta = me.clientX - s.startX;
+      const w = Math.max(160, Math.min(560, s.startWidth + (s.which === "basic" ? delta : -delta)));
+      if (s.which === "basic") setBasicPaneWidth(w); else setSidebarWidth(w);
+    }
+    function onUp() {
+      colResizeRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
   return (
     <main className="with-app-nav" style={styles.page}>
+      <div style={styles.pageHeader}>
+        <TopNav currentPath="/persona-spectrum" />
+        <div style={styles.titleBar}>
+          <h1 style={styles.pageTitle}>人格色谱</h1>
+        </div>
+      </div>
       <div style={styles.workspaceShell}>
         <div style={styles.mainColumn}>
-          <TopNav currentPath="/persona-spectrum" />
-
-          <div style={styles.heading}>
-            <h1 style={styles.pageTitle}>人格色谱</h1>
-            <p style={styles.pageDesc}>教师人格配置、插槽权重、导入导出与章节联动预览。</p>
-          </div>
-
           {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
-
-          <div style={styles.editorColumn}>
-            <section style={styles.editorPanel}>
-          <div style={styles.panelHead}>
-            <span style={styles.panelTitle}>人格参数编辑器</span>
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.fieldLabel}>当前人格</label>
-            <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
-              {personas.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
-              ))}
-            </select>
-          </div>
-
-          {selectedPersona ? (
-            <div style={styles.personaCard}>
-              <div style={styles.personaCardHead}>
-                <span style={styles.personaCardName}>{selectedPersona.name}</span>
-                <span style={styles.personaCardSource}>{selectedPersona.source === "builtin" ? "内置人格" : "用户人格"}</span>
+          <div style={styles.editorArea}>
+            <div style={{ ...styles.basicPane, width: basicPaneWidth, flexShrink: 0 }}>
+              <div style={styles.panelHeader}>
+                <span style={styles.panelTitle}>基本设定</span>
               </div>
-              <p style={styles.personaCardSummary}>{selectedPersona.summary || "未填写摘要"}</p>
-              <div style={styles.personaCardMetaGrid}>
-                <span style={styles.personaCardMetaLabel}>关系</span>
-                <span style={styles.personaCardMetaValue}>{selectedPersona.relationship || "未填写"}</span>
-                <span style={styles.personaCardMetaLabel}>称呼</span>
-                <span style={styles.personaCardMetaValue}>{selectedPersona.learnerAddress || "未填写"}</span>
+              <div style={styles.panelBody}>
+                <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>当前人格</label>
+                <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
+                  {personas.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
+                  ))}
+                </select>
               </div>
-            </div>
-          ) : null}
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.fieldLabel}>名称</label>
-            <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
-          </div>
+              {selectedPersona ? (
+                <div style={styles.personaCard}>
+                  <div style={styles.personaCardHead}>
+                    <span style={styles.personaCardName}>{selectedPersona.name}</span>
+                    <span style={styles.personaCardSource}>{selectedPersona.source === "builtin" ? "内置人格" : "用户人格"}</span>
+                  </div>
+                  <p style={styles.personaCardSummary}>{selectedPersona.summary || "未填写摘要"}</p>
+                  <div style={styles.personaCardMetaGrid}>
+                    <span style={styles.personaCardMetaLabel}>关系</span>
+                    <span style={styles.personaCardMetaValue}>{selectedPersona.relationship || "未填写"}</span>
+                    <span style={styles.personaCardMetaLabel}>称呼</span>
+                    <span style={styles.personaCardMetaValue}>{selectedPersona.learnerAddress || "未填写"}</span>
+                  </div>
+                </div>
+              ) : null}
 
-          <div style={styles.fieldGroup}>
-            <label style={styles.fieldLabel}>摘要</label>
-            <textarea style={styles.textarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
-          </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>名称</label>
+                <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
+              </div>
 
-          <div style={styles.compactGrid}>
-            <div style={styles.fieldGroup}>
-              <label style={styles.fieldLabel}>关系</label>
-              <input
-                style={styles.input}
-                value={draft.relationship}
-                onChange={(e) => updateDraft("relationship", e.target.value)}
-                placeholder="例如：师生、学伴、导师"
-              />
-            </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.fieldLabel}>学习者称呼</label>
-              <input
-                style={styles.input}
-                value={draft.learnerAddress}
-                onChange={(e) => updateDraft("learnerAddress", e.target.value)}
-                placeholder="例如：同学、伙伴、学员"
-              />
-            </div>
-          </div>
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>摘要</label>
+                <textarea style={styles.textarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
+              </div>
 
-          <div
-            style={{
-              ...styles.fieldGroup,
-              ...((slotInsertIndex !== null || draggingSlotIndex !== null) ? styles.slotDropZoneActive : null),
-            }}
-          >
-            <label style={styles.fieldLabel}>人格插槽</label>
-            <span style={styles.mutedText}>插槽属于人格认知层，决定“这个老师怎么想、怎么教”。</span>
-            <span style={styles.mutedText}>点击右侧卡片可选中；拖动把手可把卡片精确插入到目标位置。</span>
-            <div style={styles.actionsRow}>
-              <button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理插槽</button>
-              <span style={styles.mutedText}>排序规则：先按排序值（sortOrder）升序，再按权重（weight）降序。</span>
+              <div style={styles.compactGrid}>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.fieldLabel}>关系</label>
+                  <input
+                    style={styles.input}
+                    value={draft.relationship}
+                    onChange={(e) => updateDraft("relationship", e.target.value)}
+                    placeholder="例如：师生、学伴、导师"
+                  />
+                </div>
+                <div style={styles.fieldGroup}>
+                  <label style={styles.fieldLabel}>学习者称呼</label>
+                  <input
+                    style={styles.input}
+                    value={draft.learnerAddress}
+                    onChange={(e) => updateDraft("learnerAddress", e.target.value)}
+                    placeholder="例如：同学、伙伴、学员"
+                  />
+                </div>
+              </div>
+
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>保留原文比例 {(retainRatio * 100).toFixed(0)}%</label>
+                <input
+                  style={styles.range}
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={retainRatio}
+                  onChange={(e) => setRetainRatio(Number(e.target.value))}
+                />
+              </div>
+
+              <div style={styles.actionsRow}>
+                <button style={styles.ghostBtn} type="button" disabled={assistPending} onClick={handleAssistSetting}>
+                  {assistPending ? "AI 完善中…" : "AI 辅助完善设定"}
+                </button>
+                {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
+              </div>
+
+              <div style={styles.fieldGroup}>
+                <label style={styles.fieldLabel}>系统提示词</label>
+                <textarea style={styles.textareaLg} value={draft.systemPrompt} onChange={(e) => updateDraft("systemPrompt", e.target.value)} />
+              </div>
+
+              <div style={styles.actionsRow}>
+                <button style={styles.primaryBtn} disabled={savingPersona} onClick={handleCreatePersona}>
+                  {savingPersona ? "保存中…" : "创建新人格"}
+                </button>
+                <button style={styles.ghostBtn} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
+                  {savingPersona ? "保存中…" : "更新当前人格"}
+                </button>
+                {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
+              </div>
+              {isReadonlyPersona ? (
+                <span style={styles.mutedText}>只读 — 编辑后可另存为新人格</span>
+              ) : null}
+
+              <section style={styles.inlinePanel}>
+                <div style={styles.panelHead}>
+                  <span style={styles.panelTitle}>配置导入/导出</span>
+                </div>
+                <div style={styles.actionsRow}>
+                  <button style={styles.ghostBtn} type="button" onClick={handleDownloadTemplate}>下载模板</button>
+                  <button style={styles.ghostBtn} type="button" onClick={handleExportConfig}>导出配置</button>
+                  <label style={styles.ghostBtn}>
+                    导入配置
+                    <input type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
+                  </label>
+                </div>
+                {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
+                {configError ? <span style={styles.errorInline}>{configError}</span> : null}
+              </section>
+              </div>{/* panelBody */}
             </div>
-            <div style={styles.slotList}>
+            <div style={styles.resizer} onMouseDown={(e) => startColumnResize("basic", e)} />
+            <div style={styles.slotsPane}>
+              <div style={styles.panelHeader}>
+                <span style={styles.panelTitle}>人格插槽</span>
+                <button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理</button>
+              </div>
+              <div style={styles.panelBody}>
               <div
                 style={{
-                  ...styles.slotInsertMarker,
-                  ...(slotInsertIndex === 0 ? styles.slotInsertMarkerActive : null),
+                  ...styles.slotDropArea,
+                  ...((slotInsertIndex !== null || draggingSlotIndex !== null) ? styles.slotDropZoneActive : null),
                 }}
-                onDragOver={(event) => {
-                  if (!draggingPersonaCardId && draggingSlotIndex === null) return;
-                  event.preventDefault();
-                  handleSlotInsertDragOver(0);
-                }}
-                onDrop={(event) => {
-                  if (!draggingPersonaCardId && draggingSlotIndex === null) return;
-                  event.preventDefault();
-                  handleSlotInsertDrop(0);
-                }}
-              />
-              {draft.slots.length ? draft.slots.map((slot, index) => (
-                <Fragment key={`${slot.kind}:${slot.label}:${index}`}>
-                  <div
-                    style={{
-                      ...styles.slotCard,
-                      ...(draggingSlotIndex === index ? styles.slotCardDragging : null),
-                      ...(movePulse?.index === index
-                        ? movePulse.direction === -1
-                          ? styles.slotCardMoveUp
-                          : styles.slotCardMoveDown
-                        : null),
-                    }}
-                    onDragOver={(event) => handleSlotCardDragOver(event, index)}
-                    onDrop={(event) => handleSlotCardDrop(event, index)}
-                  >
-                    <div style={styles.slotHeader}>
-                      <span
-                        style={styles.dragHandle}
-                        title="拖动排序"
-                        draggable
-                        onDragStart={() => handleDragStart(index)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        ⋮⋮
-                      </span>
-                      <select
-                        style={styles.slotKindSelect}
-                        value={slot.kind}
-                        onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
-                        disabled={Boolean(slot.locked)}
-                      >
-                        {PERSONA_SLOT_KINDS.map((k) => (
-                          <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
-                        ))}
-                      </select>
-                      <input
-                        style={styles.slotLabelInput}
-                        value={slot.label}
-                        placeholder="显示标签"
-                        onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
-                        disabled={Boolean(slot.locked)}
-                      />
-                      <button type="button" style={styles.removeBtn} onClick={() => handleRemoveSlot(index)}>×</button>
-                    </div>
-                    <span style={styles.slotHintText}>{SLOT_KIND_HINTS[slot.kind] ?? SLOT_KIND_HINTS.custom}</span>
-                    <textarea
-                      style={styles.slotContent}
-                      value={slot.content}
-                      placeholder={`请填写“${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}”的具体内容。`}
-                      onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
-                      disabled={Boolean(slot.locked)}
-                    />
-                    <div style={styles.compactGrid}>
-                      <label style={styles.fieldGroup}>
-                        <span style={styles.fieldLabel}>权重（0-100）</span>
-                        <input
-                          style={styles.input}
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={slot.weight ?? 50}
-                          onChange={(e) => handleUpdateSlot(index, "weight", Number(e.target.value))}
-                          disabled={Boolean(slot.locked)}
-                        />
-                      </label>
-                      <label style={styles.fieldGroup}>
-                        <span style={styles.fieldLabel}>权重滑杆</span>
-                        <input
-                          style={styles.range}
-                          type="range"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={slot.weight ?? 50}
-                          onChange={(e) => handleUpdateSlot(index, "weight", Number(e.target.value))}
-                          disabled={Boolean(slot.locked)}
-                        />
-                      </label>
-                    </div>
-                    <div style={styles.actionsRow}>
-                      <button type="button" style={styles.ghostBtn} onClick={() => handleMoveSlot(index, -1)}>上移</button>
-                      <button type="button" style={styles.ghostBtn} onClick={() => handleMoveSlot(index, 1)}>下移</button>
-                      <button
-                        type="button"
-                        style={styles.ghostBtn}
-                        onClick={() => handleUpdateSlot(index, "locked", !slot.locked)}
-                      >
-                        {slot.locked ? "解锁" : "锁定"}
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.ghostBtn}
-                        onClick={() => void handleAssistSlot(index)}
-                        disabled={assistPending || slotAssistIndex === index || Boolean(slot.locked)}
-                      >
-                        {slotAssistIndex === index ? "AI 重写中…" : "AI 重写此卡片"}
-                      </button>
-                      <span style={styles.mutedText}>逐卡片重写仅作用于当前卡片，不会覆盖其他插槽。</span>
-                    </div>
-                  </div>
+              >
+                <div style={styles.slotList}>
                   <div
                     style={{
                       ...styles.slotInsertMarker,
-                      ...(slotInsertIndex === index + 1 ? styles.slotInsertMarkerActive : null),
+                      ...(slotInsertIndex === 0 ? styles.slotInsertMarkerActive : null),
                     }}
                     onDragOver={(event) => {
                       if (!draggingPersonaCardId && draggingSlotIndex === null) return;
                       event.preventDefault();
-                      handleSlotInsertDragOver(index + 1);
+                      handleSlotInsertDragOver(0);
                     }}
                     onDrop={(event) => {
                       if (!draggingPersonaCardId && draggingSlotIndex === null) return;
                       event.preventDefault();
-                      handleSlotInsertDrop(index + 1);
+                      handleSlotInsertDrop(0);
                     }}
                   />
-                </Fragment>
-              )) : (
-                <div
-                  style={{
-                    ...styles.emptySlotDropTarget,
-                    ...(slotInsertIndex === 0 ? styles.emptySlotDropTargetActive : null),
-                  }}
-                  onDragOver={(event) => {
-                    if (!draggingPersonaCardId) return;
-                    event.preventDefault();
-                    handleSlotInsertDragOver(0);
-                  }}
-                  onDrop={(event) => {
-                    if (!draggingPersonaCardId) return;
-                    event.preventDefault();
-                    handleSlotInsertDrop(0);
-                  }}
-                >
-                  拖到这里插入第一张人格卡片
+                  {draft.slots.length ? draft.slots.map((slot, index) => (
+                    <Fragment key={`${slot.kind}:${slot.label}:${index}`}>
+                      <div
+                        style={{
+                          ...styles.slotCard,
+                          ...(draggingSlotIndex === index ? styles.slotCardDragging : null),
+                          ...(movePulse?.index === index
+                            ? movePulse.direction === -1
+                              ? styles.slotCardMoveUp
+                              : styles.slotCardMoveDown
+                            : null),
+                        }}
+                        onDragOver={(event) => handleSlotCardDragOver(event, index)}
+                        onDrop={(event) => handleSlotCardDrop(event, index)}
+                      >
+                        <div
+                          style={styles.slotHeader}
+                          onClick={() => setExpandedSlotIndex((prev) => (prev === index ? null : index))}
+                        >
+                          <span
+                            style={styles.dragHandle}
+                            title="拖动排序"
+                            draggable
+                            onDragStart={(e) => { e.stopPropagation(); handleDragStart(index); }}
+                            onDragEnd={handleDragEnd}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            ⋮⋮
+                          </span>
+                          <select
+                            style={styles.slotKindSelect}
+                            value={slot.kind}
+                            onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
+                            disabled={Boolean(slot.locked)}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {PERSONA_SLOT_KINDS.map((k) => (
+                              <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
+                            ))}
+                          </select>
+                          <input
+                            style={styles.slotLabelInput}
+                            value={slot.label}
+                            placeholder="显示标签"
+                            onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
+                            disabled={Boolean(slot.locked)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          {expandedSlotIndex !== index ? (
+                            <span style={styles.slotPreview}>{slot.content.slice(0, 40) || "—"}</span>
+                          ) : null}
+                          <button
+                            type="button"
+                            style={styles.slotToggleBtn}
+                            onClick={(e) => { e.stopPropagation(); setExpandedSlotIndex((prev) => (prev === index ? null : index)); }}
+                          >
+                            {expandedSlotIndex === index ? "▾" : "▸"}
+                          </button>
+                          <button
+                            type="button"
+                            style={styles.removeBtn}
+                            onClick={(e) => { e.stopPropagation(); handleRemoveSlot(index); }}
+                          >×</button>
+                        </div>
+                        {expandedSlotIndex === index ? (
+                          <>
+                            <textarea
+                              style={styles.slotContent}
+                              value={slot.content}
+                              placeholder={`请填写"${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}"的具体内容。`}
+                              onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
+                              disabled={Boolean(slot.locked)}
+                            />
+                            <div style={styles.weightRow}>
+                              <span style={styles.fieldLabel}>权重 {slot.weight ?? 50}</span>
+                              <input
+                                style={styles.range}
+                                type="range"
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={slot.weight ?? 50}
+                                onChange={(e) => handleUpdateSlot(index, "weight", Number(e.target.value))}
+                                disabled={Boolean(slot.locked)}
+                              />
+                            </div>
+                            <div style={styles.actionsRow}>
+                              <button type="button" style={styles.iconBtn} title="上移" onClick={() => handleMoveSlot(index, -1)}>↑</button>
+                              <button type="button" style={styles.iconBtn} title="下移" onClick={() => handleMoveSlot(index, 1)}>↓</button>
+                              <button
+                                type="button"
+                                style={styles.iconBtn}
+                                title={slot.locked ? "解锁" : "锁定"}
+                                onClick={() => handleUpdateSlot(index, "locked", !slot.locked)}
+                              >
+                                {slot.locked ? "⊘" : "○"}
+                              </button>
+                              <button
+                                type="button"
+                                style={styles.iconBtn}
+                                title="AI 重写"
+                                onClick={() => void handleAssistSlot(index)}
+                                disabled={assistPending || slotAssistIndex === index || Boolean(slot.locked)}
+                              >
+                                {slotAssistIndex === index ? "…" : "✦"}
+                              </button>
+                            </div>
+                          </>
+                        ) : null}
+                      </div>
+                      <div
+                        style={{
+                          ...styles.slotInsertMarker,
+                          ...(slotInsertIndex === index + 1 ? styles.slotInsertMarkerActive : null),
+                        }}
+                        onDragOver={(event) => {
+                          if (!draggingPersonaCardId && draggingSlotIndex === null) return;
+                          event.preventDefault();
+                          handleSlotInsertDragOver(index + 1);
+                        }}
+                        onDrop={(event) => {
+                          if (!draggingPersonaCardId && draggingSlotIndex === null) return;
+                          event.preventDefault();
+                          handleSlotInsertDrop(index + 1);
+                        }}
+                      />
+                    </Fragment>
+                  )) : (
+                    <div
+                      style={{
+                        ...styles.emptySlotDropTarget,
+                        ...(slotInsertIndex === 0 ? styles.emptySlotDropTargetActive : null),
+                      }}
+                      onDragOver={(event) => {
+                        if (!draggingPersonaCardId) return;
+                        event.preventDefault();
+                        handleSlotInsertDragOver(0);
+                      }}
+                      onDrop={(event) => {
+                        if (!draggingPersonaCardId) return;
+                        event.preventDefault();
+                        handleSlotInsertDrop(0);
+                      }}
+                    >
+                      拖到这里插入第一张人格卡片
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div style={styles.addSlotRow}>
-              <span style={styles.mutedText}>添加插槽：</span>
-              {SLOT_TEMPLATES.map((t) => (
-                <button key={t.kind} type="button" style={styles.tagBtn} onClick={() => handleAddSlot(t.kind)}>
-                  {PERSONA_SLOT_KIND_LABELS[t.kind]}
-                </button>
-              ))}
-              <button type="button" style={styles.tagBtn} onClick={() => handleAddSlot("custom")}>自定义</button>
-            </div>
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.fieldLabel}>保留原文比例 {(retainRatio * 100).toFixed(0)}%</label>
-            <input
-              style={styles.range}
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={retainRatio}
-              onChange={(e) => setRetainRatio(Number(e.target.value))}
-            />
-            <span style={styles.mutedText}>越高越保留原文，越低越允许模型重写。</span>
-          </div>
-
-          <div style={styles.actionsRow}>
-            <button style={styles.ghostBtn} type="button" disabled={assistPending} onClick={handleAssistSetting}>
-              {assistPending ? "AI 完善中…" : "AI 辅助完善设定"}
-            </button>
-            <span style={styles.mutedText}>该操作会对整套插槽进行联动改写。</span>
-            {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
-          </div>
-
-          <div style={styles.fieldGroup}>
-            <label style={styles.fieldLabel}>系统提示词</label>
-            <textarea style={styles.textareaLg} value={draft.systemPrompt} onChange={(e) => updateDraft("systemPrompt", e.target.value)} />
-          </div>
-
-          <div style={styles.actionsRow}>
-            <button style={styles.primaryBtn} disabled={savingPersona} onClick={handleCreatePersona}>
-              {savingPersona ? "保存中…" : "创建新人格"}
-            </button>
-            <button style={styles.ghostBtn} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
-              {savingPersona ? "保存中…" : "更新当前人格"}
-            </button>
-            {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
-          </div>
-          {isReadonlyPersona ? (
-            <span style={styles.mutedText}>内置人格为只读，可编辑后使用「创建新人格」另存。</span>
-          ) : null}
-          <section style={styles.inlinePanel}>
-            <div style={styles.panelHead}>
-              <span style={styles.panelTitle}>配置导入/导出</span>
-            </div>
-            <div style={styles.actionsRow}>
-              <button style={styles.ghostBtn} type="button" onClick={handleDownloadTemplate}>下载模板</button>
-              <button style={styles.ghostBtn} type="button" onClick={handleExportConfig}>导出配置</button>
-              <label style={styles.ghostBtn}>
-                导入配置
-                <input type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
-              </label>
-            </div>
-            <span style={styles.mutedText}>导入模板需为人格配置 JSON 结构（包含 slots 数组）。</span>
-            <span style={styles.mutedText}>建议先导出一份模板，再基于模板编辑，避免字段缺失。</span>
-            {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
-            {configError ? <span style={styles.errorInline}>{configError}</span> : null}
-          </section>
-
-          <section style={styles.inlinePanel}>
-            <div style={styles.panelHead}>
-              <span style={styles.panelTitle}>章节联动实时预览</span>
-            </div>
-
-            <div style={styles.compactGrid}>
-              <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>文档</label>
-                <select style={styles.select} value={selectedDocumentId} onChange={(e) => { setSelectedDocumentId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
-                  {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-                </select>
+                <div style={styles.addSlotRow}>
+                  {SLOT_TEMPLATES.map((t) => (
+                    <button key={t.kind} type="button" style={styles.tagBtn} onClick={() => handleAddSlot(t.kind)}>
+                      {PERSONA_SLOT_KIND_LABELS[t.kind]}
+                    </button>
+                  ))}
+                  <button type="button" style={styles.tagBtn} onClick={() => handleAddSlot("custom")}>自定义</button>
+                </div>
               </div>
-              <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>章节</label>
-                <select style={styles.select} value={selectedSectionId} onChange={(e) => { setSelectedSectionId(e.target.value); setPreviewSessionId(""); setPreviewChat(null); }}>
-                  {sectionOptions.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-                </select>
-              </div>
+              </div>{/* panelBody */}
             </div>
-
-            <div style={styles.fieldGroup}>
-              <label style={styles.fieldLabel}>联动提问</label>
-              <textarea style={styles.textareaLg} value={previewMessage} onChange={(e) => setPreviewMessage(e.target.value)} />
-            </div>
-
-            <div style={styles.actionsRow}>
-              <button style={styles.primaryBtn} onClick={handleSendPreviewMessage} disabled={previewPending}>
-                {previewPending ? "预览生成中…" : "发送预览消息"}
-              </button>
-              {previewError ? <span style={styles.errorInline}>{previewError}</span> : null}
-            </div>
-
-            <div style={styles.assetCard}>
-              <div style={styles.assetRow}><span style={styles.assetLabel}>渲染器</span><span>{assets?.renderer ?? "-"}</span></div>
-              <div style={styles.assetRow}><span style={styles.assetLabel}>资源清单</span><span>{assets ? JSON.stringify(assets.assetManifest) : "-"}</span></div>
-              {assetsError ? <div style={styles.errorInline}>{assetsError}</div> : null}
-            </div>
-
-            {previewChat ? (
-              <>
-                <CharacterShell persona={draftPersona} response={previewChat} pending={previewPending} />
-                <div style={styles.chatReply}>{previewChat.reply}</div>
-              </>
-            ) : (
-              <span style={styles.mutedText}>发送一条消息后，这里会展示真实章节联动的返回与角色事件。</span>
-            )}
-          </section>
-            </section>
           </div>
         </div>
-
-        <aside style={styles.sidebarPane}>
+        <div style={styles.resizer} onMouseDown={(e) => startColumnResize("sidebar", e)} />
+        <aside style={{ ...styles.sidebarPane, width: sidebarWidth, flexShrink: 0 }}>
           <div style={styles.sidebarSection}>
-            <span style={styles.panelTitle}>人格卡片库</span>
+            <div style={styles.panelHead}><span style={styles.panelTitle}>人格卡片库</span></div>
             <input
               style={styles.input}
               value={cardSearchQuery}
@@ -1229,11 +1105,10 @@ export default function PersonaSpectrumPage() {
             <span style={styles.mutedText}>
               共 {personaCards.length} 张库卡片，{generatedCards.length} 张本轮生成结果，当前选中 {selectedCards.length} 张。
             </span>
-            <span style={styles.mutedText}>点击卡片切换选中状态，拖动左上把手可插入到左侧精确位置。</span>
           </div>
 
           <div style={styles.sidebarSection}>
-            <span style={styles.panelTitle}>关键词生成 / 长文本提取</span>
+            <div style={styles.panelHead}><span style={styles.panelTitle}>关键词生成 / 长文本提取</span></div>
             <input
               style={styles.input}
               value={cardKeywordInput}
@@ -1482,12 +1357,6 @@ function dedupeCsvValues<T extends string>(values: T[]): T[] {
   return result;
 }
 
-function resolveSections(document: DocumentRecord): Array<{ id: string; title: string }> {
-  return document.studyUnits.length
-    ? document.studyUnits.map((unit) => ({ id: unit.id, title: `学习单元：${unit.title}` }))
-    : document.sections.map((section) => ({ id: section.id, title: `章节：${section.title}` }));
-}
-
 function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): CreatePersonaInput {
   const name = String(parsed.name ?? "").trim();
   const systemPrompt = String(parsed.systemPrompt ?? parsed.system_prompt ?? "").trim();
@@ -1537,36 +1406,80 @@ function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): Create
 const styles: Record<string, CSSProperties> = {
   /* Page shell */
   page: {
-    minHeight: "100vh",
+    height: "100vh",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
     maxWidth: 1400,
     margin: "0 auto",
     padding: 0,
   },
-  workspaceShell: {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 380px",
-    alignItems: "stretch",
-    minHeight: "100vh",
-  },
-  mainColumn: {
-    display: "grid",
-    alignContent: "start",
-    minHeight: "100vh",
-  },
-  heading: {
-    display: "grid",
-    gap: 6,
-    padding: "16px 24px 12px",
+  pageHeader: {
+    flexShrink: 0,
     borderBottom: "1px solid var(--border)",
   },
-  pageTitle: { margin: 0, fontSize: 20, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 },
-  pageDesc: { margin: 0, fontSize: 13, color: "var(--muted)", lineHeight: 1.6 },
-  editorColumn: {
-    padding: "20px 24px 40px",
-    display: "grid",
-    gap: 16,
-    alignContent: "start",
+  titleBar: {
+    padding: "8px 24px",
+    display: "flex",
+    alignItems: "center",
   },
+  workspaceShell: {
+    display: "flex",
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  mainColumn: {
+    flex: 1,
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  editorArea: {
+    display: "flex",
+    flex: 1,
+    minHeight: 0,
+    overflow: "hidden",
+  },
+  basicPane: {
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  slotsPane: {
+    flex: 1,
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  panelHeader: {
+    flexShrink: 0,
+    padding: "8px 16px",
+    borderBottom: "1px solid var(--border)",
+    background: "var(--panel)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 36,
+    gap: 8,
+  },
+  panelBody: {
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    padding: "16px 20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  },
+  slotDropArea: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 0,
+  },
+  pageTitle: { margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 },
 
   /* Left: editor */
   editorPanel: {
@@ -1578,22 +1491,23 @@ const styles: Record<string, CSSProperties> = {
     alignContent: "start",
   },
   inlinePanel: {
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: 20,
+    borderTop: "1px solid var(--border)",
+    paddingTop: 14,
     display: "grid",
-    gap: 14,
+    gap: 10,
     alignContent: "start",
   },
   sidebarPane: {
-    borderLeft: "1px solid var(--border)",
     display: "flex",
     flexDirection: "column",
-    position: "sticky",
-    top: 0,
-    height: "100vh",
-    minHeight: "100vh",
+    overflow: "hidden",
     background: "var(--bg)",
+  },
+  resizer: {
+    width: 4,
+    flexShrink: 0,
+    background: "var(--border)",
+    cursor: "col-resize",
   },
   sidebarSection: {
     padding: "14px 16px",
@@ -1616,10 +1530,11 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: 2,
   },
   panelTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: 700,
-    color: "var(--ink)",
-    letterSpacing: "0.01em",
+    color: "var(--muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
   },
 
   /* Form elements */
@@ -1665,7 +1580,7 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 8,
     border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, color-mix(in srgb, white 88%, var(--accent-soft)) 0%, var(--panel) 100%)",
+    background: "var(--panel)",
     padding: 12,
   },
   personaCardHead: {
@@ -1795,6 +1710,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     gap: 6,
     alignItems: "center",
+    cursor: "pointer",
   },
   dragHandle: {
     color: "var(--muted)",
@@ -1808,7 +1724,7 @@ const styles: Record<string, CSSProperties> = {
     flex: "0 0 auto",
     height: 30,
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--bg)",
     padding: "0 6px",
     fontSize: 12,
     color: "var(--ink)",
@@ -1817,7 +1733,7 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
     height: 30,
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--bg)",
     padding: "0 8px",
     fontSize: 12,
     color: "var(--ink)",
@@ -1827,7 +1743,7 @@ const styles: Record<string, CSSProperties> = {
     height: 30,
     width: 30,
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--bg)",
     color: "var(--muted)",
     cursor: "pointer",
     fontSize: 16,
@@ -1840,7 +1756,7 @@ const styles: Record<string, CSSProperties> = {
     width: "100%",
     minHeight: 64,
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--bg)",
     padding: "6px 8px",
     resize: "vertical",
     fontSize: 12,
@@ -1852,11 +1768,38 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     lineHeight: 1.6,
   },
+  weightRow: {
+    display: "grid",
+    gridTemplateColumns: "auto 1fr",
+    gap: 8,
+    alignItems: "center",
+  },
   addSlotRow: {
     display: "flex",
     gap: 6,
     alignItems: "center",
     flexWrap: "wrap",
+    paddingTop: 10,
+    borderTop: "1px solid var(--border)",
+  },
+  slotPreview: {
+    flex: 1,
+    fontSize: 11,
+    color: "var(--muted)",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
+    minWidth: 0,
+  },
+  slotToggleBtn: {
+    border: "none",
+    background: "transparent",
+    color: "var(--muted)",
+    cursor: "pointer",
+    fontSize: 12,
+    padding: "0 4px",
+    height: 28,
+    flexShrink: 0,
   },
 
   /* Compact 2-col grid */
@@ -1879,7 +1822,7 @@ const styles: Record<string, CSSProperties> = {
   },
   ghostBtn: {
     border: "1px solid var(--border)",
-    background: "white",
+    background: "transparent",
     color: "var(--ink)",
     height: 36,
     padding: "0 12px",
@@ -1887,6 +1830,20 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     display: "inline-flex",
     alignItems: "center",
+  },
+  iconBtn: {
+    border: "1px solid var(--border)",
+    background: "transparent",
+    color: "var(--muted)",
+    height: 26,
+    minWidth: 26,
+    padding: "0 6px",
+    cursor: "pointer",
+    fontSize: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
   },
   tagBtn: {
     border: "1px solid var(--border)",
@@ -1965,7 +1922,7 @@ const styles: Record<string, CSSProperties> = {
   },
   libraryCardDragHandle: {
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--bg)",
     color: "var(--muted)",
     width: 30,
     height: 30,
@@ -1988,7 +1945,7 @@ const styles: Record<string, CSSProperties> = {
     padding: "2px 8px",
     fontSize: 11,
     color: "var(--muted)",
-    background: "white",
+    background: "var(--bg)",
   },
   libraryCardMetaRow: {
     display: "flex",
@@ -2043,11 +2000,11 @@ const styles: Record<string, CSSProperties> = {
 
   /* Error states */
   errorBanner: {
-    border: "1px solid #f0b8b8",
-    background: "#fff4f4",
-    color: "#9c2020",
+    border: "1px solid color-mix(in srgb, var(--negative) 40%, transparent)",
+    background: "color-mix(in srgb, var(--negative) 8%, white)",
+    color: "var(--negative)",
     padding: "8px 12px",
     fontSize: 13,
   },
-  errorInline: { color: "#9c2020", fontSize: 12 },
+  errorInline: { color: "var(--negative)", fontSize: 12 },
 };

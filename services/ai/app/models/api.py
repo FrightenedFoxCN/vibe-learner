@@ -17,11 +17,13 @@ from app.models.domain import (
     PersonaCardRecord,
     PersonaSlot,
     SceneLibraryRecord,
+    ReusableSceneNodeRecord,
     StreamEventRecord,
     StreamReportRecord,
     StudySessionRecord,
     SceneProfileRecord,
     SceneLayerStateRecord,
+    SceneObjectStateRecord,
     SessionSceneRecord,
     SceneSetupStateRecord,
 )
@@ -125,6 +127,22 @@ class PersonaCardGenerateResponse(BaseModel):
     relationship: str = ""
     learner_address: str = ""
     items: list[PersonaCardResponse]
+
+
+class SceneTreeGenerateRequest(BaseModel):
+    mode: str
+    input_text: str
+    layer_count: int = Field(default=5, ge=3, le=8)
+
+
+class SceneTreeGenerateResponse(BaseModel):
+    mode: str
+    used_model: str
+    used_web_search: bool
+    scene_name: str
+    scene_summary: str
+    selected_layer_id: str = ""
+    scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
 
 
 class DocumentResponse(DocumentRecord):
@@ -392,6 +410,27 @@ class SceneLibraryResponse(SceneLibraryRecord):
 
 class SceneLibraryListResponse(BaseModel):
     items: list[SceneLibraryResponse]
+
+
+class CreateReusableSceneNodeRequest(BaseModel):
+    node_type: str
+    title: str = Field(min_length=1)
+    summary: str = ""
+    tags: list[str] = Field(default_factory=list)
+    reuse_id: str = ""
+    reuse_hint: str = ""
+    source_scene_id: str = ""
+    source_scene_name: str = ""
+    layer_node: SceneLayerStateRecord | None = None
+    object_node: SceneObjectStateRecord | None = None
+
+
+class ReusableSceneNodeResponse(ReusableSceneNodeRecord):
+    pass
+
+
+class ReusableSceneNodeListResponse(BaseModel):
+    items: list[ReusableSceneNodeResponse]
 
 
 class SessionSceneResponse(SessionSceneRecord):

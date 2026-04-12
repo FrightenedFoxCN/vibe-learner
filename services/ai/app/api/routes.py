@@ -18,6 +18,7 @@ from app.core.bootstrap import container
 from app.models.api import (
     BatchCreatePersonaCardsRequest,
     CreatePersonaCardRequest,
+    CreateReusableSceneNodeRequest,
     CreatePersonaRequest,
     CreateStudySessionRequest,
     DocumentDebugResponse,
@@ -38,8 +39,12 @@ from app.models.api import (
     RuntimeSettingsResponse,
     RuntimeSettingsProbeRequest,
     RuntimeSettingsProbeResponse,
+    ReusableSceneNodeListResponse,
+    ReusableSceneNodeResponse,
     SceneLibraryListResponse,
     SceneLibraryResponse,
+    SceneTreeGenerateRequest,
+    SceneTreeGenerateResponse,
     SceneSetupResponse,
     StudyUnitTitleUpdateRequest,
     UpdateModelToolConfigRequest,
@@ -71,7 +76,7 @@ from app.models.api import (
     TokenUsageStatsResponse,
     TokenUsageDailyBucket,
 )
-from app.models.domain import PersonaCardRecord, PlanGenerationTraceRecord
+from app.models.domain import PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -309,6 +314,58 @@ def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest)
 def delete_scene_library_item(scene_id: str) -> dict[str, str]:
     container.scene_library_service.delete_scene(scene_id)
     return {"deleted_scene_id": scene_id}
+
+
+@router.get("/reusable-scene-nodes", response_model=ReusableSceneNodeListResponse)
+def list_reusable_scene_nodes() -> ReusableSceneNodeListResponse:
+    items = container.reusable_scene_node_library_service.list_nodes()
+    return ReusableSceneNodeListResponse(
+        items=[_into_response(ReusableSceneNodeResponse, item) for item in items]
+    )
+
+
+@router.post("/reusable-scene-nodes", response_model=ReusableSceneNodeResponse)
+def create_reusable_scene_node(payload: CreateReusableSceneNodeRequest) -> ReusableSceneNodeResponse:
+    record = container.reusable_scene_node_library_service.create_node(payload)
+    return _into_response(ReusableSceneNodeResponse, record)
+
+
+@router.delete("/reusable-scene-nodes/{node_id}")
+def delete_reusable_scene_node(node_id: str) -> dict[str, str]:
+    container.reusable_scene_node_library_service.delete_node(node_id)
+    return {"deleted_reusable_scene_node_id": node_id}
+
+
+@router.post("/scene-setup/generate", response_model=SceneTreeGenerateResponse)
+def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateResponse:
+    try:
+        if payload.mode == "keywords":
+            result = container.model_provider.generate_scene_tree_from_keywords(
+                keywords=payload.input_text,
+                layer_count=payload.layer_count,
+            )
+        elif payload.mode == "long_text":
+            result = container.model_provider.generate_scene_tree_from_text(
+                text=payload.input_text,
+                layer_count=payload.layer_count,
+            )
+        else:
+            raise HTTPException(status_code=400, detail="invalid_scene_tree_generation_mode")
+    except RuntimeError as exc:
+        raise _map_setting_generation_error(exc) from exc
+
+    return SceneTreeGenerateResponse(
+        mode=payload.mode,
+        used_model=str(result.get("used_model") or ""),
+        used_web_search=bool(result.get("used_web_search")),
+        scene_name=str(result.get("scene_name") or ""),
+        scene_summary=str(result.get("scene_summary") or ""),
+        selected_layer_id=str(result.get("selected_layer_id") or ""),
+        scene_layers=[
+            SceneLayerStateRecord.model_validate(item)
+            for item in (result.get("scene_layers") or [])
+        ],
+    )
 
 
 @router.post("/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse)

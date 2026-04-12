@@ -52,6 +52,8 @@ export interface SceneObjectSnapshot {
   description: string;
   interaction: string;
   tags: string;
+  reuseId: string;
+  reuseHint: string;
 }
 
 export interface SceneTreeNode {
@@ -62,6 +64,9 @@ export interface SceneTreeNode {
   atmosphere: string;
   rules: string;
   entrance: string;
+  tags: string;
+  reuseId: string;
+  reuseHint: string;
   objects: SceneObjectSnapshot[];
   children: SceneTreeNode[];
 }

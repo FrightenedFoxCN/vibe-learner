@@ -11,6 +11,7 @@ from app.services.performance import PerformanceMapper
 from app.services.plans import LearningPlanService
 from app.services.persona_cards import PersonaCardLibraryService
 from app.services.persona import PersonaEngine
+from app.services.reusable_scene_nodes import ReusableSceneNodeLibraryService
 from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, ModelToolConfigService
 from app.services.runtime_settings import RuntimeSettingsService
 from app.services.scene_library import SceneLibraryService
@@ -34,6 +35,7 @@ class Container:
         self.token_usage_service = TokenUsageService(data_root)
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
+        self.reusable_scene_node_library_service = ReusableSceneNodeLibraryService(self.store)
         self.persona_card_library_service = PersonaCardLibraryService(self.store)
         self.session_scene_service = SessionSceneService(self.store)
         self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())

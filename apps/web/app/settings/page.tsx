@@ -227,14 +227,12 @@ export default function SettingsPage() {
                 <option value="openai">OpenAI</option>
               </select>
             </label>
-            <p style={styles.tip}>仅当选择 OpenAI 时显示连接、模型与高级参数。</p>
           </section>
 
           {settings.planProvider === "openai" ? (
             <>
               <section style={styles.card}>
                 <h2 style={styles.cardTitle}>连接与模型</h2>
-                <p style={styles.tip}>先配置默认连接，再按功能覆盖；子功能服务地址留空即继承默认服务地址。</p>
 
                 <label style={styles.field}>
                   <span style={styles.label}>默认访问密钥</span>
@@ -265,7 +263,7 @@ export default function SettingsPage() {
                     disabled={probeState.global.loading}
                     onClick={() => handleProbe("global")}
                   >
-                    {probeState.global.loading ? "检测中..." : "检测默认连接并拉取模型"}
+                    {probeState.global.loading ? "检测中..." : "检测连接"}
                   </button>
                   <span style={styles.probeHint}>{formatProbeHint(probeState.global)}</span>
                 </div>
@@ -307,7 +305,7 @@ export default function SettingsPage() {
                       disabled={probeState.plan.loading}
                       onClick={() => handleProbe("plan")}
                     >
-                      {probeState.plan.loading ? "检测中..." : "检测计划连接并拉取模型"}
+                      {probeState.plan.loading ? "检测中..." : "检测连接"}
                     </button>
                     <span style={styles.probeHint}>{formatProbeHint(probeState.plan)}</span>
                   </div>
@@ -365,7 +363,7 @@ export default function SettingsPage() {
                       disabled={probeState.setting.loading}
                       onClick={() => handleProbe("setting")}
                     >
-                      {probeState.setting.loading ? "检测中..." : "检测人格设置连接并拉取模型"}
+                      {probeState.setting.loading ? "检测中..." : "检测连接"}
                     </button>
                     <span style={styles.probeHint}>{formatProbeHint(probeState.setting)}</span>
                   </div>
@@ -400,9 +398,6 @@ export default function SettingsPage() {
                     />
                     <span style={styles.checkboxLabel}>允许人格设置模型访问网络资源</span>
                   </label>
-                  <p style={styles.tip}>
-                    关闭后，关键词生成人格卡片仍会调用设定模型，但不再使用联网搜索，而是仅根据关键词自行生成。
-                  </p>
                 </div>
 
                 <div style={styles.subCard}>
@@ -442,7 +437,7 @@ export default function SettingsPage() {
                       disabled={probeState.chat.loading}
                       onClick={() => handleProbe("chat")}
                     >
-                      {probeState.chat.loading ? "检测中..." : "检测对话连接并拉取模型"}
+                      {probeState.chat.loading ? "检测中..." : "检测连接"}
                     </button>
                     <span style={styles.probeHint}>{formatProbeHint(probeState.chat)}</span>
                   </div>
@@ -479,7 +474,6 @@ export default function SettingsPage() {
 
               <section style={styles.card}>
                 <h2 style={styles.cardTitle}>多模态能力</h2>
-                <p style={styles.tip}>将图像输入能力单独放在这里，避免和高级参数混在一起。</p>
                 <div style={styles.toggleGrid}>
                   <label style={styles.switchField}>
                     <input
@@ -516,9 +510,7 @@ export default function SettingsPage() {
                 >
                   {advancedExpanded ? "收起高级设置" : "展开高级设置"}
                 </button>
-                {!advancedExpanded ? (
-                  <p style={styles.tip}>高级设置包括温度、输出长度、工具开关、降级策略和向量检索模型。</p>
-                ) : (
+                {advancedExpanded && (
                   <div style={styles.advancedContent}>
                     <div style={styles.grid2}>
                       <label style={styles.field}>
@@ -694,11 +686,7 @@ export default function SettingsPage() {
                 </label>
               </section>
             </>
-          ) : (
-            <section style={styles.card}>
-              <p style={styles.tip}>当前使用本地模拟引擎，已隐藏 OpenAI 相关配置。</p>
-            </section>
-          )}
+          ) : null}
 
           <div style={styles.actions}>
             <button type="submit" disabled={saving} style={styles.primaryBtn}>
@@ -835,8 +823,10 @@ const styles: Record<string, CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: 32,
+    fontSize: 28,
+    fontWeight: 800,
     letterSpacing: "-0.02em",
+    lineHeight: 1.2,
     color: "var(--ink)"
   },
   subtitle: {
@@ -850,9 +840,9 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)"
   },
   error: {
-    background: "#fff0f0",
-    border: "1px solid #ffd9d9",
-    color: "#9a1c1c",
+    background: "color-mix(in srgb, var(--negative) 8%, white)",
+    border: "1px solid color-mix(in srgb, var(--negative) 35%, var(--border))",
+    color: "var(--negative)",
     padding: "10px 12px",
     fontSize: 13
   },
@@ -895,8 +885,11 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13
   },
   label: {
-    color: "var(--ink-2)",
-    fontWeight: 600
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.07em",
+    color: "var(--muted)"
   },
   probeRow: {
     display: "flex",
@@ -949,22 +942,25 @@ const styles: Record<string, CSSProperties> = {
     border: "none",
     background: "var(--accent)",
     color: "#fff",
-    height: 36,
+    height: 34,
     padding: "0 18px",
     cursor: "pointer",
     fontSize: 13,
-    fontWeight: 600
+    fontWeight: 600,
+    display: "inline-flex",
+    alignItems: "center"
   },
   secondaryBtn: {
-    height: 30,
+    height: 26,
     border: "1px solid var(--border)",
-    borderRadius: 3,
     padding: "0 10px",
     background: "transparent",
     color: "var(--muted)",
     fontSize: 12,
     cursor: "pointer",
-    fontWeight: 500
+    fontWeight: 500,
+    display: "inline-flex",
+    alignItems: "center"
   },
   updatedAt: {
     fontSize: 12,

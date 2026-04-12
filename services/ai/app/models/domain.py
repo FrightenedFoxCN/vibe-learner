@@ -252,6 +252,8 @@ class SceneObjectStateRecord(BaseModel):
     description: str
     interaction: str
     tags: str = ""
+    reuse_id: str = ""
+    reuse_hint: str = ""
 
 
 class SceneLayerStateRecord(BaseModel):
@@ -262,6 +264,9 @@ class SceneLayerStateRecord(BaseModel):
     atmosphere: str
     rules: str
     entrance: str
+    tags: str = ""
+    reuse_id: str = ""
+    reuse_hint: str = ""
     objects: list[SceneObjectStateRecord] = Field(default_factory=list)
     children: list["SceneLayerStateRecord"] = Field(default_factory=list)
 
@@ -280,6 +285,22 @@ class SceneSetupStateRecord(BaseModel):
 class SceneLibraryRecord(SceneSetupStateRecord):
     scene_id: str
     created_at: str
+
+
+class ReusableSceneNodeRecord(BaseModel):
+    node_id: str
+    node_type: str
+    title: str
+    summary: str = ""
+    tags: list[str] = Field(default_factory=list)
+    reuse_id: str = ""
+    reuse_hint: str = ""
+    source_scene_id: str = ""
+    source_scene_name: str = ""
+    layer_node: SceneLayerStateRecord | None = None
+    object_node: SceneObjectStateRecord | None = None
+    created_at: str
+    updated_at: str
 
 
 class SessionSceneRecord(SceneSetupStateRecord):

@@ -349,8 +349,10 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: 24,
   },
   pageTitle: {
-    fontSize: 22,
-    fontWeight: 700,
+    fontSize: 28,
+    fontWeight: 800,
+    letterSpacing: "-0.02em",
+    lineHeight: 1.2,
     margin: 0,
     marginBottom: 6,
     color: "var(--ink)",
@@ -366,10 +368,10 @@ const styles: Record<string, CSSProperties> = {
     padding: "12px 0",
   },
   errorBanner: {
-    padding: "10px 14px",
-    background: "#fef2f2",
-    color: "#b91c1c",
-    borderRadius: 6,
+    padding: "10px 12px",
+    background: "color-mix(in srgb, var(--negative) 8%, white)",
+    border: "1px solid color-mix(in srgb, var(--negative) 35%, var(--border))",
+    color: "var(--negative)",
     fontSize: 13,
     marginBottom: 16,
   },
@@ -382,7 +384,6 @@ const styles: Record<string, CSSProperties> = {
   summaryCard: {
     flex: "1 1 160px",
     border: "1px solid var(--border)",
-    borderRadius: 8,
     padding: "14px 18px",
     display: "flex",
     flexDirection: "column",
@@ -413,7 +414,6 @@ const styles: Record<string, CSSProperties> = {
   },
   chartWrapper: {
     border: "1px solid var(--border)",
-    borderRadius: 8,
     padding: "16px 16px 8px",
   },
   legend: {

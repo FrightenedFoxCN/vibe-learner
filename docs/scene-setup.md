@@ -7,6 +7,8 @@ This page defines the layered environment editor used by `/scene-setup`.
 - Build a scene from world scale down to a specific classroom.
 - Let each layer carry its own summary, atmosphere, entry transition, and local rules.
 - Add interactive objects to any layer so the scene can be queried or staged later.
+- Support generating a scene tree from keyword search or long-form setting text.
+- Ensure every layer and object carries explicit reuse metadata for later recombination.
 
 ## Recommended Layer Chain
 
@@ -50,6 +52,10 @@ Interactive objects should usually include:
 | POST | `/scene-library` | Create a new saved scene |
 | PUT | `/scene-library/{scene_id}` | Update an existing saved scene |
 | DELETE | `/scene-library/{scene_id}` | Delete a saved scene |
+| POST | `/scene-setup/generate` | Generate a reusable scene tree from keywords or long text |
+| GET | `/reusable-scene-nodes` | List reusable layer/object nodes |
+| POST | `/reusable-scene-nodes` | Save one layer or object into the reusable node library |
+| DELETE | `/reusable-scene-nodes/{node_id}` | Delete a reusable node |
 
 ### Request Payloads
 
@@ -81,6 +87,9 @@ Python backend (`SceneLayerStateRecord`) uses **snake_case**. TypeScript fronten
 | `atmosphere` | `atmosphere` | Sensory / mood text |
 | `rules` | `rules` | Constraints that children inherit |
 | `entrance` | `entrance` | Transition description from parent |
+| `tags` | `tags` | Search and reuse tags for this node |
+| `reuse_id` | `reuseId` | Stable reusable-node identifier |
+| `reuse_hint` | `reuseHint` | How this node should be reused later |
 | `objects` | `objects` | `SceneObjectStateRecord[]` |
 | `children` | `children` | Recursive `SceneLayerStateRecord[]` |
 
@@ -95,6 +104,35 @@ Python backend (`SceneLayerStateRecord`) uses **snake_case**. TypeScript fronten
 | `description` | `description` |
 | `interaction` | `interaction` |
 | `tags` | `tags` (default `""`) |
+| `reuse_id` | `reuseId` |
+| `reuse_hint` | `reuseHint` |
+
+### Scene Tree Generation
+
+`POST /scene-setup/generate`
+
+```json
+{
+  "mode": "keywords",
+  "input_text": "赛博校园, 物理实验, 夜间自习",
+  "layer_count": 5
+}
+```
+
+- `mode` supports `keywords` and `long_text`.
+- Keywords mode may use web search when the runtime setting model allows it.
+- The response returns `scene_name`, `scene_summary`, `selected_layer_id`, and `scene_layers`.
+- Returned nodes are expected to already contain `tags`, `reuse_id`, and `reuse_hint`.
+
+### Reusable Node Library
+
+Reusable nodes are a smaller-granularity library than the full scene library.
+
+- `node_type="layer"` stores one `SceneLayerStateRecord`, including all nested children and objects.
+- `node_type="object"` stores one `SceneObjectStateRecord`.
+- The frontend inserts a saved layer as a child of the currently selected layer.
+- The frontend inserts a saved object into the currently selected layer's object list.
+- Inserted copies receive fresh runtime `id`s, but preserve `reuse_id` so the semantic template identity survives cloning.
 
 ### SceneProfileRecord
 

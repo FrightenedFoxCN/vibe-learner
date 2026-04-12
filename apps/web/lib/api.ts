@@ -44,6 +44,16 @@ export interface PersonaCardGenerateResult {
   items: PersonaCard[];
 }
 
+export interface SceneTreeGenerateResult {
+  mode: "keywords" | "long_text";
+  usedModel: string;
+  usedWebSearch: boolean;
+  sceneName: string;
+  sceneSummary: string;
+  selectedLayerId: string;
+  sceneLayers: import("@vibe-learner/shared").SceneTreeNode[];
+}
+
 export interface PersonaSettingAssistInput {
   name: string;
   summary: string;
@@ -89,6 +99,22 @@ export interface SceneLibraryItemPayload {
   sceneProfile?: import("@vibe-learner/shared").SceneProfile;
 }
 
+export interface ReusableSceneNodePayload {
+  nodeId: string;
+  nodeType: "layer" | "object";
+  title: string;
+  summary: string;
+  tags: string[];
+  reuseId: string;
+  reuseHint: string;
+  sourceSceneId: string;
+  sourceSceneName: string;
+  layerNode?: import("@vibe-learner/shared").SceneTreeNode;
+  objectNode?: import("@vibe-learner/shared").SceneObjectSnapshot;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DocumentStudyUnitUpdatePayload {
   document: DocumentRecord;
   plans: LearningPlan[];
@@ -105,12 +131,17 @@ function serializeSceneTree(
     atmosphere: node.atmosphere,
     rules: node.rules,
     entrance: node.entrance,
+    tags: node.tags,
+    reuse_id: node.reuseId,
+    reuse_hint: node.reuseHint,
     objects: (node.objects ?? []).map((object) => ({
       id: object.id,
       name: object.name,
       description: object.description,
       interaction: object.interaction,
       tags: object.tags,
+      reuse_id: object.reuseId,
+      reuse_hint: object.reuseHint,
     })),
     children: serializeSceneTree(node.children),
   }));
@@ -143,6 +174,9 @@ function normalizeSceneTreeNode(node: any): import("@vibe-learner/shared").Scene
     atmosphere: String(node.atmosphere ?? ""),
     rules: String(node.rules ?? ""),
     entrance: String(node.entrance ?? ""),
+    tags: String(node.tags ?? ""),
+    reuseId: String(node.reuse_id ?? ""),
+    reuseHint: String(node.reuse_hint ?? ""),
     objects: Array.isArray(node.objects)
       ? node.objects.map((object: any) => ({
           id: String(object.id ?? ""),
@@ -150,6 +184,8 @@ function normalizeSceneTreeNode(node: any): import("@vibe-learner/shared").Scene
           description: String(object.description ?? ""),
           interaction: String(object.interaction ?? ""),
           tags: String(object.tags ?? ""),
+          reuseId: String(object.reuse_id ?? ""),
+          reuseHint: String(object.reuse_hint ?? ""),
         }))
       : [],
     children: Array.isArray(node.children) ? node.children.map(normalizeSceneTreeNode) : [],
@@ -668,6 +704,34 @@ function normalizeSceneLibraryItem(payload: any): SceneLibraryItemPayload {
   };
 }
 
+function normalizeReusableSceneNode(payload: any): ReusableSceneNodePayload {
+  return {
+    nodeId: String(payload.node_id ?? ""),
+    nodeType: (payload.node_type === "object" ? "object" : "layer") as "layer" | "object",
+    title: String(payload.title ?? ""),
+    summary: String(payload.summary ?? ""),
+    tags: Array.isArray(payload.tags) ? payload.tags.map((item: unknown) => String(item)) : [],
+    reuseId: String(payload.reuse_id ?? ""),
+    reuseHint: String(payload.reuse_hint ?? ""),
+    sourceSceneId: String(payload.source_scene_id ?? ""),
+    sourceSceneName: String(payload.source_scene_name ?? ""),
+    layerNode: payload.layer_node ? normalizeSceneTreeNode(payload.layer_node) : undefined,
+    objectNode: payload.object_node
+      ? {
+          id: String(payload.object_node.id ?? ""),
+          name: String(payload.object_node.name ?? ""),
+          description: String(payload.object_node.description ?? ""),
+          interaction: String(payload.object_node.interaction ?? ""),
+          tags: String(payload.object_node.tags ?? ""),
+          reuseId: String(payload.object_node.reuse_id ?? ""),
+          reuseHint: String(payload.object_node.reuse_hint ?? ""),
+        }
+      : undefined,
+    createdAt: String(payload.created_at ?? ""),
+    updatedAt: String(payload.updated_at ?? ""),
+  };
+}
+
 function normalizeMemoryTrace(items: any[] | undefined) {
   const raw = Array.isArray(items) ? items : [];
   return raw.map((item: any) => ({
@@ -946,6 +1010,35 @@ export async function generatePersonaCards(input: {
   };
 }
 
+export async function generateSceneTree(input: {
+  mode: "keywords" | "long_text";
+  inputText: string;
+  layerCount: number;
+}): Promise<SceneTreeGenerateResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/scene-setup/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        mode: input.mode,
+        input_text: input.inputText,
+        layer_count: input.layerCount
+      })
+    })
+  );
+  return {
+    mode: (payload.mode === "keywords" ? "keywords" : "long_text") as "keywords" | "long_text",
+    usedModel: String(payload.used_model ?? ""),
+    usedWebSearch: Boolean(payload.used_web_search),
+    sceneName: String(payload.scene_name ?? ""),
+    sceneSummary: String(payload.scene_summary ?? ""),
+    selectedLayerId: String(payload.selected_layer_id ?? ""),
+    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers.map(normalizeSceneTreeNode) : []
+  };
+}
+
 export async function assistPersonaSetting(
   input: PersonaSettingAssistInput
 ): Promise<PersonaSettingAssistOutput> {
@@ -1184,6 +1277,69 @@ export async function deleteSceneLibraryItem(sceneId: string): Promise<{ deleted
   );
   return {
     deletedSceneId: String(payload.deleted_scene_id ?? sceneId),
+  };
+}
+
+export async function listReusableSceneNodes(): Promise<ReusableSceneNodePayload[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL}/reusable-scene-nodes`)
+  );
+  return payload.items.map(normalizeReusableSceneNode);
+}
+
+export async function createReusableSceneNode(input: {
+  nodeType: "layer" | "object";
+  title: string;
+  summary?: string;
+  tags?: string[];
+  reuseId?: string;
+  reuseHint?: string;
+  sourceSceneId?: string;
+  sourceSceneName?: string;
+  layerNode?: import("@vibe-learner/shared").SceneTreeNode | null;
+  objectNode?: import("@vibe-learner/shared").SceneObjectSnapshot | null;
+}): Promise<ReusableSceneNodePayload> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/reusable-scene-nodes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        node_type: input.nodeType,
+        title: input.title,
+        summary: input.summary ?? "",
+        tags: input.tags ?? [],
+        reuse_id: input.reuseId ?? "",
+        reuse_hint: input.reuseHint ?? "",
+        source_scene_id: input.sourceSceneId ?? "",
+        source_scene_name: input.sourceSceneName ?? "",
+        layer_node: input.layerNode ? serializeSceneTree([input.layerNode])[0] : null,
+        object_node: input.objectNode
+          ? {
+              id: input.objectNode.id,
+              name: input.objectNode.name,
+              description: input.objectNode.description,
+              interaction: input.objectNode.interaction,
+              tags: input.objectNode.tags,
+              reuse_id: input.objectNode.reuseId,
+              reuse_hint: input.objectNode.reuseHint,
+            }
+          : null,
+      })
+    })
+  );
+  return normalizeReusableSceneNode(payload);
+}
+
+export async function deleteReusableSceneNode(nodeId: string): Promise<{ deletedReusableSceneNodeId: string }> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL}/reusable-scene-nodes/${nodeId}`, {
+      method: "DELETE"
+    })
+  );
+  return {
+    deletedReusableSceneNodeId: String(payload.deleted_reusable_scene_node_id ?? nodeId),
   };
 }
 

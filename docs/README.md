@@ -4,6 +4,7 @@
 
 - `architecture.md`: current monorepo boundaries, runtime flow, and storage model
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
+- `desktop-distribution-plan.md`: deferred plan for future cross-platform desktop packaging and app-shell architecture
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
 - `learning-plan-prompt-contract.md`: exact learning-plan prompt sections, user payload shape, schema injection, and model transport string
@@ -19,8 +20,9 @@
 4. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
 5. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
 6. Read `api-reference.md` before touching frontend/backend contracts.
-7. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-8. Read `../TODO.md` for the active implementation backlog.
+7. Read `desktop-distribution-plan.md` before reviving desktop packaging or executable distribution work.
+8. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+9. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 

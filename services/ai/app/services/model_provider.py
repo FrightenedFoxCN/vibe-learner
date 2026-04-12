@@ -21,6 +21,8 @@ from app.models.domain import (
     PersonaProfile,
     PersonaSlot,
     RichTextBlockRecord,
+    SceneLayerStateRecord,
+    SceneObjectStateRecord,
     SceneProfileRecord,
     StudyUnitRecord,
     normalize_persona_narrative_mode,
@@ -127,6 +129,19 @@ PERSONA_CARD_GENERATION_JSON_SCHEMA: dict[str, object] = {
     "required": ["summary", "relationship", "learner_address", "cards"],
 }
 
+SCENE_TREE_GENERATION_SCHEMA = (
+    "{"
+    '"scene_name": string, '
+    '"scene_summary": string, '
+    '"selected_layer_id": string, '
+    '"scene_layers": [{"id"?: string, "title": string, "scope_label": string, "summary": string, '
+    '"atmosphere": string, "rules": string, "entrance": string, "tags"?: string, "reuse_id"?: string, '
+    '"reuse_hint"?: string, "objects"?: [{"id"?: string, "name": string, "description": string, '
+    '"interaction": string, "tags"?: string, "reuse_id"?: string, "reuse_hint"?: string}], '
+    '"children"?: [SceneLayer]}]'
+    "}"
+)
+
 CHAT_EXEMPT_TOOL_NAMES = frozenset(
     (
         "read_page_range_content",
@@ -158,6 +173,10 @@ def _setting_prompt_sections() -> dict[str, str]:
         "generate_keywords_user": template.require("generate_keywords_user"),
         "generate_long_text_system": template.require("generate_long_text_system"),
         "generate_long_text_user": template.require("generate_long_text_user"),
+        "generate_scene_keywords_system": template.require("generate_scene_keywords_system"),
+        "generate_scene_keywords_user": template.require("generate_scene_keywords_user"),
+        "generate_scene_long_text_system": template.require("generate_scene_long_text_system"),
+        "generate_scene_long_text_user": template.require("generate_scene_long_text_user"),
     }
 
 
@@ -444,6 +463,22 @@ class ModelProvider:
     ) -> dict[str, object]:
         raise NotImplementedError
 
+    def generate_scene_tree_from_keywords(
+        self,
+        *,
+        keywords: str,
+        layer_count: int,
+    ) -> dict[str, object]:
+        raise NotImplementedError
+
+    def generate_scene_tree_from_text(
+        self,
+        *,
+        text: str,
+        layer_count: int,
+    ) -> dict[str, object]:
+        raise NotImplementedError
+
 
 class MockModelProvider(ModelProvider):
     def generate_chat(
@@ -725,6 +760,69 @@ class MockModelProvider(ModelProvider):
             "relationship": "陪伴式导师",
             "learner_address": "同学",
             "cards": cards,
+            "used_model": "mock",
+            "used_web_search": False,
+        }
+
+    def generate_scene_tree_from_keywords(
+        self,
+        *,
+        keywords: str,
+        layer_count: int,
+    ) -> dict[str, object]:
+        keyword_parts = [
+            part.strip()
+            for part in re.split(r"[，,、；;|\n]+", keywords)
+            if part.strip()
+        ]
+        if not keyword_parts:
+            raise RuntimeError("setting_model_invalid_payload")
+        seed_name = " / ".join(keyword_parts[:2])
+        theme = "、".join(keyword_parts[:4])
+        layers = _build_mock_scene_layers(
+            layer_count=max(3, min(8, layer_count)),
+            anchors=keyword_parts,
+            fragments=[
+                f"围绕 {theme} 展开教学场景，强调从宏观规则一路收束到局部互动。",
+                f"关键词驱动：{theme}。",
+            ],
+        )
+        selected_layer_id = _select_deepest_layer_id(layers)
+        return {
+            "scene_name": f"{seed_name} 场景树" if seed_name else "关键词场景树",
+            "scene_summary": f"根据关键词 {theme} 生成的分层场景草稿，适合继续补充教学动线、规则与交互节点。",
+            "selected_layer_id": selected_layer_id,
+            "scene_layers": [layer.model_dump(mode="json") for layer in layers],
+            "used_model": "mock",
+            "used_web_search": False,
+        }
+
+    def generate_scene_tree_from_text(
+        self,
+        *,
+        text: str,
+        layer_count: int,
+    ) -> dict[str, object]:
+        fragments = [
+            segment.strip()
+            for segment in re.split(r"[。！？\n]+", text)
+            if segment.strip()
+        ]
+        if not fragments:
+            raise RuntimeError("setting_model_invalid_payload")
+        anchors = _extract_scene_anchors_from_text(text)
+        layers = _build_mock_scene_layers(
+            layer_count=max(3, min(8, layer_count)),
+            anchors=anchors,
+            fragments=fragments,
+        )
+        selected_layer_id = _select_deepest_layer_id(layers)
+        scene_name_seed = fragments[0][:18].strip("：:- ")
+        return {
+            "scene_name": f"{scene_name_seed or '长文本'} 场景树",
+            "scene_summary": f"从长文本中抽取出的分层场景结构，共 {len(layers)} 层，可继续作为教学或角色互动场景复用。",
+            "selected_layer_id": selected_layer_id,
+            "scene_layers": [layer.model_dump(mode="json") for layer in layers],
             "used_model": "mock",
             "used_web_search": False,
         }
@@ -1276,6 +1374,122 @@ class OpenAIModelProvider(MockModelProvider):
             "used_model": self.setting_model,
             "used_web_search": False,
         }
+
+    def generate_scene_tree_from_keywords(
+        self,
+        *,
+        keywords: str,
+        layer_count: int,
+    ) -> dict[str, object]:
+        prompt_sections = _setting_prompt_sections()
+        if self.setting_web_search_enabled:
+            payload: dict[str, Any] = {
+                "model": self.setting_model,
+                "temperature": self.setting_temperature,
+                "max_output_tokens": max(self.setting_max_tokens, 1400),
+                "instructions": prompt_sections["generate_scene_keywords_system"]
+                .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
+                .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count)))),
+                "input": prompt_sections["generate_scene_keywords_user"]
+                .replace("{{KEYWORDS}}", keywords.strip())
+                .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count))))
+                .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA),
+                "tools": [{"type": "web_search"}],
+            }
+            raw_payload, _ = self._request_openai_response(
+                payload,
+                request_kind="setting",
+                model=self.setting_model,
+            )
+            parsed = _extract_json_payload(
+                _extract_response_output_text(raw_payload),
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+        else:
+            payload = {
+                "model": self.setting_model,
+                "temperature": self.setting_temperature,
+                "max_tokens": max(self.setting_max_tokens, 1400),
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": prompt_sections["generate_scene_keywords_system"]
+                        .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
+                        .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count)))),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            prompt_sections["generate_scene_keywords_user"]
+                            .replace("{{KEYWORDS}}", keywords.strip())
+                            .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count))))
+                            .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
+                            + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
+                        ),
+                    },
+                ],
+            }
+            raw_payload, _ = self._request_openai_chat_completion(
+                payload,
+                request_kind="setting",
+                model=self.setting_model,
+            )
+            parsed = _extract_json_payload(
+                _extract_choice_content(raw_payload),
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+        return _normalize_generated_scene_result(
+            parsed,
+            used_model=self.setting_model,
+            used_web_search=self.setting_web_search_enabled,
+        )
+
+    def generate_scene_tree_from_text(
+        self,
+        *,
+        text: str,
+        layer_count: int,
+    ) -> dict[str, object]:
+        prompt_sections = _setting_prompt_sections()
+        payload: dict[str, Any] = {
+            "model": self.setting_model,
+            "temperature": self.setting_temperature,
+            "max_tokens": max(self.setting_max_tokens, 1400),
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": prompt_sections["generate_scene_long_text_system"]
+                    .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
+                    .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count)))),
+                },
+                {
+                    "role": "user",
+                    "content": prompt_sections["generate_scene_long_text_user"]
+                    .replace("{{SOURCE_TEXT}}", text.strip())
+                    .replace("{{LAYER_COUNT}}", str(max(3, min(8, layer_count))))
+                    .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA),
+                },
+            ],
+        }
+        raw_payload, _ = self._request_openai_chat_completion(
+            payload,
+            request_kind="setting",
+            model=self.setting_model,
+        )
+        parsed = _extract_json_payload(
+            _extract_choice_content(raw_payload),
+            invalid_json_code="setting_model_invalid_json",
+            invalid_payload_code="setting_model_invalid_payload",
+        )
+        return _normalize_generated_scene_result(
+            parsed,
+            used_model=self.setting_model,
+            used_web_search=False,
+        )
 
 
 
@@ -2252,6 +2466,207 @@ def _normalize_generated_persona_cards(parsed: dict[str, object]) -> list[dict[s
     if not cards:
         raise RuntimeError("setting_model_invalid_payload")
     return cards
+
+
+def _stable_scene_token(seed: str, prefix: str) -> str:
+    value = 0
+    for char in seed:
+        value = ((value * 131) + ord(char)) % 0xFFFFFFFF
+    return f"{prefix}-{value:08x}"
+
+
+def _normalize_generated_scene_object(
+    raw_object: object,
+    *,
+    parent_title: str,
+    index: int,
+) -> SceneObjectStateRecord | None:
+    if not isinstance(raw_object, dict):
+        return None
+    name = str(raw_object.get("name") or "").strip()
+    description = str(raw_object.get("description") or "").strip()
+    interaction = str(raw_object.get("interaction") or "").strip()
+    if not name or not description or not interaction:
+        return None
+    seed = f"{parent_title}:{name}:{index}"
+    return SceneObjectStateRecord(
+        id=str(raw_object.get("id") or _stable_scene_token(seed, "scene-object")),
+        name=name,
+        description=description,
+        interaction=interaction,
+        tags=str(raw_object.get("tags") or "").strip(),
+        reuse_id=str(raw_object.get("reuse_id") or _stable_scene_token(seed, "scene-object-reuse")),
+        reuse_hint=str(raw_object.get("reuse_hint") or f"可复用为“{name}”这一类交互物体。").strip(),
+    )
+
+
+def _normalize_generated_scene_layer(
+    raw_layer: object,
+    *,
+    trail: tuple[str, ...],
+    index: int,
+) -> SceneLayerStateRecord | None:
+    if not isinstance(raw_layer, dict):
+        return None
+    title = str(raw_layer.get("title") or "").strip()
+    scope_label = str(raw_layer.get("scope_label") or raw_layer.get("scopeLabel") or "").strip()
+    summary = str(raw_layer.get("summary") or "").strip()
+    atmosphere = str(raw_layer.get("atmosphere") or "").strip()
+    rules = str(raw_layer.get("rules") or "").strip()
+    entrance = str(raw_layer.get("entrance") or "").strip()
+    if not title or not scope_label or not summary or not atmosphere or not rules or not entrance:
+        return None
+    current_trail = (*trail, title)
+    seed = "/".join(current_trail) + f":{scope_label}:{index}"
+    raw_objects = raw_layer.get("objects")
+    raw_children = raw_layer.get("children")
+    objects = [
+        item
+        for object_index, raw_object in enumerate(raw_objects if isinstance(raw_objects, list) else [])
+        if (item := _normalize_generated_scene_object(raw_object, parent_title=title, index=object_index)) is not None
+    ]
+    children = [
+        item
+        for child_index, raw_child in enumerate(raw_children if isinstance(raw_children, list) else [])
+        if (item := _normalize_generated_scene_layer(raw_child, trail=current_trail, index=child_index)) is not None
+    ]
+    return SceneLayerStateRecord(
+        id=str(raw_layer.get("id") or _stable_scene_token(seed, "scene-layer")),
+        title=title,
+        scope_label=scope_label,
+        summary=summary,
+        atmosphere=atmosphere,
+        rules=rules,
+        entrance=entrance,
+        tags=str(raw_layer.get("tags") or "").strip(),
+        reuse_id=str(raw_layer.get("reuse_id") or _stable_scene_token(seed, "scene-layer-reuse")),
+        reuse_hint=str(
+            raw_layer.get("reuse_hint")
+            or f"可复用为“{title}”这一层场景模板，保留其规则、氛围和进入方式。"
+        ).strip(),
+        objects=objects,
+        children=children,
+    )
+
+
+def _select_deepest_layer_id(layers: list[SceneLayerStateRecord]) -> str:
+    current = layers[0] if layers else None
+    while current and current.children:
+        current = current.children[-1]
+    return current.id if current is not None else ""
+
+
+def _normalize_generated_scene_result(
+    parsed: dict[str, object],
+    *,
+    used_model: str,
+    used_web_search: bool,
+) -> dict[str, object]:
+    raw_layers = parsed.get("scene_layers")
+    if not isinstance(raw_layers, list):
+        raise RuntimeError("setting_model_invalid_payload")
+    scene_layers = [
+        item
+        for index, raw_layer in enumerate(raw_layers)
+        if (item := _normalize_generated_scene_layer(raw_layer, trail=(), index=index)) is not None
+    ]
+    if not scene_layers:
+        raise RuntimeError("setting_model_invalid_payload")
+    selected_layer_id = str(parsed.get("selected_layer_id") or "").strip()
+    valid_ids = {
+        layer.id
+        for layer in scene_layers
+        for layer in _iter_scene_layers(layer)
+    }
+    if selected_layer_id not in valid_ids:
+        selected_layer_id = _select_deepest_layer_id(scene_layers)
+    scene_name = str(parsed.get("scene_name") or "").strip() or "生成场景树"
+    scene_summary = str(parsed.get("scene_summary") or "").strip()
+    if not scene_summary:
+        scene_summary = f"围绕 {scene_name} 生成的可复用场景树。"
+    return {
+        "scene_name": scene_name,
+        "scene_summary": scene_summary,
+        "selected_layer_id": selected_layer_id,
+        "scene_layers": [layer.model_dump(mode="json") for layer in scene_layers],
+        "used_model": used_model,
+        "used_web_search": used_web_search,
+    }
+
+
+def _iter_scene_layers(layer: SceneLayerStateRecord):
+    yield layer
+    for child in layer.children:
+        yield from _iter_scene_layers(child)
+
+
+def _extract_scene_anchors_from_text(text: str) -> list[str]:
+    tokens = [
+        token.strip()
+        for token in re.split(r"[，,、；;：:\s]+", text)
+        if token.strip()
+    ]
+    anchors: list[str] = []
+    for token in tokens:
+        if len(token) < 2:
+            continue
+        anchors.append(token)
+        if len(anchors) >= 6:
+            break
+    return anchors or ["教材", "课堂", "实验台"]
+
+
+def _build_mock_scene_layers(
+    *,
+    layer_count: int,
+    anchors: list[str],
+    fragments: list[str],
+) -> list[SceneLayerStateRecord]:
+    layer_templates = [
+        ("世界整体", "宏观世界"),
+        ("区域 / 城市群", "区域层"),
+        ("街区 / 校园周边", "城市层"),
+        ("校园 / 教学楼", "建筑层"),
+        ("教室 / 实验区", "微观教室"),
+        ("讲台 / 操作台", "互动层"),
+        ("桌面 / 设备焦点", "近景层"),
+        ("局部道具", "对象层"),
+    ]
+
+    def build_layer(depth: int) -> SceneLayerStateRecord:
+        title, scope_label = layer_templates[min(depth, len(layer_templates) - 1)]
+        anchor = anchors[depth % len(anchors)] if anchors else "学习"
+        fragment = fragments[depth % len(fragments)] if fragments else "围绕学习任务组织空间。"
+        layer_title = f"{anchor}{title}" if depth else f"{anchor}{title}"
+        object_name = f"{anchor}装置"
+        seed = f"{depth}:{layer_title}:{scope_label}"
+        child_layers = [build_layer(depth + 1)] if depth + 1 < layer_count else []
+        return SceneLayerStateRecord(
+            id=_stable_scene_token(seed, "scene-layer"),
+            title=layer_title,
+            scope_label=scope_label,
+            summary=f"{fragment[:64]} 这一层负责把“{anchor}”主题收束到当前空间尺度。",
+            atmosphere=f"空间基调围绕“{anchor}”展开，信息密度和视觉焦点随层级逐步集中。",
+            rules=f"当前层级保留与“{anchor}”相关的核心规则，并为下级节点提供更具体的互动边界。",
+            entrance=f"从上一层进入时，先感知“{anchor}”相关线索，再把注意力推进到当前尺度的关键设施。",
+            tags=",".join(dict.fromkeys([anchor, scope_label, "可复用节点"])),
+            reuse_id=_stable_scene_token(seed, "scene-layer-reuse"),
+            reuse_hint=f"适合作为“{anchor}”主题下的 {scope_label} 模板节点，后续可替换物体和规则后直接复用。",
+            objects=[
+                SceneObjectStateRecord(
+                    id=_stable_scene_token(seed + ":object", "scene-object"),
+                    name=object_name,
+                    description=f"承载“{anchor}”主题线索的核心物体，用于帮助学习者快速识别当前层级的功能。",
+                    interaction=f"可读取、操作或指向该物体，以推进与“{anchor}”相关的讲解或任务。",
+                    tags=",".join(dict.fromkeys([anchor, "交互", scope_label])),
+                    reuse_id=_stable_scene_token(seed + ":object", "scene-object-reuse"),
+                    reuse_hint=f"可复用为“{object_name}”这一类核心交互物体。",
+                )
+            ],
+            children=child_layers,
+        )
+
+    return [build_layer(0)]
 
 
 def _parse_chat_model_reply(

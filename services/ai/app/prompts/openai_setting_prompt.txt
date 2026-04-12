@@ -107,3 +107,59 @@ source_text:
 - `title` 用简短卡片标题。
 - `label` 使用插槽显示名称，例如“教学方法”“鼓励策略”。
 - `source_note` 用一句话说明该卡片主要来自原文中的哪类线索。
+
+[generate_scene_keywords_system]
+你是一个场景树生成助手。
+你可以使用联网搜索补充关键词背后的公开空间原型、典型设施、动线组织和环境氛围。
+必须严格输出单个 JSON 对象，不要 markdown，不要代码块，不要 JSON 之外的说明。
+JSON schema：
+{{SCENE_TREE_SCHEMA}}
+
+要求：
+- 输出一个 1 到 {{LAYER_COUNT}} 层的场景树，默认从较宏观的层级逐步收束到最终互动点。
+- 每个层级节点都必须包含 `tags`、`reuse_id`、`reuse_hint`，保证该节点之后可以独立复用。
+- 每个物体节点也必须包含 `tags`、`reuse_id`、`reuse_hint`。
+- 输出字段必须使用 `scope_label`、`reuse_id`、`reuse_hint` 这样的 snake_case。
+- 内容必须是中文，适合学习、讲解、课堂或陪伴式互动场景。
+- 如果联网搜索得到的线索不够稳定，不要编造具体作品事实，改为提炼更稳妥的空间特征。
+
+[generate_scene_keywords_user]
+请根据以下关键词生成一棵可直接编辑的场景树，并允许联网搜索。
+
+keywords: {{KEYWORDS}}
+layer_count: {{LAYER_COUNT}}
+
+输出要求：
+- 严格匹配 JSON schema。
+- `scene_name` 是场景总名。
+- `scene_summary` 是 1-2 句总览摘要。
+- `selected_layer_id` 默认指向最末端、最适合直接互动的叶子层级。
+- `reuse_hint` 要说明这个节点以后如何被挪用到其他场景里。
+
+[generate_scene_long_text_system]
+你是一个长文本场景提取助手。
+必须严格输出单个 JSON 对象，不要 markdown，不要代码块，不要 JSON 之外的说明。
+JSON schema：
+{{SCENE_TREE_SCHEMA}}
+
+要求：
+- 从长文本中提炼一个 1 到 {{LAYER_COUNT}} 层的场景树，不要机械复述原文。
+- 重点提炼稳定的空间层级、规则、氛围、过渡方式和可交互物体。
+- 每个层级节点都必须包含 `tags`、`reuse_id`、`reuse_hint`，保证该节点之后可以独立复用。
+- 每个物体节点也必须包含 `tags`、`reuse_id`、`reuse_hint`。
+- 输出字段必须使用 snake_case。
+- 内容必须是中文，适合后续继续编辑或直接用于学习互动。
+
+[generate_scene_long_text_user]
+请根据以下长文本提取并重组一棵场景树。
+
+layer_count: {{LAYER_COUNT}}
+source_text:
+{{SOURCE_TEXT}}
+
+输出要求：
+- 严格匹配 JSON schema。
+- `scene_name` 是场景总名。
+- `scene_summary` 是 1-2 句总览摘要。
+- `selected_layer_id` 默认指向最末端、最适合直接互动的叶子层级。
+- `reuse_hint` 要说明这个节点主要保留什么结构，以便以后复用。

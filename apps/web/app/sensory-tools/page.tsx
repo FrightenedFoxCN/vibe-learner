@@ -104,7 +104,6 @@ export default function SensoryToolsPage() {
                     <span style={styles.stageCount}>({buildStageToolSummary(stage)})</span>
                   </h2>
                   <p style={styles.stageDesc}>{stage.description}</p>
-                  <p style={styles.stageAudit}>审计：{stage.auditBasis.join(" | ") || "-"}</p>
                 </div>
                 <StageBadge enabled={stage.stageEnabled} reason={stage.stageDisabledReason} />
               </div>
@@ -149,7 +148,6 @@ export default function SensoryToolsPage() {
                               {!tool.available ? (
                                 <div style={styles.unavailable}>不可用：{tool.unavailableReason || "当前环境不支持"}</div>
                               ) : null}
-                              <div style={styles.auditRow}>审计：{tool.auditBasis.join(" | ") || "-"}</div>
                             </div>
                             <input
                               type="checkbox"
@@ -293,8 +291,10 @@ const styles: Record<string, CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: 32,
+    fontSize: 28,
+    fontWeight: 800,
     letterSpacing: "-0.02em",
+    lineHeight: 1.2,
     color: "var(--ink)"
   },
   subtitle: {
@@ -320,7 +320,7 @@ const styles: Record<string, CSSProperties> = {
   },
   stageCard: {
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--panel)",
     padding: "14px",
     display: "grid",
     gap: 12
@@ -380,9 +380,11 @@ const styles: Record<string, CSSProperties> = {
     alignContent: "start"
   },
   categoryTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: 700,
-    color: "var(--ink)"
+    color: "var(--muted)",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em"
   },
   categoryHeader: {
     display: "flex",
@@ -396,7 +398,7 @@ const styles: Record<string, CSSProperties> = {
   },
   categoryActionBtn: {
     border: "1px solid var(--border)",
-    background: "white",
+    background: "transparent",
     color: "var(--ink)",
     fontSize: 12,
     padding: "2px 8px",
@@ -407,7 +409,7 @@ const styles: Record<string, CSSProperties> = {
     gap: 8
   },
   toolItem: {
-    background: "white",
+    background: "var(--bg)",
     border: "1px solid var(--border)",
     padding: "10px",
     display: "grid",

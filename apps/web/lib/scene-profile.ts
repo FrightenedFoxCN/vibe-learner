@@ -11,18 +11,31 @@ type RawSceneLayer = {
 };
 
 type RawSceneObject = {
+  id?: unknown;
   name?: unknown;
+  description?: unknown;
+  interaction?: unknown;
   tags?: unknown;
+  reuseId?: unknown;
+  reuse_id?: unknown;
+  reuseHint?: unknown;
+  reuse_hint?: unknown;
 };
 
 type RawSceneTreeNode = {
   id?: unknown;
   title?: unknown;
   scopeLabel?: unknown;
+  scope_label?: unknown;
   summary?: unknown;
   atmosphere?: unknown;
   rules?: unknown;
   entrance?: unknown;
+  tags?: unknown;
+  reuseId?: unknown;
+  reuse_id?: unknown;
+  reuseHint?: unknown;
+  reuse_hint?: unknown;
   objects?: unknown;
   children?: unknown;
 };
@@ -107,11 +120,14 @@ function normalizeSceneTree(nodes: RawSceneTreeNode[]): import("@vibe-learner/sh
   return nodes.map((node) => ({
     id: String(node.id ?? ""),
     title: String(node.title ?? "未命名层级"),
-    scopeLabel: String(node.scopeLabel ?? "未定义范围"),
+    scopeLabel: String(node.scopeLabel ?? node.scope_label ?? "未定义范围"),
     summary: String(node.summary ?? ""),
     atmosphere: String(node.atmosphere ?? ""),
     rules: String(node.rules ?? ""),
     entrance: String(node.entrance ?? ""),
+    tags: String(node.tags ?? ""),
+    reuseId: String(node.reuseId ?? node.reuse_id ?? ""),
+    reuseHint: String(node.reuseHint ?? node.reuse_hint ?? ""),
     objects: Array.isArray(node.objects)
       ? node.objects.map((item) => ({
           id: String((item as Record<string, unknown>).id ?? ""),
@@ -119,6 +135,8 @@ function normalizeSceneTree(nodes: RawSceneTreeNode[]): import("@vibe-learner/sh
           description: String((item as Record<string, unknown>).description ?? ""),
           interaction: String((item as Record<string, unknown>).interaction ?? ""),
           tags: String((item as Record<string, unknown>).tags ?? ""),
+          reuseId: String((item as Record<string, unknown>).reuseId ?? (item as Record<string, unknown>).reuse_id ?? ""),
+          reuseHint: String((item as Record<string, unknown>).reuseHint ?? (item as Record<string, unknown>).reuse_hint ?? ""),
         }))
       : [],
     children: Array.isArray(node.children) ? normalizeSceneTree(node.children as RawSceneTreeNode[]) : [],
