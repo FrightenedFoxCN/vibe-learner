@@ -27,7 +27,12 @@ async fn main() {
     let app = Router::new()
         .merge(routes::router())
         .with_state(app_state)
-        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any).allow_headers(Any))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        )
         .layer(TraceLayer::new_for_http());
 
     let port = env::var("VIBE_LEARNER_RS_PORT")
@@ -35,9 +40,7 @@ async fn main() {
         .and_then(|value| value.parse::<u16>().ok())
         .unwrap_or(9000);
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    let listener = TcpListener::bind(addr)
-        .await
-        .expect("bind rust ai service");
+    let listener = TcpListener::bind(addr).await.expect("bind rust ai service");
 
     info!("vibe-learner-ai-rs listening on http://{}", addr);
 

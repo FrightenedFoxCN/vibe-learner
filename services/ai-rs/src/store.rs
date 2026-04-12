@@ -2,11 +2,15 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use uuid::Uuid;
-use vibe_learner_contracts::{CreatePersonaRequest, DocumentRecord, DocumentStatus, PersonaRecord};
+use vibe_learner_contracts::{
+    CreateLearningPlanRequest, CreatePersonaRequest, DocumentRecord, DocumentStatus,
+    LearningPlanRecord, PersonaRecord, PlanProvider, RuntimeSettingsPatch, RuntimeSettingsRecord,
+};
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -112,6 +116,21 @@ impl JsonStore {
         self.load_list("personas.json")
     }
 
+    pub fn list_learning_plans(&self) -> Result<Vec<LearningPlanRecord>, StoreError> {
+        self.load_list("learning_plans.json")
+    }
+
+    pub fn get_runtime_settings(&self) -> Result<RuntimeSettingsRecord, StoreError> {
+        let path = self.root.join("runtime_settings.json");
+        if !path.exists() {
+            let defaults = default_runtime_settings();
+            self.save_runtime_settings(&defaults)?;
+            return Ok(defaults);
+        }
+        let raw = fs::read_to_string(path)?;
+        Ok(serde_json::from_str(&raw)?)
+    }
+
     pub fn create_persona(
         &self,
         payload: CreatePersonaRequest,
@@ -126,6 +145,55 @@ impl JsonStore {
         personas.push(record.clone());
         self.save_list("personas.json", &personas)?;
         Ok(record)
+    }
+
+    pub fn create_learning_plan(
+        &self,
+        payload: CreateLearningPlanRequest,
+    ) -> Result<LearningPlanRecord, StoreError> {
+        let _guard = self.write_lock.lock().expect("learning plan store lock");
+        let mut plans = self.load_list("learning_plans.json")?;
+        let record = LearningPlanRecord {
+            id: Uuid::new_v4(),
+            document_id: payload.document_id,
+            persona_id: payload.persona_id,
+            course_title: payload.course_title.trim().to_string(),
+            objective: payload.objective.trim().to_string(),
+            study_chapters: payload
+                .study_chapters
+                .into_iter()
+                .map(|chapter| chapter.trim().to_string())
+                .filter(|chapter| !chapter.is_empty())
+                .collect(),
+        };
+        plans.push(record.clone());
+        self.save_list("learning_plans.json", &plans)?;
+        Ok(record)
+    }
+
+    pub fn update_runtime_settings(
+        &self,
+        patch: RuntimeSettingsPatch,
+    ) -> Result<RuntimeSettingsRecord, StoreError> {
+        let _guard = self.write_lock.lock().expect("runtime settings store lock");
+        let mut settings = self.get_runtime_settings()?;
+
+        if let Some(plan_provider) = patch.plan_provider {
+            settings.plan_provider = plan_provider;
+        }
+        if let Some(openai_plan_model) = patch.openai_plan_model {
+            settings.openai_plan_model = openai_plan_model.trim().to_string();
+        }
+        if let Some(openai_chat_model) = patch.openai_chat_model {
+            settings.openai_chat_model = openai_chat_model.trim().to_string();
+        }
+        if let Some(show_debug_info) = patch.show_debug_info {
+            settings.show_debug_info = show_debug_info;
+        }
+
+        settings.updated_at = unix_timestamp_string();
+        self.save_runtime_settings(&settings)?;
+        Ok(settings)
     }
 
     fn load_list<T>(&self, file_name: &str) -> Result<Vec<T>, StoreError>
@@ -145,12 +213,42 @@ impl JsonStore {
         T: Serialize,
     {
         let path = self.root.join(file_name);
-        let temp_path = self.root.join(format!("{file_name}.{}.tmp", Uuid::new_v4()));
+        let temp_path = self
+            .root
+            .join(format!("{file_name}.{}.tmp", Uuid::new_v4()));
         let payload = serde_json::to_string_pretty(items)?;
         fs::write(&temp_path, payload)?;
         fs::rename(temp_path, path)?;
         Ok(())
     }
+
+    fn save_runtime_settings(&self, settings: &RuntimeSettingsRecord) -> Result<(), StoreError> {
+        let path = self.root.join("runtime_settings.json");
+        let temp_path = self
+            .root
+            .join(format!("runtime_settings.json.{}.tmp", Uuid::new_v4()));
+        let payload = serde_json::to_string_pretty(settings)?;
+        fs::write(&temp_path, payload)?;
+        fs::rename(temp_path, path)?;
+        Ok(())
+    }
+}
+
+fn default_runtime_settings() -> RuntimeSettingsRecord {
+    RuntimeSettingsRecord {
+        updated_at: unix_timestamp_string(),
+        plan_provider: PlanProvider::Mock,
+        openai_plan_model: "gpt-4.1-mini".to_string(),
+        openai_chat_model: "gpt-4.1-mini".to_string(),
+        show_debug_info: true,
+    }
+}
+
+fn unix_timestamp_string() -> String {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs().to_string())
+        .unwrap_or_else(|_| "0".to_string())
 }
 
 fn derive_title(original_filename: &str) -> String {
@@ -225,6 +323,64 @@ mod tests {
         let documents = store.list_documents().expect("list documents");
         assert_eq!(documents.len(), 1);
         assert_eq!(documents[0], created);
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn create_learning_plan_persists_trimmed_fields() {
+        let root = temp_root();
+        let store = JsonStore::new(root.clone()).expect("create store");
+
+        let created = store
+            .create_learning_plan(CreateLearningPlanRequest {
+                document_id: Uuid::new_v4(),
+                persona_id: Uuid::new_v4(),
+                course_title: "  Chapter Sprint  ".to_string(),
+                objective: "  Master core derivations  ".to_string(),
+                study_chapters: vec![
+                    " Intro ".to_string(),
+                    " ".to_string(),
+                    "Integrals".to_string(),
+                ],
+            })
+            .expect("create learning plan");
+
+        assert_eq!(created.course_title, "Chapter Sprint");
+        assert_eq!(created.objective, "Master core derivations");
+        assert_eq!(created.study_chapters, vec!["Intro", "Integrals"]);
+
+        let plans = store.list_learning_plans().expect("list plans");
+        assert_eq!(plans.len(), 1);
+        assert_eq!(plans[0], created);
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn runtime_settings_defaults_and_patch_roundtrip() {
+        let root = temp_root();
+        let store = JsonStore::new(root.clone()).expect("create store");
+
+        let defaults = store.get_runtime_settings().expect("read defaults");
+        assert_eq!(defaults.plan_provider, PlanProvider::Mock);
+        assert_eq!(defaults.openai_plan_model, "gpt-4.1-mini");
+
+        let updated = store
+            .update_runtime_settings(RuntimeSettingsPatch {
+                plan_provider: Some(PlanProvider::Openai),
+                openai_plan_model: Some("  gpt-5-mini  ".to_string()),
+                openai_chat_model: None,
+                show_debug_info: Some(false),
+            })
+            .expect("patch settings");
+
+        assert_eq!(updated.plan_provider, PlanProvider::Openai);
+        assert_eq!(updated.openai_plan_model, "gpt-5-mini");
+        assert!(!updated.show_debug_info);
+
+        let persisted = store.get_runtime_settings().expect("reload settings");
+        assert_eq!(persisted, updated);
 
         let _ = fs::remove_dir_all(root);
     }

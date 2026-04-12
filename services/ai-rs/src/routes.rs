@@ -6,8 +6,9 @@ use axum::{Json, Router};
 use serde_json::json;
 use uuid::Uuid;
 use vibe_learner_contracts::{
-    CreatePersonaRequest, DocumentRecord, HealthResponse, PersonaRecord, RewriteStatusResponse,
-    RewriteSurface,
+    CreateLearningPlanRequest, CreatePersonaRequest, DocumentPlanningContext, DocumentRecord,
+    HealthResponse, LearningPlanRecord, PersonaRecord, PlanningStudyUnit, RewriteStatusResponse,
+    RewriteSurface, RuntimeSettingsPatch, RuntimeSettingsRecord,
 };
 
 use crate::state::AppState;
@@ -19,6 +20,18 @@ pub fn router() -> Router<AppState> {
         .route("/api/rewrite-status", get(rewrite_status))
         .route("/api/documents", get(list_documents).post(create_document))
         .route("/api/documents/{document_id}/file", get(get_document_file))
+        .route(
+            "/api/documents/{document_id}/planning-context",
+            get(get_document_planning_context),
+        )
+        .route(
+            "/api/learning-plans",
+            get(list_learning_plans).post(create_learning_plan),
+        )
+        .route(
+            "/api/runtime-settings",
+            get(get_runtime_settings).patch(patch_runtime_settings),
+        )
         .route("/api/personas", get(list_personas).post(create_persona))
 }
 
@@ -80,8 +93,14 @@ async fn rewrite_status(State(state): State<AppState>) -> Json<RewriteStatusResp
     })
 }
 
-async fn list_documents(State(state): State<AppState>) -> Result<Json<Vec<DocumentRecord>>, AppError> {
-    state.store.list_documents().map(Json).map_err(map_store_error)
+async fn list_documents(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<DocumentRecord>>, AppError> {
+    state
+        .store
+        .list_documents()
+        .map(Json)
+        .map_err(map_store_error)
 }
 
 async fn create_document(
@@ -103,10 +122,9 @@ async fn create_document(
             .file_name()
             .map(|value| value.to_string())
             .unwrap_or_else(|| "document.pdf".to_string());
-        let bytes = field
-            .bytes()
-            .await
-            .map_err(|error| AppError::bad_request(format!("cannot read uploaded file: {error}")))?;
+        let bytes = field.bytes().await.map_err(|error| {
+            AppError::bad_request(format!("cannot read uploaded file: {error}"))
+        })?;
 
         upload = Some((file_name, bytes.to_vec()));
         break;
@@ -126,13 +144,20 @@ async fn get_document_file(
     State(state): State<AppState>,
     Path(document_id): Path<Uuid>,
 ) -> Result<Response, AppError> {
-    let document = state.store.find_document(document_id).map_err(map_store_error)?;
+    let document = state
+        .store
+        .find_document(document_id)
+        .map_err(map_store_error)?;
     let bytes = state
         .store
         .read_document_bytes(document_id)
         .map_err(map_store_error)?;
 
-    let media_type = if document.original_filename.to_ascii_lowercase().ends_with(".pdf") {
+    let media_type = if document
+        .original_filename
+        .to_ascii_lowercase()
+        .ends_with(".pdf")
+    {
         "application/pdf"
     } else {
         "application/octet-stream"
@@ -154,8 +179,79 @@ async fn get_document_file(
     Ok((headers, bytes).into_response())
 }
 
-async fn list_personas(State(state): State<AppState>) -> Result<Json<Vec<PersonaRecord>>, AppError> {
-    state.store.list_personas().map(Json).map_err(map_store_error)
+async fn get_document_planning_context(
+    State(state): State<AppState>,
+    Path(document_id): Path<Uuid>,
+) -> Result<Json<DocumentPlanningContext>, AppError> {
+    let document = state
+        .store
+        .find_document(document_id)
+        .map_err(map_store_error)?;
+    let related_plans = state
+        .store
+        .list_learning_plans()
+        .map_err(map_store_error)?
+        .into_iter()
+        .filter(|plan| plan.document_id == document_id)
+        .collect::<Vec<_>>();
+
+    let outline = related_plans
+        .iter()
+        .flat_map(|plan| plan.study_chapters.iter().cloned())
+        .collect::<Vec<_>>();
+
+    let study_units = if outline.is_empty() {
+        vec![PlanningStudyUnit {
+            unit_id: format!("{}-overview", document_id),
+            title: document.title,
+            summary: "Initial planning context generated from uploaded document metadata."
+                .to_string(),
+            page_start: 1,
+            page_end: 1,
+        }]
+    } else {
+        outline
+            .iter()
+            .enumerate()
+            .map(|(index, chapter)| PlanningStudyUnit {
+                unit_id: format!("{}-{}", document_id, index + 1),
+                title: chapter.clone(),
+                summary: format!("Study unit scaffold for chapter `{chapter}`."),
+                page_start: (index as u32) + 1,
+                page_end: (index as u32) + 1,
+            })
+            .collect()
+    };
+
+    Ok(Json(DocumentPlanningContext {
+        document_id,
+        course_outline: outline,
+        study_units,
+        available_tools: vec![
+            "get_study_unit_detail".to_string(),
+            "read_page_range_content".to_string(),
+        ],
+    }))
+}
+
+async fn list_personas(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<PersonaRecord>>, AppError> {
+    state
+        .store
+        .list_personas()
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn list_learning_plans(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<LearningPlanRecord>>, AppError> {
+    state
+        .store
+        .list_learning_plans()
+        .map(Json)
+        .map_err(map_store_error)
 }
 
 async fn create_persona(
@@ -172,6 +268,60 @@ async fn create_persona(
     state
         .store
         .create_persona(payload)
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn create_learning_plan(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateLearningPlanRequest>,
+) -> Result<Json<LearningPlanRecord>, AppError> {
+    if payload.course_title.trim().is_empty() {
+        return Err(AppError::bad_request("course title is required"));
+    }
+    if payload.objective.trim().is_empty() {
+        return Err(AppError::bad_request("learning objective is required"));
+    }
+
+    state
+        .store
+        .create_learning_plan(payload)
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn get_runtime_settings(
+    State(state): State<AppState>,
+) -> Result<Json<RuntimeSettingsRecord>, AppError> {
+    state
+        .store
+        .get_runtime_settings()
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn patch_runtime_settings(
+    State(state): State<AppState>,
+    Json(payload): Json<RuntimeSettingsPatch>,
+) -> Result<Json<RuntimeSettingsRecord>, AppError> {
+    if payload
+        .openai_plan_model
+        .as_ref()
+        .is_some_and(|value| value.trim().is_empty())
+    {
+        return Err(AppError::bad_request("openai plan model cannot be empty"));
+    }
+    if payload
+        .openai_chat_model
+        .as_ref()
+        .is_some_and(|value| value.trim().is_empty())
+    {
+        return Err(AppError::bad_request("openai chat model cannot be empty"));
+    }
+
+    state
+        .store
+        .update_runtime_settings(payload)
         .map(Json)
         .map_err(map_store_error)
 }

@@ -1,14 +1,13 @@
 [package]
 name = "vibe-learner-web-rs"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
 publish = false
 
 [dependencies]
 dioxus = { version = "0.6", features = ["router", "web"] }
 gloo-net = "0.6"
-serde.workspace = true
+serde = { version = "1.0", features = ["derive"] }
 vibe-learner-contracts = { path = "../../crates/vibe-learner-contracts" }
 wasm-bindgen-futures = "0.4"
-

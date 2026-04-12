@@ -19,7 +19,7 @@ The repository now has a parallel Rust workspace so the rewrite can start from a
 - Rust frontend skeleton: `apps/web-rs`
 - toolchain pin: `rust-toolchain.toml`
 - minimal local JSON/file persistence for Rust `documents` and `personas`
-- runtime-verified Rust endpoints for `health`, persona creation, and document upload
+- runtime-verified Rust endpoints for `health`, persona creation, document upload, and basic learning-plan persistence
 
 ## Chosen Rewrite Shape
 
@@ -54,6 +54,9 @@ This rewrite is not close to feature parity yet. The current branch only provide
 - backend entrypoint and rewrite-status endpoint
 - JSON-backed persona listing/creation
 - JSON-backed document listing/upload and file persistence
+- JSON-backed learning-plan listing/creation (course title + objective + study chapters)
+- JSON-backed runtime settings read/patch endpoint scaffold (`/api/runtime-settings`)
+- document planning-context scaffold endpoint (`/api/documents/{id}/planning-context`)
 - frontend route shell with backend probe
 
 It does not yet provide:

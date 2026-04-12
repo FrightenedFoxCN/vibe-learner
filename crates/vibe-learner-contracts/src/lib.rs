@@ -23,7 +23,18 @@ pub struct DocumentRecord {
 pub struct LearningPlanRecord {
     pub id: Uuid,
     pub document_id: Uuid,
+    pub persona_id: Uuid,
     pub course_title: String,
+    pub objective: String,
+    pub study_chapters: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CreateLearningPlanRequest {
+    pub document_id: Uuid,
+    pub persona_id: Uuid,
+    pub course_title: String,
+    pub objective: String,
     pub study_chapters: Vec<String>,
 }
 
@@ -68,4 +79,45 @@ pub struct RewriteStatusResponse {
     pub completed_today: Vec<String>,
     pub next_steps: Vec<String>,
     pub surfaces: Vec<RewriteSurface>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PlanProvider {
+    Mock,
+    Openai,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RuntimeSettingsRecord {
+    pub updated_at: String,
+    pub plan_provider: PlanProvider,
+    pub openai_plan_model: String,
+    pub openai_chat_model: String,
+    pub show_debug_info: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RuntimeSettingsPatch {
+    pub plan_provider: Option<PlanProvider>,
+    pub openai_plan_model: Option<String>,
+    pub openai_chat_model: Option<String>,
+    pub show_debug_info: Option<bool>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PlanningStudyUnit {
+    pub unit_id: String,
+    pub title: String,
+    pub summary: String,
+    pub page_start: u32,
+    pub page_end: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DocumentPlanningContext {
+    pub document_id: Uuid,
+    pub course_outline: Vec<String>,
+    pub study_units: Vec<PlanningStudyUnit>,
+    pub available_tools: Vec<String>,
 }
