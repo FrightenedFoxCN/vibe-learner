@@ -80,3 +80,27 @@ pub struct RewriteStatusResponse {
     pub next_steps: Vec<String>,
     pub surfaces: Vec<RewriteSurface>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PlanProvider {
+    Mock,
+    Openai,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RuntimeSettingsRecord {
+    pub updated_at: String,
+    pub plan_provider: PlanProvider,
+    pub openai_plan_model: String,
+    pub openai_chat_model: String,
+    pub show_debug_info: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RuntimeSettingsPatch {
+    pub plan_provider: Option<PlanProvider>,
+    pub openai_plan_model: Option<String>,
+    pub openai_chat_model: Option<String>,
+    pub show_debug_info: Option<bool>,
+}

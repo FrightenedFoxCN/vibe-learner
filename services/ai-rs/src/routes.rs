@@ -7,7 +7,8 @@ use serde_json::json;
 use uuid::Uuid;
 use vibe_learner_contracts::{
     CreateLearningPlanRequest, CreatePersonaRequest, DocumentRecord, HealthResponse,
-    LearningPlanRecord, PersonaRecord, RewriteStatusResponse, RewriteSurface,
+    LearningPlanRecord, PersonaRecord, RewriteStatusResponse, RewriteSurface, RuntimeSettingsPatch,
+    RuntimeSettingsRecord,
 };
 
 use crate::state::AppState;
@@ -22,6 +23,10 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/learning-plans",
             get(list_learning_plans).post(create_learning_plan),
+        )
+        .route(
+            "/api/runtime-settings",
+            get(get_runtime_settings).patch(patch_runtime_settings),
         )
         .route("/api/personas", get(list_personas).post(create_persona))
 }
@@ -222,6 +227,42 @@ async fn create_learning_plan(
     state
         .store
         .create_learning_plan(payload)
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn get_runtime_settings(
+    State(state): State<AppState>,
+) -> Result<Json<RuntimeSettingsRecord>, AppError> {
+    state
+        .store
+        .get_runtime_settings()
+        .map(Json)
+        .map_err(map_store_error)
+}
+
+async fn patch_runtime_settings(
+    State(state): State<AppState>,
+    Json(payload): Json<RuntimeSettingsPatch>,
+) -> Result<Json<RuntimeSettingsRecord>, AppError> {
+    if payload
+        .openai_plan_model
+        .as_ref()
+        .is_some_and(|value| value.trim().is_empty())
+    {
+        return Err(AppError::bad_request("openai plan model cannot be empty"));
+    }
+    if payload
+        .openai_chat_model
+        .as_ref()
+        .is_some_and(|value| value.trim().is_empty())
+    {
+        return Err(AppError::bad_request("openai chat model cannot be empty"));
+    }
+
+    state
+        .store
+        .update_runtime_settings(payload)
         .map(Json)
         .map_err(map_store_error)
 }

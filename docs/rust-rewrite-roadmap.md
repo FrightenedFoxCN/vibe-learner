@@ -55,6 +55,7 @@ This rewrite is not close to feature parity yet. The current branch only provide
 - JSON-backed persona listing/creation
 - JSON-backed document listing/upload and file persistence
 - JSON-backed learning-plan listing/creation (course title + objective + study chapters)
+- JSON-backed runtime settings read/patch endpoint scaffold (`/api/runtime-settings`)
 - frontend route shell with backend probe
 
 It does not yet provide:
