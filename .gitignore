@@ -20,3 +20,7 @@ services/ai/data/*.json
 **/target
 **/data-rs
 apps/desktop/src-tauri/gen
+apps/desktop/src-tauri/binaries
+apps/desktop/.bundle-resources
+services/ai/build
+**/log

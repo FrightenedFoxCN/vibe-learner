@@ -17,6 +17,10 @@ const DESKTOP_VIEW_TOGGLE_NAV_ID: &str = "desktop-view-toggle-sidebar";
 const DESKTOP_VIEW_TOGGLE_DEBUG_ID: &str = "desktop-view-toggle-debug-overlay";
 const DESKTOP_VIEW_TOGGLE_NAV_EVENT: &str = "desktop-view-toggle-sidebar";
 const DESKTOP_VIEW_TOGGLE_DEBUG_EVENT: &str = "desktop-view-toggle-debug-overlay";
+const SIDECAR_BINARY_NAME: &str = "vibe-learner-sidecar";
+const ONNXTR_RESOURCE_DIR: &str = "ocr/onnxtr";
+const REQUIRED_ONNXTR_MODEL_FILES: [&str; 3] =
+    ["detector.onnx", "recognizer.onnx", "recognizer_vocab.txt"];
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -28,6 +32,7 @@ struct DesktopRuntimeConfig {
     vault_state: &'static str,
     vault_path: String,
     storage_root: String,
+    startup_error: String,
 }
 
 struct ManagedSidecar {
@@ -48,6 +53,7 @@ struct DesktopAppState {
     storage_root: String,
     vault_path: String,
     vault_state: &'static str,
+    startup_error: String,
     _sidecar: Mutex<ManagedSidecar>,
 }
 
@@ -70,6 +76,7 @@ fn runtime_config_from_state(state: &DesktopAppState) -> DesktopRuntimeConfig {
         vault_state: state.vault_state,
         vault_path: state.vault_path.clone(),
         storage_root: state.storage_root.clone(),
+        startup_error: state.startup_error.clone(),
     }
 }
 
@@ -116,15 +123,32 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
 
     let port = available_port().map_err(|err| format!("desktop_port_allocation_failed:{err}"))?;
     let ai_base_url = format!("http://127.0.0.1:{port}");
-    let child = spawn_sidecar_process(port, &storage_root)?;
-    wait_for_sidecar_health(port)?;
+    let mut startup_error = String::new();
+    let mut managed_sidecar = ManagedSidecar { child: None };
+
+    match spawn_sidecar_process(app, port, &storage_root) {
+        Ok(child) => {
+            managed_sidecar.child = Some(child);
+            if let Err(err) = wait_for_sidecar_health(port) {
+                startup_error = err;
+            }
+        }
+        Err(err) => {
+            startup_error = err;
+        }
+    }
+
+    if !startup_error.is_empty() {
+        eprintln!("desktop_startup_error:{startup_error}");
+    }
 
     Ok(DesktopAppState {
         ai_base_url,
         storage_root: storage_root.to_string_lossy().into_owned(),
         vault_path: vault_path.to_string_lossy().into_owned(),
         vault_state,
-        _sidecar: Mutex::new(ManagedSidecar { child: Some(child) }),
+        startup_error,
+        _sidecar: Mutex::new(managed_sidecar),
     })
 }
 
@@ -135,15 +159,13 @@ fn available_port() -> std::io::Result<u16> {
     Ok(port)
 }
 
-fn spawn_sidecar_process(port: u16, storage_root: &Path) -> Result<Child, String> {
+fn spawn_sidecar_process(
+    app: &tauri::AppHandle,
+    port: u16,
+    storage_root: &Path,
+) -> Result<Child, String> {
+    let bundled_sidecar = bundled_sidecar_path(app);
     let services_ai_dir = repo_root().join("services").join("ai");
-    if !services_ai_dir.exists() {
-        return Err(format!(
-            "desktop_sidecar_source_missing:{}",
-            services_ai_dir.display()
-        ));
-    }
-
     let database_url = format!(
         "sqlite:///{}",
         storage_root.join("vibe_learner.db").to_string_lossy()
@@ -157,12 +179,27 @@ fn spawn_sidecar_process(port: u16, storage_root: &Path) -> Result<Child, String
     ]
     .join(",");
 
-    Command::new("uv")
-        .current_dir(&services_ai_dir)
-        .arg("run")
-        .arg("python")
-        .arg("-m")
-        .arg("app.sidecar")
+    let mut command = if let Some(sidecar_path) = bundled_sidecar {
+        Command::new(sidecar_path)
+    } else {
+        if !services_ai_dir.exists() {
+            return Err(format!(
+                "desktop_sidecar_source_missing:{}",
+                services_ai_dir.display()
+            ));
+        }
+
+        let mut source_command = Command::new("uv");
+        source_command
+            .current_dir(&services_ai_dir)
+            .arg("run")
+            .arg("python")
+            .arg("-m")
+            .arg("app.sidecar");
+        source_command
+    };
+
+    command
         .arg("--host")
         .arg("127.0.0.1")
         .arg("--port")
@@ -171,7 +208,13 @@ fn spawn_sidecar_process(port: u16, storage_root: &Path) -> Result<Child, String
         .env("VIBE_LEARNER_STORAGE_ROOT", storage_root)
         .env("VIBE_LEARNER_DESKTOP_MODE", "true")
         .env("VIBE_LEARNER_ALLOWED_ORIGINS", allowed_origins)
-        .env("VIBE_LEARNER_OCR_ENGINE", "onnxtr")
+        .env("VIBE_LEARNER_OCR_ENGINE", "onnxtr");
+
+    if let Some(model_dir) = bundled_onnxtr_model_dir(app) {
+        command.env("VIBE_LEARNER_ONNXTR_MODEL_DIR", model_dir);
+    }
+
+    command
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
@@ -220,6 +263,48 @@ fn repo_root() -> PathBuf {
         .nth(3)
         .map(Path::to_path_buf)
         .expect("repo root should be available from src-tauri")
+}
+
+fn sidecar_binary_file_name() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "vibe-learner-sidecar.exe"
+    } else {
+        SIDECAR_BINARY_NAME
+    }
+}
+
+fn bundled_sidecar_path(app: &tauri::AppHandle) -> Option<PathBuf> {
+    let executable_name = sidecar_binary_file_name();
+
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(parent) = current_exe.parent() {
+            let candidate = parent.join(executable_name);
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+
+    let resource_dir = app.path().resource_dir().ok()?;
+    let candidate = resource_dir.join(executable_name);
+    if candidate.exists() {
+        Some(candidate)
+    } else {
+        None
+    }
+}
+
+fn bundled_onnxtr_model_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
+    let resource_dir = app.path().resource_dir().ok()?;
+    let candidate = resource_dir.join(ONNXTR_RESOURCE_DIR);
+    if REQUIRED_ONNXTR_MODEL_FILES
+        .iter()
+        .all(|file_name| candidate.join(file_name).exists())
+    {
+        Some(candidate)
+    } else {
+        None
+    }
 }
 
 fn stronghold_key_deriver(password: &str) -> Vec<u8> {

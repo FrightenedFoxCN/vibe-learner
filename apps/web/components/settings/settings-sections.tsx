@@ -85,6 +85,10 @@ export function DesktopSecurityCard({ controller }: { controller: SettingsContro
           <div style={styles.error}>操作失败：{controller.desktopSecurity.error}</div>
         ) : null}
 
+        {controller.desktopSecurity.startupError ? (
+          <div style={styles.error}>桌面后端启动失败：{controller.desktopSecurity.startupError}</div>
+        ) : null}
+
         {!isUnlocked ? (
           <>
             <label style={styles.field}>

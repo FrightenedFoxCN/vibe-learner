@@ -48,6 +48,7 @@ export interface DesktopSecurityState {
   busy: boolean;
   error: string;
   vaultPath: string;
+  startupError: string;
 }
 
 export interface SettingsController {
@@ -101,7 +102,8 @@ export function useSettingsController(): SettingsController {
     vaultState: isDesktopVaultUnlocked() ? "unlocked" : desktopRuntimeConfig?.vaultState ?? "unconfigured",
     busy: false,
     error: "",
-    vaultPath: desktopRuntimeConfig?.vaultPath ?? ""
+    vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
+    startupError: desktopRuntimeConfig?.startupError ?? ""
   });
   const [numericDrafts, setNumericDrafts] = useState<NumericDraftState>({
     openaiTimeoutSeconds: "",
@@ -144,9 +146,10 @@ export function useSettingsController(): SettingsController {
         : prev.vaultState === "unlocked"
           ? prev.vaultState
           : desktopRuntimeConfig?.vaultState ?? "unconfigured",
-      vaultPath: desktopRuntimeConfig?.vaultPath ?? ""
+      vaultPath: desktopRuntimeConfig?.vaultPath ?? "",
+      startupError: desktopRuntimeConfig?.startupError ?? ""
     }));
-  }, [desktopEnabled, desktopRuntimeConfig?.vaultPath, desktopRuntimeConfig?.vaultState]);
+  }, [desktopEnabled, desktopRuntimeConfig?.startupError, desktopRuntimeConfig?.vaultPath, desktopRuntimeConfig?.vaultState]);
 
   useEffect(() => {
     if (initializedRef.current || !runtimeSettings.settings) {

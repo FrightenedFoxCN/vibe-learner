@@ -19,6 +19,8 @@ import { useSettingsController } from "./use-settings-controller";
 
 export function SettingsPage() {
   const controller = useSettingsController();
+  const showDesktopSecurityCard =
+    controller.desktopSecurity.enabled || Boolean(controller.desktopSecurity.startupError);
   const debugSnapshot = useMemo(
     () => ({
       title: "设置页调试面板",
@@ -62,14 +64,19 @@ export function SettingsPage() {
 
       {controller.loading ? <div style={styles.loading}>正在加载设置…</div> : null}
       {controller.loadError ? <div style={styles.error}>设置加载失败：{controller.loadError}</div> : null}
+      {!controller.loading && !controller.settings && showDesktopSecurityCard ? (
+        <div className="settings-form" style={styles.form}>
+          <DesktopSecurityCard controller={controller} />
+        </div>
+      ) : null}
 
       {!controller.loading && controller.settings ? (
         <div className="settings-form" style={styles.form}>
           <ProviderCard controller={controller} settings={controller.settings} />
+          {showDesktopSecurityCard ? <DesktopSecurityCard controller={controller} /> : null}
 
           {controller.settings.planProvider === "litellm" ? (
             <>
-              <DesktopSecurityCard controller={controller} />
               <ConnectionModelsCard controller={controller} settings={controller.settings} />
               <CapabilityAuditCard controller={controller} settings={controller.settings} />
               <AdvancedSettingsCard controller={controller} settings={controller.settings} />

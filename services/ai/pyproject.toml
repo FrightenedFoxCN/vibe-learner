@@ -3,7 +3,7 @@ name = "vibe-learner-ai"
 version = "0.1.0"
 description = "AI service for persona-aware learning orchestration"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
   "alembic>=1.16.0",
   "fastapi>=0.116.0",

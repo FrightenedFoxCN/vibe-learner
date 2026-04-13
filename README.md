@@ -83,7 +83,7 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 - Git（新增）: >= 2.40
 - Node.js: >= 20
 - npm: >= 10
-- Python: >= 3.9
+- Python: >= 3.12
 - uv: 建议最新稳定版
 
 ## 项目现有依赖项（按清单文件整理）
@@ -238,9 +238,32 @@ OPENAI_CHAT_MODEL_MULTIMODAL=false
 ```bash
 npm run dev:web      # 启动前端
 npm run build:web    # 构建前端
+npm run build:desktop # 为当前操作系统构建桌面预览安装包
 npm run lint:web     # 前端 lint
 npm run test:ai      # 运行后端测试（unittest）
 ```
+
+## 桌面预览封包
+
+`npm run build:desktop` 会自动完成：
+
+- 静态导出 `apps/web`
+- 用 `PyInstaller` 打包 `services/ai` sidecar
+- 通过 Tauri 生成当前主机平台的预览安装包
+
+如需把离线 OnnxTR 模型一并打进安装包，可在构建前提供一个包含以下文件的目录：
+
+- `detector.onnx`
+- `recognizer.onnx`
+- `recognizer_vocab.txt`
+
+示例：
+
+```bash
+VIBE_LEARNER_ONNXTR_MODEL_SOURCE=/absolute/path/to/onnxtr-models npm run build:desktop
+```
+
+若未提供该目录，预览安装包仍可构建，但 OCR 会回退到运行时默认模型发现路径，而不是完全离线内嵌模型资源。
 
 ## 典型使用流程
 

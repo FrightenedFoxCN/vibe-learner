@@ -10,6 +10,7 @@
     "dev:web": "npm --workspace @vibe-learner/web run dev",
     "build:web": "npm --workspace @vibe-learner/web run build",
     "build:desktop:web": "npm --workspace @vibe-learner/web run build:desktop",
+    "prepare:desktop:bundle": "npm --workspace @vibe-learner/desktop run prepare:bundle",
     "dev:desktop": "npm --workspace @vibe-learner/desktop run dev",
     "build:desktop": "npm --workspace @vibe-learner/desktop run build",
     "lint:web": "npm --workspace @vibe-learner/web run lint",

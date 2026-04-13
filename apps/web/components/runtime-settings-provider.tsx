@@ -29,7 +29,7 @@ export function RuntimeSettingsProvider({ children }: { children: ReactNode }) {
       setSettings(nextSettings);
       return nextSettings;
     } catch (err) {
-      setError(String(err));
+      setError(err instanceof Error ? err.message : String(err));
       return null;
     } finally {
       setLoading(false);

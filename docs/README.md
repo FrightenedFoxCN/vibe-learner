@@ -6,6 +6,7 @@
 - `architecture.md`: current monorepo boundaries, runtime flow, and storage model
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
 - `desktop-roadmap.md`: active desktop implementation roadmap for Tauri packaging, OnnxTR OCR, and master-password vault storage
+- `desktop-packaging.md`: concrete desktop preview packaging commands, artifact paths, sidecar bundling, and CI workflow notes
 - `desktop-distribution-plan.md`: deferred plan for future cross-platform desktop packaging and app-shell architecture
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields

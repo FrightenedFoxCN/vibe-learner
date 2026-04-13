@@ -35,6 +35,7 @@ function normalizeDesktopConfig(value: unknown): DesktopRuntimeConfig | null {
         : "unconfigured",
     vaultPath: typeof record.vaultPath === "string" ? record.vaultPath : "",
     storageRoot: typeof record.storageRoot === "string" ? record.storageRoot : "",
+    startupError: typeof record.startupError === "string" ? record.startupError : ""
   };
 }
 

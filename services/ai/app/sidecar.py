@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 import uvicorn
+from app.main import app as fastapi_app
 
 
 def main() -> None:
@@ -13,7 +14,7 @@ def main() -> None:
     args = parser.parse_args()
 
     uvicorn.run(
-        "app.main:app",
+        fastapi_app,
         host=args.host,
         port=args.port,
         log_level=args.log_level,

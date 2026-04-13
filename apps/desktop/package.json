@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "icons": "node scripts/generate-icon-assets.mjs src-tauri/icons/icon-source.svg src-tauri/icons",
+    "prepare:bundle": "node scripts/prepare-bundle-assets.mjs",
     "dev": "tauri dev",
     "build": "tauri build"
   },

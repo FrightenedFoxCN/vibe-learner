@@ -23,7 +23,7 @@ import type {
 } from "@vibe-learner/shared";
 
 import { compactPreviewString, compactPreviewValue } from "./preview";
-import { getAiBaseUrl } from "./runtime-config";
+import { getAiBaseUrl, getDesktopRuntimeConfig } from "./runtime-config";
 
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
@@ -299,7 +299,9 @@ async function request(input: string, init?: RequestInit): Promise<Response> {
       durationMs: Math.round(performance.now() - startedAt),
       error: String(error)
     });
-    throw new Error(`Cannot reach AI service at ${AI_BASE_URL()}`);
+    const startupError = getDesktopRuntimeConfig()?.startupError.trim();
+    const detail = startupError ? ` (${startupError})` : "";
+    throw new Error(`Cannot reach AI service at ${AI_BASE_URL()}${detail}`);
   }
 }
 

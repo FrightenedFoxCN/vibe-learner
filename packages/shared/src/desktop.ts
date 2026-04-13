@@ -12,4 +12,5 @@ export interface DesktopRuntimeConfig {
   vaultState: DesktopVaultState;
   vaultPath: string;
   storageRoot: string;
+  startupError: string;
 }

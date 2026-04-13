@@ -5,7 +5,7 @@
 - Active roadmap for desktop packaging and secure local distribution work.
 - Replaces `desktop-distribution-plan.md` as the implementation-facing document.
 - Last updated: 2026-04-13
-- Milestone 1 through Milestone 4 now have a working development implementation in-repo.
+- Milestone 1 through Milestone 5 now have a working preview implementation in-repo.
 
 ## Summary
 
@@ -175,14 +175,16 @@ The first implementation slice delivered:
 - adding a dedicated desktop sidecar entrypoint, loopback port allocation, and app-data storage root
 - replacing `tesseract` shell-out OCR with an `OnnxTR` OCR abstraction and debug metadata
 
-The remaining implementation slices are:
+The remaining release-hardening slices are:
 
-- package the Python sidecar and OCR assets for installer builds
-- finalize release-oriented CI, signing, and distribution artifacts
+- add signing and notarization for production distribution
+- decide whether preview builds should require bundled OCR assets instead of allowing runtime fallback
+- add crash-reporting and auto-update policy only after the preview packaging flow stabilizes
 
 ## References
 
 - [desktop-distribution-plan.md](./desktop-distribution-plan.md)
+- [desktop-packaging.md](./desktop-packaging.md)
 - [architecture.md](./architecture.md)
 - [api-reference.md](./api-reference.md)
 - https://v2.tauri.app/start/create-project/
