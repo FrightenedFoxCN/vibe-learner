@@ -57,6 +57,33 @@ export function SettingsHeader() {
   );
 }
 
+export function StartupRequirementCard({
+  title,
+  description
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <section
+      style={{
+        ...styles.card,
+        borderColor: "color-mix(in srgb, var(--negative) 35%, var(--border))",
+        background: "color-mix(in srgb, var(--negative) 6%, var(--panel))"
+      }}
+    >
+      <div style={styles.probeRow}>
+        <StatusBadge label="启动提示" tone="negative" />
+        <span style={styles.probeHint}>当前桌面会话还没有完成必需的安全配置。</span>
+      </div>
+      <div style={styles.subCard}>
+        <h2 style={styles.cardTitle}>{title}</h2>
+        <p style={styles.cardDescription}>{description}</p>
+      </div>
+    </section>
+  );
+}
+
 export function DesktopSecurityCard({ controller }: { controller: SettingsController }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
