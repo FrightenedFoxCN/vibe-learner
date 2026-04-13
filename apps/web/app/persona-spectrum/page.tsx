@@ -36,14 +36,16 @@ import {
   assistPersonaSlot,
   assistPersonaSetting,
   createPersona,
-  createPersonaCardsBatch,
   deletePersona,
+  listPersonas,
+  updatePersona,
+} from "../../lib/data/personas";
+import {
+  createPersonaCardsBatch,
   deletePersonaCard,
   generatePersonaCards,
   listPersonaCards,
-  listPersonas,
-  updatePersona,
-} from "../../lib/api";
+} from "../../lib/data/persona-cards";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
   worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
@@ -123,6 +125,7 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
 export default function PersonaSpectrumPage() {
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
+  const selectedPersonaIdRef = useRef("");
 
   const [draft, setDraft] = useState<PersonaDraft>(EMPTY_DRAFT);
   const [savingPersona, setSavingPersona] = useState(false);
@@ -175,6 +178,10 @@ export default function PersonaSpectrumPage() {
   const colResizeRef = useRef<{ which: "basic" | "sidebar"; startX: number; startWidth: number } | null>(null);
 
   useEffect(() => {
+    selectedPersonaIdRef.current = selectedPersonaId;
+  }, [selectedPersonaId]);
+
+  useEffect(() => {
     if (!movePulse) {
       return;
     }
@@ -197,7 +204,10 @@ export default function PersonaSpectrumPage() {
         setPersonas(personaList);
         setPersonaCards(cardList);
         const initialPersona = personaList[0];
-        if (initialPersona) { setSelectedPersonaId(initialPersona.id); setDraft(personaToDraft(initialPersona)); }
+        if (initialPersona && !selectedPersonaIdRef.current) {
+          setSelectedPersonaId(initialPersona.id);
+          setDraft(personaToDraft(initialPersona));
+        }
       } catch (error) {
         if (!cancelled) setLoadError(String(error));
       }

@@ -15,8 +15,8 @@ import {
   getDocumentPlanningContext,
   getDocumentPlanningTrace,
   getDocumentProcessEvents,
-  getModelToolConfig
-} from "../lib/api";
+} from "../lib/data/documents";
+import { getModelToolConfig } from "../lib/data/model-tools";
 
 interface DocumentDebugSnapshot {
   debugRecord: DocumentDebugRecord | null;

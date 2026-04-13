@@ -13,27 +13,30 @@ import type {
 } from "@vibe-learner/shared";
 
 import {
+  listDocuments,
+  processDocumentStream,
+  updateDocumentStudyUnitTitle as updateDocumentStudyUnitTitleRequest,
+  uploadDocument,
+} from "../lib/data/documents";
+import {
   answerLearningPlanQuestion,
   createLearningPlanStream,
   deleteLearningPlan as deleteLearningPlanRequest,
-  createStudySession,
-  listStudySessions,
-  listSceneLibrary,
-  listDocuments,
   listLearningPlans,
-  listPersonas,
-  processDocumentStream,
-  resolveStudyPlanConfirmation,
-  sendStudyMessage,
-  submitStudyQuestionAttempt,
-  type SceneLibraryItemPayload,
-  updateDocumentStudyUnitTitle as updateDocumentStudyUnitTitleRequest,
   updateLearningPlanProgress as updateLearningPlanProgressRequest,
   updateLearningPlanStudyChapters as updateLearningPlanStudyChaptersRequest,
   updateLearningPlanTitle as updateLearningPlanTitleRequest,
+} from "../lib/data/learning-plans";
+import { listPersonas } from "../lib/data/personas";
+import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
+import {
+  createStudySession,
+  listStudySessions,
+  resolveStudyPlanConfirmation,
+  sendStudyMessage,
+  submitStudyQuestionAttempt,
   updateStudySessionSection,
-  uploadDocument
-} from "../lib/api";
+} from "../lib/data/study-sessions";
 import { mockPersonas } from "../lib/mock-data";
 import {
   buildPlanHistoryItems,
@@ -110,6 +113,8 @@ export function useLearningWorkspaceController({
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState("");
+  const selectedPersonaIdRef = useRef(state.selectedPersonaId);
+  const selectedPlanIdRef = useRef(state.selectedPlanId);
   const preludeInFlightRef = useRef<Set<string>>(new Set());
   const followUpTimerRef = useRef<Map<string, number>>(new Map());
   const followUpInFlightRef = useRef<Set<string>>(new Set());
@@ -134,6 +139,11 @@ export function useLearningWorkspaceController({
   );
 
   const resolveActiveSceneProfile = () => selectedSceneProfile ?? readSceneProfileFromLocalStorage();
+
+  useEffect(() => {
+    selectedPersonaIdRef.current = state.selectedPersonaId;
+    selectedPlanIdRef.current = state.selectedPlanId;
+  }, [state.selectedPersonaId, state.selectedPlanId]);
 
   const resolveSectionTitle = (sectionId: string) => {
     const sectionFromPlan = planSections.find((section) => section.id === sectionId);
@@ -231,8 +241,8 @@ export function useLearningWorkspaceController({
     const nextState = resolveWorkspaceSnapshot({
       snapshot,
       preferredPlanId,
-      currentSelectedPlanId: state.selectedPlanId,
-      currentSelectedPersonaId: state.selectedPersonaId
+      currentSelectedPlanId: selectedPlanIdRef.current,
+      currentSelectedPersonaId: selectedPersonaIdRef.current
     });
 
     dispatch({
@@ -1071,7 +1081,7 @@ export function useLearningWorkspaceController({
         if (!active) {
           return;
         }
-        applyWorkspaceSnapshot(snapshot, state.selectedPlanId);
+        applyWorkspaceSnapshot(snapshot, selectedPlanIdRef.current);
         dispatch({
           type: "notice_set",
           notice: CONNECTED_NOTICE

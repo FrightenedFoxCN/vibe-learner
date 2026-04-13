@@ -369,7 +369,9 @@ const styles: Record<string, CSSProperties> = {
     backdropFilter: "blur(10px)",
   },
   modeButton: {
-    border: "1px solid rgba(148, 163, 184, 0.32)",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "rgba(148, 163, 184, 0.32)",
     background: "rgba(248, 250, 252, 0.96)",
     color: "var(--ink)",
     height: 28,
@@ -432,7 +434,9 @@ const styles: Record<string, CSSProperties> = {
   },
   overlayBox: {
     position: "absolute",
-    border: "2px solid #FACC15",
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor: "#FACC15",
     borderRadius: 6,
     boxSizing: "border-box",
   },

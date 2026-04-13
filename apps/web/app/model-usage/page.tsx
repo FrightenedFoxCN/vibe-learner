@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { TokenUsageCallRecord, TokenUsageDailyBucket, TokenUsageStats } from "@vibe-learner/shared";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
-import { getModelUsageStats } from "../../lib/api";
+import { getModelUsageStats } from "../../lib/data/model-usage";
 
 const FEATURE_LABELS: Record<string, string> = {
   plan: "计划生成",

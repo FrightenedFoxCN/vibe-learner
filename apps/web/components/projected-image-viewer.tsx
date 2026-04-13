@@ -251,7 +251,9 @@ const styles: Record<string, CSSProperties> = {
   },
   overlayBox: {
     position: "absolute",
-    border: "2px solid #F97316",
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor: "#F97316",
     borderRadius: 8,
     boxSizing: "border-box",
   },

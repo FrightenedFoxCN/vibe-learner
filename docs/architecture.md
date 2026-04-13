@@ -13,10 +13,10 @@ The current system runs as a local-first split application:
 
 - frontend: `apps/web`
 - backend: `services/ai`
-- storage: local JSON files under `services/ai/data`
+- storage: PostgreSQL for structured records plus local file storage under `services/ai/data`
 - model planning: mock by default, OpenAI-compatible provider when configured
 
-There is no database, queue, Live2D runtime, or TTS service in the current repository. The codebase is still intentionally small and uses file-backed persistence while the parsing and planning loop is being stabilized.
+There is still no queue, Live2D runtime, or TTS service in the current repository. The backend now uses a PostgreSQL-backed ORM persistence layer for business records while keeping uploaded binaries and runtime temp files on local disk.
 
 ## Core Boundaries
 
@@ -48,7 +48,7 @@ See `docs/frontend-learning-workspace.md` before reshaping this boundary.
 
 The backend is responsible for:
 
-- storing uploaded files and JSON records
+- storing uploaded files and PostgreSQL-backed structured records
 - extracting textbook text from PDF or OCR fallback
 - cleaning noisy OCR structure into plannable study units
 - generating planning context and planner tool-call traces
@@ -187,16 +187,26 @@ This is the main mechanism used to keep plans grounded in OCR-cleaned textbook s
 
 ## Storage Layout
 
-Local storage currently lives under `services/ai/data/`:
+Structured data now lives in PostgreSQL tables managed through SQLAlchemy and Alembic. Main buckets include:
 
-- `documents.json`
-- `plans.json`
-- `study_sessions.json`
-- `uploads/`
-- `document_debug/`
-- `planning_trace/`
+- `documents`
+- `learning_plans`
+- `study_sessions`
+- `personas`
+- `document_debug_records`
+- `planning_traces`
+- `stream_reports`
+- `runtime_settings`
+- `model_tool_configs`
 
-This storage model is good enough for a single-user local workflow, but it should be treated as a transitional persistence layer rather than the final architecture.
+Local filesystem storage under `services/ai/data/` is now limited to file-like assets and temp material:
+
+- `uploads/`: uploaded textbook binaries
+- `chat_attachments/`: learner chat attachments
+- `_tmp/`: OCR/runtime temporary files
+- `cache/`: reserved local cache directory
+
+The backend also exposes `/storage/summary` and `/storage/cleanup` so cache and temp layers can be inspected and cleared without touching persistent domain records.
 
 ## Current Constraints
 

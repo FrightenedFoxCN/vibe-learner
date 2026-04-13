@@ -198,7 +198,9 @@ export const settingsStyles: Record<string, CSSProperties> = {
     fontSize: 11,
     fontWeight: 700,
     letterSpacing: "0.03em",
-    border: "1px solid var(--border)",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "var(--border)",
     textTransform: "uppercase"
   },
   badgePositive: {

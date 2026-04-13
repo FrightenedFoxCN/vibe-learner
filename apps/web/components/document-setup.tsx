@@ -11,7 +11,7 @@ import type {
   StudySessionRecord
 } from "@vibe-learner/shared";
 import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
-import type { SceneLibraryItemPayload } from "../lib/api";
+import type { SceneLibraryItemPayload } from "../lib/data/scenes";
 import { MaterialIcon } from "./material-icon";
 import { PersonaSelector } from "./persona-selector";
 
@@ -576,7 +576,9 @@ const styles: Record<string, CSSProperties> = {
   },
   progressStat: {
     padding: "5px 8px",
-    border: "1px solid var(--border)",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "var(--border)",
     background: "white",
     fontSize: 12,
     color: "var(--muted)"

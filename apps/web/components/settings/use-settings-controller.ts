@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import type { RuntimeSettings } from "@vibe-learner/shared";
 import { useRuntimeSettings } from "../runtime-settings-provider";
-import { probeRuntimeOpenAIModels, updateRuntimeSettings } from "../../lib/api";
+import { probeRuntimeOpenAIModels, updateRuntimeSettings } from "../../lib/data/runtime-settings";
 import {
   AUTO_SAVE_DELAY_MS,
   buildNumericDrafts,

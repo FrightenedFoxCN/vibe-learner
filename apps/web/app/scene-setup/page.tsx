@@ -7,8 +7,8 @@ import type { ModelRecovery, SceneProfile } from "@vibe-learner/shared";
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
+import { assistPersonaSlot } from "../../lib/data/personas";
 import {
-  assistPersonaSlot,
   createReusableSceneNode,
   createSceneLibraryItem,
   deleteReusableSceneNode,
@@ -16,8 +16,10 @@ import {
   generateSceneTree,
   listReusableSceneNodes,
   listSceneLibrary,
+  type ReusableSceneNodePayload,
+  type SceneLibraryItemPayload,
   updateSceneLibraryItem,
-} from "../../lib/api";
+} from "../../lib/data/scenes";
 
 interface SceneObject {
   id: string;
@@ -266,7 +268,7 @@ export default function SceneSetupPage() {
   const [sceneSummary, setSceneSummary] = useState("从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。");
   const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>([]);
-  const [savedScenes, setSavedScenes] = useState<import("../../lib/api").SceneLibraryItemPayload[]>([]);
+  const [savedScenes, setSavedScenes] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSavedSceneId, setSelectedSavedSceneId] = useState("");
   const [rewriteStrength, setRewriteStrength] = useState(0.6);
   const [rewritePendingKey, setRewritePendingKey] = useState("");
@@ -282,7 +284,7 @@ export default function SceneSetupPage() {
   const [sceneGenerateError, setSceneGenerateError] = useState("");
   const [sceneGenerateMessage, setSceneGenerateMessage] = useState("");
   const [sceneGenerateModelRecoveries, setSceneGenerateModelRecoveries] = useState<ModelRecovery[]>([]);
-  const [reusableNodes, setReusableNodes] = useState<import("../../lib/api").ReusableSceneNodePayload[]>([]);
+  const [reusableNodes, setReusableNodes] = useState<ReusableSceneNodePayload[]>([]);
   const [reusableSearchQuery, setReusableSearchQuery] = useState("");
   const [reusableActionPendingId, setReusableActionPendingId] = useState("");
   const [reusableMessage, setReusableMessage] = useState("");
@@ -412,9 +414,7 @@ export default function SceneSetupPage() {
         }
         setSavedScenes(items);
         setReusableNodes(reusableItems);
-        if (!selectedSavedSceneId && items[0]) {
-          setSelectedSavedSceneId(items[0].sceneId);
-        }
+        setSelectedSavedSceneId((current) => current || items[0]?.sceneId || "");
       } catch {
         if (active) {
           setSavedScenes([]);
@@ -549,7 +549,7 @@ export default function SceneSetupPage() {
     }
   }
 
-  function insertReusableNode(item: import("../../lib/api").ReusableSceneNodePayload) {
+  function insertReusableNode(item: ReusableSceneNodePayload) {
     if (!selectedLayer) {
       setReusableError("请先选择一个目标层级，再插入节点。");
       return;
@@ -2147,10 +2147,10 @@ const styles: Record<string, CSSProperties> = {
   btnPrimary: { border: "none", background: "var(--accent)", color: "white", height: 34, padding: "0 14px", fontWeight: 600, cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnGhost: { border: "1px solid var(--border)", background: "transparent", color: "var(--ink)", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnDanger: { border: "none", background: "var(--danger, #b42318)", color: "white", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" },
-  iconButton: { border: "1px solid var(--border)", background: "var(--panel)", color: "var(--ink)", height: 28, minWidth: 28, padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  iconButton: { borderWidth: 1, borderStyle: "solid", borderColor: "var(--border)", background: "var(--panel)", color: "var(--ink)", height: 28, minWidth: 28, padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   iconButtonAccent: { borderColor: "color-mix(in srgb, var(--accent) 40%, var(--border))", background: "color-mix(in srgb, white 76%, var(--accent-soft))", color: "var(--accent)" },
   iconButtonDanger: { borderColor: "color-mix(in srgb, var(--danger, #b42318) 38%, var(--border))", background: "color-mix(in srgb, white 88%, var(--danger, #b42318))", color: "var(--danger, #b42318)" },
-  iconButtonMicro: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", height: 22, minWidth: 22, padding: 0, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  iconButtonMicro: { borderWidth: 1, borderStyle: "solid", borderColor: "var(--border)", background: "transparent", color: "var(--muted)", height: 22, minWidth: 22, padding: 0, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   iconButtonMicroAccent: { borderColor: "color-mix(in srgb, var(--accent) 40%, var(--border))", color: "var(--accent)", background: "color-mix(in srgb, white 84%, var(--accent-soft))" },
   iconButtonMicroDanger: { borderColor: "color-mix(in srgb, var(--danger, #b42318) 38%, var(--border))", color: "var(--danger, #b42318)", background: "color-mix(in srgb, white 92%, var(--danger, #b42318))" },
   confirmOverlay: { position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", display: "grid", placeItems: "center", zIndex: 30, padding: 16 },

@@ -5,7 +5,7 @@ import type { ModelToolConfig, ModelToolConfigItem, ModelToolStageConfig } from 
 
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
-import { getModelToolConfig, updateModelToolConfig } from "../../lib/api";
+import { getModelToolConfig, updateModelToolConfig } from "../../lib/data/model-tools";
 
 export default function SensoryToolsPage() {
   const [config, setConfig] = useState<ModelToolConfig | null>(null);

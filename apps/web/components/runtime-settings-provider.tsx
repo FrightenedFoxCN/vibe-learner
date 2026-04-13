@@ -3,7 +3,7 @@
 import type { RuntimeSettings } from "@vibe-learner/shared";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { getRuntimeSettings } from "../lib/api";
+import { getRuntimeSettings } from "../lib/data/runtime-settings";
 
 interface RuntimeSettingsContextValue {
   settings: RuntimeSettings | null;
