@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
-import type { SceneProfile } from "@vibe-learner/shared";
+import type { ModelRecovery, SceneProfile } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { TopNav } from "../../components/top-nav";
@@ -271,6 +271,7 @@ export default function SceneSetupPage() {
   const [rewriteStrength, setRewriteStrength] = useState(0.6);
   const [rewritePendingKey, setRewritePendingKey] = useState("");
   const [rewriteError, setRewriteError] = useState("");
+  const [rewriteModelRecoveries, setRewriteModelRecoveries] = useState<ModelRecovery[]>([]);
   const [lastRewrite, setLastRewrite] = useState<RewriteUndoEntry | null>(null);
   const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
   const [sceneIoMessage, setSceneIoMessage] = useState("");
@@ -280,6 +281,7 @@ export default function SceneSetupPage() {
   const [sceneGeneratePending, setSceneGeneratePending] = useState<null | "keywords" | "long_text">(null);
   const [sceneGenerateError, setSceneGenerateError] = useState("");
   const [sceneGenerateMessage, setSceneGenerateMessage] = useState("");
+  const [sceneGenerateModelRecoveries, setSceneGenerateModelRecoveries] = useState<ModelRecovery[]>([]);
   const [reusableNodes, setReusableNodes] = useState<import("../../lib/api").ReusableSceneNodePayload[]>([]);
   const [reusableSearchQuery, setReusableSearchQuery] = useState("");
   const [reusableActionPendingId, setReusableActionPendingId] = useState("");
@@ -365,22 +367,27 @@ export default function SceneSetupPage() {
         { label: "选中层级", value: selectedLayer?.title || selectedLayerId || "-" },
         { label: "已保存场景", value: String(savedScenes.length) },
         { label: "可复用节点", value: String(reusableNodes.length) },
-        { label: "生成候选", value: generatedSceneCandidate ? "是" : "否" }
+        { label: "生成候选", value: generatedSceneCandidate ? "是" : "否" },
+        { label: "AI 恢复记录", value: String(rewriteModelRecoveries.length + sceneGenerateModelRecoveries.length) }
       ],
       details: [
         { title: "场景快照预览", value: sceneProfilePreview },
         { title: "当前选中路径", value: selectedPath },
         { title: "生成候选场景", value: generatedSceneCandidate },
         { title: "已保存场景列表", value: savedScenes },
-        { title: "可复用节点列表", value: reusableNodes.slice(0, 24) }
+        { title: "可复用节点列表", value: reusableNodes.slice(0, 24) },
+        { title: "场景生成恢复记录", value: sceneGenerateModelRecoveries },
+        { title: "文本重写恢复记录", value: rewriteModelRecoveries }
       ]
     }),
     [
       generatedSceneCandidate,
       reusableError,
       reusableNodes,
+      rewriteModelRecoveries,
       rewriteError,
       savedScenes,
+      sceneGenerateModelRecoveries,
       sceneGenerateError,
       sceneName,
       sceneProfilePreview,
@@ -810,6 +817,7 @@ export default function SceneSetupPage() {
     }
     setSceneGenerateError("");
     setSceneGenerateMessage("");
+    setSceneGenerateModelRecoveries([]);
     setSceneGeneratePending(mode);
     try {
       const result = await generateSceneTree({
@@ -830,6 +838,7 @@ export default function SceneSetupPage() {
         usedWebSearch: result.usedWebSearch,
         mode: result.mode,
       });
+      setSceneGenerateModelRecoveries(result.modelRecoveries ?? []);
       setSceneGenerateMessage(
         `已生成 ${countSceneNodes(imported.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 个节点。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
       );
@@ -860,6 +869,7 @@ export default function SceneSetupPage() {
 
     const pendingKey = `${layerId}:${field}`;
     setRewriteError("");
+    setRewriteModelRecoveries([]);
     setRewritePendingKey(pendingKey);
     try {
       const previousValue = layer[field];
@@ -880,6 +890,7 @@ export default function SceneSetupPage() {
         ...currentLayer,
         [field]: result.slot.content
       }));
+      setRewriteModelRecoveries(result.modelRecoveries ?? []);
       setLastRewrite({
         kind: "layer",
         key: pendingKey,
@@ -909,6 +920,7 @@ export default function SceneSetupPage() {
 
     const pendingKey = `${layerId}:${objectId}:${field}`;
     setRewriteError("");
+    setRewriteModelRecoveries([]);
     setRewritePendingKey(pendingKey);
     try {
       const previousValue = object[field];
@@ -926,6 +938,7 @@ export default function SceneSetupPage() {
         rewriteStrength: Number(rewriteStrength.toFixed(2))
       });
       updateObject(layerId, objectId, field, result.slot.content);
+      setRewriteModelRecoveries(result.modelRecoveries ?? []);
       setLastRewrite({
         kind: "object",
         key: pendingKey,

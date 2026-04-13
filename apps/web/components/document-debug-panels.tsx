@@ -303,7 +303,7 @@ export function DocumentDebugPanels({
             <div style={styles.itemCard}>
               <strong>{planningTrace.trace.model || "unknown model"}</strong>
               <span style={styles.caption}>
-                rounds: {planningTrace.summary.roundCount} · tool calls: {planningTrace.summary.toolCallCount}
+                rounds: {planningTrace.summary.roundCount} · tool calls: {planningTrace.summary.toolCallCount} · recoveries: {planningTrace.trace.rounds.reduce((sum, round) => sum + (round.recoveries?.length ?? 0), 0)}
               </span>
             </div>
             {planningTrace.trace.rounds.map((round) => (
@@ -315,6 +315,15 @@ export function DocumentDebugPanels({
                 {round.thinking ? <pre style={styles.preCompact}>{truncateText(round.thinking, 900)}</pre> : null}
                 {round.assistantContent ? (
                   <pre style={styles.preCompact}>{truncateText(round.assistantContent, 900)}</pre>
+                ) : null}
+                {round.recoveries?.length ? (
+                  <div style={styles.tagRow}>
+                    {round.recoveries.map((recovery) => (
+                      <span key={recovery.recoveryId} style={styles.tag}>
+                        {recovery.reason} · {recovery.strategy} · x{recovery.attempts}
+                      </span>
+                    ))}
+                  </div>
                 ) : null}
                 {round.toolCalls.length ? (
                   <div style={styles.list}>

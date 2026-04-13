@@ -18,6 +18,12 @@ When changing this area, preserve the separation below unless there is a clear a
 
 `/plan` and `/study` share one runtime state source through `LearningWorkspaceProvider`.
 
+They now also share one page-cache bridge through the same provider:
+
+- in-memory cache keeps page-local drafts alive across route changes without interrupting ongoing calls
+- `sessionStorage` persists serializable page state for same-tab refresh recovery
+- browser `File` objects are intentionally memory-only, so uploaded PDFs and unsent attachments survive page switching but still cannot be restored after a hard refresh
+
 ## Boundary Map
 
 ### Page Composition
@@ -54,10 +60,11 @@ Responsibilities:
   - document upload and processing
   - learning plan generation
   - study session creation
-  - study chat send/reply
-  - study session chapter switching
+- study chat send/reply
+- study session chapter switching
 - translate backend results into reducer actions
 - expose page-ready derived state and actions
+- expose page-cache read/write hooks used by `/plan` and `/study` local draft state
 
 Must not own:
 
@@ -83,6 +90,13 @@ Must not own:
 - network requests
 - browser event wiring
 - view rendering
+
+The reducer-backed state is still the source of truth for documents, plans, sessions, and replies.
+
+Page-cache state is only for page-local UI continuity such as:
+
+- `/plan` upload mode, objective draft, and selected-but-not-yet-submitted PDF file
+- `/study` chapter/subsection selection, preview window position, and unsent chat draft
 
 ### Pure State Utilities
 
@@ -148,6 +162,8 @@ Current `/study` interaction details:
 - quick action allows jumping PDF preview to the current theme start page
 - transcript displays latest turns first (reverse chronological)
 - on chat failure, UI shows explicit error text and a manual retry button
+- unsent composer text, question draft state, and preview/chapter position recover after route changes and same-tab refresh
+- successful model-side recoveries are debug-only: they surface in `StudyDebugPanels`, persona/scene page debug snapshots, and plan trace/debug panels, but not in the main user-facing page blocks
 
 Each block should receive already-prepared data via props.
 

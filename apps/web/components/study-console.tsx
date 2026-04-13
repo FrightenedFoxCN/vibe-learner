@@ -19,6 +19,7 @@ import type {
 
 import { CharacterShell } from "./character-shell";
 import { RichTextMessage } from "./rich-text-message";
+import type { StudyConsolePageCache } from "../lib/learning-workspace-page-cache";
 
 interface StudyConsoleProps {
   isPending: boolean;
@@ -69,6 +70,8 @@ interface StudyConsoleProps {
   } | null;
   onConsumeComposerInsert?: () => void;
   disabled?: boolean;
+  cachedState?: StudyConsolePageCache;
+  onCachedStateChange?: (state: StudyConsolePageCache) => void;
 }
 
 export function StudyConsole({
@@ -100,14 +103,26 @@ export function StudyConsole({
   chatImageUploadEnabled,
   pendingComposerInsert,
   onConsumeComposerInsert,
-  disabled
+  disabled,
+  cachedState,
+  onCachedStateChange,
 }: StudyConsoleProps) {
-  const [message, setMessage] = useState("请解释这一章的核心概念，并给我一个复述练习。");
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>({});
-  const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
-  const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>({});
-  const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>({});
+  const [message, setMessage] = useState(
+    () => cachedState?.message ?? "请解释这一章的核心概念，并给我一个复述练习。"
+  );
+  const [attachments, setAttachments] = useState<File[]>(() => cachedState?.attachments ?? []);
+  const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>(
+    () => cachedState?.selectedChoices ?? {}
+  );
+  const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>(
+    () => cachedState?.blankAnswers ?? {}
+  );
+  const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>(
+    () => cachedState?.questionFeedback ?? {}
+  );
+  const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>(
+    () => cachedState?.expandedExplanation ?? {}
+  );
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -136,6 +151,25 @@ export function StudyConsole({
     textareaRef.current?.focus();
     onConsumeComposerInsert?.();
   }, [onConsumeComposerInsert, pendingComposerInsert]);
+
+  useEffect(() => {
+    onCachedStateChange?.({
+      message,
+      attachments,
+      selectedChoices,
+      blankAnswers,
+      questionFeedback,
+      expandedExplanation,
+    });
+  }, [
+    attachments,
+    blankAnswers,
+    expandedExplanation,
+    message,
+    onCachedStateChange,
+    questionFeedback,
+    selectedChoices,
+  ]);
 
   const supportedAttachmentHint = chatImageUploadEnabled
     ? "支持图片、PDF、txt、md、json、csv 等附件；图片会按多模态输入发送。"

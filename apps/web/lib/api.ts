@@ -47,6 +47,7 @@ export interface PersonaCardGenerateResult {
   relationship: string;
   learnerAddress: string;
   items: PersonaCard[];
+  modelRecoveries?: import("@vibe-learner/shared").ModelRecovery[];
 }
 
 export interface SceneTreeGenerateResult {
@@ -57,6 +58,7 @@ export interface SceneTreeGenerateResult {
   sceneSummary: string;
   selectedLayerId: string;
   sceneLayers: import("@vibe-learner/shared").SceneTreeNode[];
+  modelRecoveries?: import("@vibe-learner/shared").ModelRecovery[];
 }
 
 export interface PersonaSettingAssistInput {
@@ -69,6 +71,7 @@ export interface PersonaSettingAssistInput {
 export interface PersonaSettingAssistOutput {
   slots: import("@vibe-learner/shared").PersonaSlot[];
   systemPromptSuggestion: string;
+  modelRecoveries?: import("@vibe-learner/shared").ModelRecovery[];
 }
 
 export interface PersonaSlotAssistInput {
@@ -80,6 +83,7 @@ export interface PersonaSlotAssistInput {
 
 export interface PersonaSlotAssistOutput {
   slot: import("@vibe-learner/shared").PersonaSlot;
+  modelRecoveries?: import("@vibe-learner/shared").ModelRecovery[];
 }
 
 export interface SceneSetupStatePayload {
@@ -230,6 +234,21 @@ function normalizeChatToolCalls(toolCalls: any): import("@vibe-learner/shared").
   }));
 }
 
+function normalizeModelRecoveries(items: any): import("@vibe-learner/shared").ModelRecovery[] {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  return items.map((item: any) => ({
+    recoveryId: String(item.recovery_id ?? ""),
+    category: String(item.category ?? ""),
+    reason: String(item.reason ?? ""),
+    strategy: String(item.strategy ?? ""),
+    attempts: Number(item.attempts ?? 1),
+    note: String(item.note ?? ""),
+    createdAt: String(item.created_at ?? ""),
+  }));
+}
+
 function extractErrorMessage(payload: unknown, fallbackMessage: string) {
   if (typeof payload === "string") {
     const trimmed = payload.trim();
@@ -306,12 +325,16 @@ function formatStreamErrorPayload(
   const detail = String(payload?.detail ?? payload?.error ?? fallbackCode);
   const internal = payload?.internal_error_code;
   const statusCode = payload?.status_code;
+  const retryAttempts = payload?.retry_attempts;
   const suffixParts: string[] = [];
   if (internal) {
     suffixParts.push(`internal=${String(internal)}`);
   }
   if (statusCode) {
     suffixParts.push(`status=${String(statusCode)}`);
+  }
+  if (typeof retryAttempts === "number" && retryAttempts > 1) {
+    suffixParts.push(`retries=${String(retryAttempts - 1)}`);
   }
   if (!suffixParts.length) {
     return detail;
@@ -588,7 +611,8 @@ function normalizePlanningTrace(record: any): PlanGenerationTrace {
         argumentsJson: compactPreviewString(toolCall.arguments_json ?? "", 800),
         resultSummary: toolCall.result_summary ?? "",
         resultJson: compactPreviewString(toolCall.result_json ?? "", 800)
-      }))
+      })),
+      recoveries: normalizeModelRecoveries(round.recoveries),
     }))
   };
 }
@@ -1125,6 +1149,7 @@ function normalizeSession(session: any): StudySessionRecord {
         memoryTrace: normalizeMemoryTrace(turn.memory_trace),
         toolCalls: normalizeChatToolCalls(turn.tool_calls),
         sceneProfile: normalizeSceneProfile(turn.scene_profile),
+        modelRecoveries: normalizeModelRecoveries(turn.model_recoveries),
         createdAt: turn.created_at
       };
     }),
@@ -1256,7 +1281,8 @@ export async function generatePersonaCards(input: {
     summary: String(payload.summary ?? ""),
     relationship: String(payload.relationship ?? ""),
     learnerAddress: String(payload.learner_address ?? ""),
-    items: Array.isArray(payload.items) ? payload.items.map(normalizePersonaCard) : []
+    items: Array.isArray(payload.items) ? payload.items.map(normalizePersonaCard) : [],
+    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
   };
 }
 
@@ -1288,7 +1314,8 @@ export async function generateSceneTree(input: {
     sceneName: String(payload.scene_name ?? ""),
     sceneSummary: String(payload.scene_summary ?? ""),
     selectedLayerId: String(payload.selected_layer_id ?? ""),
-    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers.map(normalizeSceneTreeNode) : []
+    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers.map(normalizeSceneTreeNode) : [],
+    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
   };
 }
 
@@ -1319,7 +1346,8 @@ export async function assistPersonaSetting(
       locked: Boolean(s.locked),
       sortOrder: Number(s.sort_order ?? 0)
     })),
-    systemPromptSuggestion: String(payload.system_prompt_suggestion ?? "")
+    systemPromptSuggestion: String(payload.system_prompt_suggestion ?? ""),
+    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
   };
 }
 
@@ -1349,7 +1377,8 @@ export async function assistPersonaSlot(
       weight: Number(slot.weight ?? 1),
       locked: Boolean(slot.locked),
       sortOrder: Number(slot.sort_order ?? 0)
-    }
+    },
+    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
   };
 }
 
@@ -2154,6 +2183,7 @@ export async function sendStudyMessage(input: {
     memoryTrace: normalizeMemoryTrace(payload.memory_trace),
     toolCalls: normalizeChatToolCalls(payload.tool_calls),
     sceneProfile: normalizeSceneProfile(payload.scene_profile),
+    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries),
     session: normalizeSession(payload.session)
   };
 }

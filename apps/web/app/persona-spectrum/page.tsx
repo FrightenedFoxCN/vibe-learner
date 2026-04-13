@@ -21,6 +21,7 @@ import {
   type CreatePersonaInput,
   type CreatePersonaCardInput,
   type PersonaCard,
+  type ModelRecovery,
   type PersonaProfile,
   type PersonaSlot,
   type PersonaSlotKind,
@@ -131,6 +132,7 @@ export default function PersonaSpectrumPage() {
   const [assistPending, setAssistPending] = useState(false);
   const [slotAssistIndex, setSlotAssistIndex] = useState<number | null>(null);
   const [assistError, setAssistError] = useState("");
+  const [assistModelRecoveries, setAssistModelRecoveries] = useState<ModelRecovery[]>([]);
   const [retainRatio, setRetainRatio] = useState(0.7);
   const [configMessage, setConfigMessage] = useState("");
   const [configError, setConfigError] = useState("");
@@ -148,6 +150,7 @@ export default function PersonaSpectrumPage() {
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [cardMessage, setCardMessage] = useState("");
   const [cardError, setCardError] = useState("");
+  const [cardModelRecoveries, setCardModelRecoveries] = useState<ModelRecovery[]>([]);
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
   const [slotInsertIndex, setSlotInsertIndex] = useState<number | null>(null);
   const [systemPromptSuggestion, setSystemPromptSuggestion] = useState("");
@@ -270,7 +273,8 @@ export default function PersonaSpectrumPage() {
         { label: "卡片库", value: String(personaCards.length) },
         { label: "人格库", value: String(personas.length) },
         { label: "附加约束建议", value: systemPromptSuggestion ? "待确认" : "无" },
-        { label: "回填前清空", value: clearBeforeBackfill ? "开启" : "关闭" }
+        { label: "回填前清空", value: clearBeforeBackfill ? "开启" : "关闭" },
+        { label: "AI 恢复记录", value: String(assistModelRecoveries.length + cardModelRecoveries.length) }
       ],
       details: [
         { title: "当前选中人格", value: selectedPersona },
@@ -279,7 +283,9 @@ export default function PersonaSpectrumPage() {
         { title: "附加约束建议", value: { source: systemPromptSuggestionSource, value: systemPromptSuggestion } },
         { title: "生成摘要信息", value: generatedPersonaMeta },
         { title: "生成卡片（前 24 条）", value: generatedCards.slice(0, 24) },
-        { title: "当前勾选卡片", value: selectedCards }
+        { title: "当前勾选卡片", value: selectedCards },
+        { title: "设定/槽位辅助恢复记录", value: assistModelRecoveries },
+        { title: "卡片生成恢复记录", value: cardModelRecoveries }
       ]
     }),
     [
@@ -291,6 +297,7 @@ export default function PersonaSpectrumPage() {
       generatedPersonaMeta,
       loadError,
       clearBeforeBackfill,
+      cardModelRecoveries,
       personas.length,
       personaLibraryError,
       personaCards.length,
@@ -298,6 +305,7 @@ export default function PersonaSpectrumPage() {
       selectedCards,
       selectedPersona,
       runtimePromptPreview,
+      assistModelRecoveries,
       systemPromptSuggestion,
       systemPromptSuggestionSource
     ]
@@ -492,6 +500,7 @@ export default function PersonaSpectrumPage() {
       return;
     }
     setAssistError("");
+    setAssistModelRecoveries([]);
     setSlotAssistIndex(index);
     try {
       const result = await assistPersonaSlot({
@@ -505,6 +514,7 @@ export default function PersonaSpectrumPage() {
         next[index] = result.slot;
         return { ...prev, slots: next };
       });
+      setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
       setAssistError(String(error));
     } finally {
@@ -514,6 +524,7 @@ export default function PersonaSpectrumPage() {
 
   async function handleAssistSetting() {
     setAssistError("");
+    setAssistModelRecoveries([]);
     setAssistPending(true);
     try {
       const result = await assistPersonaSetting({
@@ -540,6 +551,7 @@ export default function PersonaSpectrumPage() {
           : prev.slots,
       }));
       setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
+      setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
       setAssistError(String(error));
     } finally {
@@ -743,6 +755,7 @@ export default function PersonaSpectrumPage() {
     }
     setCardError("");
     setCardMessage("");
+    setCardModelRecoveries([]);
     setCardActionPending(mode === "keywords" ? "generate_keywords" : "generate_long_text");
     try {
       const result = await generatePersonaCards({
@@ -756,6 +769,7 @@ export default function PersonaSpectrumPage() {
         relationship: result.relationship,
         learnerAddress: result.learnerAddress,
       });
+      setCardModelRecoveries(result.modelRecoveries ?? []);
       setSelectedCardIds(result.items.map((item) => item.id));
       setCardMessage(
         `已生成 ${result.items.length} 张卡片。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`

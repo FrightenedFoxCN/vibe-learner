@@ -39,3 +39,6 @@ These docs describe the repository as it exists now, not the aspirational long-t
 - OpenAI-compatible provider truncation mitigation is documented via `OPENAI_CHAT_MAX_TOKENS` tuning.
 - Scene Setup and Scene Library contracts are documented in `scene-setup.md` and summarized in `api-reference.md`.
 - Scene-related 422 triage now centers on empty `scene_name` / `scene_summary` and missing required `scene_layers[].scope_label`.
+- `/plan` and `/study` now preserve page-local draft state across route changes, with serializable state restored from `sessionStorage` after same-tab refresh.
+- OpenAI-compatible model calls now retry transient transport failures inside `OpenAIModelProvider`, while keeping final public error categories stable and exposing retry count in plan stream errors.
+- Successful model recoveries are now carried as debug-only data (`model_recoveries` / plan trace recoveries) for plan, chat, persona, and scene generation flows; ordinary page UI still only surfaces unrecovered failures.

@@ -446,6 +446,16 @@ class PlanToolCallTraceRecord(BaseModel):
     result_json: str
 
 
+class ModelRecoveryRecord(BaseModel):
+    recovery_id: str
+    category: str
+    reason: str
+    strategy: str
+    attempts: int = 1
+    note: str = ""
+    created_at: str
+
+
 class PlanGenerationRoundRecord(BaseModel):
     round_index: int
     finish_reason: str = ""
@@ -454,6 +464,7 @@ class PlanGenerationRoundRecord(BaseModel):
     elapsed_ms: int = 0
     timeout_seconds: int = 0
     tool_calls: list[PlanToolCallTraceRecord] = []
+    recoveries: list[ModelRecoveryRecord] = []
 
 
 class PlanGenerationTraceRecord(BaseModel):
@@ -563,6 +574,7 @@ class StudyChatResult(BaseModel):
     memory_trace: list["MemoryTraceHitRecord"] = []
     tool_calls: list[ChatToolCallTraceRecord] = []
     scene_profile: SceneProfileRecord | None = None
+    model_recoveries: list[ModelRecoveryRecord] = []
 
 
 class PersonaSlotTraceRecord(BaseModel):
@@ -615,6 +627,7 @@ class DialogueTurnRecord(BaseModel):
     memory_trace: list[MemoryTraceHitRecord] = []
     tool_calls: list[ChatToolCallTraceRecord] = []
     scene_profile: SceneProfileRecord | None = None
+    model_recoveries: list[ModelRecoveryRecord] = []
     created_at: str
 
 

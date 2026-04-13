@@ -38,6 +38,7 @@ Within the `Learning Workspace`, frontend responsibilities are further split int
 - async workflow orchestration in `apps/web/hooks/use-learning-workspace-controller.ts`
 - reducer-driven state transitions in `apps/web/lib/learning-workspace-reducer.ts`
 - pure state helpers in `apps/web/lib/learning-workspace-state.ts`
+- provider-level page-cache persistence in `apps/web/lib/learning-workspace-page-cache.ts`
 - plan-view mapping helpers in `apps/web/lib/plan-panel-data.ts`
 - repeated notices and telemetry helpers in `apps/web/lib/learning-workspace-copy.ts` and `apps/web/lib/learning-workspace-telemetry.ts`
 
@@ -123,6 +124,7 @@ Current behavior additions:
 - frontend routes dialogue by active plan section and reuses historical sessions per plan-section key when available
 - chat failures are surfaced explicitly for user retry, rather than hidden by synthetic fallback assistant text
 - transcript view is reverse chronological for faster review of recent turns
+- `/plan` and `/study` page-local draft state now survives route changes; serializable subsets also recover after same-tab refresh through `sessionStorage`
 
 ## Character Layer
 
@@ -168,6 +170,18 @@ Chat model runtime behavior is configurable through environment variables, inclu
 - `OPENAI_CHAT_MODEL_MULTIMODAL`
 
 Per-tool enablement is managed by `ModelToolConfig` rather than runtime environment toggles.
+
+OpenAI-compatible requests now also include a transport-level transient retry layer inside `OpenAIModelProvider`:
+
+- retries are limited to network errors, timeouts, and transient upstream HTTP statuses (`408`, `409`, `425`, `500`, `502`, `503`, `504`)
+- rate-limit and payload/schema failures are still surfaced directly
+- final public error mapping stays unchanged, while stream payloads can expose `retry_attempts` for debug visibility
+
+Additional semantic recovery paths now exist across plan/chat/setting generation:
+
+- content-filter, empty-response, and invalid-structured-output cases may trigger one constrained retry path
+- successful recoveries are recorded as typed debug data (`model_recoveries`) and are intended for debug panels only
+- unsuccessful recoveries still surface through the ordinary page-level error path
 
 This is the main mechanism used to keep plans grounded in OCR-cleaned textbook structure while still allowing a model to inspect details before scheduling.
 

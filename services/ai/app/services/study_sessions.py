@@ -93,6 +93,7 @@ class StudySessionService:
                 memory_trace=result.memory_trace,
                 tool_calls=result.tool_calls,
                 scene_profile=result.scene_profile,
+                model_recoveries=result.model_recoveries,
                 created_at=_now(),
             )
         )

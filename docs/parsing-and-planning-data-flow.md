@@ -195,6 +195,20 @@ Behavior:
 - `openai` uses `OpenAIModelProvider`
 - missing API key while `openai` is requested falls back to `MockModelProvider`
 
+Transport stability notes for `OpenAIModelProvider`:
+
+- all LiteLLM-backed completion, responses, and embedding calls now share one transient-retry wrapper
+- retries only cover timeout/network failures and transient upstream HTTP statuses (`408`, `409`, `425`, `500`, `502`, `503`, `504`)
+- rate-limit and invalid-payload classes still surface as-is so upstream failure reasons remain visible
+
+Plan generation also records successful semantic recoveries inside planner trace data:
+
+- transport retries resolved inside a round
+- `content_filter` recovery retries
+- empty-response recovery retries
+
+These successful recoveries are intended for debug inspection and trace review, not for the main plan UI.
+
 ### Heuristic first pass
 
 `LearningPlanService.create_plan()` always builds a heuristic base plan first through `StudyArrangementService.build_plan()`.

@@ -428,6 +428,16 @@ export interface PlanToolCallTrace {
   resultJson: string;
 }
 
+export interface ModelRecovery {
+  recoveryId: string;
+  category: string;
+  reason: string;
+  strategy: string;
+  attempts: number;
+  note: string;
+  createdAt: string;
+}
+
 export interface PlanGenerationRoundTrace {
   roundIndex: number;
   finishReason: string;
@@ -436,6 +446,7 @@ export interface PlanGenerationRoundTrace {
   elapsedMs: number;
   timeoutSeconds: number;
   toolCalls: PlanToolCallTrace[];
+  recoveries: ModelRecovery[];
 }
 
 export interface PlanGenerationTrace {
@@ -503,6 +514,7 @@ export interface StudyChatResponse {
   memoryTrace?: MemoryTraceHit[];
   toolCalls?: ChatToolCallTrace[];
   sceneProfile?: SceneProfile;
+  modelRecoveries?: ModelRecovery[];
 }
 
 export interface InteractiveQuestionOption {
@@ -585,6 +597,7 @@ export interface DialogueTurnRecord {
   memoryTrace?: MemoryTraceHit[];
   toolCalls?: ChatToolCallTrace[];
   sceneProfile?: SceneProfile;
+  modelRecoveries?: ModelRecovery[];
   createdAt: string;
 }
 

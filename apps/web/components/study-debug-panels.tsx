@@ -38,6 +38,9 @@ export function StudyDebugPanels({
   const latestToolCalls = response?.toolCalls?.length
     ? response.toolCalls
     : latestTurn?.toolCalls ?? [];
+  const latestModelRecoveries = response?.modelRecoveries?.length
+    ? response.modelRecoveries
+    : latestTurn?.modelRecoveries ?? [];
   const latestSceneProfile = response?.sceneProfile ?? latestTurn?.sceneProfile ?? session.sceneProfile ?? null;
 
   return (
@@ -82,6 +85,23 @@ export function StudyDebugPanels({
           <pre style={styles.pre}>{JSON.stringify(latestCharacterEvents, null, 2)}</pre>
         ) : (
           <DebugEmptyState message="当前轮没有角色事件。" />
+        )}
+      </details>
+
+      <details style={styles.card} open>
+        <summary style={styles.summary}>本轮恢复记录</summary>
+        {latestModelRecoveries.length ? (
+          <div style={styles.list}>
+            {latestModelRecoveries.map((item) => (
+              <div key={item.recoveryId} style={styles.itemCard}>
+                <strong>{item.reason}</strong>
+                <span style={styles.caption}>{item.strategy} · attempts {item.attempts}</span>
+                {item.note ? <span style={styles.bodyText}>{item.note}</span> : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <DebugEmptyState message="当前轮没有恢复记录。" />
         )}
       </details>
 

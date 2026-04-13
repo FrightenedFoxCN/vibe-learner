@@ -10,6 +10,7 @@ from app.models.domain import (
     InteractiveQuestionOption,
     LearningGoalInput,
     LearningPlanRecord,
+    ModelRecoveryRecord,
     PlanProgressEventRecord,
     PlanProgressSummaryRecord,
     PlanGenerationTraceRecord,
@@ -68,6 +69,7 @@ class PersonaSettingAssistRequest(BaseModel):
 class PersonaSettingAssistResponse(BaseModel):
     slots: list[PersonaSlot]
     system_prompt_suggestion: str
+    model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
 
 
 class PersonaSlotAssistRequest(BaseModel):
@@ -79,6 +81,7 @@ class PersonaSlotAssistRequest(BaseModel):
 
 class PersonaSlotAssistResponse(BaseModel):
     slot: PersonaSlot
+    model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
 
 
 class PersonaResponse(PersonaProfile):
@@ -132,6 +135,7 @@ class PersonaCardGenerateResponse(BaseModel):
     relationship: str = ""
     learner_address: str = ""
     items: list[PersonaCardResponse]
+    model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
 
 
 class SceneTreeGenerateRequest(BaseModel):
@@ -148,6 +152,7 @@ class SceneTreeGenerateResponse(BaseModel):
     scene_summary: str
     selected_layer_id: str = ""
     scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
+    model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
 
 
 class DocumentResponse(DocumentRecord):
@@ -522,6 +527,7 @@ class StudyChatResponse(BaseModel):
     memory_trace: list[dict[str, object]] = []
     tool_calls: list[ChatToolCallTraceResponse] = []
     scene_profile: SceneProfileRecord | None = None
+    model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
 
 
 class StudyChatExchangeResponse(StudyChatResponse):

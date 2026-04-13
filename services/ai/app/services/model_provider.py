@@ -30,6 +30,7 @@ from app.models.domain import (
     persona_sorted_slots,
 )
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+from app.services.model_recovery import record_model_recovery
 from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.token_usage import TokenUsageService
 from app.services.openai_plan_runner import OpenAIPlanRunner
@@ -171,6 +172,25 @@ CHAT_EXEMPT_TOOL_NAMES = frozenset(
     )
 )
 CHAT_EXEMPT_TOOL_EXTRA_ROUNDS = 12
+LITELLM_TRANSIENT_RETRY_COUNT = 2
+LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES = frozenset({"408", "409", "425", "500", "502", "503", "504"})
+
+
+class ModelRequestError(RuntimeError):
+    def __init__(
+        self,
+        code: str,
+        *,
+        attempts: int = 1,
+        status_code: str = "",
+        upstream_code: str = "",
+        upstream_message: str = "",
+    ) -> None:
+        super().__init__(code)
+        self.attempts = max(1, attempts)
+        self.status_code = status_code
+        self.upstream_code = upstream_code
+        self.upstream_message = upstream_message
 
 
 def _chat_prompt_sections() -> dict[str, str]:
@@ -181,6 +201,30 @@ def _chat_prompt_sections() -> dict[str, str]:
         "tool_followup": template.require("tool_followup"),
         "recovery": template.require("recovery"),
     }
+
+
+def _build_chat_recovery_instruction(*, reason: str, prompt_sections: dict[str, str]) -> str:
+    base = prompt_sections["recovery"]
+    if reason == "chat_model_content_filter":
+        return (
+            "上一次输出被内容过滤截断。请改为更克制、更教学化的表达，不要生成多余铺陈，只输出一个合法 JSON 对象。\n\n"
+            + base
+        )
+    return base
+
+
+def _build_setting_retry_instruction(*, reason: str, retry_instruction: str) -> str:
+    if reason == "setting_model_content_filter":
+        return (
+            "上一次输出被内容过滤截断。请改为更中性、更克制的结构化表达，只输出符合要求的 JSON 对象。\n\n"
+            + retry_instruction
+        )
+    if reason == "setting_model_empty_response":
+        return (
+            "上一次没有返回可用内容。请补全结果，并且只输出一个合法 JSON 对象。\n\n"
+            + retry_instruction
+        )
+    return retry_instruction
 
 
 def _setting_prompt_sections() -> dict[str, str]:
@@ -1167,6 +1211,9 @@ class OpenAIModelProvider(MockModelProvider):
             raise RuntimeError("chat_model_invalid_payload")
 
         try:
+            finish_reason, _, _ = _extract_choice_diagnostics(raw_payload)
+            if finish_reason == "content_filter":
+                raise RuntimeError("chat_model_content_filter")
             return _parse_chat_model_reply(
                 raw_payload=raw_payload,
                 tool_results=last_tool_results,
@@ -1174,14 +1221,21 @@ class OpenAIModelProvider(MockModelProvider):
                 tool_traces=tool_call_traces,
             )
         except RuntimeError as exc:
-            if str(exc) != "chat_model_invalid_payload":
+            recovery_reason = str(exc)
+            if recovery_reason not in {
+                "chat_model_invalid_payload",
+                "chat_model_content_filter",
+            }:
                 raise
-            logger.warning("model.chat.recovery invalid_payload retry_without_tools")
+            logger.warning("model.chat.recovery retry_without_tools reason=%s", recovery_reason)
             recovery_messages = [
                 *messages,
                 {
                     "role": "user",
-                    "content": prompt_sections["recovery"].replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
+                    "content": _build_chat_recovery_instruction(
+                        reason=recovery_reason,
+                        prompt_sections=prompt_sections,
+                    ).replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
                 },
             ]
             recovery_payload: dict[str, Any] = {
@@ -1196,12 +1250,19 @@ class OpenAIModelProvider(MockModelProvider):
                 request_kind="chat",
                 model=self.chat_model,
             )
-            return _parse_chat_model_reply(
+            recovered = _parse_chat_model_reply(
                 raw_payload=recovery_raw_payload,
                 tool_results=[],
                 fallback_memory_trace=memory_trace_hits or [],
                 tool_traces=[],
             )
+            record_model_recovery(
+                category="semantic_retry",
+                reason=recovery_reason,
+                strategy="retry_without_tools",
+                attempts=2,
+            )
+            return recovered
 
     def assist_persona_setting(
         self,
@@ -1354,15 +1415,9 @@ class OpenAIModelProvider(MockModelProvider):
                 },
             }
             try:
-                raw_payload, _ = self._request_openai_response(
+                parsed = self._request_setting_json_response(
                     payload,
-                    request_kind="setting",
-                    model=self.setting_model,
-                )
-                parsed = _extract_json_payload(
-                    _extract_response_output_text(raw_payload),
-                    invalid_json_code="setting_model_invalid_json",
-                    invalid_payload_code="setting_model_invalid_payload",
+                    retry_instruction="上一次输出没有形成完整 JSON。请保持结果简洁、中性、严格，只输出一个符合 schema 的 JSON 对象。",
                 )
                 used_web_search = True
             except RuntimeError as exc:
@@ -1377,6 +1432,12 @@ class OpenAIModelProvider(MockModelProvider):
                     prompt_sections=prompt_sections,
                     keywords=keywords,
                     card_count_hint=card_count_hint,
+                )
+                record_model_recovery(
+                    category="feature_fallback",
+                    reason=str(exc),
+                    strategy="disable_web_search",
+                    attempts=1,
                 )
         else:
             parsed = self._generate_persona_cards_from_keywords_without_web_search(
@@ -1459,15 +1520,9 @@ class OpenAIModelProvider(MockModelProvider):
                 "tools": [{"type": "web_search"}],
             }
             try:
-                raw_payload, _ = self._request_openai_response(
+                parsed = self._request_setting_json_response(
                     payload,
-                    request_kind="setting",
-                    model=self.setting_model,
-                )
-                parsed = _extract_json_payload(
-                    _extract_response_output_text(raw_payload),
-                    invalid_json_code="setting_model_invalid_json",
-                    invalid_payload_code="setting_model_invalid_payload",
+                    retry_instruction="上一次输出没有形成完整 JSON。请保持结果简洁、中性、严格，只输出一个符合场景树 schema 的 JSON 对象。",
                 )
                 used_web_search = True
             except RuntimeError as exc:
@@ -1482,6 +1537,12 @@ class OpenAIModelProvider(MockModelProvider):
                     prompt_sections=prompt_sections,
                     keywords=keywords,
                     layer_count_hint=layer_count_hint,
+                )
+                record_model_recovery(
+                    category="feature_fallback",
+                    reason=str(exc),
+                    strategy="disable_web_search",
+                    attempts=1,
                 )
         else:
             parsed = self._generate_scene_tree_from_keywords_without_web_search(
@@ -1579,13 +1640,25 @@ class OpenAIModelProvider(MockModelProvider):
             model=self.setting_model,
         )
         try:
+            finish_reason, _, _ = _extract_choice_diagnostics(raw_payload)
+            if finish_reason == "content_filter":
+                raise RuntimeError("setting_model_content_filter")
+            content = _extract_choice_content(raw_payload).strip()
+            if not content:
+                raise RuntimeError("setting_model_empty_response")
             return _extract_json_payload(
-                _extract_choice_content(raw_payload),
+                content,
                 invalid_json_code="setting_model_invalid_json",
                 invalid_payload_code="setting_model_invalid_payload",
             )
         except RuntimeError as exc:
-            if str(exc) not in {"setting_model_invalid_json", "setting_model_invalid_payload"}:
+            recovery_reason = str(exc)
+            if recovery_reason not in {
+                "setting_model_invalid_json",
+                "setting_model_invalid_payload",
+                "setting_model_content_filter",
+                "setting_model_empty_response",
+            }:
                 raise
             logger.warning(
                 "model.setting.json_retry model=%s reason=%s",
@@ -1597,7 +1670,10 @@ class OpenAIModelProvider(MockModelProvider):
             retry_messages.append(
                 {
                     "role": "user",
-                    "content": retry_instruction,
+                    "content": _build_setting_retry_instruction(
+                        reason=recovery_reason,
+                        retry_instruction=retry_instruction,
+                    ),
                 }
             )
             retry_payload["messages"] = retry_messages
@@ -1612,11 +1688,87 @@ class OpenAIModelProvider(MockModelProvider):
                 request_kind="setting",
                 model=self.setting_model,
             )
-            return _extract_json_payload(
-                _extract_choice_content(retry_raw_payload),
+            retry_finish_reason, _, _ = _extract_choice_diagnostics(retry_raw_payload)
+            if retry_finish_reason == "content_filter":
+                raise RuntimeError("setting_model_content_filter")
+            retry_content = _extract_choice_content(retry_raw_payload).strip()
+            if not retry_content:
+                raise RuntimeError("setting_model_empty_response")
+            parsed = _extract_json_payload(
+                retry_content,
                 invalid_json_code="setting_model_invalid_json",
                 invalid_payload_code="setting_model_invalid_payload",
             )
+            record_model_recovery(
+                category="semantic_retry",
+                reason=recovery_reason,
+                strategy="retry_structured_json",
+                attempts=2,
+            )
+            return parsed
+
+    def _request_setting_json_response(
+        self,
+        payload: dict[str, Any],
+        *,
+        retry_instruction: str,
+    ) -> dict[str, Any]:
+        raw_payload, _ = self._request_openai_response(
+            payload,
+            request_kind="setting",
+            model=self.setting_model,
+        )
+        try:
+            content = _extract_response_output_text(raw_payload).strip()
+            if not content:
+                raise RuntimeError("setting_model_empty_response")
+            return _extract_json_payload(
+                content,
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+        except RuntimeError as exc:
+            recovery_reason = str(exc)
+            if recovery_reason not in {
+                "setting_model_invalid_json",
+                "setting_model_invalid_payload",
+                "setting_model_empty_response",
+            }:
+                raise
+            retry_payload = dict(payload)
+            retry_payload["temperature"] = min(float(payload.get("temperature") or self.setting_temperature), 0.2)
+            existing_instructions = str(payload.get("instructions") or "").strip()
+            retry_payload["instructions"] = "\n\n".join(
+                part
+                for part in [
+                    existing_instructions,
+                    _build_setting_retry_instruction(
+                        reason=recovery_reason,
+                        retry_instruction=retry_instruction,
+                    ),
+                ]
+                if part
+            )
+            raw_retry_payload, _ = self._request_openai_response(
+                retry_payload,
+                request_kind="setting",
+                model=self.setting_model,
+            )
+            retry_content = _extract_response_output_text(raw_retry_payload).strip()
+            if not retry_content:
+                raise RuntimeError("setting_model_empty_response")
+            parsed = _extract_json_payload(
+                retry_content,
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+            record_model_recovery(
+                category="semantic_retry",
+                reason=recovery_reason,
+                strategy="retry_structured_response",
+                attempts=2,
+            )
+            return parsed
 
     def generate_scene_tree_from_text(
         self,
@@ -1864,22 +2016,20 @@ class OpenAIModelProvider(MockModelProvider):
             tools_enabled,
         )
         self._require_litellm_sdk(litellm_completion, feature="completion")
-        started_at = time.perf_counter()
-        try:
-            raw_result = litellm_completion(
+        raw_payload, elapsed_ms = self._execute_litellm_request(
+            request_kind=request_kind,
+            model=model,
+            invoke=lambda: litellm_completion(
                 **resolved_payload,
                 **self._build_litellm_request_kwargs(
                     api_base=request_base_url,
                     api_key=request_api_key,
                     model=str(resolved_payload.get("model") or model),
                 ),
-            )
-            raw_payload = _normalize_litellm_payload(raw_result)
-            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            self._record_token_usage(raw_payload, feature=request_kind, model=model)
-            return raw_payload, elapsed_ms
-        except Exception as exc:
-            raise self._map_litellm_request_error(exc, request_kind=request_kind) from exc
+            ),
+        )
+        self._record_token_usage(raw_payload, feature=request_kind, model=model)
+        return raw_payload, elapsed_ms
 
     def _request_openai_response(
         self,
@@ -1902,22 +2052,20 @@ class OpenAIModelProvider(MockModelProvider):
             bool(resolved_payload.get("tools")),
         )
         self._require_litellm_sdk(litellm_responses, feature="responses")
-        started_at = time.perf_counter()
-        try:
-            raw_result = litellm_responses(
+        raw_payload, elapsed_ms = self._execute_litellm_request(
+            request_kind=request_kind,
+            model=model,
+            invoke=lambda: litellm_responses(
                 **resolved_payload,
                 **self._build_litellm_request_kwargs(
                     api_base=request_base_url,
                     api_key=request_api_key,
                     model=str(resolved_payload.get("model") or model),
                 ),
-            )
-            raw_payload = _normalize_litellm_payload(raw_result)
-            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            self._record_token_usage_responses(raw_payload, feature=request_kind, model=model)
-            return raw_payload, elapsed_ms
-        except Exception as exc:
-            raise self._map_litellm_request_error(exc, request_kind=request_kind) from exc
+            ),
+        )
+        self._record_token_usage_responses(raw_payload, feature=request_kind, model=model)
+        return raw_payload, elapsed_ms
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         clean = [text.strip() for text in texts if text and text.strip()]
@@ -1948,23 +2096,21 @@ class OpenAIModelProvider(MockModelProvider):
             api_base=request_base_url,
         )
         self._require_litellm_sdk(litellm_embedding, feature="embedding")
-        started_at = time.perf_counter()
-        try:
-            raw_result = litellm_embedding(
+        raw_payload, elapsed_ms = self._execute_litellm_request(
+            request_kind="embedding",
+            model=model,
+            invoke=lambda: litellm_embedding(
                 **resolved_payload,
                 **self._build_litellm_request_kwargs(
                     api_base=request_base_url,
                     api_key=request_api_key,
                     model=str(resolved_payload.get("model") or model),
                 ),
-            )
-            raw_payload = _normalize_litellm_payload(raw_result)
-            elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            logger.info("model.embedding.request provider=litellm model=%s elapsed_ms=%s", model, elapsed_ms)
-            self._record_token_usage(raw_payload, feature="embedding", model=model)
-            return raw_payload, elapsed_ms
-        except Exception as exc:
-            raise self._map_litellm_request_error(exc, request_kind="embedding") from exc
+            ),
+        )
+        logger.info("model.embedding.request provider=litellm model=%s elapsed_ms=%s", model, elapsed_ms)
+        self._record_token_usage(raw_payload, feature="embedding", model=model)
+        return raw_payload, elapsed_ms
 
     def _record_token_usage(
         self,
@@ -2052,17 +2198,17 @@ class OpenAIModelProvider(MockModelProvider):
     def _map_litellm_request_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:
         if _is_litellm_rate_limit_error(exc):
             logger.exception("model.%s.rate_limit provider=litellm", request_kind)
-            return RuntimeError(f"openai_{request_kind}_request_rate_limit")
+            return ModelRequestError(f"openai_{request_kind}_request_rate_limit")
         if _is_litellm_timeout_error(exc):
             logger.exception(
                 "model.%s.timeout provider=litellm timeout_seconds=%s",
                 request_kind,
                 self.timeout_seconds,
             )
-            return RuntimeError(f"openai_{request_kind}_request_timeout")
+            return ModelRequestError(f"openai_{request_kind}_request_timeout")
         if _is_litellm_network_error(exc):
             logger.exception("model.%s.network_error provider=litellm", request_kind)
-            return RuntimeError(f"openai_{request_kind}_request_network_error")
+            return ModelRequestError(f"openai_{request_kind}_request_network_error")
 
         status_code, error_code, error_message = _extract_litellm_exception_details(exc)
         logger.exception(
@@ -2072,9 +2218,64 @@ class OpenAIModelProvider(MockModelProvider):
             error_code,
             error_message,
         )
-        return RuntimeError(
-            f"openai_{request_kind}_request_failed:{status_code}:{error_code or 'unknown'}"
+        return ModelRequestError(
+            f"openai_{request_kind}_request_failed:{status_code}:{error_code or 'unknown'}",
+            status_code=status_code,
+            upstream_code=error_code,
+            upstream_message=error_message,
         )
+
+    def _execute_litellm_request(
+        self,
+        *,
+        request_kind: str,
+        model: str,
+        invoke: Callable[[], Any],
+    ) -> tuple[dict[str, Any], int]:
+        started_at = time.perf_counter()
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                raw_result = invoke()
+                raw_payload = _normalize_litellm_payload(raw_result)
+                elapsed_ms = int((time.perf_counter() - started_at) * 1000)
+                if attempt > 1:
+                    record_model_recovery(
+                        category="transport_retry",
+                        reason="upstream_transient_error",
+                        strategy="retry_same_payload",
+                        attempts=attempt,
+                    )
+                    logger.info(
+                        "model.%s.retry_recovered provider=litellm model=%s attempts=%s elapsed_ms=%s",
+                        request_kind,
+                        model,
+                        attempt,
+                        elapsed_ms,
+                    )
+                return raw_payload, elapsed_ms
+            except Exception as exc:
+                if _is_litellm_retryable_error(exc) and attempt <= LITELLM_TRANSIENT_RETRY_COUNT:
+                    retry_delay_seconds = min(0.4 * attempt, 1.2)
+                    status_code, error_code, error_message = _extract_litellm_exception_details(exc)
+                    logger.warning(
+                        "model.%s.retry provider=litellm model=%s attempt=%s max_retries=%s delay_ms=%s status=%s upstream_code=%s upstream_message=%s",
+                        request_kind,
+                        model,
+                        attempt,
+                        LITELLM_TRANSIENT_RETRY_COUNT,
+                        int(retry_delay_seconds * 1000),
+                        status_code or "unknown",
+                        error_code or "unknown",
+                        error_message,
+                    )
+                    time.sleep(retry_delay_seconds)
+                    continue
+                mapped_error = self._map_litellm_request_error(exc, request_kind=request_kind)
+                if isinstance(mapped_error, ModelRequestError):
+                    mapped_error.attempts = attempt
+                raise mapped_error from exc
 
 
 def _chat_tools(
@@ -3339,6 +3540,13 @@ def _is_litellm_network_error(exc: Exception) -> bool:
             "refused",
         )
     )
+
+
+def _is_litellm_retryable_error(exc: Exception) -> bool:
+    if _is_litellm_timeout_error(exc) or _is_litellm_network_error(exc):
+        return True
+    status_code = _extract_litellm_status_code(exc)
+    return status_code in LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES
 
 
 def _extract_choice_content(payload: dict[str, Any]) -> str:

@@ -8,6 +8,7 @@ import { PlanHistory } from "./plan-history";
 import { PlanOverview } from "./plan-overview";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
+import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import { useLearningWorkspace } from "./learning-workspace-provider";
 
 export function LearningWorkspace() {
@@ -40,8 +41,11 @@ export function LearningWorkspace() {
     answerPlanQuestion,
     renameStudyUnitTitle,
     removePlan,
-    refreshPlanSnapshot
+    refreshPlanSnapshot,
+    getPageCache,
+    setPageCache,
   } = useLearningWorkspace();
+  const planSetupCache = getPageCache("planSetup");
 
   const handleOpenStudyDialog = async () => {
     if (!studySession && activePlan) {
@@ -84,6 +88,8 @@ export function LearningWorkspace() {
           onRenameStudyUnitTitle={renameStudyUnitTitle}
           planStreamEvents={planStreamEvents}
           planStreamStatus={planStreamStatus}
+          cachedState={planSetupCache}
+          onCachedStateChange={(nextState: PlanSetupPageCache) => setPageCache("planSetup", nextState)}
         />
 
         <div className="plan-main-column" style={styles.planColumn}>

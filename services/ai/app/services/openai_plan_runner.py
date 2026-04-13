@@ -6,10 +6,12 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from app.models.domain import (
+    ModelRecoveryRecord,
     PlanGenerationRoundRecord,
     PlanGenerationTraceRecord,
     PlanToolCallTraceRecord,
 )
+from app.services.model_recovery import get_model_recovery_state, record_model_recovery
 from app.services.plan_tool_runtime import PlanToolRuntime
 from app.services.prompt_loader import load_prompt_template
 
@@ -56,7 +58,9 @@ class OpenAIPlanRunner:
         tool_probe_retries = 0
         round_index = 0
         content_filter_retries = 0
+        pending_recoveries: list[dict[str, object]] = []
         while round_index < max_rounds:
+            round_recovery_start = len(get_model_recovery_state())
             _emit_progress(
                 progress_callback,
                 "model_round_started",
@@ -86,6 +90,10 @@ class OpenAIPlanRunner:
             )
             tool_calls = message.get("tool_calls") or []
             if tool_calls:
+                round_recoveries = _resolve_pending_plan_recoveries(
+                    pending_recoveries=pending_recoveries,
+                    round_recovery_start=round_recovery_start,
+                )
                 trace_round = PlanGenerationRoundRecord(
                     round_index=round_index,
                     finish_reason=str(choice.get("finish_reason") or ""),
@@ -94,6 +102,7 @@ class OpenAIPlanRunner:
                     elapsed_ms=elapsed_ms,
                     timeout_seconds=self.timeout_seconds,
                     tool_calls=[],
+                    recoveries=round_recoveries,
                 )
                 current_messages.append(
                     {
@@ -187,6 +196,10 @@ class OpenAIPlanRunner:
                         elapsed_ms=elapsed_ms,
                         timeout_seconds=self.timeout_seconds,
                         tool_calls=[],
+                        recoveries=_resolve_pending_plan_recoveries(
+                            pending_recoveries=pending_recoveries,
+                            round_recovery_start=round_recovery_start,
+                        ),
                     )
                 )
                 _emit_progress(
@@ -217,6 +230,14 @@ class OpenAIPlanRunner:
                 )
                 if content_filter_retries < max_content_filter_retries:
                     content_filter_retries += 1
+                    pending_recoveries.append(
+                        {
+                            "category": "semantic_retry",
+                            "reason": "plan_model_content_filter",
+                            "strategy": "retry_same_context",
+                            "attempts": content_filter_retries + 1,
+                        }
+                    )
                     _emit_progress(
                         progress_callback,
                         "model_recovery_attempt",
@@ -228,6 +249,7 @@ class OpenAIPlanRunner:
                         },
                     )
                     continue
+                raise RuntimeError("plan_model_content_filter")
             _emit_progress(
                 progress_callback,
                 "model_round_failed",
@@ -240,6 +262,14 @@ class OpenAIPlanRunner:
             )
             if empty_response_retries < max_empty_response_retries:
                 empty_response_retries += 1
+                pending_recoveries.append(
+                    {
+                        "category": "semantic_retry",
+                        "reason": "plan_model_empty_response",
+                        "strategy": "retry_with_tools",
+                        "attempts": empty_response_retries + 1,
+                    }
+                )
                 _emit_progress(
                     progress_callback,
                     "model_recovery_attempt",
@@ -337,6 +367,23 @@ def _should_continue_tool_refinement(
     study_units: list[Any],
 ) -> bool:
     return _tool_call_count(trace) == 0 and _looks_coarse_grained(study_units)
+
+
+def _resolve_pending_plan_recoveries(
+    *,
+    pending_recoveries: list[dict[str, object]],
+    round_recovery_start: int,
+) -> list[ModelRecoveryRecord]:
+    for item in pending_recoveries:
+        record_model_recovery(
+            category=str(item.get("category") or "semantic_retry"),
+            reason=str(item.get("reason") or "unknown"),
+            strategy=str(item.get("strategy") or "unknown"),
+            attempts=int(item.get("attempts") or 1),
+            note=str(item.get("note") or ""),
+        )
+    pending_recoveries.clear()
+    return get_model_recovery_state()[round_recovery_start:]
 
 
 def _looks_coarse_grained(study_units: list[Any]) -> bool:

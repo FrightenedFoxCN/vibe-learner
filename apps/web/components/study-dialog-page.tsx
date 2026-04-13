@@ -10,6 +10,11 @@ import { useLearningWorkspace } from "./learning-workspace-provider";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
+import type {
+  StudyConsolePageCache,
+  StudyDialogPageCache,
+  StudyDialogPreviewState,
+} from "../lib/learning-workspace-page-cache";
 
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
 const ProjectedPdfViewer = dynamic(
@@ -21,28 +26,7 @@ const ProjectedImageViewer = dynamic(
   { ssr: false }
 );
 
-type PreviewState =
-  | {
-      kind: "document";
-      sourceId: string;
-      title: string;
-      page: number;
-      pageCount: number;
-    }
-  | {
-      kind: "attachment_pdf";
-      sourceId: string;
-      title: string;
-      page: number;
-      pageCount: number;
-    }
-  | {
-      kind: "attachment_image";
-      sourceId: string;
-      title: string;
-      page: number;
-      pageCount: number;
-    };
+type PreviewState = StudyDialogPreviewState;
 
 export function StudyDialogPage() {
   const {
@@ -66,14 +50,24 @@ export function StudyDialogPage() {
     handleSwitchSection,
     handleSubmitQuestionAttempt,
     handleResolvePlanConfirmation,
+    getPageCache,
+    setPageCache,
   } = useLearningWorkspace();
+  const studyDialogCache = getPageCache("studyDialog");
+  const studyConsoleCache = getPageCache("studyConsole");
 
-  const [pdfPage, setPdfPage] = useState(1);
-  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
-  const [previewState, setPreviewState] = useState<PreviewState | null>(null);
+  const [pdfPage, setPdfPage] = useState(() => studyDialogCache?.pdfPage ?? 1);
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(
+    () => studyDialogCache?.isPdfPreviewOpen ?? false
+  );
+  const [previewState, setPreviewState] = useState<PreviewState | null>(
+    () => studyDialogCache?.previewState ?? null
+  );
   const [pendingComposerInsert, setPendingComposerInsert] = useState<{ id: string; text: string } | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState("");
-  const [selectedSubsectionId, setSelectedSubsectionId] = useState("");
+  const [selectedChapter, setSelectedChapter] = useState(() => studyDialogCache?.selectedChapter ?? "");
+  const [selectedSubsectionId, setSelectedSubsectionId] = useState(
+    () => studyDialogCache?.selectedSubsectionId ?? ""
+  );
   const [requestedPlanId, setRequestedPlanId] = useState("");
   const [requestedChapter, setRequestedChapter] = useState("");
   const [requestedSubsectionId, setRequestedSubsectionId] = useState("");
@@ -376,6 +370,17 @@ export function StudyDialogPage() {
     studySession?.sectionId,
   ]);
 
+  useEffect(() => {
+    const nextCache: StudyDialogPageCache = {
+      pdfPage,
+      isPdfPreviewOpen,
+      previewState,
+      selectedChapter,
+      selectedSubsectionId,
+    };
+    setPageCache("studyDialog", nextCache);
+  }, [isPdfPreviewOpen, pdfPage, previewState, selectedChapter, selectedSubsectionId, setPageCache]);
+
   const effectivePreview = previewState;
   const previewPage = effectivePreview?.page ?? pdfPage;
   const previewTitle = effectivePreview?.title ?? activeDocument?.title ?? "";
@@ -479,6 +484,8 @@ export function StudyDialogPage() {
             onConsumeComposerInsert={() => setPendingComposerInsert(null)}
             canJumpToChapterStart={chapterStartPage > 0}
             disabled={!studySession}
+            cachedState={studyConsoleCache}
+            onCachedStateChange={(nextState: StudyConsolePageCache) => setPageCache("studyConsole", nextState)}
           />
       </section>
 

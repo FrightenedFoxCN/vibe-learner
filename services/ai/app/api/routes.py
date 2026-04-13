@@ -80,6 +80,7 @@ from app.models.api import (
 )
 from app.models.domain import Citation, PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
+from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
 from app.services.study_chat_attachments import prepare_study_chat_attachments
 from app.services.study_chat_attachments import render_pdf_page_png_bytes
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
@@ -101,6 +102,17 @@ def _into_response(response_model: type[BaseModel], value: BaseModel | dict) -> 
     payload = value.model_dump() if isinstance(value, BaseModel) else value
     return response_model.model_validate(payload)
 
+
+def _into_response_with_model_recoveries(
+    response_model: type[BaseModel],
+    value: BaseModel | dict,
+) -> BaseModel:
+    payload = value.model_dump() if isinstance(value, BaseModel) else dict(value)
+    recoveries = consume_model_recovery_state()
+    if recoveries and "model_recoveries" not in payload:
+        payload["model_recoveries"] = [item.model_dump(mode="json") for item in recoveries]
+    return response_model.model_validate(payload)
+
 def _map_openai_upstream_error(detail_prefix: str, exc: RuntimeError) -> HTTPException:
     detail = str(exc)
     if not detail.startswith("openai_") or "_request_failed:" not in detail:
@@ -116,6 +128,11 @@ def _map_openai_upstream_error(detail_prefix: str, exc: RuntimeError) -> HTTPExc
     )
 
 
+def _runtime_error_retry_attempts(exc: RuntimeError) -> int:
+    attempts = getattr(exc, "attempts", 1)
+    return attempts if isinstance(attempts, int) and attempts > 0 else 1
+
+
 def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
     if detail == "openai_plan_request_rate_limit":
@@ -126,6 +143,8 @@ def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="plan_model_network_error")
     if detail.startswith("openai_plan_request_failed:"):
         return _map_openai_upstream_error("plan_model", exc)
+    if detail == "plan_model_content_filter":
+        return HTTPException(status_code=502, detail="plan_model_content_filter")
     if detail == "plan_model_invalid_json":
         return HTTPException(status_code=502, detail="plan_model_invalid_json")
     if detail == "plan_model_invalid_payload":
@@ -147,6 +166,10 @@ def _map_chat_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="chat_model_network_error")
     if detail.startswith("openai_chat_request_failed:"):
         return _map_openai_upstream_error("chat_model", exc)
+    if detail == "chat_model_content_filter":
+        return HTTPException(status_code=502, detail="chat_model_content_filter")
+    if detail == "chat_model_empty_response":
+        return HTTPException(status_code=502, detail="chat_model_empty_response")
     if detail == "chat_model_invalid_payload":
         return HTTPException(status_code=502, detail="chat_model_invalid_payload")
     return HTTPException(status_code=500, detail="chat_generation_failed")
@@ -162,6 +185,10 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="setting_model_network_error")
     if detail.startswith("openai_setting_request_failed:"):
         return _map_openai_upstream_error("setting_model", exc)
+    if detail == "setting_model_content_filter":
+        return HTTPException(status_code=502, detail="setting_model_content_filter")
+    if detail == "setting_model_empty_response":
+        return HTTPException(status_code=502, detail="setting_model_empty_response")
     if detail == "setting_model_invalid_json":
         return HTTPException(status_code=502, detail="setting_model_invalid_json")
     if detail == "setting_model_invalid_payload":
@@ -349,6 +376,7 @@ def delete_reusable_scene_node(node_id: str) -> dict[str, str]:
 
 @router.post("/scene-setup/generate", response_model=SceneTreeGenerateResponse)
 def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateResponse:
+    reset_model_recovery_state()
     try:
         if payload.mode == "keywords":
             result = container.model_provider.generate_scene_tree_from_keywords(
@@ -365,7 +393,7 @@ def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateR
     except RuntimeError as exc:
         raise _map_setting_generation_error(exc) from exc
 
-    return SceneTreeGenerateResponse(
+    return _into_response_with_model_recoveries(SceneTreeGenerateResponse, SceneTreeGenerateResponse(
         mode=payload.mode,
         used_model=str(result.get("used_model") or ""),
         used_web_search=bool(result.get("used_web_search")),
@@ -376,7 +404,7 @@ def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateR
             SceneLayerStateRecord.model_validate(item)
             for item in (result.get("scene_layers") or [])
         ],
-    )
+    ))
 
 
 @router.post("/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse)
@@ -746,6 +774,7 @@ def delete_persona_card(card_id: str) -> dict[str, str]:
 
 @router.post("/persona-cards/generate", response_model=PersonaCardGenerateResponse)
 def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGenerateResponse:
+    reset_model_recovery_state()
     try:
         if payload.mode == "keywords":
             result = container.model_provider.generate_persona_cards_from_keywords(
@@ -780,7 +809,7 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGe
         )
         for item in result.get("cards") or []
     ]
-    return PersonaCardGenerateResponse(
+    return _into_response_with_model_recoveries(PersonaCardGenerateResponse, PersonaCardGenerateResponse(
         mode=payload.mode,
         used_model=str(result.get("used_model") or ""),
         used_web_search=bool(result.get("used_web_search")),
@@ -788,11 +817,12 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGe
         relationship=str(result.get("relationship") or ""),
         learner_address=str(result.get("learner_address") or ""),
         items=[_into_response(PersonaCardResponse, item) for item in cards],
-    )
+    ))
 
 
 @router.post("/personas/assist-setting", response_model=PersonaSettingAssistResponse)
 def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSettingAssistResponse:
+    reset_model_recovery_state()
     try:
         result = container.model_provider.assist_persona_setting(
             name=payload.name,
@@ -807,16 +837,18 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
             http_error.detail,
             str(exc),
         )
+        reset_model_recovery_state()
         result = container.persona_engine.assist_setting(
             name=payload.name,
             summary=payload.summary,
             slots=payload.slots,
         )
-    return PersonaSettingAssistResponse(**result)
+    return _into_response_with_model_recoveries(PersonaSettingAssistResponse, result)
 
 
 @router.post("/personas/assist-slot", response_model=PersonaSlotAssistResponse)
 def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistResponse:
+    reset_model_recovery_state()
     try:
         result = container.model_provider.assist_persona_slot(
             name=payload.name,
@@ -831,6 +863,7 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
             http_error.detail,
             str(exc),
         )
+        reset_model_recovery_state()
         result = {
             "slot": container.persona_engine.assist_slot(
                 name=payload.name,
@@ -839,7 +872,7 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
                 rewrite_strength=payload.rewrite_strength,
             ).model_dump()
         }
-    return PersonaSlotAssistResponse(**result)
+    return _into_response_with_model_recoveries(PersonaSlotAssistResponse, result)
 
 
 @router.get("/study-sessions/{session_id}/attachments/{attachment_id}/file")
@@ -924,6 +957,7 @@ def _run_study_chat(
     attachment_context: str = "",
     learner_multimodal_parts=None,
 ) -> StudyChatExchangeResponse:
+    reset_model_recovery_state()
     session = _ensure_session_scene_binding(container.study_session_service.require_session(session_id))
     normalized_message_kind = (message_kind or "learner").strip() or "learner"
     normalized_follow_up_id = follow_up_id.strip()
@@ -1024,16 +1058,18 @@ def _run_study_chat(
     except RuntimeError as exc:
         http_error = _map_chat_generation_error(exc)
         logger.exception(
-            "study_chat.error session_id=%s public_detail=%s internal_error_code=%s",
+            "study_chat.error session_id=%s public_detail=%s internal_error_code=%s retry_attempts=%s",
             session_id,
             http_error.detail,
             str(exc),
+            _runtime_error_retry_attempts(exc),
         )
         raise http_error from exc
     response.citations = _merge_chat_citations(
         response.citations,
         session_tool_runtime.response_citations(),
     )
+    response.model_recoveries = consume_model_recovery_state()
     session = container.study_session_service.append_turn(
         session_id=session_id,
         learner_message=message,
@@ -1411,6 +1447,7 @@ def _ensure_session_scene_binding(session):
 
 @router.post("/learning-plans", response_model=LearningPlanResponse)
 def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResponse:
+    reset_model_recovery_state()
     stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
     recorder = StreamReportRecorder(
         store=container.store,
@@ -1459,15 +1496,17 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
                 "detail": http_error.detail,
                 "status_code": http_error.status_code,
                 "internal_error_code": str(exc),
+                "retry_attempts": _runtime_error_retry_attempts(exc),
             },
         )
         logger.warning(
-            "learning_plans.create_failed document_id=%s persona_id=%s detail=%s status_code=%s internal_error_code=%s",
+            "learning_plans.create_failed document_id=%s persona_id=%s detail=%s status_code=%s internal_error_code=%s retry_attempts=%s",
             payload.document_id,
             payload.persona_id,
             http_error.detail,
             http_error.status_code,
             str(exc),
+            _runtime_error_retry_attempts(exc),
         )
         raise http_error from exc
     recorder.emit(
@@ -1517,6 +1556,7 @@ def create_learning_plan_stream(
         event_queue.put({"stage": stage, "payload": event_payload})
 
     def run() -> None:
+        reset_model_recovery_state()
         try:
             report(
                 "learning_plan_started",
@@ -1562,6 +1602,7 @@ def create_learning_plan_stream(
                     "detail": http_error.detail,
                     "status_code": http_error.status_code,
                     "internal_error_code": str(exc),
+                    "retry_attempts": _runtime_error_retry_attempts(exc),
                 },
             )
             event_queue.put(
@@ -1572,6 +1613,7 @@ def create_learning_plan_stream(
                         "detail": http_error.detail,
                         "status_code": http_error.status_code,
                         "internal_error_code": str(exc),
+                        "retry_attempts": _runtime_error_retry_attempts(exc),
                     },
                 }
             )

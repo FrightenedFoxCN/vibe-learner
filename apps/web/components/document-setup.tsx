@@ -10,6 +10,7 @@ import type {
   SceneProfile,
   StudySessionRecord
 } from "@vibe-learner/shared";
+import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import type { SceneLibraryItemPayload } from "../lib/api";
 import { MaterialIcon } from "./material-icon";
 import { PersonaSelector } from "./persona-selector";
@@ -37,6 +38,8 @@ interface DocumentSetupProps {
   sceneProfile?: SceneProfile | null;
   planStreamEvents: StreamEventItem[];
   planStreamStatus: string;
+  cachedState?: PlanSetupPageCache;
+  onCachedStateChange?: (state: PlanSetupPageCache) => void;
 }
 
 interface StreamEventItem {
@@ -62,11 +65,17 @@ export function DocumentSetup({
   onSelectSceneLibraryId,
   sceneProfile,
   planStreamEvents,
-  planStreamStatus
+  planStreamStatus,
+  cachedState,
+  onCachedStateChange,
 }: DocumentSetupProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [generationMode, setGenerationMode] = useState<"document" | "goal_only">("document");
-  const [objective, setObjective] = useState("请基于教材结构生成首轮学习计划，先给出学习章节顺序，再拆分每章的细分学习要点。");
+  const [file, setFile] = useState<File | null>(() => cachedState?.file ?? null);
+  const [generationMode, setGenerationMode] = useState<"document" | "goal_only">(
+    () => cachedState?.generationMode ?? "document"
+  );
+  const [objective, setObjective] = useState(
+    () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先给出学习章节顺序，再拆分每章的细分学习要点。"
+  );
   const [editingUnitId, setEditingUnitId] = useState("");
   const [unitTitleDraft, setUnitTitleDraft] = useState("");
 
@@ -80,6 +89,14 @@ export function DocumentSetup({
       setUnitTitleDraft("");
     }
   }, [document, editingUnitId]);
+
+  useEffect(() => {
+    onCachedStateChange?.({
+      generationMode,
+      objective,
+      file,
+    });
+  }, [file, generationMode, objective, onCachedStateChange]);
 
   const planRoundSummary = summarizePlanRounds(planStreamEvents);
   const shouldShowPlanRounds =
@@ -235,7 +252,6 @@ export function DocumentSetup({
             <div style={styles.progressStats}>
               <span style={styles.progressStat}>已见轮次 {planRoundSummary.rounds.length}</span>
               <span style={styles.progressStat}>工具调用 {planRoundSummary.totalToolCalls}</span>
-              <span style={styles.progressStat}>恢复尝试 {planRoundSummary.recoveryCount}</span>
               <span style={styles.progressStat}>规划提问 {planRoundSummary.planningQuestions.length}</span>
             </div>
 
@@ -271,11 +287,6 @@ export function DocumentSetup({
                       {typeof round.elapsedMs === "number" ? ` · ${round.elapsedMs} ms` : ""}
                     </span>
                     {round.error ? <span style={styles.roundError}>失败原因：{round.error}</span> : null}
-                    {round.recoveryNotes.length ? (
-                      <span style={styles.roundRecovery}>
-                        恢复：{round.recoveryNotes.join("；")}
-                      </span>
-                    ) : null}
                     {round.toolCalls.length ? (
                       <div style={styles.roundToolList}>
                         {round.toolCalls.map((toolName, index) => (
@@ -796,7 +807,6 @@ interface PlanRoundSummaryItem {
   roundIndex: number;
   status: PlanRoundStatus;
   toolCalls: string[];
-  recoveryNotes: string[];
   finishReason: string;
   elapsedMs?: number;
   error?: string;
@@ -812,7 +822,6 @@ function summarizePlanRounds(events: StreamEventItem[]) {
   const rounds = new Map<number, PlanRoundSummaryItem>();
   const planningQuestions = new Map<string, PlanningQuestionSummaryItem>();
   let totalToolCalls = 0;
-  let recoveryCount = 0;
   let latestMessage = "";
 
   for (const event of events) {
@@ -827,7 +836,6 @@ function summarizePlanRounds(events: StreamEventItem[]) {
           roundIndex,
           status: "running" as const,
           toolCalls: [],
-          recoveryNotes: [],
           finishReason: "",
         };
       rounds.set(roundIndex, current);
@@ -851,18 +859,6 @@ function summarizePlanRounds(events: StreamEventItem[]) {
         totalToolCalls += 1;
         latestMessage = `Round ${round.roundIndex + 1} 调用了工具 ${toolName}。`;
       }
-      continue;
-    }
-
-    if (event.stage === "model_recovery_attempt") {
-      const round = ensureRound();
-      const reason = String(event.payload.reason ?? "").trim();
-      const strategy = String(event.payload.strategy ?? "").trim();
-      if (round) {
-        round.recoveryNotes.push([reason, strategy].filter(Boolean).join(" -> "));
-      }
-      recoveryCount += 1;
-      latestMessage = "计划器正在做恢复尝试。";
       continue;
     }
 
@@ -922,7 +918,6 @@ function summarizePlanRounds(events: StreamEventItem[]) {
     rounds: [...rounds.values()].sort((a, b) => a.roundIndex - b.roundIndex),
     planningQuestions: [...planningQuestions.values()],
     totalToolCalls,
-    recoveryCount,
     latestMessage,
   };
 }
