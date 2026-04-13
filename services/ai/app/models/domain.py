@@ -45,6 +45,7 @@ class PersonaProfile(BaseModel):
     relationship: str = ""
     learner_address: str = ""
     system_prompt: str
+    reference_hints: list[str] = Field(default_factory=list)
     slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str]
     available_actions: list[str]

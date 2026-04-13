@@ -30,6 +30,7 @@ interface DocumentDebugSnapshot {
 interface DocumentDebugDataState extends DocumentDebugSnapshot {
   loading: boolean;
   error: string;
+  lastUpdatedAt: string;
   debugRecordError: string;
   planningContextError: string;
   planningTraceError: string;
@@ -47,6 +48,7 @@ const EMPTY_STATE: DocumentDebugDataState = {
   planReport: null,
   loading: false,
   error: "",
+  lastUpdatedAt: "",
   debugRecordError: "",
   planningContextError: "",
   planningTraceError: "",
@@ -74,8 +76,9 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
     if (cached) {
       setState({
         ...cached,
-        loading: false,
+        loading: refreshKey > 0,
         error: "",
+        lastUpdatedAt: deriveLastUpdatedAt(cached),
         debugRecordError: "",
         planningContextError: "",
         planningTraceError: "",
@@ -87,7 +90,8 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
       setState((current) => ({
         ...EMPTY_STATE,
         modelToolConfig: current.modelToolConfig,
-        loading: true
+        loading: true,
+        lastUpdatedAt: current.lastUpdatedAt
       }));
     }
 
@@ -182,6 +186,7 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
         ...nextSnapshot,
         loading: false,
         error: nextError,
+        lastUpdatedAt: deriveLastUpdatedAt(nextSnapshot),
         ...nextErrors
       };
       cacheRef.current.set(documentId, {
@@ -202,8 +207,53 @@ export function useDocumentDebugData(documentId: string, enabled: boolean, debug
     };
   }, [documentId, enabled, debugReady, refreshKey]);
 
+  const autoRefreshActive = Boolean(
+    enabled
+    && documentId
+    && !state.loading
+    && (
+      !debugReady
+      || state.processReport?.status === "running"
+      || state.planReport?.status === "running"
+    )
+  );
+
+  useEffect(() => {
+    if (!autoRefreshActive) {
+      return;
+    }
+    const delayMs = !debugReady ? 3000 : 2200;
+    const timeoutId = window.setTimeout(() => {
+      setRefreshKey((current) => current + 1);
+    }, delayMs);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [autoRefreshActive, debugReady, documentId, state.planReport?.status, state.processReport?.status]);
+
   return {
     ...state,
+    autoRefreshActive,
     refresh: () => setRefreshKey((current) => current + 1)
   };
+}
+
+function deriveLastUpdatedAt(snapshot: DocumentDebugSnapshot) {
+  const timestamps = [
+    snapshot.debugRecord?.processedAt ?? "",
+    snapshot.processReport?.updatedAt ?? "",
+    snapshot.planReport?.updatedAt ?? "",
+  ]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => {
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? null : { value, parsed };
+    })
+    .filter((entry): entry is { value: string; parsed: number } => Boolean(entry));
+  if (!timestamps.length) {
+    return "";
+  }
+  timestamps.sort((left, right) => right.parsed - left.parsed);
+  return timestamps[0].value;
 }

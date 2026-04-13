@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 import type { SceneProfile } from "@vibe-learner/shared";
 
+import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import {
@@ -1035,14 +1036,12 @@ export default function SceneSetupPage() {
                   onChange={(event) => setRewriteStrength(Number(event.target.value))}
                 />
                 {lastRewrite ? (
-                  <button
-                    type="button"
-                    style={styles.btnSmall}
+                  <SceneIconButton
+                    icon="undo"
+                    label={`撤销重写：${lastRewrite.label}`}
                     onClick={undoLastRewrite}
                     disabled={Boolean(rewritePendingKey)}
-                  >
-                    撤销重写（{lastRewrite.label}）
-                  </button>
+                  />
                 ) : null}
                 {rewriteError ? <span style={styles.errorText}>{rewriteError}</span> : null}
               </div>
@@ -1079,14 +1078,12 @@ export default function SceneSetupPage() {
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabelRow}>
                     <span style={styles.fieldLabel}>层级总述</span>
-                    <button
-                      type="button"
-                      style={styles.btnSmall}
+                    <SceneIconButton
+                      icon={rewritePendingKey === `${selectedLayer.id}:summary` ? "replay" : "auto_awesome"}
+                      label="AI 重写层级总述"
                       onClick={() => void rewriteLayerField(selectedLayer.id, "summary", "层级总述")}
                       disabled={Boolean(rewritePendingKey)}
-                    >
-                      {rewritePendingKey === `${selectedLayer.id}:summary` ? "AI 重写中…" : "AI 重写"}
-                    </button>
+                    />
                   </span>
                   <textarea
                     style={styles.textarea}
@@ -1098,14 +1095,12 @@ export default function SceneSetupPage() {
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabelRow}>
                     <span style={styles.fieldLabel}>氛围与感知</span>
-                    <button
-                      type="button"
-                      style={styles.btnSmall}
+                    <SceneIconButton
+                      icon={rewritePendingKey === `${selectedLayer.id}:atmosphere` ? "replay" : "auto_awesome"}
+                      label="AI 重写氛围与感知"
                       onClick={() => void rewriteLayerField(selectedLayer.id, "atmosphere", "氛围与感知")}
                       disabled={Boolean(rewritePendingKey)}
-                    >
-                      {rewritePendingKey === `${selectedLayer.id}:atmosphere` ? "AI 重写中…" : "AI 重写"}
-                    </button>
+                    />
                   </span>
                   <textarea
                     style={styles.textarea}
@@ -1117,14 +1112,12 @@ export default function SceneSetupPage() {
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabelRow}>
                     <span style={styles.fieldLabel}>进入方式 / 过渡</span>
-                    <button
-                      type="button"
-                      style={styles.btnSmall}
+                    <SceneIconButton
+                      icon={rewritePendingKey === `${selectedLayer.id}:entrance` ? "replay" : "auto_awesome"}
+                      label="AI 重写进入方式 / 过渡"
                       onClick={() => void rewriteLayerField(selectedLayer.id, "entrance", "进入方式 / 过渡")}
                       disabled={Boolean(rewritePendingKey)}
-                    >
-                      {rewritePendingKey === `${selectedLayer.id}:entrance` ? "AI 重写中…" : "AI 重写"}
-                    </button>
+                    />
                   </span>
                   <textarea
                     style={styles.textarea}
@@ -1136,14 +1129,12 @@ export default function SceneSetupPage() {
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabelRow}>
                     <span style={styles.fieldLabel}>层级规则</span>
-                    <button
-                      type="button"
-                      style={styles.btnSmall}
+                    <SceneIconButton
+                      icon={rewritePendingKey === `${selectedLayer.id}:rules` ? "replay" : "auto_awesome"}
+                      label="AI 重写层级规则"
                       onClick={() => void rewriteLayerField(selectedLayer.id, "rules", "层级规则")}
                       disabled={Boolean(rewritePendingKey)}
-                    >
-                      {rewritePendingKey === `${selectedLayer.id}:rules` ? "AI 重写中…" : "AI 重写"}
-                    </button>
+                    />
                   </span>
                   <textarea
                     style={styles.textarea}
@@ -1177,13 +1168,11 @@ export default function SceneSetupPage() {
               </div>
 
               <div style={styles.objectsSection}>
-                <div style={styles.objectsHead}>
+                  <div style={styles.objectsHead}>
                   <div>
                     <p style={styles.objectsTitle}>可互动物体</p>
                   </div>
-                  <button type="button" style={styles.btnPrimary} onClick={() => addObject(selectedLayer.id)}>
-                    添加物体
-                  </button>
+                  <SceneIconButton icon="add" label="添加物体" variant="accent" onClick={() => addObject(selectedLayer.id)} />
                 </div>
 
                 <div style={styles.objectList}>
@@ -1198,22 +1187,18 @@ export default function SceneSetupPage() {
                             onChange={(event) => updateObject(selectedLayer.id, object.id, "name", event.target.value)}
                           />
                         </label>
-                        <button type="button" style={styles.btnGhost} onClick={() => removeObject(selectedLayer.id, object.id)}>
-                          删除
-                        </button>
+                        <SceneIconButton icon="delete" label="删除物体" variant="danger" onClick={() => removeObject(selectedLayer.id, object.id)} />
                       </div>
 
                       <label style={styles.fieldGroup}>
                         <span style={styles.fieldLabelRow}>
                           <span style={styles.fieldLabel}>外观 / 说明</span>
-                          <button
-                            type="button"
-                            style={styles.btnSmall}
+                          <SceneIconButton
+                            icon={rewritePendingKey === `${selectedLayer.id}:${object.id}:description` ? "replay" : "auto_awesome"}
+                            label="AI 重写物体外观 / 说明"
                             onClick={() => void rewriteObjectField(selectedLayer.id, object.id, "description", "物体外观与说明")}
                             disabled={Boolean(rewritePendingKey)}
-                          >
-                            {rewritePendingKey === `${selectedLayer.id}:${object.id}:description` ? "AI 重写中…" : "AI 重写"}
-                          </button>
+                          />
                         </span>
                         <textarea
                           style={styles.textarea}
@@ -1225,14 +1210,12 @@ export default function SceneSetupPage() {
                       <label style={styles.fieldGroup}>
                         <span style={styles.fieldLabelRow}>
                           <span style={styles.fieldLabel}>交互方式</span>
-                          <button
-                            type="button"
-                            style={styles.btnSmall}
+                          <SceneIconButton
+                            icon={rewritePendingKey === `${selectedLayer.id}:${object.id}:interaction` ? "replay" : "auto_awesome"}
+                            label="AI 重写物体交互方式"
                             onClick={() => void rewriteObjectField(selectedLayer.id, object.id, "interaction", "物体交互方式")}
                             disabled={Boolean(rewritePendingKey)}
-                          >
-                            {rewritePendingKey === `${selectedLayer.id}:${object.id}:interaction` ? "AI 重写中…" : "AI 重写"}
-                          </button>
+                          />
                         </span>
                         <textarea
                           style={styles.textarea}
@@ -1273,14 +1256,12 @@ export default function SceneSetupPage() {
                         </div>
                       </details>
                       <div style={styles.actionsRowInline}>
-                        <button
-                          type="button"
-                          style={styles.btnSmall}
+                        <SceneIconButton
+                          icon={reusableActionPendingId === object.id ? "replay" : "library_add"}
+                          label="把物体加入可复用节点库"
                           onClick={() => void saveObjectToReusableLibrary(object)}
                           disabled={reusableActionPendingId === object.id}
-                        >
-                          {reusableActionPendingId === object.id ? "保存中…" : "加入节点库"}
-                        </button>
+                        />
                       </div>
                     </article>
                   ))}
@@ -1288,25 +1269,20 @@ export default function SceneSetupPage() {
               </div>
 
               <div style={styles.editorActions}>
-                <button type="button" style={styles.btnGhost} onClick={() => addChildLayer(selectedLayer.id)}>
-                  新增下级层级
-                </button>
-                <button
-                  type="button"
-                  style={styles.btnGhost}
+                <SceneIconButton icon="add" label="新增下级层级" variant="accent" onClick={() => addChildLayer(selectedLayer.id)} />
+                <SceneIconButton
+                  icon={reusableActionPendingId === selectedLayer.id ? "replay" : "library_add"}
+                  label="把当前层级加入可复用节点库"
                   onClick={() => void saveSelectedLayerToReusableLibrary()}
                   disabled={reusableActionPendingId === selectedLayer.id}
-                >
-                  {reusableActionPendingId === selectedLayer.id ? "保存中…" : "加入节点库"}
-                </button>
-                <button
-                  type="button"
-                  style={styles.btnGhost}
+                />
+                <SceneIconButton
+                  icon="delete"
+                  label="删除当前层级"
+                  variant="danger"
                   onClick={() => requestDeleteLayer(selectedLayer.id)}
                   disabled={!canDeleteLayerSafely(sceneLayers, selectedLayer.id)}
-                >
-                  删除当前层级
-                </button>
+                />
               </div>
             </>
           ) : (
@@ -1323,7 +1299,7 @@ export default function SceneSetupPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("draft")}>
               <span style={styles.panelTitle}>当前草稿</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("draft") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("draft") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("draft") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1352,7 +1328,7 @@ export default function SceneSetupPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
               <span style={styles.panelTitle}>场景树生成器</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("generate") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("generate") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1426,7 +1402,7 @@ export default function SceneSetupPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("reuse")}>
               <span style={styles.panelTitle}>可复用节点库</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("reuse") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("reuse") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("reuse") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1455,17 +1431,14 @@ export default function SceneSetupPage() {
                         {item.sourceSceneName ? ` · 来自 ${item.sourceSceneName}` : ""}
                       </p>
                       <div style={styles.savedSceneActions}>
-                        <button type="button" style={styles.btnSmall} onClick={() => insertReusableNode(item)}>
-                          插入当前层级
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.btnSmallDanger}
+                        <SceneIconButton icon="subdirectory_arrow_right" label="插入到当前层级" onClick={() => insertReusableNode(item)} />
+                        <SceneIconButton
+                          icon={reusableActionPendingId === item.nodeId ? "replay" : "delete"}
+                          label="删除复用节点"
+                          variant="danger"
                           onClick={() => void deleteReusableNode(item.nodeId)}
                           disabled={reusableActionPendingId === item.nodeId}
-                        >
-                          {reusableActionPendingId === item.nodeId ? "删除中…" : "删除"}
-                        </button>
+                        />
                       </div>
                     </article>
                   )) : (
@@ -1479,7 +1452,7 @@ export default function SceneSetupPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("io")}>
               <span style={styles.panelTitle}>场景库 / 导入 / 导出</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("io") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("io") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("io") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1502,7 +1475,7 @@ export default function SceneSetupPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("saved")}>
               <span style={styles.panelTitle}>已保存场景</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("saved") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("saved") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("saved") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1525,9 +1498,9 @@ export default function SceneSetupPage() {
                             <p style={styles.savedSceneMeta}>{item.sceneProfile?.title ?? "未生成快照"} · {countSceneNodes(item.sceneProfile?.sceneTree ?? [])} 节点</p>
                           </button>
                           <div style={styles.savedSceneActions}>
-                            <button type="button" style={styles.btnSmall} onClick={() => void loadSavedScene(item.sceneId)}>载入</button>
-                            <button type="button" style={styles.btnSmall} onClick={() => setSelectedSavedSceneId(item.sceneId)}>作为更新目标</button>
-                            <button type="button" style={styles.btnSmallDanger} onClick={() => void deleteSavedScene(item.sceneId)}>删除</button>
+                            <SceneIconButton icon="replay" label="载入场景" onClick={() => void loadSavedScene(item.sceneId)} />
+                            <SceneIconButton icon="adjust" label="作为更新目标" onClick={() => setSelectedSavedSceneId(item.sceneId)} />
+                            <SceneIconButton icon="delete" label="删除已保存场景" variant="danger" onClick={() => void deleteSavedScene(item.sceneId)} />
                           </div>
                         </div>
                       );
@@ -1581,6 +1554,10 @@ function SceneLayerCard({
   const isSelected = layer.id === selectedLayerId;
   const isCollapsed = collapsedLayerIds.includes(layer.id);
   const hasChildren = layer.children.length > 0;
+  const stopCardAction = (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    handler();
+  };
   return (
     <div style={styles.cardGroup}>
       <article
@@ -1611,17 +1588,14 @@ function SceneLayerCard({
         </div>
 
         <div style={styles.cardActions}>
-          <button type="button" style={styles.btnMicro} onClick={(event) => { event.stopPropagation(); onAddChild(layer.id); }}>
-            添加子层
-          </button>
+          <SceneIconButton icon="add" label="添加子层" size="micro" variant="accent" onClick={stopCardAction(() => onAddChild(layer.id))} />
           {hasChildren ? (
-            <button
-              type="button"
-              style={styles.btnMicro}
-              onClick={(event) => { event.stopPropagation(); onToggleCollapse(layer.id); }}
-            >
-              {isCollapsed ? "展开子树" : "收起子树"}
-            </button>
+            <SceneIconButton
+              icon={isCollapsed ? "chevron_right" : "expand_more"}
+              label={isCollapsed ? "展开子树" : "收起子树"}
+              size="micro"
+              onClick={stopCardAction(() => onToggleCollapse(layer.id))}
+            />
           ) : null}
         </div>
       </article>
@@ -1644,6 +1618,40 @@ function SceneLayerCard({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function SceneIconButton({
+  icon,
+  label,
+  onClick,
+  disabled = false,
+  variant = "default",
+  size = "small",
+}: {
+  icon: MaterialIconName;
+  label: string;
+  onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  disabled?: boolean;
+  variant?: "default" | "accent" | "danger";
+  size?: "small" | "micro";
+}) {
+  const style = {
+    ...(size === "micro" ? styles.iconButtonMicro : styles.iconButton),
+    ...(variant === "accent"
+      ? size === "micro"
+        ? styles.iconButtonMicroAccent
+        : styles.iconButtonAccent
+      : variant === "danger"
+        ? size === "micro"
+          ? styles.iconButtonMicroDanger
+          : styles.iconButtonDanger
+        : {}),
+  };
+  return (
+    <button type="button" aria-label={label} title={label} style={style} onClick={onClick} disabled={disabled}>
+      <MaterialIcon name={icon} size={size === "micro" ? 14 : 16} />
+    </button>
   );
 }
 
@@ -2066,7 +2074,7 @@ const styles: Record<string, CSSProperties> = {
     gap: 10,
     alignContent: "start",
   },
-  sidebarToggleIcon: { fontSize: 12, color: "var(--muted)" },
+  sidebarToggleIcon: { color: "var(--muted)", display: "inline-flex", alignItems: "center", justifyContent: "center" },
   sidebarHint: { margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.6 },
   sidebarStatusMsg: { margin: 0, padding: "8px 16px", fontSize: 12, color: "var(--muted)", borderBottom: "1px solid var(--border)" },
   treePane: { padding: "16px 20px", display: "grid", gap: 14, alignContent: "start", overflowY: "auto" },
@@ -2126,9 +2134,12 @@ const styles: Record<string, CSSProperties> = {
   btnPrimary: { border: "none", background: "var(--accent)", color: "white", height: 34, padding: "0 14px", fontWeight: 600, cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnGhost: { border: "1px solid var(--border)", background: "transparent", color: "var(--ink)", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnDanger: { border: "none", background: "var(--danger, #b42318)", color: "white", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" },
-  btnSmall: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", height: 26, padding: "0 8px", cursor: "pointer", fontSize: 11, display: "inline-flex", alignItems: "center", flexShrink: 0 },
-  btnSmallDanger: { border: "1px solid var(--danger, #b42318)", background: "transparent", color: "var(--danger, #b42318)", height: 26, padding: "0 8px", cursor: "pointer", fontSize: 11, display: "inline-flex", alignItems: "center" },
-  btnMicro: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", padding: "1px 6px", fontSize: 11, cursor: "pointer", height: 22, display: "inline-flex", alignItems: "center" },
+  iconButton: { border: "1px solid var(--border)", background: "var(--panel)", color: "var(--ink)", height: 28, minWidth: 28, padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  iconButtonAccent: { borderColor: "color-mix(in srgb, var(--accent) 40%, var(--border))", background: "color-mix(in srgb, white 76%, var(--accent-soft))", color: "var(--accent)" },
+  iconButtonDanger: { borderColor: "color-mix(in srgb, var(--danger, #b42318) 38%, var(--border))", background: "color-mix(in srgb, white 88%, var(--danger, #b42318))", color: "var(--danger, #b42318)" },
+  iconButtonMicro: { border: "1px solid var(--border)", background: "transparent", color: "var(--muted)", height: 22, minWidth: 22, padding: 0, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  iconButtonMicroAccent: { borderColor: "color-mix(in srgb, var(--accent) 40%, var(--border))", color: "var(--accent)", background: "color-mix(in srgb, white 84%, var(--accent-soft))" },
+  iconButtonMicroDanger: { borderColor: "color-mix(in srgb, var(--danger, #b42318) 38%, var(--border))", color: "var(--danger, #b42318)", background: "color-mix(in srgb, white 92%, var(--danger, #b42318))" },
   confirmOverlay: { position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", display: "grid", placeItems: "center", zIndex: 30, padding: 16 },
   confirmDialog: { width: "min(480px, 100%)", background: "var(--bg)", border: "1px solid var(--border)", display: "grid", gap: 12, padding: 20, boxShadow: "0 14px 28px rgba(15, 23, 42, 0.12)" },
   confirmTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "var(--ink)" },

@@ -11,6 +11,7 @@ def render_persona_runtime_instruction(persona: PersonaProfile) -> str:
         learner_address=persona.learner_address,
         slots=persona.slots,
         additional_instruction=persona.system_prompt,
+        reference_hints=persona.reference_hints,
         default_speech_style=persona.default_speech_style,
     )
 
@@ -23,6 +24,7 @@ def render_persona_runtime_instruction_from_parts(
     learner_address: str,
     slots: list[PersonaSlot],
     additional_instruction: str = "",
+    reference_hints: list[str] | None = None,
     default_speech_style: str = "",
 ) -> str:
     resolved_name = name.strip() or "未命名教师"
@@ -30,6 +32,7 @@ def render_persona_runtime_instruction_from_parts(
     resolved_relationship = relationship.strip() or "标准导学教师"
     resolved_address = learner_address.strip() or "同学"
     resolved_style = default_speech_style.strip() or "warm"
+    resolved_reference_hints = _normalize_reference_hints(reference_hints or [])
     slot_lines = _render_slot_lines(slots)
 
     sections = [
@@ -54,6 +57,22 @@ def render_persona_runtime_instruction_from_parts(
         f"默认表达风格：{resolved_style}。",
     ]
 
+    if resolved_reference_hints:
+        sections.append(
+            "灵感来源提示：\n" + "\n".join(f"- {hint}" for hint in resolved_reference_hints)
+        )
+    if any(_looks_like_fiction_reference_hint(hint) for hint in resolved_reference_hints):
+        sections.append(
+            "\n".join(
+                [
+                    "常见虚构作品来源处理：",
+                    "- 上述线索只用于稳定语气、关系感、节奏与角色轮廓。",
+                    "- 不要把原作剧情、设定或世界观细节当作当前会话里的既成事实。",
+                    "- 若学习者提到原作，可承认风格灵感相近，但不要自称拥有原作中的完整记忆。",
+                ]
+            )
+        )
+
     if additional_instruction.strip():
         sections.append("附加系统约束：\n" + additional_instruction.strip())
 
@@ -69,3 +88,43 @@ def _render_slot_lines(slots: list[PersonaSlot]) -> list[str]:
         label = slot.label.strip() or slot.kind.strip() or "自定义"
         lines.append(f"- {label}：{content}")
     return lines
+
+
+def _normalize_reference_hints(hints: list[str]) -> list[str]:
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for hint in hints:
+        text = hint.strip()
+        if not text:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(text)
+    return normalized
+
+
+def _looks_like_fiction_reference_hint(hint: str) -> bool:
+    lowered = hint.lower()
+    keywords = (
+        "角色",
+        "作品",
+        "小说",
+        "动画",
+        "动漫",
+        "游戏",
+        "电影",
+        "影视",
+        "漫画",
+        "剧集",
+        "侦探型",
+        "冒险",
+        "魔法",
+        "骑士",
+        "学院派",
+        "英雄",
+        "反派",
+        "原作",
+    )
+    return any(keyword in hint for keyword in keywords) or "fiction" in lowered

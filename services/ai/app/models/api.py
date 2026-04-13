@@ -38,6 +38,7 @@ class CreatePersonaRequest(BaseModel):
     relationship: str = ""
     learner_address: str = ""
     system_prompt: str
+    reference_hints: list[str] = Field(default_factory=list)
     slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str] | None = None
     available_actions: list[str] | None = None
@@ -50,6 +51,7 @@ class UpdatePersonaRequest(BaseModel):
     relationship: str = ""
     learner_address: str = ""
     system_prompt: str
+    reference_hints: list[str] = Field(default_factory=list)
     slots: list[PersonaSlot] = Field(default_factory=list)
     available_emotions: list[str] | None = None
     available_actions: list[str] | None = None

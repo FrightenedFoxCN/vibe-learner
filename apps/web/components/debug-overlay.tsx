@@ -88,6 +88,12 @@ export function DebugOverlay() {
                 <span style={styles.subtitle}>
                   {pageLabel} · {workspace.activeDocument?.title ?? pageSnapshot?.title ?? "未关联上下文"}
                 </span>
+                {pathname === "/plan" && (debugData.lastUpdatedAt || debugData.autoRefreshActive) ? (
+                  <span style={styles.metaLine}>
+                    {debugData.lastUpdatedAt ? `最近刷新 ${formatDebugTime(debugData.lastUpdatedAt)}` : "等待首轮调试数据"}
+                    {debugData.autoRefreshActive ? " · 自动刷新中" : ""}
+                  </span>
+                ) : null}
               </div>
               <div style={styles.headerActions}>
                 {pathname === "/plan" ? (
@@ -125,6 +131,8 @@ export function DebugOverlay() {
                   planLiveStatus={workspace.planStreamStatus}
                   loading={debugData.loading}
                   error={debugData.error}
+                  lastUpdatedAt={debugData.lastUpdatedAt}
+                  autoRefreshActive={debugData.autoRefreshActive}
                 />
               ) : pathname === "/study" ? (
                 <StudyDebugPanels
@@ -229,6 +237,10 @@ const styles: Record<string, CSSProperties> = {
     whiteSpace: "nowrap",
     maxWidth: "100%"
   },
+  metaLine: {
+    fontSize: 11,
+    color: "var(--muted)"
+  },
   headerActions: {
     display: "flex",
     gap: 8,
@@ -293,6 +305,19 @@ function getDebugTitle(pathname: string) {
     return "感官工具调试浮窗";
   }
   return "调试浮窗";
+}
+
+function formatDebugTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleTimeString("zh-CN", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
 }
 
 function getDebugPageLabel(pathname: string) {

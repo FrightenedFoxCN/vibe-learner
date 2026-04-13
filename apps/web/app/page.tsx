@@ -1,42 +1,49 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
+import { MaterialIcon, type MaterialIconName } from "../components/material-icon";
 import { TopNav } from "../components/top-nav";
 
 const PAGES = [
   {
     num: "01",
     href: "/plan" as const,
+    icon: "description" as MaterialIconName,
     title: "计划生成",
     desc: "上传教材、解析章节结构，生成与刷新个性化学习计划。",
   },
   {
     num: "02",
     href: "/study" as const,
+    icon: "chat" as MaterialIconName,
     title: "章节对话",
     desc: "左侧对话，右侧 PDF 联动，按章节与 AI 教师深入学习。",
   },
   {
     num: "03",
     href: "/persona-spectrum" as const,
+    icon: "person" as MaterialIconName,
     title: "人格色谱",
     desc: "配置 AI 教师人格、插槽权重、风格调参与导入导出。",
   },
   {
     num: "04",
     href: "/scene-setup" as const,
+    icon: "landscape" as MaterialIconName,
     title: "场景搭建",
     desc: "从世界到教室搭建层级场景，并为每一层补充可互动物体。",
   },
   {
     num: "05",
     href: "/sensory-tools" as const,
+    icon: "visibility" as MaterialIconName,
     title: "感官工具",
     desc: "按阶段管理模型工具：分类查看、开启关闭，并对可用性做统一调节。",
   },
   {
     num: "06",
     href: "/settings" as const,
+    icon: "settings" as MaterialIconName,
     title: "统一设置",
     desc: "通过可视化方式管理运行参数与调试信息开关，不再依赖手工编辑 .env。",
   },
@@ -61,10 +68,17 @@ export default function HomePage() {
             className="home-nav-item"
             style={styles.navItem}
           >
-            <span style={styles.navNum}>{page.num}</span>
+            <div style={styles.navTopRow}>
+              <span style={styles.navNum}>{page.num}</span>
+              <span style={styles.navIconWrap}>
+                <MaterialIcon name={page.icon} size={18} />
+              </span>
+            </div>
             <span style={styles.navTitle}>{page.title}</span>
             <span style={styles.navDesc}>{page.desc}</span>
-            <span style={styles.navArrow}>→</span>
+            <span style={styles.navArrow}>
+              <MaterialIcon name="arrow_forward" size={18} />
+            </span>
           </Link>
         ))}
       </nav>
@@ -118,6 +132,23 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--accent)",
     letterSpacing: "0.12em",
   },
+  navTopRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  navIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    border: "1px solid color-mix(in srgb, var(--accent) 24%, var(--border))",
+    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
+    color: "var(--accent)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   navTitle: {
     fontSize: 18,
     fontWeight: 700,
@@ -130,7 +161,8 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.65,
   },
   navArrow: {
-    fontSize: 16,
+    display: "inline-flex",
+    alignItems: "center",
     color: "var(--border-strong)",
     marginTop: 4,
   },

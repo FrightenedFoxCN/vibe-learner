@@ -11,6 +11,7 @@ import type {
   StudySessionRecord
 } from "@vibe-learner/shared";
 import type { SceneLibraryItemPayload } from "../lib/api";
+import { MaterialIcon } from "./material-icon";
 import { PersonaSelector } from "./persona-selector";
 
 interface DocumentSetupProps {
@@ -133,7 +134,7 @@ export function DocumentSetup({
 
         <div style={styles.actionRow}>
           <Link href="/scene-setup" style={styles.iconButton} aria-label="打开场景编辑" title="去场景编辑">
-            <IconScene />
+            <MaterialIcon name="landscape" size={18} />
           </Link>
           <button
             type="button"
@@ -146,7 +147,7 @@ export function DocumentSetup({
             aria-label={hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
             title={hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
           >
-            <IconChat />
+            <MaterialIcon name="chat" size={18} />
           </button>
         </div>
       </section>
@@ -215,7 +216,7 @@ export function DocumentSetup({
             onGenerate({ mode: generationMode, file, objective });
           }}
         >
-          <IconUpload />
+          <MaterialIcon name="upload" size={18} />
           {isBusy ? "处理中…" : generationMode === "document" ? "上传并生成计划" : "直接生成目标计划"}
         </button>
 
@@ -760,36 +761,6 @@ const styles: Record<string, CSSProperties> = {
 
 function formatDocumentSummary(document: DocumentRecord) {
   return `${document.title} · ${document.studyUnitCount || document.sections.length} 个单元`;
-}
-
-function IconScene() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 12l3.5-4.5L9 10l2.5-3L14 12" />
-      <path d="M2 3h12v10H2z" />
-      <circle cx="5" cy="6" r="0.8" />
-    </svg>
-  );
-}
-
-function IconChat() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 2.5h12v7H6l-4 3v-10Z" />
-      <path d="M6 5.5h4" />
-      <path d="M6 7.5h3" />
-    </svg>
-  );
-}
-
-function IconUpload() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M8 11V3.5" />
-      <path d="M5.5 6 8 3.5 10.5 6" />
-      <path d="M2.5 11.5v2h11v-2" />
-    </svg>
-  );
 }
 
 function formatSceneSummary(sceneProfile: SceneProfile) {

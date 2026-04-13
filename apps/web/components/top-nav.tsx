@@ -2,125 +2,27 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { CSSProperties, JSX } from "react";
+import type { CSSProperties } from "react";
+
+import { MaterialIcon, type MaterialIconName } from "./material-icon";
 
 interface TopNavProps {
   currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/sensory-tools" | "/settings" | "/model-usage";
 }
 
-/* ─── SVG icons (16×16, stroke, currentColor) ─── */
-
-function IconHome() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 7.5L8 2L15 7.5V14H10.5V9.5H5.5V14H1V7.5Z" />
-    </svg>
-  );
-}
-
-function IconPlan() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <rect x="2" y="1" width="12" height="14" />
-      <line x1="5" y1="5" x2="11" y2="5" />
-      <line x1="5" y1="8" x2="11" y2="8" />
-      <line x1="5" y1="11" x2="9" y2="11" />
-    </svg>
-  );
-}
-
-function IconStudy() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 1H10V8H5L1 12V1Z" />
-      <path d="M10 4H15V10H10" />
-    </svg>
-  );
-}
-
-function IconPersona() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <circle cx="8" cy="5" r="3" />
-      <path d="M1 15c0-3.866 3.134-7 7-7s7 3.134 7 7" />
-    </svg>
-  );
-}
-
-function IconScene() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2 12l3.5-4.5L9 10l2.5-3L14 12" />
-      <path d="M2 3h12v10H2z" />
-      <circle cx="5" cy="6" r="0.8" />
-    </svg>
-  );
-}
-
-function IconSensory() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1.5 8c1.6-2.8 3.8-4.2 6.5-4.2S12.9 5.2 14.5 8c-1.6 2.8-3.8 4.2-6.5 4.2S3.1 10.8 1.5 8Z" />
-      <circle cx="8" cy="8" r="2.1" />
-    </svg>
-  );
-}
-
-function IconSettings() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="8" cy="8" r="2.2" />
-      <path d="M8 1.6v1.6" />
-      <path d="M8 12.8v1.6" />
-      <path d="M1.6 8h1.6" />
-      <path d="M12.8 8h1.6" />
-      <path d="M3.5 3.5l1.1 1.1" />
-      <path d="M11.4 11.4l1.1 1.1" />
-      <path d="M12.5 3.5l-1.1 1.1" />
-      <path d="M4.6 11.4l-1.1 1.1" />
-    </svg>
-  );
-}
-
-function IconUsage() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="10" width="3" height="5" />
-      <rect x="6" y="6" width="3" height="9" />
-      <rect x="11" y="2" width="3" height="13" />
-    </svg>
-  );
-}
-
-function IconChevronLeft() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9,2 4,7 9,12" />
-    </svg>
-  );
-}
-
-function IconChevronRight() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="5,2 10,7 5,12" />
-    </svg>
-  );
-}
-
 const NAV_ITEMS: Array<{
   href: TopNavProps["currentPath"];
   label: string;
-  Icon: () => JSX.Element;
+  icon: MaterialIconName;
 }> = [
-  { href: "/",                 label: "导航首页", Icon: IconHome    },
-  { href: "/plan",             label: "计划生成", Icon: IconPlan    },
-  { href: "/study",            label: "章节对话", Icon: IconStudy   },
-  { href: "/persona-spectrum", label: "人格色谱", Icon: IconPersona },
-  { href: "/scene-setup",      label: "场景搭建", Icon: IconScene   },
-  { href: "/sensory-tools",    label: "感官工具", Icon: IconSensory },
-  { href: "/settings",         label: "统一设置", Icon: IconSettings },
-  { href: "/model-usage",      label: "用量审计", Icon: IconUsage   },
+  { href: "/", label: "导航首页", icon: "home" },
+  { href: "/plan", label: "计划生成", icon: "description" },
+  { href: "/study", label: "章节对话", icon: "chat" },
+  { href: "/persona-spectrum", label: "人格色谱", icon: "person" },
+  { href: "/scene-setup", label: "场景搭建", icon: "landscape" },
+  { href: "/sensory-tools", label: "感官工具", icon: "visibility" },
+  { href: "/settings", label: "统一设置", icon: "settings" },
+  { href: "/model-usage", label: "用量审计", icon: "bar_chart" },
 ];
 
 export function TopNav({ currentPath }: TopNavProps) {
@@ -139,13 +41,11 @@ export function TopNav({ currentPath }: TopNavProps) {
 
   return (
     <aside className="app-side-nav" style={styles.aside} aria-label="Primary navigation">
-      {/* Brand */}
       <div className="app-nav-brand-row" style={styles.topRow}>
         <div style={styles.brandMark}>VL</div>
         {!collapsed ? <span style={styles.brandName}>Vibe Learner</span> : null}
       </div>
 
-      {/* Nav links */}
       <nav className="app-nav-links" style={styles.nav}>
         {NAV_ITEMS.map((item) => {
           const active = item.href === currentPath;
@@ -157,26 +57,31 @@ export function TopNav({ currentPath }: TopNavProps) {
               style={collapsed ? styles.linkCollapsed : undefined}
               title={item.label}
             >
-              <item.Icon />
+              <MaterialIcon name={item.icon} size={18} />
               {!collapsed ? <span>{item.label}</span> : null}
             </Link>
           );
         })}
       </nav>
 
-      {/* Spacer pushes the toggle to the bottom */}
       <div style={{ flex: 1 }} />
 
-      {/* Collapse toggle — pinned to bottom */}
       <button
         type="button"
         className="app-nav-collapse-btn"
         style={collapsed ? styles.toggleCollapsed : styles.toggle}
-        onClick={() => setCollapsed((v) => !v)}
+        onClick={() => setCollapsed((value) => !value)}
         aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
         title={collapsed ? "展开侧栏" : "收起侧栏"}
       >
-        {collapsed ? <IconChevronRight /> : <><IconChevronLeft /><span>收起</span></>}
+        {collapsed ? (
+          <MaterialIcon name="chevron_right" size={18} />
+        ) : (
+          <>
+            <MaterialIcon name="chevron_left" size={18} />
+            <span>收起</span>
+          </>
+        )}
       </button>
     </aside>
   );

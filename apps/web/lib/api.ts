@@ -323,6 +323,9 @@ function normalizePersona(persona: any): PersonaProfile {
     relationship: String(persona.relationship ?? ""),
     learnerAddress: String(persona.learner_address ?? ""),
     systemPrompt: persona.system_prompt,
+    referenceHints: Array.isArray(persona.reference_hints)
+      ? persona.reference_hints.map((item: unknown) => String(item)).filter(Boolean)
+      : [],
     slots: Array.isArray(persona.slots)
       ? persona.slots.map((s: any) => ({
           kind: String(s.kind ?? "custom"),
@@ -386,6 +389,7 @@ function serializePersonaInput(input: CreatePersonaInput) {
     relationship: input.relationship,
     learner_address: input.learnerAddress,
     system_prompt: input.systemPrompt,
+    reference_hints: input.referenceHints ?? [],
     slots: input.slots.map(serializeSlot),
     available_emotions: input.availableEmotions,
     available_actions: input.availableActions,

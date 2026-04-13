@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import type { PlanHistoryItem } from "../lib/plan-panel-data";
+import { MaterialIcon } from "./material-icon";
 
 interface PlanHistoryProps {
   items: PlanHistoryItem[];
@@ -37,7 +38,7 @@ export function PlanHistory({
           aria-label={isRefreshing ? "刷新中" : "刷新计划历史"}
           title={isRefreshing ? "刷新中…" : "刷新"}
         >
-          <IconRefresh />
+          <MaterialIcon name="replay" size={16} />
         </button>
       </div>
       {items.length ? (
@@ -69,7 +70,7 @@ export function PlanHistory({
                     onClick={() => { if (!selected) onSelect(item.id); }}
                     disabled={selected || isBusy}
                   >
-                    <IconOpenInPanel />
+                    <MaterialIcon name="description" size={16} />
                     <span>{selected ? "当前计划" : "查看计划"}</span>
                   </button>
                   <button
@@ -87,7 +88,7 @@ export function PlanHistory({
                     aria-label={`删除计划 ${item.courseTitle || item.documentTitle}`}
                     title="删除计划"
                   >
-                    <IconTrash />
+                    <MaterialIcon name="delete" size={16} />
                   </button>
                 </div>
               </div>
@@ -233,37 +234,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13
   }
 };
-
-function IconRefresh() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M14 8A6 6 0 1 1 12.24 3.76" />
-      <path d="M14 2v4h-4" />
-    </svg>
-  );
-}
-
-function IconTrash() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2.5 4.5h11" />
-      <path d="M6 2.5h4" />
-      <rect x="4" y="4.5" width="8" height="9" />
-      <path d="M6.5 7v4" />
-      <path d="M9.5 7v4" />
-    </svg>
-  );
-}
-
-function IconOpenInPanel() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="2.5" width="12" height="11" />
-      <path d="M6 6h4" />
-      <path d="M6 9h3" />
-    </svg>
-  );
-}
 
 function formatDate(value: string) {
   if (!value) return "未知时间";

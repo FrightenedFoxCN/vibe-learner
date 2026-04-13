@@ -37,6 +37,8 @@ interface DocumentDebugPanelsProps {
   planLiveStatus?: string;
   loading?: boolean;
   error?: string;
+  lastUpdatedAt?: string;
+  autoRefreshActive?: boolean;
 }
 
 export function DocumentDebugPanels({
@@ -60,7 +62,9 @@ export function DocumentDebugPanels({
   planLiveEvents = [],
   planLiveStatus = "idle",
   loading = false,
-  error = ""
+  error = "",
+  lastUpdatedAt = "",
+  autoRefreshActive = false
 }: DocumentDebugPanelsProps) {
   if (!document) {
     return <DebugEmptyState message="当前还没有可检查的教材。先上传教材或切换到已有学习计划。" />;
@@ -94,6 +98,12 @@ export function DocumentDebugPanels({
           </div>
         </div>
         {error ? <p style={styles.error}>{error}</p> : null}
+        <div style={styles.statusStrip}>
+          <StatusPill label="process" status={displayProcessStatus} />
+          <StatusPill label="plan" status={displayPlanStatus} />
+          {lastUpdatedAt ? <span style={styles.metaText}>最近刷新：{formatDateTime(lastUpdatedAt)}</span> : null}
+          {autoRefreshActive ? <span style={styles.liveText}>自动刷新中</span> : null}
+        </div>
         <div style={styles.summaryGrid}>
           <SummaryItem label="Pages" value={String(debugRecord?.pageCount ?? document.pageCount)} />
           <SummaryItem label="Chunks" value={String(debugRecord?.chunks.length ?? document.chunkCount)} />
@@ -413,7 +423,7 @@ function StreamPanel({
     <div style={styles.sectionStack}>
       {streamError ? <PanelError message={streamError} /> : null}
       <div style={styles.statusRow}>
-        <span style={styles.badge}>status: {status}</span>
+        <StatusPill label="status" status={status} />
         <span style={styles.caption}>
           latest: {visibleEvents[0]?.stage ?? "none"} · total: {events.length}
         </span>
@@ -441,6 +451,14 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
       <span style={styles.caption}>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+
+function StatusPill({ label, status }: { label: string; status: string }) {
+  return (
+    <span style={{ ...styles.badge, ...statusBadgeStyle(status) }}>
+      {label}: {status}
+    </span>
   );
 }
 
@@ -502,7 +520,7 @@ const styles: Record<string, CSSProperties> = {
   },
   card: {
     border: "1px solid var(--border)",
-    background: "var(--bg)",
+    background: "linear-gradient(180deg, color-mix(in srgb, white 76%, var(--accent-soft)) 0%, var(--bg) 72%)",
     borderRadius: 16,
     padding: "14px 16px"
   },
@@ -533,6 +551,22 @@ const styles: Record<string, CSSProperties> = {
     padding: "4px 8px",
     borderRadius: 999,
     background: "var(--accent-soft)",
+    color: "var(--accent)"
+  },
+  statusStrip: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    alignItems: "center",
+    marginTop: 12
+  },
+  metaText: {
+    fontSize: 11,
+    color: "var(--muted)"
+  },
+  liveText: {
+    fontSize: 11,
+    fontWeight: 700,
     color: "var(--accent)"
   },
   summaryGrid: {
@@ -660,3 +694,28 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--negative)"
   }
 };
+
+function statusBadgeStyle(status: string): CSSProperties {
+  if (status === "completed") {
+    return {
+      background: "color-mix(in srgb, var(--positive, #0f9d58) 16%, white)",
+      color: "var(--positive, #0f9d58)"
+    };
+  }
+  if (status === "running") {
+    return {
+      background: "color-mix(in srgb, var(--accent) 16%, white)",
+      color: "var(--accent)"
+    };
+  }
+  if (status === "error") {
+    return {
+      background: "color-mix(in srgb, var(--negative) 12%, white)",
+      color: "var(--negative)"
+    };
+  }
+  return {
+    background: "var(--accent-soft)",
+    color: "var(--accent)"
+  };
+}

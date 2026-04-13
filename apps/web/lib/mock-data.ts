@@ -9,6 +9,7 @@ export const mockPersonas: PersonaProfile[] = [
     relationship: "以师生协作方式陪伴学习者。",
     learnerAddress: "同学",
     systemPrompt: "优先保持讲解清晰、贴合章节，并通过温和反馈推动学习者继续前进。",
+    referenceHints: [],
     slots: [
       { kind: "worldview", label: "世界观起点", content: "来自学院图书馆塔楼，擅长把复杂章节拆成可执行的小台阶。" },
       { kind: "teaching_method", label: "教学方法", content: "结构化、引导式推进" },
@@ -28,6 +29,7 @@ export const mockPersonas: PersonaProfile[] = [
     relationship: "像并肩探路的学伴，也会在关键节点保持老师的引导感。",
     learnerAddress: "伙伴",
     systemPrompt: "把章节讲解和轻剧情陪伴结合起来，保持活力、节奏感和明确推进。",
+    referenceHints: [],
     slots: [
       { kind: "past_experiences", label: "过往经历", content: "前冒险队记录官，习惯把知识点编进轻剧情，保持学习节奏感。" },
       { kind: "teaching_method", label: "教学方法", content: "剧情引导、激励式推进" },

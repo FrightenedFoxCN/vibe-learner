@@ -29,6 +29,7 @@ import {
 } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
+import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import {
   assistPersonaSlot,
@@ -60,6 +61,7 @@ interface PersonaDraft {
   relationship: string;
   learnerAddress: string;
   systemPrompt: string;
+  referenceHints: string[];
   slots: PersonaSlot[];
   availableEmotionsText: string;
   availableActionsText: string;
@@ -83,6 +85,7 @@ const EMPTY_DRAFT: PersonaDraft = {
   relationship: "",
   learnerAddress: "",
   systemPrompt: "",
+  referenceHints: [],
   slots: [],
   availableEmotionsText: CHARACTER_EMOTIONS.join(", "),
   availableActionsText: CHARACTER_ACTIONS.join(", "),
@@ -103,6 +106,7 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   relationship: "标准导学教师",
   learnerAddress: "同学",
   systemPrompt: "优先基于章节内容讲解，通过递进式提问推进理解，并给出简洁可执行的反馈。",
+  referenceHints: [],
   slots: [
     { kind: "worldview", label: "世界观起点", content: "来自学院导学中心，擅长把抽象概念拆成可验证的小步任务，并用温和语气引导学习者持续推进。" },
     { kind: "teaching_method", label: "教学方法", content: "结构化、引导式推进" },
@@ -245,6 +249,7 @@ export default function PersonaSpectrumPage() {
       relationship: draft.relationship,
       learnerAddress: draft.learnerAddress,
       systemPrompt: draft.systemPrompt,
+      referenceHints: draft.referenceHints,
       slots: draft.slots,
       defaultSpeechStyle: draft.defaultSpeechStyle,
     }),
@@ -680,6 +685,10 @@ export default function PersonaSpectrumPage() {
       summary: generatedPersonaMeta.summary || insertion.draft.summary,
       relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
       learnerAddress: generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
+      referenceHints: mergeReferenceHints(
+        insertion.draft.referenceHints,
+        collectReferenceHintsFromCards(generatedCards)
+      ),
     });
     const metaParts = [
       generatedPersonaMeta.summary ? "摘要" : "",
@@ -702,7 +711,13 @@ export default function PersonaSpectrumPage() {
     setCardError("");
     setCardMessage("");
     const insertion = buildDraftWithInsertedCards(draft, cards, insertIndex);
-    setDraft(insertion.draft);
+    setDraft({
+      ...insertion.draft,
+      referenceHints: mergeReferenceHints(
+        insertion.draft.referenceHints,
+        collectReferenceHintsFromCards(cards)
+      ),
+    });
     if (!insertion.insertedCount) {
       setCardMessage("所选卡片已存在于当前人格中，未重复插入。");
       return;
@@ -805,6 +820,10 @@ export default function PersonaSpectrumPage() {
       payload.relationship = generatedPersonaMeta.relationship || payload.relationship;
       payload.learnerAddress = generatedPersonaMeta.learnerAddress || payload.learnerAddress;
     }
+    payload.referenceHints = mergeReferenceHints(
+      payload.referenceHints ?? [],
+      collectReferenceHintsFromCards(selectedCards)
+    );
     payload.slots = cardsToPersonaSlots(selectedCards);
     setCardError("");
     setCardMessage("");
@@ -883,7 +902,7 @@ export default function PersonaSpectrumPage() {
               onDragStart={() => handlePersonaCardDragStart(card.id)}
               onDragEnd={handlePersonaCardDragEnd}
             >
-              ⋮⋮
+              <MaterialIcon name="drag_indicator" size={16} />
             </button>
             <span style={styles.libraryCardTitle}>{card.title}</span>
           </div>
@@ -1217,7 +1236,7 @@ export default function PersonaSpectrumPage() {
                             onDragEnd={handleDragEnd}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            ⋮⋮
+                            <MaterialIcon name="drag_indicator" size={16} />
                           </span>
                           <select
                             style={styles.slotKindSelect}
@@ -1246,13 +1265,13 @@ export default function PersonaSpectrumPage() {
                             style={styles.slotToggleBtn}
                             onClick={(e) => { e.stopPropagation(); setExpandedSlotIndex((prev) => (prev === index ? null : index)); }}
                           >
-                            {expandedSlotIndex === index ? "▾" : "▸"}
+                            <MaterialIcon name={expandedSlotIndex === index ? "expand_more" : "chevron_right"} size={16} />
                           </button>
                           <button
                             type="button"
                             style={styles.removeBtn}
                             onClick={(e) => { e.stopPropagation(); handleRemoveSlot(index); }}
-                          >×</button>
+                          ><MaterialIcon name="close" size={16} /></button>
                         </div>
                         {expandedSlotIndex === index ? (
                           <>
@@ -1277,15 +1296,15 @@ export default function PersonaSpectrumPage() {
                               />
                             </div>
                             <div style={styles.actionsRow}>
-                              <button type="button" style={styles.iconBtn} title="上移" onClick={() => handleMoveSlot(index, -1)}>↑</button>
-                              <button type="button" style={styles.iconBtn} title="下移" onClick={() => handleMoveSlot(index, 1)}>↓</button>
+                              <IconGlyphButton icon="arrow_upward" label="上移" onClick={() => handleMoveSlot(index, -1)} />
+                              <IconGlyphButton icon="arrow_downward" label="下移" onClick={() => handleMoveSlot(index, 1)} />
                               <button
                                 type="button"
                                 style={styles.iconBtn}
                                 title={slot.locked ? "解锁" : "锁定"}
                                 onClick={() => handleUpdateSlot(index, "locked", !slot.locked)}
                               >
-                                {slot.locked ? "⊘" : "○"}
+                                <MaterialIcon name={slot.locked ? "lock_open" : "lock"} size={15} />
                               </button>
                               <button
                                 type="button"
@@ -1294,7 +1313,7 @@ export default function PersonaSpectrumPage() {
                                 onClick={() => void handleAssistSlot(index)}
                                 disabled={assistPending || slotAssistIndex === index || Boolean(slot.locked)}
                               >
-                                {slotAssistIndex === index ? "…" : "✦"}
+                                <MaterialIcon name={slotAssistIndex === index ? "replay" : "auto_awesome"} size={15} />
                               </button>
                             </div>
                           </>
@@ -1356,7 +1375,7 @@ export default function PersonaSpectrumPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("library")}>
               <span style={styles.panelTitle}>人格卡片库</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("library") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("library") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("library") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1376,7 +1395,7 @@ export default function PersonaSpectrumPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
               <span style={styles.panelTitle}>关键词生成 / 长文本提取</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("generate") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("generate") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1475,7 +1494,7 @@ export default function PersonaSpectrumPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("results")}>
               <span style={styles.panelTitle}>生成结果 / 卡片库</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("results") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("results") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("results") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1502,7 +1521,7 @@ export default function PersonaSpectrumPage() {
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("persona-library")}>
               <span style={styles.panelTitle}>人格库</span>
-              <span style={styles.sidebarToggleIcon}>{collapsedSidebarSections.includes("persona-library") ? "▸" : "▾"}</span>
+              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("persona-library") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("persona-library") ? (
               <div style={styles.sidebarSectionBody}>
@@ -1547,6 +1566,22 @@ export default function PersonaSpectrumPage() {
 
 /* ─── Helpers (unchanged) ─── */
 
+function IconGlyphButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: MaterialIconName;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" style={styles.iconBtn} title={label} aria-label={label} onClick={onClick}>
+      <MaterialIcon name={icon} size={15} />
+    </button>
+  );
+}
+
 function personaToDraft(persona: PersonaProfile): PersonaDraft {
   return {
     name: persona.name,
@@ -1554,6 +1589,7 @@ function personaToDraft(persona: PersonaProfile): PersonaDraft {
     relationship: persona.relationship,
     learnerAddress: persona.learnerAddress,
     systemPrompt: persona.systemPrompt,
+    referenceHints: persona.referenceHints ?? [],
     slots: (persona.slots ?? []).map((slot, index) => ({
       ...slot,
       weight: slot.weight ?? 50,
@@ -1573,6 +1609,7 @@ function draftToCreatePersonaInput(draft: PersonaDraft): CreatePersonaInput {
     relationship: draft.relationship.trim(),
     learnerAddress: draft.learnerAddress.trim(),
     systemPrompt: draft.systemPrompt.trim(),
+    referenceHints: mergeReferenceHints([], draft.referenceHints),
     slots: [...draft.slots]
       .sort((a, b) => {
         const orderA = a.sortOrder ?? 0;
@@ -1600,6 +1637,7 @@ function createInputToDraft(snapshot: CreatePersonaInput): PersonaDraft {
     relationship: snapshot.relationship,
     learnerAddress: snapshot.learnerAddress,
     systemPrompt: snapshot.systemPrompt,
+    referenceHints: mergeReferenceHints([], snapshot.referenceHints ?? []),
     slots: (snapshot.slots ?? []).map((slot, index) => ({
       ...slot,
       weight: clampWeight(Number(slot.weight ?? 50)),
@@ -1671,6 +1709,7 @@ function clearDraftForGeneratedBackfill(draft: PersonaDraft): PersonaDraft {
     summary: "",
     relationship: "",
     learnerAddress: "",
+    referenceHints: [],
     slots: [],
   };
 }
@@ -1715,11 +1754,34 @@ function matchesPersonaProfile(persona: PersonaProfile, query: string): boolean 
     persona.relationship,
     persona.learnerAddress,
     persona.systemPrompt,
+    (persona.referenceHints ?? []).join(" "),
     persona.source === "builtin" ? "内置人格" : "用户人格",
   ]
     .join("\n")
     .toLowerCase();
   return haystack.includes(trimmed);
+}
+
+function collectReferenceHintsFromCards(cards: PersonaCard[]): string[] {
+  return mergeReferenceHints(
+    [],
+    cards.map((card) => card.sourceNote)
+  );
+}
+
+function mergeReferenceHints(base: string[], incoming: string[]): string[] {
+  const seen = new Set<string>();
+  return [...base, ...incoming]
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .filter((hint) => {
+      const key = hint.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
 }
 
 function humanizePersonaDeleteError(error: unknown): string {
@@ -1954,8 +2016,9 @@ const styles: Record<string, CSSProperties> = {
     alignContent: "start",
   },
   sidebarToggleIcon: {
-    fontSize: 12,
     color: "var(--muted)",
+    display: "inline-flex",
+    alignItems: "center",
   },
 
   /* Panel header */
@@ -2223,9 +2286,10 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
     cursor: "grab",
     userSelect: "none",
-    fontSize: 14,
-    lineHeight: 1,
     padding: "0 2px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   slotKindSelect: {
     flex: "0 0 auto",
@@ -2253,10 +2317,6 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--panel)",
     color: "var(--muted)",
     cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 700,
-    letterSpacing: "0.04em",
-    lineHeight: 1,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2305,11 +2365,12 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--panel)",
     color: "var(--ink)",
     cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 700,
     padding: "0 8px",
     height: 28,
     flexShrink: 0,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* Compact 2-col grid */
@@ -2356,8 +2417,6 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 26,
     padding: "0 6px",
     cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 700,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2458,10 +2517,6 @@ const styles: Record<string, CSSProperties> = {
     width: 30,
     height: 30,
     cursor: "grab",
-    fontSize: 12,
-    fontWeight: 700,
-    letterSpacing: "0.04em",
-    lineHeight: 1,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",

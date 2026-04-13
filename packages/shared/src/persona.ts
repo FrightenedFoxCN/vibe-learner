@@ -70,6 +70,7 @@ export interface PersonaProfile {
   relationship: string;
   learnerAddress: string;
   systemPrompt: string;
+  referenceHints: string[];
   slots: PersonaSlot[];
   availableEmotions: CharacterEmotion[];
   availableActions: CharacterAction[];
@@ -90,6 +91,7 @@ export interface CreatePersonaInput {
   relationship: string;
   learnerAddress: string;
   systemPrompt: string;
+  referenceHints?: string[];
   slots: PersonaSlot[];
   availableEmotions?: CharacterEmotion[];
   availableActions?: CharacterAction[];
@@ -102,6 +104,7 @@ export interface PersonaRuntimeInstructionInput {
   relationship: string;
   learnerAddress: string;
   systemPrompt: string;
+  referenceHints?: string[];
   slots: PersonaSlot[];
   defaultSpeechStyle?: SpeechStyle;
 }
@@ -130,6 +133,7 @@ export function renderPersonaRuntimeInstruction(
   const resolvedRelationship = input.relationship.trim() || "标准导学教师";
   const resolvedAddress = input.learnerAddress.trim() || "同学";
   const resolvedStyle = (input.defaultSpeechStyle ?? "warm").trim() || "warm";
+  const resolvedReferenceHints = normalizePersonaReferenceHints(input.referenceHints ?? []);
   const slotLines = sortPersonaSlots(input.slots ?? [])
     .map((slot) => {
       const content = slot.content.trim();
@@ -159,10 +163,43 @@ export function renderPersonaRuntimeInstruction(
     `默认表达风格：${resolvedStyle}。`
   ];
 
+  if (resolvedReferenceHints.length) {
+    sections.push(`灵感来源提示：\n${resolvedReferenceHints.map((hint) => `- ${hint}`).join("\n")}`);
+  }
+  if (resolvedReferenceHints.some(looksLikeFictionReferenceHint)) {
+    sections.push(
+      [
+        "常见虚构作品来源处理：",
+        "- 上述线索只用于稳定语气、关系感、节奏与角色轮廓。",
+        "- 不要把原作剧情、设定或世界观细节当作当前会话里的既成事实。",
+        "- 若学习者提到原作，可承认风格灵感相近，但不要自称拥有原作中的完整记忆。"
+      ].join("\n")
+    );
+  }
+
   const additionalInstruction = input.systemPrompt.trim();
   if (additionalInstruction) {
     sections.push(`附加系统约束：\n${additionalInstruction}`);
   }
 
   return sections.join("\n\n");
+}
+
+function normalizePersonaReferenceHints(hints: string[]): string[] {
+  const seen = new Set<string>();
+  return hints
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .filter((hint) => {
+      const key = hint.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+}
+
+function looksLikeFictionReferenceHint(hint: string): boolean {
+  return /(角色|作品|小说|动画|动漫|游戏|电影|影视|漫画|剧集|侦探型|冒险|魔法|骑士|学院派|英雄|反派|原作)/i.test(hint);
 }

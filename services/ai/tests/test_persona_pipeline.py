@@ -20,6 +20,7 @@ from app.models.domain import (
     DocumentDebugRecord,
     LearningPlanRecord,
     LearningGoalInput,
+    PersonaProfile,
     PlanGenerationTraceRecord,
     PlanningQuestionRecord,
     SceneLayerStateRecord,
@@ -502,6 +503,28 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertIn(persona.summary, prompt)
         self.assertIn(persona.system_prompt, prompt)
         self.assertTrue(any(slot.content in prompt for slot in persona.slots if slot.content))
+
+    def test_persona_runtime_instruction_adds_fiction_reference_guidance(self) -> None:
+        persona = PersonaProfile(
+            id="detective-mentor",
+            name="Detective Mentor",
+            source="user",
+            summary="参考经典侦探角色气质的教学人格。",
+            relationship="搭档导师",
+            learner_address="搭档",
+            system_prompt="保持证据导向。",
+            reference_hints=["参考了公开侦探型角色的推理节奏。"],
+            slots=[],
+            available_emotions=["calm"],
+            available_actions=["idle"],
+            default_speech_style="steady",
+        )
+
+        prompt = render_persona_runtime_instruction(persona)
+
+        self.assertIn("灵感来源提示", prompt)
+        self.assertIn("公开侦探型角色", prompt)
+        self.assertIn("不要把原作剧情、设定或世界观细节当作当前会话里的既成事实", prompt)
 
     def test_study_session_prompt_only_adds_session_context(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
