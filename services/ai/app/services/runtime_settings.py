@@ -7,27 +7,41 @@ from app.core.settings import Settings
 from app.models.domain import RuntimeSettingsRecord
 from app.services.local_store import LocalJsonStore
 
+SECRET_FIELDS = (
+    "openai_api_key",
+    "openai_plan_api_key",
+    "openai_setting_api_key",
+    "openai_chat_api_key",
+)
+
 
 class RuntimeSettingsService:
     def __init__(self, store: LocalJsonStore, base_settings: Settings) -> None:
         self._store = store
         self._base_settings = base_settings
         self._record = self._load_or_default()
+        self._session_secrets = self._load_session_secrets()
 
     def describe(self) -> dict[str, Any]:
+        secret_values = self._effective_secret_values()
+        is_desktop = self._base_settings.desktop_mode
         return {
             "updated_at": self._record.updated_at,
             "plan_provider": self._record.plan_provider,
-            "openai_api_key": self._record.openai_api_key,
+            "openai_api_key": "" if is_desktop else self._record.openai_api_key,
+            "openai_api_key_configured": bool(secret_values["openai_api_key"]),
             "openai_base_url": self._record.openai_base_url,
-            "openai_plan_api_key": self._record.openai_plan_api_key,
+            "openai_plan_api_key": "" if is_desktop else self._record.openai_plan_api_key,
+            "openai_plan_api_key_configured": bool(secret_values["openai_plan_api_key"]),
             "openai_plan_base_url": self._record.openai_plan_base_url,
             "openai_plan_model": self._record.openai_plan_model,
-            "openai_setting_api_key": self._record.openai_setting_api_key,
+            "openai_setting_api_key": "" if is_desktop else self._record.openai_setting_api_key,
+            "openai_setting_api_key_configured": bool(secret_values["openai_setting_api_key"]),
             "openai_setting_base_url": self._record.openai_setting_base_url,
             "openai_setting_model": self._record.openai_setting_model,
             "openai_setting_web_search_enabled": self._record.openai_setting_web_search_enabled,
-            "openai_chat_api_key": self._record.openai_chat_api_key,
+            "openai_chat_api_key": "" if is_desktop else self._record.openai_chat_api_key,
+            "openai_chat_api_key_configured": bool(secret_values["openai_chat_api_key"]),
             "openai_chat_base_url": self._record.openai_chat_base_url,
             "openai_chat_model": self._record.openai_chat_model,
             "openai_chat_temperature": self._record.openai_chat_temperature,
@@ -47,18 +61,26 @@ class RuntimeSettingsService:
 
     def effective_settings(self) -> Settings:
         record = self._record
+        secrets = self._effective_secret_values()
         return Settings(
+            database_url=self._base_settings.database_url,
+            storage_root=self._base_settings.storage_root,
+            auto_migrate_local_data=self._base_settings.auto_migrate_local_data,
+            desktop_mode=self._base_settings.desktop_mode,
+            allowed_origins=self._base_settings.allowed_origins,
+            ocr_engine=self._base_settings.ocr_engine,
+            onnxtr_model_dir=self._base_settings.onnxtr_model_dir,
             plan_provider=record.plan_provider,
-            openai_api_key=record.openai_api_key,
+            openai_api_key=secrets["openai_api_key"],
             openai_base_url=record.openai_base_url,
-            openai_plan_api_key=record.openai_plan_api_key,
+            openai_plan_api_key=secrets["openai_plan_api_key"],
             openai_plan_base_url=record.openai_plan_base_url,
             openai_plan_model=record.openai_plan_model,
-            openai_setting_api_key=record.openai_setting_api_key,
+            openai_setting_api_key=secrets["openai_setting_api_key"],
             openai_setting_base_url=record.openai_setting_base_url,
             openai_setting_model=record.openai_setting_model,
             openai_setting_web_search_enabled=record.openai_setting_web_search_enabled,
-            openai_chat_api_key=record.openai_chat_api_key,
+            openai_chat_api_key=secrets["openai_chat_api_key"],
             openai_chat_base_url=record.openai_chat_base_url,
             openai_chat_model=record.openai_chat_model,
             openai_chat_temperature=record.openai_chat_temperature,
@@ -78,24 +100,34 @@ class RuntimeSettingsService:
     def update(self, updates: dict[str, Any]) -> RuntimeSettingsRecord:
         plan_provider = _normalize_plan_provider(updates.get("plan_provider", self._record.plan_provider))
 
-        openai_api_key = str(updates.get("openai_api_key", self._record.openai_api_key)).strip()
+        if self._base_settings.desktop_mode:
+            openai_api_key = ""
+            openai_plan_api_key = ""
+            openai_setting_api_key = ""
+            openai_chat_api_key = ""
+        else:
+            openai_api_key = str(updates.get("openai_api_key", self._record.openai_api_key)).strip()
+
+            raw_plan_api_key = updates.get("openai_plan_api_key", self._record.openai_plan_api_key)
+            raw_setting_api_key = updates.get("openai_setting_api_key", self._record.openai_setting_api_key)
+            raw_chat_api_key = updates.get("openai_chat_api_key", self._record.openai_chat_api_key)
+
+            openai_plan_api_key = str(raw_plan_api_key).strip() or openai_api_key
+            openai_setting_api_key = str(raw_setting_api_key).strip() or openai_api_key
+            openai_chat_api_key = str(raw_chat_api_key).strip() or openai_api_key
+
         openai_base_url = _normalize_base_url(
             updates.get("openai_base_url", self._record.openai_base_url)
         )
-
-        raw_plan_api_key = updates.get("openai_plan_api_key", self._record.openai_plan_api_key)
-        raw_plan_base_url = updates.get("openai_plan_base_url", self._record.openai_plan_base_url)
-        raw_setting_api_key = updates.get("openai_setting_api_key", self._record.openai_setting_api_key)
-        raw_setting_base_url = updates.get("openai_setting_base_url", self._record.openai_setting_base_url)
-        raw_chat_api_key = updates.get("openai_chat_api_key", self._record.openai_chat_api_key)
-        raw_chat_base_url = updates.get("openai_chat_base_url", self._record.openai_chat_base_url)
-
-        openai_plan_api_key = str(raw_plan_api_key).strip() or openai_api_key
-        openai_plan_base_url = _normalize_optional_base_url(raw_plan_base_url)
-        openai_setting_api_key = str(raw_setting_api_key).strip() or openai_api_key
-        openai_setting_base_url = _normalize_optional_base_url(raw_setting_base_url)
-        openai_chat_api_key = str(raw_chat_api_key).strip() or openai_api_key
-        openai_chat_base_url = _normalize_optional_base_url(raw_chat_base_url)
+        openai_plan_base_url = _normalize_optional_base_url(
+            updates.get("openai_plan_base_url", self._record.openai_plan_base_url)
+        )
+        openai_setting_base_url = _normalize_optional_base_url(
+            updates.get("openai_setting_base_url", self._record.openai_setting_base_url)
+        )
+        openai_chat_base_url = _normalize_optional_base_url(
+            updates.get("openai_chat_base_url", self._record.openai_chat_base_url)
+        )
 
         openai_plan_model = str(
             updates.get("openai_plan_model", self._record.openai_plan_model)
@@ -162,7 +194,10 @@ class RuntimeSettingsService:
             code="invalid_openai_plan_model_multimodal",
         )
         openai_plan_fallback_disable_tools = _normalize_bool(
-            updates.get("openai_plan_fallback_disable_tools", self._record.openai_plan_fallback_disable_tools),
+            updates.get(
+                "openai_plan_fallback_disable_tools",
+                self._record.openai_plan_fallback_disable_tools,
+            ),
             code="invalid_openai_plan_fallback_disable_tools",
         )
         openai_plan_fallback_model = str(
@@ -214,6 +249,17 @@ class RuntimeSettingsService:
         self._store.save_item("runtime_settings", "default", self._record)
         return self._record
 
+    def apply_session_secrets(self, updates: dict[str, Any]) -> None:
+        next_state = dict(self._session_secrets)
+        for field_name in SECRET_FIELDS:
+            if field_name not in updates:
+                continue
+            next_state[field_name] = str(updates.get(field_name) or "").strip()
+        self._session_secrets = next_state
+
+    def clear_session_secrets(self) -> None:
+        self._session_secrets = _empty_secret_state()
+
     def _load_or_default(self) -> RuntimeSettingsRecord:
         existing = self._store.load_item("runtime_settings", "default", RuntimeSettingsRecord)
         if existing is not None:
@@ -225,16 +271,16 @@ class RuntimeSettingsService:
             config_id="default",
             updated_at=_now_iso(),
             plan_provider=self._base_settings.plan_provider,
-            openai_api_key=self._base_settings.openai_api_key,
+            openai_api_key="" if self._base_settings.desktop_mode else self._base_settings.openai_api_key,
             openai_base_url=self._base_settings.openai_base_url,
-            openai_plan_api_key=self._base_settings.openai_plan_api_key,
+            openai_plan_api_key="" if self._base_settings.desktop_mode else self._base_settings.openai_plan_api_key,
             openai_plan_base_url=self._base_settings.openai_plan_base_url,
             openai_plan_model=self._base_settings.openai_plan_model,
-            openai_setting_api_key=self._base_settings.openai_setting_api_key,
+            openai_setting_api_key="" if self._base_settings.desktop_mode else self._base_settings.openai_setting_api_key,
             openai_setting_base_url=self._base_settings.openai_setting_base_url,
             openai_setting_model=self._base_settings.openai_setting_model,
             openai_setting_web_search_enabled=self._base_settings.openai_setting_web_search_enabled,
-            openai_chat_api_key=self._base_settings.openai_chat_api_key,
+            openai_chat_api_key="" if self._base_settings.desktop_mode else self._base_settings.openai_chat_api_key,
             openai_chat_base_url=self._base_settings.openai_chat_base_url,
             openai_chat_model=self._base_settings.openai_chat_model,
             openai_chat_temperature=self._base_settings.openai_chat_temperature,
@@ -260,16 +306,16 @@ class RuntimeSettingsService:
 
         field_to_base_value = {
             "plan_provider": self._base_settings.plan_provider,
-            "openai_api_key": self._base_settings.openai_api_key,
+            "openai_api_key": "" if self._base_settings.desktop_mode else self._base_settings.openai_api_key,
             "openai_base_url": self._base_settings.openai_base_url,
-            "openai_plan_api_key": self._base_settings.openai_plan_api_key,
+            "openai_plan_api_key": "" if self._base_settings.desktop_mode else self._base_settings.openai_plan_api_key,
             "openai_plan_base_url": self._base_settings.openai_plan_base_url,
             "openai_plan_model": self._base_settings.openai_plan_model,
-            "openai_setting_api_key": self._base_settings.openai_setting_api_key,
+            "openai_setting_api_key": "" if self._base_settings.desktop_mode else self._base_settings.openai_setting_api_key,
             "openai_setting_base_url": self._base_settings.openai_setting_base_url,
             "openai_setting_model": self._base_settings.openai_setting_model,
             "openai_setting_web_search_enabled": self._base_settings.openai_setting_web_search_enabled,
-            "openai_chat_api_key": self._base_settings.openai_chat_api_key,
+            "openai_chat_api_key": "" if self._base_settings.desktop_mode else self._base_settings.openai_chat_api_key,
             "openai_chat_base_url": self._base_settings.openai_chat_base_url,
             "openai_chat_model": self._base_settings.openai_chat_model,
             "openai_chat_temperature": self._base_settings.openai_chat_temperature,
@@ -290,11 +336,57 @@ class RuntimeSettingsService:
             if field_name not in fields_set:
                 updates[field_name] = base_value
 
+        if self._base_settings.desktop_mode:
+            for field_name in SECRET_FIELDS:
+                if getattr(existing, field_name):
+                    updates[field_name] = ""
+
         if not updates:
             return existing
 
         updates["updated_at"] = _now_iso()
         return existing.model_copy(update=updates)
+
+    def _load_session_secrets(self) -> dict[str, str]:
+        if not self._base_settings.desktop_mode:
+            return _empty_secret_state()
+        return {
+            "openai_api_key": self._base_settings.openai_api_key.strip(),
+            "openai_plan_api_key": self._base_settings.openai_plan_api_key.strip(),
+            "openai_setting_api_key": self._base_settings.openai_setting_api_key.strip(),
+            "openai_chat_api_key": self._base_settings.openai_chat_api_key.strip(),
+        }
+
+    def _effective_secret_values(self) -> dict[str, str]:
+        persisted_global = self._record.openai_api_key.strip()
+        persisted_plan = self._record.openai_plan_api_key.strip()
+        persisted_setting = self._record.openai_setting_api_key.strip()
+        persisted_chat = self._record.openai_chat_api_key.strip()
+
+        session_global = self._session_secrets["openai_api_key"]
+        session_plan = self._session_secrets["openai_plan_api_key"]
+        session_setting = self._session_secrets["openai_setting_api_key"]
+        session_chat = self._session_secrets["openai_chat_api_key"]
+
+        effective_global = session_global or persisted_global
+        effective_plan = session_plan or persisted_plan or effective_global
+        effective_setting = session_setting or persisted_setting or effective_global
+        effective_chat = session_chat or persisted_chat or effective_global
+        return {
+            "openai_api_key": effective_global,
+            "openai_plan_api_key": effective_plan,
+            "openai_setting_api_key": effective_setting,
+            "openai_chat_api_key": effective_chat,
+        }
+
+
+def _empty_secret_state() -> dict[str, str]:
+    return {
+        "openai_api_key": "",
+        "openai_plan_api_key": "",
+        "openai_setting_api_key": "",
+        "openai_chat_api_key": "",
+    }
 
 
 def _normalize_plan_provider(value: Any) -> str:

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 import type { RuntimeSettings } from "@vibe-learner/shared";
 import { settingsStyles as styles } from "./settings-styles";
@@ -60,6 +60,98 @@ export function SettingsHeader() {
   );
 }
 
+export function DesktopSecurityCard({ controller }: { controller: SettingsController }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  if (!controller.desktopSecurity.enabled) {
+    return null;
+  }
+
+  const isUnconfigured = controller.desktopSecurity.vaultState === "unconfigured";
+  const isUnlocked = controller.desktopSecurity.vaultState === "unlocked";
+  const isBusy = controller.desktopSecurity.busy;
+
+  return (
+    <section style={styles.card}>
+      <h2 style={styles.cardTitle}>桌面密钥库</h2>
+      <p style={styles.cardDescription}>
+        API key 不再写入后端数据库。桌面版会把密钥保存在本地加密 vault 中，解锁后仅同步到本次运行的 sidecar 内存。
+      </p>
+
+      <div style={styles.subCard}>
+        <div style={styles.probeRow}>
+          <StatusBadge
+            label={`Vault：${isUnconfigured ? "未初始化" : isUnlocked ? "已解锁" : "已锁定"}`}
+            tone={isUnlocked ? "positive" : "muted"}
+          />
+          <span style={styles.probeHint}>{controller.desktopSecurity.vaultPath || "未发现 vault 路径"}</span>
+        </div>
+
+        {controller.desktopSecurity.error ? (
+          <div style={styles.error}>操作失败：{controller.desktopSecurity.error}</div>
+        ) : null}
+
+        {!isUnlocked ? (
+          <>
+            <label style={styles.field}>
+              <span style={styles.label}>主密码</span>
+              <input
+                type="password"
+                autoComplete="off"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="至少使用一个你能记住的高强度密码"
+              />
+            </label>
+
+            {isUnconfigured ? (
+              <label style={styles.field}>
+                <span style={styles.label}>确认密码</span>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="再次输入主密码"
+                />
+              </label>
+            ) : null}
+
+            <div style={styles.probeRow}>
+              <button
+                type="button"
+                style={styles.secondaryBtn}
+                disabled={isBusy || !password.trim() || (isUnconfigured && password !== confirmPassword)}
+                onClick={() =>
+                  void (isUnconfigured
+                    ? controller.initializeDesktopVault(password)
+                    : controller.unlockDesktopVault(password))
+                }
+              >
+                {isBusy ? "处理中..." : isUnconfigured ? "创建并解锁 vault" : "解锁 vault"}
+              </button>
+              {isUnconfigured && password && confirmPassword && password !== confirmPassword ? (
+                <span style={styles.probeHint}>两次输入的密码不一致。</span>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <div style={styles.probeRow}>
+            <button type="button" style={styles.secondaryBtn} disabled={isBusy} onClick={() => void controller.lockDesktopVault()}>
+              {isBusy ? "处理中..." : "锁定 vault"}
+            </button>
+            <button type="button" style={styles.ghostBtn} disabled={isBusy} onClick={() => void controller.clearDesktopSecrets()}>
+              清空已保存密钥
+            </button>
+            <span style={styles.probeHint}>锁定后，后端本次运行中的 session secrets 会一起清除。</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function ProviderCard({
   controller,
   settings
@@ -97,6 +189,9 @@ export function ConnectionModelsCard({
   controller: SettingsController;
   settings: RuntimeSettings;
 }) {
+  const desktopManagedSecrets =
+    controller.desktopSecurity.enabled && controller.desktopSecurity.vaultState !== "unlocked";
+
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>连接与模型分配</h2>
@@ -117,8 +212,22 @@ export function ConnectionModelsCard({
             autoComplete="off"
             value={settings.openaiApiKey}
             onChange={(event) => controller.setSettingField("openaiApiKey", event.target.value)}
-            placeholder="sk-..."
+            disabled={desktopManagedSecrets}
+            placeholder={
+              desktopManagedSecrets
+                ? settings.openaiApiKeyConfigured
+                  ? "已保存在桌面 vault，解锁后可编辑"
+                  : "先在上方创建或解锁桌面 vault"
+                : "sk-..."
+            }
           />
+          {desktopManagedSecrets ? (
+            <span style={styles.fieldHint}>
+              {settings.openaiApiKeyConfigured
+                ? "当前默认密钥已存入桌面密钥库，后端不会持久化明文。"
+                : "桌面模式下，密钥只能在 vault 解锁后编辑。"}
+            </span>
+          ) : null}
         </label>
         <label style={styles.field}>
           <span style={styles.label}>默认服务地址</span>
@@ -132,7 +241,7 @@ export function ConnectionModelsCard({
           <button
             type="button"
             style={styles.secondaryBtn}
-            disabled={controller.probeState.global.loading}
+            disabled={controller.probeState.global.loading || desktopManagedSecrets}
             onClick={() => void controller.probeScope("global")}
           >
             {controller.probeState.global.loading ? "拉取中..." : "拉取默认连接模型"}
@@ -453,6 +562,14 @@ function ScopeModelCard({
 }) {
   const probe = controller.probeState[config.scope];
   const models = uniqueWithCurrent(probe.models, String(settings[config.modelKey] || ""));
+  const desktopManagedSecrets =
+    controller.desktopSecurity.enabled && controller.desktopSecurity.vaultState !== "unlocked";
+  const configured =
+    config.apiKeyKey === "openaiPlanApiKey"
+      ? settings.openaiPlanApiKeyConfigured
+      : config.apiKeyKey === "openaiSettingApiKey"
+        ? settings.openaiSettingApiKeyConfigured
+        : settings.openaiChatApiKeyConfigured;
 
   return (
     <section style={styles.subCard}>
@@ -467,14 +584,26 @@ function ScopeModelCard({
           type="password"
           autoComplete="off"
           value={String(settings[config.apiKeyKey] || "")}
+          disabled={desktopManagedSecrets}
           onChange={(event) =>
             controller.setSettingField(
               config.apiKeyKey,
               event.target.value as RuntimeSettings[typeof config.apiKeyKey]
             )
           }
-          placeholder="留空则继承默认访问密钥"
+          placeholder={
+            desktopManagedSecrets
+              ? configured
+                ? "已保存在桌面 vault，解锁后可编辑"
+                : "先解锁桌面 vault"
+              : "留空则继承默认访问密钥"
+          }
         />
+        {desktopManagedSecrets ? (
+          <span style={styles.fieldHint}>
+            {configured ? "当前场景已有可用密钥，解锁后会显示明文输入框。" : "未检测到该场景的可用密钥。"}
+          </span>
+        ) : null}
       </label>
       <label style={styles.field}>
         <span style={styles.label}>服务地址</span>
@@ -493,7 +622,7 @@ function ScopeModelCard({
         <button
           type="button"
           style={styles.secondaryBtn}
-          disabled={probe.loading}
+          disabled={probe.loading || desktopManagedSecrets}
           onClick={() => void controller.probeScope(config.scope)}
         >
           {probe.loading ? "拉取中..." : "拉取模型与能力"}

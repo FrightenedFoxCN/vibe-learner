@@ -220,8 +220,13 @@ class DocumentDebugRecord(BaseModel):
     page_count: int
     total_characters: int
     extraction_method: str
+    ocr_status: str = "completed"
     ocr_applied: bool = False
     ocr_language: str | None = None
+    ocr_engine: str | None = None
+    ocr_model_id: str | None = None
+    ocr_applied_page_count: int = 0
+    ocr_warnings: list[str] = Field(default_factory=list)
     pages: list[DocumentPageRecord]
     sections: list[DocumentSection]
     study_units: list[StudyUnitRecord] = []

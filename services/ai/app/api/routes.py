@@ -36,6 +36,7 @@ from app.models.api import (
     ModelToolConfigResponse,
     PlanningQuestionAnswerRequest,
     RuntimeSettingsResponse,
+    RuntimeSessionSecretsRequest,
     RuntimeSettingsProbeRequest,
     RuntimeSettingsProbeResponse,
     ReusableSceneNodeListResponse,
@@ -310,6 +311,20 @@ def update_runtime_settings(payload: UpdateRuntimeSettingsRequest) -> RuntimeSet
         container.update_runtime_settings(updates)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return get_runtime_settings()
+
+
+@router.put("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
+def apply_runtime_session_secrets(payload: RuntimeSessionSecretsRequest) -> RuntimeSettingsResponse:
+    container.apply_runtime_session_secrets(
+        payload.model_dump(mode="json", exclude_none=True)
+    )
+    return get_runtime_settings()
+
+
+@router.delete("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
+def clear_runtime_session_secrets() -> RuntimeSettingsResponse:
+    container.clear_runtime_session_secrets()
     return get_runtime_settings()
 
 

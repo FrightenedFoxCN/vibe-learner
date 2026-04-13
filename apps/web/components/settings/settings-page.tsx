@@ -8,6 +8,7 @@ import {
   AutoSaveStatusBar,
   CapabilityAuditCard,
   ConnectionModelsCard,
+  DesktopSecurityCard,
   DebugVisibilityCard,
   ProviderCard,
   SettingsHeader,
@@ -28,12 +29,14 @@ export function SettingsPage() {
         { label: "保存阶段", value: mapSavePhase(controller.savePhase) },
         { label: "上次保存", value: controller.lastSavedAt || "-" },
         { label: "调试显示", value: controller.settings?.showDebugInfo ? "开启" : "关闭" },
-        { label: "提供器", value: controller.settings?.planProvider ?? "-" }
+        { label: "提供器", value: controller.settings?.planProvider ?? "-" },
+        { label: "桌面 Vault", value: controller.desktopSecurity.enabled ? controller.desktopSecurity.vaultState : "browser" }
       ],
       details: [
         { title: "运行时设置", value: controller.settings },
         { title: "数值输入草稿", value: controller.numericDrafts },
-        { title: "能力探测状态", value: controller.probeState }
+        { title: "能力探测状态", value: controller.probeState },
+        { title: "桌面安全状态", value: controller.desktopSecurity }
       ]
     }),
     [
@@ -43,6 +46,7 @@ export function SettingsPage() {
       controller.savePhase,
       controller.lastSavedAt,
       controller.settings,
+      controller.desktopSecurity,
       controller.numericDrafts,
       controller.probeState
     ]
@@ -65,6 +69,7 @@ export function SettingsPage() {
 
           {controller.settings.planProvider === "litellm" ? (
             <>
+              <DesktopSecurityCard controller={controller} />
               <ConnectionModelsCard controller={controller} settings={controller.settings} />
               <CapabilityAuditCard controller={controller} settings={controller.settings} />
               <AdvancedSettingsCard controller={controller} settings={controller.settings} />

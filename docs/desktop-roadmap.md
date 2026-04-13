@@ -5,6 +5,7 @@
 - Active roadmap for desktop packaging and secure local distribution work.
 - Replaces `desktop-distribution-plan.md` as the implementation-facing document.
 - Last updated: 2026-04-13
+- Milestone 1 through Milestone 4 now have a working development implementation in-repo.
 
 ## Summary
 
@@ -163,18 +164,21 @@ The current OCR path shells out to `tesseract` and assumes host installation. Th
 
 ## Initial Implementation Slice
 
-The first implementation slice started with:
+The first implementation slice delivered:
 
 - creating this roadmap
 - scaffolding `apps/desktop`
 - adding desktop-aware frontend runtime config injection support
 - preparing the workspace for a dedicated desktop web export build
+- wiring a Stronghold-backed master-password vault flow into the desktop settings UX
+- moving runtime API secrets to vault storage plus in-memory sidecar session sync
+- adding a dedicated desktop sidecar entrypoint, loopback port allocation, and app-data storage root
+- replacing `tesseract` shell-out OCR with an `OnnxTR` OCR abstraction and debug metadata
 
-The next implementation slice should wire:
+The remaining implementation slices are:
 
-- Stronghold master-password unlock flow
-- sidecar launch and injected backend base URL
-- OCR engine abstraction with an `OnnxTR` implementation
+- package the Python sidecar and OCR assets for installer builds
+- finalize release-oriented CI, signing, and distribution artifacts
 
 ## References
 
@@ -185,4 +189,3 @@ The next implementation slice should wire:
 - https://v2.tauri.app/reference/javascript/stronghold/
 - https://pypi.org/project/onnxtr/
 - https://pypi.org/pypi/onnxruntime
-

@@ -853,6 +853,31 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertTrue(service.describe()["openai_setting_web_search_enabled"])
         self.assertEqual(service.effective_settings().openai_chat_max_tokens, 4800)
 
+    def test_runtime_settings_desktop_mode_keeps_secrets_out_of_store(self) -> None:
+        from app.core.settings import Settings
+
+        store = LocalJsonStore(Path(self.temp_dir.name))
+        service = RuntimeSettingsService(
+            store,
+            Settings(
+                desktop_mode=True,
+                plan_provider="litellm",
+                openai_base_url="https://example.com/v1",
+            ),
+        )
+
+        self.assertEqual(service.describe()["openai_api_key"], "")
+        self.assertFalse(service.describe()["openai_api_key_configured"])
+
+        service.apply_session_secrets({"openai_api_key": "sk-desktop"})
+        self.assertTrue(service.describe()["openai_api_key_configured"])
+        self.assertEqual(service.effective_settings().openai_api_key, "sk-desktop")
+
+        service.update({"openai_api_key": "sk-should-not-persist"})
+        saved_record = store.load_item("runtime_settings", "default", type(service._record))
+        self.assertIsNotNone(saved_record)
+        self.assertEqual(saved_record.openai_api_key, "")
+
     def test_parse_chat_model_reply_accepts_plain_text_without_warning_path(self) -> None:
         raw_payload = {
             "choices": [
@@ -1771,6 +1796,25 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(report.extraction_method, "ocr_forced")
         self.assertEqual(report.pages[0].extraction_source, "ocr")
         self.assertGreaterEqual(len(report.chunks), 1)
+
+    def test_parser_marks_ocr_unavailable_when_engine_is_missing(self) -> None:
+        sample_pdf = Path(self.temp_dir.name) / "blank-unavailable.pdf"
+        pdf = fitz.open()
+        pdf.new_page()
+        pdf.save(sample_pdf)
+        pdf.close()
+
+        parser = DocumentParser(ocr_engine_name="disabled")
+        report = parser.parse(
+            document_id="doc-ocr-unavailable",
+            title="Unavailable OCR",
+            stored_path=str(sample_pdf),
+            force_ocr=True,
+        )
+
+        self.assertEqual(report.ocr_status, "unavailable")
+        self.assertFalse(report.ocr_applied)
+        self.assertTrue(any(warning.code == "ocr_unavailable" for warning in report.warnings))
 
     def test_parser_filters_noisy_heading_candidates(self) -> None:
         sample_pdf = Path(self.temp_dir.name) / "heading-filter.pdf"

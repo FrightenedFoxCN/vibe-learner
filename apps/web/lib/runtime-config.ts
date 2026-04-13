@@ -33,6 +33,8 @@ function normalizeDesktopConfig(value: unknown): DesktopRuntimeConfig | null {
       record.vaultState === "unlocked"
         ? record.vaultState
         : "unconfigured",
+    vaultPath: typeof record.vaultPath === "string" ? record.vaultPath : "",
+    storageRoot: typeof record.storageRoot === "string" ? record.storageRoot : "",
   };
 }
 

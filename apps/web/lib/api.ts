@@ -433,7 +433,7 @@ function normalizeDocument(document: any): DocumentRecord {
     originalFilename: document.original_filename,
     storedPath: document.stored_path,
     status: document.status,
-    ocrStatus: document.ocr_status,
+    ocrStatus: String(document.ocr_status ?? "pending") as DocumentRecord["ocrStatus"],
     createdAt: document.created_at,
     updatedAt: document.updated_at,
     pageCount: document.page_count,
@@ -487,8 +487,15 @@ function normalizeDebugRecord(record: any): DocumentDebugRecord {
     pageCount: record.page_count,
     totalCharacters: record.total_characters,
     extractionMethod: record.extraction_method,
+    ocrStatus: String(record.ocr_status ?? "completed") as DocumentDebugRecord["ocrStatus"],
     ocrApplied: record.ocr_applied,
     ocrLanguage: record.ocr_language,
+    ocrEngine: record.ocr_engine ? String(record.ocr_engine) : null,
+    ocrModelId: record.ocr_model_id ? String(record.ocr_model_id) : null,
+    ocrAppliedPageCount: Number(record.ocr_applied_page_count ?? 0),
+    ocrWarnings: Array.isArray(record.ocr_warnings)
+      ? record.ocr_warnings.map((item: unknown) => String(item))
+      : [],
     dominantLanguageHint: record.dominant_language_hint,
     sections: record.sections.map((section: any) => ({
       id: section.id,
@@ -666,15 +673,19 @@ function normalizeRuntimeSettings(record: any): RuntimeSettings {
     updatedAt: String(record.updated_at ?? ""),
     planProvider: (record.plan_provider === "mock" ? "mock" : "litellm") as "mock" | "litellm",
     openaiApiKey: String(record.openai_api_key ?? ""),
+    openaiApiKeyConfigured: Boolean(record.openai_api_key_configured),
     openaiBaseUrl: String(record.openai_base_url ?? "https://api.openai.com/v1"),
     openaiPlanApiKey: String(record.openai_plan_api_key ?? ""),
+    openaiPlanApiKeyConfigured: Boolean(record.openai_plan_api_key_configured),
     openaiPlanBaseUrl: String(record.openai_plan_base_url ?? "https://api.openai.com/v1"),
     openaiPlanModel: String(record.openai_plan_model ?? "gpt-4.1-mini"),
     openaiSettingApiKey: String(record.openai_setting_api_key ?? ""),
+    openaiSettingApiKeyConfigured: Boolean(record.openai_setting_api_key_configured),
     openaiSettingBaseUrl: String(record.openai_setting_base_url ?? "https://api.openai.com/v1"),
     openaiSettingModel: String(record.openai_setting_model ?? "gpt-4.1-mini"),
     openaiSettingWebSearchEnabled: Boolean(record.openai_setting_web_search_enabled ?? true),
     openaiChatApiKey: String(record.openai_chat_api_key ?? ""),
+    openaiChatApiKeyConfigured: Boolean(record.openai_chat_api_key_configured),
     openaiChatBaseUrl: String(record.openai_chat_base_url ?? "https://api.openai.com/v1"),
     openaiChatModel: String(record.openai_chat_model ?? "gpt-4.1-mini"),
     openaiChatTemperature: Number(record.openai_chat_temperature ?? 0.35),
@@ -1663,6 +1674,38 @@ export async function updateRuntimeSettings(
         openai_plan_fallback_disable_tools: patch.openaiPlanFallbackDisableTools,
         show_debug_info: patch.showDebugInfo
       })
+    })
+  );
+  return normalizeRuntimeSettings(payload);
+}
+
+export async function applyRuntimeSessionSecrets(patch: {
+  openaiApiKey?: string;
+  openaiPlanApiKey?: string;
+  openaiSettingApiKey?: string;
+  openaiChatApiKey?: string;
+}): Promise<RuntimeSettings> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        openai_api_key: patch.openaiApiKey,
+        openai_plan_api_key: patch.openaiPlanApiKey,
+        openai_setting_api_key: patch.openaiSettingApiKey,
+        openai_chat_api_key: patch.openaiChatApiKey
+      })
+    })
+  );
+  return normalizeRuntimeSettings(payload);
+}
+
+export async function clearRuntimeSessionSecrets(): Promise<RuntimeSettings> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
+      method: "DELETE"
     })
   );
   return normalizeRuntimeSettings(payload);

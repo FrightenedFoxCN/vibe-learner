@@ -38,7 +38,11 @@ class Container:
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()
         self.store = LocalJsonStore(self.database, self.storage)
-        self.document_parser = DocumentParser(self.storage.ensure_runtime_temp_root())
+        self.document_parser = DocumentParser(
+            self.storage.ensure_runtime_temp_root(),
+            ocr_engine_name=self.base_settings.ocr_engine,
+            onnxtr_model_dir=self.base_settings.onnxtr_model_dir,
+        )
         if self.base_settings.auto_migrate_local_data and self.store.count_bucket("documents") == 0:
             migrate_from_legacy_store(
                 LegacyLocalJsonStore(data_root),
@@ -80,6 +84,22 @@ class Container:
 
     def update_runtime_settings(self, updates: dict[str, object]) -> None:
         self.runtime_settings_service.update(updates)
+        self.model_provider = self._build_model_provider(
+            self.runtime_settings_service.effective_settings()
+        )
+        self.plan_service.model_provider = self.model_provider
+        self.pedagogy_orchestrator.model_provider = self.model_provider
+
+    def apply_runtime_session_secrets(self, updates: dict[str, object]) -> None:
+        self.runtime_settings_service.apply_session_secrets(updates)
+        self.model_provider = self._build_model_provider(
+            self.runtime_settings_service.effective_settings()
+        )
+        self.plan_service.model_provider = self.model_provider
+        self.pedagogy_orchestrator.model_provider = self.model_provider
+
+    def clear_runtime_session_secrets(self) -> None:
+        self.runtime_settings_service.clear_session_secrets()
         self.model_provider = self._build_model_provider(
             self.runtime_settings_service.effective_settings()
         )

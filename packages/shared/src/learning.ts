@@ -340,15 +340,19 @@ export interface RuntimeSettings {
   updatedAt: string;
   planProvider: "mock" | "litellm";
   openaiApiKey: string;
+  openaiApiKeyConfigured: boolean;
   openaiBaseUrl: string;
   openaiPlanApiKey: string;
+  openaiPlanApiKeyConfigured: boolean;
   openaiPlanBaseUrl: string;
   openaiPlanModel: string;
   openaiSettingApiKey: string;
+  openaiSettingApiKeyConfigured: boolean;
   openaiSettingBaseUrl: string;
   openaiSettingModel: string;
   openaiSettingWebSearchEnabled: boolean;
   openaiChatApiKey: string;
+  openaiChatApiKeyConfigured: boolean;
   openaiChatBaseUrl: string;
   openaiChatModel: string;
   openaiChatTemperature: number;
@@ -607,7 +611,7 @@ export interface DocumentRecord {
   originalFilename: string;
   storedPath: string;
   status: string;
-  ocrStatus: string;
+  ocrStatus: OcrStatus;
   createdAt: string;
   updatedAt: string;
   sections: DocumentSection[];
@@ -676,6 +680,15 @@ export interface ParseWarning {
   pageNumber: number | null;
 }
 
+export type OcrStatus =
+  | "pending"
+  | "completed"
+  | "fallback_used"
+  | "forced"
+  | "required"
+  | "unavailable"
+  | "failed";
+
 export interface DocumentDebugRecord {
   documentId: string;
   parserName: string;
@@ -683,8 +696,13 @@ export interface DocumentDebugRecord {
   pageCount: number;
   totalCharacters: number;
   extractionMethod: string;
+  ocrStatus: OcrStatus;
   ocrApplied: boolean;
   ocrLanguage: string | null;
+  ocrEngine: string | null;
+  ocrModelId: string | null;
+  ocrAppliedPageCount: number;
+  ocrWarnings: string[];
   pages: DocumentPageRecord[];
   sections: DocumentSection[];
   studyUnits: StudyUnit[];

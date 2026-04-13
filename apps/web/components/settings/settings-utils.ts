@@ -97,19 +97,18 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
   }
 ];
 
-export function buildRuntimeSettingsPatch(settings: RuntimeSettings): RuntimeSettingsPatch {
-  return {
+export function buildRuntimeSettingsPatch(
+  settings: RuntimeSettings,
+  options: { includeSecrets?: boolean } = {}
+): RuntimeSettingsPatch {
+  const patch: RuntimeSettingsPatch = {
     planProvider: settings.planProvider,
-    openaiApiKey: settings.openaiApiKey,
     openaiBaseUrl: settings.openaiBaseUrl,
-    openaiPlanApiKey: settings.openaiPlanApiKey,
     openaiPlanBaseUrl: settings.openaiPlanBaseUrl,
     openaiPlanModel: settings.openaiPlanModel,
-    openaiSettingApiKey: settings.openaiSettingApiKey,
     openaiSettingBaseUrl: settings.openaiSettingBaseUrl,
     openaiSettingModel: settings.openaiSettingModel,
     openaiSettingWebSearchEnabled: settings.openaiSettingWebSearchEnabled,
-    openaiChatApiKey: settings.openaiChatApiKey,
     openaiChatBaseUrl: settings.openaiChatBaseUrl,
     openaiChatModel: settings.openaiChatModel,
     openaiChatTemperature: settings.openaiChatTemperature,
@@ -126,6 +125,15 @@ export function buildRuntimeSettingsPatch(settings: RuntimeSettings): RuntimeSet
     openaiPlanFallbackDisableTools: settings.openaiPlanFallbackDisableTools,
     showDebugInfo: settings.showDebugInfo
   };
+
+  if (options.includeSecrets !== false) {
+    patch.openaiApiKey = settings.openaiApiKey;
+    patch.openaiPlanApiKey = settings.openaiPlanApiKey;
+    patch.openaiSettingApiKey = settings.openaiSettingApiKey;
+    patch.openaiChatApiKey = settings.openaiChatApiKey;
+  }
+
+  return patch;
 }
 
 export function serializeSettings(settings: RuntimeSettings): string {

@@ -10,6 +10,10 @@ class Settings:
     database_url: str = "sqlite:///services/ai/data/vibe_learner.db"
     storage_root: str = ""
     auto_migrate_local_data: bool = False
+    desktop_mode: bool = False
+    allowed_origins: tuple[str, ...] = ("http://localhost:3000", "http://127.0.0.1:3000")
+    ocr_engine: str = "onnxtr"
+    onnxtr_model_dir: str = ""
     plan_provider: str = "mock"
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
@@ -43,6 +47,7 @@ class Settings:
         global_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         project_data_root = Path(__file__).resolve().parents[2] / "data"
         default_database_url = f"sqlite:///{project_data_root / 'vibe_learner.db'}"
+        allowed_origins = _parse_allowed_origins(os.getenv("VIBE_LEARNER_ALLOWED_ORIGINS", ""))
         return cls(
             database_url=os.getenv("DATABASE_URL", default_database_url).strip() or default_database_url,
             storage_root=os.getenv("VIBE_LEARNER_STORAGE_ROOT", "").strip(),
@@ -50,6 +55,13 @@ class Settings:
                 os.getenv("VIBE_LEARNER_AUTO_MIGRATE_LOCAL_DATA", "false"),
                 default=False,
             ),
+            desktop_mode=_to_bool(
+                os.getenv("VIBE_LEARNER_DESKTOP_MODE", "false"),
+                default=False,
+            ),
+            allowed_origins=allowed_origins or ("http://localhost:3000", "http://127.0.0.1:3000"),
+            ocr_engine=(os.getenv("VIBE_LEARNER_OCR_ENGINE", "onnxtr").strip().lower() or "onnxtr"),
+            onnxtr_model_dir=os.getenv("VIBE_LEARNER_ONNXTR_MODEL_DIR", "").strip(),
             plan_provider=_normalize_plan_provider(
                 os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock"
             ),
@@ -154,3 +166,12 @@ def _load_dotenv() -> None:
         value = value.strip().strip('"').strip("'")
         if key and key not in os.environ:
             os.environ[key] = value
+
+
+def _parse_allowed_origins(value: str) -> tuple[str, ...]:
+    origins = tuple(
+        item.strip()
+        for item in (value or "").split(",")
+        if item.strip()
+    )
+    return origins

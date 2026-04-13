@@ -116,14 +116,7 @@ class DocumentService:
             logger.exception("document.processing.failed id=%s", document.id)
             raise
         document.status = "processed"
-        if force_ocr:
-            document.ocr_status = "forced"
-        elif debug_report.ocr_applied:
-            document.ocr_status = "fallback_used"
-        elif any(warning.code == "low_text_density" for warning in debug_report.warnings):
-            document.ocr_status = "required"
-        else:
-            document.ocr_status = "completed"
+        document.ocr_status = debug_report.ocr_status
         study_units = self.arrangement_service.build_study_units(
             document=document,
             debug_report=debug_report,

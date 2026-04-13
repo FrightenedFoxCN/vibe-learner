@@ -10,4 +10,6 @@ export interface DesktopRuntimeConfig {
   platform: DesktopPlatform;
   secretStorageMode: DesktopSecretStorageMode;
   vaultState: DesktopVaultState;
+  vaultPath: string;
+  storageRoot: string;
 }

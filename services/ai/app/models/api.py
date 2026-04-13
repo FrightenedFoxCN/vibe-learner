@@ -275,15 +275,19 @@ class RuntimeSettingsResponse(BaseModel):
     updated_at: str
     plan_provider: str
     openai_api_key: str
+    openai_api_key_configured: bool = False
     openai_base_url: str
     openai_plan_api_key: str
+    openai_plan_api_key_configured: bool = False
     openai_plan_base_url: str
     openai_plan_model: str
     openai_setting_api_key: str
+    openai_setting_api_key_configured: bool = False
     openai_setting_base_url: str
     openai_setting_model: str
     openai_setting_web_search_enabled: bool
     openai_chat_api_key: str
+    openai_chat_api_key_configured: bool = False
     openai_chat_base_url: str
     openai_chat_model: str
     openai_chat_temperature: float
@@ -328,6 +332,13 @@ class UpdateRuntimeSettingsRequest(BaseModel):
     openai_plan_fallback_model: str | None = None
     openai_plan_fallback_disable_tools: bool | None = None
     show_debug_info: bool | None = None
+
+
+class RuntimeSessionSecretsRequest(BaseModel):
+    openai_api_key: str | None = None
+    openai_plan_api_key: str | None = None
+    openai_setting_api_key: str | None = None
+    openai_chat_api_key: str | None = None
 
 
 class RuntimeSettingsProbeRequest(BaseModel):

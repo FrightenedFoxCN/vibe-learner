@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import re
-import subprocess
-import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 
 import fitz
 
@@ -20,6 +18,7 @@ from app.models.domain import (
     HeadingCandidate,
     ParseWarning,
 )
+from app.services.ocr_engine import OcrPageResult, OnnxtrOcrEngine
 
 HEADING_PATTERNS = [
     re.compile(r"^(chapter|section|part|appendix)\s+\d+", re.IGNORECASE),
@@ -41,7 +40,7 @@ OCR_HEADER_PATTERNS = [
 ]
 
 TEXT_DENSITY_THRESHOLD = 40
-OCR_LANGUAGE = "eng"
+OCR_LANGUAGE_HINT = "multilingual"
 TOC_MAX_LEVEL = 2
 MIN_GOOD_TOC_ENTRIES = 6
 CHUNK_TARGET_CHARS = 1100
@@ -60,11 +59,24 @@ class ParsedPage:
     extraction_source: str
     warnings: list[ParseWarning]
     used_ocr: bool
+    ocr_result: OcrPageResult | None = None
 
 
 class DocumentParser:
-    def __init__(self, runtime_temp_root: Path | None = None) -> None:
+    def __init__(
+        self,
+        runtime_temp_root: Path | None = None,
+        *,
+        ocr_engine_name: str = "onnxtr",
+        onnxtr_model_dir: str = "",
+    ) -> None:
         self.runtime_temp_root = runtime_temp_root
+        self.ocr_engine_name = ocr_engine_name.strip().lower() or "onnxtr"
+        self.ocr_engine = (
+            OnnxtrOcrEngine(runtime_temp_root=runtime_temp_root, model_dir=onnxtr_model_dir)
+            if self.ocr_engine_name == "onnxtr"
+            else None
+        )
 
     def parse(
         self,
@@ -82,7 +94,7 @@ class DocumentParser:
         warnings: list[ParseWarning] = []
         heading_seed: list[tuple[int, str, float, float]] = []
         total_characters = 0
-        ocr_applied = False
+        ocr_applied_page_count = 0
         toc_sections = self._build_sections_from_toc(
             document_id=document_id,
             stored_path=stored_path,
@@ -108,7 +120,8 @@ class DocumentParser:
             )
             parsed_pages.append(parsed_page)
             warnings.extend(parsed_page.warnings)
-            ocr_applied = ocr_applied or parsed_page.used_ocr
+            if parsed_page.used_ocr:
+                ocr_applied_page_count += 1
             if _should_emit_page_progress(page_number=index, page_count=pdf.page_count):
                 _emit_progress(
                     progress_callback,
@@ -228,16 +241,47 @@ class DocumentParser:
                 )
             )
 
+        ocr_applied = ocr_applied_page_count > 0
+        ocr_results = [page.ocr_result for page in parsed_pages if page.ocr_result is not None]
+        ocr_warnings = _unique_preserving_order(
+            result.warning
+            for result in ocr_results
+            if result.warning
+        )
+        ocr_engine = next((result.engine_name for result in ocr_results if result.engine_name), None)
+        ocr_model_id = next((result.model_id for result in ocr_results if result.model_id), None)
+        low_density_detected = any(warning.code == "low_text_density" for warning in warnings)
+        ocr_unavailable = any(result.status == "unavailable" for result in ocr_results)
+        ocr_failed = any(result.status == "failed" for result in ocr_results)
+
+        if force_ocr and ocr_applied:
+            ocr_status = "forced"
+        elif force_ocr and ocr_unavailable:
+            ocr_status = "unavailable"
+        elif force_ocr and ocr_failed:
+            ocr_status = "failed"
+        elif ocr_applied:
+            ocr_status = "fallback_used"
+        elif low_density_detected and ocr_unavailable:
+            ocr_status = "unavailable"
+        elif low_density_detected and ocr_failed:
+            ocr_status = "failed"
+        elif low_density_detected:
+            ocr_status = "required"
+        else:
+            ocr_status = "completed"
+
         extraction_method = "ocr_forced" if force_ocr else "text_with_ocr_fallback" if ocr_applied else "page_text_dict"
         logger.info(
-            "parser.result document_id=%s pages=%s sections=%s chunks=%s total_characters=%s extraction=%s ocr_applied=%s warnings=%s section_source=%s",
+            "parser.result document_id=%s pages=%s sections=%s chunks=%s total_characters=%s extraction=%s ocr_status=%s ocr_applied_pages=%s warnings=%s section_source=%s",
             document_id,
             len(pages),
             len(sections),
             len(chunks),
             total_characters,
             extraction_method,
-            ocr_applied,
+            ocr_status,
+            ocr_applied_page_count,
             len(warnings),
             "toc" if toc_sections else "heuristic",
         )
@@ -249,8 +293,13 @@ class DocumentParser:
             page_count=len(pages),
             total_characters=total_characters,
             extraction_method=extraction_method,
+            ocr_status=ocr_status,
             ocr_applied=ocr_applied,
-            ocr_language=OCR_LANGUAGE if ocr_applied else None,
+            ocr_language=OCR_LANGUAGE_HINT if ocr_results else None,
+            ocr_engine=ocr_engine,
+            ocr_model_id=ocr_model_id,
+            ocr_applied_page_count=ocr_applied_page_count,
+            ocr_warnings=ocr_warnings,
             pages=pages,
             sections=sections,
             study_units=[],
@@ -267,11 +316,12 @@ class DocumentParser:
         warnings: list[ParseWarning] = []
         used_ocr = False
         extraction_source = "text"
+        ocr_result: OcrPageResult | None = None
 
         if force_ocr or len(page_text) < TEXT_DENSITY_THRESHOLD:
             original_text_length = len(page_text)
-            ocr_text = self._ocr_page(page)
-            cleaned_ocr = _clean_page_text(ocr_text)
+            ocr_result = self._run_ocr(page)
+            cleaned_ocr = _clean_page_text(ocr_result.text)
             if cleaned_ocr and len(cleaned_ocr) > len(page_text):
                 page_text = cleaned_ocr
                 line_entries = [(line, 0.0) for line in cleaned_ocr.splitlines() if line]
@@ -291,6 +341,36 @@ class DocumentParser:
                     force_ocr,
                     original_text_length,
                     len(cleaned_ocr),
+                )
+            elif ocr_result.status == "unavailable":
+                warnings.append(
+                    ParseWarning(
+                        code="ocr_unavailable",
+                        message=ocr_result.warning or "OCR engine is unavailable for this page.",
+                        page_number=page_number,
+                    )
+                )
+                if force_ocr:
+                    extraction_source = "ocr_unavailable"
+                logger.warning(
+                    "parser.page.ocr_unavailable page=%s reason=%s",
+                    page_number,
+                    ocr_result.warning or "unknown",
+                )
+            elif ocr_result.status == "failed":
+                warnings.append(
+                    ParseWarning(
+                        code="ocr_failed",
+                        message=ocr_result.warning or "OCR failed for this page.",
+                        page_number=page_number,
+                    )
+                )
+                if force_ocr:
+                    extraction_source = "ocr_failed"
+                logger.warning(
+                    "parser.page.ocr_failed page=%s reason=%s",
+                    page_number,
+                    ocr_result.warning or "unknown",
                 )
             elif force_ocr:
                 extraction_source = "ocr_attempted"
@@ -314,6 +394,7 @@ class DocumentParser:
             extraction_source=extraction_source,
             warnings=warnings,
             used_ocr=used_ocr,
+            ocr_result=ocr_result,
         )
 
     def _detect_margin_patterns(
@@ -732,24 +813,29 @@ class DocumentParser:
                 merged.append(unit)
         return merged
 
-    def _ocr_page(self, page: fitz.Page) -> str:
-        temp_dir_kwargs: dict[str, str] = {"prefix": "vibe-learner-ocr-"}
-        if self.runtime_temp_root is not None:
-            self.runtime_temp_root.mkdir(parents=True, exist_ok=True)
-            temp_dir_kwargs["dir"] = str(self.runtime_temp_root)
-        with tempfile.TemporaryDirectory(**temp_dir_kwargs) as temp_dir:
-            image_path = Path(temp_dir) / "page.png"
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
-            pixmap.save(image_path)
-            result = subprocess.run(
-                ["tesseract", str(image_path), "stdout", "-l", OCR_LANGUAGE, "--psm", "6"],
-                capture_output=True,
-                text=True,
-                check=False,
+    def _run_ocr(self, page: fitz.Page) -> OcrPageResult:
+        raw_result = self._ocr_page(page)
+        if isinstance(raw_result, OcrPageResult):
+            return raw_result
+        text = str(raw_result or "")
+        return OcrPageResult(
+            text=text,
+            status="completed" if text.strip() else "failed",
+            engine_name=self.ocr_engine.engine_name if self.ocr_engine is not None else self.ocr_engine_name,
+            model_id=self.ocr_engine.model_id if self.ocr_engine is not None else None,
+            warning="" if text.strip() else "ocr_empty_result",
+            language_hint=OCR_LANGUAGE_HINT,
+        )
+
+    def _ocr_page(self, page: fitz.Page) -> OcrPageResult | str:
+        if self.ocr_engine is None:
+            return OcrPageResult(
+                status="unavailable",
+                engine_name=self.ocr_engine_name,
+                warning=f"unsupported_ocr_engine:{self.ocr_engine_name}",
+                language_hint=OCR_LANGUAGE_HINT,
             )
-            if result.returncode != 0:
-                return ""
-            return result.stdout
+        return self.ocr_engine.extract_page_text(page)
 
     def _normalize_heading_text(self, text: str) -> str:
         normalized = _clean_text(text)
@@ -1036,6 +1122,18 @@ def _should_emit_page_progress(*, page_number: int, page_count: int) -> bool:
     if page_number <= 3:
         return True
     return page_number % 10 == 0
+
+
+def _unique_preserving_order(items: Iterable[object]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in items:
+        text = str(item or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        ordered.append(text)
+    return ordered
 
 
 def _now() -> str:
