@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Vibe Learner",
+  "version": "0.1.0",
+  "identifier": "com.vibelearner.desktop",
+  "build": {
+    "beforeDevCommand": "cd ../../ && npm run dev:web",
+    "beforeBuildCommand": "cd ../../ && npm run build:desktop:web",
+    "devUrl": "http://127.0.0.1:3000",
+    "frontendDist": "../../web/out"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Vibe Learner",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 1120,
+        "minHeight": 760,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": false
+  }
+}

@@ -10,13 +10,14 @@ import { useLearningWorkspace } from "./learning-workspace-provider";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
+import { getAiBaseUrl } from "../lib/runtime-config";
 import type {
   StudyConsolePageCache,
   StudyDialogPageCache,
   StudyDialogPreviewState,
 } from "../lib/learning-workspace-page-cache";
 
-const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
+const AI_BASE_URL = () => getAiBaseUrl();
 const ProjectedPdfViewer = dynamic(
   () => import("./projected-pdf-viewer").then((module) => module.ProjectedPdfViewer),
   { ssr: false }
@@ -386,16 +387,16 @@ export function StudyDialogPage() {
   const previewTitle = effectivePreview?.title ?? activeDocument?.title ?? "";
   const previewFileHref =
     effectivePreview?.kind === "document"
-      ? `${AI_BASE_URL}/documents/${effectivePreview.sourceId}/file`
+      ? `${AI_BASE_URL()}/documents/${effectivePreview.sourceId}/file`
       : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
-        ? `${AI_BASE_URL}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
+        ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
         : "";
   const previewPageCount = effectivePreview?.pageCount ?? activeDocument?.pageCount ?? 0;
   const previewFileUrl =
     effectivePreview?.kind === "document"
-      ? `${AI_BASE_URL}/documents/${effectivePreview.sourceId}/file`
+      ? `${AI_BASE_URL()}/documents/${effectivePreview.sourceId}/file`
       : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
-        ? `${AI_BASE_URL}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
+        ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
         : "";
   const previewOverlays =
     (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") &&

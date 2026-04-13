@@ -5,6 +5,7 @@
 - `user_manual.md`: end-user product manual with page-by-page and block-by-block usage instructions
 - `architecture.md`: current monorepo boundaries, runtime flow, and storage model
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
+- `desktop-roadmap.md`: active desktop implementation roadmap for Tauri packaging, OnnxTR OCR, and master-password vault storage
 - `desktop-distribution-plan.md`: deferred plan for future cross-platform desktop packaging and app-shell architecture
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
@@ -22,9 +23,10 @@
 5. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
 6. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
 7. Read `api-reference.md` before touching frontend/backend contracts.
-8. Read `desktop-distribution-plan.md` before reviving desktop packaging or executable distribution work.
-9. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-10. Read `../TODO.md` for the active implementation backlog.
+8. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
+9. Read `desktop-distribution-plan.md` for the original architecture exploration context.
+10. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+11. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 

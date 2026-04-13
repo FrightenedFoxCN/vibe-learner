@@ -23,6 +23,7 @@ import type {
 } from "@vibe-learner/shared";
 
 import { compactPreviewString, compactPreviewValue } from "./preview";
+import { getAiBaseUrl } from "./runtime-config";
 
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
@@ -272,7 +273,7 @@ function extractErrorMessage(payload: unknown, fallbackMessage: string) {
   return fallbackMessage;
 }
 
-const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
+const AI_BASE_URL = () => getAiBaseUrl();
 
 function clientLog(stage: string, payload: Record<string, unknown>) {
   console.info(`[vibe-learner] ${stage}`, payload);
@@ -298,7 +299,7 @@ async function request(input: string, init?: RequestInit): Promise<Response> {
       durationMs: Math.round(performance.now() - startedAt),
       error: String(error)
     });
-    throw new Error(`Cannot reach AI service at ${AI_BASE_URL}`);
+    throw new Error(`Cannot reach AI service at ${AI_BASE_URL()}`);
   }
 }
 
@@ -1168,14 +1169,14 @@ function normalizeSession(session: any): StudySessionRecord {
 
 export async function listPersonas(): Promise<PersonaProfile[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/personas`)
+    await request(`${AI_BASE_URL()}/personas`)
   );
   return payload.items.map(normalizePersona);
 }
 
 export async function createPersona(input: CreatePersonaInput): Promise<PersonaProfile> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/personas`, {
+    await request(`${AI_BASE_URL()}/personas`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1191,7 +1192,7 @@ export async function updatePersona(
   input: CreatePersonaInput
 ): Promise<PersonaProfile> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/personas/${personaId}`, {
+    await request(`${AI_BASE_URL()}/personas/${personaId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1204,7 +1205,7 @@ export async function updatePersona(
 
 export async function deletePersona(personaId: string): Promise<void> {
   await readJson<{ deleted_persona_id: string }>(
-    await request(`${AI_BASE_URL}/personas/${personaId}`, {
+    await request(`${AI_BASE_URL()}/personas/${personaId}`, {
       method: "DELETE"
     })
   );
@@ -1212,7 +1213,7 @@ export async function deletePersona(personaId: string): Promise<void> {
 
 export async function getPersonaAssets(personaId: string): Promise<PersonaAssets> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/personas/${personaId}/assets`)
+    await request(`${AI_BASE_URL()}/personas/${personaId}/assets`)
   );
   return {
     personaId: payload.persona_id,
@@ -1223,7 +1224,7 @@ export async function getPersonaAssets(personaId: string): Promise<PersonaAssets
 
 export async function listPersonaCards(): Promise<PersonaCard[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/persona-cards`)
+    await request(`${AI_BASE_URL()}/persona-cards`)
   );
   return payload.items.map(normalizePersonaCard);
 }
@@ -1232,7 +1233,7 @@ export async function createPersonaCardsBatch(
   items: CreatePersonaCardInput[]
 ): Promise<PersonaCard[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/persona-cards/batch`, {
+    await request(`${AI_BASE_URL()}/persona-cards/batch`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1247,7 +1248,7 @@ export async function createPersonaCardsBatch(
 
 export async function deletePersonaCard(cardId: string): Promise<void> {
   await readJson<{ deleted_persona_card_id: string }>(
-    await request(`${AI_BASE_URL}/persona-cards/${cardId}`, {
+    await request(`${AI_BASE_URL()}/persona-cards/${cardId}`, {
       method: "DELETE"
     })
   );
@@ -1266,7 +1267,7 @@ export async function generatePersonaCards(input: {
     requestBody.count = input.count;
   }
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/persona-cards/generate`, {
+    await request(`${AI_BASE_URL()}/persona-cards/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1299,7 +1300,7 @@ export async function generateSceneTree(input: {
     requestBody.layer_count = input.layerCount;
   }
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-setup/generate`, {
+    await request(`${AI_BASE_URL()}/scene-setup/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1323,7 +1324,7 @@ export async function assistPersonaSetting(
   input: PersonaSettingAssistInput
 ): Promise<PersonaSettingAssistOutput> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/personas/assist-setting`, {
+    await request(`${AI_BASE_URL()}/personas/assist-setting`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1355,7 +1356,7 @@ export async function assistPersonaSlot(
   input: PersonaSlotAssistInput
 ): Promise<PersonaSlotAssistOutput> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/personas/assist-slot`, {
+    await request(`${AI_BASE_URL()}/personas/assist-slot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1384,14 +1385,14 @@ export async function assistPersonaSlot(
 
 export async function listDocuments(): Promise<DocumentRecord[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/documents`)
+    await request(`${AI_BASE_URL()}/documents`)
   );
   return payload.items.map(normalizeDocument);
 }
 
 export async function getDocumentDebug(documentId: string): Promise<DocumentDebugRecord> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/debug`)
+    await request(`${AI_BASE_URL()}/documents/${documentId}/debug`)
   );
   return normalizeDebugRecord(payload);
 }
@@ -1400,7 +1401,7 @@ export async function getDocumentPlanningContext(
   documentId: string
 ): Promise<DocumentPlanningContext> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/planning-context`)
+    await request(`${AI_BASE_URL()}/documents/${documentId}/planning-context`)
   );
   return normalizePlanningContext(payload);
 }
@@ -1409,14 +1410,14 @@ export async function getDocumentPlanningTrace(
   documentId: string
 ): Promise<DocumentPlanningTraceResponse> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/planning-trace`)
+    await request(`${AI_BASE_URL()}/documents/${documentId}/planning-trace`)
   );
   return normalizePlanningTraceResponse(payload);
 }
 
 export async function getModelToolConfig(): Promise<ModelToolConfig> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/model-tools/config`)
+    await request(`${AI_BASE_URL()}/model-tools/config`)
   );
   return normalizeModelToolConfig(payload);
 }
@@ -1425,7 +1426,7 @@ export async function updateModelToolConfig(
   toggles: ModelToolToggle[]
 ): Promise<ModelToolConfig> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/model-tools/config`, {
+    await request(`${AI_BASE_URL()}/model-tools/config`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1444,14 +1445,14 @@ export async function updateModelToolConfig(
 
 export async function getRuntimeSettings(): Promise<RuntimeSettings> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/runtime-settings`)
+    await request(`${AI_BASE_URL()}/runtime-settings`)
   );
   return normalizeRuntimeSettings(payload);
 }
 
 export async function getSceneSetupState(): Promise<SceneSetupStatePayload> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-setup`)
+    await request(`${AI_BASE_URL()}/scene-setup`)
   );
   return normalizeSceneSetupState(payload);
 }
@@ -1465,7 +1466,7 @@ export async function updateSceneSetupState(input: {
   sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<SceneSetupStatePayload> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-setup`, {
+    await request(`${AI_BASE_URL()}/scene-setup`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -1485,14 +1486,14 @@ export async function updateSceneSetupState(input: {
 
 export async function listSceneLibrary(): Promise<SceneLibraryItemPayload[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/scene-library`)
+    await request(`${AI_BASE_URL()}/scene-library`)
   );
   return payload.items.map(normalizeSceneLibraryItem);
 }
 
 export async function getSceneLibraryItem(sceneId: string): Promise<SceneLibraryItemPayload> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-library/${sceneId}`)
+    await request(`${AI_BASE_URL()}/scene-library/${sceneId}`)
   );
   return normalizeSceneLibraryItem(payload);
 }
@@ -1506,7 +1507,7 @@ export async function createSceneLibraryItem(input: {
   sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<SceneLibraryItemPayload> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-library`, {
+    await request(`${AI_BASE_URL()}/scene-library`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1533,7 +1534,7 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
   sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<SceneLibraryItemPayload> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-library/${sceneId}`, {
+    await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -1553,7 +1554,7 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
 
 export async function deleteSceneLibraryItem(sceneId: string): Promise<{ deletedSceneId: string }> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/scene-library/${sceneId}`, {
+    await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "DELETE"
     })
   );
@@ -1564,7 +1565,7 @@ export async function deleteSceneLibraryItem(sceneId: string): Promise<{ deleted
 
 export async function listReusableSceneNodes(): Promise<ReusableSceneNodePayload[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/reusable-scene-nodes`)
+    await request(`${AI_BASE_URL()}/reusable-scene-nodes`)
   );
   return payload.items.map(normalizeReusableSceneNode);
 }
@@ -1582,7 +1583,7 @@ export async function createReusableSceneNode(input: {
   objectNode?: import("@vibe-learner/shared").SceneObjectSnapshot | null;
 }): Promise<ReusableSceneNodePayload> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/reusable-scene-nodes`, {
+    await request(`${AI_BASE_URL()}/reusable-scene-nodes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1616,7 +1617,7 @@ export async function createReusableSceneNode(input: {
 
 export async function deleteReusableSceneNode(nodeId: string): Promise<{ deletedReusableSceneNodeId: string }> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/reusable-scene-nodes/${nodeId}`, {
+    await request(`${AI_BASE_URL()}/reusable-scene-nodes/${nodeId}`, {
       method: "DELETE"
     })
   );
@@ -1629,7 +1630,7 @@ export async function updateRuntimeSettings(
   patch: RuntimeSettingsPatch
 ): Promise<RuntimeSettings> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/runtime-settings`, {
+    await request(`${AI_BASE_URL()}/runtime-settings`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1672,7 +1673,7 @@ export async function probeRuntimeOpenAIModels(input: {
   baseUrl: string;
 }): Promise<RuntimeOpenAIProbeResult> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/runtime-settings/check-openai-models`, {
+    await request(`${AI_BASE_URL()}/runtime-settings/check-openai-models`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1715,14 +1716,14 @@ export async function probeRuntimeOpenAIModels(input: {
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/process-events`)
+    await request(`${AI_BASE_URL()}/documents/${documentId}/process-events`)
   );
   return normalizeStreamReport(payload);
 }
 
 export async function getDocumentPlanEvents(documentId: string): Promise<StreamReport> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/plan-events`)
+    await request(`${AI_BASE_URL()}/documents/${documentId}/plan-events`)
   );
   return normalizeStreamReport(payload);
 }
@@ -1731,7 +1732,7 @@ export async function uploadDocument(file: File): Promise<DocumentRecord> {
   const form = new FormData();
   form.append("file", file);
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents`, {
+    await request(`${AI_BASE_URL()}/documents`, {
       method: "POST",
       body: form
     })
@@ -1751,7 +1752,7 @@ export async function processDocument(
   }
 ): Promise<DocumentRecord> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/process`, {
+    await request(`${AI_BASE_URL()}/documents/${documentId}/process`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1771,7 +1772,7 @@ export async function processDocumentStream(
   },
   onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
 ): Promise<DocumentRecord> {
-  const response = await request(`${AI_BASE_URL}/documents/${documentId}/process/stream`, {
+  const response = await request(`${AI_BASE_URL()}/documents/${documentId}/process/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -1834,7 +1835,7 @@ export async function processDocumentStream(
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/learning-plans`, {
+    await request(`${AI_BASE_URL()}/learning-plans`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1853,7 +1854,7 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
 
 export async function listLearningPlans(): Promise<LearningPlan[]> {
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/learning-plans`)
+    await request(`${AI_BASE_URL()}/learning-plans`)
   );
   return payload.items.map(normalizePlan);
 }
@@ -1867,7 +1868,7 @@ export async function updateDocumentStudyUnitTitle(
     document: any;
     plans: any[];
   }>(
-    await request(`${AI_BASE_URL}/documents/${documentId}/study-units/${studyUnitId}`, {
+    await request(`${AI_BASE_URL()}/documents/${documentId}/study-units/${studyUnitId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1888,7 +1889,7 @@ export async function updateLearningPlanTitle(
   courseTitle: string
 ): Promise<LearningPlan> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
+    await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1906,7 +1907,7 @@ export async function updateLearningPlanStudyChapters(
   studyChapters: string[]
 ): Promise<LearningPlan> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
+    await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1926,7 +1927,7 @@ export async function updateLearningPlanProgress(input: {
   note?: string;
 }): Promise<LearningPlan> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/learning-plans/${input.planId}/progress`, {
+    await request(`${AI_BASE_URL()}/learning-plans/${input.planId}/progress`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1948,7 +1949,7 @@ export async function answerLearningPlanQuestion(input: {
 }): Promise<LearningPlan> {
   const payload = await readJson<any>(
     await request(
-      `${AI_BASE_URL}/learning-plans/${input.planId}/planning-questions/${input.questionId}`,
+      `${AI_BASE_URL()}/learning-plans/${input.planId}/planning-questions/${input.questionId}`,
       {
         method: "PATCH",
         headers: {
@@ -1965,7 +1966,7 @@ export async function answerLearningPlanQuestion(input: {
 
 export async function deleteLearningPlan(planId: string): Promise<void> {
   await readJson<{ deleted_plan_id: string }>(
-    await request(`${AI_BASE_URL}/learning-plans/${planId}`, {
+    await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
       method: "DELETE"
     })
   );
@@ -1976,7 +1977,7 @@ export async function createLearningPlanStream(
   onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
 ): Promise<LearningPlan> {
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
-  const response = await request(`${AI_BASE_URL}/learning-plans/stream`, {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -2050,7 +2051,7 @@ export async function createStudySession(input: {
   themeHint?: string;
 }): Promise<StudySessionRecord> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/study-sessions`, {
+    await request(`${AI_BASE_URL()}/study-sessions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -2082,7 +2083,7 @@ export async function listStudySessions(input: {
   if (input.sectionId) query.set("section_id", input.sectionId);
   const suffix = query.toString();
   const payload = await readJson<{ items: any[] }>(
-    await request(`${AI_BASE_URL}/study-sessions${suffix ? `?${suffix}` : ""}`)
+    await request(`${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`)
   );
   return payload.items.map(normalizeSession);
 }
@@ -2100,7 +2101,7 @@ export async function updateStudySessionSection(input: {
     body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);
   }
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}`, {
+    await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -2120,7 +2121,7 @@ export async function sendStudyMessage(input: {
 }): Promise<StudyChatExchangeResponse> {
   const hasAttachments = Boolean(input.attachments?.length);
   const response = hasAttachments
-    ? await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat-with-attachments`, {
+    ? await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat-with-attachments`, {
         method: "POST",
         body: (() => {
           const form = new FormData();
@@ -2133,7 +2134,7 @@ export async function sendStudyMessage(input: {
           return form;
         })()
       })
-    : await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat`, {
+    : await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -2203,7 +2204,7 @@ export async function submitStudyQuestionAttempt(input: {
   explanation: string;
 }): Promise<StudySessionRecord> {
   const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/attempt`, {
+    await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -2234,7 +2235,7 @@ export async function resolveStudyPlanConfirmation(input: {
 }): Promise<StudyPlanConfirmationDecisionResponse> {
   const payload = await readJson<any>(
     await request(
-      `${AI_BASE_URL}/study-sessions/${input.sessionId}/plan-confirmations/${input.confirmationId}`,
+      `${AI_BASE_URL()}/study-sessions/${input.sessionId}/plan-confirmations/${input.confirmationId}`,
       {
         method: "POST",
         headers: {
@@ -2298,7 +2299,7 @@ function normalizeInteractiveQuestion(raw: any) {
 }
 
 export async function getModelUsageStats(): Promise<TokenUsageStats> {
-  const response = await request(`${AI_BASE_URL}/model-usage/stats`);
+  const response = await request(`${AI_BASE_URL()}/model-usage/stats`);
   const raw = await readJson<any>(response);
   return {
     buckets: (raw.buckets ?? []).map((b: any) => ({

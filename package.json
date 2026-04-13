@@ -9,6 +9,9 @@
   "scripts": {
     "dev:web": "npm --workspace @vibe-learner/web run dev",
     "build:web": "npm --workspace @vibe-learner/web run build",
+    "build:desktop:web": "npm --workspace @vibe-learner/web run build:desktop",
+    "dev:desktop": "npm --workspace @vibe-learner/desktop run dev",
+    "build:desktop": "npm --workspace @vibe-learner/desktop run build",
     "lint:web": "npm --workspace @vibe-learner/web run lint",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai"
