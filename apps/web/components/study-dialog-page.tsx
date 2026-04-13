@@ -31,7 +31,7 @@ type PreviewState = StudyDialogPreviewState;
 
 export function StudyDialogPage() {
   const {
-    selectedPersona,
+    activePersona,
     activePlan,
     activeDocument,
     planHistory,
@@ -467,7 +467,7 @@ export function StudyDialogPage() {
             onChangeScheduleChapter={handleScheduleChapterChange}
             turns={studySession?.turns ?? []}
             session={response}
-            persona={selectedPersona}
+            persona={activePersona}
             sceneProfile={activeSceneProfile}
             pendingFollowUps={studySession?.pendingFollowUps ?? []}
             isDialogueInterrupted={isDialogueInterrupted}

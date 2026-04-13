@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import io
 import json
+import sqlite3
 import threading
 import unittest
 from unittest.mock import patch
@@ -46,6 +47,8 @@ from app.services.model_provider import (
     CHAT_JSON_SCHEMA,
     _parse_chat_model_reply,
 )
+from app.persistence.database import Database
+from app.persistence.storage import StorageManager
 from app.services.runtime_settings import RuntimeSettingsService
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
@@ -3241,6 +3244,139 @@ class PersonaPipelineTests(unittest.TestCase):
         persisted = self.plan_service.require_plan(plan.id)
         self.assertEqual(persisted.course_title, "Calculus / Limits Sprint")
 
+    def test_local_store_migrates_legacy_plan_fields_on_load(self) -> None:
+        root = Path(self.temp_dir.name) / "legacy-plan-load"
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "plans.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "id": "plan-legacy-1",
+                        "document_id": "doc-legacy-1",
+                        "persona_id": "mentor-aurora",
+                        "creation_mode": "document",
+                        "course_title": "Legacy Algebra",
+                        "objective": "掌握一元二次方程",
+                        "overview": "旧版计划结构。",
+                        "study_chapters": ["方程入门"],
+                        "today_tasks": ["先理解标准形式"],
+                        "study_units": [
+                            {
+                                "id": "unit-1",
+                                "document_id": "doc-legacy-1",
+                                "title": "二次方程",
+                                "page_start": 1,
+                                "page_end": 12,
+                                "unit_kind": "chapter",
+                                "include_in_plan": True,
+                                "source_section_ids": ["raw-1"],
+                                "summary": "聚焦标准形式与判别式。",
+                                "confidence": 0.91,
+                            }
+                        ],
+                        "schedule": [
+                            {
+                                "id": "schedule-1",
+                                "unit_id": "unit-1",
+                                "title": "理解二次方程",
+                                "focus": "标准形式",
+                                "activity_type": "learn",
+                                "status": "planned",
+                            }
+                        ],
+                        "chapter_progress": [
+                            {
+                                "unit_id": "unit-1",
+                                "title": "方程入门",
+                                "objective_fragment": "标准形式",
+                                "schedule_ids": ["schedule-1"],
+                                "total_schedule_count": 1,
+                                "completed_schedule_count": 0,
+                                "in_progress_schedule_count": 0,
+                                "pending_schedule_count": 1,
+                                "blocked_schedule_count": 0,
+                                "completion_percent": 0,
+                                "status": "planned",
+                            }
+                        ],
+                        "progress_events": [],
+                        "planning_questions": [],
+                        "created_at": "2026-04-12T00:00:00+00:00",
+                    }
+                ],
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        store = LocalJsonStore(root)
+        try:
+            plans = store.load_list("plans", LearningPlanRecord)
+            self.assertEqual(len(plans), 1)
+            migrated = plans[0]
+            self.assertEqual(migrated.study_unit_progress[0].unit_id, "unit-1")
+            self.assertTrue(migrated.schedule[0].schedule_chapters)
+            self.assertEqual(migrated.schedule[0].schedule_chapters[0].title, "方程入门")
+
+            legacy_payload = json.loads((root / "plans.json").read_text(encoding="utf-8"))
+            self.assertIn("study_unit_progress", legacy_payload[0])
+            self.assertNotIn("chapter_progress", legacy_payload[0])
+            self.assertIn("schedule_chapters", legacy_payload[0]["schedule"][0])
+        finally:
+            store.close()
+
+    def test_delete_plan_does_not_restore_from_legacy_store(self) -> None:
+        root = Path(self.temp_dir.name) / "legacy-plan-delete"
+        root.mkdir(parents=True, exist_ok=True)
+        (root / "plans.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "id": "plan-delete-1",
+                        "document_id": "doc-delete-1",
+                        "persona_id": "mentor-aurora",
+                        "creation_mode": "document",
+                        "course_title": "Delete Me",
+                        "objective": "删除后不应该复活",
+                        "overview": "用于删除回归测试。",
+                        "today_tasks": ["删除这条计划"],
+                        "study_units": [],
+                        "schedule": [],
+                        "progress_summary": {
+                            "total_schedule_count": 0,
+                            "completed_schedule_count": 0,
+                            "in_progress_schedule_count": 0,
+                            "pending_schedule_count": 0,
+                            "blocked_schedule_count": 0,
+                            "completion_percent": 0,
+                        },
+                        "study_unit_progress": [],
+                        "progress_events": [],
+                        "planning_questions": [],
+                        "created_at": "2026-04-12T00:00:00+00:00",
+                    }
+                ],
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        store = LocalJsonStore(root)
+        try:
+            plan_service = LearningPlanService(store, StudyArrangementService(), MockModelProvider())
+            self.assertEqual(len(plan_service.list_plans()), 1)
+
+            plan_service.delete_plan("plan-delete-1")
+
+            reloaded_service = LearningPlanService(store, StudyArrangementService(), MockModelProvider())
+            self.assertEqual(reloaded_service.list_plans(), [])
+            legacy_payload = json.loads((root / "plans.json").read_text(encoding="utf-8"))
+            self.assertEqual(legacy_payload, [])
+        finally:
+            store.close()
+
     def test_plan_service_can_create_goal_only_plan(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
 
@@ -3260,6 +3396,213 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertGreaterEqual(len(plan.study_units), 3)
         self.assertTrue(plan.schedule)
         self.assertEqual(plan.progress_summary.total_schedule_count, len(plan.schedule))
+
+    def test_database_create_schema_migrates_legacy_study_sessions_table(self) -> None:
+        root = Path(self.temp_dir.name) / "sqlite-schema-migration"
+        root.mkdir(parents=True, exist_ok=True)
+        db_path = root / "vibe_learner.db"
+        with sqlite3.connect(db_path) as connection:
+            connection.execute(
+                """
+                CREATE TABLE study_sessions (
+                    id VARCHAR(64) PRIMARY KEY,
+                    document_id VARCHAR(64) NOT NULL,
+                    persona_id VARCHAR(64) NOT NULL,
+                    plan_id VARCHAR(64) NOT NULL,
+                    section_id VARCHAR(128) NOT NULL,
+                    status VARCHAR(32) NOT NULL,
+                    created_at VARCHAR(64) NOT NULL,
+                    updated_at VARCHAR(64) NOT NULL,
+                    payload JSON NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO study_sessions (
+                    id,
+                    document_id,
+                    persona_id,
+                    plan_id,
+                    section_id,
+                    status,
+                    created_at,
+                    updated_at,
+                    payload
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "session-legacy-1",
+                    "doc-legacy-1",
+                    "mentor-aurora",
+                    "plan-legacy-1",
+                    "section-legacy-1",
+                    "active",
+                    "2026-04-12T00:00:00+00:00",
+                    "2026-04-12T00:00:00+00:00",
+                    json.dumps(
+                        {
+                            "id": "session-legacy-1",
+                            "document_id": "doc-legacy-1",
+                            "persona_id": "mentor-aurora",
+                            "plan_id": "plan-legacy-1",
+                            "section_id": "section-legacy-1",
+                            "section_title": "Legacy Section",
+                            "status": "active",
+                            "turns": [],
+                            "created_at": "2026-04-12T00:00:00+00:00",
+                            "updated_at": "2026-04-12T00:00:00+00:00",
+                        },
+                        ensure_ascii=False,
+                    ),
+                ),
+            )
+            connection.commit()
+
+        database = Database(f"sqlite:///{db_path}")
+        database.create_schema()
+        store = LocalJsonStore(database, StorageManager(root))
+        try:
+            with sqlite3.connect(db_path) as connection:
+                columns = [row[1] for row in connection.execute("PRAGMA table_info(study_sessions)")]
+            self.assertIn("study_unit_id", columns)
+            self.assertNotIn("section_id", columns)
+
+            sessions = store.load_list("sessions", StudySessionRecord)
+            self.assertEqual(len(sessions), 1)
+            self.assertEqual(sessions[0].study_unit_id, "section-legacy-1")
+            self.assertEqual(sessions[0].study_unit_title, "Legacy Section")
+
+            created = StudySessionService(store).create_session(
+                document_id="doc-legacy-1",
+                persona_id="mentor-aurora",
+                plan_id="plan-legacy-1",
+                study_unit_id="unit-new-1",
+            )
+            self.assertEqual(created.study_unit_id, "unit-new-1")
+        finally:
+            store.close()
+
+    def test_database_create_schema_recovers_partially_migrated_study_sessions_table(self) -> None:
+        root = Path(self.temp_dir.name) / "sqlite-partial-schema-migration"
+        root.mkdir(parents=True, exist_ok=True)
+        db_path = root / "vibe_learner.db"
+        with sqlite3.connect(db_path) as connection:
+            connection.execute(
+                """
+                CREATE TABLE study_sessions_legacy (
+                    id VARCHAR(64) PRIMARY KEY,
+                    document_id VARCHAR(64) NOT NULL,
+                    persona_id VARCHAR(64) NOT NULL,
+                    plan_id VARCHAR(64) NOT NULL,
+                    section_id VARCHAR(128) NOT NULL,
+                    status VARCHAR(32) NOT NULL,
+                    created_at VARCHAR(64) NOT NULL,
+                    updated_at VARCHAR(64) NOT NULL,
+                    payload JSON NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX ix_study_sessions_document_id ON study_sessions_legacy (document_id)"
+            )
+            connection.execute(
+                "CREATE INDEX ix_study_sessions_persona_id ON study_sessions_legacy (persona_id)"
+            )
+            connection.execute(
+                "CREATE INDEX ix_study_sessions_plan_id ON study_sessions_legacy (plan_id)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE study_sessions (
+                    id VARCHAR(64) PRIMARY KEY,
+                    document_id VARCHAR(64) NOT NULL,
+                    persona_id VARCHAR(64) NOT NULL,
+                    plan_id VARCHAR(64) NOT NULL,
+                    study_unit_id VARCHAR(128) NOT NULL,
+                    status VARCHAR(32) NOT NULL,
+                    created_at VARCHAR(64) NOT NULL,
+                    updated_at VARCHAR(64) NOT NULL,
+                    payload JSON NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO study_sessions_legacy (
+                    id,
+                    document_id,
+                    persona_id,
+                    plan_id,
+                    section_id,
+                    status,
+                    created_at,
+                    updated_at,
+                    payload
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "session-legacy-2",
+                    "doc-legacy-2",
+                    "mentor-aurora",
+                    "plan-legacy-2",
+                    "section-legacy-2",
+                    "active",
+                    "2026-04-12T00:00:00+00:00",
+                    "2026-04-12T00:00:00+00:00",
+                    json.dumps(
+                        {
+                            "id": "session-legacy-2",
+                            "document_id": "doc-legacy-2",
+                            "persona_id": "mentor-aurora",
+                            "plan_id": "plan-legacy-2",
+                            "section_id": "section-legacy-2",
+                            "section_title": "Recovered Section",
+                            "status": "active",
+                            "turns": [],
+                            "created_at": "2026-04-12T00:00:00+00:00",
+                            "updated_at": "2026-04-12T00:00:00+00:00",
+                        },
+                        ensure_ascii=False,
+                    ),
+                ),
+            )
+            connection.commit()
+
+        database = Database(f"sqlite:///{db_path}")
+        database.create_schema()
+        store = LocalJsonStore(database, StorageManager(root))
+        try:
+            with sqlite3.connect(db_path) as connection:
+                tables = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT name FROM sqlite_master WHERE type = 'table'"
+                    )
+                }
+                indexes = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'ix_study_sessions_%'"
+                    )
+                }
+            self.assertIn("study_sessions", tables)
+            self.assertNotIn("study_sessions_legacy", tables)
+            self.assertEqual(
+                indexes,
+                {
+                    "ix_study_sessions_document_id",
+                    "ix_study_sessions_persona_id",
+                    "ix_study_sessions_plan_id",
+                },
+            )
+
+            sessions = store.load_list("sessions", StudySessionRecord)
+            self.assertEqual(len(sessions), 1)
+            self.assertEqual(sessions[0].study_unit_id, "section-legacy-2")
+            self.assertEqual(sessions[0].study_unit_title, "Recovered Section")
+        finally:
+            store.close()
 
     def test_plan_service_updates_progress_summary_and_events(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")

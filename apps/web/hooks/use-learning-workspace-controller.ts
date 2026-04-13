@@ -149,6 +149,9 @@ export function useLearningWorkspaceController({
     state.personas.find((persona) => persona.id === state.selectedPersonaId) ?? state.personas[0];
   const activePlan = findLearningPlan(state.planHistory, state.selectedPlanId);
   const activeDocument = findDocumentForPlan(activePlan, state.documents);
+  const activePersonaId = state.studySession?.personaId || activePlan?.personaId || state.selectedPersonaId;
+  const activePersona =
+    state.personas.find((persona) => persona.id === activePersonaId) ?? selectedPersona;
   const planSections = buildPlanDirectorySections(activePlan, activeDocument);
   const planHistoryItems = buildPlanHistoryItems({
     plans: state.planHistory,
@@ -1550,6 +1553,7 @@ export function useLearningWorkspaceController({
   return {
     personas: state.personas,
     selectedPersona,
+    activePersona,
     selectedPersonaId: state.selectedPersonaId,
     setSelectedPersonaId: (personaId: string) =>
       dispatch({ type: "persona_selected", personaId }),

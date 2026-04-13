@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.domain import (
     CharacterStateEvent,
@@ -534,10 +534,30 @@ class CreateStudySessionRequest(BaseModel):
     study_unit_title: str = ""
     theme_hint: str = ""
 
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_fields(cls, value):
+        if not isinstance(value, dict):
+            return value
+        if value.get("study_unit_id") is None and value.get("section_id") is not None:
+            value["study_unit_id"] = value.get("section_id")
+        if value.get("study_unit_title") is None and value.get("section_title") is not None:
+            value["study_unit_title"] = value.get("section_title")
+        return value
+
 
 class UpdateStudySessionRequest(BaseModel):
     study_unit_id: str | None = None
     scene_profile: SceneProfileRecord | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_fields(cls, value):
+        if not isinstance(value, dict):
+            return value
+        if value.get("study_unit_id") is None and value.get("section_id") is not None:
+            value["study_unit_id"] = value.get("section_id")
+        return value
 
 
 class StudySessionResponse(StudySessionRecord):

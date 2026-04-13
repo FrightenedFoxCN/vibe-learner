@@ -761,6 +761,11 @@ function normalizeStreamReport(record: any): StreamReport {
 }
 
 function normalizePlan(plan: any): LearningPlan {
+  const rawStudyUnitProgress = Array.isArray(plan.study_unit_progress)
+    ? plan.study_unit_progress
+    : Array.isArray(plan.chapter_progress)
+      ? plan.chapter_progress
+      : [];
   return {
     id: plan.id,
     documentId: plan.document_id,
@@ -782,8 +787,8 @@ function normalizePlan(plan: any): LearningPlan {
       blockedScheduleCount: Number(plan.progress_summary?.blocked_schedule_count ?? 0),
       completionPercent: Number(plan.progress_summary?.completion_percent ?? 0),
     },
-    studyUnitProgress: Array.isArray(plan.study_unit_progress)
-      ? plan.study_unit_progress.map((item: any) => ({
+    studyUnitProgress: rawStudyUnitProgress
+      .map((item: any) => ({
           unitId: String(item.unit_id ?? ""),
           title: String(item.title ?? ""),
           objectiveFragment: String(item.objective_fragment ?? ""),
@@ -797,8 +802,7 @@ function normalizePlan(plan: any): LearningPlan {
           blockedScheduleCount: Number(item.blocked_schedule_count ?? 0),
           completionPercent: Number(item.completion_percent ?? 0),
           status: String(item.status ?? "planned"),
-        }))
-      : [],
+        })),
     progressEvents: Array.isArray(plan.progress_events)
       ? plan.progress_events.map((item: any) => ({
           id: String(item.id ?? ""),
@@ -901,7 +905,7 @@ function normalizeMemoryTrace(items: any[] | undefined) {
   const raw = Array.isArray(items) ? items : [];
   return raw.map((item: any) => ({
     sessionId: String(item.session_id ?? ""),
-    studyUnitId: String(item.study_unit_id ?? ""),
+    studyUnitId: String(item.study_unit_id ?? item.section_id ?? ""),
     sceneTitle: String(item.scene_title ?? ""),
     score: Number(item.score ?? 0),
     snippet: compactPreviewString(String(item.snippet ?? ""), 240),
@@ -1131,6 +1135,13 @@ function dedupeRichBlocks(items: Array<{ kind: string; content: string }>) {
 }
 
 function normalizeSession(session: any): StudySessionRecord {
+  const studyUnitId = String(session.study_unit_id ?? session.section_id ?? "");
+  const studyUnitTitle = String(session.study_unit_title ?? session.section_title ?? "");
+  const preparedStudyUnitIds = Array.isArray(session.prepared_study_unit_ids)
+    ? session.prepared_study_unit_ids
+    : Array.isArray(session.prepared_section_ids)
+      ? session.prepared_section_ids
+      : [];
   return {
     id: session.id,
     documentId: session.document_id,
@@ -1138,8 +1149,8 @@ function normalizeSession(session: any): StudySessionRecord {
     planId: session.plan_id ?? null,
     sceneInstanceId: String(session.scene_instance_id ?? ""),
     sceneProfile: normalizeSceneProfile(session.scene_profile),
-    studyUnitId: String(session.study_unit_id ?? ""),
-    studyUnitTitle: String(session.study_unit_title ?? ""),
+    studyUnitId,
+    studyUnitTitle,
     themeHint: session.theme_hint ?? "",
     sessionSystemPrompt: compactPreviewString(session.session_system_prompt ?? "", 1200),
     status: session.status,
@@ -1188,9 +1199,7 @@ function normalizeSession(session: any): StudySessionRecord {
         createdAt: turn.created_at
       };
     }),
-    preparedStudyUnitIds: Array.isArray(session.prepared_study_unit_ids)
-      ? session.prepared_study_unit_ids.map((item: unknown) => String(item))
-      : [],
+    preparedStudyUnitIds: preparedStudyUnitIds.map((item: unknown) => String(item)),
     pendingFollowUps: normalizeSessionFollowUps(session.pending_follow_ups),
     sessionMemory: normalizeSessionMemory(session.session_memory),
     affinityState: normalizeSessionAffinityState(session.affinity_state),
@@ -2125,6 +2134,8 @@ export async function createStudySession(input: {
         scene_profile: serializeSceneProfile(input.sceneProfile),
         study_unit_id: input.studyUnitId,
         study_unit_title: input.studyUnitTitle ?? "",
+        section_id: input.studyUnitId,
+        section_title: input.studyUnitTitle ?? "",
         theme_hint: input.themeHint ?? ""
       })
     })
@@ -2150,7 +2161,10 @@ export async function listStudySessions(input: {
   if (input.documentId) query.set("document_id", input.documentId);
   if (input.personaId) query.set("persona_id", input.personaId);
   if (input.planId) query.set("plan_id", input.planId);
-  if (input.studyUnitId) query.set("study_unit_id", input.studyUnitId);
+  if (input.studyUnitId) {
+    query.set("study_unit_id", input.studyUnitId);
+    query.set("section_id", input.studyUnitId);
+  }
   const suffix = query.toString();
   const payload = await readJson<{ items: any[] }>(
     await request(`${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`)
@@ -2166,6 +2180,7 @@ export async function updateStudySessionStudyUnit(input: {
   const body: Record<string, unknown> = {};
   if (typeof input.studyUnitId === "string") {
     body.study_unit_id = input.studyUnitId;
+    body.section_id = input.studyUnitId;
   }
   if (Object.prototype.hasOwnProperty.call(input, "sceneProfile")) {
     body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);

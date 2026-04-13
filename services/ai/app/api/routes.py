@@ -1250,12 +1250,14 @@ def list_study_sessions(
     persona_id: str | None = None,
     plan_id: str | None = None,
     study_unit_id: str | None = None,
+    section_id: str | None = None,
 ) -> StudySessionListResponse:
+    resolved_study_unit_id = study_unit_id or section_id
     sessions = container.study_session_service.list_sessions(
         document_id=document_id,
         persona_id=persona_id,
         plan_id=plan_id,
-        study_unit_id=study_unit_id,
+        study_unit_id=resolved_study_unit_id,
     )
     return StudySessionListResponse(
         items=[_into_response(StudySessionResponse, session) for session in sessions]

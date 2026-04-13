@@ -13,7 +13,7 @@ interface PlanHistoryProps {
   isBusy: boolean;
   onSelect: (planId: string) => void;
   onRefresh: () => void;
-  onDelete: (planId: string) => void;
+  onDelete: (planId: string) => void | Promise<void>;
 }
 
 export function PlanHistory({
@@ -26,12 +26,22 @@ export function PlanHistory({
   onDelete,
 }: PlanHistoryProps) {
   const [isExpanded, setIsExpanded] = useState(items.length <= 1);
+  const [pendingDeletePlanId, setPendingDeletePlanId] = useState("");
 
   useEffect(() => {
     if (!selectedPlanId || items.length <= 1) {
       setIsExpanded(true);
     }
   }, [items.length, selectedPlanId]);
+
+  useEffect(() => {
+    if (!pendingDeletePlanId) {
+      return;
+    }
+    if (!items.some((item) => item.id === pendingDeletePlanId)) {
+      setPendingDeletePlanId("");
+    }
+  }, [items, pendingDeletePlanId]);
 
   return (
     <section style={styles.wrap}>
@@ -96,23 +106,49 @@ export function PlanHistory({
                       <MaterialIcon name="description" size={16} />
                       <span>{selected ? "当前计划" : "查看计划"}</span>
                     </button>
-                    <button
-                      type="button"
-                      style={{
-                        ...styles.itemDeleteButton,
-                        ...(isBusy ? styles.buttonDisabled : {}),
-                      }}
-                      disabled={isBusy}
-                      onClick={() => {
-                        if (window.confirm(`确认删除计划“${item.courseTitle || item.documentTitle}”？`)) {
-                          onDelete(item.id);
-                        }
-                      }}
-                      aria-label={`删除计划 ${item.courseTitle || item.documentTitle}`}
-                      title="删除计划"
-                    >
-                      <MaterialIcon name="delete" size={16} />
-                    </button>
+                    {pendingDeletePlanId === item.id ? (
+                      <>
+                        <button
+                          type="button"
+                          style={{
+                            ...styles.confirmDeleteButton,
+                            ...(isBusy ? styles.buttonDisabled : {}),
+                          }}
+                          disabled={isBusy}
+                          onClick={async () => {
+                            await onDelete(item.id);
+                            setPendingDeletePlanId("");
+                          }}
+                        >
+                          确认删除
+                        </button>
+                        <button
+                          type="button"
+                          style={{
+                            ...styles.itemButton,
+                            ...(isBusy ? styles.buttonDisabled : {}),
+                          }}
+                          disabled={isBusy}
+                          onClick={() => setPendingDeletePlanId("")}
+                        >
+                          取消
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.itemDeleteButton,
+                          ...(isBusy ? styles.buttonDisabled : {}),
+                        }}
+                        disabled={isBusy}
+                        onClick={() => setPendingDeletePlanId(item.id)}
+                        aria-label={`删除计划 ${item.courseTitle || item.documentTitle}`}
+                        title="删除计划"
+                      >
+                        <MaterialIcon name="delete" size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -262,6 +298,18 @@ const styles: Record<string, CSSProperties> = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+  },
+  confirmDeleteButton: {
+    minHeight: 30,
+    border: "1px solid color-mix(in srgb, var(--negative) 28%, var(--border))",
+    padding: "0 10px",
+    background: "color-mix(in srgb, white 88%, var(--negative) 12%)",
+    color: "var(--negative)",
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
   },
   buttonDisabled: {
     opacity: 0.45,

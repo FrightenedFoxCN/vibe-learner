@@ -196,9 +196,7 @@ export function learningWorkspaceReducer(
         ...state,
         planHistory: upsertLearningPlan(state.planHistory, action.plan),
         selectedPlanId:
-          state.selectedPlanId === action.plan.id ? action.plan.id : state.selectedPlanId,
-        selectedPersonaId:
-          state.selectedPlanId === action.plan.id ? action.plan.personaId : state.selectedPersonaId
+          state.selectedPlanId === action.plan.id ? action.plan.id : state.selectedPlanId
       };
     case "plan_deleted":
       {
@@ -209,10 +207,6 @@ export function learningWorkspaceReducer(
           ...state,
           planHistory: nextPlanHistory,
           selectedPlanId: deletingSelectedPlan ? nextSelectedPlan?.id ?? "" : state.selectedPlanId,
-          selectedPersonaId:
-            deletingSelectedPlan && nextSelectedPlan
-              ? nextSelectedPlan.personaId
-              : state.selectedPersonaId,
           studySession: deletingSelectedPlan ? null : state.studySession,
           response: deletingSelectedPlan ? null : state.response
         };

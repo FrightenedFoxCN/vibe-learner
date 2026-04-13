@@ -301,6 +301,7 @@ class LocalJsonStore:
             for key, row in existing_rows.items():
                 if key not in incoming_keys:
                     session.delete(row)
+        self._legacy.save_list(name, items)
 
     def load_item(self, category: str, item_id: str, model: type[T]) -> T | None:
         if category in STREAM_CATEGORIES:
@@ -325,12 +326,14 @@ class LocalJsonStore:
         payload = item.model_dump(mode="json")
         if category in STREAM_CATEGORIES:
             self._save_stream_item(category, item_id, payload)
+            self._legacy.save_item(category, item_id, item)
             return
         spec = CATEGORY_SPECS[category]
         with self._db.session() as session:
             row = session.get(spec.entity, item_id) or spec.entity()
             self._apply_payload(row, payload, spec)
             session.add(row)
+        self._legacy.save_item(category, item_id, item)
 
     def load_category_items(self, category: str, model: type[T]) -> list[T]:
         if category in STREAM_CATEGORIES:
@@ -364,12 +367,14 @@ class LocalJsonStore:
                 row = session.get(StreamReportRow, self._stream_record_id(category, item_id))
                 if row is not None:
                     session.delete(row)
+            self._legacy.delete_item(category, item_id)
             return
         spec = CATEGORY_SPECS[category]
         with self._db.session() as session:
             row = session.get(spec.entity, item_id)
             if row is not None:
                 session.delete(row)
+        self._legacy.delete_item(category, item_id)
 
     def count_bucket(self, bucket: str) -> int:
         if bucket in LIST_SPECS:
@@ -396,6 +401,7 @@ class LocalJsonStore:
                         continue
                     session.delete(row)
                     removed += 1
+            self._legacy.clear_bucket(bucket, item_id=item_id)
             return removed
         if bucket in STREAM_CATEGORIES:
             with self._db.session() as session:
@@ -406,6 +412,7 @@ class LocalJsonStore:
                 for row in rows:
                     session.delete(row)
                     removed += 1
+            self._legacy.clear_bucket(bucket, item_id=item_id)
             return removed
         spec = CATEGORY_SPECS[bucket]
         with self._db.session() as session:
@@ -416,6 +423,7 @@ class LocalJsonStore:
             for row in rows:
                 session.delete(row)
                 removed += 1
+        self._legacy.clear_bucket(bucket, item_id=item_id)
         return removed
 
     def _load_stream_item(self, category: str, item_id: str, model: type[T]) -> T | None:
@@ -499,6 +507,46 @@ class LegacyLocalJsonStore:
         path = self.root / category / f"{item_id}.json"
         if path.exists():
             path.unlink()
+
+    def clear_bucket(self, bucket: str, *, item_id: str | None = None) -> int:
+        removed = 0
+        if bucket in LIST_SPECS:
+            path = self.root / f"{bucket}.json"
+            if not path.exists():
+                return 0
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, list):
+                return 0
+            if item_id is None:
+                removed = len(payload)
+                self._write_json(path, [])
+                return removed
+            spec = LIST_SPECS[bucket]
+            filtered = []
+            for item in payload:
+                key = ""
+                if isinstance(item, dict):
+                    key = str(spec.metadata_builder(item).get(spec.key_attr, ""))
+                if key == item_id:
+                    removed += 1
+                    continue
+                filtered.append(item)
+            self._write_json(path, filtered)
+            return removed
+
+        category_root = self.root / bucket
+        if not category_root.exists():
+            return 0
+        if item_id is not None:
+            path = category_root / f"{item_id}.json"
+            if path.exists():
+                path.unlink()
+                return 1
+            return 0
+        for path in category_root.glob("*.json"):
+            path.unlink()
+            removed += 1
+        return removed
 
     def _write_json(self, path: Path, payload: object) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
