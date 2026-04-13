@@ -93,6 +93,7 @@ export interface LearningPlan {
   studyUnits: StudyUnit[];
   schedule: StudyScheduleItem[];
   progressSummary: LearningPlanProgressSummary;
+  chapterProgress: LearningPlanChapterProgress[];
   progressEvents: LearningPlanProgressEvent[];
   planningQuestions: PlanningQuestion[];
   createdAt: string;
@@ -115,6 +116,20 @@ export interface LearningPlanProgressEvent {
   status: string;
   note: string;
   createdAt: string;
+}
+
+export interface LearningPlanChapterProgress {
+  unitId: string;
+  title: string;
+  objectiveFragment: string;
+  scheduleIds: string[];
+  totalScheduleCount: number;
+  completedScheduleCount: number;
+  inProgressScheduleCount: number;
+  pendingScheduleCount: number;
+  blockedScheduleCount: number;
+  completionPercent: number;
+  status: string;
 }
 
 export interface PlanningQuestion {
@@ -227,7 +242,7 @@ export interface ModelToolToggle {
 
 export interface RuntimeSettings {
   updatedAt: string;
-  planProvider: "mock" | "openai";
+  planProvider: "mock" | "litellm";
   openaiApiKey: string;
   openaiBaseUrl: string;
   openaiPlanApiKey: string;
@@ -256,7 +271,7 @@ export interface RuntimeSettings {
 }
 
 export interface RuntimeSettingsPatch {
-  planProvider?: "mock" | "openai";
+  planProvider?: "mock" | "litellm";
   openaiApiKey?: string;
   openaiBaseUrl?: string;
   openaiPlanApiKey?: string;

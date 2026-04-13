@@ -12,6 +12,7 @@ from app.models.domain import (
     DocumentSection,
     LearningGoalInput,
     LearningPlanRecord,
+    PlanChapterProgressRecord,
     PlanProgressEventRecord,
     PlanProgressSummaryRecord,
     PlanningQuestionRecord,
@@ -342,7 +343,7 @@ class LearningPlanService:
             raise HTTPException(status_code=404, detail="plan_not_found")
 
         self._save_plans(next_plans)
-        return updated_plan
+        return self._revise_answered_plan(updated_plan)
 
     def describe_progress(self, plan_id: str) -> dict[str, object]:
         plan = self.require_plan(plan_id)
@@ -359,6 +360,10 @@ class LearningPlanService:
             "objective": plan.objective,
             "creation_mode": plan.creation_mode,
             "progress_summary": plan.progress_summary.model_dump(mode="json"),
+            "chapter_progress": [
+                item.model_dump(mode="json")
+                for item in plan.chapter_progress
+            ],
             "schedule": [
                 {
                     "id": item.id,
@@ -373,6 +378,11 @@ class LearningPlanService:
             "pending_planning_questions": [
                 question.model_dump(mode="json")
                 for question in pending_questions
+            ],
+            "answered_planning_questions": [
+                question.model_dump(mode="json")
+                for question in plan.planning_questions
+                if question.status == "answered"
             ],
             "recent_progress_events": [
                 event.model_dump(mode="json")
@@ -476,6 +486,150 @@ class LearningPlanService:
             return objective
         return f"{objective[:24].rstrip()}…"
 
+    def _revise_answered_plan(self, plan: LearningPlanRecord) -> LearningPlanRecord:
+        persona = self._load_persona(plan.persona_id)
+        if persona is None:
+            return self._refresh_plan_derived_fields(plan)
+
+        document = self._load_document(plan.document_id) if plan.document_id else None
+        debug_report = (
+            self.store.load_item("document_debug", document.id, DocumentDebugRecord)
+            if document is not None
+            else None
+        )
+        goal = LearningGoalInput(
+            document_id=plan.document_id,
+            persona_id=plan.persona_id,
+            objective=plan.objective,
+            scene_profile_summary=plan.scene_profile_summary,
+            scene_profile=plan.scene_profile,
+        )
+        document_title = document.title if document is not None else self._goal_only_document_title(goal)
+
+        try:
+            model_plan = self.model_provider.generate_learning_plan(
+                persona=persona,
+                document_title=document_title,
+                goal=goal,
+                study_units=plan.study_units,
+                document_path=document.stored_path if document is not None else None,
+                debug_report=debug_report,
+                planning_questions=plan.planning_questions,
+                existing_plan=plan,
+            )
+        except RuntimeError:
+            return self._refresh_plan_derived_fields(plan)
+
+        revised_plan = self._merge_model_plan(
+            plan=plan,
+            model_plan=model_plan,
+            document=document,
+            debug_report=debug_report,
+        )
+        if model_plan.debug_trace is not None:
+            model_plan.debug_trace.plan_id = revised_plan.id
+            self.store.save_item(
+                "planning_trace",
+                document.id if document is not None else revised_plan.id,
+                model_plan.debug_trace,
+            )
+        persisted_plans = [
+            revised_plan if item.id == revised_plan.id else item
+            for item in self._load_plans()
+        ]
+        self._save_plans(persisted_plans)
+        return revised_plan
+
+    def _merge_model_plan(
+        self,
+        *,
+        plan: LearningPlanRecord,
+        model_plan,
+        document: DocumentRecord | None,
+        debug_report: DocumentDebugRecord | None,
+    ) -> LearningPlanRecord:
+        next_plan = plan.model_copy(deep=True)
+        if model_plan.revised_study_units:
+            next_plan.study_units = model_plan.revised_study_units
+            if document is not None:
+                document.study_units = model_plan.revised_study_units
+                document.study_unit_count = len(model_plan.revised_study_units)
+                document.sections = _project_sections_from_study_units(model_plan.revised_study_units)
+                if debug_report is not None:
+                    debug_report.study_units = model_plan.revised_study_units
+                    self.store.save_item("document_debug", document.id, debug_report)
+                self._persist_document(document)
+
+        valid_unit_ids = {unit.id for unit in next_plan.study_units}
+        filtered_schedule = [
+            StudyScheduleRecord(
+                id=f"schedule-{index + 1}",
+                unit_id=item.unit_id,
+                title=item.title,
+                focus=item.focus,
+                activity_type=item.activity_type,
+                status="planned",
+            )
+            for index, item in enumerate(model_plan.schedule)
+            if item.unit_id in valid_unit_ids
+        ]
+        if filtered_schedule:
+            next_plan.schedule = self._carry_over_schedule_statuses(
+                previous_schedule=next_plan.schedule,
+                next_schedule=filtered_schedule,
+            )
+        if model_plan.course_title:
+            next_plan.course_title = model_plan.course_title
+        if model_plan.overview:
+            next_plan.overview = model_plan.overview
+        if model_plan.study_chapters:
+            next_plan.study_chapters = model_plan.study_chapters
+        if model_plan.today_tasks:
+            next_plan.today_tasks = model_plan.today_tasks
+        if model_plan.planning_questions is not None:
+            next_plan.planning_questions = list(model_plan.planning_questions)
+        return self._refresh_plan_derived_fields(next_plan)
+
+    def _carry_over_schedule_statuses(
+        self,
+        *,
+        previous_schedule: list[StudyScheduleRecord],
+        next_schedule: list[StudyScheduleRecord],
+    ) -> list[StudyScheduleRecord]:
+        buckets: dict[tuple[str, str], list[StudyScheduleRecord]] = {}
+        for item in previous_schedule:
+            key = (item.unit_id, item.activity_type)
+            buckets.setdefault(key, []).append(item)
+
+        next_bucket_index: dict[tuple[str, str], int] = {}
+        result: list[StudyScheduleRecord] = []
+        for item in next_schedule:
+            key = (item.unit_id, item.activity_type)
+            index = next_bucket_index.get(key, 0)
+            previous_items = buckets.get(key, [])
+            matched = previous_items[index] if index < len(previous_items) else None
+            next_bucket_index[key] = index + 1
+            result.append(
+                item.model_copy(
+                    update={
+                        "status": matched.status if matched is not None else item.status,
+                    }
+                )
+            )
+        return result
+
+    def _load_document(self, document_id: str) -> DocumentRecord | None:
+        for document in self.store.load_list("documents", DocumentRecord):
+            if document.id == document_id:
+                return document
+        return None
+
+    def _load_persona(self, persona_id: str) -> PersonaProfile | None:
+        for persona in self.store.load_list("personas", PersonaProfile):
+            if persona.id == persona_id:
+                return persona
+        return None
+
     def _build_progress_summary(
         self,
         schedule: list[StudyScheduleRecord],
@@ -495,12 +649,70 @@ class LearningPlanService:
             completion_percent=completion_percent,
         )
 
+    def _build_chapter_progress(self, plan: LearningPlanRecord) -> list[PlanChapterProgressRecord]:
+        plannable_units = [unit for unit in plan.study_units if unit.include_in_plan] or list(plan.study_units)
+        result = []
+        for index, unit in enumerate(plannable_units):
+            related_schedule = [item for item in plan.schedule if item.unit_id == unit.id]
+            total = len(related_schedule)
+            completed = sum(1 for item in related_schedule if item.status == "completed")
+            in_progress = sum(1 for item in related_schedule if item.status == "in_progress")
+            blocked = sum(1 for item in related_schedule if item.status == "blocked")
+            pending = max(0, total - completed - in_progress - blocked)
+            if total and completed == total:
+                status = "completed"
+            elif in_progress > 0 or completed > 0:
+                status = "in_progress"
+            elif blocked > 0 and pending == 0:
+                status = "blocked"
+            else:
+                status = "planned"
+            objective_fragment = ""
+            for item in related_schedule:
+                focus = item.focus.strip()
+                if focus:
+                    objective_fragment = focus
+                    break
+            if not objective_fragment:
+                objective_fragment = unit.summary.strip()
+            if not objective_fragment:
+                objective_fragment = self._goal_only_document_title(
+                    LearningGoalInput(
+                        document_id=plan.document_id,
+                        persona_id=plan.persona_id,
+                        objective=plan.objective,
+                    )
+                )
+            title = (
+                plan.study_chapters[index].strip()
+                if index < len(plan.study_chapters) and plan.study_chapters[index].strip()
+                else unit.title
+            )
+            completion_percent = int(round((completed / total) * 100)) if total else 0
+            result.append(
+                PlanChapterProgressRecord(
+                    unit_id=unit.id,
+                    title=title,
+                    objective_fragment=objective_fragment,
+                    schedule_ids=[item.id for item in related_schedule],
+                    total_schedule_count=total,
+                    completed_schedule_count=completed,
+                    in_progress_schedule_count=in_progress,
+                    pending_schedule_count=pending,
+                    blocked_schedule_count=blocked,
+                    completion_percent=completion_percent,
+                    status=status,
+                )
+            )
+        return result
+
     def _refresh_plan_derived_fields(self, plan: LearningPlanRecord) -> LearningPlanRecord:
         creation_mode = plan.creation_mode or ("goal_only" if not plan.document_id else "document")
         return plan.model_copy(
             update={
                 "creation_mode": creation_mode,
                 "progress_summary": self._build_progress_summary(plan.schedule),
+                "chapter_progress": self._build_chapter_progress(plan),
             }
         )
 

@@ -299,7 +299,9 @@ class RuntimeSettingsService:
 
 def _normalize_plan_provider(value: Any) -> str:
     provider = str(value or "").strip().lower() or "mock"
-    if provider not in {"mock", "openai"}:
+    if provider == "openai":
+        return "litellm"
+    if provider not in {"mock", "litellm"}:
         raise ValueError("invalid_plan_provider")
     return provider
 

@@ -39,7 +39,9 @@ class Settings:
         global_api_key = os.getenv("OPENAI_API_KEY", "").strip()
         global_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         return cls(
-            plan_provider=os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock",
+            plan_provider=_normalize_plan_provider(
+                os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock"
+            ),
             openai_api_key=global_api_key,
             openai_base_url=global_base_url,
             openai_plan_api_key=(os.getenv("OPENAI_PLAN_API_KEY", "").strip() or global_api_key),
@@ -117,6 +119,15 @@ def _to_bool(value: str, *, default: bool) -> bool:
     if normalized in {"0", "false", "no", "off"}:
         return False
     return default
+
+
+def _normalize_plan_provider(value: str) -> str:
+    provider = (value or "").strip().lower() or "mock"
+    if provider == "openai":
+        return "litellm"
+    if provider not in {"mock", "litellm"}:
+        return "mock"
+    return provider
 
 
 def _load_dotenv() -> None:

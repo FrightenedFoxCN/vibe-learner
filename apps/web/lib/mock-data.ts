@@ -87,6 +87,21 @@ export const mockPlan: LearningPlan = {
     blockedScheduleCount: 0,
     completionPercent: 0
   },
+  chapterProgress: [
+    {
+      unitId: "doc-1:study-unit:1",
+      title: "力学导论：概念定义",
+      objectiveFragment: "完成力学导论的首轮理解，标出定义、定理与例子。",
+      scheduleIds: ["schedule-1"],
+      totalScheduleCount: 1,
+      completedScheduleCount: 0,
+      inProgressScheduleCount: 0,
+      pendingScheduleCount: 1,
+      blockedScheduleCount: 0,
+      completionPercent: 0,
+      status: "planned"
+    }
+  ],
   progressEvents: [],
   planningQuestions: [],
   createdAt: "2026-04-09T00:00:00+00:00"

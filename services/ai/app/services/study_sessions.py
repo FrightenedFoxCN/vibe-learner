@@ -88,6 +88,7 @@ class StudySessionService:
         scene_profile: SceneProfileRecord | None = None,
         has_scene_profile: bool = False,
         section_title: str | None = None,
+        theme_hint: str | None = None,
         session_system_prompt: str | None = None,
     ) -> StudySessionRecord:
         sessions = self._load_sessions()
@@ -100,6 +101,8 @@ class StudySessionService:
             session.scene_profile = scene_profile
         if section_title is not None:
             session.section_title = section_title
+        if theme_hint is not None:
+            session.theme_hint = theme_hint
         if session_system_prompt is not None:
             session.session_system_prompt = session_system_prompt
         session.updated_at = _now()

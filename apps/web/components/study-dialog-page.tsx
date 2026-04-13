@@ -277,9 +277,9 @@ export function StudyDialogPage() {
             type="button"
             style={{
               ...styles.createBtn,
-              ...(isBusy || !activePlan || !activeDocument ? styles.createBtnDisabled : {})
+              ...(isBusy || !activePlan ? styles.createBtnDisabled : {})
             }}
-            disabled={isBusy || !activePlan || !activeDocument}
+            disabled={isBusy || !activePlan}
             onClick={() => { void createSessionForActivePlan(); }}
           >
             {isBusy ? "创建中…" : "创建会话"}
@@ -347,7 +347,11 @@ export function StudyDialogPage() {
           </button>
         )
       ) : (
-        <div style={styles.emptyDock}>请先在计划页完成教材上传并生成学习计划。</div>
+        <div style={styles.emptyDock}>
+          {activePlan
+            ? "当前计划未关联教材，可直接围绕章节目标展开对话。"
+            : "请先在计划页完成教材上传或目标计划生成。"}
+        </div>
       )}
     </main>
   );

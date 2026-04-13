@@ -357,6 +357,20 @@ class PlanningQuestionRecord(BaseModel):
     answered_at: str = ""
 
 
+class PlanChapterProgressRecord(BaseModel):
+    unit_id: str
+    title: str
+    objective_fragment: str = ""
+    schedule_ids: list[str] = Field(default_factory=list)
+    total_schedule_count: int = 0
+    completed_schedule_count: int = 0
+    in_progress_schedule_count: int = 0
+    pending_schedule_count: int = 0
+    blocked_schedule_count: int = 0
+    completion_percent: int = 0
+    status: str = "planned"
+
+
 class LearningPlanRecord(BaseModel):
     id: str
     document_id: str
@@ -386,6 +400,7 @@ class LearningPlanRecord(BaseModel):
     study_units: list[StudyUnitRecord] = []
     schedule: list[StudyScheduleRecord] = []
     progress_summary: PlanProgressSummaryRecord = Field(default_factory=PlanProgressSummaryRecord)
+    chapter_progress: list[PlanChapterProgressRecord] = Field(default_factory=list)
     progress_events: list[PlanProgressEventRecord] = Field(default_factory=list)
     planning_questions: list[PlanningQuestionRecord] = Field(default_factory=list)
     created_at: str

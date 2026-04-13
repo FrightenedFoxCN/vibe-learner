@@ -54,7 +54,7 @@ export function SettingsHeader() {
     <header style={styles.header}>
       <h1 style={styles.title}>统一设置</h1>
       <p style={styles.subtitle}>
-        统一管理默认连接、分场景模型和运行开关。页面会自动保存，模型能力可以单独拉取并回填，减少多模态和联网配置与事实不一致的情况。
+        统一管理 LiteLLM 接入、分场景模型和运行开关。页面会自动保存，模型能力可以单独拉取并回填，减少多模态和联网配置与事实不一致的情况。
       </p>
     </header>
   );
@@ -70,7 +70,7 @@ export function ProviderCard({
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>运行提供器</h2>
-      <p style={styles.cardDescription}>“本地模拟”适合稳定调试，“OpenAI 兼容接口”会启用真实模型连接和下方的分场景配置。</p>
+      <p style={styles.cardDescription}>“本地模拟”适合稳定调试，“LiteLLM SDK”则直接走 LiteLLM Python SDK，可直连带 provider 前缀的模型，也可接入 LiteLLM Proxy 等 OpenAI 兼容网关。</p>
       <label style={styles.field}>
         <span style={styles.label}>模型接口协议</span>
         <select
@@ -78,12 +78,12 @@ export function ProviderCard({
           onChange={(event) =>
             controller.setSettingField(
               "planProvider",
-              (event.target.value === "openai" ? "openai" : "mock") as RuntimeSettings["planProvider"]
+              (event.target.value === "litellm" ? "litellm" : "mock") as RuntimeSettings["planProvider"]
             )
           }
         >
           <option value="mock">本地模拟</option>
-          <option value="openai">OpenAI 兼容接口</option>
+          <option value="litellm">LiteLLM SDK</option>
         </select>
       </label>
     </section>
@@ -101,7 +101,7 @@ export function ConnectionModelsCard({
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>连接与模型分配</h2>
       <p style={styles.cardDescription}>
-        默认连接会作为各个场景的回退来源。每个场景都可以单独覆盖密钥、地址和模型，并按需拉取对应连接下的模型列表与能力元信息。
+        默认连接会作为各个场景的回退来源。这里既可以填 LiteLLM Proxy，也可以填 LiteLLM SDK 可访问的上游地址；但“拉取模型/能力”当前仍优先依赖 `/models` 兼容响应，若上游不提供该接口，可直接手填模型名。
       </p>
 
       <div style={styles.subCard}>
@@ -125,7 +125,7 @@ export function ConnectionModelsCard({
           <input
             value={settings.openaiBaseUrl}
             onChange={(event) => controller.setSettingField("openaiBaseUrl", event.target.value)}
-            placeholder="https://api.openai.com/v1"
+            placeholder="http://127.0.0.1:4000"
           />
         </label>
         <div style={styles.probeRow}>

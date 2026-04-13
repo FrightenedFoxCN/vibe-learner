@@ -17,7 +17,7 @@
 1. 启动前端：在仓库根目录执行 npm run dev:web。
 2. 启动后端：在 services/ai 目录执行 uv run uvicorn app.main:app --reload。
 3. 默认前端会访问 http://127.0.0.1:8000。
-4. 若计划使用真实模型，先在 services/ai/.env 配置 openai 相关变量。
+4. 若计划使用真实模型，先在 services/ai/.env 配置 litellm 相关变量。
 
 ### 1.0.1 项目现有依赖项速览
 
@@ -30,6 +30,7 @@ JavaScript / TypeScript：
 Python：
 
 - fastapi
+- litellm
 - PyMuPDF
 - pydantic
 - python-multipart
@@ -75,13 +76,14 @@ Python：
 
 - 分场景 API Key（plan/setting/chat）留空 -> 回退全局 openai_api_key。
 - 分场景 Base URL（plan/setting/chat）留空 -> 回退全局 openai_base_url。
-- 运行 provider 若设为 openai 但缺少有效 key，后端会回退到 mock provider。
+- 运行 provider 若设为 litellm 但缺少有效 key，后端会回退到 mock provider。
 
 ### F. 模型探测与持久化的关系
 
 - 设置页中的 拉取模型与能力 会调用 /runtime-settings/check-openai-models。
 - 该探测请求本身不改配置文件，只返回可用模型与能力信息。
 - 只有真正修改设置字段并保存（例如模型名、能力开关）才会持久化。
+- 若当前是 LiteLLM SDK 直连而上游没有提供 `/models` 兼容接口，则模型探测可能为空，此时直接手填模型名即可。
 
 ### G. 如何强制重新以 .env 为准
 
@@ -517,7 +519,7 @@ D. 层级节点复用
 
 - 模型接口协议选择
   - 本地模拟
-  - OpenAI 兼容接口
+  - LiteLLM SDK
 
 ### 3.7.3 连接与模型分配卡（ConnectionModelsCard）
 
@@ -657,4 +659,4 @@ C. 全局超时
 - Study Unit：从教材结构清洗后的学习单元。
 - Scene：场景设定，支持层级与复用节点。
 - Character Event：结构化角色表现事件，用于驱动前端角色层。
-- Plan Provider：学习计划生成提供器（mock 或 openai）。
+- Plan Provider：学习计划生成提供器（mock 或 litellm）。

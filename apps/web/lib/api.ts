@@ -630,7 +630,7 @@ function normalizeModelToolConfig(record: any): ModelToolConfig {
 function normalizeRuntimeSettings(record: any): RuntimeSettings {
   return {
     updatedAt: String(record.updated_at ?? ""),
-    planProvider: (record.plan_provider === "openai" ? "openai" : "mock") as "mock" | "openai",
+    planProvider: (record.plan_provider === "mock" ? "mock" : "litellm") as "mock" | "litellm",
     openaiApiKey: String(record.openai_api_key ?? ""),
     openaiBaseUrl: String(record.openai_base_url ?? "https://api.openai.com/v1"),
     openaiPlanApiKey: String(record.openai_plan_api_key ?? ""),
@@ -715,6 +715,23 @@ function normalizePlan(plan: any): LearningPlan {
       blockedScheduleCount: Number(plan.progress_summary?.blocked_schedule_count ?? 0),
       completionPercent: Number(plan.progress_summary?.completion_percent ?? 0),
     },
+    chapterProgress: Array.isArray(plan.chapter_progress)
+      ? plan.chapter_progress.map((item: any) => ({
+          unitId: String(item.unit_id ?? ""),
+          title: String(item.title ?? ""),
+          objectiveFragment: String(item.objective_fragment ?? ""),
+          scheduleIds: Array.isArray(item.schedule_ids)
+            ? item.schedule_ids.map((entry: unknown) => String(entry))
+            : [],
+          totalScheduleCount: Number(item.total_schedule_count ?? 0),
+          completedScheduleCount: Number(item.completed_schedule_count ?? 0),
+          inProgressScheduleCount: Number(item.in_progress_schedule_count ?? 0),
+          pendingScheduleCount: Number(item.pending_schedule_count ?? 0),
+          blockedScheduleCount: Number(item.blocked_schedule_count ?? 0),
+          completionPercent: Number(item.completion_percent ?? 0),
+          status: String(item.status ?? "planned"),
+        }))
+      : [],
     progressEvents: Array.isArray(plan.progress_events)
       ? plan.progress_events.map((item: any) => ({
           id: String(item.id ?? ""),

@@ -8,13 +8,15 @@
 
 ## Runtime Configuration
 
-When `VIBE_LEARNER_PLAN_PROVIDER=openai`, chat/planning behavior is affected by these env vars:
+When `VIBE_LEARNER_PLAN_PROVIDER=litellm`, chat/planning behavior is driven by LiteLLM Python SDK and affected by these env vars:
 
 - `OPENAI_EMBEDDING_MODEL`: embedding model used by cross-session memory retrieval (for example `text-embedding-3-small`).
 
 Tool enablement is now managed by `ModelToolConfig` (`GET/PATCH /model-tools/config`) and no longer uses runtime env toggles.
 
 If embeddings are unavailable, the backend falls back to local hashed-vector retrieval.
+
+`POST /runtime-settings/check-openai-models` still probes an OpenAI-compatible `/models` endpoint. LiteLLM SDK direct connections can be used for real inference even when this probe cannot enumerate models.
 
 ## Response Conventions
 

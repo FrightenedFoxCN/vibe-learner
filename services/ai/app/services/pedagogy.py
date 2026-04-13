@@ -7,6 +7,7 @@ from app.models.domain import (
     DialogueTurnRecord,
     DocumentDebugRecord,
     ExerciseResult,
+    LearningPlanRecord,
     PersonaProfile,
     PersonaSlotTraceRecord,
     StudyChatResult,
@@ -34,6 +35,9 @@ class PedagogyOrchestrator:
         persona: PersonaProfile,
         message: str,
         section_id: str,
+        section_title: str = "",
+        theme_hint: str = "",
+        active_plan: LearningPlanRecord | None = None,
         session_system_prompt: str = "",
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
@@ -46,7 +50,13 @@ class PedagogyOrchestrator:
         scene_tool_runtime=None,
     ) -> StudyChatResult:
         turns = previous_turns or []
-        section_context = _build_section_context(debug_report=debug_report, section_id=section_id)
+        section_context = _build_section_context(
+            debug_report=debug_report,
+            section_id=section_id,
+            section_title=section_title,
+            theme_hint=theme_hint,
+            active_plan=active_plan,
+        )
         conversation_history = _build_conversation_history(turns)
         memory_hits = retrieve_memory_hits(
             sessions=memory_sessions or [],
@@ -77,6 +87,7 @@ class PedagogyOrchestrator:
         citations = _build_grounded_citations(
             debug_report=debug_report,
             section_id=section_id,
+            section_title=section_title,
             message=message,
         )
         turn_index = len(turns)
@@ -189,25 +200,37 @@ def _build_scene_hint(*, section_id: str, citations: list[Citation]) -> str:
     return f"study_session:{section_id}:p{start}-{end}"
 
 
-def _build_section_context(*, debug_report: DocumentDebugRecord | None, section_id: str) -> str:
+def _build_section_context(
+    *,
+    debug_report: DocumentDebugRecord | None,
+    section_id: str,
+    section_title: str = "",
+    theme_hint: str = "",
+    active_plan: LearningPlanRecord | None = None,
+) -> str:
     if debug_report is None:
-        return f"Section ID: {section_id}"
+        return _build_goal_only_section_context(
+            section_id=section_id,
+            section_title=section_title,
+            theme_hint=theme_hint,
+            active_plan=active_plan,
+        )
 
-    section_title = section_id
+    resolved_section_title = section_title or section_id
     page_start = 0
     page_end = 0
     related_ids = {section_id}
 
     study_unit = next((unit for unit in debug_report.study_units if unit.id == section_id), None)
     if study_unit is not None:
-        section_title = study_unit.title
+        resolved_section_title = study_unit.title
         page_start = study_unit.page_start
         page_end = study_unit.page_end
         related_ids.update(study_unit.source_section_ids)
 
     parsed_section = next((section for section in debug_report.sections if section.id == section_id), None)
-    if parsed_section is not None and section_title == section_id:
-        section_title = parsed_section.title
+    if parsed_section is not None and resolved_section_title == section_id:
+        resolved_section_title = parsed_section.title
         page_start = parsed_section.page_start
         page_end = parsed_section.page_end
 
@@ -229,25 +252,72 @@ def _build_section_context(*, debug_report: DocumentDebugRecord | None, section_
     ]
     excerpt_text = "\n".join(f"- {line}" for line in excerpts)
     if excerpt_text:
-        return (
-            f"章节：{section_title} ({section_id})\n"
-            f"页码：{page_start}-{page_end}\n"
-            f"教材摘录：\n{excerpt_text}"
+        parts = [
+            f"章节：{resolved_section_title} ({section_id})",
+            f"页码：{page_start}-{page_end}",
+        ]
+        if theme_hint.strip():
+            parts.append(f"当前主题：{theme_hint.strip()}")
+        if active_plan is not None and active_plan.objective.strip():
+            parts.append(f"学习目标：{active_plan.objective.strip()}")
+        parts.append(f"教材摘录：\n{excerpt_text}")
+        return "\n".join(parts)
+    parts = [f"章节：{resolved_section_title} ({section_id})", f"页码：{page_start}-{page_end}"]
+    if theme_hint.strip():
+        parts.append(f"当前主题：{theme_hint.strip()}")
+    if active_plan is not None and active_plan.objective.strip():
+        parts.append(f"学习目标：{active_plan.objective.strip()}")
+    return "\n".join(parts)
+
+
+def _build_goal_only_section_context(
+    *,
+    section_id: str,
+    section_title: str,
+    theme_hint: str,
+    active_plan: LearningPlanRecord | None,
+) -> str:
+    resolved_title = section_title.strip() or section_id
+    parts = [f"章节：{resolved_title} ({section_id})"]
+    if active_plan is not None:
+        parts.append(f"计划模式：{active_plan.creation_mode}")
+        if active_plan.objective.strip():
+            parts.append(f"学习目标：{active_plan.objective.strip()}")
+        matching_unit = next(
+            (
+                unit
+                for unit in active_plan.study_units
+                if unit.id == section_id or section_id in unit.source_section_ids
+            ),
+            None,
         )
-    return f"章节：{section_title} ({section_id})\n页码：{page_start}-{page_end}"
+        if theme_hint.strip():
+            parts.append(f"当前主题：{theme_hint.strip()}")
+        if matching_unit is not None and matching_unit.summary.strip():
+            parts.append(f"阶段摘要：{matching_unit.summary.strip()}")
+        chapter_progress = next(
+            (item for item in active_plan.chapter_progress if item.unit_id == section_id),
+            None,
+        )
+        if chapter_progress is not None and chapter_progress.objective_fragment.strip():
+            parts.append(f"章节目标：{chapter_progress.objective_fragment.strip()}")
+    elif theme_hint.strip():
+        parts.append(f"当前主题：{theme_hint.strip()}")
+    return "\n".join(parts)
 
 
 def _build_grounded_citations(
     *,
     debug_report: DocumentDebugRecord | None,
     section_id: str,
+    section_title: str,
     message: str,
 ) -> list[Citation]:
     if debug_report is None:
         return [
             Citation(
                 section_id=section_id,
-                title=section_id,
+                title=section_title or section_id,
                 page_start=1,
                 page_end=1,
             )

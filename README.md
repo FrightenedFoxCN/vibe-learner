@@ -2,11 +2,13 @@
 
 一个以本地优先（local-first）为核心、支持人格化教学体验的学习系统。项目面向「教材上传 -> 解析 -> 学习计划生成 -> 章节对话学习 -> 追踪」的完整闭环，采用前后端分离的 Monorepo 结构，便于持续迭代与调试。
 
+Warning: still under heavy development. See [TODO.md](./TODO.md) for more information.
+
 ## 项目目标
 
 - 把原始教材（PDF）转成可学习、可追踪的结构化内容。
 - 用可配置的人格角色（Persona）和环境场景（Scene）提供更具氛围感的学习陪伴。
-- 支持稳定的本地 mock 流程，也支持接入 OpenAI 兼容模型进行真实计划生成与对话。
+- 支持稳定的本地 mock 流程，也支持通过 LiteLLM Python SDK 接入更多模型进行真实计划生成与对话。
 - 为研发与提示词迭代提供可视化调试控制台与过程留痕。
 
 ## 核心能力
@@ -18,7 +20,7 @@
 - 学习计划生成
 	- 基于清洗后的学习单元生成 Learning Plan。
 	- 支持流式计划输出与 planning trace 持久化。
-	- 可在 mock/openai 两种 provider 间切换。
+	- 可在 mock/litellm 两种 provider 间切换。
 - 学习会话与角色交互
 	- 发起 Study Session 并进行章节学习对话。
 	- 返回结构化 Character Event，驱动前端角色表现层。
@@ -176,18 +178,20 @@ VIBE_LEARNER_PLAN_PROVIDER=mock
 
 使用内置 deterministic planner，便于联调与回归测试。
 
-### 方案 B：接入 OpenAI 兼容模型
+### 方案 B：接入 LiteLLM SDK
 
 ```bash
-VIBE_LEARNER_PLAN_PROVIDER=openai
+VIBE_LEARNER_PLAN_PROVIDER=litellm
 OPENAI_API_KEY=sk-...
-OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_BASE_URL=http://127.0.0.1:4000
 OPENAI_PLAN_MODEL=gpt-4.1-mini
 OPENAI_SETTING_MODEL=gpt-4.1-mini
 OPENAI_CHAT_MODEL=gpt-4.1-mini
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_TIMEOUT_SECONDS=30
 ```
+
+当前真实模型调用已经切到 LiteLLM Python SDK。最简单的做法仍然是把 LiteLLM Proxy 当统一网关；如果你要直连其他 provider / proxy server，也可以直接在模型名里使用 LiteLLM 的 provider 前缀，并按需覆盖对应 `OPENAI_*_BASE_URL`。需要注意：设置页的模型探测目前仍基于 `/models` 兼容接口，直连某些上游时可能需要手填模型名。
 
 常见可选项（按需开启）：
 
@@ -288,16 +292,16 @@ npm run test:ai      # 运行后端测试（unittest）
 - 检查后端是否运行在 `http://127.0.0.1:8000`。
 - 若后端地址不同，设置 `NEXT_PUBLIC_AI_BASE_URL` 后重启前端。
 
-### 2) OpenAI 兼容网关返回内容异常或 `chat_model_invalid_payload`
+### 2) LiteLLM 上游返回内容异常或 `chat_model_invalid_payload`
 
 - 先提高 `OPENAI_CHAT_MAX_TOKENS`（例如 1600 或 2400）。
-- 再检查网关是否完整兼容 `/chat/completions` 响应格式。
+- 再检查当前上游或代理的输出是否能被 LiteLLM 稳定映射到 OpenAI Chat Completions 结构。
 - 同时确认 `OPENAI_TIMEOUT_SECONDS` 是否足够。
 
 ### 3) 计划结果看起来不稳定
 
 - 先用 `VIBE_LEARNER_PLAN_PROVIDER=mock` 做链路验证。
-- 再切换到 `openai` 比较差异，结合 trace 定位提示词或模型参数问题。
+- 再切换到 `litellm` 比较差异，结合 trace 定位提示词、模型参数或上游兼容性问题。
 
 ## 贡献建议
 

@@ -63,6 +63,14 @@ from app.services.session_scene import SessionSceneService
 from app.services.study_sessions import StudySessionService
 
 
+class FakeLiteLLMResult:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+
+    def model_dump(self, mode: str = "json") -> dict[str, object]:
+        return self.payload
+
+
 class PersonaPipelineTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
@@ -225,22 +233,9 @@ class PersonaPipelineTests(unittest.TestCase):
             timeout_seconds=3,
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]) -> None:
-                self.payload = payload
-
-            def read(self) -> bytes:
-                return json.dumps(self.payload).encode("utf-8")
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
         with patch(
-            "urllib.request.urlopen",
-            return_value=FakeResponse(
+            "app.services.model_provider.litellm_responses",
+            return_value=FakeLiteLLMResult(
                 {
                     "output": [
                         {
@@ -272,16 +267,16 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-        ) as mocked_urlopen:
+        ) as mocked_responses:
             result = provider.generate_persona_cards_from_keywords(
                 keywords="侦探导师, 冷静推理",
                 count=5,
             )
 
-        request = mocked_urlopen.call_args.args[0]
-        self.assertTrue(request.full_url.endswith("/responses"))
-        payload = json.loads(request.data.decode("utf-8"))
-        self.assertEqual(payload["model"], "gpt-setting-test")
+        payload = mocked_responses.call_args.kwargs
+        self.assertEqual(payload["model"], "openai/gpt-setting-test")
+        self.assertEqual(payload["api_base"], "https://api.openai.test/v1")
+        self.assertEqual(payload["api_key"], "test-key")
         self.assertEqual(payload["tools"][0]["type"], "web_search")
         self.assertIn("侦探导师, 冷静推理", payload["input"])
         self.assertTrue(result["used_web_search"])
@@ -299,22 +294,9 @@ class PersonaPipelineTests(unittest.TestCase):
             timeout_seconds=3,
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]) -> None:
-                self.payload = payload
-
-            def read(self) -> bytes:
-                return json.dumps(self.payload).encode("utf-8")
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
         with patch(
-            "urllib.request.urlopen",
-            return_value=FakeResponse(
+            "app.services.model_provider.litellm_completion",
+            return_value=FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -340,18 +322,75 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-        ) as mocked_urlopen:
+        ) as mocked_completion:
             result = provider.generate_persona_cards_from_keywords(
                 keywords="学院派导师",
                 count=4,
             )
 
-        request = mocked_urlopen.call_args.args[0]
-        self.assertTrue(request.full_url.endswith("/chat/completions"))
-        payload = json.loads(request.data.decode("utf-8"))
+        payload = mocked_completion.call_args.kwargs
         self.assertNotIn("tools", payload)
+        self.assertEqual(payload["api_base"], "https://api.openai.test/v1")
+        self.assertEqual(payload["api_key"], "test-key")
         self.assertFalse(result["used_web_search"])
         self.assertEqual(result["summary"], "由关键词直接生成的导学人格。")
+
+    def test_openai_provider_keyword_card_generation_falls_back_when_web_search_request_is_rejected(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            setting_model="gpt-setting-test",
+            timeout_seconds=3,
+        )
+
+        with (
+            patch.object(
+                provider,
+                "_request_openai_response",
+                side_effect=RuntimeError("openai_setting_request_failed:400:BadRequestError"),
+            ),
+            patch.object(
+                provider,
+                "_request_openai_chat_completion",
+                return_value=(
+                    {
+                        "choices": [
+                            {
+                                "message": {
+                                    "content": json.dumps(
+                                        {
+                                            "summary": "回退到纯模型生成的人格草稿。",
+                                            "relationship": "分析型导师",
+                                            "learner_address": "同学",
+                                            "cards": [
+                                                {
+                                                    "title": "结构化引导",
+                                                    "kind": "teaching_method",
+                                                    "label": "教学方法",
+                                                    "content": "先整理线索，再组织解释顺序。",
+                                                }
+                                            ],
+                                        },
+                                        ensure_ascii=False,
+                                    )
+                                }
+                            }
+                        ]
+                    },
+                    0,
+                ),
+            ) as mocked_completion,
+        ):
+            result = provider.generate_persona_cards_from_keywords(
+                keywords="侦探导师, 冷静推理",
+                count=4,
+            )
+
+        payload = mocked_completion.call_args.kwargs
+        self.assertEqual(payload["model"], "gpt-setting-test")
+        self.assertFalse(result["used_web_search"])
+        self.assertEqual(result["relationship"], "分析型导师")
 
     def test_persona_card_generate_request_allows_missing_count(self) -> None:
         request = PersonaCardGenerateRequest(mode="keywords", input_text="学院派导师, 冷静推理")
@@ -375,22 +414,9 @@ class PersonaPipelineTests(unittest.TestCase):
             timeout_seconds=3,
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]) -> None:
-                self.payload = payload
-
-            def read(self) -> bytes:
-                return json.dumps(self.payload).encode("utf-8")
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
         with patch(
-            "urllib.request.urlopen",
-            return_value=FakeResponse(
+            "app.services.model_provider.litellm_responses",
+            return_value=FakeLiteLLMResult(
                 {
                     "output": [
                         {
@@ -420,14 +446,13 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-        ) as mocked_urlopen:
+        ) as mocked_responses:
             provider.generate_persona_cards_from_keywords(
                 keywords="侦探导师, 冷静推理",
                 count=None,
             )
 
-        request = mocked_urlopen.call_args.args[0]
-        payload = json.loads(request.data.decode("utf-8"))
+        payload = mocked_responses.call_args.kwargs
         self.assertIn("card_count_hint: 未指定", payload["input"])
         self.assertIn("只是数量偏好", payload["instructions"])
 
@@ -734,37 +759,27 @@ class PersonaPipelineTests(unittest.TestCase):
 
         captured_payloads: list[dict[str, object]] = []
 
-        class FakeResponse:
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(
-                    {
-                        "choices": [
-                            {
-                                "message": {
-                                    "content": json.dumps(
-                                        {
-                                            "text": "这是一个结构化回答。",
-                                            "mood": "calm",
-                                            "action": "point",
-                                        }
-                                    )
-                                }
+        def fake_completion(**kwargs):
+            captured_payloads.append(kwargs)
+            return FakeLiteLLMResult(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "text": "这是一个结构化回答。",
+                                        "mood": "calm",
+                                        "action": "point",
+                                    }
+                                )
                             }
-                        ]
-                    }
-                ).encode("utf-8")
+                        }
+                    ]
+                }
+            )
 
-        def fake_urlopen(request, timeout=0):
-            captured_payloads.append(json.loads(request.data.decode("utf-8")))
-            return FakeResponse()
-
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("app.services.model_provider.litellm_completion", side_effect=fake_completion):
             reply = provider.generate_chat(
                 persona=self.persona_engine.require_persona("mentor-aurora"),
                 section_id="chapter-1",
@@ -787,22 +802,8 @@ class PersonaPipelineTests(unittest.TestCase):
             timeout_seconds=3,
         )
         captured_payloads: list[dict[str, object]] = []
-
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]):
-                self.payload = payload
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
         responses = [
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -823,7 +824,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -842,11 +843,11 @@ class PersonaPipelineTests(unittest.TestCase):
             ),
         ]
 
-        def fake_urlopen(request, timeout=0):
-            captured_payloads.append(json.loads(request.data.decode("utf-8")))
+        def fake_completion(**kwargs):
+            captured_payloads.append(kwargs)
             return responses.pop(0)
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("app.services.model_provider.litellm_completion", side_effect=fake_completion):
             reply = provider.generate_chat(
                 persona=self.persona_engine.require_persona("mentor-aurora"),
                 section_id="chapter-1",
@@ -946,22 +947,8 @@ class PersonaPipelineTests(unittest.TestCase):
         )
         assert bound_scene is not None
         scene_tool_runtime = self.session_scene_service.build_tool_runtime(bound_scene.scene_instance_id)
-
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]):
-                self.payload = payload
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
         responses = [
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -982,7 +969,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -1003,7 +990,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -1022,11 +1009,11 @@ class PersonaPipelineTests(unittest.TestCase):
             ),
         ]
 
-        def fake_urlopen(request, timeout=0):
-            captured_payloads.append(json.loads(request.data.decode("utf-8")))
+        def fake_completion(**kwargs):
+            captured_payloads.append(kwargs)
             return responses.pop(0)
 
-        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+        with patch("app.services.model_provider.litellm_completion", side_effect=fake_completion):
             reply = provider.generate_chat(
                 persona=self.persona_engine.require_persona("mentor-aurora"),
                 section_id="chapter-1",
@@ -1979,42 +1966,35 @@ class PersonaPipelineTests(unittest.TestCase):
             timeout_seconds=3,
         )
 
-        class FakeResponse:
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(
-                    {
-                        "choices": [
-                            {
-                                "message": {
-                                    "content": json.dumps(
-                                        {
-                                            "course_title": "Discrete Mathematics / Chapter 1 Foundations",
-                                            "overview": "LLM plan overview",
-                                            "study_chapters": ["Chapter 1 Foundations"],
-                                            "today_tasks": ["Read Chapter 1 carefully."],
-                                            "schedule": [
-                                                {
-                                                    "unit_id": "unit-1",
-                                                    "title": "Chapter 1 Foundations 精读",
-                                                    "focus": "理解定义与例题。",
-                                                    "activity_type": "learn",
-                                                }
-                                            ],
-                                        }
-                                    )
-                                }
+        with patch(
+            "app.services.model_provider.litellm_completion",
+            return_value=FakeLiteLLMResult(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "course_title": "Discrete Mathematics / Chapter 1 Foundations",
+                                        "overview": "LLM plan overview",
+                                        "study_chapters": ["Chapter 1 Foundations"],
+                                        "today_tasks": ["Read Chapter 1 carefully."],
+                                        "schedule": [
+                                            {
+                                                "unit_id": "unit-1",
+                                                "title": "Chapter 1 Foundations 精读",
+                                                "focus": "理解定义与例题。",
+                                                "activity_type": "learn",
+                                            }
+                                        ],
+                                    }
+                                )
                             }
-                        ]
-                    }
-                ).encode("utf-8")
-
-        with patch("urllib.request.urlopen", return_value=FakeResponse()) as mocked_urlopen:
+                        }
+                    ]
+                }
+            ),
+        ) as mocked_completion:
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -2032,9 +2012,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 ],
             )
 
-        request = mocked_urlopen.call_args.args[0]
-        payload = json.loads(request.data.decode("utf-8"))
-        self.assertEqual(payload["model"], "gpt-test")
+        payload = mocked_completion.call_args.kwargs
+        self.assertEqual(payload["model"], "openai/gpt-test")
         self.assertEqual(reply.course_title, "Discrete Mathematics / Chapter 1 Foundations")
         self.assertEqual(reply.overview, "LLM plan overview")
         self.assertEqual(reply.schedule[0].unit_id, "unit-1")
@@ -2099,21 +2078,8 @@ class PersonaPipelineTests(unittest.TestCase):
             }
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]):
-                self.payload = payload
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
         responses = [
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2154,7 +2120,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2184,7 +2150,7 @@ class PersonaPipelineTests(unittest.TestCase):
         ]
         progress_events: list[tuple[str, dict[str, object]]] = []
 
-        with patch("urllib.request.urlopen", side_effect=responses) as mocked_urlopen:
+        with patch("app.services.model_provider.litellm_completion", side_effect=responses) as mocked_completion:
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -2204,8 +2170,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 debug_report=debug_report,
             )
 
-        first_payload = json.loads(mocked_urlopen.call_args_list[0].args[0].data.decode("utf-8"))
-        second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
+        first_payload = mocked_completion.call_args_list[0].kwargs
+        second_payload = mocked_completion.call_args_list[1].kwargs
         self.assertIn("tools", first_payload)
         self.assertIn(
             "get_study_unit_detail",
@@ -2283,21 +2249,8 @@ class PersonaPipelineTests(unittest.TestCase):
             }
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]):
-                self.payload = payload
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
         responses = [
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2325,7 +2278,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2337,7 +2290,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2367,7 +2320,7 @@ class PersonaPipelineTests(unittest.TestCase):
         ]
         progress_events: list[tuple[str, dict[str, object]]] = []
 
-        with patch("urllib.request.urlopen", side_effect=responses) as mocked_urlopen:
+        with patch("app.services.model_provider.litellm_completion", side_effect=responses) as mocked_completion:
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -2388,8 +2341,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 progress_callback=lambda stage, payload: progress_events.append((stage, payload)),
             )
 
-        second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
-        third_payload = json.loads(mocked_urlopen.call_args_list[2].args[0].data.decode("utf-8"))
+        second_payload = mocked_completion.call_args_list[1].kwargs
+        third_payload = mocked_completion.call_args_list[2].kwargs
         started_round_indexes = [
             int(payload["round_index"])
             for stage, payload in progress_events
@@ -2450,21 +2403,8 @@ class PersonaPipelineTests(unittest.TestCase):
             }
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]):
-                self.payload = payload
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
         responses = [
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2500,7 +2440,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2528,7 +2468,7 @@ class PersonaPipelineTests(unittest.TestCase):
             ),
         ]
 
-        with patch("urllib.request.urlopen", side_effect=responses):
+        with patch("app.services.model_provider.litellm_completion", side_effect=responses):
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -2569,21 +2509,8 @@ class PersonaPipelineTests(unittest.TestCase):
             multimodal_enabled=True,
         )
 
-        class FakeResponse:
-            def __init__(self, payload: dict[str, object]):
-                self.payload = payload
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                return False
-
-            def read(self):
-                return json.dumps(self.payload).encode("utf-8")
-
         responses = [
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2610,7 +2537,7 @@ class PersonaPipelineTests(unittest.TestCase):
                     ]
                 }
             ),
-            FakeResponse(
+            FakeLiteLLMResult(
                 {
                     "choices": [
                         {
@@ -2639,7 +2566,7 @@ class PersonaPipelineTests(unittest.TestCase):
         ]
 
         with (
-            patch("urllib.request.urlopen", side_effect=responses) as mocked_urlopen,
+            patch("app.services.model_provider.litellm_completion", side_effect=responses) as mocked_completion,
             patch(
                 "app.services.plan_tool_runtime.read_page_range_images",
                 return_value={
@@ -2674,8 +2601,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 document_path="/tmp/physics.pdf",
             )
 
-        first_payload = json.loads(mocked_urlopen.call_args_list[0].args[0].data.decode("utf-8"))
-        second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
+        first_payload = mocked_completion.call_args_list[0].kwargs
+        second_payload = mocked_completion.call_args_list[1].kwargs
         self.assertIn(
             "read_page_range_images",
             [tool["function"]["name"] for tool in first_payload["tools"]],

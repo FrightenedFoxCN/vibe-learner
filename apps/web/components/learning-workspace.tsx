@@ -79,7 +79,7 @@ export function LearningWorkspace() {
           sceneProfile={selectedSceneProfile ?? activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
           onGenerate={(input) => { void generatePlanWorkflow(input); }}
           onOpenStudyDialog={() => { void handleOpenStudyDialog(); }}
-          canOpenStudyDialog={Boolean(studySession || (activePlan && activeDocument))}
+          canOpenStudyDialog={Boolean(studySession || activePlan)}
           hasStudySession={Boolean(studySession)}
           onRenameStudyUnitTitle={renameStudyUnitTitle}
           planStreamEvents={planStreamEvents}

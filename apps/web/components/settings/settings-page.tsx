@@ -63,7 +63,7 @@ export function SettingsPage() {
         <div className="settings-form" style={styles.form}>
           <ProviderCard controller={controller} settings={controller.settings} />
 
-          {controller.settings.planProvider === "openai" ? (
+          {controller.settings.planProvider === "litellm" ? (
             <>
               <ConnectionModelsCard controller={controller} settings={controller.settings} />
               <CapabilityAuditCard controller={controller} settings={controller.settings} />

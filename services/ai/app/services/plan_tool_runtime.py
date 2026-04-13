@@ -133,6 +133,7 @@ def build_plan_tool_runtime(
     debug_report: DocumentDebugRecord | None = None,
     document_path: str | None = None,
     multimodal_enabled: bool = False,
+    planning_questions: list[PlanningQuestionRecord] | None = None,
     progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     disabled_tools: set[str] | None = None,
 ) -> PlanToolRuntime:
@@ -143,7 +144,7 @@ def build_plan_tool_runtime(
             debug_report=debug_report,
             document_path=document_path,
             multimodal_enabled=multimodal_enabled,
-            planning_questions=[],
+            planning_questions=list(planning_questions or []),
             progress_callback=progress_callback,
         ),
         disabled_tools=disabled_tools,

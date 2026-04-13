@@ -67,14 +67,14 @@ class Container:
         self.pedagogy_orchestrator.model_provider = self.model_provider
 
     def _build_model_provider(self, settings: Settings):
-        if settings.plan_provider == "openai":
+        if settings.plan_provider in {"openai", "litellm"}:
             if not (settings.openai_plan_api_key or settings.openai_api_key):
                 logger.warning(
-                    "bootstrap.model_provider openai requested but OPENAI_PLAN_API_KEY/OPENAI_API_KEY missing; falling back to mock"
+                    "bootstrap.model_provider litellm requested but OPENAI_PLAN_API_KEY/OPENAI_API_KEY missing; falling back to mock"
                 )
                 return MockModelProvider()
             logger.info(
-                "bootstrap.model_provider provider=openai plan_model=%s base_url=%s",
+                "bootstrap.model_provider provider=litellm plan_model=%s base_url=%s",
                 settings.openai_plan_model,
                 settings.openai_plan_base_url,
             )

@@ -27,9 +27,9 @@ cp .env.example .env
 Example:
 
 ```bash
-VIBE_LEARNER_PLAN_PROVIDER=openai
+VIBE_LEARNER_PLAN_PROVIDER=litellm
 OPENAI_API_KEY=sk-...
-OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_BASE_URL=http://127.0.0.1:4000
 OPENAI_PLAN_MODEL=gpt-4.1-mini
 OPENAI_SETTING_MODEL=gpt-4.1-mini
 OPENAI_CHAT_MODEL=gpt-4.1-mini
@@ -46,7 +46,9 @@ OPENAI_TIMEOUT_SECONDS=30
 
 Without those vars, the service falls back to the mock planner.
 
-Persona setting assistant uses `OPENAI_SETTING_MODEL` when provider is `openai`.
+The runtime now calls LiteLLM through the Python SDK. You can still point `OPENAI_*_BASE_URL` at LiteLLM Proxy, but you can also use provider-prefixed LiteLLM model names to reach other supported upstreams directly. The runtime settings model probe still expects an OpenAI-compatible `/models` response, so direct upstreams may require manual model names in the UI.
+
+Persona setting assistant uses `OPENAI_SETTING_MODEL` when provider is `litellm`.
 
 Memory retrieval notes:
 
@@ -55,7 +57,7 @@ Memory retrieval notes:
 
 ## Chat Payload Troubleshooting
 
-When using OpenAI-compatible gateways, the provider can return `finish_reason=length` with very short `message.content` while most tokens are consumed as reasoning tokens. In this case, the backend may raise `chat_model_invalid_payload`.
+When using LiteLLM with some reasoning-heavy upstreams, the provider can return `finish_reason=length` with very short `message.content` while most tokens are consumed as reasoning tokens. In this case, the backend may raise `chat_model_invalid_payload`.
 
 Recommended adjustment (priority 1):
 
@@ -64,5 +66,5 @@ Recommended adjustment (priority 1):
 Also verify:
 
 - model capability for strict JSON output
-- gateway compatibility with `/chat/completions` response shape
+- whether the current upstream can be normalized by LiteLLM into a valid chat-completions payload
 - timeout budget (`OPENAI_TIMEOUT_SECONDS`) after increasing output tokens

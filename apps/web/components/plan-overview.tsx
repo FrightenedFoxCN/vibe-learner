@@ -244,6 +244,80 @@ export function PlanOverview({
               <span style={styles.progressStat}>待处理 {plan.progressSummary.pendingScheduleCount}</span>
               <span style={styles.progressStat}>阻塞 {plan.progressSummary.blockedScheduleCount}</span>
             </div>
+            {plan.chapterProgress.length ? (
+              <div style={styles.chapterProgressList}>
+                {plan.chapterProgress.map((item) => (
+                  <div key={item.unitId} style={styles.chapterProgressItem}>
+                    <div style={styles.scheduleMeta}>
+                      <span style={styles.scheduleTitle}>{item.title}</span>
+                      <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
+                    </div>
+                    <span style={styles.scheduleFocus}>
+                      {item.objectiveFragment || "当前章节尚未写入额外目标说明。"}
+                    </span>
+                    <div style={styles.chapterProgressTrack}>
+                      <div
+                        style={{
+                          ...styles.chapterProgressFill,
+                          width: `${Math.max(0, Math.min(100, item.completionPercent))}%`
+                        }}
+                      />
+                    </div>
+                    <div style={styles.progressStats}>
+                      <span style={styles.progressStat}>
+                        排期 {item.completedScheduleCount}/{item.totalScheduleCount}
+                      </span>
+                      <span style={styles.progressStat}>进行中 {item.inProgressScheduleCount}</span>
+                      <span style={styles.progressStat}>待处理 {item.pendingScheduleCount}</span>
+                    </div>
+                    <div style={styles.scheduleActions}>
+                      <button
+                        type="button"
+                        style={styles.ghostButton}
+                        disabled={isBusy || !item.scheduleIds.length || item.status === "in_progress"}
+                        onClick={() => {
+                          void onUpdatePlanProgress({
+                            planId: plan.id,
+                            scheduleIds: item.scheduleIds,
+                            status: "in_progress"
+                          });
+                        }}
+                      >
+                        本章开始
+                      </button>
+                      <button
+                        type="button"
+                        style={styles.primaryButton}
+                        disabled={isBusy || !item.scheduleIds.length || item.status === "completed"}
+                        onClick={() => {
+                          void onUpdatePlanProgress({
+                            planId: plan.id,
+                            scheduleIds: item.scheduleIds,
+                            status: "completed"
+                          });
+                        }}
+                      >
+                        本章完成
+                      </button>
+                      <button
+                        type="button"
+                        style={styles.ghostButton}
+                        disabled={isBusy || !item.scheduleIds.length || item.status === "planned"}
+                        onClick={() => {
+                          void onUpdatePlanProgress({
+                            planId: plan.id,
+                            scheduleIds: item.scheduleIds,
+                            status: "planned"
+                          });
+                        }}
+                      >
+                        本章重置
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div style={styles.scheduleList}>
               {plan.schedule.map((item) => (
                 <div key={item.id} style={styles.scheduleItem}>
@@ -369,12 +443,12 @@ export function PlanOverview({
                 type="button"
                 style={{
                   ...styles.primaryButton,
-                  ...((isBusy || plan.creationMode === "goal_only") ? styles.buttonDisabled : {})
+                  ...(isBusy ? styles.buttonDisabled : {})
                 }}
                 onClick={onCreateSession}
-                disabled={isBusy || plan.creationMode === "goal_only"}
+                disabled={isBusy}
               >
-                {plan.creationMode === "goal_only" ? "仅目标计划暂不支持章节会话" : isBusy ? "创建中…" : "创建章节会话"}
+                {isBusy ? "创建中…" : "创建章节会话"}
               </button>
             )}
           </div>
@@ -719,6 +793,26 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--panel)",
     fontSize: 12,
     color: "var(--muted)"
+  },
+  chapterProgressList: {
+    display: "grid",
+    gap: 10
+  },
+  chapterProgressItem: {
+    display: "grid",
+    gap: 8,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, var(--panel) 72%, white)"
+  },
+  chapterProgressTrack: {
+    height: 6,
+    background: "color-mix(in srgb, var(--accent-soft) 30%, white)",
+    overflow: "hidden"
+  },
+  chapterProgressFill: {
+    height: "100%",
+    background: "var(--accent)"
   },
   scheduleList: {
     display: "grid",

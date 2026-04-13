@@ -25,6 +25,14 @@ class LearningPlanChatToolRuntime:
     def plan_context(self) -> str:
         payload = self._service.describe_progress(self.plan_id)
         progress = payload["progress_summary"]
+        chapter_lines = [
+            (
+                f"- {item['unit_id']} | {item['status']} | {item['title']} | "
+                f"{item['completed_schedule_count']}/{item['total_schedule_count']} "
+                f"({item['completion_percent']}%) | {item['objective_fragment'] or '无'}"
+            )
+            for item in payload.get("chapter_progress", [])[:6]
+        ]
         schedule_lines = [
             (
                 f"- {item['id']} | {item['status']} | {item['title']} | "
@@ -44,6 +52,7 @@ class LearningPlanChatToolRuntime:
             f"（{progress['completion_percent']}%）\n"
             f"进行中：{progress['in_progress_schedule_count']}，待处理：{progress['pending_schedule_count']}，"
             f"阻塞：{progress['blocked_schedule_count']}\n"
+            f"章节完成度：\n{chr(10).join(chapter_lines) if chapter_lines else '- 暂无章节进度'}\n"
             f"排期项：\n{chr(10).join(schedule_lines) if schedule_lines else '- 暂无排期项'}\n"
             f"待补充规划问题：\n{chr(10).join(question_lines) if question_lines else '- 无'}"
         )
@@ -79,6 +88,15 @@ class LearningPlanChatToolRuntime:
                                 "description": "一组需要更新状态的排期项 ID。",
                                 "items": {"type": "string"},
                             },
+                            "chapter_unit_id": {
+                                "type": "string",
+                                "description": "可选。按章节/学习单元整体更新时使用，对应 chapter_progress 里的 unit_id。",
+                            },
+                            "chapter_unit_ids": {
+                                "type": "array",
+                                "description": "可选。批量按章节/学习单元整体更新时使用。",
+                                "items": {"type": "string"},
+                            },
                             "status": {
                                 "type": "string",
                                 "enum": ["planned", "in_progress", "completed", "blocked", "skipped"],
@@ -107,6 +125,21 @@ class LearningPlanChatToolRuntime:
             raw_schedule_ids = arguments.get("schedule_ids")
             if isinstance(raw_schedule_ids, list):
                 schedule_ids.extend(str(item).strip() for item in raw_schedule_ids if str(item).strip())
+            chapter_unit_ids = []
+            single_chapter_unit_id = str(arguments.get("chapter_unit_id") or "").strip()
+            if single_chapter_unit_id:
+                chapter_unit_ids.append(single_chapter_unit_id)
+            raw_chapter_unit_ids = arguments.get("chapter_unit_ids")
+            if isinstance(raw_chapter_unit_ids, list):
+                chapter_unit_ids.extend(
+                    str(item).strip() for item in raw_chapter_unit_ids if str(item).strip()
+                )
+            if chapter_unit_ids:
+                plan = self._service.require_plan(self.plan_id)
+                for chapter in plan.chapter_progress:
+                    if chapter.unit_id in chapter_unit_ids:
+                        schedule_ids.extend(chapter.schedule_ids)
+                schedule_ids = list(dict.fromkeys(schedule_ids))
             updated = self._service.update_progress(
                 plan_id=self.plan_id,
                 schedule_ids=schedule_ids,
@@ -118,6 +151,7 @@ class LearningPlanChatToolRuntime:
             payload = self._service.describe_progress(self.plan_id)
             payload["tool_name"] = "update_learning_plan_progress"
             payload["updated_schedule_ids"] = schedule_ids
+            payload["updated_chapter_unit_ids"] = chapter_unit_ids
             payload["updated_status"] = str(arguments.get("status") or "")
             payload["note"] = str(arguments.get("note") or "")
             payload["progress_event_id"] = updated.progress_events[-1].id if updated.progress_events else ""

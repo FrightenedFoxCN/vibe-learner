@@ -827,29 +827,37 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
 def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeResponse:
     session = _ensure_session_scene_binding(container.study_session_service.require_session(session_id))
-    memory_sessions = container.study_session_service.list_sessions(
-        document_id=session.document_id,
-        persona_id=session.persona_id,
-    )
     persona = container.persona_engine.require_persona(session.persona_id)
-    document = container.document_service.require_document(session.document_id)
-    debug_report = None
-    try:
-        debug_report = container.document_service.require_debug_report(session.document_id)
-    except HTTPException:
-        debug_report = None
-
-    scene_tool_runtime = (
-        container.session_scene_service.build_tool_runtime(session.scene_instance_id)
-        if session.scene_instance_id
-        else None
-    )
     active_plan = None
     if session.plan_id:
         try:
             active_plan = container.plan_service.require_plan(session.plan_id)
         except HTTPException:
             active_plan = None
+    memory_sessions = (
+        container.study_session_service.list_sessions(
+            plan_id=session.plan_id,
+            persona_id=session.persona_id,
+        )
+        if session.plan_id and not session.document_id
+        else container.study_session_service.list_sessions(
+            document_id=session.document_id,
+            persona_id=session.persona_id,
+        )
+    )
+    document = _resolve_session_document(session.document_id, active_plan)
+    debug_report = None
+    if document is not None:
+        try:
+            debug_report = container.document_service.require_debug_report(document.id)
+        except HTTPException:
+            debug_report = None
+
+    scene_tool_runtime = (
+        container.session_scene_service.build_tool_runtime(session.scene_instance_id)
+        if session.scene_instance_id
+        else None
+    )
     if active_plan is None:
         active_plan = container.plan_service.find_latest_plan(
             document_id=session.document_id,
@@ -866,9 +874,12 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
             persona=persona,
             message=payload.message,
             section_id=session.section_id,
+            section_title=session.section_title,
+            theme_hint=session.theme_hint,
+            active_plan=active_plan,
             session_system_prompt=session.session_system_prompt,
             debug_report=debug_report,
-            document_path=document.stored_path,
+            document_path=document.stored_path if document is not None else None,
             previous_turns=session.turns,
             memory_sessions=memory_sessions,
             active_plan_context=plan_tool_runtime.plan_context() if plan_tool_runtime else "",
@@ -964,16 +975,31 @@ def update_study_session(
         next_scene_profile = bound_scene.scene_profile if bound_scene else None
 
     persona = container.persona_engine.require_persona(current_session.persona_id)
-    document = container.document_service.require_document(current_session.document_id)
-    next_section_title = _resolve_section_title(document=document, section_id=next_section_id)
+    active_plan = None
+    if current_session.plan_id:
+        try:
+            active_plan = container.plan_service.require_plan(current_session.plan_id)
+        except HTTPException:
+            active_plan = None
+    document = _resolve_session_document(current_session.document_id, active_plan)
+    next_section_title = _resolve_section_title(
+        document=document,
+        plan=active_plan,
+        section_id=next_section_id,
+    )
+    next_theme_hint = _resolve_theme_hint(
+        plan=active_plan,
+        section_id=next_section_id,
+        fallback=current_session.theme_hint,
+    )
     session_system_prompt = build_study_session_system_prompt(
         persona_name=persona.name,
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
-        document_title=document.title,
+        document_title=_resolve_session_document_title(document=document, plan=active_plan),
         section_id=next_section_id,
         section_title=next_section_title,
-        theme_hint=current_session.theme_hint,
+        theme_hint=next_theme_hint,
         scene_profile=next_scene_profile,
     )
 
@@ -984,6 +1010,7 @@ def update_study_session(
         scene_profile=next_scene_profile,
         has_scene_profile=has_scene_profile,
         section_title=next_section_title,
+        theme_hint=next_theme_hint,
         session_system_prompt=session_system_prompt,
     )
     return _into_response(StudySessionResponse, session)
@@ -1000,20 +1027,31 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         payload.scene_profile.scene_id if payload.scene_profile else "",
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
-    document = container.document_service.require_document(payload.document_id)
     plan_id = payload.plan_id.strip() if payload.plan_id else None
+    plan = None
+    resolved_document_id = payload.document_id
     if plan_id:
         plan = container.plan_service.require_plan(plan_id)
-        if plan.document_id != payload.document_id or plan.persona_id != payload.persona_id:
+        if plan.persona_id != payload.persona_id:
             raise HTTPException(status_code=400, detail="plan_session_binding_mismatch")
+        if plan.document_id and payload.document_id and plan.document_id != payload.document_id:
+            raise HTTPException(status_code=400, detail="plan_session_binding_mismatch")
+        if not resolved_document_id and plan.document_id:
+            resolved_document_id = plan.document_id
+    document = _resolve_session_document(resolved_document_id, plan)
     section_title = payload.section_title.strip() or _resolve_section_title(
         document=document,
+        plan=plan,
         section_id=payload.section_id,
     )
-    theme_hint = payload.theme_hint.strip()
+    theme_hint = _resolve_theme_hint(
+        plan=plan,
+        section_id=payload.section_id,
+        fallback=payload.theme_hint.strip(),
+    )
     bound_scene = container.session_scene_service.clone_scene_for_session(
         session_id=session_id,
-        document_id=payload.document_id,
+        document_id=resolved_document_id,
         persona_id=payload.persona_id,
         scene_profile=payload.scene_profile,
     )
@@ -1022,7 +1060,7 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         persona_name=persona.name,
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
-        document_title=document.title,
+        document_title=_resolve_session_document_title(document=document, plan=plan),
         section_id=payload.section_id,
         section_title=section_title,
         theme_hint=theme_hint,
@@ -1030,7 +1068,7 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
     )
     session = container.study_session_service.create_session(
         session_id=session_id,
-        document_id=payload.document_id,
+        document_id=resolved_document_id,
         persona_id=payload.persona_id,
         plan_id=plan_id,
         scene_instance_id=bound_scene.scene_instance_id if bound_scene else "",
@@ -1043,14 +1081,61 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
     return _into_response(StudySessionResponse, session)
 
 
-def _resolve_section_title(*, document, section_id: str) -> str:
-    for section in document.sections:
-        if section.id == section_id:
-            return section.title
-    for unit in document.study_units:
-        if unit.id == section_id:
-            return unit.title
+def _resolve_section_title(*, document, plan, section_id: str) -> str:
+    if document is not None:
+        for section in document.sections:
+            if section.id == section_id:
+                return section.title
+        for unit in document.study_units:
+            if unit.id == section_id:
+                return unit.title
+    if plan is not None:
+        for unit in plan.study_units:
+            if unit.id == section_id or section_id in unit.source_section_ids:
+                return unit.title
+        for chapter in plan.chapter_progress:
+            if chapter.unit_id == section_id and chapter.title.strip():
+                return chapter.title
     return section_id
+
+
+def _resolve_theme_hint(*, plan, section_id: str, fallback: str = "") -> str:
+    if plan is None:
+        return fallback
+    for chapter in plan.chapter_progress:
+        if chapter.unit_id == section_id and chapter.objective_fragment.strip():
+            return chapter.objective_fragment.strip()
+    for item in plan.schedule:
+        if item.unit_id == section_id and item.focus.strip():
+            return item.focus.strip()
+    plannable_units = [unit for unit in plan.study_units if unit.include_in_plan] or list(plan.study_units)
+    for index, unit in enumerate(plannable_units):
+        if unit.id != section_id and section_id not in unit.source_section_ids:
+            continue
+        if index < len(plan.study_chapters) and plan.study_chapters[index].strip():
+            return plan.study_chapters[index].strip()
+        if unit.summary.strip():
+            return unit.summary.strip()
+    if fallback:
+        return fallback
+    if plan.study_chapters:
+        return plan.study_chapters[0]
+    return plan.objective
+
+
+def _resolve_session_document(document_id: str, plan):
+    resolved_document_id = document_id.strip() or (plan.document_id.strip() if plan is not None else "")
+    if not resolved_document_id:
+        return None
+    return container.document_service.require_document(resolved_document_id)
+
+
+def _resolve_session_document_title(*, document, plan) -> str:
+    if document is not None:
+        return document.title
+    if plan is not None and plan.course_title.strip():
+        return plan.course_title.strip()
+    return "仅学习目标计划"
 
 
 def _scene_profile_summary(session) -> str:

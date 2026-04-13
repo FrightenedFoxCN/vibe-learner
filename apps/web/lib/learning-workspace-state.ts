@@ -51,14 +51,28 @@ export function upsertDocumentRecord(
 }
 
 export function buildInitialStudySessionInput(input: {
-  document: DocumentRecord;
+  plan: LearningPlan;
+  document?: DocumentRecord | null;
   planId: string;
   personaId: string;
 }) {
+  const firstUnit = input.plan.studyUnits.find((unit) => unit.includeInPlan) ?? input.plan.studyUnits[0];
   return {
-    documentId: input.document.id,
+    documentId: input.document?.id ?? input.plan.documentId ?? "",
     personaId: input.personaId,
     planId: input.planId,
-    sectionId: input.document.sections[0]?.id ?? `${input.document.id}:intro`
+    sectionId:
+      firstUnit?.id ??
+      input.document?.sections[0]?.id ??
+      `${input.plan.id}:intro`,
+    sectionTitle:
+      firstUnit?.title ??
+      input.document?.sections[0]?.title ??
+      input.plan.studyChapters[0] ??
+      `${input.plan.id}:intro`,
+    themeHint:
+      input.plan.chapterProgress.find((item) => item.unitId === firstUnit?.id)?.objectiveFragment ??
+      input.plan.studyChapters[0] ??
+      input.plan.objective
   };
 }

@@ -10,7 +10,9 @@ from app.models.domain import (
     DocumentDebugRecord,
     DocumentSection,
     LearningGoalInput,
+    LearningPlanRecord,
     PersonaProfile,
+    PlanningQuestionRecord,
     StudyUnitRecord,
 )
 from app.services.persona_runtime import render_persona_runtime_instruction
@@ -45,6 +47,8 @@ def build_learning_plan_messages(
     goal: LearningGoalInput,
     study_units: list[StudyUnitRecord],
     debug_report: DocumentDebugRecord | None = None,
+    planning_questions: list[PlanningQuestionRecord] | None = None,
+    existing_plan: LearningPlanRecord | None = None,
 ) -> list[dict[str, str]]:
     planning_context = build_learning_plan_context(
         study_units=study_units,
@@ -57,6 +61,8 @@ def build_learning_plan_messages(
     prompt_template = load_learning_plan_prompt_template()
     runtime_instruction = render_persona_runtime_instruction(persona)
     user_prompt = {
+        "plan_creation_mode": "goal_only" if not goal.document_id.strip() else "document",
+        "document_available": debug_report is not None,
         "persona": {
             "id": persona.id,
             "name": persona.name,
@@ -93,6 +99,19 @@ def build_learning_plan_messages(
                 else None
             ),
         },
+        "planning_feedback": {
+            "answered_questions": [
+                _serialize_planning_question(item)
+                for item in (planning_questions or [])
+                if item.status == "answered" and item.answer.strip()
+            ],
+            "pending_questions": [
+                _serialize_planning_question(item)
+                for item in (planning_questions or [])
+                if item.status != "answered"
+            ],
+        },
+        "current_plan": _serialize_current_plan(existing_plan),
         "course_outline": planning_context["course_outline"],
         "segmentation_hints": segmentation_hints,
         "study_units": planning_context["study_units"],
@@ -153,6 +172,50 @@ def build_learning_plan_context(
         "course_outline": course_outline,
         "study_units": study_unit_payload,
         "detail_map": detail_map,
+    }
+
+
+def _serialize_planning_question(question: PlanningQuestionRecord) -> dict[str, object]:
+    return {
+        "id": question.id,
+        "question": question.question,
+        "reason": question.reason,
+        "assumptions": list(question.assumptions),
+        "answer": question.answer,
+        "status": question.status,
+    }
+
+
+def _serialize_current_plan(plan: LearningPlanRecord | None) -> dict[str, object] | None:
+    if plan is None:
+        return None
+    return {
+        "course_title": plan.course_title,
+        "overview": plan.overview,
+        "study_chapters": list(plan.study_chapters),
+        "today_tasks": list(plan.today_tasks),
+        "schedule": [
+            {
+                "id": item.id,
+                "unit_id": item.unit_id,
+                "title": item.title,
+                "focus": item.focus,
+                "activity_type": item.activity_type,
+                "status": item.status,
+            }
+            for item in plan.schedule
+        ],
+        "chapter_progress": [
+            {
+                "unit_id": item.unit_id,
+                "title": item.title,
+                "objective_fragment": item.objective_fragment,
+                "completion_percent": item.completion_percent,
+                "status": item.status,
+                "schedule_ids": list(item.schedule_ids),
+            }
+            for item in plan.chapter_progress
+        ],
     }
 
 

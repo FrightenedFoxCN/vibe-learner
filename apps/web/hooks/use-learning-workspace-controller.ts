@@ -144,6 +144,10 @@ export function useLearningWorkspaceController({
     if (!activePlan) {
       return "";
     }
+    const chapterProgress = activePlan.chapterProgress.find((item) => item.unitId === sectionId);
+    if (chapterProgress?.objectiveFragment?.trim()) {
+      return chapterProgress.objectiveFragment.trim();
+    }
     const scheduleItem = activePlan.schedule.find((item) => item.unitId === sectionId);
     if (scheduleItem?.focus) {
       return scheduleItem.focus;
@@ -178,11 +182,11 @@ export function useLearningWorkspaceController({
   };
 
   const fetchLatestSessionForPlan = async (): Promise<StudySessionRecord | null> => {
-    if (!activePlan || !activeDocument) {
+    if (!activePlan) {
       return null;
     }
     const sessions = await listStudySessions({
-      documentId: activeDocument.id,
+      documentId: activeDocument?.id,
       personaId: activePlan.personaId,
       planId: activePlan.id,
     });
@@ -301,7 +305,8 @@ export function useLearningWorkspaceController({
   };
 
   const createInitialStudySession = async (input: {
-    document: DocumentRecord;
+    plan: LearningPlan;
+    document?: DocumentRecord | null;
     planId: string;
     personaId: string;
   }): Promise<StudySessionRecord> => {
@@ -435,34 +440,31 @@ export function useLearningWorkspaceController({
       });
       applyGeneratedPlan(nextPlan);
 
-      if (nextDocument) {
-        try {
-          const nextSession = await createInitialStudySession({
-            document: nextDocument,
-            planId: nextPlan.id,
-            personaId: selectedPersona.id
-          });
-          dispatch({
-            type: "study_session_set",
-            studySession: nextSession,
-            clearResponse: true
-          });
-          dispatch({
-            type: "notice_set",
-            notice: PLAN_GENERATED_NOTICE
-          });
-        } catch (sessionError) {
-          dispatch({
-            type: "notice_set",
-            notice: PLAN_GENERATED_SESSION_FAILED_NOTICE
-          });
-          logWorkspaceError("workflow:upload:session_error", sessionError);
-        }
-      } else {
+      try {
+        const nextSession = await createInitialStudySession({
+          plan: nextPlan,
+          document: nextDocument,
+          planId: nextPlan.id,
+          personaId: selectedPersona.id
+        });
+        dispatch({
+          type: "study_session_set",
+          studySession: nextSession,
+          clearResponse: true
+        });
         dispatch({
           type: "notice_set",
-          notice: "目标计划已生成。当前未关联教材，因此不会自动创建章节会话。"
+          notice:
+            nextPlan.creationMode === "goal_only"
+              ? "目标计划已生成，并已创建首个学习会话。"
+              : PLAN_GENERATED_NOTICE
         });
+      } catch (sessionError) {
+        dispatch({
+          type: "notice_set",
+          notice: PLAN_GENERATED_SESSION_FAILED_NOTICE
+        });
+        logWorkspaceError("workflow:upload:session_error", sessionError);
       }
     } catch (error) {
       setProcessStreamStatus((current) => (current === "running" ? "error" : current));
@@ -479,7 +481,7 @@ export function useLearningWorkspaceController({
   };
 
   const createSessionForActivePlan = async () => {
-    if (!activePlan || !activeDocument) {
+    if (!activePlan) {
       return;
     }
     try {
@@ -487,21 +489,12 @@ export function useLearningWorkspaceController({
       const nextSession = await createStudySession(
         {
           ...buildInitialStudySessionInput({
+            plan: activePlan,
             document: activeDocument,
             planId: activePlan.id,
             personaId: activePlan.personaId
           }),
           sceneProfile: resolveActiveSceneProfile(),
-          sectionTitle: resolveSectionTitle(
-            planSections[0]?.id ??
-              activeDocument.sections[0]?.id ??
-              `${activeDocument.id}:intro`
-          ),
-          themeHint: activePlan.studyChapters[0] ?? "",
-          sectionId:
-            planSections[0]?.id ??
-            activeDocument.sections[0]?.id ??
-            `${activeDocument.id}:intro`
         }
       );
       dispatch({
@@ -703,7 +696,7 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已保存规划问题回答。"
+        notice: "已保存规划问题回答，并按最新反馈刷新了学习计划。"
       });
       return true;
     } catch (error) {
@@ -729,7 +722,7 @@ export function useLearningWorkspaceController({
     sectionId: string,
     options: { clearResponseOnSwitch?: boolean } = {}
   ): Promise<StudySessionRecord | null> => {
-    if (!activePlan || !activeDocument || !sectionId) {
+    if (!activePlan || !sectionId) {
       return null;
     }
 
@@ -741,7 +734,7 @@ export function useLearningWorkspaceController({
     const activeSceneProfile = resolveActiveSceneProfile();
     if (!workingSession) {
       workingSession = await createStudySession({
-        documentId: activeDocument.id,
+        documentId: activeDocument?.id ?? activePlan.documentId ?? "",
         personaId: activePlan.personaId,
         planId: activePlan.id,
         sceneProfile: activeSceneProfile ?? null,
@@ -804,11 +797,11 @@ export function useLearningWorkspaceController({
             type: "notice_set",
             notice: "会话已失效，正在自动重建并重试…"
           });
-          if (!activePlan || !activeDocument) {
-            throw new Error("active_plan_or_document_missing");
+          if (!activePlan) {
+            throw new Error("active_plan_missing");
           }
           const recoveredSession = await createStudySession({
-            documentId: activeDocument.id,
+            documentId: activeDocument?.id ?? activePlan.documentId ?? "",
             personaId: activePlan.personaId,
             planId: activePlan.id,
             sceneProfile: resolveActiveSceneProfile(),
@@ -1195,11 +1188,13 @@ function buildPlanDirectorySections(
   plan: LearningPlan | null,
   document: DocumentRecord | null
 ): DocumentSection[] {
-  if (!plan || !document) {
+  if (!plan) {
     return [];
   }
 
-  const studyUnitById = new Map(document.studyUnits.map((unit) => [unit.id, unit]));
+  const studyUnitById = new Map(
+    (document?.studyUnits ?? plan.studyUnits).map((unit) => [unit.id, unit])
+  );
   const sections: DocumentSection[] = [];
 
   for (const item of plan.schedule) {
@@ -1218,7 +1213,19 @@ function buildPlanDirectorySections(
   }
 
   if (!sections.length) {
-    return document.sections;
+    const baseSections = document?.sections.length
+      ? document.sections
+      : plan.studyUnits
+          .filter((unit) => unit.includeInPlan)
+          .map((unit) => ({
+            id: unit.id,
+            documentId: unit.documentId,
+            title: unit.title,
+            pageStart: unit.pageStart,
+            pageEnd: unit.pageEnd,
+            level: 1 as const,
+          }));
+    return baseSections;
   }
 
   return sections.filter(

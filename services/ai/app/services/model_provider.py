@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-import socket
 import time
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from typing import Callable
 from typing import Any
@@ -17,6 +14,7 @@ from app.models.domain import (
     ChatToolCallTraceRecord,
     DocumentDebugRecord,
     LearningGoalInput,
+    LearningPlanRecord,
     PlanGenerationTraceRecord,
     PlanningQuestionRecord,
     PersonaProfile,
@@ -48,6 +46,17 @@ from app.services.session_scene import (
     extract_scene_profile_from_tool_results,
     serialize_chat_tool_trace_item,
 )
+
+try:
+    import litellm
+    from litellm import completion as litellm_completion
+    from litellm import embedding as litellm_embedding
+    from litellm import responses as litellm_responses
+except ImportError:
+    litellm = None
+    litellm_completion = None
+    litellm_embedding = None
+    litellm_responses = None
 
 logger = get_logger("vibe_learner.model_provider")
 
@@ -413,6 +422,8 @@ class ModelProvider:
         study_units: list[StudyUnitRecord],
         document_path: str | None = None,
         debug_report: DocumentDebugRecord | None = None,
+        planning_questions: list[PlanningQuestionRecord] | None = None,
+        existing_plan: LearningPlanRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ) -> PlanModelReply:
         raise NotImplementedError
@@ -581,10 +592,16 @@ class MockModelProvider(ModelProvider):
         study_units: list[StudyUnitRecord],
         document_path: str | None = None,
         debug_report: DocumentDebugRecord | None = None,
+        planning_questions: list[PlanningQuestionRecord] | None = None,
+        existing_plan: LearningPlanRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ) -> PlanModelReply:
         plannable_units = [unit for unit in study_units if unit.include_in_plan] or study_units
         objective_hint = self._compact_objective(goal.objective)
+        answered_questions = [
+            item for item in (planning_questions or [])
+            if item.status == "answered" and item.answer.strip()
+        ]
         today_tasks = [
             f"阅读 {unit.title}，提取 2 条定义或结论。"
             for unit in plannable_units[:2]
@@ -593,13 +610,23 @@ class MockModelProvider(ModelProvider):
             today_tasks = [f"阅读 {document_title}，确认学习章节顺序与关键知识点。"]
         if objective_hint:
             today_tasks.insert(0, f"先对照学习目标：{objective_hint}。")
+        if answered_questions:
+            latest_answer = answered_questions[-1]
+            today_tasks.insert(
+                1 if objective_hint else 0,
+                f"按学习者新增偏好修订：{latest_answer.answer.strip()}。",
+            )
         schedule: list[PlanScheduleItem] = []
         for unit in plannable_units[:4]:
             schedule.append(
                 PlanScheduleItem(
                     unit_id=unit.id,
                     title=f"{unit.title} 精读",
-                    focus=f"在 {unit.title} 中整理概念、例题与疑问。",
+                    focus=(
+                        f"围绕 {unit.title} 推进学习目标，并整理概念、例题与疑问。"
+                        if goal.objective.strip()
+                        else f"在 {unit.title} 中整理概念、例题与疑问。"
+                    ),
                     activity_type="learn",
                 )
             )
@@ -613,10 +640,12 @@ class MockModelProvider(ModelProvider):
                 f"{persona.name} 将围绕 {document_title} 生成首轮学习计划，"
                 f"覆盖 {len(plannable_units)} 个学习单元。"
                 f"{' 目标优先：' + objective_hint + '。' if objective_hint else ''}"
+                f"{' 已吸收最新规划回答。' if answered_questions else ''}"
             ),
             study_chapters=[unit.title for unit in plannable_units[:4]],
             today_tasks=today_tasks,
             schedule=schedule,
+            planning_questions=list(planning_questions or []),
         )
 
     def _compact_objective(self, objective: str) -> str:
@@ -1168,16 +1197,9 @@ class OpenAIModelProvider(MockModelProvider):
                 },
             ],
         }
-        raw_payload, _ = self._request_openai_chat_completion(
+        parsed = self._request_setting_json_chat(
             payload,
-            request_kind="setting",
-            model=self.setting_model,
-        )
-        raw_content = _extract_choice_content(raw_payload)
-        parsed = _extract_json_payload(
-            raw_content,
-            invalid_json_code="setting_model_invalid_json",
-            invalid_payload_code="setting_model_invalid_payload",
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，不要附加解释、代码块、注释或省略号。",
         )
         returned_slots_raw = parsed.get("slots") or []
         system_prompt_suggestion = str(parsed.get("system_prompt_suggestion") or "").strip()
@@ -1238,16 +1260,9 @@ class OpenAIModelProvider(MockModelProvider):
                 },
             ],
         }
-        raw_payload, _ = self._request_openai_chat_completion(
+        parsed = self._request_setting_json_chat(
             payload,
-            request_kind="setting",
-            model=self.setting_model,
-        )
-        raw_content = _extract_choice_content(raw_payload)
-        parsed = _extract_json_payload(
-            raw_content,
-            invalid_json_code="setting_model_invalid_json",
-            invalid_payload_code="setting_model_invalid_payload",
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，字段保持与 schema 一致，不要添加额外说明。",
         )
         slot_raw = parsed.get("slot")
         if not isinstance(slot_raw, dict) or not slot_raw.get("kind") or not slot_raw.get("content"):
@@ -1271,6 +1286,7 @@ class OpenAIModelProvider(MockModelProvider):
     ) -> dict[str, object]:
         prompt_sections = _setting_prompt_sections()
         card_count_hint = _render_persona_card_count_hint(count)
+        used_web_search = False
         if self.setting_web_search_enabled:
             payload: dict[str, Any] = {
                 "model": self.setting_model,
@@ -1292,50 +1308,36 @@ class OpenAIModelProvider(MockModelProvider):
                     }
                 },
             }
-            raw_payload, _ = self._request_openai_response(
-                payload,
-                request_kind="setting",
-                model=self.setting_model,
-            )
-            parsed = _extract_json_payload(
-                _extract_response_output_text(raw_payload),
-                invalid_json_code="setting_model_invalid_json",
-                invalid_payload_code="setting_model_invalid_payload",
-            )
+            try:
+                raw_payload, _ = self._request_openai_response(
+                    payload,
+                    request_kind="setting",
+                    model=self.setting_model,
+                )
+                parsed = _extract_json_payload(
+                    _extract_response_output_text(raw_payload),
+                    invalid_json_code="setting_model_invalid_json",
+                    invalid_payload_code="setting_model_invalid_payload",
+                )
+                used_web_search = True
+            except RuntimeError as exc:
+                if not _should_fallback_setting_web_search(exc):
+                    raise
+                logger.warning(
+                    "model.setting.web_search_fallback feature=persona_cards_from_keywords model=%s error=%s",
+                    self.setting_model,
+                    exc,
+                )
+                parsed = self._generate_persona_cards_from_keywords_without_web_search(
+                    prompt_sections=prompt_sections,
+                    keywords=keywords,
+                    card_count_hint=card_count_hint,
+                )
         else:
-            payload = {
-                "model": self.setting_model,
-                "temperature": self.setting_temperature,
-                "max_tokens": max(self.setting_max_tokens, 1200),
-                "response_format": {"type": "json_object"},
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": prompt_sections["generate_keywords_system"]
-                        .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
-                        .replace("{{CARD_COUNT}}", card_count_hint),
-                    },
-                    {
-                        "role": "user",
-                        "content": (
-                            prompt_sections["generate_keywords_user"]
-                            .replace("{{KEYWORDS}}", keywords.strip())
-                            .replace("{{CARD_COUNT}}", card_count_hint)
-                            .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
-                            + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
-                        ),
-                    },
-                ],
-            }
-            raw_payload, _ = self._request_openai_chat_completion(
-                payload,
-                request_kind="setting",
-                model=self.setting_model,
-            )
-            parsed = _extract_json_payload(
-                _extract_choice_content(raw_payload),
-                invalid_json_code="setting_model_invalid_json",
-                invalid_payload_code="setting_model_invalid_payload",
+            parsed = self._generate_persona_cards_from_keywords_without_web_search(
+                prompt_sections=prompt_sections,
+                keywords=keywords,
+                card_count_hint=card_count_hint,
             )
         return {
             "summary": str(parsed.get("summary") or "").strip(),
@@ -1343,7 +1345,7 @@ class OpenAIModelProvider(MockModelProvider):
             "learner_address": str(parsed.get("learner_address") or "").strip(),
             "cards": _normalize_generated_persona_cards(parsed),
             "used_model": self.setting_model,
-            "used_web_search": self.setting_web_search_enabled,
+            "used_web_search": used_web_search,
         }
 
     def generate_persona_cards_from_text(
@@ -1375,15 +1377,9 @@ class OpenAIModelProvider(MockModelProvider):
                 },
             ],
         }
-        raw_payload, _ = self._request_openai_chat_completion(
+        parsed = self._request_setting_json_chat(
             payload,
-            request_kind="setting",
-            model=self.setting_model,
-        )
-        parsed = _extract_json_payload(
-            _extract_choice_content(raw_payload),
-            invalid_json_code="setting_model_invalid_json",
-            invalid_payload_code="setting_model_invalid_payload",
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 summary、relationship、learner_address、cards 字段完整。",
         )
         return {
             "summary": str(parsed.get("summary") or "").strip(),
@@ -1402,6 +1398,7 @@ class OpenAIModelProvider(MockModelProvider):
     ) -> dict[str, object]:
         prompt_sections = _setting_prompt_sections()
         layer_count_hint = _render_scene_layer_count_hint(layer_count)
+        used_web_search = False
         if self.setting_web_search_enabled:
             payload: dict[str, Any] = {
                 "model": self.setting_model,
@@ -1416,56 +1413,165 @@ class OpenAIModelProvider(MockModelProvider):
                 .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA),
                 "tools": [{"type": "web_search"}],
             }
-            raw_payload, _ = self._request_openai_response(
-                payload,
-                request_kind="setting",
-                model=self.setting_model,
-            )
-            parsed = _extract_json_payload(
-                _extract_response_output_text(raw_payload),
-                invalid_json_code="setting_model_invalid_json",
-                invalid_payload_code="setting_model_invalid_payload",
-            )
+            try:
+                raw_payload, _ = self._request_openai_response(
+                    payload,
+                    request_kind="setting",
+                    model=self.setting_model,
+                )
+                parsed = _extract_json_payload(
+                    _extract_response_output_text(raw_payload),
+                    invalid_json_code="setting_model_invalid_json",
+                    invalid_payload_code="setting_model_invalid_payload",
+                )
+                used_web_search = True
+            except RuntimeError as exc:
+                if not _should_fallback_setting_web_search(exc):
+                    raise
+                logger.warning(
+                    "model.setting.web_search_fallback feature=scene_tree_from_keywords model=%s error=%s",
+                    self.setting_model,
+                    exc,
+                )
+                parsed = self._generate_scene_tree_from_keywords_without_web_search(
+                    prompt_sections=prompt_sections,
+                    keywords=keywords,
+                    layer_count_hint=layer_count_hint,
+                )
         else:
-            payload = {
-                "model": self.setting_model,
-                "temperature": self.setting_temperature,
-                "max_tokens": max(self.setting_max_tokens, 1400),
-                "response_format": {"type": "json_object"},
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": prompt_sections["generate_scene_keywords_system"]
-                        .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
-                        .replace("{{LAYER_COUNT}}", layer_count_hint),
-                    },
-                    {
-                        "role": "user",
-                        "content": (
-                            prompt_sections["generate_scene_keywords_user"]
-                            .replace("{{KEYWORDS}}", keywords.strip())
-                            .replace("{{LAYER_COUNT}}", layer_count_hint)
-                            .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
-                            + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
-                        ),
-                    },
-                ],
-            }
-            raw_payload, _ = self._request_openai_chat_completion(
-                payload,
-                request_kind="setting",
-                model=self.setting_model,
-            )
-            parsed = _extract_json_payload(
-                _extract_choice_content(raw_payload),
-                invalid_json_code="setting_model_invalid_json",
-                invalid_payload_code="setting_model_invalid_payload",
+            parsed = self._generate_scene_tree_from_keywords_without_web_search(
+                prompt_sections=prompt_sections,
+                keywords=keywords,
+                layer_count_hint=layer_count_hint,
             )
         return _normalize_generated_scene_result(
             parsed,
             used_model=self.setting_model,
-            used_web_search=self.setting_web_search_enabled,
+            used_web_search=used_web_search,
         )
+
+    def _generate_persona_cards_from_keywords_without_web_search(
+        self,
+        *,
+        prompt_sections: dict[str, str],
+        keywords: str,
+        card_count_hint: str,
+    ) -> dict[str, Any]:
+        payload = {
+            "model": self.setting_model,
+            "temperature": self.setting_temperature,
+            "max_tokens": max(self.setting_max_tokens, 1200),
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": prompt_sections["generate_keywords_system"]
+                    .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
+                    .replace("{{CARD_COUNT}}", card_count_hint),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        prompt_sections["generate_keywords_user"]
+                        .replace("{{KEYWORDS}}", keywords.strip())
+                        .replace("{{CARD_COUNT}}", card_count_hint)
+                        .replace("{{PERSONA_CARD_SCHEMA}}", PERSONA_CARD_GENERATION_SCHEMA)
+                        + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
+                    ),
+                },
+            ],
+        }
+        return self._request_setting_json_chat(
+            payload,
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 summary、relationship、learner_address、cards 字段完整。",
+        )
+
+    def _generate_scene_tree_from_keywords_without_web_search(
+        self,
+        *,
+        prompt_sections: dict[str, str],
+        keywords: str,
+        layer_count_hint: str,
+    ) -> dict[str, Any]:
+        payload = {
+            "model": self.setting_model,
+            "temperature": self.setting_temperature,
+            "max_tokens": max(self.setting_max_tokens, 1400),
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": prompt_sections["generate_scene_keywords_system"]
+                    .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
+                    .replace("{{LAYER_COUNT}}", layer_count_hint),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        prompt_sections["generate_scene_keywords_user"]
+                        .replace("{{KEYWORDS}}", keywords.strip())
+                        .replace("{{LAYER_COUNT}}", layer_count_hint)
+                        .replace("{{SCENE_TREE_SCHEMA}}", SCENE_TREE_GENERATION_SCHEMA)
+                        + "\n\n补充限制：当前不允许访问网络资源，请仅根据关键词本身生成。"
+                    ),
+                },
+            ],
+        }
+        return self._request_setting_json_chat(
+            payload,
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 scene_name、scene_summary、selected_layer_id、scene_layers 字段完整。",
+        )
+
+    def _request_setting_json_chat(
+        self,
+        payload: dict[str, Any],
+        *,
+        retry_instruction: str,
+    ) -> dict[str, Any]:
+        raw_payload, _ = self._request_openai_chat_completion(
+            payload,
+            request_kind="setting",
+            model=self.setting_model,
+        )
+        try:
+            return _extract_json_payload(
+                _extract_choice_content(raw_payload),
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
+        except RuntimeError as exc:
+            if str(exc) not in {"setting_model_invalid_json", "setting_model_invalid_payload"}:
+                raise
+            logger.warning(
+                "model.setting.json_retry model=%s reason=%s",
+                self.setting_model,
+                exc,
+            )
+            retry_payload = dict(payload)
+            retry_messages = list(payload.get("messages") or [])
+            retry_messages.append(
+                {
+                    "role": "user",
+                    "content": retry_instruction,
+                }
+            )
+            retry_payload["messages"] = retry_messages
+            retry_payload["temperature"] = min(float(payload.get("temperature") or self.setting_temperature), 0.2)
+            existing_max_tokens = int(payload.get("max_tokens") or self.setting_max_tokens)
+            retry_payload["max_tokens"] = min(
+                max(existing_max_tokens + 800, int(existing_max_tokens * 1.5)),
+                6400,
+            )
+            retry_raw_payload, _ = self._request_openai_chat_completion(
+                retry_payload,
+                request_kind="setting",
+                model=self.setting_model,
+            )
+            return _extract_json_payload(
+                _extract_choice_content(retry_raw_payload),
+                invalid_json_code="setting_model_invalid_json",
+                invalid_payload_code="setting_model_invalid_payload",
+            )
 
     def generate_scene_tree_from_text(
         self,
@@ -1496,15 +1602,9 @@ class OpenAIModelProvider(MockModelProvider):
                 },
             ],
         }
-        raw_payload, _ = self._request_openai_chat_completion(
+        parsed = self._request_setting_json_chat(
             payload,
-            request_kind="setting",
-            model=self.setting_model,
-        )
-        parsed = _extract_json_payload(
-            _extract_choice_content(raw_payload),
-            invalid_json_code="setting_model_invalid_json",
-            invalid_payload_code="setting_model_invalid_payload",
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 scene_name、scene_summary、selected_layer_id、scene_layers 字段完整。",
         )
         return _normalize_generated_scene_result(
             parsed,
@@ -1523,6 +1623,8 @@ class OpenAIModelProvider(MockModelProvider):
         study_units: list[StudyUnitRecord],
         document_path: str | None = None,
         debug_report: DocumentDebugRecord | None = None,
+        planning_questions: list[PlanningQuestionRecord] | None = None,
+        existing_plan: LearningPlanRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ) -> PlanModelReply:
         planning_context = build_learning_plan_context(
@@ -1535,6 +1637,8 @@ class OpenAIModelProvider(MockModelProvider):
             goal=goal,
             study_units=study_units,
             debug_report=debug_report,
+            planning_questions=planning_questions,
+            existing_plan=existing_plan,
         )
         tool_runtime = self._build_plan_tool_runtime(
             study_units=study_units,
@@ -1542,6 +1646,7 @@ class OpenAIModelProvider(MockModelProvider):
             debug_report=debug_report,
             document_path=document_path,
             tools_enabled=self.plan_tools_enabled,
+            planning_questions=planning_questions,
             progress_callback=progress_callback,
         )
         active_tool_runtime = tool_runtime
@@ -1564,6 +1669,7 @@ class OpenAIModelProvider(MockModelProvider):
                 debug_report=debug_report,
                 document_path=document_path,
                 tools_enabled=fallback_tools_enabled,
+                planning_questions=planning_questions,
                 progress_callback=progress_callback,
             )
             logger.warning(
@@ -1640,16 +1746,18 @@ class OpenAIModelProvider(MockModelProvider):
         debug_report: DocumentDebugRecord | None,
         document_path: str | None,
         tools_enabled: bool,
+        planning_questions: list[PlanningQuestionRecord] | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ):
         if not tools_enabled:
-            return build_plan_tool_runtime()
+            return build_plan_tool_runtime(planning_questions=planning_questions)
         return build_plan_tool_runtime(
             study_units=study_units,
             detail_map=detail_map,
             debug_report=debug_report,
             document_path=document_path,
             multimodal_enabled=self.multimodal_enabled,
+            planning_questions=planning_questions,
             progress_callback=progress_callback,
             disabled_tools=(self.plan_disabled_tools_provider() if self.plan_disabled_tools_provider else set()),
         )
@@ -1695,57 +1803,38 @@ class OpenAIModelProvider(MockModelProvider):
         model: str,
     ) -> tuple[dict[str, Any], int]:
         request_base_url, request_api_key = self._resolve_request_endpoint(request_kind)
+        resolved_payload = self._normalize_litellm_payload_model(
+            payload,
+            api_base=request_base_url,
+        )
         tools_enabled = "tools" in payload
-        tool_round = len([message for message in payload.get("messages", []) if message.get("role") == "tool"])
+        tool_round = len(
+            [message for message in resolved_payload.get("messages", []) if message.get("role") == "tool"]
+        )
         logger.info(
-            "model.%s.request provider=openai model=%s tool_round=%s tools_enabled=%s",
+            "model.%s.request provider=litellm model=%s tool_round=%s tools_enabled=%s",
             request_kind,
-            model,
+            str(resolved_payload.get("model") or model),
             tool_round,
             tools_enabled,
         )
-        request = urllib.request.Request(
-            url=f"{request_base_url}/chat/completions",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {request_api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
+        self._require_litellm_sdk(litellm_completion, feature="completion")
         started_at = time.perf_counter()
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                raw_payload = json.loads(response.read().decode("utf-8"))
+            raw_result = litellm_completion(
+                **resolved_payload,
+                **self._build_litellm_request_kwargs(
+                    api_base=request_base_url,
+                    api_key=request_api_key,
+                    model=str(resolved_payload.get("model") or model),
+                ),
+            )
+            raw_payload = _normalize_litellm_payload(raw_result)
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
             self._record_token_usage(raw_payload, feature=request_kind, model=model)
             return raw_payload, elapsed_ms
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="ignore")
-            error_code, error_message = _extract_upstream_error(body)
-            logger.exception(
-                "model.%s.http_error status=%s upstream_code=%s upstream_message=%s body=%s",
-                request_kind,
-                exc.code,
-                error_code,
-                error_message,
-                body,
-            )
-            if error_code == "rate_limit":
-                raise RuntimeError(f"openai_{request_kind}_request_rate_limit") from exc
-            raise RuntimeError(
-                f"openai_{request_kind}_request_failed:{exc.code}:{error_code or 'unknown'}"
-            ) from exc
-        except urllib.error.URLError as exc:
-            logger.exception("model.%s.network_error reason=%s", request_kind, exc.reason)
-            raise RuntimeError(f"openai_{request_kind}_request_network_error") from exc
-        except (TimeoutError, socket.timeout) as exc:
-            logger.exception(
-                "model.%s.timeout timeout_seconds=%s",
-                request_kind,
-                self.timeout_seconds,
-            )
-            raise RuntimeError(f"openai_{request_kind}_request_timeout") from exc
+        except Exception as exc:
+            raise self._map_litellm_request_error(exc, request_kind=request_kind) from exc
 
     def _request_openai_response(
         self,
@@ -1755,54 +1844,35 @@ class OpenAIModelProvider(MockModelProvider):
         model: str,
     ) -> tuple[dict[str, Any], int]:
         request_base_url, request_api_key = self._resolve_request_endpoint(request_kind)
+        resolved_payload = self._normalize_litellm_payload_model(
+            payload,
+            api_base=request_base_url,
+        )
+        if "input" not in resolved_payload and "messages" in resolved_payload:
+            resolved_payload["input"] = resolved_payload.pop("messages")
         logger.info(
-            "model.%s.responses.request provider=openai model=%s tools_enabled=%s",
+            "model.%s.responses.request provider=litellm model=%s tools_enabled=%s",
             request_kind,
-            model,
-            bool(payload.get("tools")),
+            str(resolved_payload.get("model") or model),
+            bool(resolved_payload.get("tools")),
         )
-        request = urllib.request.Request(
-            url=f"{request_base_url}/responses",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {request_api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
+        self._require_litellm_sdk(litellm_responses, feature="responses")
         started_at = time.perf_counter()
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                raw_payload = json.loads(response.read().decode("utf-8"))
+            raw_result = litellm_responses(
+                **resolved_payload,
+                **self._build_litellm_request_kwargs(
+                    api_base=request_base_url,
+                    api_key=request_api_key,
+                    model=str(resolved_payload.get("model") or model),
+                ),
+            )
+            raw_payload = _normalize_litellm_payload(raw_result)
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
             self._record_token_usage_responses(raw_payload, feature=request_kind, model=model)
             return raw_payload, elapsed_ms
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="ignore")
-            error_code, error_message = _extract_upstream_error(body)
-            logger.exception(
-                "model.%s.responses.http_error status=%s upstream_code=%s upstream_message=%s body=%s",
-                request_kind,
-                exc.code,
-                error_code,
-                error_message,
-                body,
-            )
-            if error_code == "rate_limit":
-                raise RuntimeError(f"openai_{request_kind}_request_rate_limit") from exc
-            raise RuntimeError(
-                f"openai_{request_kind}_request_failed:{exc.code}:{error_code or 'unknown'}"
-            ) from exc
-        except urllib.error.URLError as exc:
-            logger.exception("model.%s.responses.network_error reason=%s", request_kind, exc.reason)
-            raise RuntimeError(f"openai_{request_kind}_request_network_error") from exc
-        except (TimeoutError, socket.timeout) as exc:
-            logger.exception(
-                "model.%s.responses.timeout timeout_seconds=%s",
-                request_kind,
-                self.timeout_seconds,
-            )
-            raise RuntimeError(f"openai_{request_kind}_request_timeout") from exc
+        except Exception as exc:
+            raise self._map_litellm_request_error(exc, request_kind=request_kind) from exc
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         clean = [text.strip() for text in texts if text and text.strip()]
@@ -1828,33 +1898,28 @@ class OpenAIModelProvider(MockModelProvider):
         model: str,
     ) -> tuple[dict[str, Any], int]:
         request_base_url, request_api_key = self._resolve_request_endpoint("chat")
-        request = urllib.request.Request(
-            url=f"{request_base_url}/embeddings",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {request_api_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
+        resolved_payload = self._normalize_litellm_payload_model(
+            payload,
+            api_base=request_base_url,
         )
+        self._require_litellm_sdk(litellm_embedding, feature="embedding")
         started_at = time.perf_counter()
         try:
-            with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
-                raw_payload = json.loads(response.read().decode("utf-8"))
+            raw_result = litellm_embedding(
+                **resolved_payload,
+                **self._build_litellm_request_kwargs(
+                    api_base=request_base_url,
+                    api_key=request_api_key,
+                    model=str(resolved_payload.get("model") or model),
+                ),
+            )
+            raw_payload = _normalize_litellm_payload(raw_result)
             elapsed_ms = int((time.perf_counter() - started_at) * 1000)
-            logger.info("model.embedding.request provider=openai model=%s elapsed_ms=%s", model, elapsed_ms)
+            logger.info("model.embedding.request provider=litellm model=%s elapsed_ms=%s", model, elapsed_ms)
             self._record_token_usage(raw_payload, feature="embedding", model=model)
             return raw_payload, elapsed_ms
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="ignore")
-            error_code, _ = _extract_upstream_error(body)
-            if error_code == "rate_limit":
-                raise RuntimeError("openai_embedding_request_rate_limit") from exc
-            raise RuntimeError(f"openai_embedding_request_failed:{exc.code}:{error_code or 'unknown'}") from exc
-        except urllib.error.URLError as exc:
-            raise RuntimeError("openai_embedding_request_network_error") from exc
-        except (TimeoutError, socket.timeout) as exc:
-            raise RuntimeError("openai_embedding_request_timeout") from exc
+        except Exception as exc:
+            raise self._map_litellm_request_error(exc, request_kind="embedding") from exc
 
     def _record_token_usage(
         self,
@@ -1901,6 +1966,70 @@ class OpenAIModelProvider(MockModelProvider):
         if request_kind == "chat":
             return self.chat_base_url, self.chat_api_key
         return self.base_url, self.api_key
+
+    def _require_litellm_sdk(self, client: Any, *, feature: str) -> None:
+        if client is None:
+            raise RuntimeError(f"litellm_sdk_not_installed:{feature}")
+
+    def _build_litellm_request_kwargs(
+        self,
+        *,
+        api_base: str,
+        api_key: str,
+        model: str,
+    ) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "timeout": self.timeout_seconds,
+        }
+        if api_base:
+            kwargs["api_base"] = api_base
+        if api_key:
+            kwargs["api_key"] = api_key
+        forced_provider = _infer_openai_compatible_provider(model=model, api_base=api_base)
+        if forced_provider:
+            kwargs["custom_llm_provider"] = forced_provider
+        return kwargs
+
+    def _normalize_litellm_payload_model(
+        self,
+        payload: dict[str, Any],
+        *,
+        api_base: str,
+    ) -> dict[str, Any]:
+        resolved_payload = dict(payload)
+        raw_model = str(resolved_payload.get("model") or "").strip()
+        resolved_payload["model"] = _normalize_litellm_model_name(
+            model=raw_model,
+            api_base=api_base,
+        )
+        return resolved_payload
+
+    def _map_litellm_request_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:
+        if _is_litellm_rate_limit_error(exc):
+            logger.exception("model.%s.rate_limit provider=litellm", request_kind)
+            return RuntimeError(f"openai_{request_kind}_request_rate_limit")
+        if _is_litellm_timeout_error(exc):
+            logger.exception(
+                "model.%s.timeout provider=litellm timeout_seconds=%s",
+                request_kind,
+                self.timeout_seconds,
+            )
+            return RuntimeError(f"openai_{request_kind}_request_timeout")
+        if _is_litellm_network_error(exc):
+            logger.exception("model.%s.network_error provider=litellm", request_kind)
+            return RuntimeError(f"openai_{request_kind}_request_network_error")
+
+        status_code, error_code, error_message = _extract_litellm_exception_details(exc)
+        logger.exception(
+            "model.%s.http_error provider=litellm status=%s upstream_code=%s upstream_message=%s",
+            request_kind,
+            status_code,
+            error_code,
+            error_message,
+        )
+        return RuntimeError(
+            f"openai_{request_kind}_request_failed:{status_code}:{error_code or 'unknown'}"
+        )
 
 
 def _chat_tools(
@@ -2941,6 +3070,216 @@ def _extract_upstream_error(body: str) -> tuple[str, str]:
     if not isinstance(error, dict):
         return "", body[:200]
     return str(error.get("code", "")), str(error.get("message", ""))
+
+
+def _should_fallback_setting_web_search(exc: RuntimeError) -> bool:
+    detail = str(exc).strip()
+    return (
+        detail.startswith("openai_setting_request_failed:400:")
+        or detail.startswith("openai_setting_request_failed:422:")
+        or detail.startswith("openai_setting_request_failed:500:")
+    )
+
+
+def _normalize_litellm_model_name(*, model: str, api_base: str) -> str:
+    normalized = model.strip()
+    if not normalized:
+        return normalized
+    if _litellm_model_has_provider_prefix(normalized):
+        return normalized
+    if _infer_openai_compatible_provider(model=normalized, api_base=api_base):
+        return f"openai/{normalized}"
+    return normalized
+
+
+def _infer_openai_compatible_provider(*, model: str, api_base: str) -> str | None:
+    if not model.strip():
+        return None
+    if _litellm_model_has_provider_prefix(model):
+        return None
+    normalized_base = api_base.rstrip("/")
+    if not normalized_base:
+        return None
+    if normalized_base == "https://api.openai.com/v1":
+        return None
+    return "openai"
+
+
+def _litellm_model_has_provider_prefix(model: str) -> bool:
+    if "/" not in model:
+        return False
+    provider = model.split("/", 1)[0].strip().lower()
+    if not provider:
+        return False
+    return provider in _known_litellm_providers()
+
+
+def _known_litellm_providers() -> set[str]:
+    if litellm is not None:
+        providers = getattr(litellm, "provider_list", None)
+        if providers:
+            normalized = {
+                str(getattr(provider, "value", provider)).strip().lower()
+                for provider in providers
+            }
+            return {provider for provider in normalized if provider}
+    return {
+        "openai",
+        "azure",
+        "anthropic",
+        "gemini",
+        "vertex_ai",
+        "vertex_ai_beta",
+        "openrouter",
+        "ollama",
+        "huggingface",
+        "bedrock",
+        "xai",
+        "custom_openai",
+        "openai_like",
+        "text-completion-openai",
+    }
+
+
+def _normalize_litellm_payload(result: Any) -> dict[str, Any]:
+    if isinstance(result, dict):
+        return result
+
+    model_dump = getattr(result, "model_dump", None)
+    if callable(model_dump):
+        dumped = model_dump(mode="json")
+        if isinstance(dumped, dict):
+            return dumped
+
+    model_dump_json = getattr(result, "model_dump_json", None)
+    if callable(model_dump_json):
+        dumped_json = model_dump_json()
+        if isinstance(dumped_json, str):
+            parsed = _try_parse_json_dict(dumped_json)
+            if parsed is not None:
+                return parsed
+
+    json_method = getattr(result, "json", None)
+    if callable(json_method):
+        raw_json = json_method()
+        if isinstance(raw_json, str):
+            parsed = _try_parse_json_dict(raw_json)
+            if parsed is not None:
+                return parsed
+
+    raise RuntimeError("litellm_invalid_payload")
+
+
+def _try_parse_json_dict(raw_value: str) -> dict[str, Any] | None:
+    try:
+        parsed = json.loads(raw_value)
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _extract_litellm_exception_details(exc: Exception) -> tuple[str, str, str]:
+    status_code = _extract_litellm_status_code(exc)
+    error_code = ""
+    error_message = str(exc)
+
+    body_candidates = [
+        getattr(exc, "body", None),
+        getattr(exc, "response_body", None),
+    ]
+    response = getattr(exc, "response", None)
+    if response is not None:
+        body_candidates.extend(
+            [
+                getattr(response, "text", None),
+                getattr(response, "content", None),
+                getattr(response, "body", None),
+            ]
+        )
+
+    for candidate in body_candidates:
+        error_code, error_message = _extract_litellm_error_from_body(candidate, fallback_message=error_message)
+        if error_code:
+            break
+
+    if not error_code:
+        error_code = str(
+            getattr(exc, "code", "")
+            or getattr(exc, "type", "")
+            or type(exc).__name__
+        ).strip()
+
+    return status_code or "unknown", error_code or "unknown", error_message or str(exc)
+
+
+def _extract_litellm_status_code(exc: Exception) -> str:
+    for value in (
+        getattr(exc, "status_code", None),
+        getattr(exc, "status", None),
+        getattr(getattr(exc, "response", None), "status_code", None),
+        getattr(getattr(exc, "response", None), "status", None),
+    ):
+        if isinstance(value, int):
+            return str(value)
+        if isinstance(value, str) and value.isdigit():
+            return value
+    return ""
+
+
+def _extract_litellm_error_from_body(
+    body: Any,
+    *,
+    fallback_message: str,
+) -> tuple[str, str]:
+    if body is None:
+        return "", fallback_message
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="ignore")
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict):
+            return (
+                str(error.get("code") or error.get("type") or ""),
+                str(error.get("message") or fallback_message),
+            )
+        return "", fallback_message
+    if isinstance(body, str):
+        error_code, error_message = _extract_upstream_error(body)
+        return error_code, error_message or fallback_message
+    return "", fallback_message
+
+
+def _is_litellm_rate_limit_error(exc: Exception) -> bool:
+    rate_limit_cls = getattr(litellm, "RateLimitError", None) if litellm is not None else None
+    if rate_limit_cls is not None and isinstance(exc, rate_limit_cls):
+        return True
+    return _extract_litellm_status_code(exc) == "429" or "ratelimit" in type(exc).__name__.lower()
+
+
+def _is_litellm_timeout_error(exc: Exception) -> bool:
+    timeout_cls = getattr(litellm, "Timeout", None) if litellm is not None else None
+    if timeout_cls is not None and isinstance(exc, timeout_cls):
+        return True
+    class_name = type(exc).__name__.lower()
+    message = str(exc).lower()
+    return isinstance(exc, TimeoutError) or "timeout" in class_name or "timed out" in message
+
+
+def _is_litellm_network_error(exc: Exception) -> bool:
+    connection_cls = getattr(litellm, "APIConnectionError", None) if litellm is not None else None
+    if connection_cls is not None and isinstance(exc, connection_cls):
+        return True
+    class_name = type(exc).__name__.lower()
+    message = str(exc).lower()
+    return any(
+        token in class_name or token in message
+        for token in (
+            "connection",
+            "network",
+            "dns",
+            "refused",
+        )
+    )
 
 
 def _extract_choice_content(payload: dict[str, Any]) -> str:
