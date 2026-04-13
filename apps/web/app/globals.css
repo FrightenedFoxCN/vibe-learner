@@ -111,17 +111,19 @@ textarea {
 /* Plan page: form (left) | overview (right) */
 .plan-content-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   align-items: start;
+  gap: 28px;
 }
 
 .plan-setup-column {
-  padding-right: 40px;
-  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 28px;
+  align-self: start;
 }
 
 .plan-main-column {
-  padding-left: 40px;
+  min-width: 0;
 }
 
 /* Home page: 3-column feature cards — gap shows as border */
@@ -241,15 +243,11 @@ textarea {
   }
 
   .plan-setup-column {
-    padding-right: 0;
-    padding-bottom: 24px;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+    position: static;
   }
 
   .plan-main-column {
-    padding-left: 0;
-    padding-top: 24px;
+    padding-top: 0;
   }
 }
 

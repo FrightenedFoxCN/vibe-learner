@@ -34,16 +34,13 @@ export function LearningWorkspace() {
     sceneLibraryItems,
     selectedSceneLibraryId,
     setSelectedSceneLibraryId,
-    selectedSceneProfile,
     generatePlanWorkflow,
     cancelPlanGeneration,
     selectPlan,
-    createSessionForActivePlan,
     renamePlanTitle,
     updatePlanStudyChapters,
     updatePlanProgress,
     answerPlanQuestion,
-    renameStudyUnitTitle,
     removePlan,
     refreshPlanSnapshot,
     handleSwitchSection,
@@ -51,15 +48,6 @@ export function LearningWorkspace() {
     setPageCache,
   } = useLearningWorkspace();
   const planSetupCache = getPageCache("planSetup");
-
-  const handleOpenStudyDialog = async () => {
-    if (!studySession && activePlan) {
-      await createSessionForActivePlan();
-    }
-    if (studySession || activePlan) {
-      appNavigator.push("/study");
-    }
-  };
 
   const handleStartStudyFromPlan = async (input: {
     sectionId: string;
@@ -90,8 +78,10 @@ export function LearningWorkspace() {
       <TopNav currentPath="/plan" />
 
       <div style={styles.heading}>
-        <h1 style={styles.pageTitle}>计划生成</h1>
-        {notice ? <div style={styles.notice}>{notice}</div> : null}
+        <div style={styles.headingRow}>
+          <h1 style={styles.pageTitle}>计划生成</h1>
+          {notice ? <div style={styles.notice}>{notice}</div> : null}
+        </div>
       </div>
 
       <div className="plan-content-grid">
@@ -100,19 +90,11 @@ export function LearningWorkspace() {
           selectedPersonaId={selectedPersona.id}
           onSelectPersonaId={setSelectedPersonaId}
           isBusy={isBusy}
-          document={activeDocument}
-          plan={activePlan}
-          session={studySession}
           sceneLibraryItems={sceneLibraryItems}
           selectedSceneLibraryId={selectedSceneLibraryId}
           onSelectSceneLibraryId={setSelectedSceneLibraryId}
-          sceneProfile={selectedSceneProfile ?? activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
           onGenerate={(input) => { void generatePlanWorkflow(input); }}
           onInterruptGeneration={() => { void cancelPlanGeneration(); }}
-          onOpenStudyDialog={() => { void handleOpenStudyDialog(); }}
-          canOpenStudyDialog={Boolean(studySession || activePlan)}
-          hasStudySession={Boolean(studySession)}
-          onRenameStudyUnitTitle={renameStudyUnitTitle}
           planStreamEvents={planStreamEvents}
           planStreamStatus={planStreamStatus}
           canInterruptGeneration={isGeneratingPlan}
@@ -134,9 +116,7 @@ export function LearningWorkspace() {
             }
             planPositionLabel={activePlan ? `共 ${planHistory.length} 条` : ""}
             sceneProfile={activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
-            hasSession={Boolean(studySession)}
             isBusy={isBusy}
-            onCreateSession={() => { void createSessionForActivePlan(); }}
             onRenamePlan={renamePlanTitle}
             onUpdateStudyChapters={updatePlanStudyChapters}
             onUpdatePlanProgress={updatePlanProgress}
@@ -164,40 +144,45 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100vh",
     maxWidth: 1600,
     margin: "0 auto",
-    padding: "28px 32px 48px",
+    padding: "28px 32px 56px",
     display: "grid",
-    gap: 24,
+    gap: 22,
     alignContent: "start"
   },
   heading: {
     display: "grid",
-    gap: 8
+    gap: 10,
+    paddingBottom: 10,
+    borderBottom: "1px solid var(--border)"
+  },
+  headingRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap"
   },
   pageTitle: {
     margin: 0,
-    fontSize: 20,
+    fontSize: "clamp(1.4rem, 2vw, 1.9rem)",
     fontWeight: 700,
     color: "var(--ink)",
     lineHeight: 1.2
   },
-  pageDesc: {
-    margin: 0,
-    fontSize: 13,
-    color: "var(--muted)",
-    lineHeight: 1.6
-  },
   notice: {
     width: "fit-content",
     maxWidth: "100%",
-    padding: "8px 12px",
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    minHeight: 28,
+    padding: "0 10px",
+    border: "1px solid color-mix(in srgb, var(--accent) 20%, var(--border))",
+    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
     color: "var(--teal)",
     fontSize: 12,
-    lineHeight: 1.5
+    lineHeight: 1,
+    display: "inline-flex",
+    alignItems: "center"
   },
   planColumn: {
     display: "grid",
-    gap: 24
+    gap: 18
   }
 };

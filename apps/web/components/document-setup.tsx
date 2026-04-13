@@ -3,11 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type {
-  DocumentRecord,
-  LearningPlan,
   PersonaProfile,
-  SceneProfile,
-  StudySessionRecord
 } from "@vibe-learner/shared";
 import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import type { SceneLibraryItemPayload } from "../lib/data/scenes";
@@ -21,22 +17,10 @@ interface DocumentSetupProps {
   onSelectPersonaId: (personaId: string) => void;
   onGenerate: (input: { mode: "document" | "goal_only"; file?: File | null; objective: string }) => void;
   onInterruptGeneration: () => void;
-  onOpenStudyDialog: () => void;
-  canOpenStudyDialog: boolean;
-  hasStudySession: boolean;
-  onRenameStudyUnitTitle: (
-    documentId: string,
-    studyUnitId: string,
-    title: string
-  ) => Promise<boolean>;
   isBusy: boolean;
-  document: DocumentRecord | null;
-  plan: LearningPlan | null;
-  session: StudySessionRecord | null;
   sceneLibraryItems: SceneLibraryItemPayload[];
   selectedSceneLibraryId: string;
   onSelectSceneLibraryId: (sceneId: string) => void;
-  sceneProfile?: SceneProfile | null;
   planStreamEvents: StreamEventItem[];
   planStreamStatus: string;
   canInterruptGeneration: boolean;
@@ -57,18 +41,10 @@ export function DocumentSetup({
   onSelectPersonaId,
   onGenerate,
   onInterruptGeneration,
-  onOpenStudyDialog,
-  canOpenStudyDialog,
-  hasStudySession,
-  onRenameStudyUnitTitle,
   isBusy,
-  document,
-  plan,
-  session,
   sceneLibraryItems,
   selectedSceneLibraryId,
   onSelectSceneLibraryId,
-  sceneProfile,
   planStreamEvents,
   planStreamStatus,
   canInterruptGeneration,
@@ -84,19 +60,7 @@ export function DocumentSetup({
   const [objective, setObjective] = useState(
     () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先给出学习章节顺序，再拆分每章的细分学习要点。"
   );
-  const [editingUnitId, setEditingUnitId] = useState("");
-  const [unitTitleDraft, setUnitTitleDraft] = useState("");
-
-  useEffect(() => {
-    if (!editingUnitId || !document) {
-      return;
-    }
-    const editingUnit = document.studyUnits.find((unit) => unit.id === editingUnitId);
-    if (!editingUnit) {
-      setEditingUnitId("");
-      setUnitTitleDraft("");
-    }
-  }, [document, editingUnitId]);
+  const [showRoundDetails, setShowRoundDetails] = useState(false);
 
   useEffect(() => {
     onCachedStateChange?.({
@@ -109,14 +73,40 @@ export function DocumentSetup({
   const planRoundSummary = summarizePlanRounds(planStreamEvents);
   const shouldShowPlanRounds =
     planStreamStatus !== "idle" || planStreamEvents.length > 0 || planRoundSummary.rounds.length > 0;
-  const displayedStudyUnits = document?.studyUnits.length
-    ? document.studyUnits
-    : (plan?.studyUnits ?? []);
+  const isGenerateDisabled = isBusy || (generationMode === "document" && !file) || Boolean(generationBlockedReason);
+  const generateButtonLabel = isBusy ? "处理中…" : generationMode === "document" ? "生成计划" : "按目标生成";
+
+  const handleGenerate = () => {
+    if (generationMode === "document" && !file) {
+      return;
+    }
+    console.info("[vibe-learner] ui:upload_click", {
+      mode: generationMode,
+      filename: file?.name ?? "",
+      sizeBytes: file?.size ?? 0,
+      selectedPersonaId
+    });
+    onGenerate({ mode: generationMode, file, objective });
+  };
 
   return (
     <div className="plan-setup-column" style={styles.wrap}>
       <div style={styles.sectionHead}>
         <span style={styles.sectionTitle}>创建计划</span>
+        <div style={styles.sectionActions}>
+          <button
+            type="button"
+            style={{
+              ...styles.primaryButton,
+              ...(isGenerateDisabled ? styles.buttonDisabled : {})
+            }}
+            disabled={isGenerateDisabled}
+            onClick={handleGenerate}
+          >
+            <MaterialIcon name="upload" size={18} />
+            {generateButtonLabel}
+          </button>
+        </div>
       </div>
 
       <section style={styles.card}>
@@ -150,30 +140,11 @@ export function DocumentSetup({
           </select>
         </label>
 
-        <div style={styles.actionRow}>
-          <AppLink path="/scene-setup" style={styles.iconButton} aria-label="打开场景编辑" title="去场景编辑">
-            <MaterialIcon name="account_tree" size={18} />
-          </AppLink>
-          <button
-            type="button"
-            style={{
-              ...styles.iconButton,
-              ...((!canOpenStudyDialog || isBusy) ? styles.buttonDisabled : {})
-            }}
-            disabled={!canOpenStudyDialog || isBusy}
-            onClick={onOpenStudyDialog}
-            aria-label={hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
-            title={hasStudySession ? "打开章节对话" : "创建并打开章节对话"}
-          >
-            <MaterialIcon name="chat" size={18} />
-          </button>
-        </div>
       </section>
 
       <section style={styles.card}>
         <div style={styles.cardHead}>
           <span style={styles.cardTitle}>教材与目标</span>
-          <span style={styles.cardMeta}>上传教材或直接按目标生成计划</span>
         </div>
 
         <div style={styles.form}>
@@ -207,30 +178,6 @@ export function DocumentSetup({
             />
           </label>
         </div>
-
-        <button
-          type="button"
-          style={{
-            ...styles.primaryButton,
-            ...((isBusy || (generationMode === "document" && !file) || Boolean(generationBlockedReason))
-              ? styles.buttonDisabled
-              : {})
-          }}
-          disabled={isBusy || (generationMode === "document" && !file) || Boolean(generationBlockedReason)}
-          onClick={() => {
-            if (generationMode === "document" && !file) return;
-            console.info("[vibe-learner] ui:upload_click", {
-              mode: generationMode,
-              filename: file?.name ?? "",
-              sizeBytes: file?.size ?? 0,
-              selectedPersonaId
-            });
-            onGenerate({ mode: generationMode, file, objective });
-          }}
-        >
-          <MaterialIcon name="upload" size={18} />
-          {isBusy ? "处理中…" : generationMode === "document" ? "生成计划" : "按目标生成"}
-        </button>
 
         {generationBlockedReason ? (
           <div style={styles.warningCard}>
@@ -291,144 +238,49 @@ export function DocumentSetup({
             ) : null}
 
             {planRoundSummary.rounds.length ? (
-              <div style={styles.roundList}>
-                {planRoundSummary.rounds.map((round) => (
-                  <div key={round.roundIndex} style={styles.roundCard}>
-                    <div style={styles.roundHeader}>
-                      <strong style={styles.roundTitle}>第 {round.roundIndex + 1} 轮</strong>
-                      <span style={roundStatusBadgeStyle(round.status)}>
-                        {formatRoundStatus(round.status)}
-                      </span>
-                    </div>
-                    <span style={styles.roundMeta}>
-                      工具 {round.toolCalls.length}
-                      {round.finishReason ? ` · finish=${round.finishReason}` : ""}
-                      {typeof round.elapsedMs === "number" ? ` · ${round.elapsedMs} ms` : ""}
-                    </span>
-                    {round.error ? <span style={styles.roundError}>出错：{round.error}</span> : null}
-                    {round.toolCalls.length ? (
-                      <div style={styles.roundToolList}>
-                        {round.toolCalls.map((toolName, index) => (
-                          <span key={`${round.roundIndex}:${toolName}:${index}`} style={styles.roundToolTag}>
-                            {toolName}
+              <div style={styles.foldSection}>
+                <button
+                  type="button"
+                  style={styles.foldButton}
+                  onClick={() => setShowRoundDetails((current) => !current)}
+                >
+                  {showRoundDetails ? "收起调用细节" : `查看调用细节 · ${planRoundSummary.rounds.length} 轮`}
+                </button>
+
+                {showRoundDetails ? (
+                  <div style={styles.roundList}>
+                    {planRoundSummary.rounds.map((round) => (
+                      <div key={round.roundIndex} style={styles.roundCard}>
+                        <div style={styles.roundHeader}>
+                          <strong style={styles.roundTitle}>第 {round.roundIndex + 1} 轮</strong>
+                          <span style={roundStatusBadgeStyle(round.status)}>
+                            {formatRoundStatus(round.status)}
                           </span>
-                        ))}
+                        </div>
+                        <span style={styles.roundMeta}>
+                          工具 {round.toolCalls.length}
+                          {round.finishReason ? ` · finish=${round.finishReason}` : ""}
+                          {typeof round.elapsedMs === "number" ? ` · ${round.elapsedMs} ms` : ""}
+                        </span>
+                        {round.error ? <span style={styles.roundError}>出错：{round.error}</span> : null}
+                        {round.toolCalls.length ? (
+                          <div style={styles.roundToolList}>
+                            {round.toolCalls.map((toolName, index) => (
+                              <span key={`${round.roundIndex}:${toolName}:${index}`} style={styles.roundToolTag}>
+                                {toolName}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
+                    ))}
                   </div>
-                ))}
+                ) : null}
               </div>
             ) : null}
           </div>
         ) : null}
       </section>
-
-      <div style={styles.statusGrid}>
-        <div style={styles.statusItem}>
-          <span style={styles.statusLabel}>教材</span>
-          <span style={styles.statusValue}>
-            {document
-              ? formatDocumentSummary(document)
-              : plan?.creationMode === "goal_only"
-                ? "仅目标模式"
-                : "未上传"}
-          </span>
-        </div>
-        <div style={styles.statusItem}>
-          <span style={styles.statusLabel}>计划</span>
-          <span style={styles.statusValue}>
-            {plan ? `${plan.todayTasks.length} 条任务` : "未生成"}
-          </span>
-        </div>
-        <div style={styles.statusItem}>
-          <span style={styles.statusLabel}>会话</span>
-          <span style={styles.statusValue}>
-            {session ? formatSessionStatus(session.status) : "未创建"}
-          </span>
-        </div>
-        <div style={styles.statusItem}>
-          <span style={styles.statusLabel}>场景</span>
-          <span style={styles.statusValue}>
-            {sceneProfile ? formatSceneSummary(sceneProfile) : "未配置"}
-          </span>
-        </div>
-      </div>
-
-      {displayedStudyUnits.length ? (
-        <div style={styles.unitSection}>
-          <span style={styles.unitSectionLabel}>学习单元</span>
-          <div style={styles.unitList}>
-            {displayedStudyUnits.map((unit) => (
-              <div key={unit.id} style={styles.unitItem}>
-                {editingUnitId === unit.id ? (
-                  <div style={styles.unitEditWrap}>
-                    <input
-                      value={unitTitleDraft}
-                      onChange={(event) => setUnitTitleDraft(event.target.value)}
-                      style={styles.unitTitleInput}
-                      placeholder="输入学习单元标题"
-                      disabled={isBusy}
-                    />
-                    <div style={styles.unitActionRow}>
-                      <button
-                        type="button"
-                        style={{
-                          ...styles.unitActionButtonPrimary,
-                          ...((isBusy || !unitTitleDraft.trim() || unitTitleDraft.trim() === unit.title.trim())
-                            ? styles.buttonDisabled
-                            : {})
-                        }}
-                        disabled={isBusy || !unitTitleDraft.trim() || unitTitleDraft.trim() === unit.title.trim()}
-                        onClick={() => {
-                          if (!document) return;
-                          void onRenameStudyUnitTitle(document.id, unit.id, unitTitleDraft).then((didSave) => {
-                            if (didSave) {
-                              setEditingUnitId("");
-                              setUnitTitleDraft("");
-                            }
-                          });
-                        }}
-                      >
-                        保存
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.unitActionButton}
-                        disabled={isBusy}
-                        onClick={() => {
-                          setEditingUnitId("");
-                          setUnitTitleDraft("");
-                        }}
-                      >
-                        取消
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={styles.unitTitleRow}>
-                    <span style={styles.unitTitle}>{unit.title}</span>
-                    <button
-                      type="button"
-                      style={styles.unitEditButton}
-                      disabled={isBusy || !document}
-                      onClick={() => {
-                        setEditingUnitId(unit.id);
-                        setUnitTitleDraft(unit.title);
-                      }}
-                    >
-                      改名
-                    </button>
-                  </div>
-                )}
-                <span style={styles.unitMeta}>
-                  p.{unit.pageStart}–{unit.pageEnd} · {formatUnitKind(unit.unitKind)}
-                  {unit.includeInPlan ? "" : " · 已跳过"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -436,29 +288,33 @@ export function DocumentSetup({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
-    gap: 18
+    gap: 16,
+    paddingRight: 4,
   },
   sectionHead: {
-    display: "grid",
-    gap: 4,
-    paddingBottom: 4
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+    minHeight: 24
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: 700,
     color: "var(--ink)"
   },
-  sectionMeta: {
-    fontSize: 12,
-    color: "var(--muted)",
-    lineHeight: 1.6
+  sectionActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8
   },
   card: {
     display: "grid",
     gap: 14,
     padding: 16,
     border: "1px solid var(--border)",
-    background: "var(--panel)"
+    background: "white"
   },
   cardHead: {
     display: "grid",
@@ -468,10 +324,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     fontWeight: 700,
     color: "var(--ink)"
-  },
-  cardMeta: {
-    fontSize: 12,
-    color: "var(--muted)"
   },
   form: {
     display: "grid",
@@ -515,29 +367,6 @@ const styles: Record<string, CSSProperties> = {
     background: "white",
     color: "var(--ink)",
     fontSize: 13
-  },
-  fieldHint: {
-    fontSize: 12,
-    color: "var(--muted)",
-    lineHeight: 1.5
-  },
-  actionRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 10
-  },
-  iconButton: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 34,
-    height: 34,
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--accent)",
-    fontSize: 13,
-    cursor: "pointer",
-    flexShrink: 0
   },
   primaryButton: {
     border: "none",
@@ -638,9 +467,9 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)"
   },
   progressNotice: {
-    padding: "10px 12px",
-    border: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border))",
-    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
+    padding: "8px 10px",
+    border: "1px solid var(--border)",
+    background: "white",
     color: "var(--ink)",
     fontSize: 12,
     lineHeight: 1.6
@@ -653,7 +482,7 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 4,
     padding: "10px 12px",
-    border: "1px solid color-mix(in srgb, var(--accent) 16%, var(--border))",
+    border: "1px solid var(--border)",
     background: "white",
     fontSize: 12,
     color: "var(--ink)",
@@ -661,7 +490,7 @@ const styles: Record<string, CSSProperties> = {
   },
   questionNoticeLabel: {
     fontSize: 11,
-    color: "var(--accent)",
+    color: "var(--muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em"
   },
@@ -709,153 +538,27 @@ const styles: Record<string, CSSProperties> = {
   },
   roundToolTag: {
     padding: "4px 8px",
-    border: "1px solid color-mix(in srgb, var(--accent) 18%, var(--border))",
-    background: "color-mix(in srgb, white 88%, var(--accent-soft))",
-    color: "var(--accent)",
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--muted)",
     fontSize: 12
   },
-  statusGrid: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px 20px",
-    padding: "14px 0 0",
-    borderTop: "1px solid var(--border)"
-  },
-  statusItem: {
-    display: "flex",
-    gap: 6,
-    alignItems: "baseline"
-  },
-  statusLabel: {
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: "0.06em",
-    color: "var(--muted)",
-    fontWeight: 600
-  },
-  statusValue: {
-    fontSize: 13,
-    color: "var(--ink)"
-  },
-  unitSection: {
+  foldSection: {
     display: "grid",
-    gap: 10,
-    paddingTop: 18,
-    borderTop: "1px solid var(--border)"
-  },
-  unitSectionLabel: {
-    fontSize: 11,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.07em",
-    color: "var(--muted)"
-  },
-  unitList: {
-    display: "grid",
-    gap: 8
-  },
-  unitItem: {
-    display: "grid",
-    gap: 2,
-    padding: "10px 12px",
-    background: "var(--panel)",
-    border: "1px solid var(--border)"
-  },
-  unitTitleRow: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
     gap: 10
   },
-  unitTitle: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--ink)"
-  },
-  unitEditWrap: {
-    display: "grid",
-    gap: 8
-  },
-  unitTitleInput: {
-    width: "100%",
-    minHeight: 36,
-    border: "1px solid var(--border-strong)",
-    padding: "6px 10px",
-    background: "white",
-    color: "var(--ink)",
-    fontSize: 13,
-    fontWeight: 600
-  },
-  unitActionRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8
-  },
-  unitActionButton: {
+  foldButton: {
     minHeight: 30,
-    border: "1px solid var(--border)",
+    width: "fit-content",
+    border: "1px solid color-mix(in srgb, var(--accent) 18%, var(--border))",
     padding: "0 10px",
     background: "white",
-    color: "var(--muted)",
-    fontSize: 12,
-    cursor: "pointer"
-  },
-  unitActionButtonPrimary: {
-    minHeight: 30,
-    border: "none",
-    padding: "0 10px",
-    background: "var(--accent)",
-    color: "white",
+    color: "var(--accent)",
     fontSize: 12,
     fontWeight: 600,
     cursor: "pointer"
-  },
-  unitEditButton: {
-    minHeight: 28,
-    border: "1px solid var(--border)",
-    padding: "0 8px",
-    background: "white",
-    color: "var(--muted)",
-    fontSize: 12,
-    cursor: "pointer",
-    whiteSpace: "nowrap"
-  },
-  unitMeta: {
-    fontSize: 12,
-    color: "var(--muted)"
   }
 };
-
-function formatDocumentSummary(document: DocumentRecord) {
-  return `${document.title} · ${document.studyUnitCount || document.sections.length} 个单元`;
-}
-
-function formatSceneSummary(sceneProfile: SceneProfile) {
-  const path = sceneProfile.selectedPath.join(" / ");
-  return path ? `${sceneProfile.title} · ${path}` : sceneProfile.title || sceneProfile.sceneName || "未命名场景";
-}
-
-function formatSessionStatus(status: string) {
-  switch (status) {
-    case "active":
-      return "进行中";
-    case "completed":
-      return "已完成";
-    default:
-      return status || "未知";
-  }
-}
-
-function formatUnitKind(unitKind: string) {
-  switch (unitKind) {
-    case "chapter":
-      return "章节";
-    case "section":
-      return "小节";
-    default:
-      return unitKind || "单元";
-  }
-}
 
 type PlanRoundStatus = "running" | "completed" | "failed";
 
