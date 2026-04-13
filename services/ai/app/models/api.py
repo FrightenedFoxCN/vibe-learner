@@ -445,7 +445,6 @@ class LearningPlanCreateRequest(LearningGoalInput):
 
 class LearningPlanUpdateRequest(BaseModel):
     course_title: str | None = Field(default=None, min_length=1)
-    study_chapters: list[str] | None = None
 
 
 class LearningPlanProgressUpdateRequest(BaseModel):
@@ -531,13 +530,13 @@ class CreateStudySessionRequest(BaseModel):
     persona_id: str
     plan_id: str | None = None
     scene_profile: SceneProfileRecord | None = None
-    section_id: str
-    section_title: str = ""
+    study_unit_id: str
+    study_unit_title: str = ""
     theme_hint: str = ""
 
 
 class UpdateStudySessionRequest(BaseModel):
-    section_id: str | None = None
+    study_unit_id: str | None = None
     scene_profile: SceneProfileRecord | None = None
 
 

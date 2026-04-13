@@ -13,7 +13,7 @@ _VECTOR_SIZE = 384
 @dataclass
 class _MemoryCandidate:
     session_id: str
-    section_id: str
+    study_unit_id: str
     scene_title: str
     snippet: str
     created_at: str
@@ -24,7 +24,7 @@ def retrieve_memory_hits(
     *,
     sessions: list[StudySessionRecord],
     current_session_id: str,
-    active_section_id: str,
+    active_study_unit_id: str,
     query: str,
     active_scene_summary: str,
     top_k: int = 5,
@@ -48,7 +48,7 @@ def retrieve_memory_hits(
         score = _cosine(query_vector, candidate_vector)
         if score <= 0:
             continue
-        if candidate.section_id == active_section_id:
+        if candidate.study_unit_id == active_study_unit_id:
             score += 0.08
         if active_scene_summary and candidate.scene_title != "未设置场景":
             score += 0.03
@@ -60,7 +60,7 @@ def retrieve_memory_hits(
         results.append(
             MemoryTraceHitRecord(
                 session_id=candidate.session_id,
-                section_id=candidate.section_id,
+                study_unit_id=candidate.study_unit_id,
                 scene_title=candidate.scene_title,
                 score=round(score, 4),
                 snippet=candidate.snippet,
@@ -76,7 +76,7 @@ def build_memory_context(hits: list[MemoryTraceHitRecord]) -> str:
         return ""
     lines = [
         (
-            f"- score={hit.score:.4f} | session={hit.session_id} | section={hit.section_id} "
+            f"- score={hit.score:.4f} | session={hit.session_id} | study_unit={hit.study_unit_id} "
             f"| scene={hit.scene_title} | snippet={hit.snippet}"
         )
         for hit in hits
@@ -101,7 +101,7 @@ def _build_candidates(
             candidates.append(
                 _MemoryCandidate(
                     session_id=session.id,
-                    section_id=session.section_id,
+                    study_unit_id=session.study_unit_id,
                     scene_title=scene_title,
                     snippet=_truncate(merged, 180),
                     created_at=turn.created_at,

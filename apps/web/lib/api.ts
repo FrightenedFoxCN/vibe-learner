@@ -480,7 +480,27 @@ function normalizeScheduleItem(item: any) {
     title: item.title,
     focus: item.focus,
     activityType: item.activity_type,
-    status: item.status
+    status: item.status,
+    scheduleChapters: Array.isArray(item.schedule_chapters)
+      ? item.schedule_chapters.map((chapter: any) => ({
+          id: String(chapter.id ?? ""),
+          title: String(chapter.title ?? ""),
+          anchorPageStart: Number(chapter.anchor_page_start ?? 0),
+          anchorPageEnd: Number(chapter.anchor_page_end ?? 0),
+          sourceSectionIds: Array.isArray(chapter.source_section_ids)
+            ? chapter.source_section_ids.map((entry: unknown) => String(entry))
+            : [],
+          contentSlices: Array.isArray(chapter.content_slices)
+            ? chapter.content_slices.map((slice: any) => ({
+                pageStart: Number(slice.page_start ?? 0),
+                pageEnd: Number(slice.page_end ?? 0),
+                sourceSectionIds: Array.isArray(slice.source_section_ids)
+                  ? slice.source_section_ids.map((entry: unknown) => String(entry))
+                  : [],
+              }))
+            : [],
+        }))
+      : [],
   };
 }
 
@@ -751,9 +771,6 @@ function normalizePlan(plan: any): LearningPlan {
     sceneProfileSummary: String(plan.scene_profile_summary ?? ""),
     sceneProfile: normalizeSceneProfile(plan.scene_profile),
     overview: plan.overview,
-    studyChapters: Array.isArray(plan.study_chapters)
-      ? plan.study_chapters.map((item: unknown) => String(item))
-      : [],
     todayTasks: plan.today_tasks,
     studyUnits: plan.study_units.map(normalizeStudyUnit),
     schedule: plan.schedule.map(normalizeScheduleItem),
@@ -765,8 +782,8 @@ function normalizePlan(plan: any): LearningPlan {
       blockedScheduleCount: Number(plan.progress_summary?.blocked_schedule_count ?? 0),
       completionPercent: Number(plan.progress_summary?.completion_percent ?? 0),
     },
-    chapterProgress: Array.isArray(plan.chapter_progress)
-      ? plan.chapter_progress.map((item: any) => ({
+    studyUnitProgress: Array.isArray(plan.study_unit_progress)
+      ? plan.study_unit_progress.map((item: any) => ({
           unitId: String(item.unit_id ?? ""),
           title: String(item.title ?? ""),
           objectiveFragment: String(item.objective_fragment ?? ""),
@@ -884,7 +901,7 @@ function normalizeMemoryTrace(items: any[] | undefined) {
   const raw = Array.isArray(items) ? items : [];
   return raw.map((item: any) => ({
     sessionId: String(item.session_id ?? ""),
-    sectionId: String(item.section_id ?? ""),
+    studyUnitId: String(item.study_unit_id ?? ""),
     sceneTitle: String(item.scene_title ?? ""),
     score: Number(item.score ?? 0),
     snippet: compactPreviewString(String(item.snippet ?? ""), 240),
@@ -1121,8 +1138,8 @@ function normalizeSession(session: any): StudySessionRecord {
     planId: session.plan_id ?? null,
     sceneInstanceId: String(session.scene_instance_id ?? ""),
     sceneProfile: normalizeSceneProfile(session.scene_profile),
-    sectionId: session.section_id,
-    sectionTitle: session.section_title ?? "",
+    studyUnitId: String(session.study_unit_id ?? ""),
+    studyUnitTitle: String(session.study_unit_title ?? ""),
     themeHint: session.theme_hint ?? "",
     sessionSystemPrompt: compactPreviewString(session.session_system_prompt ?? "", 1200),
     status: session.status,
@@ -1171,8 +1188,8 @@ function normalizeSession(session: any): StudySessionRecord {
         createdAt: turn.created_at
       };
     }),
-    preparedSectionIds: Array.isArray(session.prepared_section_ids)
-      ? session.prepared_section_ids.map((item: unknown) => String(item))
+    preparedStudyUnitIds: Array.isArray(session.prepared_study_unit_ids)
+      ? session.prepared_study_unit_ids.map((item: unknown) => String(item))
       : [],
     pendingFollowUps: normalizeSessionFollowUps(session.pending_follow_ups),
     sessionMemory: normalizeSessionMemory(session.session_memory),
@@ -1960,24 +1977,6 @@ export async function updateLearningPlanTitle(
   return normalizePlan(payload);
 }
 
-export async function updateLearningPlanStudyChapters(
-  planId: string,
-  studyChapters: string[]
-): Promise<LearningPlan> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        study_chapters: studyChapters
-      })
-    })
-  );
-  return normalizePlan(payload);
-}
-
 export async function updateLearningPlanProgress(input: {
   planId: string;
   scheduleIds: string[];
@@ -2109,8 +2108,8 @@ export async function createStudySession(input: {
   personaId: string;
   planId?: string | null;
   sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
-  sectionId: string;
-  sectionTitle?: string;
+  studyUnitId: string;
+  studyUnitTitle?: string;
   themeHint?: string;
 }): Promise<StudySessionRecord> {
   const payload = await readJson<any>(
@@ -2124,8 +2123,8 @@ export async function createStudySession(input: {
         persona_id: input.personaId,
         plan_id: input.planId ?? null,
         scene_profile: serializeSceneProfile(input.sceneProfile),
-        section_id: input.sectionId,
-        section_title: input.sectionTitle ?? "",
+        study_unit_id: input.studyUnitId,
+        study_unit_title: input.studyUnitTitle ?? "",
         theme_hint: input.themeHint ?? ""
       })
     })
@@ -2145,13 +2144,13 @@ export async function listStudySessions(input: {
   documentId?: string;
   personaId?: string;
   planId?: string;
-  sectionId?: string;
+  studyUnitId?: string;
 }): Promise<StudySessionRecord[]> {
   const query = new URLSearchParams();
   if (input.documentId) query.set("document_id", input.documentId);
   if (input.personaId) query.set("persona_id", input.personaId);
   if (input.planId) query.set("plan_id", input.planId);
-  if (input.sectionId) query.set("section_id", input.sectionId);
+  if (input.studyUnitId) query.set("study_unit_id", input.studyUnitId);
   const suffix = query.toString();
   const payload = await readJson<{ items: any[] }>(
     await request(`${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`)
@@ -2159,14 +2158,14 @@ export async function listStudySessions(input: {
   return payload.items.map(normalizeSession);
 }
 
-export async function updateStudySessionSection(input: {
+export async function updateStudySessionStudyUnit(input: {
   sessionId: string;
-  sectionId?: string;
+  studyUnitId?: string;
   sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<StudySessionRecord> {
   const body: Record<string, unknown> = {};
-  if (typeof input.sectionId === "string") {
-    body.section_id = input.sectionId;
+  if (typeof input.studyUnitId === "string") {
+    body.study_unit_id = input.studyUnitId;
   }
   if (Object.prototype.hasOwnProperty.call(input, "sceneProfile")) {
     body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);

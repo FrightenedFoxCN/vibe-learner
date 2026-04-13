@@ -17,8 +17,8 @@ def build_study_session_system_prompt(
     persona_relationship: str,
     persona_learner_address: str,
     document_title: str,
-    section_id: str,
-    section_title: str,
+    study_unit_id: str,
+    study_unit_title: str,
     theme_hint: str,
     scene_profile: SceneProfileRecord | None = None,
 ) -> str:
@@ -34,8 +34,8 @@ def build_study_session_system_prompt(
         .replace("{{PERSONA_RELATIONSHIP}}", persona_relationship.strip() or "无")
         .replace("{{PERSONA_LEARNER_ADDRESS}}", persona_learner_address.strip() or "无")
         .replace("{{DOCUMENT_TITLE}}", document_title.strip())
-        .replace("{{SECTION_ID}}", section_id.strip())
-        .replace("{{SECTION_TITLE}}", section_title.strip())
+        .replace("{{STUDY_UNIT_ID}}", study_unit_id.strip())
+        .replace("{{STUDY_UNIT_TITLE}}", study_unit_title.strip())
         .replace("{{THEME_HINT}}", theme_hint.strip() or "无")
         .replace("{{SCENE_PROFILE_SUMMARY}}", scene_summary or "无")
         .replace("{{SCENE_PROFILE_TITLE}}", scene_title or "无")

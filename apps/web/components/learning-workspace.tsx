@@ -38,7 +38,6 @@ export function LearningWorkspace() {
     cancelPlanGeneration,
     selectPlan,
     renamePlanTitle,
-    updatePlanStudyChapters,
     updatePlanProgress,
     answerPlanQuestion,
     removePlan,
@@ -50,12 +49,14 @@ export function LearningWorkspace() {
   const planSetupCache = getPageCache("planSetup");
 
   const handleStartStudyFromPlan = async (input: {
-    sectionId: string;
+    studyUnitId: string;
+    scheduleId: string;
+    scheduleChapterId?: string;
     chapter: string;
     page: number;
     scheduleIds: string[];
   }) => {
-    if (!activePlan || !input.sectionId) {
+    if (!activePlan || !input.studyUnitId) {
       return;
     }
     if (input.scheduleIds.length) {
@@ -65,9 +66,11 @@ export function LearningWorkspace() {
         status: "in_progress",
       });
     }
-    await handleSwitchSection(input.sectionId);
+    await handleSwitchSection(input.studyUnitId);
     appNavigator.push("/study", {
       plan: activePlan.id,
+      schedule: input.scheduleId,
+      scheduleChapter: input.scheduleChapterId ?? "",
       chapter: input.chapter,
       page: Math.max(1, input.page),
     });
@@ -118,7 +121,6 @@ export function LearningWorkspace() {
             sceneProfile={activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
             isBusy={isBusy}
             onRenamePlan={renamePlanTitle}
-            onUpdateStudyChapters={updatePlanStudyChapters}
             onUpdatePlanProgress={updatePlanProgress}
             onAnswerPlanningQuestion={answerPlanQuestion}
             onStartStudyFromPlan={handleStartStudyFromPlan}

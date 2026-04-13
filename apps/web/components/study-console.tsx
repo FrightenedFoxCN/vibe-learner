@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import type {
   CharacterStateEvent,
   Citation,
-  DocumentSection,
   InteractiveQuestion,
   PersonaProfile,
+  ScheduleChapter,
   SceneProfile,
   SessionAffinityState,
   SessionFollowUp,
@@ -37,17 +37,17 @@ interface StudyConsoleProps {
     isCorrect: boolean;
     explanation: string;
   }) => void | Promise<void>;
-  onChangeChapter: (chapter: string) => void;
+  onChangeSchedule: (scheduleId: string) => void;
   onOpenCitation?: (citation: Citation) => void;
-  onJumpToChapterStart?: () => void;
-  canJumpToChapterStart?: boolean;
+  onJumpToScheduleStart?: () => void;
+  canJumpToScheduleStart?: boolean;
   chatErrorMessage?: string;
   onRetryLastAsk?: () => void | Promise<void>;
-  selectedChapter: string;
-  studyChapters: string[];
-  selectedSubsectionId?: string;
-  subsectionOptions?: DocumentSection[];
-  onChangeSubsection?: (subsectionId: string) => void;
+  selectedScheduleId: string;
+  scheduleOptions: Array<{ id: string; title: string }>;
+  selectedScheduleChapterId?: string;
+  scheduleChapterOptions?: ScheduleChapter[];
+  onChangeScheduleChapter?: (scheduleChapterId: string) => void;
   turns: StudySessionRecord["turns"];
   session: StudyChatResponse | null;
   persona: PersonaProfile;
@@ -78,17 +78,17 @@ export function StudyConsole({
   isPending,
   onAsk,
   onSubmitQuestionAttempt,
-  onChangeChapter,
+  onChangeSchedule,
   onOpenCitation,
-  onJumpToChapterStart,
-  canJumpToChapterStart,
+  onJumpToScheduleStart,
+  canJumpToScheduleStart,
   chatErrorMessage,
   onRetryLastAsk,
-  selectedChapter,
-  studyChapters,
-  selectedSubsectionId,
-  subsectionOptions = [],
-  onChangeSubsection,
+  selectedScheduleId,
+  scheduleOptions,
+  selectedScheduleChapterId,
+  scheduleChapterOptions = [],
+  onChangeScheduleChapter,
   turns,
   session,
   persona,
@@ -179,27 +179,29 @@ export function StudyConsole({
           <div style={styles.consoleHead}>
             <div style={styles.consoleMeta}>
               <span style={styles.caption}>章节对话</span>
-              <h2 style={styles.consoleTitle}>{selectedChapter || "选择章节后开始对话"}</h2>
+              <h2 style={styles.consoleTitle}>
+                {scheduleOptions.find((item) => item.id === selectedScheduleId)?.title || "选择排期项后开始对话"}
+              </h2>
             </div>
           </div>
 
           <div style={styles.controlStack}>
             <div style={styles.themeRow}>
               <label style={styles.themeLabel}>
-                <span style={styles.caption}>学习章节</span>
+                <span style={styles.caption}>排期项</span>
                 <select
                   style={styles.select}
-                  value={selectedChapter}
-                  onChange={(event) => onChangeChapter(event.target.value)}
+                  value={selectedScheduleId}
+                  onChange={(event) => onChangeSchedule(event.target.value)}
                   disabled={isPending || disabled}
-                  title={selectedChapter || "暂无学习章节"}
+                  title={scheduleOptions.find((item) => item.id === selectedScheduleId)?.title || "暂无排期项"}
                 >
-                  {studyChapters.length ? (
-                    studyChapters.map((chapter) => (
-                      <option key={chapter} value={chapter}>{chapter}</option>
+                  {scheduleOptions.length ? (
+                    scheduleOptions.map((item) => (
+                      <option key={item.id} value={item.id}>{item.title}</option>
                     ))
                   ) : (
-                    <option value="">暂无学习章节</option>
+                    <option value="">暂无排期项</option>
                   )}
                 </select>
               </label>
@@ -207,12 +209,12 @@ export function StudyConsole({
                 type="button"
                 style={{
                   ...styles.ghostBtn,
-                  ...(isPending || disabled || !onJumpToChapterStart || !canJumpToChapterStart ? styles.btnDisabled : {})
+                  ...(isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart ? styles.btnDisabled : {})
                 }}
-                disabled={isPending || disabled || !onJumpToChapterStart || !canJumpToChapterStart}
-                onClick={() => { if (onJumpToChapterStart) onJumpToChapterStart(); }}
+                disabled={isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart}
+                onClick={() => { if (onJumpToScheduleStart) onJumpToScheduleStart(); }}
               >
-                定位章节首页
+                定位排期首页
               </button>
               <button
                 type="button"
@@ -229,18 +231,18 @@ export function StudyConsole({
 
             <div style={styles.themeRow}>
               <label style={styles.themeLabel}>
-                <span style={styles.caption}>子章节</span>
+                <span style={styles.caption}>学习章节</span>
                 <select
                   style={styles.select}
-                  value={selectedSubsectionId ?? ""}
-                  onChange={(event) => { if (onChangeSubsection) onChangeSubsection(event.target.value); }}
-                  disabled={isPending || disabled || !subsectionOptions.length || !onChangeSubsection}
-                  title={selectedSubsectionId || "整章"}
+                  value={selectedScheduleChapterId ?? ""}
+                  onChange={(event) => { if (onChangeScheduleChapter) onChangeScheduleChapter(event.target.value); }}
+                  disabled={isPending || disabled || !scheduleChapterOptions.length || !onChangeScheduleChapter}
+                  title={selectedScheduleChapterId || "整项范围"}
                 >
-                  <option value="">整章范围</option>
-                  {subsectionOptions.map((subsection) => (
-                    <option key={subsection.id} value={subsection.id}>
-                      {subsection.title} · p.{subsection.pageStart}-{subsection.pageEnd}
+                  <option value="">整项范围</option>
+                  {scheduleChapterOptions.map((chapter) => (
+                    <option key={chapter.id} value={chapter.id}>
+                      {chapter.title} · p.{chapter.anchorPageStart}-{chapter.anchorPageEnd}
                     </option>
                   ))}
                 </select>

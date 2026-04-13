@@ -48,7 +48,7 @@ class StudySessionRow(Base):
     document_id: Mapped[str] = mapped_column(String(64), index=True, default="")
     persona_id: Mapped[str] = mapped_column(String(64), index=True, default="")
     plan_id: Mapped[str] = mapped_column(String(64), index=True, default="")
-    section_id: Mapped[str] = mapped_column(String(128), default="")
+    study_unit_id: Mapped[str] = mapped_column(String(128), default="")
     status: Mapped[str] = mapped_column(String(32), default="active")
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")

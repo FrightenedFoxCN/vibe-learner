@@ -35,8 +35,8 @@ class StudySessionService:
         plan_id: str | None = None,
         scene_instance_id: str = "",
         scene_profile: SceneProfileRecord | None = None,
-        section_id: str,
-        section_title: str = "",
+        study_unit_id: str,
+        study_unit_title: str = "",
         theme_hint: str = "",
         session_system_prompt: str = "",
     ) -> StudySessionRecord:
@@ -47,13 +47,13 @@ class StudySessionService:
             plan_id=plan_id,
             scene_instance_id=scene_instance_id,
             scene_profile=scene_profile,
-            section_id=section_id,
-            section_title=section_title,
+            study_unit_id=study_unit_id,
+            study_unit_title=study_unit_title,
             theme_hint=theme_hint,
             session_system_prompt=session_system_prompt,
             status="active",
             turns=[],
-            prepared_section_ids=[],
+            prepared_study_unit_ids=[],
             pending_follow_ups=[],
             session_memory=[],
             affinity_state=SessionAffinityStateRecord(),
@@ -75,7 +75,7 @@ class StudySessionService:
         learner_message_kind: str = "learner",
         learner_attachments: list[LearnerAttachmentRecord] | None = None,
         result: StudyChatResult,
-        prepared_section_id: str | None = None,
+        prepared_study_unit_id: str | None = None,
     ) -> StudySessionRecord:
         sessions = self._load_sessions()
         session = self.require_session(session_id, sessions)
@@ -97,10 +97,10 @@ class StudySessionService:
                 created_at=_now(),
             )
         )
-        if prepared_section_id:
-            normalized = prepared_section_id.strip()
-            if normalized and normalized not in session.prepared_section_ids:
-                session.prepared_section_ids.append(normalized)
+        if prepared_study_unit_id:
+            normalized = prepared_study_unit_id.strip()
+            if normalized and normalized not in session.prepared_study_unit_ids:
+                session.prepared_study_unit_ids.append(normalized)
         if result.scene_profile is not None:
             session.scene_profile = result.scene_profile
         session.updated_at = _now()
@@ -111,26 +111,26 @@ class StudySessionService:
         self,
         *,
         session_id: str,
-        section_id: str | None = None,
+        study_unit_id: str | None = None,
         scene_instance_id: str | None = None,
         scene_profile: SceneProfileRecord | None = None,
         has_scene_profile: bool = False,
-        section_title: str | None = None,
+        study_unit_title: str | None = None,
         theme_hint: str | None = None,
         session_system_prompt: str | None = None,
     ) -> StudySessionRecord:
         sessions = self._load_sessions()
         session = self.require_session(session_id, sessions)
-        if section_id is not None:
-            if section_id != session.section_id:
+        if study_unit_id is not None:
+            if study_unit_id != session.study_unit_id:
                 self._cancel_pending_follow_ups(session)
-            session.section_id = section_id
+            session.study_unit_id = study_unit_id
         if scene_instance_id is not None:
             session.scene_instance_id = scene_instance_id
         if has_scene_profile:
             session.scene_profile = scene_profile
-        if section_title is not None:
-            session.section_title = section_title
+        if study_unit_title is not None:
+            session.study_unit_title = study_unit_title
         if theme_hint is not None:
             session.theme_hint = theme_hint
         if session_system_prompt is not None:
@@ -441,7 +441,7 @@ class StudySessionService:
         persona_id: str | None = None,
         plan_id: str | None = None,
         scene_id: str | None = None,
-        section_id: str | None = None,
+        study_unit_id: str | None = None,
     ) -> list[StudySessionRecord]:
         sessions = self._load_sessions()
         result = sessions
@@ -457,8 +457,8 @@ class StudySessionService:
                 for session in result
                 if session.scene_profile and session.scene_profile.scene_id == scene_id
             ]
-        if section_id:
-            result = [session for session in result if session.section_id == section_id]
+        if study_unit_id:
+            result = [session for session in result if session.study_unit_id == study_unit_id]
         return result
 
     def _load_sessions(self) -> list[StudySessionRecord]:

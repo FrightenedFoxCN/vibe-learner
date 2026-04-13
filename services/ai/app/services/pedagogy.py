@@ -34,8 +34,8 @@ class PedagogyOrchestrator:
         session_id: str,
         persona: PersonaProfile,
         message: str,
-        section_id: str,
-        section_title: str = "",
+        study_unit_id: str,
+        study_unit_title: str = "",
         theme_hint: str = "",
         active_plan: LearningPlanRecord | None = None,
         session_system_prompt: str = "",
@@ -56,8 +56,8 @@ class PedagogyOrchestrator:
         turns = previous_turns or []
         section_context = _build_section_context(
             debug_report=debug_report,
-            section_id=section_id,
-            section_title=section_title,
+            study_unit_id=study_unit_id,
+            study_unit_title=study_unit_title,
             theme_hint=theme_hint,
             active_plan=active_plan,
         )
@@ -65,7 +65,7 @@ class PedagogyOrchestrator:
         memory_hits = retrieve_memory_hits(
             sessions=memory_sessions or [],
             current_session_id=session_id,
-            active_section_id=section_id,
+            active_study_unit_id=study_unit_id,
             query=message,
             active_scene_summary=active_scene_summary,
             embed_texts=self.model_provider.embed_texts,
@@ -74,7 +74,7 @@ class PedagogyOrchestrator:
         memory_hit_payloads = [item.model_dump(mode="json") for item in memory_hits]
         raw_reply = self.model_provider.generate_chat(
             persona=persona,
-            section_id=section_id,
+            section_id=study_unit_id,
             message=message,
             session_prompt=session_system_prompt,
             section_context=section_context,
@@ -94,8 +94,8 @@ class PedagogyOrchestrator:
         )
         citations = _build_grounded_citations(
             debug_report=debug_report,
-            section_id=section_id,
-            section_title=section_title,
+            study_unit_id=study_unit_id,
+            study_unit_title=study_unit_title,
             message=message,
         )
         turn_index = len(turns)
@@ -109,7 +109,7 @@ class PedagogyOrchestrator:
             delivery_cue=raw_reply.delivery_cue,
             commentary=raw_reply.state_commentary,
         )
-        scene_hint = _build_scene_hint(section_id=section_id, citations=citations)
+        scene_hint = _build_scene_hint(study_unit_id=study_unit_id, citations=citations)
         for event in events:
             event.scene_hint = scene_hint
         tool_events = self.performance_mapper.map_tool_calls_to_events(
@@ -200,45 +200,45 @@ def _build_conversation_history(turns: list[DialogueTurnRecord]) -> list[dict[st
     return history
 
 
-def _build_scene_hint(*, section_id: str, citations: list[Citation]) -> str:
+def _build_scene_hint(*, study_unit_id: str, citations: list[Citation]) -> str:
     if not citations:
-        return f"study_session:{section_id}:overview"
+        return f"study_session:{study_unit_id}:overview"
     start = min(citation.page_start for citation in citations)
     end = max(citation.page_end for citation in citations)
-    return f"study_session:{section_id}:p{start}-{end}"
+    return f"study_session:{study_unit_id}:p{start}-{end}"
 
 
 def _build_section_context(
     *,
     debug_report: DocumentDebugRecord | None,
-    section_id: str,
-    section_title: str = "",
+    study_unit_id: str,
+    study_unit_title: str = "",
     theme_hint: str = "",
     active_plan: LearningPlanRecord | None = None,
 ) -> str:
     if debug_report is None:
         return _build_goal_only_section_context(
-            section_id=section_id,
-            section_title=section_title,
+            study_unit_id=study_unit_id,
+            study_unit_title=study_unit_title,
             theme_hint=theme_hint,
             active_plan=active_plan,
         )
 
-    resolved_section_title = section_title or section_id
+    resolved_study_unit_title = study_unit_title or study_unit_id
     page_start = 0
     page_end = 0
-    related_ids = {section_id}
+    related_ids = {study_unit_id}
 
-    study_unit = next((unit for unit in debug_report.study_units if unit.id == section_id), None)
+    study_unit = next((unit for unit in debug_report.study_units if unit.id == study_unit_id), None)
     if study_unit is not None:
-        resolved_section_title = study_unit.title
+        resolved_study_unit_title = study_unit.title
         page_start = study_unit.page_start
         page_end = study_unit.page_end
         related_ids.update(study_unit.source_section_ids)
 
-    parsed_section = next((section for section in debug_report.sections if section.id == section_id), None)
-    if parsed_section is not None and resolved_section_title == section_id:
-        resolved_section_title = parsed_section.title
+    parsed_section = next((section for section in debug_report.sections if section.id == study_unit_id), None)
+    if parsed_section is not None and resolved_study_unit_title == study_unit_id:
+        resolved_study_unit_title = parsed_section.title
         page_start = parsed_section.page_start
         page_end = parsed_section.page_end
 
@@ -261,7 +261,7 @@ def _build_section_context(
     excerpt_text = "\n".join(f"- {line}" for line in excerpts)
     if excerpt_text:
         parts = [
-            f"章节：{resolved_section_title} ({section_id})",
+            f"学习单元：{resolved_study_unit_title} ({study_unit_id})",
             f"页码：{page_start}-{page_end}",
         ]
         if theme_hint.strip():
@@ -270,7 +270,7 @@ def _build_section_context(
             parts.append(f"学习目标：{active_plan.objective.strip()}")
         parts.append(f"教材摘录：\n{excerpt_text}")
         return "\n".join(parts)
-    parts = [f"章节：{resolved_section_title} ({section_id})", f"页码：{page_start}-{page_end}"]
+    parts = [f"学习单元：{resolved_study_unit_title} ({study_unit_id})", f"页码：{page_start}-{page_end}"]
     if theme_hint.strip():
         parts.append(f"当前主题：{theme_hint.strip()}")
     if active_plan is not None and active_plan.objective.strip():
@@ -280,13 +280,13 @@ def _build_section_context(
 
 def _build_goal_only_section_context(
     *,
-    section_id: str,
-    section_title: str,
+    study_unit_id: str,
+    study_unit_title: str,
     theme_hint: str,
     active_plan: LearningPlanRecord | None,
 ) -> str:
-    resolved_title = section_title.strip() or section_id
-    parts = [f"章节：{resolved_title} ({section_id})"]
+    resolved_title = study_unit_title.strip() or study_unit_id
+    parts = [f"学习单元：{resolved_title} ({study_unit_id})"]
     if active_plan is not None:
         parts.append(f"计划模式：{active_plan.creation_mode}")
         if active_plan.objective.strip():
@@ -295,7 +295,7 @@ def _build_goal_only_section_context(
             (
                 unit
                 for unit in active_plan.study_units
-                if unit.id == section_id or section_id in unit.source_section_ids
+                if unit.id == study_unit_id or study_unit_id in unit.source_section_ids
             ),
             None,
         )
@@ -303,12 +303,12 @@ def _build_goal_only_section_context(
             parts.append(f"当前主题：{theme_hint.strip()}")
         if matching_unit is not None and matching_unit.summary.strip():
             parts.append(f"阶段摘要：{matching_unit.summary.strip()}")
-        chapter_progress = next(
-            (item for item in active_plan.chapter_progress if item.unit_id == section_id),
+        study_unit_progress = next(
+            (item for item in active_plan.study_unit_progress if item.unit_id == study_unit_id),
             None,
         )
-        if chapter_progress is not None and chapter_progress.objective_fragment.strip():
-            parts.append(f"章节目标：{chapter_progress.objective_fragment.strip()}")
+        if study_unit_progress is not None and study_unit_progress.objective_fragment.strip():
+            parts.append(f"学习单元目标：{study_unit_progress.objective_fragment.strip()}")
     elif theme_hint.strip():
         parts.append(f"当前主题：{theme_hint.strip()}")
     return "\n".join(parts)
@@ -317,34 +317,34 @@ def _build_goal_only_section_context(
 def _build_grounded_citations(
     *,
     debug_report: DocumentDebugRecord | None,
-    section_id: str,
-    section_title: str,
+    study_unit_id: str,
+    study_unit_title: str,
     message: str,
 ) -> list[Citation]:
     if debug_report is None:
         return [
             Citation(
-                section_id=section_id,
-                title=section_title or section_id,
+                section_id=study_unit_id,
+                title=study_unit_title or study_unit_id,
                 page_start=1,
                 page_end=1,
             )
         ]
 
-    title = section_id
+    title = study_unit_id
     page_start = 1
     page_end = 1
-    related_ids = {section_id}
+    related_ids = {study_unit_id}
 
-    unit = next((item for item in debug_report.study_units if item.id == section_id), None)
+    unit = next((item for item in debug_report.study_units if item.id == study_unit_id), None)
     if unit is not None:
         title = unit.title
         page_start = unit.page_start
         page_end = unit.page_end
         related_ids.update(unit.source_section_ids)
 
-    section = next((item for item in debug_report.sections if item.id == section_id), None)
-    if section is not None and title == section_id:
+    section = next((item for item in debug_report.sections if item.id == study_unit_id), None)
+    if section is not None and title == study_unit_id:
         title = section.title
         page_start = section.page_start
         page_end = section.page_end
@@ -362,24 +362,24 @@ def _build_grounded_citations(
             if chunk.page_end >= page_start and chunk.page_start <= page_end
         ]
 
-    scored_chunks = []
+    scored_chunks: list[tuple[int, int, int, str]] = []
     for chunk in candidate_chunks:
         chunk_text = f"{chunk.text_preview}\n{chunk.content}".lower()
         score = sum(1 for token in tokens if token in chunk_text)
-        scored_chunks.append((score, chunk.page_start, chunk.page_end))
+        scored_chunks.append((score, chunk.page_start, chunk.page_end, chunk.section_id))
 
     scored_chunks.sort(key=lambda item: (item[0], -(item[2] - item[1])), reverse=True)
 
     citations: list[Citation] = []
-    seen_ranges: set[tuple[int, int]] = set()
-    for _, start, end in scored_chunks[:3]:
-        key = (start, end)
+    seen_ranges: set[tuple[int, int, str]] = set()
+    for _, start, end, raw_section_id in scored_chunks[:3]:
+        key = (start, end, raw_section_id)
         if key in seen_ranges:
             continue
         seen_ranges.add(key)
         citations.append(
             Citation(
-                section_id=section_id,
+                section_id=raw_section_id,
                 title=title,
                 page_start=start,
                 page_end=end,
@@ -391,7 +391,7 @@ def _build_grounded_citations(
 
     return [
         Citation(
-            section_id=section_id,
+            section_id=next(iter(related_ids - {study_unit_id}), study_unit_id),
             title=title,
             page_start=page_start,
             page_end=page_end,
@@ -450,7 +450,7 @@ def _normalize_memory_trace(
             result.append(
                 MemoryTraceHitRecord(
                     session_id=str(item.get("session_id") or ""),
-                    section_id=str(item.get("section_id") or ""),
+                    study_unit_id=str(item.get("study_unit_id") or item.get("section_id") or ""),
                     scene_title=str(item.get("scene_title") or "未设置场景"),
                     score=float(item.get("score") or 0),
                     snippet=str(item.get("snippet") or ""),

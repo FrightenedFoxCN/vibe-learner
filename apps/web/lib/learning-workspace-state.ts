@@ -61,18 +61,17 @@ export function buildInitialStudySessionInput(input: {
     documentId: input.document?.id ?? input.plan.documentId ?? "",
     personaId: input.personaId,
     planId: input.planId,
-    sectionId:
+    studyUnitId:
       firstUnit?.id ??
-      input.document?.sections[0]?.id ??
+      input.document?.studyUnits[0]?.id ??
       `${input.plan.id}:intro`,
-    sectionTitle:
+    studyUnitTitle:
       firstUnit?.title ??
-      input.document?.sections[0]?.title ??
-      input.plan.studyChapters[0] ??
+      input.document?.studyUnits[0]?.title ??
       `${input.plan.id}:intro`,
     themeHint:
-      input.plan.chapterProgress.find((item) => item.unitId === firstUnit?.id)?.objectiveFragment ??
-      input.plan.studyChapters[0] ??
+      input.plan.studyUnitProgress.find((item) => item.unitId === firstUnit?.id)?.objectiveFragment ??
+      input.plan.schedule.find((item) => item.unitId === firstUnit?.id)?.scheduleChapters[0]?.title ??
       input.plan.objective
   };
 }

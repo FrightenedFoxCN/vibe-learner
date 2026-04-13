@@ -410,10 +410,10 @@ Returns:
   - `course_title`: generated textbook-grounded plan header title
   - `objective`: learner goal captured from the request, used as supporting goal text
   - `overview`: generated summary paragraph
-  - `study_chapters[]`: ordered study chapters used for downstream navigation
   - `today_tasks[]`: actionable learner tasks
 - referenced `study_units[]`
-- planned `schedule[]`
+- planned `schedule[]`, where each item carries nested `schedule_chapters[]`
+- derived `study_unit_progress[]`
 - `created_at`
 
 Text-field naming and display rules are defined in `docs/plan-text-contract.md`.
@@ -466,12 +466,13 @@ The final success line includes the full plan:
 
 Section source note:
 
-- The chapter selector in Learning Workspace is now driven by the active learning plan directory (schedule units).
-- If no schedule units are available, it falls back to parsed document sections.
+- Study sessions are always scoped by `study_unit_id`.
+- Learning Workspace renders a two-level directory: `schedule[]` as the primary list and `schedule_chapters[]` as per-schedule child items.
+- Switching a learning chapter only changes local preview/navigation; switching the parent schedule item is what changes session scope.
 
 ### `POST /study-sessions`
 
-Creates a study session shell for one document/persona/section.
+Creates a study session shell for one document/persona/study-unit scope.
 
 Request body:
 
@@ -479,8 +480,8 @@ Request body:
 {
   "document_id": "doc-123",
   "persona_id": "persona-123",
-  "section_id": "unit-123",
-  "section_title": "optional section title",
+  "study_unit_id": "unit-123",
+  "study_unit_title": "optional study unit title",
   "theme_hint": "optional theme hint"
 }
 ```
@@ -495,7 +496,7 @@ Optional query params:
 
 - `document_id`
 - `persona_id`
-- `section_id`
+- `study_unit_id`
 
 ### `POST /study-sessions/{session_id}/chat`
 
@@ -542,13 +543,13 @@ Returns updated `StudySessionRecord`.
 
 ### `PATCH /study-sessions/{session_id}`
 
-Updates an existing study session. Supports section switch and/or scene profile refresh.
+Updates an existing study session. Supports study-unit switch and/or scene profile refresh.
 
 Request body:
 
 ```json
 {
-  "section_id": "unit-456",
+  "study_unit_id": "unit-456",
   "scene_profile": {
     "scene_name": "高一物理-力学基础",
     "scene_id": "scene-classroom",
@@ -564,7 +565,7 @@ Request body:
 
 Validation notes:
 
-- `section_id` and `scene_profile` are both optional, but at least one must be provided.
+- `study_unit_id` and `scene_profile` are both optional, but at least one must be provided.
 - Sending neither returns `400` with `detail=update_payload_empty`.
 
 Returns updated `StudySessionRecord`.

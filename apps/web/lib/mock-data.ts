@@ -50,8 +50,7 @@ export const mockPlan: LearningPlan = {
   creationMode: "document",
   courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
-  overview: "先完成力学导论与牛顿定律两个学习章节，再在每章下推进定义、受力分析与例题复述等细分要点。",
-  studyChapters: ["力学导论：概念定义", "牛顿定律：受力分析", "例题复述：解题步骤"],
+  overview: "先完成力学导论的首轮精读排期，再在排期项下推进定义、受力分析与例题复述等学习章节子项。",
   todayTasks: [
     "阅读教材第 12-18 页，标出本章定义句。",
     "向教师人格提问并完成一次复述练习。",
@@ -78,7 +77,51 @@ export const mockPlan: LearningPlan = {
       title: "力学导论 精读",
       focus: "完成力学导论的首轮理解，标出定义、定理与例子。",
       activityType: "learn",
-      status: "planned"
+      status: "planned",
+      scheduleChapters: [
+        {
+          id: "schedule-1:chapter-1",
+          title: "力学导论：概念定义",
+          anchorPageStart: 12,
+          anchorPageEnd: 14,
+          sourceSectionIds: ["doc-1:section:1"],
+          contentSlices: [
+            {
+              pageStart: 12,
+              pageEnd: 14,
+              sourceSectionIds: ["doc-1:section:1"],
+            }
+          ],
+        },
+        {
+          id: "schedule-1:chapter-2",
+          title: "牛顿定律：受力分析",
+          anchorPageStart: 15,
+          anchorPageEnd: 16,
+          sourceSectionIds: ["doc-1:section:1"],
+          contentSlices: [
+            {
+              pageStart: 15,
+              pageEnd: 16,
+              sourceSectionIds: ["doc-1:section:1"],
+            }
+          ],
+        },
+        {
+          id: "schedule-1:chapter-3",
+          title: "例题复述：解题步骤",
+          anchorPageStart: 17,
+          anchorPageEnd: 18,
+          sourceSectionIds: ["doc-1:section:1"],
+          contentSlices: [
+            {
+              pageStart: 17,
+              pageEnd: 18,
+              sourceSectionIds: ["doc-1:section:1"],
+            }
+          ],
+        }
+      ]
     }
   ],
   progressSummary: {
@@ -89,7 +132,7 @@ export const mockPlan: LearningPlan = {
     blockedScheduleCount: 0,
     completionPercent: 0
   },
-  chapterProgress: [
+  studyUnitProgress: [
     {
       unitId: "doc-1:study-unit:1",
       title: "力学导论：概念定义",

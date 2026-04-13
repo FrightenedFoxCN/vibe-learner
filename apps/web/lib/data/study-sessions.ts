@@ -5,7 +5,7 @@ export {
   resolveStudyPlanConfirmation,
   sendStudyMessage,
   submitStudyQuestionAttempt,
-  updateStudySessionSection,
+  updateStudySessionStudyUnit,
 } from "../api";
 
 export type {

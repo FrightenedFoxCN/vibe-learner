@@ -6,6 +6,5 @@ export {
   deleteLearningPlan,
   listLearningPlans,
   updateLearningPlanProgress,
-  updateLearningPlanStudyChapters,
   updateLearningPlanTitle,
 } from "../api";

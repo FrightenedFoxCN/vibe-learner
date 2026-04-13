@@ -95,7 +95,7 @@ class StudySessionChatToolRuntime:
             for item in session.pending_follow_ups
             if item.status == "pending"
         ]
-        prepared_sections = ", ".join(session.prepared_section_ids[-6:]) or "无"
+        prepared_study_units = ", ".join(session.prepared_study_unit_ids[-6:]) or "无"
         affinity = session.affinity_state
         pdf_attachment_lines = [
             f"- {item.attachment_id} | {item.name} | pages={item.page_count or '?'}"
@@ -121,7 +121,7 @@ class StudySessionChatToolRuntime:
             else "无"
         )
         return (
-            f"已做过预处理的章节：{prepared_sections}\n"
+            f"已做过预处理的学习单元：{prepared_study_units}\n"
             f"临时记忆：\n{chr(10).join(memory_lines) if memory_lines else '- 无'}\n"
             f"好感度：score={affinity.score} | level={affinity.level} | summary={affinity.summary or '无'}\n"
             f"当前可投射 PDF 附件：\n{chr(10).join(pdf_attachment_lines) if pdf_attachment_lines else '- 无'}\n"
@@ -560,11 +560,6 @@ class StudySessionChatToolRuntime:
                                         "type": "string",
                                         "description": "可选。新的课程标题。",
                                     },
-                                    "study_chapters": {
-                                        "type": "array",
-                                        "description": "可选。新的学习章节标题列表。",
-                                        "items": {"type": "string"},
-                                    },
                                     "note": {
                                         "type": "string",
                                         "description": "为什么要这样调整计划。",
@@ -591,13 +586,13 @@ class StudySessionChatToolRuntime:
                                         "description": "一组需要更新状态的排期项 ID。",
                                         "items": {"type": "string"},
                                     },
-                                    "chapter_unit_id": {
+                                    "study_unit_id": {
                                         "type": "string",
-                                        "description": "可选。按章节整体更新时使用。",
+                                        "description": "可选。按学习单元整体更新时使用。",
                                     },
-                                    "chapter_unit_ids": {
+                                    "study_unit_ids": {
                                         "type": "array",
-                                        "description": "可选。批量按章节整体更新时使用。",
+                                        "description": "可选。批量按学习单元整体更新时使用。",
                                         "items": {"type": "string"},
                                     },
                                     "status": {
@@ -1048,23 +1043,13 @@ class StudySessionChatToolRuntime:
             if not self.plan_id:
                 raise HTTPException(status_code=400, detail="plan_not_bound")
             course_title = str(arguments.get("course_title") or "").strip()
-            raw_chapters = arguments.get("study_chapters")
-            study_chapters = (
-                [str(item).strip() for item in raw_chapters if str(item).strip()]
-                if isinstance(raw_chapters, list)
-                else []
-            )
             note = str(arguments.get("note") or "").strip()
-            if not course_title and not study_chapters:
+            if not course_title:
                 raise HTTPException(status_code=422, detail="plan_update_empty")
             plan = self._plan_service.require_plan(self.plan_id)
             preview_lines: list[str] = []
             if course_title:
                 preview_lines.append(f"课程标题：{plan.course_title} -> {course_title}")
-            if study_chapters:
-                preview_lines.append(
-                    f"学习章节：{' / '.join(plan.study_chapters[:6]) or '无'} -> {' / '.join(study_chapters[:6])}"
-                )
             confirmation = SessionPlanConfirmationRecord(
                 id=f"plan-confirm-{uuid4().hex[:10]}",
                 tool_name=tool_name,
@@ -1075,7 +1060,6 @@ class StudySessionChatToolRuntime:
                 preview_lines=preview_lines,
                 payload={
                     "course_title": course_title,
-                    "study_chapters": study_chapters,
                     "note": note,
                 },
                 created_at=datetime.now().astimezone().isoformat(),
@@ -1212,17 +1196,17 @@ def _collect_schedule_ids(plan, arguments: dict[str, Any]) -> list[str]:
     raw_schedule_ids = arguments.get("schedule_ids")
     if isinstance(raw_schedule_ids, list):
         schedule_ids.extend(str(item).strip() for item in raw_schedule_ids if str(item).strip())
-    chapter_unit_ids: list[str] = []
-    single_chapter_unit_id = str(arguments.get("chapter_unit_id") or "").strip()
-    if single_chapter_unit_id:
-        chapter_unit_ids.append(single_chapter_unit_id)
-    raw_chapter_unit_ids = arguments.get("chapter_unit_ids")
-    if isinstance(raw_chapter_unit_ids, list):
-        chapter_unit_ids.extend(str(item).strip() for item in raw_chapter_unit_ids if str(item).strip())
-    if chapter_unit_ids:
-        for chapter in plan.chapter_progress:
-            if chapter.unit_id in chapter_unit_ids:
-                schedule_ids.extend(chapter.schedule_ids)
+    study_unit_ids: list[str] = []
+    single_study_unit_id = str(arguments.get("study_unit_id") or "").strip()
+    if single_study_unit_id:
+        study_unit_ids.append(single_study_unit_id)
+    raw_study_unit_ids = arguments.get("study_unit_ids")
+    if isinstance(raw_study_unit_ids, list):
+        study_unit_ids.extend(str(item).strip() for item in raw_study_unit_ids if str(item).strip())
+    if study_unit_ids:
+        for progress in plan.study_unit_progress:
+            if progress.unit_id in study_unit_ids:
+                schedule_ids.extend(progress.schedule_ids)
     deduped: list[str] = []
     seen: set[str] = set()
     for item in schedule_ids:

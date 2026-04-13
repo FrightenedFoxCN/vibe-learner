@@ -12,12 +12,14 @@ from app.models.domain import (
     DocumentSection,
     LearningGoalInput,
     LearningPlanRecord,
-    PlanChapterProgressRecord,
     PlanProgressEventRecord,
     PlanProgressSummaryRecord,
     PlanningQuestionRecord,
     PersonaProfile,
+    ScheduleChapterContentSliceRecord,
+    ScheduleChapterRecord,
     StudyScheduleRecord,
+    StudyUnitProgressRecord,
     StudyUnitRecord,
 )
 from app.services.local_store import LocalJsonStore
@@ -86,6 +88,7 @@ class LearningPlanService:
                 document=document,
                 persona_name=persona_name,
                 persona=persona,
+                debug_report=debug_report,
             )
             document_title = document.title
             document_path = document.stored_path
@@ -108,7 +111,7 @@ class LearningPlanService:
                 "document_id": progress_document_id,
                 "today_task_count": len(plan.today_tasks),
                 "schedule_count": len(plan.schedule),
-                "study_chapter_count": len(plan.study_chapters),
+                "schedule_chapter_count": sum(len(item.schedule_chapters) for item in plan.schedule),
                 "creation_mode": plan.creation_mode,
             },
         )
@@ -135,23 +138,18 @@ class LearningPlanService:
                 self._persist_document(document)
         valid_unit_ids = {unit.id for unit in plan.study_units}
         filtered_schedule = [
-            StudyScheduleRecord(
-                id=f"schedule-{index + 1}",
-                unit_id=item.unit_id,
-                title=item.title,
-                focus=item.focus,
-                activity_type=item.activity_type,
-                status="planned",
+            self._build_schedule_record(
+                index=index,
+                item=item,
+                unit=unit,
             )
             for index, item in enumerate(model_plan.schedule)
-            if item.unit_id in valid_unit_ids
+            if (unit := next((entry for entry in plan.study_units if entry.id == item.unit_id), None)) is not None
         ]
         if model_plan.course_title:
             plan.course_title = model_plan.course_title
         if model_plan.overview:
             plan.overview = model_plan.overview
-        if model_plan.study_chapters:
-            plan.study_chapters = model_plan.study_chapters
         if model_plan.today_tasks:
             plan.today_tasks = model_plan.today_tasks
         if goal.scene_profile is not None:
@@ -165,7 +163,7 @@ class LearningPlanService:
                 "document_id": progress_document_id,
                 "schedule_count": len(plan.schedule),
                 "today_task_count": len(plan.today_tasks),
-                "study_chapter_count": len(plan.study_chapters),
+                "schedule_chapter_count": sum(len(item.schedule_chapters) for item in plan.schedule),
                 "planning_question_count": len(getattr(model_plan, "planning_questions", []) or []),
             },
         )
@@ -210,20 +208,12 @@ class LearningPlanService:
         *,
         plan_id: str,
         course_title: str | None = None,
-        study_chapters: list[str] | None = None,
     ) -> LearningPlanRecord:
         normalized_title = course_title.strip() if course_title is not None else None
-        normalized_chapters = (
-            [item.strip() for item in study_chapters if item.strip()]
-            if study_chapters is not None
-            else None
-        )
-        if normalized_title is None and normalized_chapters is None:
+        if normalized_title is None:
             raise HTTPException(status_code=422, detail="plan_update_empty")
         if normalized_title is not None and not normalized_title:
             raise HTTPException(status_code=422, detail="course_title_required")
-        if normalized_chapters is not None and not normalized_chapters:
-            raise HTTPException(status_code=422, detail="study_chapters_required")
 
         plans = self._load_plans()
         updated_plan: LearningPlanRecord | None = None
@@ -235,8 +225,6 @@ class LearningPlanService:
             updates: dict[str, object] = {}
             if normalized_title is not None:
                 updates["course_title"] = normalized_title
-            if normalized_chapters is not None:
-                updates["study_chapters"] = normalized_chapters
             updated_plan = plan.model_copy(update=updates)
             next_plans.append(updated_plan)
 
@@ -364,9 +352,9 @@ class LearningPlanService:
             "objective": plan.objective,
             "creation_mode": plan.creation_mode,
             "progress_summary": plan.progress_summary.model_dump(mode="json"),
-            "chapter_progress": [
+            "study_unit_progress": [
                 item.model_dump(mode="json")
-                for item in plan.chapter_progress
+                for item in plan.study_unit_progress
             ],
             "schedule": [
                 {
@@ -376,6 +364,10 @@ class LearningPlanService:
                     "focus": item.focus,
                     "activity_type": item.activity_type,
                     "status": item.status,
+                    "schedule_chapters": [
+                        chapter.model_dump(mode="json")
+                        for chapter in item.schedule_chapters
+                    ],
                 }
                 for item in plan.schedule
             ],
@@ -566,16 +558,13 @@ class LearningPlanService:
 
         valid_unit_ids = {unit.id for unit in next_plan.study_units}
         filtered_schedule = [
-            StudyScheduleRecord(
-                id=f"schedule-{index + 1}",
-                unit_id=item.unit_id,
-                title=item.title,
-                focus=item.focus,
-                activity_type=item.activity_type,
-                status="planned",
+            self._build_schedule_record(
+                index=index,
+                item=item,
+                unit=unit,
             )
             for index, item in enumerate(model_plan.schedule)
-            if item.unit_id in valid_unit_ids
+            if (unit := next((entry for entry in next_plan.study_units if entry.id == item.unit_id), None)) is not None
         ]
         if filtered_schedule:
             next_plan.schedule = self._carry_over_schedule_statuses(
@@ -586,8 +575,6 @@ class LearningPlanService:
             next_plan.course_title = model_plan.course_title
         if model_plan.overview:
             next_plan.overview = model_plan.overview
-        if model_plan.study_chapters:
-            next_plan.study_chapters = model_plan.study_chapters
         if model_plan.today_tasks:
             next_plan.today_tasks = model_plan.today_tasks
         if model_plan.planning_questions is not None:
@@ -617,6 +604,7 @@ class LearningPlanService:
                 item.model_copy(
                     update={
                         "status": matched.status if matched is not None else item.status,
+                        "schedule_chapters": item.schedule_chapters,
                     }
                 )
             )
@@ -653,10 +641,10 @@ class LearningPlanService:
             completion_percent=completion_percent,
         )
 
-    def _build_chapter_progress(self, plan: LearningPlanRecord) -> list[PlanChapterProgressRecord]:
+    def _build_study_unit_progress(self, plan: LearningPlanRecord) -> list[StudyUnitProgressRecord]:
         plannable_units = [unit for unit in plan.study_units if unit.include_in_plan] or list(plan.study_units)
         result = []
-        for index, unit in enumerate(plannable_units):
+        for unit in plannable_units:
             related_schedule = [item for item in plan.schedule if item.unit_id == unit.id]
             total = len(related_schedule)
             completed = sum(1 for item in related_schedule if item.status == "completed")
@@ -688,13 +676,21 @@ class LearningPlanService:
                     )
                 )
             title = (
-                plan.study_chapters[index].strip()
-                if index < len(plan.study_chapters) and plan.study_chapters[index].strip()
-                else unit.title
+                unit.title.strip()
+                or next(
+                    (
+                        chapter.title.strip()
+                        for item in related_schedule
+                        for chapter in item.schedule_chapters
+                        if chapter.title.strip()
+                    ),
+                    "",
+                )
+                or unit.id
             )
             completion_percent = int(round((completed / total) * 100)) if total else 0
             result.append(
-                PlanChapterProgressRecord(
+                StudyUnitProgressRecord(
                     unit_id=unit.id,
                     title=title,
                     objective_fragment=objective_fragment,
@@ -716,7 +712,96 @@ class LearningPlanService:
             update={
                 "creation_mode": creation_mode,
                 "progress_summary": self._build_progress_summary(plan.schedule),
-                "chapter_progress": self._build_chapter_progress(plan),
+                "study_unit_progress": self._build_study_unit_progress(plan),
+            }
+        )
+
+    def _build_schedule_record(
+        self,
+        *,
+        index: int,
+        item,
+        unit: StudyUnitRecord,
+    ) -> StudyScheduleRecord:
+        schedule_chapters = self._normalize_schedule_chapters(
+            raw_schedule_chapters=getattr(item, "schedule_chapters", None),
+            unit=unit,
+        )
+        return StudyScheduleRecord(
+            id=f"schedule-{index + 1}",
+            unit_id=item.unit_id,
+            title=item.title,
+            focus=item.focus,
+            activity_type=item.activity_type,
+            status="planned",
+            schedule_chapters=schedule_chapters,
+        )
+
+    def _normalize_schedule_chapters(
+        self,
+        *,
+        raw_schedule_chapters: list[ScheduleChapterRecord] | list[dict[str, object]] | None,
+        unit: StudyUnitRecord,
+    ) -> list[ScheduleChapterRecord]:
+        chapters = list(raw_schedule_chapters or [])
+        normalized: list[ScheduleChapterRecord] = []
+        for index, raw_chapter in enumerate(chapters, start=1):
+            chapter = (
+                raw_chapter
+                if isinstance(raw_chapter, ScheduleChapterRecord)
+                else ScheduleChapterRecord.model_validate(raw_chapter)
+            )
+            validated_chapter = self._validate_schedule_chapter(chapter=chapter, unit=unit, index=index)
+            if validated_chapter is not None:
+                normalized.append(validated_chapter)
+        if normalized:
+            return normalized
+        normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
+        return [
+            ScheduleChapterRecord(
+                id=f"{unit.id}:schedule-chapter:1",
+                title=unit.title,
+                anchor_page_start=unit.page_start,
+                anchor_page_end=unit.page_end,
+                source_section_ids=normalized_sources,
+                content_slices=[
+                    ScheduleChapterContentSliceRecord(
+                        page_start=unit.page_start,
+                        page_end=unit.page_end,
+                        source_section_ids=normalized_sources,
+                    )
+                ],
+            )
+        ]
+
+    def _validate_schedule_chapter(
+        self,
+        *,
+        chapter: ScheduleChapterRecord,
+        unit: StudyUnitRecord,
+        index: int,
+    ) -> ScheduleChapterRecord | None:
+        if chapter.anchor_page_start < unit.page_start or chapter.anchor_page_end > unit.page_end:
+            return None
+        next_slices: list[ScheduleChapterContentSliceRecord] = []
+        for raw_slice in chapter.content_slices:
+            if raw_slice.page_start < unit.page_start or raw_slice.page_end > unit.page_end:
+                continue
+            next_slices.append(raw_slice)
+        if not next_slices:
+            next_slices = [
+                ScheduleChapterContentSliceRecord(
+                    page_start=chapter.anchor_page_start,
+                    page_end=chapter.anchor_page_end,
+                    source_section_ids=list(chapter.source_section_ids),
+                )
+            ]
+        return chapter.model_copy(
+            update={
+                "id": chapter.id or f"{unit.id}:schedule-chapter:{index}",
+                "title": chapter.title.strip() or unit.title,
+                "source_section_ids": [str(item).strip() for item in chapter.source_section_ids if str(item).strip()],
+                "content_slices": next_slices,
             }
         )
 

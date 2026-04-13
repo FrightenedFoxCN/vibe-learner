@@ -58,7 +58,7 @@ export function DocumentSetup({
     () => cachedState?.generationMode ?? "document"
   );
   const [objective, setObjective] = useState(
-    () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先给出学习章节顺序，再拆分每章的细分学习要点。"
+    () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先排出学习排期，再为每个排期项拆分可执行的学习章节子项。"
   );
   const [showRoundDetails, setShowRoundDetails] = useState(false);
 

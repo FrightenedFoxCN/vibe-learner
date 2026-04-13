@@ -2,18 +2,10 @@
 
 This document describes the current prompt assembly contract for learning-plan generation in `services/ai`.
 
-It is the source of truth for:
-
-- the prompt template sections loaded from disk
-- the exact JSON schema string injected into the system prompt
-- the structured payload assembled for the user message
-- the final transport shape sent to the model provider
-
 ## Source Files
 
 - Prompt assembly: `services/ai/app/services/plan_prompt.py`
 - Prompt template: `services/ai/app/prompts/learning_plan_prompt.txt`
-- Prompt section loader: `services/ai/app/services/prompt_loader.py`
 - Planner output model: `services/ai/app/services/model_provider.py`
 
 ## Prompt Sections
@@ -23,9 +15,7 @@ It is the source of truth for:
 Current required sections:
 
 - `[system]`: top-level planner rules and JSON-only output requirement
-- `[user_instructions]`: additional writing and planning constraints injected into the user payload
-
-The loader ignores all text outside named sections.
+- `[user_instructions]`: additional planning constraints injected into the user payload
 
 ## Injected JSON Schema String
 
@@ -34,174 +24,86 @@ The loader ignores all text outside named sections.
 Current schema string:
 
 ```text
-{"course_title": string, "overview": string, "study_chapters": string[], "today_tasks": string[], "schedule": [{"unit_id": string, "title": string, "focus": string, "activity_type": "learn" | "review"}]}.
+{"course_title": string, "overview": string, "today_tasks": string[], "schedule": [{"unit_id": string, "title": string, "focus": string, "activity_type": "learn" | "review", "schedule_chapters": [{"id": string, "title": string, "anchor_page_start": number, "anchor_page_end": number, "source_section_ids": string[], "content_slices": [{"page_start": number, "page_end": number, "source_section_ids": string[]}]}]}]}.
 ```
 
-This string is injected into the `[system]` section by replacing `{{PLAN_JSON_SCHEMA}}`.
+There is no top-level `study_chapters` field anymore.
 
 ## User Payload Structure
 
-`build_learning_plan_messages()` assembles a Python object and serializes it as the single user message.
+`build_learning_plan_messages()` serializes one user payload with these top-level keys:
 
-Top-level payload shape:
+- `plan_creation_mode`
+- `document_available`
+- `persona`
+- `document_title`
+- `learning_goal`
+- `course_outline`
+- `segmentation_hints`
+- `study_units`
+- `instructions`
 
-```json
-{
-  "persona": {
-    "id": "string",
-    "name": "string",
-    "source": "string",
-    "summary": "string",
-    "system_prompt": "string",
-    "slots": [
-      {
-        "kind": "string",
-        "label": "string",
-        "content": "string"
-      }
-    ],
-    "available_emotions": ["string"],
-    "available_actions": ["string"],
-    "default_speech_style": "string"
-  },
-  "document_title": "string",
-  "learning_goal": {
-    "objective": "string",
-    "scene_profile_summary": "string",
-    "scene_profile": {
-      "scene_id": "string",
-      "title": "string",
-      "summary": "string",
-      "tags": ["string"],
-      "selected_path": ["string"],
-      "focus_object_names": ["string"],
-      "scene_tree": [
-        {
-          "id": "string",
-          "title": "string",
-          "scope_label": "string",
-          "summary": "string",
-          "atmosphere": "string",
-          "rules": "string",
-          "entrance": "string",
-          "objects": [],
-          "children": []
-        }
-      ]
-    }
-  },
-  "course_outline": [
-    {
-      "section_id": "string",
-      "title": "string",
-      "level": "number",
-      "page_start": "number",
-      "page_end": "number",
-      "children": [
-        {
-          "section_id": "string",
-          "title": "string",
-          "level": "number",
-          "page_start": "number",
-          "page_end": "number"
-        }
-      ]
-    }
-  ],
-  "segmentation_hints": {
-    "is_coarse_grained": "boolean",
-    "recommend_revise_study_units": "boolean",
-    "recommend_detail_tool_call": "boolean",
-    "recommend_continue_tool_calls": "boolean",
-    "recommend_min_tool_rounds": "number",
-    "reason": "string",
-    "plannable_unit_count": "number",
-    "max_unit_page_span": "number",
-    "units_with_subsections": "number",
-    "sparse_subsection_unit_count": "number",
-    "total_subsection_count": "number"
-  },
-  "study_units": [
-    {
-      "unit_id": "string",
-      "title": "string",
-      "page_start": "number",
-      "page_end": "number",
-      "summary": "string",
-      "unit_kind": "string",
-      "include_in_plan": "boolean",
-      "subsection_titles": ["string"],
-      "related_section_ids": ["string"],
-      "detail_tool_target_id": "string"
-    }
-  ],
-  "instructions": ["string"]
-}
-```
+Important structural inputs:
 
-## Transport String
+- `course_outline` is raw parser-oriented chapter structure for grounding.
+- `study_units` is the cleaned planning backbone. Each item carries:
+  - `unit_id`
+  - `title`
+  - `page_start`
+  - `page_end`
+  - `summary`
+  - `unit_kind`
+  - `include_in_plan`
+  - `subsection_titles`
+  - `related_section_ids`
+  - `detail_tool_target_id`
+- `segmentation_hints` tells the model whether the current structure is too coarse and whether more tool use is expected before finalizing.
 
-The model does not receive the user payload as a native JSON object. It receives a chat message array where:
+## Transport Shape
 
-- the system message is plain text from the `[system]` section after schema substitution
-- the user message is `json.dumps(user_prompt, ensure_ascii=False, indent=2)`
+The provider still sends:
 
-Current transport shape:
+- one system message with the prompt template after schema substitution
+- one user message containing `json.dumps(user_prompt, ensure_ascii=False, indent=2)`
 
-```json
-[
-  {
-    "role": "system",
-    "content": "string"
-  },
-  {
-    "role": "user",
-    "content": "{\n  \"persona\": { ... },\n  \"document_title\": \"...\",\n  \"learning_goal\": { ... },\n  \"segmentation_hints\": { ... },\n  \"study_units\": [ ... ],\n  \"instructions\": [ ... ]\n}"
-  }
-]
-```
-
-Important details:
-
-- `ensure_ascii=False` keeps Chinese text unescaped
-- `indent=2` means the user message is a pretty-printed JSON string, not a minified string
-- only one user message is sent for plan generation
+The user payload is therefore sent as a pretty-printed JSON string, not as native structured tool input.
 
 ## Output Contract
 
 The planner must return a single JSON object matching the schema above.
 
-Required planner-facing semantic rules:
+Required semantic rules:
 
-- `course_title` is the plan header, not the learner goal
-- `overview` is 1 to 2 summary sentences
-- `study_chapters` is the ordered chapter list used for navigation
-- `study_chapters` should be as fine-grained as the textbook structure allows, preferably down to subchapter-level anchors when supported by evidence
-- `today_tasks` is the ordered actionable task list
-- `schedule[].unit_id` must point to an active study unit
-- when `segmentation_hints` or tool evidence show coarse or sparse subsection structure, the planner is expected to keep using tools before finalizing
+- `course_title` is the learner-facing plan header.
+- `overview` is a short summary paragraph.
+- `today_tasks` is the current actionable task list.
+- `schedule[].unit_id` must point to an existing `study_unit.id`.
+- `schedule[].schedule_chapters[]` is required for every schedule item.
+- `schedule[].schedule_chapters[]` must stay inside the parent study unit's page range and content scope.
+- `schedule[].schedule_chapters[].title` should name concrete chapter or subchapter content, not abstract themes.
+- `schedule[].schedule_chapters[].content_slices[]` may be discontinuous, but must remain within the parent study unit.
 
 ## Tool-Loop Expectations
 
-The plan runner now biases toward repeated tool use instead of early stopping:
+The planner may call:
 
-- it allows up to 8 model rounds for plan generation
-- it can inject up to 3 follow-up nudges asking the model to continue tool refinement
-- if no tools were called yet, it will explicitly push for tool use before accepting a final answer
-- if study units still look coarse, it may keep nudging until several tool calls have been made
+- `get_study_unit_detail`
+- `revise_study_units`
+- `read_page_range_content`
+- `read_page_range_images`
 
-Prompt wording also explicitly encourages:
+Prompt wording and runner behavior both bias toward continued tool use when:
 
-- repeated `revise_study_units` calls when directory granularity is still insufficient
-- multiple `get_study_unit_detail` / page-range evidence calls across representative units
-- continued refinement until downstream chapter/subchapter selection can be fine-grained
+- study units are still coarse
+- subsection hints are sparse or noisy
+- the model has not yet gathered enough evidence to emit useful `schedule_chapters`
 
 ## Change Rules
 
 When changing learning-plan prompting:
 
-1. Update `services/ai/app/services/plan_prompt.py` if the transport object changes.
-2. Update `services/ai/app/prompts/learning_plan_prompt.txt` if prompt wording or schema wording changes.
-3. Update `services/ai/app/services/model_provider.py` if output parsing changes.
+1. Update `services/ai/app/services/plan_prompt.py` if the transport payload or schema changes.
+2. Update `services/ai/app/prompts/learning_plan_prompt.txt` if prompt wording changes.
+3. Update `services/ai/app/services/model_provider.py` if output parsing or fallback schedule-chapter generation changes.
 4. Update `docs/plan-text-contract.md` if learner-facing field meaning changes.
-5. Update tests that assert exact planner payload or exact JSON field names.
+5. Update tests that assert exact planner JSON field names.

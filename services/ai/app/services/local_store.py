@@ -69,7 +69,7 @@ def _session_metadata(payload: dict[str, Any]) -> dict[str, Any]:
         "document_id": str(payload.get("document_id") or ""),
         "persona_id": str(payload.get("persona_id") or ""),
         "plan_id": str(payload.get("plan_id") or ""),
-        "section_id": str(payload.get("section_id") or ""),
+        "study_unit_id": str(payload.get("study_unit_id") or payload.get("section_id") or ""),
         "status": str(payload.get("status") or ""),
         "created_at": str(payload.get("created_at") or ""),
         "updated_at": str(payload.get("updated_at") or ""),

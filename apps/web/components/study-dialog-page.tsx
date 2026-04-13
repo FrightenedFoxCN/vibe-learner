@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
-import type { Citation, DocumentRecord, DocumentSection, LearningPlan, StudySessionRecord, StudyUnit } from "@vibe-learner/shared";
+import type { Citation, LearningPlan, StudySessionRecord } from "@vibe-learner/shared";
 
 import { useLearningWorkspace } from "./learning-workspace-provider";
 import { StudyConsole } from "./study-console";
@@ -67,80 +67,49 @@ export function StudyDialogPage() {
     () => studyDialogCache?.previewState ?? null
   );
   const [pendingComposerInsert, setPendingComposerInsert] = useState<{ id: string; text: string } | null>(null);
-  const [selectedChapter, setSelectedChapter] = useState(() => studyDialogCache?.selectedChapter ?? "");
-  const [selectedSubsectionId, setSelectedSubsectionId] = useState(
-    () => studyDialogCache?.selectedSubsectionId ?? ""
+  const [selectedScheduleId, setSelectedScheduleId] = useState(
+    () => studyDialogCache?.selectedScheduleId ?? ""
+  );
+  const [selectedScheduleChapterId, setSelectedScheduleChapterId] = useState(
+    () => studyDialogCache?.selectedScheduleChapterId ?? ""
   );
   const [requestedPlanId, setRequestedPlanId] = useState("");
-  const [requestedChapter, setRequestedChapter] = useState("");
-  const [requestedSubsectionId, setRequestedSubsectionId] = useState("");
+  const [requestedScheduleId, setRequestedScheduleId] = useState("");
+  const [requestedScheduleChapterId, setRequestedScheduleChapterId] = useState("");
   const [requestedPage, setRequestedPage] = useState(0);
 
-  const chapterOptions = activePlan?.studyChapters ?? [];
-  const currentChapter = selectedChapter || chapterOptions[0] || "";
+  const scheduleOptions = activePlan?.schedule ?? [];
+  const currentSchedule =
+    scheduleOptions.find((item) => item.id === selectedScheduleId) ??
+    scheduleOptions[0] ??
+    null;
+  const currentScheduleId = currentSchedule?.id ?? "";
   const activeSceneProfile = studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
   const projectedPdf = studySession?.projectedPdf ?? null;
-  const currentChapterStudyUnit = resolveStudyUnitByChapter(activePlan, currentChapter);
-  const subsectionOptions = resolveSubsectionsForStudyUnit(activeDocument, currentChapterStudyUnit);
+  const scheduleChapterOptions = currentSchedule?.scheduleChapters ?? [];
 
-  const resolveSectionIdByChapter = useCallback(
-    (chapter: string) => {
-      if (!chapter) return "";
-      const chapterIndex = chapterOptions.findIndex((item) => item === chapter);
-      const exactFocusMatch = activePlan?.schedule.find((item) => {
-        const focus = item.focus?.trim() ?? "";
-        return focus === chapter || focus.includes(chapter) || chapter.includes(focus);
-      });
-      if (exactFocusMatch?.unitId) return exactFocusMatch.unitId;
-
-      const chapterScopedUnitIds = (activePlan?.studyUnits ?? [])
-        .filter((unit) => unit.includeInPlan)
-        .map((unit) => unit.id);
-
-      if (chapterIndex >= 0 && chapterScopedUnitIds[chapterIndex]) {
-        return chapterScopedUnitIds[chapterIndex];
+  const resolveScheduleStartPage = useCallback(
+    (scheduleId: string) => {
+      if (!scheduleId) return 0;
+      const scheduleItem = activePlan?.schedule.find((item) => item.id === scheduleId);
+      if (!scheduleItem) return 0;
+      const firstScheduleChapter = scheduleItem.scheduleChapters[0];
+      if (firstScheduleChapter?.anchorPageStart) {
+        return firstScheduleChapter.anchorPageStart;
       }
-      if (chapterIndex >= 0) {
-        if (planSections[chapterIndex]?.id) return planSections[chapterIndex].id;
-        const uniqueUnitIds = Array.from(
-          new Set((activePlan?.schedule ?? []).map((item) => item.unitId).filter(Boolean))
-        );
-        if (uniqueUnitIds[chapterIndex]) return uniqueUnitIds[chapterIndex];
-      }
-      return planSections[0]?.id ?? "";
-    },
-    [activePlan?.schedule, activePlan?.studyUnits, chapterOptions, planSections]
-  );
-
-  const handleChapterChange = useCallback(
-    (chapter: string) => {
-      setSelectedChapter(chapter);
-      setSelectedSubsectionId("");
-      if (!studySession) return;
-      const nextSectionId = resolveSectionIdByChapter(chapter);
-      if (nextSectionId && nextSectionId !== studySession.sectionId) {
-        void handleSwitchSection(nextSectionId);
-      }
-    },
-    [handleSwitchSection, resolveSectionIdByChapter, studySession]
-  );
-
-  const resolveChapterStartPage = useCallback(
-    (chapter: string) => {
-      const sectionId = resolveSectionIdByChapter(chapter);
-      if (!sectionId) return 0;
-      const fromPlanSection = planSections.find((section) => section.id === sectionId)?.pageStart;
+      const fromPlanSection = planSections.find((section) => section.id === scheduleItem.unitId)?.pageStart;
       if (fromPlanSection) return fromPlanSection;
-      const fromStudyUnit = activeDocument?.studyUnits.find((unit) => unit.id === sectionId)?.pageStart;
+      const fromStudyUnit = activeDocument?.studyUnits.find((unit) => unit.id === scheduleItem.unitId)?.pageStart;
       if (fromStudyUnit) return fromStudyUnit;
-      const fromRawSection = activeDocument?.sections.find((section) => section.id === sectionId)?.pageStart;
+      const fromRawSection = activeDocument?.sections.find((section) => section.id === scheduleItem.unitId)?.pageStart;
       if (fromRawSection) return fromRawSection;
       return 0;
     },
-    [activeDocument?.sections, activeDocument?.studyUnits, planSections, resolveSectionIdByChapter]
+    [activeDocument?.sections, activeDocument?.studyUnits, activePlan?.schedule, planSections]
   );
-  const chapterStartPage = resolveChapterStartPage(currentChapter);
-  const chapterSectionId = resolveSectionIdByChapter(currentChapter);
+
+  const scheduleStartPage = resolveScheduleStartPage(currentScheduleId);
+  const currentStudyUnitId = currentSchedule?.unitId ?? "";
 
   const handleOpenPdfPage = useCallback((page: number) => {
     setPdfPage(page);
@@ -155,6 +124,23 @@ export function StudyDialogPage() {
     }
     setIsPdfPreviewOpen(true);
   }, [activeDocument]);
+
+  const handleScheduleChange = useCallback(
+    (scheduleId: string) => {
+      setSelectedScheduleId(scheduleId);
+      setSelectedScheduleChapterId("");
+      const scheduleItem = scheduleOptions.find((item) => item.id === scheduleId);
+      if (!scheduleItem) return;
+      const nextPage = scheduleItem.scheduleChapters[0]?.anchorPageStart || resolveScheduleStartPage(scheduleId);
+      if (nextPage > 0) {
+        handleOpenPdfPage(nextPage);
+      }
+      if (studySession && scheduleItem.unitId && scheduleItem.unitId !== studySession.studyUnitId) {
+        void handleSwitchSection(scheduleItem.unitId);
+      }
+    },
+    [handleOpenPdfPage, handleSwitchSection, resolveScheduleStartPage, scheduleOptions, studySession]
+  );
 
   const handleOpenCitation = useCallback((citation: Citation) => {
     const targetPage = Math.max(1, citation.pageStart || 1);
@@ -199,69 +185,50 @@ export function StudyDialogPage() {
     }
   }, [activeDocument, studySession]);
 
-  const handleSubsectionChange = useCallback(
-    (subsectionId: string) => {
-      setSelectedSubsectionId(subsectionId);
+  const handleScheduleChapterChange = useCallback(
+    (scheduleChapterId: string) => {
+      setSelectedScheduleChapterId(scheduleChapterId);
 
-      if (!subsectionId) {
-        const chapterSectionId = resolveSectionIdByChapter(currentChapter);
-        const chapterStartPage = resolveChapterStartPage(currentChapter);
-        if (chapterStartPage > 0) {
-          handleOpenPdfPage(chapterStartPage);
-        }
-        if (studySession && chapterSectionId && chapterSectionId !== studySession.sectionId) {
-          void handleSwitchSection(chapterSectionId);
+      if (!scheduleChapterId) {
+        if (scheduleStartPage > 0) {
+          handleOpenPdfPage(scheduleStartPage);
         }
         return;
       }
 
-      const targetSubsection = subsectionOptions.find((section) => section.id === subsectionId);
-      if (targetSubsection) {
-        handleOpenPdfPage(targetSubsection.pageStart);
-      }
-      if (studySession && subsectionId !== studySession.sectionId) {
-        void handleSwitchSection(subsectionId);
+      const targetScheduleChapter = scheduleChapterOptions.find((item) => item.id === scheduleChapterId);
+      if (targetScheduleChapter?.anchorPageStart) {
+        handleOpenPdfPage(targetScheduleChapter.anchorPageStart);
       }
     },
-    [
-      currentChapter,
-      handleOpenPdfPage,
-      handleSwitchSection,
-      resolveChapterStartPage,
-      resolveSectionIdByChapter,
-      studySession,
-      subsectionOptions
-    ]
+    [handleOpenPdfPage, scheduleChapterOptions, scheduleStartPage]
   );
 
-  const handleJumpToChapterStart = useCallback(() => {
-    setSelectedSubsectionId("");
-    if (chapterStartPage > 0) {
-      handleOpenPdfPage(chapterStartPage);
+  const handleJumpToScheduleStart = useCallback(() => {
+    setSelectedScheduleChapterId("");
+    if (scheduleStartPage > 0) {
+      handleOpenPdfPage(scheduleStartPage);
     }
-    if (studySession && chapterSectionId && chapterSectionId !== studySession.sectionId) {
-      void handleSwitchSection(chapterSectionId);
-    }
-  }, [chapterSectionId, chapterStartPage, handleOpenPdfPage, handleSwitchSection, studySession]);
+  }, [handleOpenPdfPage, scheduleStartPage]);
 
   const handleAskByCurrentChapter = useCallback(
     async (message: string, attachments: File[] = []) => {
-      const targetSectionId = selectedSubsectionId || resolveSectionIdByChapter(currentChapter);
-      if (targetSectionId) {
-        await handleAskForSection(message, targetSectionId, attachments);
+      const targetStudyUnitId = currentStudyUnitId || studySession?.studyUnitId || "";
+      if (targetStudyUnitId) {
+        await handleAskForSection(message, targetStudyUnitId, attachments);
         return;
       }
       await handleAsk(message, attachments);
     },
-    [currentChapter, handleAsk, handleAskForSection, resolveSectionIdByChapter, selectedSubsectionId]
+    [currentStudyUnitId, handleAsk, handleAskForSection, studySession?.studyUnitId]
   );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     setRequestedPlanId(params.get("plan") ?? "");
-    setRequestedChapter(params.get("chapter") ?? "");
-    setRequestedSubsectionId(params.get("subsection") ?? "");
+    setRequestedScheduleId(params.get("schedule") ?? "");
+    setRequestedScheduleChapterId(params.get("scheduleChapter") ?? "");
     setRequestedPage(Number(params.get("page") ?? "0"));
   }, []);
 
@@ -271,31 +238,35 @@ export function StudyDialogPage() {
   }, [activePlan?.id, requestedPlanId, selectPlan]);
 
   useEffect(() => {
-    if (!chapterOptions.length) { setSelectedChapter(""); return; }
-    if (requestedChapter && chapterOptions.includes(requestedChapter) && requestedChapter !== selectedChapter) {
-      setSelectedChapter(requestedChapter);
-      setSelectedSubsectionId("");
+    if (!scheduleOptions.length) { setSelectedScheduleId(""); return; }
+    if (
+      requestedScheduleId &&
+      scheduleOptions.some((item) => item.id === requestedScheduleId) &&
+      requestedScheduleId !== selectedScheduleId
+    ) {
+      setSelectedScheduleId(requestedScheduleId);
+      setSelectedScheduleChapterId("");
       return;
     }
-    if (!selectedChapter || !chapterOptions.includes(selectedChapter)) {
-      setSelectedChapter(chapterOptions[0]);
-      setSelectedSubsectionId("");
+    if (!selectedScheduleId || !scheduleOptions.some((item) => item.id === selectedScheduleId)) {
+      setSelectedScheduleId(scheduleOptions[0]?.id ?? "");
+      setSelectedScheduleChapterId("");
     }
-  }, [activePlan?.id, chapterOptions, requestedChapter, selectedChapter]);
+  }, [activePlan?.id, requestedScheduleId, scheduleOptions, selectedScheduleId]);
 
   useEffect(() => {
-    if (!selectedSubsectionId) return;
-    if (subsectionOptions.some((section) => section.id === selectedSubsectionId)) {
+    if (!selectedScheduleChapterId) return;
+    if (scheduleChapterOptions.some((item) => item.id === selectedScheduleChapterId)) {
       return;
     }
-    setSelectedSubsectionId("");
-  }, [selectedSubsectionId, subsectionOptions]);
+    setSelectedScheduleChapterId("");
+  }, [scheduleChapterOptions, selectedScheduleChapterId]);
 
   useEffect(() => {
-    if (!requestedSubsectionId || !subsectionOptions.length) return;
-    if (!subsectionOptions.some((section) => section.id === requestedSubsectionId)) return;
-    setSelectedSubsectionId((current) => current || requestedSubsectionId);
-  }, [requestedSubsectionId, subsectionOptions]);
+    if (!requestedScheduleChapterId || !scheduleChapterOptions.length) return;
+    if (!scheduleChapterOptions.some((item) => item.id === requestedScheduleChapterId)) return;
+    setSelectedScheduleChapterId((current) => current || requestedScheduleChapterId);
+  }, [requestedScheduleChapterId, scheduleChapterOptions]);
 
   useEffect(() => {
     const firstPage = activeDocument?.sections[0]?.pageStart;
@@ -378,18 +349,15 @@ export function StudyDialogPage() {
   ]);
 
   useEffect(() => {
-    if (!studySession || !currentChapter) return;
-    const nextSectionId = selectedSubsectionId || resolveSectionIdByChapter(currentChapter);
-    if (nextSectionId && nextSectionId !== studySession.sectionId) {
-      void handleSwitchSection(nextSectionId);
+    if (!studySession || !currentStudyUnitId) return;
+    if (currentStudyUnitId !== studySession.studyUnitId) {
+      void handleSwitchSection(currentStudyUnitId);
     }
   }, [
-    currentChapter,
+    currentStudyUnitId,
     handleSwitchSection,
-    resolveSectionIdByChapter,
-    selectedSubsectionId,
     studySession?.id,
-    studySession?.sectionId,
+    studySession?.studyUnitId,
   ]);
 
   useEffect(() => {
@@ -397,11 +365,11 @@ export function StudyDialogPage() {
       pdfPage,
       isPdfPreviewOpen,
       previewState,
-      selectedChapter,
-      selectedSubsectionId,
+      selectedScheduleId: currentScheduleId,
+      selectedScheduleChapterId,
     };
     setPageCache("studyDialog", nextCache);
-  }, [isPdfPreviewOpen, pdfPage, previewState, selectedChapter, selectedSubsectionId, setPageCache]);
+  }, [currentScheduleId, isPdfPreviewOpen, pdfPage, previewState, selectedScheduleChapterId, setPageCache]);
 
   const effectivePreview = previewState;
   const previewPage = effectivePreview?.page ?? pdfPage;
@@ -487,16 +455,16 @@ export function StudyDialogPage() {
             isPending={isBusy}
             onAsk={handleAskByCurrentChapter}
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
-            onChangeChapter={handleChapterChange}
+            onChangeSchedule={handleScheduleChange}
             onOpenCitation={handleOpenCitation}
-            onJumpToChapterStart={handleJumpToChapterStart}
+            onJumpToScheduleStart={handleJumpToScheduleStart}
             chatErrorMessage={chatFailure?.detail ?? ""}
             onRetryLastAsk={retryFailedAsk}
-            selectedChapter={currentChapter}
-            studyChapters={chapterOptions}
-            selectedSubsectionId={selectedSubsectionId}
-            subsectionOptions={subsectionOptions}
-            onChangeSubsection={handleSubsectionChange}
+            selectedScheduleId={currentScheduleId}
+            scheduleOptions={scheduleOptions.map((item) => ({ id: item.id, title: item.title }))}
+            selectedScheduleChapterId={selectedScheduleChapterId}
+            scheduleChapterOptions={scheduleChapterOptions}
+            onChangeScheduleChapter={handleScheduleChapterChange}
             turns={studySession?.turns ?? []}
             session={response}
             persona={selectedPersona}
@@ -511,7 +479,7 @@ export function StudyDialogPage() {
             chatImageUploadEnabled={chatImageUploadEnabled}
             pendingComposerInsert={pendingComposerInsert}
             onConsumeComposerInsert={() => setPendingComposerInsert(null)}
-            canJumpToChapterStart={chapterStartPage > 0}
+            canJumpToScheduleStart={scheduleStartPage > 0}
             disabled={!studySession}
             cachedState={studyConsoleCache}
             onCachedStateChange={(nextState: StudyConsolePageCache) => setPageCache("studyConsole", nextState)}
@@ -671,74 +639,6 @@ export function StudyDialogPage() {
         </div>
       )}
     </main>
-  );
-}
-
-function resolveStudyUnitByChapter(
-  plan: LearningPlan | null,
-  chapter: string
-): StudyUnit | null {
-  if (!plan || !chapter) {
-    return null;
-  }
-
-  const chapterIndex = plan.studyChapters.findIndex((item) => item === chapter);
-  const exactFocusMatch = plan.schedule.find((item) => {
-    const focus = item.focus?.trim() ?? "";
-    return focus === chapter || focus.includes(chapter) || chapter.includes(focus);
-  });
-  if (exactFocusMatch?.unitId) {
-    const matchedUnit = plan.studyUnits.find((unit) => unit.id === exactFocusMatch.unitId);
-    if (matchedUnit) {
-      return matchedUnit;
-    }
-  }
-
-  const chapterScopedUnits = plan.studyUnits.filter((unit) => unit.includeInPlan);
-  if (chapterIndex >= 0 && chapterScopedUnits[chapterIndex]) {
-    return chapterScopedUnits[chapterIndex];
-  }
-
-  if (chapterIndex >= 0) {
-    const uniqueUnitIds = Array.from(new Set(plan.schedule.map((item) => item.unitId).filter(Boolean)));
-    const fallbackUnitId = uniqueUnitIds[chapterIndex];
-    if (fallbackUnitId) {
-      return plan.studyUnits.find((unit) => unit.id === fallbackUnitId) ?? null;
-    }
-  }
-
-  return null;
-}
-
-function resolveSubsectionsForStudyUnit(
-  document: DocumentRecord | null,
-  studyUnit: StudyUnit | null
-): DocumentSection[] {
-  if (!document || !studyUnit) {
-    return [];
-  }
-
-  const sectionMap = new Map(document.sections.map((section) => [section.id, section]));
-  const directMatches = studyUnit.sourceSectionIds
-    .map((sectionId) => sectionMap.get(sectionId))
-    .filter((section): section is DocumentSection => Boolean(section));
-  const scopeSections = directMatches.length ? directMatches : [studyUnit];
-  const candidates = document.sections
-    .filter((section) =>
-      scopeSections.some((scope) =>
-        Math.max(scope.pageStart, section.pageStart) <= Math.min(scope.pageEnd, section.pageEnd)
-      )
-    )
-    .filter((section) => section.level >= 2)
-    .sort((left, right) =>
-      left.pageStart - right.pageStart ||
-      left.level - right.level ||
-      left.pageEnd - right.pageEnd ||
-      left.id.localeCompare(right.id)
-    );
-
-  return candidates.filter(
-    (section, index) => candidates.findIndex((candidate) => candidate.id === section.id) === index
   );
 }
 

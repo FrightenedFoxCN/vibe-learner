@@ -9,7 +9,7 @@ export interface PersonaSlotTraceEntry {
 
 export interface MemoryTraceHit {
   sessionId: string;
-  sectionId: string;
+  studyUnitId: string;
   sceneTitle: string;
   score: number;
   snippet: string;
@@ -183,14 +183,12 @@ export interface LearningPlan {
   sceneProfile?: SceneProfile;
   // One or two sentence learner-facing summary of the plan. This is not a title.
   overview: string;
-  // Ordered study-chapter list used for navigation.
-  studyChapters: string[];
   // Actionable learner tasks for the current session/day.
   todayTasks: string[];
   studyUnits: StudyUnit[];
   schedule: StudyScheduleItem[];
   progressSummary: LearningPlanProgressSummary;
-  chapterProgress: LearningPlanChapterProgress[];
+  studyUnitProgress: LearningPlanStudyUnitProgress[];
   progressEvents: LearningPlanProgressEvent[];
   planningQuestions: PlanningQuestion[];
   createdAt: string;
@@ -215,7 +213,7 @@ export interface LearningPlanProgressEvent {
   createdAt: string;
 }
 
-export interface LearningPlanChapterProgress {
+export interface LearningPlanStudyUnitProgress {
   unitId: string;
   title: string;
   objectiveFragment: string;
@@ -580,6 +578,21 @@ export interface StudyUnit {
   confidence: number;
 }
 
+export interface ScheduleChapterContentSlice {
+  pageStart: number;
+  pageEnd: number;
+  sourceSectionIds: string[];
+}
+
+export interface ScheduleChapter {
+  id: string;
+  title: string;
+  anchorPageStart: number;
+  anchorPageEnd: number;
+  sourceSectionIds: string[];
+  contentSlices: ScheduleChapterContentSlice[];
+}
+
 export interface StudyScheduleItem {
   id: string;
   unitId: string;
@@ -587,6 +600,7 @@ export interface StudyScheduleItem {
   focus: string;
   activityType: string;
   status: string;
+  scheduleChapters: ScheduleChapter[];
 }
 
 export interface DialogueTurnRecord {
@@ -631,13 +645,13 @@ export interface StudySessionRecord {
   planId?: string | null;
   sceneInstanceId?: string;
   sceneProfile?: SceneProfile;
-  sectionId: string;
-  sectionTitle?: string;
+  studyUnitId: string;
+  studyUnitTitle?: string;
   themeHint?: string;
   sessionSystemPrompt?: string;
   status: string;
   turns: DialogueTurnRecord[];
-  preparedSectionIds?: string[];
+  preparedStudyUnitIds?: string[];
   pendingFollowUps?: SessionFollowUp[];
   sessionMemory?: SessionMemoryEntry[];
   affinityState?: SessionAffinityState;

@@ -22,14 +22,29 @@ PLAN_JSON_SCHEMA = (
     "{"
     '"course_title": string, '
     '"overview": string, '
-    '"study_chapters": string[], '
     '"today_tasks": string[], '
     '"schedule": ['
     "{"
     '"unit_id": string, '
     '"title": string, '
     '"focus": string, '
-    '"activity_type": "learn" | "review"'
+    '"activity_type": "learn" | "review", '
+    '"schedule_chapters": ['
+    "{"
+    '"id": string, '
+    '"title": string, '
+    '"anchor_page_start": number, '
+    '"anchor_page_end": number, '
+    '"source_section_ids": string[], '
+    '"content_slices": ['
+    "{"
+    '"page_start": number, '
+    '"page_end": number, '
+    '"source_section_ids": string[]'
+    "}"
+    "]"
+    "}"
+    "]"
     "}"
     "]"
     "}."
@@ -192,7 +207,6 @@ def _serialize_current_plan(plan: LearningPlanRecord | None) -> dict[str, object
     return {
         "course_title": plan.course_title,
         "overview": plan.overview,
-        "study_chapters": list(plan.study_chapters),
         "today_tasks": list(plan.today_tasks),
         "schedule": [
             {
@@ -202,10 +216,14 @@ def _serialize_current_plan(plan: LearningPlanRecord | None) -> dict[str, object
                 "focus": item.focus,
                 "activity_type": item.activity_type,
                 "status": item.status,
+                "schedule_chapters": [
+                    chapter.model_dump(mode="json")
+                    for chapter in item.schedule_chapters
+                ],
             }
             for item in plan.schedule
         ],
-        "chapter_progress": [
+        "study_unit_progress": [
             {
                 "unit_id": item.unit_id,
                 "title": item.title,
@@ -214,7 +232,7 @@ def _serialize_current_plan(plan: LearningPlanRecord | None) -> dict[str, object
                 "status": item.status,
                 "schedule_ids": list(item.schedule_ids),
             }
-            for item in plan.chapter_progress
+            for item in plan.study_unit_progress
         ],
     }
 

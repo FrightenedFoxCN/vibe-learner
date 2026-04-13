@@ -24,13 +24,13 @@ class LearningPlanChatToolRuntime:
     def plan_context(self) -> str:
         payload = self._service.describe_progress(self.plan_id)
         progress = payload["progress_summary"]
-        chapter_lines = [
+        study_unit_lines = [
             (
                 f"- {item['unit_id']} | {item['status']} | {item['title']} | "
                 f"{item['completed_schedule_count']}/{item['total_schedule_count']} "
                 f"({item['completion_percent']}%) | {item['objective_fragment'] or '无'}"
             )
-            for item in payload.get("chapter_progress", [])[:6]
+            for item in payload.get("study_unit_progress", [])[:6]
         ]
         schedule_lines = [
             (
@@ -51,7 +51,7 @@ class LearningPlanChatToolRuntime:
             f"（{progress['completion_percent']}%）\n"
             f"进行中：{progress['in_progress_schedule_count']}，待处理：{progress['pending_schedule_count']}，"
             f"阻塞：{progress['blocked_schedule_count']}\n"
-            f"章节完成度：\n{chr(10).join(chapter_lines) if chapter_lines else '- 暂无章节进度'}\n"
+            f"学习单元完成度：\n{chr(10).join(study_unit_lines) if study_unit_lines else '- 暂无学习单元进度'}\n"
             f"排期项：\n{chr(10).join(schedule_lines) if schedule_lines else '- 暂无排期项'}\n"
             f"待补充规划问题：\n{chr(10).join(question_lines) if question_lines else '- 无'}"
         )

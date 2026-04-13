@@ -42,8 +42,8 @@ export interface StudyDialogPageCache {
   pdfPage: number;
   isPdfPreviewOpen: boolean;
   previewState: StudyDialogPreviewState | null;
-  selectedChapter: string;
-  selectedSubsectionId: string;
+  selectedScheduleId: string;
+  selectedScheduleChapterId: string;
 }
 
 export interface StudyConsolePageCache {
@@ -65,7 +65,10 @@ const STORAGE_KEY = "vibe-learner:learning-workspace-page-cache:v1";
 
 type SerializableLearningWorkspacePageCache = {
   planSetup?: Omit<PlanSetupPageCache, "file">;
-  studyDialog?: StudyDialogPageCache;
+  studyDialog?: StudyDialogPageCache & {
+    selectedChapter?: string;
+    selectedSubsectionId?: string;
+  };
   studyConsole?: Omit<StudyConsolePageCache, "attachments">;
 };
 
@@ -95,8 +98,10 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
             pdfPage: Number(parsed.studyDialog.pdfPage ?? 1),
             isPdfPreviewOpen: Boolean(parsed.studyDialog.isPdfPreviewOpen),
             previewState: normalizePreviewState(parsed.studyDialog.previewState),
-            selectedChapter: String(parsed.studyDialog.selectedChapter ?? ""),
-            selectedSubsectionId: String(parsed.studyDialog.selectedSubsectionId ?? ""),
+            selectedScheduleId: String(parsed.studyDialog.selectedScheduleId ?? parsed.studyDialog.selectedChapter ?? ""),
+            selectedScheduleChapterId: String(
+              parsed.studyDialog.selectedScheduleChapterId ?? parsed.studyDialog.selectedSubsectionId ?? ""
+            ),
           }
         : undefined,
       studyConsole: parsed.studyConsole
@@ -133,8 +138,8 @@ export function persistLearningWorkspacePageCache(
       pdfPage: cache.studyDialog.pdfPage,
       isPdfPreviewOpen: cache.studyDialog.isPdfPreviewOpen,
       previewState: cache.studyDialog.previewState,
-      selectedChapter: cache.studyDialog.selectedChapter,
-      selectedSubsectionId: cache.studyDialog.selectedSubsectionId,
+      selectedScheduleId: cache.studyDialog.selectedScheduleId,
+      selectedScheduleChapterId: cache.studyDialog.selectedScheduleChapterId,
     };
   }
   if (cache.studyConsole) {

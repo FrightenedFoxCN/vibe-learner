@@ -1119,8 +1119,8 @@ def _run_study_chat(
             session_id=session_id,
             persona=persona,
             message=model_message,
-            section_id=session.section_id,
-            section_title=session.section_title,
+            study_unit_id=session.study_unit_id,
+            study_unit_title=session.study_unit_title,
             theme_hint=session.theme_hint,
             active_plan=active_plan,
             session_system_prompt=session_prompt,
@@ -1159,7 +1159,9 @@ def _run_study_chat(
         learner_message_kind=normalized_message_kind,
         learner_attachments=learner_attachments or [],
         result=response,
-        prepared_section_id=session.section_id if normalized_message_kind == "session_prelude" else None,
+        prepared_study_unit_id=(
+            session.study_unit_id if normalized_message_kind == "session_prelude" else None
+        ),
     )
     if normalized_follow_up_id:
         try:
@@ -1226,17 +1228,11 @@ def resolve_study_session_plan_confirmation(
                 source="chat_confirmation",
             )
         elif action_type == "update_plan":
-            raw_chapters = confirmation.payload.get("study_chapters")
             updated_plan = container.plan_service.update_plan(
                 plan_id=confirmation.plan_id,
                 course_title=(
                     str(confirmation.payload.get("course_title") or "").strip()
                     or None
-                ),
-                study_chapters=(
-                    [str(item).strip() for item in raw_chapters if str(item).strip()]
-                    if isinstance(raw_chapters, list)
-                    else None
                 ),
             )
         else:
@@ -1253,13 +1249,13 @@ def list_study_sessions(
     document_id: str | None = None,
     persona_id: str | None = None,
     plan_id: str | None = None,
-    section_id: str | None = None,
+    study_unit_id: str | None = None,
 ) -> StudySessionListResponse:
     sessions = container.study_session_service.list_sessions(
         document_id=document_id,
         persona_id=persona_id,
         plan_id=plan_id,
-        section_id=section_id,
+        study_unit_id=study_unit_id,
     )
     return StudySessionListResponse(
         items=[_into_response(StudySessionResponse, session) for session in sessions]
@@ -1296,13 +1292,13 @@ def record_study_question_attempt(
 def update_study_session(
     session_id: str, payload: UpdateStudySessionRequest
 ) -> StudySessionResponse:
-    if payload.section_id is None and "scene_profile" not in payload.model_fields_set:
+    if payload.study_unit_id is None and "scene_profile" not in payload.model_fields_set:
         raise HTTPException(status_code=400, detail="update_payload_empty")
 
     current_session = _ensure_session_scene_binding(
         container.study_session_service.require_session(session_id)
     )
-    next_section_id = payload.section_id or current_session.section_id
+    next_study_unit_id = payload.study_unit_id or current_session.study_unit_id
     has_scene_profile = "scene_profile" in payload.model_fields_set
     next_scene_instance_id = current_session.scene_instance_id
     next_scene_profile = current_session.scene_profile
@@ -1324,14 +1320,14 @@ def update_study_session(
         except HTTPException:
             active_plan = None
     document = _resolve_session_document(current_session.document_id, active_plan)
-    next_section_title = _resolve_section_title(
+    next_study_unit_title = _resolve_study_unit_title(
         document=document,
         plan=active_plan,
-        section_id=next_section_id,
+        study_unit_id=next_study_unit_id,
     )
-    next_theme_hint = _resolve_theme_hint(
+    next_theme_hint = _resolve_study_unit_theme_hint(
         plan=active_plan,
-        section_id=next_section_id,
+        study_unit_id=next_study_unit_id,
         fallback=current_session.theme_hint,
     )
     session_system_prompt = build_study_session_system_prompt(
@@ -1339,19 +1335,19 @@ def update_study_session(
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
         document_title=_resolve_session_document_title(document=document, plan=active_plan),
-        section_id=next_section_id,
-        section_title=next_section_title,
+        study_unit_id=next_study_unit_id,
+        study_unit_title=next_study_unit_title,
         theme_hint=next_theme_hint,
         scene_profile=next_scene_profile,
     )
 
     session = container.study_session_service.update_session(
         session_id=session_id,
-        section_id=payload.section_id,
+        study_unit_id=payload.study_unit_id,
         scene_instance_id=next_scene_instance_id if has_scene_profile else None,
         scene_profile=next_scene_profile,
         has_scene_profile=has_scene_profile,
-        section_title=next_section_title,
+        study_unit_title=next_study_unit_title,
         theme_hint=next_theme_hint,
         session_system_prompt=session_system_prompt,
     )
@@ -1362,10 +1358,10 @@ def update_study_session(
 def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResponse:
     session_id = f"session-{uuid4().hex[:10]}"
     logger.info(
-        "study_sessions.create document_id=%s persona_id=%s section_id=%s scene_id=%s",
+        "study_sessions.create document_id=%s persona_id=%s study_unit_id=%s scene_id=%s",
         payload.document_id,
         payload.persona_id,
-        payload.section_id,
+        payload.study_unit_id,
         payload.scene_profile.scene_id if payload.scene_profile else "",
     )
     persona = container.persona_engine.require_persona(payload.persona_id)
@@ -1381,14 +1377,14 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         if not resolved_document_id and plan.document_id:
             resolved_document_id = plan.document_id
     document = _resolve_session_document(resolved_document_id, plan)
-    section_title = payload.section_title.strip() or _resolve_section_title(
+    study_unit_title = payload.study_unit_title.strip() or _resolve_study_unit_title(
         document=document,
         plan=plan,
-        section_id=payload.section_id,
+        study_unit_id=payload.study_unit_id,
     )
-    theme_hint = _resolve_theme_hint(
+    theme_hint = _resolve_study_unit_theme_hint(
         plan=plan,
-        section_id=payload.section_id,
+        study_unit_id=payload.study_unit_id,
         fallback=payload.theme_hint.strip(),
     )
     bound_scene = container.session_scene_service.clone_scene_for_session(
@@ -1403,8 +1399,8 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         persona_relationship=persona.relationship,
         persona_learner_address=persona.learner_address,
         document_title=_resolve_session_document_title(document=document, plan=plan),
-        section_id=payload.section_id,
-        section_title=section_title,
+        study_unit_id=payload.study_unit_id,
+        study_unit_title=study_unit_title,
         theme_hint=theme_hint,
         scene_profile=session_scene_profile,
     )
@@ -1415,8 +1411,8 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         plan_id=plan_id,
         scene_instance_id=bound_scene.scene_instance_id if bound_scene else "",
         scene_profile=session_scene_profile,
-        section_id=payload.section_id,
-        section_title=section_title,
+        study_unit_id=payload.study_unit_id,
+        study_unit_title=study_unit_title,
         theme_hint=theme_hint,
         session_system_prompt=session_system_prompt,
     )
@@ -1460,45 +1456,44 @@ def _merge_chat_citations(base: list[Citation], extra: list[Citation]) -> list[C
     return merged
 
 
-def _resolve_section_title(*, document, plan, section_id: str) -> str:
+def _resolve_study_unit_title(*, document, plan, study_unit_id: str) -> str:
     if document is not None:
         for section in document.sections:
-            if section.id == section_id:
+            if section.id == study_unit_id:
                 return section.title
         for unit in document.study_units:
-            if unit.id == section_id:
+            if unit.id == study_unit_id:
                 return unit.title
     if plan is not None:
         for unit in plan.study_units:
-            if unit.id == section_id or section_id in unit.source_section_ids:
+            if unit.id == study_unit_id or study_unit_id in unit.source_section_ids:
                 return unit.title
-        for chapter in plan.chapter_progress:
-            if chapter.unit_id == section_id and chapter.title.strip():
-                return chapter.title
-    return section_id
+        for item in plan.schedule:
+            if item.unit_id == study_unit_id and item.title.strip():
+                return item.title
+    return study_unit_id
 
 
-def _resolve_theme_hint(*, plan, section_id: str, fallback: str = "") -> str:
+def _resolve_study_unit_theme_hint(*, plan, study_unit_id: str, fallback: str = "") -> str:
     if plan is None:
         return fallback
-    for chapter in plan.chapter_progress:
-        if chapter.unit_id == section_id and chapter.objective_fragment.strip():
-            return chapter.objective_fragment.strip()
+    for progress in plan.study_unit_progress:
+        if progress.unit_id == study_unit_id and progress.objective_fragment.strip():
+            return progress.objective_fragment.strip()
     for item in plan.schedule:
-        if item.unit_id == section_id and item.focus.strip():
+        if item.unit_id == study_unit_id and item.focus.strip():
             return item.focus.strip()
-    plannable_units = [unit for unit in plan.study_units if unit.include_in_plan] or list(plan.study_units)
-    for index, unit in enumerate(plannable_units):
-        if unit.id != section_id and section_id not in unit.source_section_ids:
+        if item.unit_id == study_unit_id:
+            for chapter in item.schedule_chapters:
+                if chapter.title.strip():
+                    return chapter.title.strip()
+    for unit in plan.study_units:
+        if unit.id != study_unit_id and study_unit_id not in unit.source_section_ids:
             continue
-        if index < len(plan.study_chapters) and plan.study_chapters[index].strip():
-            return plan.study_chapters[index].strip()
         if unit.summary.strip():
             return unit.summary.strip()
     if fallback:
         return fallback
-    if plan.study_chapters:
-        return plan.study_chapters[0]
     return plan.objective
 
 
@@ -1788,7 +1783,6 @@ def update_learning_plan(
     plan = container.plan_service.update_plan(
         plan_id=plan_id,
         course_title=payload.course_title,
-        study_chapters=payload.study_chapters,
     )
     return _into_response(LearningPlanResponse, plan)
 

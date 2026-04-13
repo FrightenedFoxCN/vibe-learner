@@ -28,6 +28,8 @@ from app.models.domain import (
     SceneLayerStateRecord,
     SceneObjectStateRecord,
     SceneProfileRecord,
+    ScheduleChapterContentSliceRecord,
+    ScheduleChapterRecord,
     StudyUnitRecord,
     StudyChatResult,
     StudySessionRecord,
@@ -75,6 +77,31 @@ class FakeLiteLLMResult:
 
     def model_dump(self, mode: str = "json") -> dict[str, object]:
         return self.payload
+
+
+def _schedule_chapter_record(
+    *,
+    chapter_id: str,
+    title: str,
+    page_start: int,
+    page_end: int,
+    source_section_ids: list[str] | None = None,
+) -> ScheduleChapterRecord:
+    sources = source_section_ids or []
+    return ScheduleChapterRecord(
+        id=chapter_id,
+        title=title,
+        anchor_page_start=page_start,
+        anchor_page_end=page_end,
+        source_section_ids=sources,
+        content_slices=[
+            ScheduleChapterContentSliceRecord(
+                page_start=page_start,
+                page_end=page_end,
+                source_section_ids=sources,
+            )
+        ],
+    )
 
 
 class PersonaPipelineTests(unittest.TestCase):
@@ -181,7 +208,6 @@ class PersonaPipelineTests(unittest.TestCase):
                     course_title="课程标题",
                     objective="完成教材学习",
                     overview="计划概览",
-                    study_chapters=["第一章"],
                     today_tasks=["复习核心概念"],
                     study_units=[],
                     schedule=[],
@@ -192,7 +218,7 @@ class PersonaPipelineTests(unittest.TestCase):
         self.study_session_service.create_session(
             document_id="doc-1",
             persona_id=created.id,
-            section_id="section-1",
+            study_unit_id="section-1",
         )
 
         with self.assertRaises(HTTPException) as ctx:
@@ -538,8 +564,8 @@ class PersonaPipelineTests(unittest.TestCase):
             persona_relationship=persona.relationship,
             persona_learner_address=persona.learner_address,
             document_title="Physics",
-            section_id="chapter-1",
-            section_title="Chapter 1",
+            study_unit_id="chapter-1",
+            study_unit_title="Chapter 1",
             theme_hint="牛顿定律",
         )
 
@@ -553,7 +579,7 @@ class PersonaPipelineTests(unittest.TestCase):
             session_id="session-1",
             persona=persona,
             message="解释牛顿第一定律",
-            section_id="chapter-1",
+            study_unit_id="chapter-1",
         )
         self.assertTrue(result.reply)
         self.assertEqual(result.citations[0].section_id, "chapter-1")
@@ -635,7 +661,7 @@ class PersonaPipelineTests(unittest.TestCase):
         session = self.study_session_service.create_session(
             document_id="doc-1",
             persona_id="mentor-aurora",
-            section_id="chapter-1",
+            study_unit_id="chapter-1",
         )
         next_scene_profile = SceneProfileRecord(
             scene_name="力学教室",
@@ -684,14 +710,14 @@ class PersonaPipelineTests(unittest.TestCase):
         session = self.study_session_service.create_session(
             document_id="doc-1",
             persona_id="mentor-aurora",
-            section_id="chapter-2",
+            study_unit_id="chapter-2",
         )
 
         updated_session = self.study_session_service.append_turn(
             session_id=session.id,
             learner_message="请先做一轮隐藏预处理。",
             learner_message_kind="session_prelude",
-            prepared_section_id="chapter-2",
+            prepared_study_unit_id="chapter-2",
             result=StudyChatResult(
                 reply="我们先把这章的抓手和场景焦点定下来。",
                 citations=[],
@@ -699,14 +725,14 @@ class PersonaPipelineTests(unittest.TestCase):
             ),
         )
 
-        self.assertIn("chapter-2", updated_session.prepared_section_ids)
+        self.assertIn("chapter-2", updated_session.prepared_study_unit_ids)
         self.assertEqual(updated_session.turns[-1].learner_message_kind, "session_prelude")
 
     def test_session_service_tracks_follow_up_memory_and_affinity(self) -> None:
         session = self.study_session_service.create_session(
             document_id="doc-1",
             persona_id="mentor-aurora",
-            section_id="chapter-1",
+            study_unit_id="chapter-1",
         )
 
         follow_up = self.study_session_service.schedule_follow_up(
@@ -806,7 +832,7 @@ class PersonaPipelineTests(unittest.TestCase):
                         session_id=f"session-{index}-{turn_index}",
                         document_id=f"doc-{index}",
                         persona_id="mentor-aurora",
-                        section_id=f"chapter-{turn_index}",
+                        study_unit_id=f"chapter-{turn_index}",
                     )
                     store.save_list("sessions", [session])
             except Exception as exc:
@@ -1264,14 +1290,14 @@ class PersonaPipelineTests(unittest.TestCase):
         session = self.study_session_service.create_session(
             document_id=processed.id,
             persona_id=persona.id,
-            section_id=processed.sections[0].id,
+            study_unit_id=processed.study_units[0].id,
         )
 
         reply = self.orchestrator.generate_chat_reply(
             session_id=session.id,
             persona=persona,
             message="解释本章核心定义",
-            section_id=processed.sections[0].id,
+            study_unit_id=processed.study_units[0].id,
         )
         updated_session = self.study_session_service.append_turn(
             session_id=session.id,
@@ -1289,7 +1315,7 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertTrue(plan.schedule)
         self.assertTrue(any(saved_plan.id == plan.id for saved_plan in self.plan_service.list_plans()))
         self.assertEqual(updated_session.turns[0].assistant_reply, reply.reply)
-        self.assertEqual(updated_session.section_id, processed.sections[0].id)
+        self.assertEqual(updated_session.study_unit_id, processed.study_units[0].id)
         self.assertTrue(any(item.title.endswith("精读") for item in plan.schedule))
 
     def test_api_response_model_accepts_domain_dump(self) -> None:
@@ -2162,7 +2188,6 @@ class PersonaPipelineTests(unittest.TestCase):
                                     {
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "LLM plan overview",
-                                        "study_chapters": ["Chapter 1 Foundations"],
                                         "today_tasks": ["Read Chapter 1 carefully."],
                                         "schedule": [
                                             {
@@ -2170,6 +2195,14 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "理解定义与例题。",
                                                 "activity_type": "learn",
+                                                "schedule_chapters": [
+                                                    _schedule_chapter_record(
+                                                        chapter_id="unit-1:chapter-1",
+                                                        title="Chapter 1 Foundations",
+                                                        page_start=1,
+                                                        page_end=18,
+                                                    ).model_dump(mode="json")
+                                                ],
                                             }
                                         ],
                                     }
@@ -2315,7 +2348,6 @@ class PersonaPipelineTests(unittest.TestCase):
                                     {
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Tool-assisted plan overview",
-                                        "study_chapters": ["Chapter 1 Foundations"],
                                         "today_tasks": ["Read sets and extensionality."],
                                         "schedule": [
                                             {
@@ -2323,6 +2355,15 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
+                                                "schedule_chapters": [
+                                                    _schedule_chapter_record(
+                                                        chapter_id="unit-1:chapter-1",
+                                                        title="1.1 Sets",
+                                                        page_start=1,
+                                                        page_end=8,
+                                                        source_section_ids=["raw-1-1"],
+                                                    ).model_dump(mode="json")
+                                                ],
                                             }
                                         ],
                                     }
@@ -2484,7 +2525,6 @@ class PersonaPipelineTests(unittest.TestCase):
                                     {
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Recovered after transparent regeneration.",
-                                        "study_chapters": ["Chapter 1 Foundations"],
                                         "today_tasks": ["Read sets and extensionality."],
                                         "schedule": [
                                             {
@@ -2492,6 +2532,15 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
+                                                "schedule_chapters": [
+                                                    _schedule_chapter_record(
+                                                        chapter_id="unit-1:chapter-1",
+                                                        title="Chapter 1 Foundations",
+                                                        page_start=1,
+                                                        page_end=18,
+                                                        source_section_ids=["raw-1"],
+                                                    ).model_dump(mode="json")
+                                                ],
                                             }
                                         ],
                                     }
@@ -2634,7 +2683,6 @@ class PersonaPipelineTests(unittest.TestCase):
                                     {
                                         "course_title": "Discrete Mathematics / Revised",
                                         "overview": "Use the revised segmentation.",
-                                        "study_chapters": ["Chapter 1 Foundations", "Chapter 2 Practice"],
                                         "today_tasks": ["Start with the corrected first chapter."],
                                         "schedule": [
                                             {
@@ -2642,6 +2690,14 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "title": "Chapter 1 Foundations 精读",
                                                 "focus": "Study the corrected first chapter.",
                                                 "activity_type": "learn",
+                                                "schedule_chapters": [
+                                                    _schedule_chapter_record(
+                                                        chapter_id="doc-1:study-unit:llm:1:chapter-1",
+                                                        title="Chapter 1 Foundations",
+                                                        page_start=1,
+                                                        page_end=10,
+                                                    ).model_dump(mode="json")
+                                                ],
                                             }
                                         ],
                                     }
@@ -2731,7 +2787,6 @@ class PersonaPipelineTests(unittest.TestCase):
                                     {
                                         "course_title": "Physics / Chapter 2 Graphs",
                                         "overview": "Use the page image to understand the diagram-heavy unit.",
-                                        "study_chapters": ["Chapter 2 Graphs"],
                                         "today_tasks": ["Inspect the textbook figure and summarize it."],
                                         "schedule": [
                                             {
@@ -2739,6 +2794,14 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "title": "Chapter 2 Graphs 精读",
                                                 "focus": "Interpret the chart and connect it with the surrounding explanation.",
                                                 "activity_type": "learn",
+                                                "schedule_chapters": [
+                                                    _schedule_chapter_record(
+                                                        chapter_id="unit-graph:chapter-1",
+                                                        title="Chapter 2 Graphs",
+                                                        page_start=2,
+                                                        page_end=4,
+                                                    ).model_dump(mode="json")
+                                                ],
                                             }
                                         ],
                                     }
@@ -2955,7 +3018,6 @@ class PersonaPipelineTests(unittest.TestCase):
             return_value=PlanModelReply(
                 course_title="Linear Algebra / Chapter 1 Vectors",
                 overview="Model-crafted overview",
-                study_chapters=["Chapter 1 Vectors"],
                 today_tasks=["完成向量定义与例题梳理。"],
                 schedule=[
                     PlanScheduleItem(
@@ -2963,6 +3025,15 @@ class PersonaPipelineTests(unittest.TestCase):
                         title="Chapter 1 Vectors 精读",
                         focus="完成向量定义与例题梳理。",
                         activity_type="learn",
+                        schedule_chapters=[
+                            _schedule_chapter_record(
+                                chapter_id="doc-plan:study-unit:1:chapter-1",
+                                title="Chapter 1 Vectors",
+                                page_start=1,
+                                page_end=20,
+                                source_section_ids=["raw-1"],
+                            )
+                        ],
                     )
                 ],
             ),
@@ -3046,7 +3117,6 @@ class PersonaPipelineTests(unittest.TestCase):
             return_value=PlanModelReply(
                 course_title="Discrete Mathematics / Revised",
                 overview="Model-crafted revised overview",
-                study_chapters=["Chapter 1 Foundations", "Chapter 2 Practice"],
                 today_tasks=["从修正后的第一章开始。"],
                 schedule=[
                     PlanScheduleItem(
@@ -3054,6 +3124,14 @@ class PersonaPipelineTests(unittest.TestCase):
                         title="Chapter 1 Foundations 精读",
                         focus="修正后的第一章。",
                         activity_type="learn",
+                        schedule_chapters=[
+                            _schedule_chapter_record(
+                                chapter_id="doc-revise:study-unit:llm:1:chapter-1",
+                                title="Chapter 1 Foundations",
+                                page_start=1,
+                                page_end=10,
+                            )
+                        ],
                     )
                 ],
                 revised_study_units=[
@@ -3162,70 +3240,6 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(updated.course_title, "Calculus / Limits Sprint")
         persisted = self.plan_service.require_plan(plan.id)
         self.assertEqual(persisted.course_title, "Calculus / Limits Sprint")
-
-    def test_plan_service_updates_study_chapters(self) -> None:
-        persona = self.persona_engine.require_persona("mentor-aurora")
-        document = DocumentResponse.model_validate(
-            {
-                "id": "doc-update-focus",
-                "title": "Geometry",
-                "original_filename": "geometry.pdf",
-                "stored_path": "/tmp/geometry.pdf",
-                "status": "processed",
-                "ocr_status": "completed",
-                "created_at": "2026-04-09T00:00:00+00:00",
-                "updated_at": "2026-04-09T00:00:00+00:00",
-                "sections": [
-                    {
-                        "id": "doc-update-focus:study-unit:1",
-                        "document_id": "doc-update-focus",
-                        "title": "Triangles",
-                        "page_start": 1,
-                        "page_end": 18,
-                        "level": 1,
-                    }
-                ],
-                "study_units": [
-                    {
-                        "id": "doc-update-focus:study-unit:1",
-                        "document_id": "doc-update-focus",
-                        "title": "Triangles",
-                        "page_start": 1,
-                        "page_end": 18,
-                        "unit_kind": "chapter",
-                        "include_in_plan": True,
-                        "source_section_ids": ["raw-1"],
-                        "summary": "三角形基础。",
-                        "confidence": 0.92,
-                    }
-                ],
-                "study_unit_count": 1,
-                "page_count": 18,
-                "chunk_count": 3,
-                "preview_excerpt": "sample",
-                "debug_ready": True,
-            }
-        )
-
-        plan = self.plan_service.create_plan(
-            goal=LearningGoalInput(
-                document_id=document.id,
-                persona_id=persona.id,
-                objective="掌握三角形基础",
-            ),
-            document=document,
-            persona_name=persona.name,
-            persona=persona,
-        )
-
-        updated = self.plan_service.update_plan(
-            plan_id=plan.id,
-            study_chapters=["图形基础", "三角形证明"],
-        )
-
-        self.assertEqual(updated.study_chapters, ["图形基础", "三角形证明"])
-        persisted = self.plan_service.require_plan(plan.id)
-        self.assertEqual(persisted.study_chapters, ["图形基础", "三角形证明"])
 
     def test_plan_service_can_create_goal_only_plan(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
@@ -3353,7 +3367,6 @@ class PersonaPipelineTests(unittest.TestCase):
             return_value=PlanModelReply(
                 course_title="Calculus / Limits",
                 overview="Need one clarification.",
-                study_chapters=["Limits"],
                 today_tasks=["Clarify the learner preference."],
                 schedule=[],
                 planning_questions=[
@@ -3486,7 +3499,7 @@ class PersonaPipelineTests(unittest.TestCase):
             document_id=document.id,
             persona_id=persona.id,
             plan_id=plan.id,
-            section_id="doc-session-runtime:study-unit:1",
+            study_unit_id="doc-session-runtime:study-unit:1",
         )
         runtime = StudySessionChatToolRuntime(
             session_service=self.study_session_service,
@@ -3514,7 +3527,7 @@ class PersonaPipelineTests(unittest.TestCase):
         session = self.study_session_service.create_session(
             document_id="doc-projected-pdf",
             persona_id="mentor-aurora",
-            section_id="doc-projected-pdf:unit-1",
+            study_unit_id="doc-projected-pdf:unit-1",
         )
 
         pdf_doc = fitz.open()
@@ -3575,7 +3588,7 @@ class PersonaPipelineTests(unittest.TestCase):
         session = self.study_session_service.create_session(
             document_id="doc-projected-image",
             persona_id="mentor-aurora",
-            section_id="doc-projected-image:unit-1",
+            study_unit_id="doc-projected-image:unit-1",
         )
         image_bytes = base64.b64decode(
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0n8AAAAASUVORK5CYII="
@@ -3666,7 +3679,7 @@ class PersonaPipelineTests(unittest.TestCase):
         session = self.study_session_service.create_session(
             document_id="doc-generated-image",
             persona_id="mentor-aurora",
-            section_id="doc-generated-image:unit-1",
+            study_unit_id="doc-generated-image:unit-1",
         )
         provider = StubGeneratedImageProvider()
         runtime = StudySessionChatToolRuntime(

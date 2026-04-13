@@ -354,6 +354,80 @@ SceneLayerStateRecord.model_rebuild()
 SceneProfileRecord.model_rebuild()
 
 
+class ScheduleChapterContentSliceRecord(BaseModel):
+    page_start: int
+    page_end: int
+    source_section_ids: list[str] = Field(default_factory=list)
+
+
+class ScheduleChapterRecord(BaseModel):
+    id: str
+    title: str
+    anchor_page_start: int
+    anchor_page_end: int
+    source_section_ids: list[str] = Field(default_factory=list)
+    content_slices: list[ScheduleChapterContentSliceRecord] = Field(default_factory=list)
+
+
+def _normalize_schedule_chapter_payload(
+    *,
+    unit_id: str,
+    title: str,
+    page_start: int,
+    page_end: int,
+    source_section_ids: list[str],
+) -> dict[str, Any]:
+    normalized_sources = [str(item).strip() for item in source_section_ids if str(item).strip()]
+    return {
+        "id": f"{unit_id}:schedule-chapter:1",
+        "title": title.strip() or unit_id,
+        "anchor_page_start": page_start,
+        "anchor_page_end": page_end,
+        "source_section_ids": normalized_sources,
+        "content_slices": [
+            {
+                "page_start": page_start,
+                "page_end": page_end,
+                "source_section_ids": normalized_sources,
+            }
+        ],
+    }
+
+
+def _legacy_study_chapter_title_map(payload: dict[str, Any]) -> dict[str, str]:
+    raw_chapters = payload.get("study_chapters")
+    if not isinstance(raw_chapters, list):
+        return {}
+    chapter_labels = [str(item).strip() for item in raw_chapters if str(item).strip()]
+    if not chapter_labels:
+        return {}
+    unit_ids: list[str] = []
+    raw_study_units = payload.get("study_units")
+    if isinstance(raw_study_units, list):
+        unit_ids = [
+            str(item.get("id") or "").strip()
+            for item in raw_study_units
+            if isinstance(item, dict) and bool(item.get("include_in_plan", True)) and str(item.get("id") or "").strip()
+        ]
+    if not unit_ids:
+        seen: set[str] = set()
+        raw_schedule = payload.get("schedule")
+        if isinstance(raw_schedule, list):
+            for item in raw_schedule:
+                if not isinstance(item, dict):
+                    continue
+                unit_id = str(item.get("unit_id") or "").strip()
+                if not unit_id or unit_id in seen:
+                    continue
+                seen.add(unit_id)
+                unit_ids.append(unit_id)
+    return {
+        unit_id: chapter_labels[index]
+        for index, unit_id in enumerate(unit_ids)
+        if index < len(chapter_labels)
+    }
+
+
 class StudyScheduleRecord(BaseModel):
     id: str
     unit_id: str
@@ -361,6 +435,40 @@ class StudyScheduleRecord(BaseModel):
     focus: str
     activity_type: str
     status: str = "planned"
+    schedule_chapters: list[ScheduleChapterRecord] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_schedule_chapters(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        if value.get("schedule_chapters") is not None:
+            return value
+        unit_id = str(value.get("unit_id") or "").strip()
+        page_start = int(value.get("_unit_page_start") or 0)
+        page_end = int(value.get("_unit_page_end") or 0)
+        if not unit_id or page_start <= 0 or page_end <= 0:
+            return value
+        source_section_ids = value.get("_unit_source_section_ids")
+        if not isinstance(source_section_ids, list):
+            source_section_ids = []
+        legacy_title = str(value.get("_legacy_study_chapter_title") or "").strip()
+        fallback_title = (
+            legacy_title
+            or str(value.get("focus") or "").strip()
+            or str(value.get("title") or "").strip()
+            or unit_id
+        )
+        value["schedule_chapters"] = [
+            _normalize_schedule_chapter_payload(
+                unit_id=unit_id,
+                title=fallback_title,
+                page_start=page_start,
+                page_end=page_end,
+                source_section_ids=[str(item) for item in source_section_ids],
+            )
+        ]
+        return value
 
 
 class PlanProgressSummaryRecord(BaseModel):
@@ -394,7 +502,7 @@ class PlanningQuestionRecord(BaseModel):
     answered_at: str = ""
 
 
-class PlanChapterProgressRecord(BaseModel):
+class StudyUnitProgressRecord(BaseModel):
     unit_id: str
     title: str
     objective_fragment: str = ""
@@ -428,19 +536,63 @@ class LearningPlanRecord(BaseModel):
             "One or two sentence learner-facing plan summary. Use this as body/summary text, not as the plan title."
         )
     )
-    study_chapters: list[str] = Field(
-        description="Ordered study-chapter list used by downstream navigation."
-    )
     today_tasks: list[str] = Field(
         description="Actionable learner tasks for the current session or day."
     )
     study_units: list[StudyUnitRecord] = []
     schedule: list[StudyScheduleRecord] = []
     progress_summary: PlanProgressSummaryRecord = Field(default_factory=PlanProgressSummaryRecord)
-    chapter_progress: list[PlanChapterProgressRecord] = Field(default_factory=list)
+    study_unit_progress: list[StudyUnitProgressRecord] = Field(default_factory=list)
     progress_events: list[PlanProgressEventRecord] = Field(default_factory=list)
     planning_questions: list[PlanningQuestionRecord] = Field(default_factory=list)
     created_at: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_learning_plan_fields(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        if value.get("study_unit_progress") is None and value.get("chapter_progress") is not None:
+            value["study_unit_progress"] = value.get("chapter_progress")
+
+        study_units = value.get("study_units")
+        study_unit_by_id: dict[str, dict[str, Any]] = {}
+        if isinstance(study_units, list):
+            for raw_unit in study_units:
+                if not isinstance(raw_unit, dict):
+                    continue
+                unit_id = str(raw_unit.get("id") or "").strip()
+                if not unit_id:
+                    continue
+                study_unit_by_id[unit_id] = raw_unit
+
+        legacy_title_map = _legacy_study_chapter_title_map(value)
+        raw_schedule = value.get("schedule")
+        if isinstance(raw_schedule, list):
+            next_schedule: list[dict[str, Any]] = []
+            for raw_item in raw_schedule:
+                if not isinstance(raw_item, dict):
+                    next_schedule.append(raw_item)
+                    continue
+                if raw_item.get("schedule_chapters") is None:
+                    unit_id = str(raw_item.get("unit_id") or "").strip()
+                    unit = study_unit_by_id.get(unit_id, {})
+                    page_start = int(unit.get("page_start") or 0)
+                    page_end = int(unit.get("page_end") or 0)
+                    if unit_id and page_start > 0 and page_end > 0:
+                        source_section_ids = unit.get("source_section_ids")
+                        raw_item = {
+                            **raw_item,
+                            "_unit_page_start": page_start,
+                            "_unit_page_end": page_end,
+                            "_unit_source_section_ids": (
+                                source_section_ids if isinstance(source_section_ids, list) else []
+                            ),
+                            "_legacy_study_chapter_title": legacy_title_map.get(unit_id, ""),
+                        }
+                next_schedule.append(raw_item)
+            value["schedule"] = next_schedule
+        return value
 
 
 
@@ -592,12 +744,21 @@ class PersonaSlotTraceRecord(BaseModel):
 
 class MemoryTraceHitRecord(BaseModel):
     session_id: str
-    section_id: str
+    study_unit_id: str
     scene_title: str
     score: float
     snippet: str
     created_at: str
     source: str = "retriever"
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_scope_field(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        if value.get("study_unit_id") is None and value.get("section_id") is not None:
+            value["study_unit_id"] = value.get("section_id")
+        return value
 
 
 class InteractiveQuestionOption(BaseModel):
@@ -697,13 +858,13 @@ class StudySessionRecord(BaseModel):
     plan_id: str | None = None
     scene_instance_id: str = ""
     scene_profile: SceneProfileRecord | None = None
-    section_id: str
-    section_title: str = ""
+    study_unit_id: str
+    study_unit_title: str = ""
     theme_hint: str = ""
     session_system_prompt: str = ""
     status: str
     turns: list[DialogueTurnRecord]
-    prepared_section_ids: list[str] = Field(default_factory=list)
+    prepared_study_unit_ids: list[str] = Field(default_factory=list)
     pending_follow_ups: list[SessionFollowUpRecord] = Field(default_factory=list)
     session_memory: list[SessionMemoryRecord] = Field(default_factory=list)
     affinity_state: SessionAffinityStateRecord = Field(default_factory=SessionAffinityStateRecord)
@@ -711,6 +872,22 @@ class StudySessionRecord(BaseModel):
     projected_pdf: SessionProjectedPdfRecord | None = None
     created_at: str
     updated_at: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_session_fields(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        if value.get("study_unit_id") is None and value.get("section_id") is not None:
+            value["study_unit_id"] = value.get("section_id")
+        if value.get("study_unit_title") is None and value.get("section_title") is not None:
+            value["study_unit_title"] = value.get("section_title")
+        if (
+            value.get("prepared_study_unit_ids") is None
+            and value.get("prepared_section_ids") is not None
+        ):
+            value["prepared_study_unit_ids"] = value.get("prepared_section_ids")
+        return value
 
 
 class ExerciseResult(BaseModel):

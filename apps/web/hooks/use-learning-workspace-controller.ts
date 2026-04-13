@@ -25,7 +25,6 @@ import {
   deleteLearningPlan as deleteLearningPlanRequest,
   listLearningPlans,
   updateLearningPlanProgress as updateLearningPlanProgressRequest,
-  updateLearningPlanStudyChapters as updateLearningPlanStudyChaptersRequest,
   updateLearningPlanTitle as updateLearningPlanTitleRequest,
 } from "../lib/data/learning-plans";
 import { listPersonas } from "../lib/data/personas";
@@ -37,7 +36,7 @@ import {
   resolveStudyPlanConfirmation,
   sendStudyMessage,
   submitStudyQuestionAttempt,
-  updateStudySessionSection,
+  updateStudySessionStudyUnit,
 } from "../lib/data/study-sessions";
 import { mockPersonas } from "../lib/mock-data";
 import {
@@ -96,7 +95,7 @@ type StreamEventItem = {
 
 type ChatFailureState = {
   message: string;
-  sectionId: string;
+  studyUnitId: string;
   detail: string;
   attachments: File[];
 };
@@ -157,7 +156,7 @@ export function useLearningWorkspaceController({
     personas: state.personas
   });
   const activeSection =
-    planSections.find((section) => section.id === state.studySession?.sectionId) ??
+    planSections.find((section) => section.id === state.studySession?.studyUnitId) ??
     planSections[0] ??
     null;
   const selectedSceneProfile = useMemo(
@@ -196,36 +195,36 @@ export function useLearningWorkspaceController({
     );
   };
 
-  const resolveSectionTitle = (sectionId: string) => {
-    const sectionFromPlan = planSections.find((section) => section.id === sectionId);
+  const resolveStudyUnitTitle = (studyUnitId: string) => {
+    const sectionFromPlan = planSections.find((section) => section.id === studyUnitId);
     if (sectionFromPlan?.title) {
       return sectionFromPlan.title;
     }
-    const sectionFromDocument = activeDocument?.sections.find((section) => section.id === sectionId);
+    const sectionFromDocument = activeDocument?.sections.find((section) => section.id === studyUnitId);
     if (sectionFromDocument?.title) {
       return sectionFromDocument.title;
     }
-    return sectionId;
+    return studyUnitId;
   };
 
-  const resolveThemeHintBySectionId = (sectionId: string) => {
+  const resolveThemeHintByStudyUnitId = (studyUnitId: string) => {
     if (!activePlan) {
       return "";
     }
-    const chapterProgress = activePlan.chapterProgress.find((item) => item.unitId === sectionId);
-    if (chapterProgress?.objectiveFragment?.trim()) {
-      return chapterProgress.objectiveFragment.trim();
+    const studyUnitProgress = activePlan.studyUnitProgress.find((item) => item.unitId === studyUnitId);
+    if (studyUnitProgress?.objectiveFragment?.trim()) {
+      return studyUnitProgress.objectiveFragment.trim();
     }
-    const scheduleItem = activePlan.schedule.find((item) => item.unitId === sectionId);
+    const scheduleItem = activePlan.schedule.find((item) => item.unitId === studyUnitId);
     if (scheduleItem?.focus) {
       return scheduleItem.focus;
     }
     const containingUnit = activePlan.studyUnits.find((unit) =>
-      unit.id === sectionId ||
-      unit.sourceSectionIds.includes(sectionId) ||
+      unit.id === studyUnitId ||
+      unit.sourceSectionIds.includes(studyUnitId) ||
       (
         activeDocument?.sections.some((section) =>
-          section.id === sectionId &&
+          section.id === studyUnitId &&
           Math.max(unit.pageStart, section.pageStart) <= Math.min(unit.pageEnd, section.pageEnd)
         ) ?? false
       )
@@ -235,18 +234,12 @@ export function useLearningWorkspaceController({
       if (containingSchedule?.focus) {
         return containingSchedule.focus;
       }
-      const containingIndex = (activePlan.studyUnits.filter((unit) => unit.includeInPlan) || []).findIndex(
-        (unit) => unit.id === containingUnit.id
-      );
-      if (containingIndex >= 0 && activePlan.studyChapters[containingIndex]) {
-        return activePlan.studyChapters[containingIndex];
+      const containingChapter = containingSchedule?.scheduleChapters.find((chapter) => chapter.title.trim());
+      if (containingChapter?.title) {
+        return containingChapter.title;
       }
     }
-    const sectionIndex = planSections.findIndex((section) => section.id === sectionId);
-    if (sectionIndex >= 0 && activePlan.studyChapters[sectionIndex]) {
-      return activePlan.studyChapters[sectionIndex];
-    }
-    return activePlan.studyChapters[0] ?? "";
+    return activePlan.schedule[0]?.scheduleChapters[0]?.title ?? activePlan.objective;
   };
 
   const fetchLatestSessionForPlan = async (): Promise<StudySessionRecord | null> => {
@@ -399,7 +392,7 @@ export function useLearningWorkspaceController({
     );
     logWorkspaceInfo("workflow:upload:session_ready", {
       sessionId: nextSession.id,
-      sectionId: nextSession.sectionId
+      studyUnitId: nextSession.studyUnitId
     });
     return nextSession;
   };
@@ -763,35 +756,6 @@ export function useLearningWorkspaceController({
     }
   };
 
-  const updatePlanStudyChapters = async (planId: string, studyChapters: string[]) => {
-    const normalizedChapters = studyChapters.map((item) => item.trim()).filter(Boolean);
-    if (!planId || !normalizedChapters.length) {
-      return false;
-    }
-    try {
-      dispatch({ type: "busy_started" });
-      const updatedPlan = await updateLearningPlanStudyChaptersRequest(planId, normalizedChapters);
-      dispatch({
-        type: "plan_updated",
-        plan: updatedPlan
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "学习章节已更新。"
-      });
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: `更新学习章节失败：${String(error)}`
-      });
-      logWorkspaceError("workflow:plan_study_chapters_update:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
   const updatePlanProgress = async (input: {
     planId: string;
     scheduleIds: string[];
@@ -948,14 +912,14 @@ export function useLearningWorkspaceController({
     if (!state.studySession) {
       return;
     }
-    await handleAskForSection(message, state.studySession.sectionId, attachments);
+    await handleAskForSection(message, state.studySession.studyUnitId, attachments);
   };
 
   const ensureSessionForSection = async (
-    sectionId: string,
+    studyUnitId: string,
     options: { clearResponseOnSwitch?: boolean } = {}
   ): Promise<StudySessionRecord | null> => {
-    if (!activePlan || !sectionId) {
+    if (!activePlan || !studyUnitId) {
       return null;
     }
 
@@ -971,14 +935,14 @@ export function useLearningWorkspaceController({
         personaId: activePlan.personaId,
         planId: activePlan.id,
         sceneProfile: activeSceneProfile ?? null,
-        sectionId,
-        sectionTitle: resolveSectionTitle(sectionId),
-        themeHint: resolveThemeHintBySectionId(sectionId),
+        studyUnitId,
+        studyUnitTitle: resolveStudyUnitTitle(studyUnitId),
+        themeHint: resolveThemeHintByStudyUnitId(studyUnitId),
       });
-    } else if (workingSession.sectionId !== sectionId) {
-      workingSession = await updateStudySessionSection({
+    } else if (workingSession.studyUnitId !== studyUnitId) {
+      workingSession = await updateStudySessionStudyUnit({
         sessionId: workingSession.id,
-        sectionId,
+        studyUnitId,
       });
     }
 
@@ -990,9 +954,9 @@ export function useLearningWorkspaceController({
     return workingSession;
   };
 
-  const handleAskForSection = async (message: string, sectionId: string, attachments: File[] = []) => {
+  const handleAskForSection = async (message: string, studyUnitId: string, attachments: File[] = []) => {
     setChatFailure(null);
-    const targetSession = await ensureSessionForSection(sectionId, {
+    const targetSession = await ensureSessionForSection(studyUnitId, {
       clearResponseOnSwitch: false,
     });
     if (!targetSession) {
@@ -1038,9 +1002,9 @@ export function useLearningWorkspaceController({
             personaId: activePlan.personaId,
             planId: activePlan.id,
             sceneProfile: resolveActiveSceneProfile(),
-            sectionId,
-            sectionTitle: resolveSectionTitle(sectionId),
-            themeHint: resolveThemeHintBySectionId(sectionId),
+            studyUnitId,
+            studyUnitTitle: resolveStudyUnitTitle(studyUnitId),
+            themeHint: resolveThemeHintByStudyUnitId(studyUnitId),
           });
           dispatch({
             type: "study_session_set",
@@ -1074,7 +1038,7 @@ export function useLearningWorkspaceController({
       if (detail.includes("chat_model_invalid_payload")) {
         setChatFailure({
           message,
-          sectionId,
+          studyUnitId,
           detail,
           attachments,
         });
@@ -1086,7 +1050,7 @@ export function useLearningWorkspaceController({
       }
       setChatFailure({
         message,
-        sectionId,
+        studyUnitId,
         detail,
         attachments,
       });
@@ -1100,11 +1064,11 @@ export function useLearningWorkspaceController({
     }
   };
 
-  const handleSwitchSection = async (sectionId: string) => {
+  const handleSwitchSection = async (studyUnitId: string) => {
     try {
       dispatch({ type: "busy_started" });
       const beforeSessionId = state.studySession?.id ?? "";
-      const nextSession = await ensureSessionForSection(sectionId, {
+      const nextSession = await ensureSessionForSection(studyUnitId, {
         clearResponseOnSwitch: true,
       });
       if (!nextSession) {
@@ -1119,7 +1083,7 @@ export function useLearningWorkspaceController({
       });
       logWorkspaceInfo("workflow:study_session:section_switched", {
         sessionId: nextSession.id,
-        sectionId: nextSession.sectionId
+        studyUnitId: nextSession.studyUnitId
       });
     } catch (error) {
       dispatch({
@@ -1216,7 +1180,7 @@ export function useLearningWorkspaceController({
             type: "notice_set",
             notice: "答题会话失效，正在恢复…"
           });
-          const recoveredSession = await ensureSessionForSection(state.studySession.sectionId, {
+          const recoveredSession = await ensureSessionForSection(state.studySession.studyUnitId, {
             clearResponseOnSwitch: false,
           });
           if (!recoveredSession) {
@@ -1310,7 +1274,7 @@ export function useLearningWorkspaceController({
     if (!session) {
       dispatch({
         type: "notice_set",
-        notice: "当前还没有可打断的章节会话。"
+        notice: "当前还没有可打断的学习单元会话。"
       });
       return false;
     }
@@ -1472,11 +1436,11 @@ export function useLearningWorkspaceController({
       return;
     }
     const session = state.studySession;
-    const sectionId = session.sectionId;
-    if (!sectionId || session.preparedSectionIds?.includes(sectionId) || state.isBusy) {
+    const studyUnitId = session.studyUnitId;
+    if (!studyUnitId || session.preparedStudyUnitIds?.includes(studyUnitId) || state.isBusy) {
       return;
     }
-    const requestKey = `${session.id}:${sectionId}`;
+    const requestKey = `${session.id}:${studyUnitId}`;
     if (preludeInFlightRef.current.has(requestKey)) {
       return;
     }
@@ -1487,7 +1451,7 @@ export function useLearningWorkspaceController({
         await sendHiddenSessionMessage({
           sessionId: session.id,
           message: buildSessionPreludeMessage({
-            sectionTitle: session.sectionTitle ?? session.sectionId,
+            sectionTitle: session.studyUnitTitle ?? session.studyUnitId,
             themeHint: session.themeHint ?? "",
           }),
           messageKind: "session_prelude",
@@ -1580,7 +1544,7 @@ export function useLearningWorkspaceController({
     if (!chatFailure) {
       return;
     }
-    await handleAskForSection(chatFailure.message, chatFailure.sectionId, chatFailure.attachments);
+    await handleAskForSection(chatFailure.message, chatFailure.studyUnitId, chatFailure.attachments);
   };
 
   return {
@@ -1621,7 +1585,6 @@ export function useLearningWorkspaceController({
     selectPlan,
     createSessionForActivePlan,
     renamePlanTitle,
-    updatePlanStudyChapters,
     updatePlanProgress,
     answerPlanQuestion,
     renameStudyUnitTitle,
@@ -1788,12 +1751,12 @@ function buildSessionPreludeMessage(input: {
   themeHint: string;
 }) {
   return [
-    "正式对话开始前，请先完成一轮隐藏的章节预处理和自然引入。",
-    `当前章节：${input.sectionTitle || "未命名章节"}`,
+    "正式对话开始前，请先完成一轮隐藏的学习单元预处理和自然引入。",
+    `当前学习单元：${input.sectionTitle || "未命名学习单元"}`,
     `当前主题：${input.themeHint || "未额外指定"}`,
     "要求：",
     "1. 如果需要，可先调用计划、场景、教材或时间相关工具，确认当前上下文。",
-    "2. 用 2 到 4 句自然地把学习者带入这一章，说明你准备如何陪他学。",
+    "2. 用 2 到 4 句自然地把学习者带入这一学习单元，说明你准备如何陪他学。",
     "3. 如果场景、物体、教材页码或公式焦点有帮助，可以顺手把它们纳入引入。",
     "4. 不要提到这是隐藏消息、预处理消息或内部流程。"
   ].join("\n");

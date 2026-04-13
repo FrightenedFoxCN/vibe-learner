@@ -9,6 +9,7 @@
 - `desktop-packaging.md`: concrete desktop preview packaging commands, artifact paths, sidecar bundling, and CI workflow notes
 - `desktop-distribution-plan.md`: deferred plan for future cross-platform desktop packaging and app-shell architecture
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
+- `study-chapter-and-schedule.md`: canonical terminology and runtime data chain for study units, chapter labels, schedule items, and session scope
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields
 - `learning-plan-prompt-contract.md`: exact learning-plan prompt sections, user payload shape, schema injection, and model transport string
 - `frontend-learning-workspace.md`: frontend responsibility split for `/plan` and `/study` workspace pages
@@ -19,15 +20,16 @@
 
 1. Read `user_manual.md` to understand the current page-level product behavior and operation flow.
 2. Read `architecture.md` for the high-level system split.
-3. Read `parsing-and-planning-data-flow.md` before changing PDF parsing, study-unit cleanup, planning context, or tool-enabled plan generation.
-4. Read `frontend-learning-workspace.md` before changing `apps/web/components/learning-workspace.tsx` or its controller/state helpers.
-5. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
-6. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
-7. Read `api-reference.md` before touching frontend/backend contracts.
-8. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
-9. Read `desktop-distribution-plan.md` for the original architecture exploration context.
-10. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-11. Read `../TODO.md` for the active implementation backlog.
+3. Read `study-chapter-and-schedule.md` before discussing study-unit, chapter-label, schedule, or session-scope changes.
+4. Read `parsing-and-planning-data-flow.md` before changing PDF parsing, study-unit cleanup, planning context, or tool-enabled plan generation.
+5. Read `frontend-learning-workspace.md` before changing `apps/web/components/learning-workspace.tsx` or its controller/state helpers.
+6. Read `plan-text-contract.md` before changing learning-plan text fields or UI copy mapping.
+7. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
+8. Read `api-reference.md` before touching frontend/backend contracts.
+9. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
+10. Read `desktop-distribution-plan.md` for the original architecture exploration context.
+11. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+12. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 

@@ -58,7 +58,7 @@ export function StudyDebugPanels({
         <div style={styles.metaGrid}>
           <MetaItem label="Session" value={session.id} />
           <MetaItem label="Scene Instance" value={session.sceneInstanceId || "-"} />
-          <MetaItem label="Section" value={session.sectionTitle || session.sectionId} />
+          <MetaItem label="Study Unit" value={session.studyUnitTitle || session.studyUnitId} />
           <MetaItem label="Theme" value={session.themeHint || "-"} />
           <MetaItem label="Status" value={session.status} />
         </div>
@@ -146,7 +146,7 @@ export function StudyDebugPanels({
           <div style={styles.list}>
             {latestMemoryTrace.map((hit, index) => (
               <div key={`${hit.sessionId}:${index}`} style={styles.itemCard}>
-                <strong>{hit.sceneTitle || "未设置场景"} · {hit.sectionId}</strong>
+                <strong>{hit.sceneTitle || "未设置场景"} · {hit.studyUnitId}</strong>
                 <span style={styles.caption}>
                   score: {hit.score.toFixed(4)} · {hit.source === "tool_call" ? "tool" : "retriever"}
                 </span>

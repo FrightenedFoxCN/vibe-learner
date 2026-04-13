@@ -218,10 +218,10 @@ This produces a `LearningPlanRecord` shell with:
 - `course_title`
 - `objective`
 - `overview`
-- `study_chapters` (ordered study chapters used for downstream navigation)
 - `today_tasks`
 - `study_units`
-- `schedule`
+- `schedule` (each item includes nested `schedule_chapters`)
+- derived `study_unit_progress`
 
 This heuristic result is then refined by the selected model provider.
 
@@ -253,9 +253,8 @@ Model output is parsed into:
 
 - `course_title`
 - `overview`
-- `study_chapters` (ordered study chapters used for downstream navigation)
 - `today_tasks`
-- `schedule`
+- `schedule` with nested `schedule_chapters`
 
 ### Plan reconciliation
 

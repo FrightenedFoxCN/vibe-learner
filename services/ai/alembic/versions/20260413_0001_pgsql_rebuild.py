@@ -52,7 +52,7 @@ def upgrade() -> None:
         sa.Column("document_id", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("persona_id", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("plan_id", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("section_id", sa.String(length=128), nullable=False, server_default=""),
+        sa.Column("study_unit_id", sa.String(length=128), nullable=False, server_default=""),
         sa.Column("status", sa.String(length=32), nullable=False, server_default="active"),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),

@@ -20,6 +20,8 @@ from app.models.domain import (
     PersonaProfile,
     PersonaSlot,
     RichTextBlockRecord,
+    ScheduleChapterContentSliceRecord,
+    ScheduleChapterRecord,
     SceneLayerStateRecord,
     SceneObjectStateRecord,
     SceneProfileRecord,
@@ -428,13 +430,13 @@ class PlanScheduleItem:
     title: str
     focus: str
     activity_type: str
+    schedule_chapters: list[ScheduleChapterRecord]
 
 
 @dataclass
 class PlanModelReply:
     course_title: str
     overview: str
-    study_chapters: list[str]
     today_tasks: list[str]
     schedule: list[PlanScheduleItem]
     revised_study_units: list[StudyUnitRecord] | None = None
@@ -717,6 +719,7 @@ class MockModelProvider(ModelProvider):
                         else f"在 {unit.title} 中整理概念、例题与疑问。"
                     ),
                     activity_type="learn",
+                    schedule_chapters=_fallback_schedule_chapters_for_unit(unit),
                 )
             )
         # course_title is the generated textbook-grounded title; objective remains learner-authored goal text.
@@ -731,7 +734,6 @@ class MockModelProvider(ModelProvider):
                 f"{' 目标优先：' + objective_hint + '。' if objective_hint else ''}"
                 f"{' 已吸收最新规划回答。' if answered_questions else ''}"
             ),
-            study_chapters=[unit.title for unit in plannable_units[:4]],
             today_tasks=today_tasks,
             schedule=schedule,
             planning_questions=list(planning_questions or []),
@@ -1940,6 +1942,7 @@ class OpenAIModelProvider(MockModelProvider):
                 title=str(item["title"]),
                 focus=str(item["focus"]),
                 activity_type=str(item["activity_type"]),
+                schedule_chapters=_parse_plan_schedule_chapters(item),
             )
             for item in parsed.get("schedule", [])
         ]
@@ -1954,10 +1957,6 @@ class OpenAIModelProvider(MockModelProvider):
                 )
             ),
             overview=str(parsed["overview"]),
-            study_chapters=[
-                str(item)
-                for item in parsed.get("study_chapters", [])
-            ],
             today_tasks=[str(item) for item in parsed.get("today_tasks", [])],
             schedule=schedule_items,
             revised_study_units=active_study_units if _study_units_changed(study_units, active_study_units) else None,
@@ -2706,7 +2705,7 @@ def _tool_topic(
     candidate = str(arguments.get("topic") or "").strip()
     if candidate:
         return candidate
-    context_title = _extract_section_title(section_context)
+    context_title = _extract_scope_title(section_context)
     if context_title:
         return context_title
     message_title = _extract_topic_hint(learner_message)
@@ -2734,7 +2733,7 @@ def _summarize_section_context(section_context: str) -> str:
     return lines[0]
 
 
-def _extract_section_title(section_context: str) -> str:
+def _extract_scope_title(section_context: str) -> str:
     match = re.search(r"^(?:章节|Section)[:：]\s*(.+?)\s*\(", section_context, re.MULTILINE)
     if match:
         return match.group(1).strip()
@@ -3409,6 +3408,41 @@ def _build_course_title(
     if lead_titles:
         return " / ".join(lead_titles)
     return document_title.strip()
+
+
+def _fallback_schedule_chapters_for_unit(unit: StudyUnitRecord) -> list[ScheduleChapterRecord]:
+    normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
+    return [
+        ScheduleChapterRecord(
+            id=f"{unit.id}:schedule-chapter:1",
+            title=unit.title,
+            anchor_page_start=unit.page_start,
+            anchor_page_end=unit.page_end,
+            source_section_ids=normalized_sources,
+            content_slices=[
+                ScheduleChapterContentSliceRecord(
+                    page_start=unit.page_start,
+                    page_end=unit.page_end,
+                    source_section_ids=normalized_sources,
+                )
+            ],
+        )
+    ]
+
+
+def _parse_plan_schedule_chapters(item: dict[str, Any]) -> list[ScheduleChapterRecord]:
+    raw_schedule_chapters = item.get("schedule_chapters")
+    if not isinstance(raw_schedule_chapters, list):
+        return []
+    normalized: list[ScheduleChapterRecord] = []
+    for raw_chapter in raw_schedule_chapters:
+        if not isinstance(raw_chapter, dict):
+            continue
+        try:
+            normalized.append(ScheduleChapterRecord.model_validate(raw_chapter))
+        except Exception:
+            continue
+    return normalized
 
 
 def _study_units_changed(
