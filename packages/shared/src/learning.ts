@@ -17,11 +17,107 @@ export interface MemoryTraceHit {
   source?: "retriever" | "tool_call";
 }
 
+export interface SessionFollowUp {
+  id: string;
+  triggerKind: string;
+  status: string;
+  delaySeconds: number;
+  dueAt: string;
+  hiddenMessage: string;
+  reason: string;
+  createdAt: string;
+  completedAt?: string;
+  canceledAt?: string;
+}
+
+export interface SessionMemoryEntry {
+  id: string;
+  key: string;
+  content: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SessionAffinityEvent {
+  id: string;
+  delta: number;
+  reason: string;
+  source: string;
+  createdAt: string;
+}
+
+export interface SessionAffinityState {
+  score: number;
+  level: string;
+  summary: string;
+  updatedAt: string;
+  events: SessionAffinityEvent[];
+}
+
+export interface SessionPlanConfirmation {
+  id: string;
+  toolName: string;
+  actionType: string;
+  planId: string;
+  title: string;
+  summary: string;
+  previewLines: string[];
+  payload: Record<string, unknown>;
+  status: string;
+  createdAt: string;
+  resolvedAt?: string;
+  resolutionNote?: string;
+}
+
+export interface LearnerAttachment {
+  attachmentId: string;
+  name: string;
+  mimeType: string;
+  kind: string;
+  sizeBytes: number;
+  imageUrl?: string;
+  textExcerpt?: string;
+  source?: string;
+  pageCount?: number;
+  previewable?: boolean;
+}
+
 export interface Citation {
   sectionId: string;
   title: string;
   pageStart: number;
   pageEnd: number;
+  sourceKind?: string;
+  sourceId?: string;
+}
+
+export interface PdfRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ProjectedPdfOverlay {
+  id: string;
+  kind: string;
+  pageNumber: number;
+  rects: PdfRect[];
+  label: string;
+  quoteText?: string;
+  color?: string;
+  createdAt: string;
+}
+
+export interface SessionProjectedPdf {
+  sourceKind: string;
+  sourceId: string;
+  title: string;
+  pageNumber: number;
+  pageCount: number;
+  overlays: ProjectedPdfOverlay[];
+  updatedAt: string;
 }
 
 export interface LearningGoal {
@@ -380,6 +476,8 @@ export interface StreamReport {
 
 export interface StudyChatRequest {
   message: string;
+  messageKind?: string;
+  followUpId?: string;
 }
 
 export interface ChatToolCallTrace {
@@ -476,6 +574,8 @@ export interface StudyScheduleItem {
 
 export interface DialogueTurnRecord {
   learnerMessage: string;
+  learnerMessageKind?: string;
+  learnerAttachments?: LearnerAttachment[];
   assistantReply: string;
   citations: Citation[];
   characterEvents: CharacterStateEvent[];
@@ -519,6 +619,12 @@ export interface StudySessionRecord {
   sessionSystemPrompt?: string;
   status: string;
   turns: DialogueTurnRecord[];
+  preparedSectionIds?: string[];
+  pendingFollowUps?: SessionFollowUp[];
+  sessionMemory?: SessionMemoryEntry[];
+  affinityState?: SessionAffinityState;
+  planConfirmations?: SessionPlanConfirmation[];
+  projectedPdf?: SessionProjectedPdf | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -5,9 +5,9 @@ import queue
 import threading
 from uuid import uuid4
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.core.logging import get_logger
@@ -65,6 +65,8 @@ from app.models.api import (
     StudyChatRequest,
     StudyChatResponse,
     StudyChatExchangeResponse,
+    StudySessionPlanConfirmationDecisionRequest,
+    StudySessionPlanConfirmationDecisionResponse,
     StudyQuestionAttemptRequest,
     StudySessionListResponse,
     StudySessionResponse,
@@ -76,8 +78,11 @@ from app.models.api import (
     TokenUsageStatsResponse,
     TokenUsageDailyBucket,
 )
-from app.models.domain import PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
+from app.models.domain import Citation, PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
+from app.services.study_chat_attachments import prepare_study_chat_attachments
+from app.services.study_chat_attachments import render_pdf_page_png_bytes
+from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -571,6 +576,19 @@ def get_document_file(document_id: str) -> FileResponse:
     )
 
 
+@router.get("/documents/{document_id}/pages/{page_number}/image")
+def get_document_page_image(document_id: str, page_number: int) -> Response:
+    document = container.document_service.require_document(document_id)
+    path = Path(document.stored_path)
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="document_file_not_found")
+    image_bytes = render_pdf_page_png_bytes(
+        pdf_path=str(path),
+        page_number=page_number,
+    )
+    return Response(content=image_bytes, media_type="image/png")
+
+
 @router.get("/documents/{document_id}/debug", response_model=DocumentDebugResponse)
 def get_document_debug(document_id: str) -> DocumentDebugResponse:
     report = container.document_service.require_debug_report(document_id)
@@ -824,9 +842,104 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
     return PersonaSlotAssistResponse(**result)
 
 
+@router.get("/study-sessions/{session_id}/attachments/{attachment_id}/file")
+def get_study_session_attachment_file(session_id: str, attachment_id: str) -> FileResponse:
+    attachment = container.study_session_service.require_attachment(
+        session_id=session_id,
+        attachment_id=attachment_id,
+    )
+    path = Path(attachment.stored_path)
+    if not attachment.stored_path or not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="session_attachment_file_not_found")
+    return FileResponse(
+        path=path,
+        media_type=attachment.mime_type or "application/octet-stream",
+        filename=attachment.name,
+        headers={"Content-Disposition": "inline"},
+    )
+
+
+@router.get("/study-sessions/{session_id}/attachments/{attachment_id}/pages/{page_number}/image")
+def get_study_session_attachment_page_image(
+    session_id: str,
+    attachment_id: str,
+    page_number: int,
+) -> Response:
+    attachment = container.study_session_service.require_attachment(
+        session_id=session_id,
+        attachment_id=attachment_id,
+    )
+    path = Path(attachment.stored_path)
+    if attachment.kind != "pdf" or not attachment.stored_path or not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="session_attachment_file_not_found")
+    image_bytes = render_pdf_page_png_bytes(
+        pdf_path=str(path),
+        page_number=page_number,
+    )
+    return Response(content=image_bytes, media_type="image/png")
+
+
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
 def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeResponse:
+    return _run_study_chat(
+        session_id=session_id,
+        message=payload.message,
+        message_kind=payload.message_kind,
+        follow_up_id=payload.follow_up_id,
+    )
+
+
+@router.post("/study-sessions/{session_id}/chat-with-attachments", response_model=StudyChatExchangeResponse)
+def study_chat_with_attachments(
+    session_id: str,
+    message: str = Form(...),
+    message_kind: str = Form("learner"),
+    follow_up_id: str = Form(""),
+    files: list[UploadFile] | None = File(default=None),
+) -> StudyChatExchangeResponse:
+    prepared = prepare_study_chat_attachments(
+        store=container.store,
+        session_id=session_id,
+        files=files or [],
+        allow_image_input=container.model_provider.supports_chat_page_image_tools(),
+    )
+    return _run_study_chat(
+        session_id=session_id,
+        message=message,
+        message_kind=message_kind,
+        follow_up_id=follow_up_id,
+        learner_attachments=prepared.records,
+        attachment_context=prepared.attachment_context,
+        learner_multimodal_parts=prepared.multimodal_parts,
+    )
+
+
+def _run_study_chat(
+    *,
+    session_id: str,
+    message: str,
+    message_kind: str = "learner",
+    follow_up_id: str = "",
+    learner_attachments=None,
+    attachment_context: str = "",
+    learner_multimodal_parts=None,
+) -> StudyChatExchangeResponse:
     session = _ensure_session_scene_binding(container.study_session_service.require_session(session_id))
+    normalized_message_kind = (message_kind or "learner").strip() or "learner"
+    normalized_follow_up_id = follow_up_id.strip()
+    if normalized_message_kind == "scheduled_follow_up" and normalized_follow_up_id:
+        target_follow_up = next(
+            (
+                item
+                for item in session.pending_follow_ups
+                if item.id == normalized_follow_up_id and item.status == "pending"
+            ),
+            None,
+        )
+        if target_follow_up is None:
+            raise HTTPException(status_code=409, detail="follow_up_not_pending")
+    if normalized_message_kind == "learner":
+        session = container.study_session_service.cancel_pending_follow_ups(session_id=session_id)
     persona = container.persona_engine.require_persona(session.persona_id)
     active_plan = None
     if session.plan_id:
@@ -868,23 +981,43 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
         if active_plan is not None
         else None
     )
+    session_tool_runtime = StudySessionChatToolRuntime(
+        session_service=container.study_session_service,
+        plan_service=container.plan_service,
+        session_id=session_id,
+        plan_id=active_plan.id if active_plan is not None else session.plan_id,
+        transient_attachments=learner_attachments or [],
+        multimodal_enabled=container.model_provider.supports_chat_page_image_tools(),
+    )
+    session_state_context = _resolve_session_state_context(
+        session_tool_runtime=session_tool_runtime,
+        follow_up_id=normalized_follow_up_id,
+    )
+    session_prompt = _compose_session_prompt(
+        session=session,
+        session_state_context=session_state_context,
+    )
     try:
         response = container.pedagogy_orchestrator.generate_chat_reply(
             session_id=session_id,
             persona=persona,
-            message=payload.message,
+            message=message,
             section_id=session.section_id,
             section_title=session.section_title,
             theme_hint=session.theme_hint,
             active_plan=active_plan,
-            session_system_prompt=session.session_system_prompt,
+            session_system_prompt=session_prompt,
             debug_report=debug_report,
             document_path=document.stored_path if document is not None else None,
             previous_turns=session.turns,
             memory_sessions=memory_sessions,
             active_plan_context=plan_tool_runtime.plan_context() if plan_tool_runtime else "",
+            attachment_context=attachment_context,
+            learner_multimodal_parts=learner_multimodal_parts or [],
+            session_state_context=session_state_context,
             active_scene_summary=_scene_profile_summary(session),
             active_scene_context=scene_tool_runtime.scene_context() if scene_tool_runtime else "",
+            session_tool_runtime=session_tool_runtime,
             plan_tool_runtime=plan_tool_runtime,
             scene_tool_runtime=scene_tool_runtime,
         )
@@ -897,12 +1030,88 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
             str(exc),
         )
         raise http_error from exc
-    session = container.study_session_service.append_turn(
-        session_id=session_id, learner_message=payload.message, result=response
+    response.citations = _merge_chat_citations(
+        response.citations,
+        session_tool_runtime.response_citations(),
     )
+    session = container.study_session_service.append_turn(
+        session_id=session_id,
+        learner_message=message,
+        learner_message_kind=normalized_message_kind,
+        learner_attachments=learner_attachments or [],
+        result=response,
+        prepared_section_id=session.section_id if normalized_message_kind == "session_prelude" else None,
+    )
+    if normalized_follow_up_id:
+        try:
+            session = container.study_session_service.complete_follow_up(
+                session_id=session_id,
+                follow_up_id=normalized_follow_up_id,
+            )
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+            session = container.study_session_service.require_session(session_id)
     return StudyChatExchangeResponse(
         **response.model_dump(mode="json"),
         session=_into_response(StudySessionResponse, session),
+    )
+
+
+@router.post(
+    "/study-sessions/{session_id}/plan-confirmations/{confirmation_id}",
+    response_model=StudySessionPlanConfirmationDecisionResponse,
+)
+def resolve_study_session_plan_confirmation(
+    session_id: str,
+    confirmation_id: str,
+    payload: StudySessionPlanConfirmationDecisionRequest,
+) -> StudySessionPlanConfirmationDecisionResponse:
+    decision = payload.decision.strip().lower()
+    if decision not in {"approve", "reject"}:
+        raise HTTPException(status_code=422, detail="invalid_confirmation_decision")
+    session, confirmation = container.study_session_service.resolve_plan_confirmation(
+        session_id=session_id,
+        confirmation_id=confirmation_id,
+        decision=decision,
+        note=payload.note,
+    )
+    updated_plan = None
+    if decision == "approve":
+        action_type = confirmation.action_type.strip()
+        if action_type == "update_plan_progress":
+            updated_plan = container.plan_service.update_progress(
+                plan_id=confirmation.plan_id,
+                schedule_ids=[
+                    str(item).strip()
+                    for item in (confirmation.payload.get("schedule_ids") or [])
+                    if str(item).strip()
+                ],
+                status=str(confirmation.payload.get("status") or ""),
+                note=str(confirmation.payload.get("note") or payload.note or ""),
+                actor="user",
+                source="chat_confirmation",
+            )
+        elif action_type == "update_plan":
+            raw_chapters = confirmation.payload.get("study_chapters")
+            updated_plan = container.plan_service.update_plan(
+                plan_id=confirmation.plan_id,
+                course_title=(
+                    str(confirmation.payload.get("course_title") or "").strip()
+                    or None
+                ),
+                study_chapters=(
+                    [str(item).strip() for item in raw_chapters if str(item).strip()]
+                    if isinstance(raw_chapters, list)
+                    else None
+                ),
+            )
+        else:
+            raise HTTPException(status_code=400, detail="unsupported_confirmation_action")
+    refreshed_session = container.study_session_service.require_session(session_id)
+    return StudySessionPlanConfirmationDecisionResponse(
+        session=_into_response(StudySessionResponse, refreshed_session),
+        plan=_into_response(LearningPlanResponse, updated_plan) if updated_plan is not None else None,
     )
 
 
@@ -1079,6 +1288,43 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
         session_system_prompt=session_system_prompt,
     )
     return _into_response(StudySessionResponse, session)
+
+
+def _resolve_session_state_context(*, session_tool_runtime, follow_up_id: str) -> str:
+    runtime_state = session_tool_runtime.session_context().strip()
+    if follow_up_id.strip():
+        runtime_state = (
+            f"{runtime_state}\n当前这轮是已触发的自动续接 follow-up={follow_up_id.strip()}，"
+            "不要再把它当成仍未处理的待办。"
+        ).strip()
+    return runtime_state
+
+
+def _compose_session_prompt(*, session, session_state_context: str) -> str:
+    base = session.session_system_prompt.strip()
+    if not session_state_context:
+        return base
+    if not base:
+        return f"会话动态状态：\n{session_state_context}"
+    return f"{base}\n\n会话动态状态：\n{session_state_context}"
+
+
+def _merge_chat_citations(base: list[Citation], extra: list[Citation]) -> list[Citation]:
+    merged: list[Citation] = []
+    seen: set[tuple[str, str, int, int, str]] = set()
+    for citation in [*(base or []), *(extra or [])]:
+        key = (
+            citation.source_kind,
+            citation.source_id,
+            citation.page_start,
+            citation.page_end,
+            citation.title,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(citation)
+    return merged
 
 
 def _resolve_section_title(*, document, plan, section_id: str) -> str:

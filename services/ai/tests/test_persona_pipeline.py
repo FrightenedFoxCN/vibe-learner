@@ -1,5 +1,7 @@
+import base64
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import io
 import json
 import threading
 import unittest
@@ -54,6 +56,8 @@ from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning_plan_tool_specs
 from app.services.prompt_loader import load_prompt_template
 from app.services.study_arrangement import StudyArrangementService
+from app.services.study_chat_attachments import prepare_study_chat_attachments
+from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_session_prompt import build_study_session_system_prompt
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
@@ -674,6 +678,116 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(updated_session.scene_profile.title, "实验桌前")
         self.assertEqual(updated_session.turns[-1].tool_calls[0].tool_name, "move_to_scene")
         self.assertEqual(updated_session.turns[-1].scene_profile.title, "实验桌前")
+
+    def test_append_turn_marks_prepared_section_for_hidden_prelude(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-1",
+            persona_id="mentor-aurora",
+            section_id="chapter-2",
+        )
+
+        updated_session = self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="请先做一轮隐藏预处理。",
+            learner_message_kind="session_prelude",
+            prepared_section_id="chapter-2",
+            result=StudyChatResult(
+                reply="我们先把这章的抓手和场景焦点定下来。",
+                citations=[],
+                character_events=[],
+            ),
+        )
+
+        self.assertIn("chapter-2", updated_session.prepared_section_ids)
+        self.assertEqual(updated_session.turns[-1].learner_message_kind, "session_prelude")
+
+    def test_session_service_tracks_follow_up_memory_and_affinity(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-1",
+            persona_id="mentor-aurora",
+            section_id="chapter-1",
+        )
+
+        follow_up = self.study_session_service.schedule_follow_up(
+            session_id=session.id,
+            delay_seconds=30,
+            hidden_message="30 秒后继续追问学习者的复述。",
+            reason="等待学习者先独立组织答案。",
+        )
+        self.assertEqual(follow_up.status, "pending")
+
+        updated = self.study_session_service.upsert_session_memory(
+            session_id=session.id,
+            key="difficulty_hint",
+            content="学习者对矩阵乘法顺序容易混淆。",
+        )
+        self.assertEqual(updated.session_memory[-1].key, "difficulty_hint")
+
+        updated = self.study_session_service.update_affinity(
+            session_id=session.id,
+            delta=12,
+            reason="学习者主动复述并愿意继续追问。",
+        )
+        self.assertEqual(updated.affinity_state.level, "neutral")
+        self.assertEqual(updated.affinity_state.score, 12)
+
+    def test_prepare_study_chat_attachments_supports_image_and_text(self) -> None:
+        from fastapi import UploadFile
+
+        image_upload = UploadFile(
+            filename="diagram.png",
+            file=io.BytesIO(b"\x89PNG\r\n\x1a\nfakepng"),
+            headers={"content-type": "image/png"},
+        )
+        text_upload = UploadFile(
+            filename="notes.md",
+            file=io.BytesIO("矩阵乘法需要注意左右顺序。".encode("utf-8")),
+            headers={"content-type": "text/markdown"},
+        )
+
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id="session-attach-1",
+            files=[image_upload, text_upload],
+            allow_image_input=True,
+        )
+
+        self.assertEqual(len(prepared.records), 2)
+        self.assertEqual(prepared.records[0].kind, "image")
+        self.assertTrue(prepared.records[0].image_url.startswith("data:image/png;base64,"))
+        self.assertEqual(prepared.records[1].kind, "text")
+        self.assertIn("矩阵乘法", prepared.records[1].text_excerpt)
+        self.assertEqual(prepared.multimodal_parts[0]["type"], "image_url")
+        self.assertIn("学习者本轮附带了这些材料", prepared.attachment_context)
+
+    def test_prepare_study_chat_attachments_extracts_pdf_excerpt(self) -> None:
+        from fastapi import UploadFile
+
+        pdf_doc = fitz.open()
+        page = pdf_doc.new_page()
+        page.insert_text((72, 72), "Eigenvalues help summarize linear transformations.")
+        pdf_bytes = pdf_doc.tobytes()
+        pdf_doc.close()
+
+        pdf_upload = UploadFile(
+            filename="eigenvalues.pdf",
+            file=io.BytesIO(pdf_bytes),
+            headers={"content-type": "application/pdf"},
+        )
+
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id="session-attach-2",
+            files=[pdf_upload],
+            allow_image_input=False,
+        )
+
+        self.assertEqual(len(prepared.records), 1)
+        self.assertEqual(prepared.records[0].kind, "pdf")
+        self.assertIn("Eigenvalues help summarize", prepared.records[0].text_excerpt)
+        self.assertTrue(prepared.records[0].previewable)
+        self.assertGreater(prepared.records[0].page_count, 0)
+        self.assertTrue(Path(prepared.records[0].stored_path).exists())
 
     def test_local_store_save_list_is_safe_under_concurrent_writes(self) -> None:
         store = LocalJsonStore(Path(self.temp_dir.name))
@@ -3221,7 +3335,7 @@ class PersonaPipelineTests(unittest.TestCase):
         persisted = service.require_plan(plan.id)
         self.assertEqual(persisted.planning_questions[0].question, "这次更偏向概念打底还是刷题提分？")
 
-    def test_learning_plan_chat_tool_runtime_updates_progress(self) -> None:
+    def test_learning_plan_chat_tool_runtime_reads_progress(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")
         document = DocumentResponse.model_validate(
             {
@@ -3268,19 +3382,218 @@ class PersonaPipelineTests(unittest.TestCase):
         )
 
         runtime = LearningPlanChatToolRuntime(self.plan_service, plan.id)
+        payload = runtime.execute_tool("read_learning_plan_progress", {})
+
+        self.assertEqual(payload["tool_name"], "read_learning_plan_progress")
+        self.assertEqual(payload["progress_summary"]["completed_schedule_count"], 0)
+        refreshed = self.plan_service.require_plan(plan.id)
+        self.assertEqual(refreshed.schedule[0].status, "planned")
+
+    def test_study_session_chat_runtime_proposes_plan_confirmation(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        document = DocumentResponse.model_validate(
+            {
+                "id": "doc-session-runtime",
+                "title": "Linear Algebra",
+                "original_filename": "linear-algebra.pdf",
+                "stored_path": "/tmp/linear-algebra.pdf",
+                "status": "processed",
+                "ocr_status": "completed",
+                "created_at": "2026-04-09T00:00:00+00:00",
+                "updated_at": "2026-04-09T00:00:00+00:00",
+                "sections": [],
+                "study_units": [
+                    {
+                        "id": "doc-session-runtime:study-unit:1",
+                        "document_id": "doc-session-runtime",
+                        "title": "Matrices",
+                        "page_start": 1,
+                        "page_end": 12,
+                        "unit_kind": "chapter",
+                        "include_in_plan": True,
+                        "source_section_ids": [],
+                        "summary": "矩阵基础。",
+                        "confidence": 0.9,
+                    }
+                ],
+                "study_unit_count": 1,
+                "page_count": 12,
+                "chunk_count": 3,
+                "preview_excerpt": "sample",
+                "debug_ready": True,
+            }
+        )
+
+        plan = self.plan_service.create_plan(
+            goal=LearningGoalInput(
+                document_id=document.id,
+                persona_id=persona.id,
+                objective="掌握矩阵基础",
+            ),
+            document=document,
+            persona_name=persona.name,
+            persona=persona,
+        )
+        session = self.study_session_service.create_session(
+            document_id=document.id,
+            persona_id=persona.id,
+            plan_id=plan.id,
+            section_id="doc-session-runtime:study-unit:1",
+        )
+        runtime = StudySessionChatToolRuntime(
+            session_service=self.study_session_service,
+            plan_service=self.plan_service,
+            session_id=session.id,
+            plan_id=plan.id,
+        )
+
         payload = runtime.execute_tool(
             "update_learning_plan_progress",
             {
                 "schedule_id": plan.schedule[0].id,
                 "status": "completed",
-                "note": "The learner finished the first task.",
+                "note": "学习者已经完成第一轮阅读。",
             },
         )
 
-        self.assertEqual(payload["tool_name"], "update_learning_plan_progress")
-        self.assertEqual(payload["progress_summary"]["completed_schedule_count"], 1)
-        refreshed = self.plan_service.require_plan(plan.id)
-        self.assertEqual(refreshed.schedule[0].status, "completed")
+        self.assertTrue(payload["requires_confirmation"])
+        refreshed_session = self.study_session_service.require_session(session.id)
+        self.assertEqual(refreshed_session.plan_confirmations[-1].action_type, "update_plan_progress")
+        refreshed_plan = self.plan_service.require_plan(plan.id)
+        self.assertEqual(refreshed_plan.schedule[0].status, "planned")
+
+    def test_study_session_chat_runtime_projects_pdf_and_highlights_text(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-projected-pdf",
+            persona_id="mentor-aurora",
+            section_id="doc-projected-pdf:unit-1",
+        )
+
+        pdf_doc = fitz.open()
+        page = pdf_doc.new_page()
+        page.insert_text((72, 72), "Spectral theorem makes symmetric matrices diagonalizable.", fontsize=16)
+        pdf_bytes = pdf_doc.tobytes()
+        pdf_doc.close()
+
+        from fastapi import UploadFile
+
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id=session.id,
+            files=[
+                UploadFile(
+                    filename="spectral.pdf",
+                    file=io.BytesIO(pdf_bytes),
+                    headers={"content-type": "application/pdf"},
+                )
+            ],
+            allow_image_input=False,
+        )
+
+        runtime = StudySessionChatToolRuntime(
+            session_service=self.study_session_service,
+            plan_service=self.plan_service,
+            session_id=session.id,
+            transient_attachments=prepared.records,
+        )
+
+        project_payload = runtime.execute_tool(
+            "project_uploaded_pdf",
+            {
+                "attachment_id": prepared.records[0].attachment_id,
+                "page_number": 1,
+            },
+        )
+        highlight_payload = runtime.execute_tool(
+            "highlight_projected_pdf_text",
+            {
+                "page_number": 1,
+                "quote_text": "symmetric matrices diagonalizable",
+                "label": "定理结论",
+            },
+        )
+
+        self.assertTrue(project_payload["ok"])
+        self.assertTrue(highlight_payload["ok"])
+        self.assertGreaterEqual(highlight_payload["match_count"], 1)
+        refreshed_session = self.study_session_service.require_session(session.id)
+        self.assertIsNotNone(refreshed_session.projected_pdf)
+        self.assertEqual(refreshed_session.projected_pdf.source_id, prepared.records[0].attachment_id)
+        self.assertEqual(refreshed_session.projected_pdf.page_number, 1)
+        self.assertEqual(refreshed_session.projected_pdf.overlays[-1].kind, "text_highlight")
+        self.assertEqual(runtime.response_citations()[-1].source_kind, "attachment_pdf")
+
+    def test_study_session_chat_runtime_projects_image_and_clears_region_overlays(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-projected-image",
+            persona_id="mentor-aurora",
+            section_id="doc-projected-image:unit-1",
+        )
+        image_bytes = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0n8AAAAASUVORK5CYII="
+        )
+
+        from fastapi import UploadFile
+
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id=session.id,
+            files=[
+                UploadFile(
+                    filename="diagram.png",
+                    file=io.BytesIO(image_bytes),
+                    headers={"content-type": "image/png"},
+                )
+            ],
+            allow_image_input=True,
+        )
+
+        self.assertEqual(prepared.records[0].kind, "image")
+        self.assertEqual(prepared.records[0].page_count, 1)
+        self.assertTrue(prepared.records[0].previewable)
+        self.assertTrue(Path(prepared.records[0].stored_path).exists())
+
+        runtime = StudySessionChatToolRuntime(
+            session_service=self.study_session_service,
+            plan_service=self.plan_service,
+            session_id=session.id,
+            transient_attachments=prepared.records,
+        )
+
+        project_payload = runtime.execute_tool(
+            "project_uploaded_image",
+            {
+                "attachment_id": prepared.records[0].attachment_id,
+            },
+        )
+        annotate_payload = runtime.execute_tool(
+            "annotate_projected_image_region",
+            {
+                "x": 0.12,
+                "y": 0.24,
+                "width": 0.33,
+                "height": 0.18,
+                "label": "受力图",
+            },
+        )
+
+        refreshed_session = self.study_session_service.require_session(session.id)
+
+        self.assertTrue(project_payload["ok"])
+        self.assertTrue(annotate_payload["ok"])
+        self.assertEqual(annotate_payload["overlay"]["kind"], "region_box")
+        self.assertIsNotNone(refreshed_session.projected_pdf)
+        self.assertEqual(refreshed_session.projected_pdf.source_kind, "attachment_image")
+        self.assertEqual(refreshed_session.projected_pdf.source_id, prepared.records[0].attachment_id)
+        self.assertEqual(refreshed_session.projected_pdf.overlays[-1].kind, "region_box")
+        self.assertEqual(runtime.response_citations()[-1].source_kind, "attachment_image")
+
+        clear_payload = runtime.execute_tool("clear_projected_image_overlays", {})
+        cleared_session = self.study_session_service.require_session(session.id)
+
+        self.assertTrue(clear_payload["ok"])
+        self.assertEqual(clear_payload["remaining_overlay_count"], 0)
+        self.assertEqual(len(cleared_session.projected_pdf.overlays), 0)
 
     def test_plan_service_deletes_plan(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")

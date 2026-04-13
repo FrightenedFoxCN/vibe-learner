@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react";
 import type {
   PersonaProfile,
+  SessionAffinityState,
+  SessionFollowUp,
+  SessionProjectedPdf,
   StudyChatResponse
 } from "@vibe-learner/shared";
 
@@ -8,6 +11,9 @@ interface CharacterShellProps {
   persona: PersonaProfile;
   response: StudyChatResponse | null;
   pending: boolean;
+  affinityState?: SessionAffinityState;
+  projectedPdf?: SessionProjectedPdf | null;
+  nextFollowUp?: SessionFollowUp | null;
   variant?: "default" | "embedded";
 }
 
@@ -15,6 +21,9 @@ export function CharacterShell({
   persona,
   response,
   pending,
+  affinityState,
+  projectedPdf,
+  nextFollowUp,
   variant = "default"
 }: CharacterShellProps) {
   const responseEvents = response?.characterEvents ?? [];
@@ -67,6 +76,53 @@ export function CharacterShell({
           <div style={styles.noteBlock}>
             <span style={styles.noteKey}>状态解说</span>
             <p style={styles.noteText}>{primaryNote}</p>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={styles.statusCard}>
+        <div style={styles.sectionHead}>
+          <strong style={styles.sectionTitle}>会话状态</strong>
+          <span style={styles.sectionMeta}>随当前会话实时同步</span>
+        </div>
+        <div style={styles.stateGrid}>
+          <StateChip
+            label="好感度"
+            value={`${formatAffinityLevel(affinityState?.level)} · ${affinityState?.score ?? 0}`}
+          />
+          <StateChip
+            label="材料投射"
+            value={projectedPdf ? formatProjectedPreview(projectedPdf) : "未投射"}
+          />
+          <StateChip
+            label="自动续接"
+            value={nextFollowUp ? formatFollowUpState(nextFollowUp) : "无"}
+          />
+        </div>
+        {affinityState?.summary ? (
+          <div style={styles.noteBlock}>
+            <span style={styles.noteKey}>关系备注</span>
+            <p style={styles.noteText}>{affinityState.summary}</p>
+          </div>
+        ) : null}
+        {projectedPdf ? (
+          <div style={styles.noteBlock}>
+            <span style={styles.noteKey}>当前投射材料</span>
+            <p style={styles.noteText}>
+              {projectedPdf.title}
+              {projectedPdf.sourceKind === "attachment_image"
+                ? " · 图片"
+                : ` · 第 ${projectedPdf.pageNumber} 页${projectedPdf.pageCount ? ` / 共 ${projectedPdf.pageCount} 页` : ""}`}
+              {projectedPdf.overlays.length ? ` · ${projectedPdf.overlays.length} 个标注` : ""}
+            </p>
+          </div>
+        ) : null}
+        {nextFollowUp ? (
+          <div style={styles.noteBlock}>
+            <span style={styles.noteKey}>下一次自动续接</span>
+            <p style={styles.noteText}>
+              {formatDueAt(nextFollowUp.dueAt)} · {nextFollowUp.reason || "自动续接当前话题"}
+            </p>
           </div>
         ) : null}
       </section>
@@ -151,6 +207,41 @@ function formatToolName(value: string) {
   if (normalized === "read_page_range_content") return "读取教材正文";
   if (normalized === "read_page_range_images") return "读取教材图像";
   return value || "工具事件";
+}
+
+function formatAffinityLevel(value?: string) {
+  const normalized = (value || "").trim().toLowerCase();
+  if (normalized === "close") return "亲近";
+  if (normalized === "warm") return "温和";
+  if (normalized === "guarded") return "保留";
+  if (normalized === "distant") return "疏离";
+  if (normalized === "neutral") return "中性";
+  return value || "中性";
+}
+
+function formatFollowUpState(value: SessionFollowUp) {
+  if (value.status === "pending") return "待触发";
+  if (value.status === "completed") return "已完成";
+  if (value.status === "canceled") return "已取消";
+  return value.status || "未知";
+}
+
+function formatProjectedPreview(value: SessionProjectedPdf) {
+  if (value.sourceKind === "attachment_image") {
+    return value.overlays.length ? `图片 · ${value.overlays.length} 标注` : "图片";
+  }
+  return `p.${value.pageNumber}${value.pageCount ? ` / ${value.pageCount}` : ""}`;
+}
+
+function formatDueAt(value: string) {
+  const parsed = Date.parse(value || "");
+  if (!Number.isFinite(parsed)) {
+    return "时间未定";
+  }
+  return new Date(parsed).toLocaleTimeString("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 const styles: Record<string, CSSProperties> = {

@@ -120,11 +120,41 @@ class CharacterStateEvent(BaseModel):
     commentary: str = ""
 
 
+class PdfRectRecord(BaseModel):
+    x: float = Field(default=0.0, ge=0.0, le=1.0)
+    y: float = Field(default=0.0, ge=0.0, le=1.0)
+    width: float = Field(default=0.0, ge=0.0, le=1.0)
+    height: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class ProjectedPdfOverlayRecord(BaseModel):
+    id: str
+    kind: str
+    page_number: int
+    rects: list[PdfRectRecord] = Field(default_factory=list)
+    label: str = ""
+    quote_text: str = ""
+    color: str = "#FACC15"
+    created_at: str
+
+
+class SessionProjectedPdfRecord(BaseModel):
+    source_kind: str
+    source_id: str
+    title: str
+    page_number: int = 1
+    page_count: int = 0
+    overlays: list[ProjectedPdfOverlayRecord] = Field(default_factory=list)
+    updated_at: str
+
+
 class Citation(BaseModel):
-    section_id: str
+    section_id: str = ""
     title: str
     page_start: int
     page_end: int
+    source_kind: str = "document"
+    source_id: str = ""
 
 
 class DocumentSection(BaseModel):
@@ -509,6 +539,20 @@ class RichTextBlockRecord(BaseModel):
     content: str
 
 
+class LearnerAttachmentRecord(BaseModel):
+    attachment_id: str
+    name: str
+    mime_type: str
+    kind: str
+    size_bytes: int = 0
+    image_url: str = ""
+    text_excerpt: str = ""
+    source: str = "learner_upload"
+    stored_path: str = ""
+    page_count: int = 0
+    previewable: bool = False
+
+
 class StudyChatResult(BaseModel):
     reply: str
     citations: list[Citation]
@@ -560,6 +604,8 @@ class InteractiveQuestion(BaseModel):
 
 class DialogueTurnRecord(BaseModel):
     learner_message: str
+    learner_message_kind: str = "learner"
+    learner_attachments: list[LearnerAttachmentRecord] = []
     assistant_reply: str
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
@@ -570,6 +616,59 @@ class DialogueTurnRecord(BaseModel):
     tool_calls: list[ChatToolCallTraceRecord] = []
     scene_profile: SceneProfileRecord | None = None
     created_at: str
+
+
+class SessionFollowUpRecord(BaseModel):
+    id: str
+    trigger_kind: str = "scheduled_reply"
+    status: str = "pending"
+    delay_seconds: int = 0
+    due_at: str
+    hidden_message: str
+    reason: str = ""
+    created_at: str
+    completed_at: str = ""
+    canceled_at: str = ""
+
+
+class SessionMemoryRecord(BaseModel):
+    id: str
+    key: str
+    content: str
+    source: str = "tool_call"
+    created_at: str
+    updated_at: str
+
+
+class SessionAffinityEventRecord(BaseModel):
+    id: str
+    delta: int
+    reason: str = ""
+    source: str = "tool_call"
+    created_at: str
+
+
+class SessionAffinityStateRecord(BaseModel):
+    score: int = 0
+    level: str = "neutral"
+    summary: str = ""
+    updated_at: str = ""
+    events: list[SessionAffinityEventRecord] = Field(default_factory=list)
+
+
+class SessionPlanConfirmationRecord(BaseModel):
+    id: str
+    tool_name: str
+    action_type: str
+    plan_id: str = ""
+    title: str
+    summary: str = ""
+    preview_lines: list[str] = Field(default_factory=list)
+    payload: dict[str, Any] = Field(default_factory=dict)
+    status: str = "pending"
+    created_at: str
+    resolved_at: str = ""
+    resolution_note: str = ""
 
 
 class StudySessionRecord(BaseModel):
@@ -585,6 +684,12 @@ class StudySessionRecord(BaseModel):
     session_system_prompt: str = ""
     status: str
     turns: list[DialogueTurnRecord]
+    prepared_section_ids: list[str] = Field(default_factory=list)
+    pending_follow_ups: list[SessionFollowUpRecord] = Field(default_factory=list)
+    session_memory: list[SessionMemoryRecord] = Field(default_factory=list)
+    affinity_state: SessionAffinityStateRecord = Field(default_factory=SessionAffinityStateRecord)
+    plan_confirmations: list[SessionPlanConfirmationRecord] = Field(default_factory=list)
+    projected_pdf: SessionProjectedPdfRecord | None = None
     created_at: str
     updated_at: str
 

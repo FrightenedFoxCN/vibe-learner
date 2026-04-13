@@ -213,6 +213,25 @@ textarea {
   padding: 6px 0;
 }
 
+.pdf-preview-document {
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-preview-page {
+  display: inline-block;
+}
+
+.pdf-preview-page .react-pdf__Page__canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+}
+
+.pdf-preview-page .react-pdf__Page__textContent ::selection {
+  background: rgba(14, 165, 233, 0.22);
+}
+
 /* ─── Breakpoints ─── */
 
 /* Plan page: collapse at 1200px */

@@ -1,9 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
-import type { DocumentRecord, DocumentSection, LearningPlan, StudyUnit } from "@vibe-learner/shared";
+import type { Citation, DocumentRecord, DocumentSection, LearningPlan, StudySessionRecord, StudyUnit } from "@vibe-learner/shared";
 
 import { useLearningWorkspace } from "./learning-workspace-provider";
 import { StudyConsole } from "./study-console";
@@ -11,6 +12,37 @@ import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
 
 const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_BASE_URL ?? "http://127.0.0.1:8000";
+const ProjectedPdfViewer = dynamic(
+  () => import("./projected-pdf-viewer").then((module) => module.ProjectedPdfViewer),
+  { ssr: false }
+);
+const ProjectedImageViewer = dynamic(
+  () => import("./projected-image-viewer").then((module) => module.ProjectedImageViewer),
+  { ssr: false }
+);
+
+type PreviewState =
+  | {
+      kind: "document";
+      sourceId: string;
+      title: string;
+      page: number;
+      pageCount: number;
+    }
+  | {
+      kind: "attachment_pdf";
+      sourceId: string;
+      title: string;
+      page: number;
+      pageCount: number;
+    }
+  | {
+      kind: "attachment_image";
+      sourceId: string;
+      title: string;
+      page: number;
+      pageCount: number;
+    };
 
 export function StudyDialogPage() {
   const {
@@ -25,6 +57,7 @@ export function StudyDialogPage() {
     response,
     notice,
     isBusy,
+    chatImageUploadEnabled,
     createSessionForActivePlan,
     handleAsk,
     handleAskForSection,
@@ -32,10 +65,13 @@ export function StudyDialogPage() {
     retryFailedAsk,
     handleSwitchSection,
     handleSubmitQuestionAttempt,
+    handleResolvePlanConfirmation,
   } = useLearningWorkspace();
 
   const [pdfPage, setPdfPage] = useState(1);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+  const [previewState, setPreviewState] = useState<PreviewState | null>(null);
+  const [pendingComposerInsert, setPendingComposerInsert] = useState<{ id: string; text: string } | null>(null);
   const [selectedChapter, setSelectedChapter] = useState("");
   const [selectedSubsectionId, setSelectedSubsectionId] = useState("");
   const [requestedPlanId, setRequestedPlanId] = useState("");
@@ -51,6 +87,7 @@ export function StudyDialogPage() {
     : activePlan?.sceneProfile
       ? "学习计划"
       : "";
+  const projectedPdf = studySession?.projectedPdf ?? null;
   const currentChapterStudyUnit = resolveStudyUnitByChapter(activePlan, currentChapter);
   const subsectionOptions = resolveSubsectionsForStudyUnit(activeDocument, currentChapterStudyUnit);
 
@@ -110,11 +147,65 @@ export function StudyDialogPage() {
     },
     [activeDocument?.sections, activeDocument?.studyUnits, planSections, resolveSectionIdByChapter]
   );
+  const chapterStartPage = resolveChapterStartPage(currentChapter);
+  const chapterSectionId = resolveSectionIdByChapter(currentChapter);
 
   const handleOpenPdfPage = useCallback((page: number) => {
     setPdfPage(page);
+    if (activeDocument) {
+      setPreviewState({
+        kind: "document",
+        sourceId: activeDocument.id,
+        title: activeDocument.title,
+        page: page,
+        pageCount: activeDocument.pageCount,
+      });
+    }
     setIsPdfPreviewOpen(true);
-  }, []);
+  }, [activeDocument]);
+
+  const handleOpenCitation = useCallback((citation: Citation) => {
+    const targetPage = Math.max(1, citation.pageStart || 1);
+    if (citation.sourceKind === "attachment_pdf" && studySession?.id) {
+      const attachment = resolvePreviewableAttachmentById(studySession, citation.sourceId || citation.sectionId, "pdf");
+      if (attachment) {
+        setPreviewState({
+          kind: "attachment_pdf",
+          sourceId: attachment.attachmentId,
+          title: attachment.name,
+          page: targetPage,
+          pageCount: attachment.pageCount ?? 0,
+        });
+        setIsPdfPreviewOpen(true);
+        return;
+      }
+    }
+    if (citation.sourceKind === "attachment_image" && studySession?.id) {
+      const attachment = resolvePreviewableAttachmentById(studySession, citation.sourceId || citation.sectionId, "image");
+      if (attachment) {
+        setPreviewState({
+          kind: "attachment_image",
+          sourceId: attachment.attachmentId,
+          title: attachment.name,
+          page: 1,
+          pageCount: 1,
+        });
+        setIsPdfPreviewOpen(true);
+        return;
+      }
+    }
+    if (activeDocument) {
+      setPdfPage(targetPage);
+      setPreviewState({
+        kind: "document",
+        sourceId: activeDocument.id,
+        title: activeDocument.title,
+        page: targetPage,
+        pageCount: activeDocument.pageCount,
+      });
+      setIsPdfPreviewOpen(true);
+    }
+  }, [activeDocument, studySession]);
 
   const handleSubsectionChange = useCallback(
     (subsectionId: string) => {
@@ -152,18 +243,23 @@ export function StudyDialogPage() {
   );
 
   const handleJumpToChapterStart = useCallback(() => {
-    const nextPage = resolveChapterStartPage(currentChapter);
-    if (nextPage > 0) handleOpenPdfPage(nextPage);
-  }, [currentChapter, handleOpenPdfPage, resolveChapterStartPage]);
+    setSelectedSubsectionId("");
+    if (chapterStartPage > 0) {
+      handleOpenPdfPage(chapterStartPage);
+    }
+    if (studySession && chapterSectionId && chapterSectionId !== studySession.sectionId) {
+      void handleSwitchSection(chapterSectionId);
+    }
+  }, [chapterSectionId, chapterStartPage, handleOpenPdfPage, handleSwitchSection, studySession]);
 
   const handleAskByCurrentChapter = useCallback(
-    async (message: string) => {
+    async (message: string, attachments: File[] = []) => {
       const targetSectionId = selectedSubsectionId || resolveSectionIdByChapter(currentChapter);
       if (targetSectionId) {
-        await handleAskForSection(message, targetSectionId);
+        await handleAskForSection(message, targetSectionId, attachments);
         return;
       }
-      await handleAsk(message);
+      await handleAsk(message, attachments);
     },
     [currentChapter, handleAsk, handleAskForSection, resolveSectionIdByChapter, selectedSubsectionId]
   );
@@ -211,17 +307,59 @@ export function StudyDialogPage() {
 
   useEffect(() => {
     const firstPage = activeDocument?.sections[0]?.pageStart;
+    if (projectedPdf) return;
     if (firstPage) {
       setPdfPage(firstPage);
+      setPreviewState({
+        kind: "document",
+        sourceId: activeDocument.id,
+        title: activeDocument.title,
+        page: firstPage,
+        pageCount: activeDocument.pageCount,
+      });
       setIsPdfPreviewOpen(true);
     }
-  }, [activeDocument?.id]);
+  }, [activeDocument?.id, activeDocument?.pageCount, activeDocument?.title, projectedPdf]);
 
   useEffect(() => {
     if (!Number.isFinite(requestedPage) || requestedPage <= 0) return;
+    if (projectedPdf) return;
     setPdfPage(requestedPage);
+    if (activeDocument) {
+      setPreviewState({
+        kind: "document",
+        sourceId: activeDocument.id,
+        title: activeDocument.title,
+        page: requestedPage,
+        pageCount: activeDocument.pageCount,
+      });
+    }
     setIsPdfPreviewOpen(true);
-  }, [requestedPage, activeDocument?.id]);
+  }, [requestedPage, activeDocument?.id, activeDocument?.pageCount, activeDocument?.title, projectedPdf]);
+
+  useEffect(() => {
+    if (!projectedPdf) return;
+    setPreviewState({
+      kind:
+        projectedPdf.sourceKind === "attachment_pdf"
+          ? "attachment_pdf"
+          : projectedPdf.sourceKind === "attachment_image"
+            ? "attachment_image"
+            : "document",
+      sourceId: projectedPdf.sourceId,
+      title: projectedPdf.title,
+      page: projectedPdf.pageNumber,
+      pageCount: projectedPdf.pageCount,
+    });
+    setIsPdfPreviewOpen(true);
+  }, [
+    projectedPdf?.pageNumber,
+    projectedPdf?.pageCount,
+    projectedPdf?.sourceId,
+    projectedPdf?.sourceKind,
+    projectedPdf?.title,
+    projectedPdf?.updatedAt,
+  ]);
 
   useEffect(() => {
     if (!studySession || !currentChapter) return;
@@ -238,7 +376,27 @@ export function StudyDialogPage() {
     studySession?.sectionId,
   ]);
 
-  const pdfSrc = activeDocument ? `${AI_BASE_URL}/documents/${activeDocument.id}/file#page=${pdfPage}` : "";
+  const effectivePreview = previewState;
+  const previewPage = effectivePreview?.page ?? pdfPage;
+  const previewTitle = effectivePreview?.title ?? activeDocument?.title ?? "";
+  const previewFileHref =
+    effectivePreview?.kind === "document"
+      ? `${AI_BASE_URL}/documents/${effectivePreview.sourceId}/file`
+      : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
+        ? `${AI_BASE_URL}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
+        : "";
+  const previewPageCount = effectivePreview?.pageCount ?? activeDocument?.pageCount ?? 0;
+  const previewFileUrl =
+    effectivePreview?.kind === "document"
+      ? `${AI_BASE_URL}/documents/${effectivePreview.sourceId}/file`
+      : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
+        ? `${AI_BASE_URL}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
+        : "";
+  const previewOverlays =
+    (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") &&
+    projectedPdf?.sourceId === effectivePreview.sourceId
+      ? projectedPdf.overlays.filter((item) => item.pageNumber === previewPage)
+      : [];
 
   return (
     <main className="with-app-nav study-dialog-page" style={styles.page}>
@@ -247,7 +405,7 @@ export function StudyDialogPage() {
       {/* ── Heading ── */}
       <div style={styles.heading}>
         <h1 style={styles.pageTitle}>章节对话</h1>
-        <p style={styles.pageDesc}>让对话成为主界面；章节切换、练习反馈与教材引用围绕同一个会话流展开，教材预览收进可收拢浮窗。</p>
+        <p style={styles.pageDesc}>让对话成为主界面；章节切换、练习反馈与教材引用围绕同一个会话流展开，教材预览统一收进右侧浮窗。</p>
       </div>
 
       {/* ── Toolbar ── */}
@@ -296,7 +454,7 @@ export function StudyDialogPage() {
             onAsk={handleAskByCurrentChapter}
             onSubmitQuestionAttempt={handleSubmitQuestionAttempt}
             onChangeChapter={handleChapterChange}
-            onOpenPage={handleOpenPdfPage}
+            onOpenCitation={handleOpenCitation}
             onJumpToChapterStart={handleJumpToChapterStart}
             chatErrorMessage={chatFailure?.detail ?? ""}
             onRetryLastAsk={retryFailedAsk}
@@ -311,30 +469,131 @@ export function StudyDialogPage() {
             sceneProfile={activeSceneProfile}
             sceneSourceLabel={activeSceneSourceLabel}
             sceneInstanceId={studySession?.sceneInstanceId ?? ""}
-            onTogglePdfPreview={() => setIsPdfPreviewOpen((current) => !current)}
-            isPdfPreviewOpen={isPdfPreviewOpen}
-            canOpenPdfPreview={Boolean(activeDocument)}
+            pendingFollowUps={studySession?.pendingFollowUps ?? []}
+            affinityState={studySession?.affinityState}
+            projectedPdf={studySession?.projectedPdf ?? null}
+            planConfirmations={studySession?.planConfirmations ?? []}
+            onResolvePlanConfirmation={handleResolvePlanConfirmation}
+            chatImageUploadEnabled={chatImageUploadEnabled}
+            pendingComposerInsert={pendingComposerInsert}
+            onConsumeComposerInsert={() => setPendingComposerInsert(null)}
+            canJumpToChapterStart={chapterStartPage > 0}
             disabled={!studySession}
           />
       </section>
 
-      {activeDocument ? (
+      {effectivePreview ? (
         isPdfPreviewOpen ? (
           <aside className="study-dialog-pdf-window" style={styles.pdfWindow}>
             <div style={styles.pdfHeader}>
               <div style={styles.pdfHeaderMeta}>
-                <span style={styles.pdfTitle}>{activeDocument.title}</span>
-                <span style={styles.pdfSubtitle}>第 {pdfPage} 页</span>
+                <span style={styles.pdfTitle}>{previewTitle}</span>
+                <span style={styles.pdfSubtitle}>
+                  {effectivePreview.kind === "attachment_pdf"
+                    ? "会话材料"
+                    : effectivePreview.kind === "attachment_image"
+                      ? "会话图片"
+                      : "教材材料"}
+                  {effectivePreview.kind === "attachment_image"
+                    ? " · 可框选引用与标注"
+                    : ` · 第 ${previewPage} 页${previewPageCount > 0 ? ` / ${previewPageCount}` : ""}`}
+                </span>
               </div>
-              <button
-                type="button"
-                style={styles.pdfCollapseBtn}
-                onClick={() => setIsPdfPreviewOpen(false)}
-              >
-                收拢
-              </button>
+              <div style={styles.pdfHeaderActions}>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.pdfNavBtn,
+                    ...(previewPage <= 1 ? styles.pdfNavBtnDisabled : {})
+                  }}
+                  onClick={() => {
+                    if (!effectivePreview || previewPage <= 1) return;
+                    if (effectivePreview.kind === "attachment_image") return;
+                    const nextPage = previewPage - 1;
+                    setPdfPage(nextPage);
+                    setPreviewState({ ...effectivePreview, page: nextPage });
+                  }}
+                  disabled={previewPage <= 1 || effectivePreview.kind === "attachment_image"}
+                >
+                  上一页
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.pdfNavBtn,
+                    ...(previewPageCount > 0 && previewPage >= previewPageCount ? styles.pdfNavBtnDisabled : {})
+                  }}
+                  onClick={() => {
+                    if (!effectivePreview) return;
+                    if (effectivePreview.kind === "attachment_image") return;
+                    if (previewPageCount > 0 && previewPage >= previewPageCount) return;
+                    const nextPage = previewPage + 1;
+                    setPdfPage(nextPage);
+                    setPreviewState({ ...effectivePreview, page: nextPage });
+                  }}
+                  disabled={effectivePreview.kind === "attachment_image" || (previewPageCount > 0 && previewPage >= previewPageCount)}
+                >
+                  下一页
+                </button>
+                {previewFileHref ? (
+                  <a href={previewFileHref} target="_blank" rel="noreferrer" style={styles.pdfOpenLink}>
+                    打开原件
+                  </a>
+                ) : null}
+                <button
+                  type="button"
+                  style={styles.pdfCollapseBtn}
+                  onClick={() => setIsPdfPreviewOpen(false)}
+                >
+                  收拢
+                </button>
+              </div>
             </div>
-            <iframe title="textbook-pdf" src={pdfSrc} className="study-dialog-pdf-iframe" style={styles.iframe} />
+            <div style={styles.previewStage}>
+              {previewFileUrl ? (
+                <div style={styles.previewCanvas}>
+                  {effectivePreview?.kind === "attachment_image" ? (
+                    <ProjectedImageViewer
+                      fileUrl={previewFileUrl}
+                      title={previewTitle}
+                      overlays={previewOverlays}
+                      onInsertReference={(text) => {
+                        setPendingComposerInsert({
+                          id: `${Date.now()}:image:${text.slice(0, 24)}`,
+                          text,
+                        });
+                      }}
+                    />
+                  ) : (
+                    <ProjectedPdfViewer
+                      fileUrl={previewFileUrl}
+                      title={previewTitle}
+                      pageNumber={previewPage}
+                      overlays={previewOverlays}
+                      onPageCountChange={(pageCount) => {
+                        if (!effectivePreview) return;
+                        setPreviewState((current) =>
+                          current
+                            ? {
+                                ...current,
+                                pageCount,
+                              }
+                            : current
+                        );
+                      }}
+                      onInsertReference={(text) => {
+                        setPendingComposerInsert({
+                          id: `${Date.now()}:${previewPage}:${text.slice(0, 24)}`,
+                          text,
+                        });
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div style={styles.previewEmptyState}>当前页暂时无法渲染。</div>
+              )}
+            </div>
           </aside>
         ) : (
           <button
@@ -343,7 +602,7 @@ export function StudyDialogPage() {
             style={styles.pdfDock}
             onClick={() => setIsPdfPreviewOpen(true)}
           >
-            教材浮窗 · p.{pdfPage}
+            材料预览 · {effectivePreview.kind === "attachment_image" ? "图像" : `p.${previewPage}`}
           </button>
         )
       ) : (
@@ -423,6 +682,29 @@ function resolveSubsectionsForStudyUnit(
   return candidates.filter(
     (section, index) => candidates.findIndex((candidate) => candidate.id === section.id) === index
   );
+}
+
+function resolvePreviewableAttachmentById(
+  session: StudySessionRecord | null | undefined,
+  attachmentId: string,
+  kind?: "pdf" | "image"
+) {
+  const normalizedId = attachmentId.trim();
+  if (!session || !normalizedId) {
+    return null;
+  }
+  for (const turn of session.turns) {
+    const match = turn.learnerAttachments?.find(
+      (attachment) =>
+        attachment.attachmentId === normalizedId &&
+        attachment.previewable &&
+        (!kind || attachment.kind === kind)
+    );
+    if (match) {
+      return match;
+    }
+  }
+  return null;
 }
 
 const styles: Record<string, CSSProperties> = {
@@ -524,13 +806,12 @@ const styles: Record<string, CSSProperties> = {
     zIndex: 35,
     display: "flex",
     flexDirection: "column",
-    width: "min(440px, calc(100vw - 40px))",
+    width: "min(430px, calc(100vw - 36px))",
     height: "min(72vh, calc(100vh - 120px))",
     border: "1px solid var(--border)",
-    borderTop: "1px solid var(--border)",
-    borderRadius: 20,
-    background: "color-mix(in srgb, white 94%, var(--panel))",
-    boxShadow: "0 28px 72px rgba(13, 32, 40, 0.18)",
+    borderRadius: 18,
+    background: "rgba(255, 255, 255, 0.98)",
+    boxShadow: "0 20px 56px rgba(13, 32, 40, 0.14)",
     overflow: "hidden",
   },
   pdfHeader: {
@@ -538,14 +819,21 @@ const styles: Record<string, CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "flex-start",
     gap: 12,
-    padding: "14px 14px 12px",
+    padding: "12px 12px 10px",
     borderBottom: "1px solid var(--border)",
-    background: "linear-gradient(180deg, #fbfdfe 0%, #f3f7f8 100%)",
+    background: "rgba(246, 249, 250, 0.96)",
   },
   pdfHeaderMeta: {
     display: "grid",
     gap: 4,
     minWidth: 0,
+  },
+  pdfHeaderActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
   },
   pdfTitle: {
     fontSize: 13,
@@ -569,13 +857,72 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: "pointer",
   },
-  iframe: {
+  pdfNavBtn: {
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--ink)",
+    height: 32,
+    padding: "0 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  pdfNavBtnDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed",
+  },
+  pdfOpenLink: {
+    color: "var(--accent)",
+    fontSize: 12,
+    fontWeight: 700,
+    textDecoration: "none",
+    padding: "6px 2px",
+  },
+  previewStage: {
     width: "100%",
     flex: 1,
     minHeight: 0,
-    border: "none",
+    background: "linear-gradient(180deg, #f1f5f7 0%, #e4ebef 100%)",
+    overflow: "auto",
+    padding: 12,
+  },
+  previewCanvas: {
+    position: "relative",
+    width: "100%",
     background: "white",
-    display: "block",
+    border: "1px solid rgba(15, 23, 42, 0.08)",
+    borderRadius: 14,
+    boxShadow: "0 12px 24px rgba(15, 23, 42, 0.10)",
+    overflow: "hidden",
+  },
+  overlayBox: {
+    position: "absolute",
+    border: "2px solid #FACC15",
+    boxSizing: "border-box",
+    pointerEvents: "none",
+  },
+  overlayLabel: {
+    position: "absolute",
+    left: 0,
+    top: -24,
+    maxWidth: 220,
+    color: "#0f172a",
+    fontSize: 11,
+    fontWeight: 700,
+    lineHeight: 1.2,
+    padding: "4px 6px",
+    borderRadius: 6,
+    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.12)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  previewEmptyState: {
+    minHeight: 280,
+    display: "grid",
+    placeItems: "center",
+    color: "var(--muted)",
+    fontSize: 13,
   },
   pdfDock: {
     position: "fixed",
@@ -583,8 +930,8 @@ const styles: Record<string, CSSProperties> = {
     top: 30,
     transform: "none",
     zIndex: 35,
-    border: "1px solid var(--accent)",
-    background: "var(--accent)",
+    border: "1px solid rgba(10, 103, 114, 0.18)",
+    background: "rgba(10, 103, 114, 0.94)",
     color: "white",
     minHeight: 0,
     width: "auto",
@@ -593,7 +940,7 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     fontWeight: 700,
     cursor: "pointer",
-    boxShadow: "0 18px 44px rgba(10, 103, 114, 0.2)",
+    boxShadow: "0 14px 32px rgba(10, 103, 114, 0.16)",
     borderRadius: 999,
     letterSpacing: "0.03em",
   },

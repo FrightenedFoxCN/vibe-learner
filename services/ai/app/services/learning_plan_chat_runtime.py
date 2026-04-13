@@ -10,7 +10,6 @@ from app.services.plans import LearningPlanService
 
 PLAN_CHAT_TOOL_NAMES = (
     "read_learning_plan_progress",
-    "update_learning_plan_progress",
 )
 
 
@@ -71,89 +70,9 @@ class LearningPlanChatToolRuntime:
                     },
                 },
             },
-            {
-                "type": "function",
-                "function": {
-                    "name": "update_learning_plan_progress",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["update_learning_plan_progress"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "schedule_id": {
-                                "type": "string",
-                                "description": "单个排期项 ID；与 schedule_ids 二选一即可。",
-                            },
-                            "schedule_ids": {
-                                "type": "array",
-                                "description": "一组需要更新状态的排期项 ID。",
-                                "items": {"type": "string"},
-                            },
-                            "chapter_unit_id": {
-                                "type": "string",
-                                "description": "可选。按章节/学习单元整体更新时使用，对应 chapter_progress 里的 unit_id。",
-                            },
-                            "chapter_unit_ids": {
-                                "type": "array",
-                                "description": "可选。批量按章节/学习单元整体更新时使用。",
-                                "items": {"type": "string"},
-                            },
-                            "status": {
-                                "type": "string",
-                                "enum": ["planned", "in_progress", "completed", "blocked", "skipped"],
-                                "description": "新的计划状态。",
-                            },
-                            "note": {
-                                "type": "string",
-                                "description": "可选。记录为什么要更新这次状态。",
-                            },
-                        },
-                        "required": ["status"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
         ]
 
     def execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         if tool_name == "read_learning_plan_progress":
             return self._service.describe_progress(self.plan_id)
-        if tool_name == "update_learning_plan_progress":
-            schedule_ids = []
-            single_schedule_id = str(arguments.get("schedule_id") or "").strip()
-            if single_schedule_id:
-                schedule_ids.append(single_schedule_id)
-            raw_schedule_ids = arguments.get("schedule_ids")
-            if isinstance(raw_schedule_ids, list):
-                schedule_ids.extend(str(item).strip() for item in raw_schedule_ids if str(item).strip())
-            chapter_unit_ids = []
-            single_chapter_unit_id = str(arguments.get("chapter_unit_id") or "").strip()
-            if single_chapter_unit_id:
-                chapter_unit_ids.append(single_chapter_unit_id)
-            raw_chapter_unit_ids = arguments.get("chapter_unit_ids")
-            if isinstance(raw_chapter_unit_ids, list):
-                chapter_unit_ids.extend(
-                    str(item).strip() for item in raw_chapter_unit_ids if str(item).strip()
-                )
-            if chapter_unit_ids:
-                plan = self._service.require_plan(self.plan_id)
-                for chapter in plan.chapter_progress:
-                    if chapter.unit_id in chapter_unit_ids:
-                        schedule_ids.extend(chapter.schedule_ids)
-                schedule_ids = list(dict.fromkeys(schedule_ids))
-            updated = self._service.update_progress(
-                plan_id=self.plan_id,
-                schedule_ids=schedule_ids,
-                status=str(arguments.get("status") or ""),
-                note=str(arguments.get("note") or ""),
-                actor="assistant",
-                source="chat_tool",
-            )
-            payload = self._service.describe_progress(self.plan_id)
-            payload["tool_name"] = "update_learning_plan_progress"
-            payload["updated_schedule_ids"] = schedule_ids
-            payload["updated_chapter_unit_ids"] = chapter_unit_ids
-            payload["updated_status"] = str(arguments.get("status") or "")
-            payload["note"] = str(arguments.get("note") or "")
-            payload["progress_event_id"] = updated.progress_events[-1].id if updated.progress_events else ""
-            return payload
         raise HTTPException(status_code=400, detail="plan_tool_unknown")

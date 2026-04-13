@@ -28,6 +28,11 @@ export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
 }
 
+export interface StudyPlanConfirmationDecisionResponse {
+  session: StudySessionRecord;
+  plan: LearningPlan | null;
+}
+
 export interface PersonaAssets {
   personaId: string;
   renderer: string;
@@ -847,6 +852,125 @@ function normalizeMemoryTrace(items: any[] | undefined) {
   }));
 }
 
+function normalizeSessionFollowUps(items: any[] | undefined) {
+  const raw = Array.isArray(items) ? items : [];
+  return raw.map((item: any) => ({
+    id: String(item.id ?? ""),
+    triggerKind: String(item.trigger_kind ?? ""),
+    status: String(item.status ?? "pending"),
+    delaySeconds: Number(item.delay_seconds ?? 0),
+    dueAt: String(item.due_at ?? ""),
+    hiddenMessage: String(item.hidden_message ?? ""),
+    reason: String(item.reason ?? ""),
+    createdAt: String(item.created_at ?? ""),
+    completedAt: String(item.completed_at ?? ""),
+    canceledAt: String(item.canceled_at ?? ""),
+  }));
+}
+
+function normalizeSessionMemory(items: any[] | undefined) {
+  const raw = Array.isArray(items) ? items : [];
+  return raw.map((item: any) => ({
+    id: String(item.id ?? ""),
+    key: String(item.key ?? ""),
+    content: compactPreviewString(String(item.content ?? ""), 280),
+    source: String(item.source ?? "tool_call"),
+    createdAt: String(item.created_at ?? ""),
+    updatedAt: String(item.updated_at ?? ""),
+  }));
+}
+
+function normalizeSessionAffinityState(value: any) {
+  const raw = value && typeof value === "object" ? value : {};
+  return {
+    score: Number(raw.score ?? 0),
+    level: String(raw.level ?? "neutral"),
+    summary: String(raw.summary ?? ""),
+    updatedAt: String(raw.updated_at ?? ""),
+    events: Array.isArray(raw.events)
+      ? raw.events.map((item: any) => ({
+          id: String(item.id ?? ""),
+          delta: Number(item.delta ?? 0),
+          reason: String(item.reason ?? ""),
+          source: String(item.source ?? "tool_call"),
+          createdAt: String(item.created_at ?? ""),
+        }))
+      : [],
+  };
+}
+
+function normalizePlanConfirmations(items: any[] | undefined) {
+  const raw = Array.isArray(items) ? items : [];
+  return raw.map((item: any) => ({
+    id: String(item.id ?? ""),
+    toolName: String(item.tool_name ?? ""),
+    actionType: String(item.action_type ?? ""),
+    planId: String(item.plan_id ?? ""),
+    title: String(item.title ?? ""),
+    summary: String(item.summary ?? ""),
+    previewLines: Array.isArray(item.preview_lines)
+      ? item.preview_lines.map((line: unknown) => String(line))
+      : [],
+    payload: item.payload && typeof item.payload === "object"
+      ? item.payload as Record<string, unknown>
+      : {},
+    status: String(item.status ?? "pending"),
+    createdAt: String(item.created_at ?? ""),
+    resolvedAt: String(item.resolved_at ?? ""),
+    resolutionNote: String(item.resolution_note ?? ""),
+  }));
+}
+
+function normalizeLearnerAttachments(items: any[] | undefined) {
+  const raw = Array.isArray(items) ? items : [];
+  return raw.map((item: any) => ({
+    attachmentId: String(item.attachment_id ?? ""),
+    name: String(item.name ?? ""),
+    mimeType: String(item.mime_type ?? ""),
+    kind: String(item.kind ?? ""),
+    sizeBytes: Number(item.size_bytes ?? 0),
+    imageUrl: item.image_url ? String(item.image_url) : undefined,
+    textExcerpt: item.text_excerpt ? compactPreviewString(String(item.text_excerpt), 240) : undefined,
+    source: item.source ? String(item.source) : undefined,
+    pageCount: Number(item.page_count ?? 0),
+    previewable: Boolean(item.previewable ?? false),
+  }));
+}
+
+function normalizeProjectedPdf(value: any) {
+  const raw = value && typeof value === "object" ? value : null;
+  if (!raw) {
+    return null;
+  }
+  return {
+    sourceKind: String(raw.source_kind ?? "document"),
+    sourceId: String(raw.source_id ?? ""),
+    title: String(raw.title ?? ""),
+    pageNumber: Number(raw.page_number ?? 1),
+    pageCount: Number(raw.page_count ?? 0),
+    overlays: Array.isArray(raw.overlays)
+      ? raw.overlays.map((overlay: any) => ({
+          id: String(overlay.id ?? ""),
+          kind: String(overlay.kind ?? ""),
+          pageNumber: Number(overlay.page_number ?? 1),
+          rects: Array.isArray(overlay.rects)
+            ? overlay.rects.map((rect: any) => ({
+                x: Number(rect.x ?? 0),
+                y: Number(rect.y ?? 0),
+                width: Number(rect.width ?? 0),
+                height: Number(rect.height ?? 0),
+              }))
+            : [],
+          label: String(overlay.label ?? ""),
+          quoteText: overlay.quote_text ? String(overlay.quote_text) : undefined,
+          color: overlay.color ? String(overlay.color) : undefined,
+          createdAt: String(overlay.created_at ?? ""),
+        }))
+      : [],
+    updatedAt: String(raw.updated_at ?? ""),
+  };
+}
+
 function normalizeRichBlocks(items: any[] | undefined) {
   const raw = Array.isArray(items) ? items : [];
   return raw
@@ -967,12 +1091,16 @@ function normalizeSession(session: any): StudySessionRecord {
       );
       return {
         learnerMessage: turn.learner_message,
+        learnerMessageKind: String(turn.learner_message_kind ?? "learner"),
+        learnerAttachments: normalizeLearnerAttachments(turn.learner_attachments),
         assistantReply: repaired.reply,
         citations: (turn.citations ?? []).map((citation: any) => ({
-          sectionId: citation.section_id,
+          sectionId: String(citation.section_id ?? ""),
           title: citation.title,
           pageStart: citation.page_start,
-          pageEnd: citation.page_end
+          pageEnd: citation.page_end,
+          sourceKind: citation.source_kind ? String(citation.source_kind) : undefined,
+          sourceId: citation.source_id ? String(citation.source_id) : undefined,
         })),
         characterEvents: (turn.character_events ?? []).map((event: any) => ({
           emotion: event.emotion,
@@ -1000,6 +1128,14 @@ function normalizeSession(session: any): StudySessionRecord {
         createdAt: turn.created_at
       };
     }),
+    preparedSectionIds: Array.isArray(session.prepared_section_ids)
+      ? session.prepared_section_ids.map((item: unknown) => String(item))
+      : [],
+    pendingFollowUps: normalizeSessionFollowUps(session.pending_follow_ups),
+    sessionMemory: normalizeSessionMemory(session.session_memory),
+    affinityState: normalizeSessionAffinityState(session.affinity_state),
+    planConfirmations: normalizePlanConfirmations(session.plan_confirmations),
+    projectedPdf: normalizeProjectedPdf(session.projected_pdf),
     createdAt: session.created_at,
     updatedAt: session.updated_at
   };
@@ -1949,18 +2085,37 @@ export async function updateStudySessionSection(input: {
 export async function sendStudyMessage(input: {
   sessionId: string;
   message: string;
+  messageKind?: string;
+  followUpId?: string;
+  attachments?: File[];
 }): Promise<StudyChatExchangeResponse> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: input.message
+  const hasAttachments = Boolean(input.attachments?.length);
+  const response = hasAttachments
+    ? await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat-with-attachments`, {
+        method: "POST",
+        body: (() => {
+          const form = new FormData();
+          form.set("message", input.message);
+          form.set("message_kind", input.messageKind ?? "learner");
+          form.set("follow_up_id", input.followUpId ?? "");
+          (input.attachments ?? []).forEach((file) => {
+            form.append("files", file);
+          });
+          return form;
+        })()
       })
-    })
-  );
+    : await request(`${AI_BASE_URL}/study-sessions/${input.sessionId}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: input.message,
+          message_kind: input.messageKind ?? "learner",
+          follow_up_id: input.followUpId ?? "",
+        })
+      });
+  const payload = await readJson<any>(response);
   const repaired = repairLegacyRichReply(
     String(payload.reply ?? ""),
     normalizeRichBlocks(payload.rich_blocks)
@@ -1969,10 +2124,12 @@ export async function sendStudyMessage(input: {
   return {
     reply: repaired.reply,
     citations: payload.citations.map((citation: any) => ({
-      sectionId: citation.section_id,
+      sectionId: String(citation.section_id ?? ""),
       title: citation.title,
       pageStart: citation.page_start,
-      pageEnd: citation.page_end
+      pageEnd: citation.page_end,
+      sourceKind: citation.source_kind ? String(citation.source_kind) : undefined,
+      sourceId: citation.source_id ? String(citation.source_id) : undefined,
     })),
     characterEvents: payload.character_events.map((event: any) => ({
       emotion: event.emotion,
@@ -2037,6 +2194,33 @@ export async function submitStudyQuestionAttempt(input: {
     })
   );
   return normalizeSession(payload);
+}
+
+export async function resolveStudyPlanConfirmation(input: {
+  sessionId: string;
+  confirmationId: string;
+  decision: "approve" | "reject";
+  note?: string;
+}): Promise<StudyPlanConfirmationDecisionResponse> {
+  const payload = await readJson<any>(
+    await request(
+      `${AI_BASE_URL}/study-sessions/${input.sessionId}/plan-confirmations/${input.confirmationId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          decision: input.decision,
+          note: input.note ?? "",
+        })
+      }
+    )
+  );
+  return {
+    session: normalizeSession(payload.session),
+    plan: payload.plan ? normalizePlan(payload.plan) : null,
+  };
 }
 
 function normalizeInteractiveQuestion(raw: any) {

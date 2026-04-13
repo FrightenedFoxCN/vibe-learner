@@ -508,6 +508,8 @@ class StudySessionListResponse(BaseModel):
 
 class StudyChatRequest(BaseModel):
     message: str
+    message_kind: str = "learner"
+    follow_up_id: str = ""
 
 
 class StudyChatResponse(BaseModel):
@@ -524,6 +526,16 @@ class StudyChatResponse(BaseModel):
 
 class StudyChatExchangeResponse(StudyChatResponse):
     session: StudySessionResponse
+
+
+class StudySessionPlanConfirmationDecisionRequest(BaseModel):
+    decision: str = Field(min_length=1)
+    note: str = ""
+
+
+class StudySessionPlanConfirmationDecisionResponse(BaseModel):
+    session: StudySessionResponse
+    plan: LearningPlanResponse | None = None
 
 
 class StudyQuestionAttemptRequest(BaseModel):

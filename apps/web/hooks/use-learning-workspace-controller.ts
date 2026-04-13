@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useEffect, useMemo, useReducer } from "react";
+import { useEffect, useMemo, useReducer, useRef } from "react";
 import type {
   DocumentRecord,
   DocumentSection,
@@ -23,6 +23,7 @@ import {
   listLearningPlans,
   listPersonas,
   processDocumentStream,
+  resolveStudyPlanConfirmation,
   sendStudyMessage,
   submitStudyQuestionAttempt,
   type SceneLibraryItemPayload,
@@ -62,6 +63,7 @@ import {
   logWorkspaceInfo
 } from "../lib/learning-workspace-telemetry";
 import { compactPreviewValue } from "../lib/preview";
+import { useRuntimeSettings } from "../components/runtime-settings-provider";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
@@ -78,6 +80,7 @@ type ChatFailureState = {
   message: string;
   sectionId: string;
   detail: string;
+  attachments: File[];
 };
 
 interface UseLearningWorkspaceControllerOptions {
@@ -89,6 +92,7 @@ export function useLearningWorkspaceController({
   initialPlan,
   initialPersonas = mockPersonas
 }: UseLearningWorkspaceControllerOptions) {
+  const runtimeSettings = useRuntimeSettings();
   const [state, dispatch] = useReducer(
     learningWorkspaceReducer,
     createInitialLearningWorkspaceState({
@@ -106,6 +110,9 @@ export function useLearningWorkspaceController({
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState("");
+  const preludeInFlightRef = useRef<Set<string>>(new Set());
+  const followUpTimerRef = useRef<Map<string, number>>(new Map());
+  const followUpInFlightRef = useRef<Set<string>>(new Set());
 
   const selectedPersona =
     state.personas.find((persona) => persona.id === state.selectedPersonaId) ?? state.personas[0];
@@ -711,11 +718,39 @@ export function useLearningWorkspaceController({
     }
   };
 
-  const handleAsk = async (message: string) => {
+  const applyChatExchange = (next: StudyChatResponse & { session: StudySessionRecord }) => {
+    dispatch({
+      type: "study_session_set",
+      studySession: next.session,
+      clearResponse: false
+    });
+    dispatch({
+      type: "response_set",
+      response: next
+    });
+  };
+
+  const sendHiddenSessionMessage = async (input: {
+    sessionId: string;
+    message: string;
+    messageKind: "session_prelude" | "scheduled_follow_up" | "interactive_callback";
+    followUpId?: string;
+  }) => {
+    const next = await sendStudyMessage({
+      sessionId: input.sessionId,
+      message: input.message,
+      messageKind: input.messageKind,
+      followUpId: input.followUpId,
+    });
+    applyChatExchange(next);
+    return next;
+  };
+
+  const handleAsk = async (message: string, attachments: File[] = []) => {
     if (!state.studySession) {
       return;
     }
-    await handleAskForSection(message, state.studySession.sectionId);
+    await handleAskForSection(message, state.studySession.sectionId, attachments);
   };
 
   const ensureSessionForSection = async (
@@ -757,7 +792,7 @@ export function useLearningWorkspaceController({
     return workingSession;
   };
 
-  const handleAskForSection = async (message: string, sectionId: string) => {
+  const handleAskForSection = async (message: string, sectionId: string, attachments: File[] = []) => {
     setChatFailure(null);
     const targetSession = await ensureSessionForSection(sectionId, {
       clearResponseOnSwitch: false,
@@ -773,17 +808,11 @@ export function useLearningWorkspaceController({
       });
       const next = await sendStudyMessage({
         sessionId: targetSession.id,
-        message
+        message,
+        messageKind: "learner",
+        attachments,
       });
-      dispatch({
-        type: "study_session_set",
-        studySession: next.session,
-        clearResponse: false
-      });
-      dispatch({
-        type: "response_set",
-        response: next
-      });
+      applyChatExchange(next);
       logWorkspaceInfo("workflow:study_chat:done", {
         sessionId: targetSession.id,
         citations: next.citations.length,
@@ -818,16 +847,10 @@ export function useLearningWorkspaceController({
           const recovered = await sendStudyMessage({
             sessionId: recoveredSession.id,
             message,
+            messageKind: "learner",
+            attachments,
           });
-          dispatch({
-            type: "study_session_set",
-            studySession: recovered.session,
-            clearResponse: false,
-          });
-          dispatch({
-            type: "response_set",
-            response: recovered,
-          });
+          applyChatExchange(recovered);
           dispatch({
             type: "notice_set",
             notice: "会话已恢复，已继续当前章节对话。"
@@ -847,6 +870,7 @@ export function useLearningWorkspaceController({
           message,
           sectionId,
           detail,
+          attachments,
         });
         dispatch({
           type: "notice_set",
@@ -858,6 +882,7 @@ export function useLearningWorkspaceController({
         message,
         sectionId,
         detail,
+        attachments,
       });
       dispatch({
         type: "notice_set",
@@ -930,18 +955,10 @@ export function useLearningWorkspaceController({
       if (input.callBack) {
         try {
           dispatch({ type: "busy_started" });
-          const callbackResponse = await sendStudyMessage({
+          await sendHiddenSessionMessage({
             sessionId: nextSession.id,
-            message: buildInteractiveCallbackMessage(input)
-          });
-          dispatch({
-            type: "study_session_set",
-            studySession: callbackResponse.session,
-            clearResponse: false
-          });
-          dispatch({
-            type: "response_set",
-            response: callbackResponse
+            message: buildInteractiveCallbackMessage(input),
+            messageKind: "interactive_callback",
           });
         } catch (callbackError) {
           dispatch({
@@ -998,6 +1015,50 @@ export function useLearningWorkspaceController({
         notice: `写入答题记录失败: ${String(error)}`
       });
       logWorkspaceError("workflow:study_attempt:error", error);
+    }
+  };
+
+  const handleResolvePlanConfirmation = async (input: {
+    confirmationId: string;
+    decision: "approve" | "reject";
+    note?: string;
+  }) => {
+    if (!state.studySession) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const next = await resolveStudyPlanConfirmation({
+        sessionId: state.studySession.id,
+        confirmationId: input.confirmationId,
+        decision: input.decision,
+        note: input.note,
+      });
+      dispatch({
+        type: "study_session_set",
+        studySession: next.session,
+        clearResponse: false,
+      });
+      if (next.plan) {
+        dispatch({
+          type: "plan_updated",
+          plan: next.plan,
+        });
+      }
+      dispatch({
+        type: "notice_set",
+        notice: input.decision === "approve" ? "已确认并应用计划变更。" : "已拒绝本次计划变更。",
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `处理计划确认失败: ${String(error)}`,
+      });
+      logWorkspaceError("workflow:study_plan_confirmation:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
     }
   };
 
@@ -1088,11 +1149,120 @@ export function useLearningWorkspaceController({
     };
   }, [activeDocument?.id, activePlan?.id, activePlan?.personaId]);
 
+  useEffect(() => {
+    if (!state.studySession) {
+      return;
+    }
+    const session = state.studySession;
+    const sectionId = session.sectionId;
+    if (!sectionId || session.preparedSectionIds?.includes(sectionId) || state.isBusy) {
+      return;
+    }
+    const requestKey = `${session.id}:${sectionId}`;
+    if (preludeInFlightRef.current.has(requestKey)) {
+      return;
+    }
+    preludeInFlightRef.current.add(requestKey);
+    void (async () => {
+      try {
+        dispatch({ type: "busy_started" });
+        await sendHiddenSessionMessage({
+          sessionId: session.id,
+          message: buildSessionPreludeMessage({
+            sectionTitle: session.sectionTitle ?? session.sectionId,
+            themeHint: session.themeHint ?? "",
+          }),
+          messageKind: "session_prelude",
+        });
+      } catch (error) {
+        dispatch({
+          type: "notice_set",
+          notice: `章节预处理失败: ${String(error)}`,
+        });
+        logWorkspaceError("workflow:study_session:prelude_error", error);
+      } finally {
+        preludeInFlightRef.current.delete(requestKey);
+        dispatch({ type: "busy_finished" });
+      }
+    })();
+  }, [state.isBusy, state.studySession]);
+
+  useEffect(() => {
+    const session = state.studySession;
+    const timers = followUpTimerRef.current;
+    const pendingIds = new Set(
+      (session?.pendingFollowUps ?? [])
+        .filter((item) => item.status === "pending")
+        .map((item) => item.id)
+    );
+    Array.from(timers.keys()).forEach((id) => {
+      if (pendingIds.has(id)) {
+        return;
+      }
+      const timer = timers.get(id);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+      timers.delete(id);
+    });
+    if (!session) {
+      return;
+    }
+    (session.pendingFollowUps ?? [])
+      .filter((item) => item.status === "pending")
+      .forEach((item) => {
+        if (timers.has(item.id) || followUpInFlightRef.current.has(item.id)) {
+          return;
+        }
+        const dueAt = Date.parse(item.dueAt || "");
+        const delay = Number.isFinite(dueAt) ? Math.max(0, dueAt - Date.now()) : 0;
+        const timer = window.setTimeout(() => {
+          timers.delete(item.id);
+          if (followUpInFlightRef.current.has(item.id)) {
+            return;
+          }
+          followUpInFlightRef.current.add(item.id);
+          void (async () => {
+            try {
+              dispatch({ type: "busy_started" });
+              await sendHiddenSessionMessage({
+                sessionId: session.id,
+                message: item.hiddenMessage,
+                messageKind: "scheduled_follow_up",
+                followUpId: item.id,
+              });
+            } catch (error) {
+              if (String(error).includes("follow_up_not_pending")) {
+                return;
+              }
+              dispatch({
+                type: "notice_set",
+                notice: `自动续接失败: ${String(error)}`,
+              });
+              logWorkspaceError("workflow:study_follow_up:error", error);
+            } finally {
+              followUpInFlightRef.current.delete(item.id);
+              dispatch({ type: "busy_finished" });
+            }
+          })();
+        }, delay);
+        timers.set(item.id, timer);
+      });
+  }, [state.isBusy, state.studySession]);
+
+  useEffect(() => {
+    return () => {
+      const timers = followUpTimerRef.current;
+      Array.from(timers.values()).forEach((timer) => window.clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
   const retryFailedAsk = async () => {
     if (!chatFailure) {
       return;
     }
-    await handleAskForSection(chatFailure.message, chatFailure.sectionId);
+    await handleAskForSection(chatFailure.message, chatFailure.sectionId, chatFailure.attachments);
   };
 
   return {
@@ -1112,6 +1282,7 @@ export function useLearningWorkspaceController({
     response: state.response,
     notice: state.notice,
     isBusy: state.isBusy,
+    chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
     processStreamDocumentId,
     planStreamDocumentId,
@@ -1139,6 +1310,7 @@ export function useLearningWorkspaceController({
     chatFailure,
     retryFailedAsk,
     handleSubmitQuestionAttempt,
+    handleResolvePlanConfirmation,
     refreshPlanSnapshot: () =>
       syncWorkspaceSnapshot({
         includePersonas: false,
@@ -1243,7 +1415,6 @@ function buildInteractiveCallbackMessage(input: {
 }) {
   const verdict = input.isCorrect ? "正确" : "不正确";
   return [
-    "[交互回调]",
     `学习者刚完成了一道${input.questionType === "multiple_choice" ? "选择题" : "填空题"}。`,
     `题目：${input.prompt}`,
     `主题：${input.topic || "章节练习"}`,
@@ -1254,4 +1425,20 @@ function buildInteractiveCallbackMessage(input: {
       ? "请基于这次正确作答继续推进下一步讲解或追问。"
       : "请先针对错误点做纠正，再继续推进下一步讲解或追问。"
   ].filter(Boolean).join("\n");
+}
+
+function buildSessionPreludeMessage(input: {
+  sectionTitle: string;
+  themeHint: string;
+}) {
+  return [
+    "正式对话开始前，请先完成一轮隐藏的章节预处理和自然引入。",
+    `当前章节：${input.sectionTitle || "未命名章节"}`,
+    `当前主题：${input.themeHint || "未额外指定"}`,
+    "要求：",
+    "1. 如果需要，可先调用计划、场景、教材或时间相关工具，确认当前上下文。",
+    "2. 用 2 到 4 句自然地把学习者带入这一章，说明你准备如何陪他学。",
+    "3. 如果场景、物体、教材页码或公式焦点有帮助，可以顺手把它们纳入引入。",
+    "4. 不要提到这是隐藏消息、预处理消息或内部流程。"
+  ].join("\n");
 }

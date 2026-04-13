@@ -157,6 +157,16 @@ CHAT_EXEMPT_TOOL_NAMES = frozenset(
     (
         "read_page_range_content",
         "read_page_range_images",
+        "project_uploaded_pdf",
+        "project_uploaded_image",
+        "read_projected_pdf_content",
+        "read_projected_pdf_images",
+        "focus_projected_pdf_page",
+        "highlight_projected_pdf_text",
+        "annotate_projected_pdf_region",
+        "clear_projected_pdf_overlays",
+        "annotate_projected_image_region",
+        "clear_projected_image_overlays",
         *SCENE_TOOL_NAMES,
     )
 )
@@ -389,8 +399,12 @@ class ModelProvider:
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
+        attachment_context: str = "",
+        learner_multimodal_parts: list[dict[str, Any]] | None = None,
         scene_context: str = "",
         active_plan_context: str = "",
+        session_state_context: str = "",
+        session_tool_runtime: Any | None = None,
         scene_tool_runtime: Any | None = None,
         plan_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
@@ -506,8 +520,12 @@ class MockModelProvider(ModelProvider):
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
+        attachment_context: str = "",
+        learner_multimodal_parts: list[dict[str, Any]] | None = None,
         scene_context: str = "",
         active_plan_context: str = "",
+        session_state_context: str = "",
+        session_tool_runtime: Any | None = None,
         scene_tool_runtime: Any | None = None,
         plan_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
@@ -522,13 +540,17 @@ class MockModelProvider(ModelProvider):
             history_hint = f" 我已读取最近 {len(conversation_history)} 条上下文。"
         section_hint = f" 章节上下文：{section_context[:80]}。" if section_context else ""
         memory_hint = f" 我还参考了历史互动记忆：{memory_context[:80]}。" if memory_context else ""
+        attachment_hint = f" 学习者还上传了材料：{attachment_context[:80]}。" if attachment_context else ""
         scene_hint = f" 当前会话场景：{scene_context[:80]}。" if scene_context else ""
+        session_state_hint = f" 当前会话动态状态：{session_state_context[:80]}。" if session_state_context else ""
         text = (
             f"{persona.name} 正在结合章节 {section_id} 讲解。"
             f" 当前提问是：{message}。"
             f"{section_hint}"
             f"{memory_hint}"
+            f"{attachment_hint}"
             f"{scene_hint}"
+            f"{session_state_hint}"
             f"{history_hint}"
             f"{' 会话约束：' + session_prompt[:80] if session_prompt else ''}"
             f" 我会用 {style} 的方式先解释核心概念，再给你一个复述任务。"
@@ -967,8 +989,12 @@ class OpenAIModelProvider(MockModelProvider):
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
+        attachment_context: str = "",
+        learner_multimodal_parts: list[dict[str, Any]] | None = None,
         scene_context: str = "",
         active_plan_context: str = "",
+        session_state_context: str = "",
+        session_tool_runtime: Any | None = None,
         scene_tool_runtime: Any | None = None,
         plan_tool_runtime: Any | None = None,
         memory_trace_hits: list[dict[str, Any]] | None = None,
@@ -979,9 +1005,14 @@ class OpenAIModelProvider(MockModelProvider):
         history = conversation_history or []
         persona_runtime_prompt = render_persona_runtime_instruction(persona)
         plan_tool_instruction = (
-            "如需读取或更新当前学习计划的完成度，可调用 read_learning_plan_progress、update_learning_plan_progress；更新时必须引用排期项 ID，并只修改当前会话绑定计划。"
+            "如需读取当前学习计划完成度，可调用 read_learning_plan_progress；如需提出计划结构修改或完成度更新建议，可调用 update_learning_plan、update_learning_plan_progress，但这些提案都必须等待用户确认后才会真正应用。"
             if plan_tool_runtime is not None
             else "当前会话没有绑定可操作的学习计划进度。"
+        )
+        session_tool_instruction = (
+            "如需读取系统时间、读写临时记忆、调整好感度、安排稍后自动续接，或把会话中的 PDF/图片附件投到预览窗口并进行切页或标注，可调用 read_system_time、read_session_memory、write_session_memory、read_affinity_state、update_affinity_state、schedule_session_follow_up、project_uploaded_pdf、project_uploaded_image、read_projected_pdf_content、read_projected_pdf_images、focus_projected_pdf_page、highlight_projected_pdf_text、annotate_projected_pdf_region、clear_projected_pdf_overlays、annotate_projected_image_region、clear_projected_image_overlays。"
+            if session_tool_runtime is not None
+            else "当前会话没有启用额外的会话状态工具。"
         )
         scene_tool_instruction = (
             "如需读取或修改当前会话绑定场景，可调用 read_scene_overview、add_scene、move_to_scene、add_object、update_object_description、delete_object；所有场景修改都必须限制在当前会话绑定场景内。"
@@ -998,21 +1029,33 @@ class OpenAIModelProvider(MockModelProvider):
                 .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
                 .replace("{{PERSONA_EVENT_GUIDANCE}}", _build_persona_event_guidance(persona))
                 .replace("{{PLAN_TOOL_INSTRUCTION}}", plan_tool_instruction)
+                .replace("{{SESSION_TOOL_INSTRUCTION}}", session_tool_instruction)
                 .replace("{{SCENE_TOOL_INSTRUCTION}}", scene_tool_instruction),
             }
         ]
         messages.extend(history[-self.chat_history_messages:])
+        user_text = (
+            prompt_sections["user"]
+            .replace("{{SECTION_ID}}", section_id)
+            .replace("{{SECTION_CONTEXT}}", section_context or "无")
+            .replace("{{MEMORY_CONTEXT}}", memory_context or "无")
+            .replace("{{ATTACHMENT_CONTEXT}}", attachment_context or "无")
+            .replace("{{PLAN_CONTEXT}}", active_plan_context or "无")
+            .replace("{{SESSION_STATE_CONTEXT}}", session_state_context or "无")
+            .replace("{{SCENE_CONTEXT}}", scene_context or "无")
+            .replace("{{LEARNER_MESSAGE}}", message)
+            .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA)
+        )
+        user_content: Any = user_text
+        if learner_multimodal_parts:
+            user_content = [
+                {"type": "text", "text": user_text},
+                *learner_multimodal_parts,
+            ]
         messages.append(
             {
                 "role": "user",
-                "content": prompt_sections["user"]
-                .replace("{{SECTION_ID}}", section_id)
-                .replace("{{SECTION_CONTEXT}}", section_context or "无")
-                .replace("{{MEMORY_CONTEXT}}", memory_context or "无")
-                .replace("{{PLAN_CONTEXT}}", active_plan_context or "无")
-                .replace("{{SCENE_CONTEXT}}", scene_context or "无")
-                .replace("{{LEARNER_MESSAGE}}", message)
-                .replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
+                "content": user_content,
             }
         )
 
@@ -1047,6 +1090,7 @@ class OpenAIModelProvider(MockModelProvider):
                 debug_report=debug_report,
                 document_path=document_path,
                 plan_tool_runtime=plan_tool_runtime,
+                session_tool_runtime=session_tool_runtime,
                 scene_tool_runtime=scene_tool_runtime,
                 disabled_tools=round_disabled_tools,
             )
@@ -1082,6 +1126,7 @@ class OpenAIModelProvider(MockModelProvider):
                         debug_report=debug_report,
                         document_path=document_path,
                         plan_tool_runtime=plan_tool_runtime,
+                        session_tool_runtime=session_tool_runtime,
                         scene_tool_runtime=scene_tool_runtime,
                         disabled_tools=round_disabled_tools,
                     )
@@ -2041,6 +2086,7 @@ def _chat_tools(
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
     plan_tool_runtime: Any | None = None,
+    session_tool_runtime: Any | None = None,
     scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
 ) -> list[dict[str, object]]:
@@ -2186,6 +2232,9 @@ def _chat_tools(
     if plan_tool_runtime is not None:
         tools.extend(plan_tool_runtime.tool_specs())
 
+    if session_tool_runtime is not None:
+        tools.extend(session_tool_runtime.tool_specs())
+
     if scene_tool_runtime is not None:
         tools.extend(scene_tool_runtime.tool_specs())
 
@@ -2206,6 +2255,7 @@ def _execute_chat_tool_call(
     debug_report: DocumentDebugRecord | None,
     document_path: str | None,
     plan_tool_runtime: Any | None = None,
+    session_tool_runtime: Any | None = None,
     scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
 ) -> dict[str, Any]:
@@ -2285,6 +2335,15 @@ def _execute_chat_tool_call(
             "hit_count": min(len(memory_hits), top_k),
             "hits": memory_hits[:top_k],
         }
+    elif session_tool_runtime is not None and bool(getattr(session_tool_runtime, "has_tool", lambda _name: False)(tool_name)):
+        try:
+            result = session_tool_runtime.execute_tool(tool_name, arguments)
+        except HTTPException as exc:
+            result = {
+                "ok": False,
+                "error": str(exc.detail),
+                "tool_name": tool_name,
+            }
     elif plan_tool_runtime is not None and bool(getattr(plan_tool_runtime, "has_tool", lambda _name: False)(tool_name)):
         try:
             result = plan_tool_runtime.execute_tool(tool_name, arguments)

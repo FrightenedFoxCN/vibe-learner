@@ -1,3 +1,4 @@
+import "react-pdf/dist/Page/TextLayer.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";

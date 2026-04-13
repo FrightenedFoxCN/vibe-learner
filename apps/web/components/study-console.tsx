@@ -5,10 +5,14 @@ import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import type {
   CharacterStateEvent,
+  Citation,
   DocumentSection,
   InteractiveQuestion,
   PersonaProfile,
   SceneProfile,
+  SessionAffinityState,
+  SessionFollowUp,
+  SessionPlanConfirmation,
   StudyChatResponse,
   StudySessionRecord
 } from "@vibe-learner/shared";
@@ -18,7 +22,7 @@ import { RichTextMessage } from "./rich-text-message";
 
 interface StudyConsoleProps {
   isPending: boolean;
-  onAsk: (message: string) => void;
+  onAsk: (message: string, attachments: File[]) => void;
   onSubmitQuestionAttempt: (input: {
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
@@ -33,8 +37,9 @@ interface StudyConsoleProps {
     explanation: string;
   }) => void | Promise<void>;
   onChangeChapter: (chapter: string) => void;
-  onOpenPage?: (page: number) => void;
+  onOpenCitation?: (citation: Citation) => void;
   onJumpToChapterStart?: () => void;
+  canJumpToChapterStart?: boolean;
   chatErrorMessage?: string;
   onRetryLastAsk?: () => void | Promise<void>;
   selectedChapter: string;
@@ -48,9 +53,21 @@ interface StudyConsoleProps {
   sceneProfile?: SceneProfile | null;
   sceneSourceLabel?: string;
   sceneInstanceId?: string;
-  onTogglePdfPreview?: () => void;
-  isPdfPreviewOpen?: boolean;
-  canOpenPdfPreview?: boolean;
+  pendingFollowUps?: SessionFollowUp[];
+  affinityState?: SessionAffinityState;
+  projectedPdf?: StudySessionRecord["projectedPdf"];
+  planConfirmations?: SessionPlanConfirmation[];
+  onResolvePlanConfirmation?: (input: {
+    confirmationId: string;
+    decision: "approve" | "reject";
+    note?: string;
+  }) => void | Promise<unknown>;
+  chatImageUploadEnabled?: boolean;
+  pendingComposerInsert?: {
+    id: string;
+    text: string;
+  } | null;
+  onConsumeComposerInsert?: () => void;
   disabled?: boolean;
 }
 
@@ -59,8 +76,9 @@ export function StudyConsole({
   onAsk,
   onSubmitQuestionAttempt,
   onChangeChapter,
-  onOpenPage,
+  onOpenCitation,
   onJumpToChapterStart,
+  canJumpToChapterStart,
   chatErrorMessage,
   onRetryLastAsk,
   selectedChapter,
@@ -74,17 +92,25 @@ export function StudyConsole({
   sceneProfile,
   sceneSourceLabel,
   sceneInstanceId,
-  onTogglePdfPreview,
-  isPdfPreviewOpen,
-  canOpenPdfPreview,
+  pendingFollowUps = [],
+  affinityState,
+  projectedPdf,
+  planConfirmations = [],
+  onResolvePlanConfirmation,
+  chatImageUploadEnabled,
+  pendingComposerInsert,
+  onConsumeComposerInsert,
   disabled
 }: StudyConsoleProps) {
   const [message, setMessage] = useState("请解释这一章的核心概念，并给我一个复述练习。");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [selectedChoices, setSelectedChoices] = useState<Record<string, string>>({});
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
   const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>({});
   const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>({});
   const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const sortedTurns = [...turns].sort((a, b) => {
     const aTime = Date.parse(a.createdAt || "") || 0;
@@ -98,6 +124,23 @@ export function StudyConsole({
     node.scrollTop = node.scrollHeight;
   }, [sortedTurns.length, session?.reply, chatErrorMessage]);
 
+  useEffect(() => {
+    if (!pendingComposerInsert?.id || !pendingComposerInsert.text) {
+      return;
+    }
+    setMessage((current) => {
+      const trimmed = current.trimEnd();
+      const prefix = trimmed ? `${trimmed}\n\n` : "";
+      return `${prefix}${pendingComposerInsert.text}`;
+    });
+    textareaRef.current?.focus();
+    onConsumeComposerInsert?.();
+  }, [onConsumeComposerInsert, pendingComposerInsert]);
+
+  const supportedAttachmentHint = chatImageUploadEnabled
+    ? "支持图片、PDF、txt、md、json、csv 等附件；图片会按多模态输入发送。"
+    : "支持 PDF、txt、md、json、csv 等文本附件；图片上传需要先在设置里开启对话多模态。";
+
   return (
     <div style={styles.wrap}>
       <div className="study-console-layout" style={styles.consoleCard}>
@@ -109,19 +152,6 @@ export function StudyConsole({
               <p style={styles.consoleSummary}>
                 左侧保持常规聊天窗口，历史消息会被新内容向上推走；右侧单列只保留人格与场景陪伴信息。
               </p>
-            </div>
-            <div style={styles.consoleActions}>
-              <button
-                type="button"
-                style={{
-                  ...styles.ghostBtn,
-                  ...(disabled || !canOpenPdfPreview || !onTogglePdfPreview ? styles.btnDisabled : {})
-                }}
-                disabled={disabled || !canOpenPdfPreview || !onTogglePdfPreview}
-                onClick={() => { if (onTogglePdfPreview) onTogglePdfPreview(); }}
-              >
-                {isPdfPreviewOpen ? "收拢教材浮窗" : "展开教材浮窗"}
-              </button>
             </div>
           </div>
 
@@ -149,9 +179,9 @@ export function StudyConsole({
                 type="button"
                 style={{
                   ...styles.ghostBtn,
-                  ...(isPending || disabled || !onJumpToChapterStart ? styles.btnDisabled : {})
+                  ...(isPending || disabled || !onJumpToChapterStart || !canJumpToChapterStart ? styles.btnDisabled : {})
                 }}
-                disabled={isPending || disabled || !onJumpToChapterStart}
+                disabled={isPending || disabled || !onJumpToChapterStart || !canJumpToChapterStart}
                 onClick={() => { if (onJumpToChapterStart) onJumpToChapterStart(); }}
               >
                 定位章节首页
@@ -196,13 +226,22 @@ export function StudyConsole({
                     key={buildTurnKey(turn.createdAt, index)}
                     style={styles.turnCard}
                   >
-                    {!isHiddenLearnerMessage(turn.learnerMessage) ? (
+                    {!isHiddenLearnerMessage(turn) ? (
                       <div style={styles.userSection}>
                         <div style={{ ...styles.turnMeta, ...styles.turnMetaRight }}>
                           <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
                           <span style={styles.roleLabel}>你</span>
                         </div>
-                        <p style={styles.userMessage}>{formatLearnerMessage(turn.learnerMessage)}</p>
+                        <p style={styles.userMessage}>{formatLearnerMessage(turn)}</p>
+                        {turn.learnerAttachments?.length ? (
+                          <div style={styles.attachmentChipRow}>
+                            {turn.learnerAttachments.map((attachment) => (
+                              <span key={attachment.attachmentId} style={styles.attachmentChip}>
+                                {formatAttachmentLabel(attachment)}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -243,9 +282,9 @@ export function StudyConsole({
                                 key={`${turn.createdAt}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
                                 type="button"
                                 style={styles.citation}
-                                onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
+                                onClick={() => { if (onOpenCitation) onOpenCitation(citation); }}
                                 title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
-                                disabled={!onOpenPage}
+                                disabled={!onOpenCitation}
                               >
                                 {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
                               </button>
@@ -277,9 +316,9 @@ export function StudyConsole({
                               key={`${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${index}`}
                               type="button"
                               style={styles.citation}
-                              onClick={() => { if (onOpenPage) onOpenPage(citation.pageStart); }}
+                              onClick={() => { if (onOpenCitation) onOpenCitation(citation); }}
                               title={`跳转到 p.${citation.pageStart}–${citation.pageEnd}`}
-                              disabled={!onOpenPage}
+                              disabled={!onOpenCitation}
                             >
                               {citation.title} · p.{citation.pageStart}–{citation.pageEnd}
                             </button>
@@ -316,20 +355,137 @@ export function StudyConsole({
             </div>
           ) : null}
 
+          {planConfirmations.filter((item) => item.status === "pending").length ? (
+            <div style={styles.confirmationStack}>
+              {planConfirmations
+                .filter((item) => item.status === "pending")
+                .map((item) => (
+                  <div key={item.id} style={styles.confirmationCard}>
+                    <div style={styles.confirmationHead}>
+                      <span style={styles.confirmationTitle}>{item.title}</span>
+                      <span style={styles.confirmationMeta}>{formatToolName(item.toolName)}</span>
+                    </div>
+                    <p style={styles.confirmationSummary}>{item.summary || "模型希望你确认这项计划调整。"}</p>
+                    {item.previewLines.length ? (
+                      <div style={styles.confirmationLines}>
+                        {item.previewLines.map((line, index) => (
+                          <span key={`${item.id}:${index}`} style={styles.confirmationLine}>{line}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={styles.confirmationActions}>
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.confirmApproveBtn,
+                          ...(disabled || isPending || !onResolvePlanConfirmation ? styles.btnDisabled : {})
+                        }}
+                        disabled={disabled || isPending || !onResolvePlanConfirmation}
+                        onClick={() => { if (onResolvePlanConfirmation) void onResolvePlanConfirmation({ confirmationId: item.id, decision: "approve" }); }}
+                      >
+                        确认应用
+                      </button>
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.confirmRejectBtn,
+                          ...(disabled || isPending || !onResolvePlanConfirmation ? styles.btnDisabled : {})
+                        }}
+                        disabled={disabled || isPending || !onResolvePlanConfirmation}
+                        onClick={() => { if (onResolvePlanConfirmation) void onResolvePlanConfirmation({ confirmationId: item.id, decision: "reject" }); }}
+                      >
+                        暂不应用
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : null}
+
           <div style={styles.inputArea}>
-            <textarea
-              style={styles.textarea}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="继续输入问题，或追问上一轮内容…"
-            />
+            <div style={styles.inputStack}>
+              <textarea
+                ref={textareaRef}
+                style={styles.textarea}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder="继续输入问题，或追问上一轮内容…"
+              />
+              <div style={styles.attachmentToolbar}>
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  multiple
+                  accept={chatImageUploadEnabled ? "image/*,.pdf,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml" : ".pdf,.txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml"}
+                  style={styles.hiddenFileInput}
+                  onChange={(event) => {
+                    const nextFiles = Array.from(event.target.files ?? []);
+                    if (!nextFiles.length) {
+                      return;
+                    }
+                    setAttachments((current) => {
+                      const deduped = [...current];
+                      nextFiles.forEach((file) => {
+                        if (deduped.some((item) => item.name === file.name && item.size === file.size && item.type === file.type)) {
+                          return;
+                        }
+                        deduped.push(file);
+                      });
+                      return deduped.slice(0, 4);
+                    });
+                    event.currentTarget.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  style={{
+                    ...styles.ghostBtn,
+                    ...(disabled || isPending ? styles.btnDisabled : {})
+                  }}
+                  disabled={disabled || isPending}
+                  onClick={() => attachmentInputRef.current?.click()}
+                >
+                  添加附件
+                </button>
+                <span style={styles.attachmentHint}>{supportedAttachmentHint}</span>
+              </div>
+              {attachments.length ? (
+                <div style={styles.attachmentDraftList}>
+                  {attachments.map((file) => (
+                    <div key={`${file.name}:${file.size}:${file.type}`} style={styles.attachmentDraftItem}>
+                      <span style={styles.attachmentDraftText}>
+                        {file.name} · {formatFileSize(file.size)}{file.type.startsWith("image/") ? " · 图片" : ""}
+                      </span>
+                      <button
+                        type="button"
+                        style={{
+                          ...styles.attachmentRemoveBtn,
+                          ...(disabled || isPending ? styles.btnDisabled : {})
+                        }}
+                        disabled={disabled || isPending}
+                        onClick={() => {
+                          setAttachments((current) =>
+                            current.filter((item) => !(item.name === file.name && item.size === file.size && item.type === file.type))
+                          );
+                        }}
+                      >
+                        移除
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <button
               style={{
                 ...styles.sendBtn,
                 ...(isPending || disabled ? styles.btnDisabled : {})
               }}
               disabled={isPending || disabled}
-              onClick={() => onAsk(message)}
+              onClick={() => {
+                onAsk(message, attachments);
+                setAttachments([]);
+              }}
             >
               {isPending ? "发送中…" : "发送"}
             </button>
@@ -366,6 +522,9 @@ export function StudyConsole({
                 persona={persona}
                 response={session}
                 pending={isPending}
+                affinityState={affinityState}
+                projectedPdf={projectedPdf}
+                nextFollowUp={pendingFollowUps.find((item) => item.status === "pending") ?? null}
                 variant="embedded"
               />
             </div>
@@ -407,7 +566,7 @@ const styles: Record<string, CSSProperties> = {
   sidebar: {
     minWidth: 0,
     position: "sticky",
-    top: 96,
+    top: 128,
   },
   consoleHead: {
     display: "flex",
@@ -434,12 +593,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.7,
     color: "var(--muted)",
-  },
-  consoleActions: {
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
   },
   companionCard: {
     display: "grid",
@@ -563,6 +716,11 @@ const styles: Record<string, CSSProperties> = {
     background: "rgba(255, 255, 255, 0.92)",
     boxShadow: "0 -10px 26px rgba(13, 32, 40, 0.08)",
   },
+  inputStack: {
+    display: "grid",
+    gap: 8,
+    minWidth: 0,
+  },
   textarea: {
     minHeight: 84,
     border: "1px solid var(--border)",
@@ -572,6 +730,49 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.6,
     color: "var(--ink)",
+  },
+  attachmentToolbar: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  hiddenFileInput: {
+    display: "none",
+  },
+  attachmentHint: {
+    fontSize: 11,
+    color: "var(--muted)",
+    lineHeight: 1.5,
+  },
+  attachmentDraftList: {
+    display: "grid",
+    gap: 6,
+  },
+  attachmentDraftItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 10,
+    alignItems: "center",
+    padding: "8px 10px",
+    border: "1px solid var(--border)",
+    background: "rgba(248, 252, 252, 0.92)",
+  },
+  attachmentDraftText: {
+    fontSize: 12,
+    color: "var(--ink-2)",
+    lineHeight: 1.6,
+    wordBreak: "break-word",
+  },
+  attachmentRemoveBtn: {
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--muted)",
+    height: 28,
+    padding: "0 10px",
+    fontSize: 11,
+    cursor: "pointer",
+    flexShrink: 0,
   },
   sendBtn: {
     border: "none",
@@ -616,6 +817,121 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 600,
     cursor: "pointer",
     width: "fit-content",
+  },
+  confirmationStack: {
+    display: "grid",
+    gap: 10,
+  },
+  confirmationCard: {
+    display: "grid",
+    gap: 10,
+    padding: "12px 14px",
+    border: "1px solid #d7d9bf",
+    background: "#fffef1",
+  },
+  confirmationHead: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  confirmationTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#5d4b00",
+  },
+  confirmationMeta: {
+    fontSize: 11,
+    color: "#7a6806",
+  },
+  confirmationSummary: {
+    margin: 0,
+    fontSize: 12,
+    color: "#6a5810",
+    lineHeight: 1.6,
+  },
+  confirmationLines: {
+    display: "grid",
+    gap: 6,
+  },
+  confirmationLine: {
+    fontSize: 12,
+    color: "#4f4a2c",
+    lineHeight: 1.6,
+  },
+  confirmationActions: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  confirmApproveBtn: {
+    border: "1px solid #b8d5c9",
+    background: "#f3fbf7",
+    color: "#0f6d46",
+    height: 32,
+    padding: "0 12px",
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  confirmRejectBtn: {
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--ink-2)",
+    height: 32,
+    padding: "0 12px",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  auditCard: {
+    border: "1px solid var(--border)",
+    background: "rgba(255, 255, 255, 0.84)",
+    padding: "10px 12px",
+  },
+  auditSummary: {
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
+    color: "var(--ink)",
+  },
+  auditGrid: {
+    display: "grid",
+    gap: 10,
+    marginTop: 10,
+  },
+  auditSection: {
+    display: "grid",
+    gap: 6,
+  },
+  auditLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    color: "var(--muted)",
+  },
+  auditItem: {
+    fontSize: 12,
+    color: "var(--ink-2)",
+    lineHeight: 1.6,
+  },
+  auditEmpty: {
+    fontSize: 12,
+    color: "var(--muted)",
+    lineHeight: 1.6,
+  },
+  affinityBadge: {
+    display: "inline-flex",
+    width: "fit-content",
+    alignItems: "center",
+    padding: "3px 8px",
+    border: "1px solid rgba(29, 125, 117, 0.18)",
+    background: "rgba(29, 125, 117, 0.1)",
+    color: "var(--teal)",
+    fontSize: 12,
+    fontWeight: 700,
   },
   transcript: {
     display: "grid",
@@ -689,6 +1005,23 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.7,
     color: "var(--ink-2)",
     whiteSpace: "pre-wrap",
+  },
+  attachmentChipRow: {
+    display: "flex",
+    gap: 6,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    maxWidth: "min(82%, 720px)",
+  },
+  attachmentChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "3px 8px",
+    border: "1px solid #b8dde2",
+    background: "rgba(231, 245, 247, 0.68)",
+    color: "var(--ink-2)",
+    fontSize: 11,
+    lineHeight: 1.4,
   },
   aiLabel: {
     fontSize: 11,
@@ -921,7 +1254,7 @@ function renderInteractiveQuestion(input: {
   setQuestionFeedback: Dispatch<SetStateAction<Record<string, { ok: boolean; text: string }>>>;
   expandedExplanation: Record<string, boolean>;
   setExpandedExplanation: Dispatch<SetStateAction<Record<string, boolean>>>;
-  onAsk: (message: string) => void;
+  onAsk: (message: string, attachments: File[]) => void;
   onSubmitQuestionAttempt: (input: {
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
@@ -1025,7 +1358,7 @@ function renderInteractiveQuestion(input: {
             type="button"
             style={styles.inlineGhostBtn}
             disabled={disabled}
-            onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度选择题。`); }}
+            onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度选择题。`, []); }}
           >
             再来一题
           </button>
@@ -1105,7 +1438,7 @@ function renderInteractiveQuestion(input: {
           type="button"
           style={styles.inlineGhostBtn}
           disabled={disabled}
-          onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度填空题。`); }}
+          onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度填空题。`, []); }}
           >
             再来一题
           </button>
@@ -1312,6 +1645,14 @@ function formatToolName(value: string) {
   if (normalized === "update_object_description") return "更新物件描述";
   if (normalized === "delete_object") return "删除物件";
   if (normalized === "retrieve_memory_context") return "检索记忆";
+  if (normalized === "read_session_memory") return "读取临时记忆";
+  if (normalized === "write_session_memory") return "写入临时记忆";
+  if (normalized === "read_system_time") return "读取系统时间";
+  if (normalized === "schedule_session_follow_up") return "安排自动续接";
+  if (normalized === "read_affinity_state") return "读取好感度";
+  if (normalized === "update_affinity_state") return "更新好感度";
+  if (normalized === "update_learning_plan") return "提出计划修改";
+  if (normalized === "update_learning_plan_progress") return "提出进度修改";
   if (normalized === "read_page_range_content") return "读取教材正文";
   if (normalized === "read_page_range_images") return "读取教材图像";
   return value || "工具事件";
@@ -1321,12 +1662,40 @@ function isAttemptTurn(message: string) {
   return message.trim().startsWith("[练习作答]");
 }
 
-function isHiddenLearnerMessage(message: string) {
-  const normalized = message.trim();
+function isHiddenLearnerMessage(turn: Pick<StudySessionRecord["turns"][number], "learnerMessage" | "learnerMessageKind">) {
+  const kind = String(turn.learnerMessageKind ?? "learner");
+  if (kind !== "learner") {
+    return true;
+  }
+  const normalized = turn.learnerMessage.trim();
   return normalized.startsWith("[练习作答]") || normalized.startsWith("[交互回调]");
 }
 
-function formatLearnerMessage(message: string) {
-  if (!isAttemptTurn(message)) return message;
-  return message.replace("[练习作答]", "练习作答").trim();
+function formatLearnerMessage(turn: Pick<StudySessionRecord["turns"][number], "learnerMessage" | "learnerMessageKind">) {
+  const kind = String(turn.learnerMessageKind ?? "learner");
+  if (kind === "interactive_callback") return "答题回调";
+  if (kind === "session_prelude") return "章节预处理";
+  if (kind === "scheduled_follow_up") return "自动续接";
+  if (!isAttemptTurn(turn.learnerMessage)) return turn.learnerMessage;
+  return turn.learnerMessage.replace("[练习作答]", "练习作答").trim();
+}
+
+function formatAttachmentLabel(attachment: NonNullable<StudySessionRecord["turns"][number]["learnerAttachments"]>[number]) {
+  const typeLabel =
+    attachment.kind === "image"
+      ? "图片"
+      : attachment.kind === "pdf"
+        ? "PDF"
+        : "附件";
+  return `${typeLabel} · ${attachment.name}`;
+}
+
+function formatFileSize(size: number) {
+  if (size >= 1024 * 1024) {
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  if (size >= 1024) {
+    return `${Math.round(size / 1024)} KB`;
+  }
+  return `${size} B`;
 }
