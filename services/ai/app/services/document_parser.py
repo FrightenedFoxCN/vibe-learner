@@ -86,7 +86,9 @@ class DocumentParser:
         stored_path: str,
         force_ocr: bool = False,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> DocumentDebugRecord:
+        _call_interrupt(interrupt_check)
         pdf = fitz.open(stored_path)
         parsed_pages: list[ParsedPage] = []
         pages: list[DocumentPageRecord] = []
@@ -113,6 +115,7 @@ class DocumentParser:
         )
 
         for index, page in enumerate(pdf, start=1):
+            _call_interrupt(interrupt_check)
             parsed_page = self._parse_page(
                 page_number=index,
                 page=page,
@@ -152,6 +155,7 @@ class DocumentParser:
         )
 
         for parsed_page in parsed_pages:
+            _call_interrupt(interrupt_check)
             stripped_lines, stripped_count = self._strip_margin_lines(
                 parsed_page.line_entries,
                 top_patterns=top_margin_patterns,
@@ -212,6 +216,7 @@ class DocumentParser:
             page_count=len(pages),
             heading_seed=heading_seed,
         )
+        _call_interrupt(interrupt_check)
         _emit_progress(
             progress_callback,
             "sections_built",
@@ -1148,3 +1153,9 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _call_interrupt(callback: Callable[[], None] | None) -> None:
+    if callback is None:
+        return
+    callback()

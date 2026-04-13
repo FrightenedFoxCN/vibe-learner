@@ -145,6 +145,12 @@ TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
             "category": "sensory",
             "category_label": "感官工具",
         },
+        "generate_projected_image": {
+            "label": "生成并投射图片",
+            "description": "当当前模型支持图像生成时，生成一张教学用图片并直接投到预览窗口。",
+            "category": "sensory",
+            "category_label": "感官工具",
+        },
         "read_projected_pdf_content": {
             "label": "投射 PDF 文本读取",
             "description": "读取当前投射 PDF 的指定页文字内容，用于基于附件作答和精确引用。",

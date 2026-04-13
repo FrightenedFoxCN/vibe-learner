@@ -66,6 +66,15 @@ MERMAID_BLOCK_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+CHAT_IMAGE_GENERATION_MODEL_HINTS = (
+    re.compile(r"^gpt-4o(?:[-.:]|$)", re.IGNORECASE),
+    re.compile(r"^gpt-4\.1(?:[-.:]|$)", re.IGNORECASE),
+    re.compile(r"^gpt-5(?:[-.:]|$)", re.IGNORECASE),
+    re.compile(r"^o3(?:[-.:]|$)", re.IGNORECASE),
+    re.compile(r"^chatgpt-image-latest$", re.IGNORECASE),
+    re.compile(r"^gpt-image-1(?:[-.:]|$)", re.IGNORECASE),
+)
+
 CHAT_JSON_SCHEMA = (
     '{'
     '"text": string, '
@@ -483,6 +492,7 @@ class ModelProvider:
         planning_questions: list[PlanningQuestionRecord] | None = None,
         existing_plan: LearningPlanRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> PlanModelReply:
         raise NotImplementedError
 
@@ -490,6 +500,9 @@ class ModelProvider:
         return False
 
     def supports_chat_page_image_tools(self) -> bool:
+        return False
+
+    def supports_chat_generated_image_tools(self) -> bool:
         return False
 
     def plan_tools_runtime_enabled(self) -> bool:
@@ -552,6 +565,14 @@ class ModelProvider:
         layer_count: int | None,
     ) -> dict[str, object]:
         raise NotImplementedError
+
+    def generate_projected_image(
+        self,
+        *,
+        prompt: str,
+        size: str = "1024x1024",
+    ) -> dict[str, str]:
+        raise RuntimeError("chat_image_generation_unsupported")
 
 
 class MockModelProvider(ModelProvider):
@@ -661,7 +682,9 @@ class MockModelProvider(ModelProvider):
         planning_questions: list[PlanningQuestionRecord] | None = None,
         existing_plan: LearningPlanRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> PlanModelReply:
+        _call_interrupt(interrupt_check)
         plannable_units = [unit for unit in study_units if unit.include_in_plan] or study_units
         objective_hint = self._compact_objective(goal.objective)
         answered_questions = [
@@ -1015,6 +1038,9 @@ class OpenAIModelProvider(MockModelProvider):
     def supports_chat_page_image_tools(self) -> bool:
         return self.chat_multimodal_enabled
 
+    def supports_chat_generated_image_tools(self) -> bool:
+        return bool(litellm_responses) and _model_supports_chat_image_generation(self.chat_model)
+
     def plan_tools_runtime_enabled(self) -> bool:
         return self.plan_tools_enabled
 
@@ -1054,7 +1080,7 @@ class OpenAIModelProvider(MockModelProvider):
             else "当前会话没有绑定可操作的学习计划进度。"
         )
         session_tool_instruction = (
-            "如需读取系统时间、读写临时记忆、调整好感度、安排稍后自动续接，或把会话中的 PDF/图片附件投到预览窗口并进行切页或标注，可调用 read_system_time、read_session_memory、write_session_memory、read_affinity_state、update_affinity_state、schedule_session_follow_up、project_uploaded_pdf、project_uploaded_image、read_projected_pdf_content、read_projected_pdf_images、focus_projected_pdf_page、highlight_projected_pdf_text、annotate_projected_pdf_region、clear_projected_pdf_overlays、annotate_projected_image_region、clear_projected_image_overlays。"
+            "如需读取系统时间、读写临时记忆、调整好感度、安排稍后自动续接，或把会话中的 PDF/图片附件投到预览窗口并进行切页或标注，也可在当前模型支持时直接生成并投射一张图片；可调用 read_system_time、read_session_memory、write_session_memory、read_affinity_state、update_affinity_state、schedule_session_follow_up、project_uploaded_pdf、project_uploaded_image、generate_projected_image、read_projected_pdf_content、read_projected_pdf_images、focus_projected_pdf_page、highlight_projected_pdf_text、annotate_projected_pdf_region、clear_projected_pdf_overlays、annotate_projected_image_region、clear_projected_image_overlays。"
             if session_tool_runtime is not None
             else "当前会话没有启用额外的会话状态工具。"
         )
@@ -1823,6 +1849,7 @@ class OpenAIModelProvider(MockModelProvider):
         planning_questions: list[PlanningQuestionRecord] | None = None,
         existing_plan: LearningPlanRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> PlanModelReply:
         planning_context = build_learning_plan_context(
             study_units=study_units,
@@ -1853,6 +1880,7 @@ class OpenAIModelProvider(MockModelProvider):
             messages=messages,
             tool_runtime=tool_runtime,
             progress_callback=progress_callback,
+            interrupt_check=interrupt_check,
         )
         if (
             self.fallback_plan_model
@@ -1890,6 +1918,7 @@ class OpenAIModelProvider(MockModelProvider):
                 messages=messages,
                 tool_runtime=fallback_runtime,
                 progress_callback=progress_callback,
+                interrupt_check=interrupt_check,
                 allow_fallback=False,
             )
             if run_result is not None:
@@ -1903,6 +1932,7 @@ class OpenAIModelProvider(MockModelProvider):
                 )
         if run_result is None:
             raise RuntimeError("plan_model_empty_response")
+        _call_interrupt(interrupt_check)
         parsed = _extract_json_payload(run_result.content)
         schedule_items = [
             PlanScheduleItem(
@@ -1967,6 +1997,7 @@ class OpenAIModelProvider(MockModelProvider):
         messages: list[dict[str, object]],
         tool_runtime,
         progress_callback: Callable[[str, dict[str, object]], None] | None,
+        interrupt_check: Callable[[], None] | None = None,
         allow_fallback: bool = True,
     ):
         runner = OpenAIPlanRunner(
@@ -1986,11 +2017,40 @@ class OpenAIModelProvider(MockModelProvider):
                 messages=messages,
                 tool_runtime=tool_runtime,
                 progress_callback=progress_callback,
+                interrupt_check=interrupt_check,
             )
         except RuntimeError as exc:
             if allow_fallback and str(exc) in {"plan_model_empty_response", "plan_model_tool_loop_exhausted"}:
                 return None
             raise
+
+    def generate_projected_image(
+        self,
+        *,
+        prompt: str,
+        size: str = "1024x1024",
+    ) -> dict[str, str]:
+        normalized_prompt = prompt.strip()
+        if not normalized_prompt:
+            raise RuntimeError("chat_image_generation_prompt_required")
+        if not self.supports_chat_generated_image_tools():
+            raise RuntimeError("chat_image_generation_unsupported")
+        payload: dict[str, Any] = {
+            "model": self.chat_model,
+            "input": normalized_prompt,
+            "tools": [
+                {
+                    "type": "image_generation",
+                    "size": _normalize_generated_image_size(size),
+                }
+            ],
+        }
+        raw_payload, _ = self._request_openai_response(
+            payload,
+            request_kind="chat",
+            model=self.chat_model,
+        )
+        return _extract_response_output_image(raw_payload)
 
     def _request_openai_chat_completion(
         self,
@@ -2865,6 +2925,56 @@ def _extract_response_output_text(payload: dict[str, Any]) -> str:
     if not merged:
         raise RuntimeError("setting_model_invalid_payload")
     return merged
+
+
+def _extract_response_output_image(payload: dict[str, Any]) -> dict[str, str]:
+    output = payload.get("output")
+    if not isinstance(output, list):
+        raise RuntimeError("chat_image_generation_empty_response")
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") == "image_generation_call":
+            raw_result = item.get("result")
+            if isinstance(raw_result, str) and raw_result.strip():
+                image_base64 = raw_result.strip()
+            elif isinstance(raw_result, list):
+                image_base64 = next(
+                    (
+                        str(entry).strip()
+                        for entry in raw_result
+                        if isinstance(entry, str) and str(entry).strip()
+                    ),
+                    "",
+                )
+            else:
+                image_base64 = ""
+            if image_base64:
+                return {
+                    "image_url": f"data:image/png;base64,{image_base64}",
+                    "revised_prompt": str(item.get("revised_prompt") or "").strip(),
+                }
+    raise RuntimeError("chat_image_generation_empty_response")
+
+
+def _normalize_generated_image_size(value: str) -> str:
+    normalized = value.strip().lower()
+    if normalized in {"1024x1024", "1536x1024", "1024x1536", "auto"}:
+        return normalized
+    return "1024x1024"
+
+
+def _model_supports_chat_image_generation(model: str) -> bool:
+    normalized = model.strip()
+    if not normalized:
+        return False
+    return any(pattern.search(normalized) for pattern in CHAT_IMAGE_GENERATION_MODEL_HINTS)
+
+
+def _call_interrupt(callback: Callable[[], None] | None) -> None:
+    if callback is None:
+        return
+    callback()
 
 
 def _normalize_generated_persona_cards(parsed: dict[str, object]) -> list[dict[str, object]]:

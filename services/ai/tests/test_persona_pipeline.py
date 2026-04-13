@@ -59,6 +59,7 @@ from app.services.study_arrangement import StudyArrangementService
 from app.services.study_chat_attachments import prepare_study_chat_attachments
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_session_prompt import build_study_session_system_prompt
+from app.services.stream_interrupts import StreamInterruptedError
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -715,6 +716,9 @@ class PersonaPipelineTests(unittest.TestCase):
             reason="等待学习者先独立组织答案。",
         )
         self.assertEqual(follow_up.status, "pending")
+        cancelled = self.study_session_service.cancel_pending_follow_ups(session_id=session.id)
+        self.assertEqual(cancelled.pending_follow_ups[-1].status, "canceled")
+        self.assertTrue(cancelled.pending_follow_ups[-1].canceled_at)
 
         updated = self.study_session_service.upsert_session_memory(
             session_id=session.id,
@@ -3638,6 +3642,113 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertTrue(clear_payload["ok"])
         self.assertEqual(clear_payload["remaining_overlay_count"], 0)
         self.assertEqual(len(cleared_session.projected_pdf.overlays), 0)
+
+    def test_study_session_chat_runtime_generates_projected_image_and_allows_overlays(self) -> None:
+        class StubGeneratedImageProvider:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, str]] = []
+
+            def supports_chat_generated_image_tools(self) -> bool:
+                return True
+
+            def generate_projected_image(
+                self,
+                *,
+                prompt: str,
+                size: str = "1024x1024",
+            ) -> dict[str, str]:
+                self.calls.append((prompt, size))
+                return {
+                    "image_url": "data:image/png;base64,AAA",
+                    "revised_prompt": "矩阵映射草图，已补充箭头与标签。",
+                }
+
+        session = self.study_session_service.create_session(
+            document_id="doc-generated-image",
+            persona_id="mentor-aurora",
+            section_id="doc-generated-image:unit-1",
+        )
+        provider = StubGeneratedImageProvider()
+        runtime = StudySessionChatToolRuntime(
+            session_service=self.study_session_service,
+            plan_service=self.plan_service,
+            session_id=session.id,
+            model_provider=provider,
+        )
+
+        tool_names = [item["function"]["name"] for item in runtime.tool_specs()]
+        self.assertIn("generate_projected_image", tool_names)
+        self.assertTrue(runtime.has_tool("generate_projected_image"))
+
+        project_payload = runtime.execute_tool(
+            "generate_projected_image",
+            {
+                "prompt": "画一个矩阵变换后的坐标网格示意图。",
+                "title": "矩阵变换草图",
+                "size": "1536x1024",
+            },
+        )
+        annotate_payload = runtime.execute_tool(
+            "annotate_projected_image_region",
+            {
+                "x": 0.18,
+                "y": 0.22,
+                "width": 0.36,
+                "height": 0.28,
+                "label": "拉伸方向",
+            },
+        )
+        refreshed_session = self.study_session_service.require_session(session.id)
+
+        self.assertTrue(project_payload["ok"])
+        self.assertEqual(provider.calls, [("画一个矩阵变换后的坐标网格示意图。", "1536x1024")])
+        self.assertEqual(project_payload["projected_pdf"]["source_kind"], "generated_image")
+        self.assertEqual(project_payload["projected_pdf"]["title"], "矩阵变换草图")
+        self.assertEqual(project_payload["projected_pdf"]["image_url"], "data:image/png;base64,AAA")
+        self.assertEqual(project_payload["revised_prompt"], "矩阵映射草图，已补充箭头与标签。")
+        self.assertTrue(annotate_payload["ok"])
+        self.assertIsNone(annotate_payload["citation"])
+        self.assertEqual(runtime.response_citations(), [])
+        self.assertIsNotNone(refreshed_session.projected_pdf)
+        self.assertEqual(refreshed_session.projected_pdf.source_kind, "generated_image")
+        self.assertEqual(refreshed_session.projected_pdf.image_url, "data:image/png;base64,AAA")
+        self.assertEqual(refreshed_session.projected_pdf.overlays[-1].kind, "region_box")
+
+        clear_payload = runtime.execute_tool("clear_projected_image_overlays", {})
+        cleared_session = self.study_session_service.require_session(session.id)
+
+        self.assertTrue(clear_payload["ok"])
+        self.assertEqual(clear_payload["remaining_overlay_count"], 0)
+        self.assertEqual(len(cleared_session.projected_pdf.overlays), 0)
+
+    def test_document_service_resets_state_when_processing_is_interrupted(self) -> None:
+        pdf_doc = fitz.open()
+        page = pdf_doc.new_page()
+        page.insert_text((72, 72), "Interruptible document", fontsize=12)
+        pdf_bytes = pdf_doc.tobytes()
+        pdf_doc.close()
+
+        from fastapi import UploadFile
+
+        document = self.document_service.create_document(
+            UploadFile(
+                filename="interruptible.pdf",
+                file=io.BytesIO(pdf_bytes),
+                headers={"content-type": "application/pdf"},
+            )
+        )
+
+        with patch.object(
+            self.document_service.parser,
+            "parse",
+            side_effect=StreamInterruptedError("stream_interrupted"),
+        ):
+            with self.assertRaises(StreamInterruptedError):
+                self.document_service.process_document(document.id)
+
+        refreshed = self.document_service.require_document(document.id)
+        self.assertEqual(refreshed.status, "uploaded")
+        self.assertEqual(refreshed.ocr_status, "pending")
 
     def test_plan_service_deletes_plan(self) -> None:
         persona = self.persona_engine.require_persona("mentor-aurora")

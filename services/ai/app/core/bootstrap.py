@@ -23,6 +23,7 @@ from app.services.session_scene import SessionSceneService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
 from app.services.storage_lifecycle import StorageLifecycleService
+from app.services.stream_interrupts import StreamInterruptRegistry
 from app.services.token_usage import TokenUsageService
 
 logger = get_logger("vibe_learner.bootstrap")
@@ -53,6 +54,7 @@ class Container:
         self.model_tool_config_service = ModelToolConfigService(self.store)
         self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
         self.token_usage_service = TokenUsageService(self.database)
+        self.stream_interrupt_registry = StreamInterruptRegistry()
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
         self.reusable_scene_node_library_service = ReusableSceneNodeLibraryService(self.store)

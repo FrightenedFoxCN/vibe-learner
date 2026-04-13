@@ -20,6 +20,7 @@ import {
 } from "../lib/data/documents";
 import {
   answerLearningPlanQuestion,
+  cancelStreamRun,
   createLearningPlanStream,
   deleteLearningPlan as deleteLearningPlanRequest,
   listLearningPlans,
@@ -30,6 +31,7 @@ import {
 import { listPersonas } from "../lib/data/personas";
 import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
 import {
+  cancelStudySessionFollowUps,
   createStudySession,
   listStudySessions,
   resolveStudyPlanConfirmation,
@@ -48,6 +50,14 @@ import {
   resolveWorkspaceSnapshot,
   type WorkspaceSnapshot,
 } from "../lib/learning-workspace-state";
+import {
+  appendDeferredInteractiveCallback,
+  clearDeferredInteractiveCallbacks as clearPersistedDeferredInteractiveCallbacks,
+  moveDeferredInteractiveCallbacks,
+  readDeferredInteractiveCallbacks,
+  readInterruptedDialogueSessionId,
+  writeInterruptedDialogueSessionId,
+} from "../lib/study-dialogue-interruption";
 import { readSceneProfileFromLocalStorage } from "../lib/scene-profile";
 import {
   PERSONA_LIBRARY_UPDATED_EVENT,
@@ -70,6 +80,7 @@ import {
   logWorkspaceInfo
 } from "../lib/learning-workspace-telemetry";
 import { compactPreviewValue } from "../lib/preview";
+import { getDesktopRuntimeConfig } from "../lib/runtime-config";
 import { useRuntimeSettings } from "../components/runtime-settings-provider";
 
 export interface GeneratePlanInput {
@@ -108,6 +119,7 @@ export function useLearningWorkspaceController({
     })
   );
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [isInterruptingPlan, setIsInterruptingPlan] = useState(false);
   const [processStreamEvents, setProcessStreamEvents] = useState<StreamEventItem[]>([]);
   const [planStreamEvents, setPlanStreamEvents] = useState<StreamEventItem[]>([]);
   const [processStreamStatus, setProcessStreamStatus] = useState("idle");
@@ -117,11 +129,22 @@ export function useLearningWorkspaceController({
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState("");
+  const [interruptedDialogueSessionId, setInterruptedDialogueSessionId] = useState("");
   const selectedPersonaIdRef = useRef(state.selectedPersonaId);
   const selectedPlanIdRef = useRef(state.selectedPlanId);
+  const generationAbortControllerRef = useRef<AbortController | null>(null);
+  const processStreamIdRef = useRef("");
+  const planStreamIdRef = useRef("");
   const preludeInFlightRef = useRef<Set<string>>(new Set());
   const followUpTimerRef = useRef<Map<string, number>>(new Map());
   const followUpInFlightRef = useRef<Set<string>>(new Set());
+  const interruptedDialogueSessionIdRef = useRef("");
+  const desktopRuntimeConfig = getDesktopRuntimeConfig();
+  const planGenerationBlockedReason = resolvePlanGenerationBlockedReason({
+    runtimeSettings: runtimeSettings.settings,
+    runtimeSettingsLoading: runtimeSettings.loading,
+    desktopRuntimeConfig,
+  });
 
   const selectedPersona =
     state.personas.find((persona) => persona.id === state.selectedPersonaId) ?? state.personas[0];
@@ -143,11 +166,35 @@ export function useLearningWorkspaceController({
   );
 
   const resolveActiveSceneProfile = () => selectedSceneProfile ?? readSceneProfileFromLocalStorage();
+  const isDialogueInterrupted = Boolean(
+    state.studySession?.id && state.studySession.id === interruptedDialogueSessionId
+  );
+
+  useEffect(() => {
+    const persistedSessionId = readInterruptedDialogueSessionId();
+    interruptedDialogueSessionIdRef.current = persistedSessionId;
+    setInterruptedDialogueSessionId(persistedSessionId);
+  }, []);
 
   useEffect(() => {
     selectedPersonaIdRef.current = state.selectedPersonaId;
     selectedPlanIdRef.current = state.selectedPlanId;
   }, [state.selectedPersonaId, state.selectedPlanId]);
+
+  const syncInterruptedDialogueSessionId = (sessionId: string) => {
+    const normalizedSessionId = sessionId.trim();
+    interruptedDialogueSessionIdRef.current = normalizedSessionId;
+    setInterruptedDialogueSessionId(normalizedSessionId);
+    writeInterruptedDialogueSessionId(normalizedSessionId);
+  };
+
+  const isDialogueInterruptedForSession = (sessionId: string) => {
+    const normalizedSessionId = sessionId.trim();
+    return Boolean(
+      normalizedSessionId &&
+      interruptedDialogueSessionIdRef.current === normalizedSessionId
+    );
+  };
 
   const resolveSectionTitle = (sectionId: string) => {
     const sectionFromPlan = planSections.find((section) => section.id === sectionId);
@@ -357,7 +404,42 @@ export function useLearningWorkspaceController({
     return nextSession;
   };
 
+  const cancelPlanGeneration = async () => {
+    if (!isGeneratingPlan) {
+      return;
+    }
+    setIsInterruptingPlan(true);
+    dispatch({
+      type: "notice_set",
+      notice: "正在中断当前任务…"
+    });
+    const streamIds = Array.from(
+      new Set(
+        [processStreamIdRef.current, planStreamIdRef.current]
+          .map((item) => item.trim())
+          .filter(Boolean)
+      )
+    );
+    generationAbortControllerRef.current?.abort();
+    if (streamIds.length) {
+      await Promise.allSettled(streamIds.map((streamId) => cancelStreamRun(streamId)));
+    }
+  };
+
   const generatePlanWorkflow = async (input: GeneratePlanInput) => {
+    if (planGenerationBlockedReason) {
+      dispatch({
+        type: "notice_set",
+        notice: planGenerationBlockedReason,
+      });
+      return;
+    }
+    generationAbortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    generationAbortControllerRef.current = abortController;
+    processStreamIdRef.current = "";
+    planStreamIdRef.current = "";
+    setIsInterruptingPlan(false);
     setIsGeneratingPlan(true);
     dispatch({ type: "generation_started" });
     dispatch({ type: "busy_started" });
@@ -379,7 +461,9 @@ export function useLearningWorkspaceController({
           personaId: selectedPersona.id
         });
 
-        const uploadedDocument = await uploadDocument(input.file);
+        const uploadedDocument = await uploadDocument(input.file, {
+          signal: abortController.signal,
+        });
         setProcessStreamDocumentId(uploadedDocument.id);
         setPlanStreamDocumentId(uploadedDocument.id);
         dispatch({
@@ -393,8 +477,14 @@ export function useLearningWorkspaceController({
 
         nextDocument = await processDocumentStream(
           uploadedDocument.id,
-          {},
+          {
+            signal: abortController.signal,
+          },
           (event) => {
+            const streamId = String(event.payload.stream_id ?? "").trim();
+            if (streamId) {
+              processStreamIdRef.current = streamId;
+            }
             setProcessStreamEvents((current) => [
               ...current.slice(-79),
               {
@@ -448,6 +538,10 @@ export function useLearningWorkspaceController({
           sceneProfile,
         },
         (event) => {
+          const streamId = String(event.payload.stream_id ?? "").trim();
+          if (streamId) {
+            planStreamIdRef.current = streamId;
+          }
           setPlanStreamEvents((current) => [
             ...current.slice(-119),
             {
@@ -465,6 +559,9 @@ export function useLearningWorkspaceController({
             stage: event.stage,
             ...event.payload
           });
+        },
+        {
+          signal: abortController.signal,
         }
       );
       logWorkspaceInfo("workflow:upload:plan_ready", {
@@ -500,6 +597,18 @@ export function useLearningWorkspaceController({
         logWorkspaceError("workflow:upload:session_error", sessionError);
       }
     } catch (error) {
+      if (isAbortLikeError(error)) {
+        setProcessStreamStatus((current) => (current === "running" ? "cancelled" : current));
+        setPlanStreamStatus((current) => (current === "running" ? "cancelled" : current));
+        dispatch({
+          type: "notice_set",
+          notice: "已中断当前任务。"
+        });
+        logWorkspaceInfo("workflow:upload:interrupted", {
+          mode: input.mode,
+        });
+        return;
+      }
       setProcessStreamStatus((current) => (current === "running" ? "error" : current));
       setPlanStreamStatus((current) => (current === "running" ? "error" : current));
       dispatch({
@@ -508,6 +617,10 @@ export function useLearningWorkspaceController({
       });
       logWorkspaceError("workflow:upload:error", error);
     } finally {
+      generationAbortControllerRef.current = null;
+      processStreamIdRef.current = "";
+      planStreamIdRef.current = "";
+      setIsInterruptingPlan(false);
       dispatch({ type: "busy_finished" });
       setIsGeneratingPlan(false);
     }
@@ -772,6 +885,65 @@ export function useLearningWorkspaceController({
     return next;
   };
 
+  const queueDeferredInteractiveCallback = (sessionId: string, callbackMessage: string) => {
+    const normalizedSessionId = sessionId.trim();
+    const normalizedMessage = callbackMessage.trim();
+    if (!normalizedSessionId || !normalizedMessage) {
+      return;
+    }
+    appendDeferredInteractiveCallback(normalizedSessionId, normalizedMessage);
+  };
+
+  const peekDeferredInteractiveCallbackPrefix = (sessionId: string) => {
+    const normalizedSessionId = sessionId.trim();
+    if (!normalizedSessionId) {
+      return "";
+    }
+    return readDeferredInteractiveCallbacks(normalizedSessionId).join("\n\n");
+  };
+
+  const clearDeferredInteractiveCallbacks = (sessionId: string) => {
+    const normalizedSessionId = sessionId.trim();
+    if (!normalizedSessionId) {
+      return;
+    }
+    clearPersistedDeferredInteractiveCallbacks(normalizedSessionId);
+  };
+
+  const clearInterruptedDialogueState = (sessionId: string) => {
+    const normalizedSessionId = sessionId.trim();
+    if (!normalizedSessionId) {
+      return;
+    }
+    clearDeferredInteractiveCallbacks(normalizedSessionId);
+    if (interruptedDialogueSessionIdRef.current === normalizedSessionId) {
+      syncInterruptedDialogueSessionId("");
+    }
+  };
+
+  const rebindInterruptedDialogueSession = (fromSessionId: string, toSessionId: string) => {
+    const normalizedFrom = fromSessionId.trim();
+    const normalizedTo = toSessionId.trim();
+    if (!normalizedTo) {
+      return;
+    }
+    if (normalizedFrom && normalizedFrom !== normalizedTo) {
+      moveDeferredInteractiveCallbacks(normalizedFrom, normalizedTo);
+    }
+    syncInterruptedDialogueSessionId(normalizedTo);
+  };
+
+  const clearPendingFollowUpTimers = (followUpIds: string[]) => {
+    const timers = followUpTimerRef.current;
+    followUpIds.forEach((followUpId) => {
+      const timer = timers.get(followUpId);
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+      timers.delete(followUpId);
+    });
+  };
+
   const handleAsk = async (message: string, attachments: File[] = []) => {
     if (!state.studySession) {
       return;
@@ -826,6 +998,10 @@ export function useLearningWorkspaceController({
     if (!targetSession) {
       return;
     }
+    const hiddenMessagePrefix =
+      isDialogueInterruptedForSession(targetSession.id)
+        ? peekDeferredInteractiveCallbackPrefix(targetSession.id)
+        : "";
     try {
       dispatch({ type: "busy_started" });
       logWorkspaceInfo("workflow:study_chat:start", {
@@ -836,9 +1012,11 @@ export function useLearningWorkspaceController({
         sessionId: targetSession.id,
         message,
         messageKind: "learner",
+        hiddenMessagePrefix,
         attachments,
       });
       applyChatExchange(next);
+      clearInterruptedDialogueState(targetSession.id);
       logWorkspaceInfo("workflow:study_chat:done", {
         sessionId: targetSession.id,
         citations: next.citations.length,
@@ -874,9 +1052,11 @@ export function useLearningWorkspaceController({
             sessionId: recoveredSession.id,
             message,
             messageKind: "learner",
+            hiddenMessagePrefix,
             attachments,
           });
           applyChatExchange(recovered);
+          clearInterruptedDialogueState(targetSession.id);
           dispatch({
             type: "notice_set",
             notice: "会话已恢复。"
@@ -952,6 +1132,52 @@ export function useLearningWorkspaceController({
     }
   };
 
+  const triggerInteractiveQuestionCallback = async (
+    session: StudySessionRecord,
+    input: {
+      questionType: "multiple_choice" | "fill_blank";
+      prompt: string;
+      topic: string;
+      difficulty: "easy" | "medium" | "hard";
+      options: Array<{ key: string; text: string }>;
+      callBack?: boolean;
+      answerKey?: string;
+      acceptedAnswers: string[];
+      submittedAnswer: string;
+      isCorrect: boolean;
+      explanation: string;
+    }
+  ) => {
+    if (!input.callBack) {
+      return;
+    }
+    const callbackMessage = buildInteractiveCallbackMessage(input);
+    if (isDialogueInterruptedForSession(session.id)) {
+      queueDeferredInteractiveCallback(session.id, callbackMessage);
+      dispatch({
+        type: "notice_set",
+        notice: "答案已记录；已暂停自动续接，会在你下次主动发言前补入答题结果。"
+      });
+      return;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      await sendHiddenSessionMessage({
+        sessionId: session.id,
+        message: callbackMessage,
+        messageKind: "interactive_callback",
+      });
+    } catch (callbackError) {
+      dispatch({
+        type: "notice_set",
+        notice: `答案已记录，续问失败：${String(callbackError)}`
+      });
+      logWorkspaceError("workflow:study_attempt:callback_error", callbackError);
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
   const handleSubmitQuestionAttempt = async (input: {
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
@@ -968,6 +1194,8 @@ export function useLearningWorkspaceController({
     if (!state.studySession) {
       return;
     }
+    const currentSessionId = state.studySession.id;
+    const shouldDeferInteractiveCallback = isDialogueInterruptedForSession(currentSessionId);
     try {
       const nextSession = await submitStudyQuestionAttempt({
         sessionId: state.studySession.id,
@@ -978,24 +1206,7 @@ export function useLearningWorkspaceController({
         studySession: nextSession,
         clearResponse: false
       });
-      if (input.callBack) {
-        try {
-          dispatch({ type: "busy_started" });
-          await sendHiddenSessionMessage({
-            sessionId: nextSession.id,
-            message: buildInteractiveCallbackMessage(input),
-            messageKind: "interactive_callback",
-          });
-        } catch (callbackError) {
-          dispatch({
-            type: "notice_set",
-            notice: `答案已记录，续问失败：${String(callbackError)}`
-          });
-          logWorkspaceError("workflow:study_attempt:callback_error", callbackError);
-        } finally {
-          dispatch({ type: "busy_finished" });
-        }
-      }
+      await triggerInteractiveQuestionCallback(nextSession, input);
     } catch (error) {
       const detail = String(error);
       if (detail.includes("session_not_found")) {
@@ -1020,9 +1231,15 @@ export function useLearningWorkspaceController({
             studySession: nextSession,
             clearResponse: false
           });
+          if (shouldDeferInteractiveCallback) {
+            rebindInterruptedDialogueSession(currentSessionId, nextSession.id);
+          }
+          await triggerInteractiveQuestionCallback(nextSession, input);
           dispatch({
             type: "notice_set",
-            notice: "答题会话已恢复。"
+            notice: shouldDeferInteractiveCallback
+              ? "答题会话已恢复；自动续接仍保持暂停。"
+              : "答题会话已恢复。"
           });
           return;
         } catch (recoveryError) {
@@ -1082,6 +1299,62 @@ export function useLearningWorkspaceController({
         notice: `处理计划变更失败：${String(error)}`,
       });
       logWorkspaceError("workflow:study_plan_confirmation:error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const interruptDialogue = async () => {
+    const session = state.studySession;
+    if (!session) {
+      dispatch({
+        type: "notice_set",
+        notice: "当前还没有可打断的章节会话。"
+      });
+      return false;
+    }
+    const pendingFollowUpIds = (session?.pendingFollowUps ?? [])
+      .filter((item) => item.status === "pending")
+      .map((item) => item.id);
+    if (isDialogueInterruptedForSession(session.id) && !pendingFollowUpIds.length) {
+      dispatch({
+        type: "notice_set",
+        notice: "当前已暂停自动续接；答题结果会等你下次主动发言时再补入。"
+      });
+      return false;
+    }
+    if (!pendingFollowUpIds.length) {
+      syncInterruptedDialogueSessionId(session.id);
+      dispatch({
+        type: "notice_set",
+        notice: "已暂停当前自动续接；之后提交答案不会立即续聊。"
+      });
+      return true;
+    }
+    clearPendingFollowUpTimers(pendingFollowUpIds);
+    try {
+      dispatch({ type: "busy_started" });
+      const nextSession = await cancelStudySessionFollowUps({
+        sessionId: session.id,
+      });
+      dispatch({
+        type: "study_session_set",
+        studySession: nextSession,
+        clearResponse: false,
+      });
+      syncInterruptedDialogueSessionId(nextSession.id);
+      dispatch({
+        type: "notice_set",
+        notice: "已打断当前自动续接；之后提交答案不会立即续聊。"
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `打断自动续接失败：${String(error)}`
+      });
+      logWorkspaceError("workflow:study_follow_up:interrupt_error", error);
       return false;
     } finally {
       dispatch({ type: "busy_finished" });
@@ -1329,6 +1602,9 @@ export function useLearningWorkspaceController({
     isBusy: state.isBusy,
     chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
+    isInterruptingPlan,
+    isDialogueInterrupted,
+    planGenerationBlockedReason,
     processStreamDocumentId,
     planStreamDocumentId,
     processStreamEvents,
@@ -1341,6 +1617,7 @@ export function useLearningWorkspaceController({
     setSelectedSceneLibraryId,
     selectedSceneProfile,
     generatePlanWorkflow,
+    cancelPlanGeneration,
     selectPlan,
     createSessionForActivePlan,
     renamePlanTitle,
@@ -1356,6 +1633,7 @@ export function useLearningWorkspaceController({
     retryFailedAsk,
     handleSubmitQuestionAttempt,
     handleResolvePlanConfirmation,
+    interruptDialogue,
     refreshPlanSnapshot: () =>
       syncWorkspaceSnapshot({
         includePersonas: false,
@@ -1369,10 +1647,43 @@ function resolveStreamStatus(stage: string) {
   if (stage === "stream_completed") {
     return "completed";
   }
+  if (stage === "stream_cancelled") {
+    return "cancelled";
+  }
   if (stage === "stream_error") {
     return "error";
   }
   return "running";
+}
+
+function isAbortLikeError(error: unknown) {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return true;
+  }
+  return String(error).includes("stream_interrupted");
+}
+
+function resolvePlanGenerationBlockedReason(input: {
+  runtimeSettings: ReturnType<typeof useRuntimeSettings>["settings"];
+  runtimeSettingsLoading: boolean;
+  desktopRuntimeConfig: ReturnType<typeof getDesktopRuntimeConfig>;
+}) {
+  if (input.runtimeSettingsLoading) {
+    return "";
+  }
+  const settings = input.runtimeSettings;
+  if (!settings || settings.planProvider !== "litellm") {
+    return "";
+  }
+  if (settings.openaiPlanApiKeyConfigured || settings.openaiApiKeyConfigured) {
+    return "";
+  }
+  if (input.desktopRuntimeConfig?.isDesktop) {
+    return input.desktopRuntimeConfig.vaultState !== "unlocked"
+      ? "当前计划提供器设为 LiteLLM，但桌面 Vault 尚未解锁；继续会静默回退到 mock。先去统一设置解锁 Vault。"
+      : "当前计划提供器设为 LiteLLM，但还没有可用的计划模型密钥。先去统一设置补齐连接信息。";
+  }
+  return "当前计划提供器设为 LiteLLM，但还没有可用的计划模型密钥。先去统一设置补齐连接信息。";
 }
 
 function resolveSceneProfileFromLibrary(

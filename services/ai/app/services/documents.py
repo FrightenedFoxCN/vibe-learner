@@ -12,6 +12,7 @@ from app.core.logging import get_logger
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
 from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
+from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
 
 logger = get_logger("vibe_learner.documents")
@@ -71,6 +72,7 @@ class DocumentService:
         *,
         force_ocr: bool = False,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> DocumentRecord:
         documents = self._load_documents()
         document = self.require_document(document_id, documents)
@@ -92,6 +94,7 @@ class DocumentService:
             force_ocr,
             document.stored_path,
         )
+        _call_interrupt(interrupt_check)
 
         try:
             debug_report = self.parser.parse(
@@ -100,7 +103,15 @@ class DocumentService:
                 stored_path=document.stored_path,
                 force_ocr=force_ocr,
                 progress_callback=progress_callback,
+                interrupt_check=interrupt_check,
             )
+        except StreamInterruptedError:
+            document.status = "uploaded"
+            document.ocr_status = "pending"
+            document.updated_at = _now()
+            self._save_documents(documents)
+            logger.info("document.processing.interrupted id=%s", document.id)
+            raise
         except fitz.FileDataError as exc:
             document.status = "failed"
             document.ocr_status = "failed"
@@ -115,6 +126,7 @@ class DocumentService:
             self._save_documents(documents)
             logger.exception("document.processing.failed id=%s", document.id)
             raise
+        _call_interrupt(interrupt_check)
         document.status = "processed"
         document.ocr_status = debug_report.ocr_status
         study_units = self.arrangement_service.build_study_units(
@@ -258,3 +270,9 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _call_interrupt(callback: Callable[[], None] | None) -> None:
+    if callback is None:
+        return
+    callback()

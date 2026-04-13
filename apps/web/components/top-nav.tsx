@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { BrandMark } from "./brand-mark";
 import { MaterialIcon, type MaterialIconName } from "./material-icon";
+import { AppLink, type AppRoutePath } from "../lib/app-navigation";
 import {
   APP_NAV_COLLAPSED_STORAGE_KEY,
   BROWSER_VIEW_TOGGLE_NAV_EVENT,
@@ -14,11 +14,11 @@ import {
 } from "../lib/view-preferences";
 
 interface TopNavProps {
-  currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/sensory-tools" | "/settings" | "/model-usage";
+  currentPath: AppRoutePath;
 }
 
 const NAV_ITEMS: Array<{
-  href: TopNavProps["currentPath"];
+  href: AppRoutePath;
   label: string;
   icon: MaterialIconName;
 }> = [
@@ -68,16 +68,16 @@ export function TopNav({ currentPath }: TopNavProps) {
         {NAV_ITEMS.map((item) => {
           const active = item.href === currentPath;
           return (
-            <Link
+            <AppLink
               key={item.href}
-              href={item.href as never}
+              path={item.href}
               className={active ? "app-nav-link--active" : "app-nav-link"}
               style={collapsed ? styles.linkCollapsed : undefined}
               title={item.label}
             >
               <MaterialIcon name={item.icon} size={18} />
               {!collapsed ? <span>{item.label}</span> : null}
-            </Link>
+            </AppLink>
           );
         })}
       </nav>

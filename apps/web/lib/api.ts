@@ -293,6 +293,9 @@ async function request(input: string, init?: RequestInit): Promise<Response> {
     });
     return response;
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
     clientLog("request:error", {
       method,
       input,
@@ -986,6 +989,7 @@ function normalizeProjectedPdf(value: any) {
     title: String(raw.title ?? ""),
     pageNumber: Number(raw.page_number ?? 1),
     pageCount: Number(raw.page_count ?? 0),
+    imageUrl: raw.image_url ? String(raw.image_url) : undefined,
     overlays: Array.isArray(raw.overlays)
       ? raw.overlays.map((overlay: any) => ({
           id: String(overlay.id ?? ""),
@@ -1773,13 +1777,17 @@ export async function getDocumentPlanEvents(documentId: string): Promise<StreamR
   return normalizeStreamReport(payload);
 }
 
-export async function uploadDocument(file: File): Promise<DocumentRecord> {
+export async function uploadDocument(
+  file: File,
+  options?: { signal?: AbortSignal }
+): Promise<DocumentRecord> {
   const form = new FormData();
   form.append("file", file);
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/documents`, {
       method: "POST",
-      body: form
+      body: form,
+      signal: options?.signal,
     })
   );
   return normalizeDocument(payload);
@@ -1814,6 +1822,7 @@ export async function processDocumentStream(
   documentId: string,
   options: {
     forceOcr?: boolean;
+    signal?: AbortSignal;
   },
   onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
 ): Promise<DocumentRecord> {
@@ -1822,6 +1831,7 @@ export async function processDocumentStream(
     headers: {
       "Content-Type": "application/json"
     },
+    signal: options.signal,
     body: JSON.stringify({
       force_ocr: Boolean(options.forceOcr)
     })
@@ -1856,6 +1866,9 @@ export async function processDocumentStream(
         stage: event.stage,
         payload: event.payload ?? {}
       });
+      if (event.stage === "stream_cancelled") {
+        throw new DOMException("stream_interrupted", "AbortError");
+      }
       if (event.stage === "stream_error") {
         streamError = formatStreamErrorPayload(event.payload, "processing_stream_error");
       }
@@ -2019,7 +2032,8 @@ export async function deleteLearningPlan(planId: string): Promise<void> {
 
 export async function createLearningPlanStream(
   goal: LearningGoal,
-  onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
+  onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void,
+  options?: { signal?: AbortSignal }
 ): Promise<LearningPlan> {
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
   const response = await request(`${AI_BASE_URL()}/learning-plans/stream`, {
@@ -2027,6 +2041,7 @@ export async function createLearningPlanStream(
     headers: {
       "Content-Type": "application/json"
     },
+    signal: options?.signal,
     body: JSON.stringify({
       document_id: goal.documentId ?? "",
       persona_id: goal.personaId,
@@ -2065,6 +2080,9 @@ export async function createLearningPlanStream(
         stage: event.stage,
         payload: event.payload ?? {}
       });
+      if (event.stage === "stream_cancelled") {
+        throw new DOMException("stream_interrupted", "AbortError");
+      }
       if (event.stage === "stream_error") {
         streamError = formatStreamErrorPayload(event.payload, "learning_plan_stream_error");
       }
@@ -2115,6 +2133,14 @@ export async function createStudySession(input: {
   return normalizeSession(payload);
 }
 
+export async function cancelStreamRun(streamId: string): Promise<void> {
+  await readJson<{ stream_id: string }>(
+    await request(`${AI_BASE_URL()}/stream-runs/${streamId}/cancel`, {
+      method: "POST",
+    })
+  );
+}
+
 export async function listStudySessions(input: {
   documentId?: string;
   personaId?: string;
@@ -2157,11 +2183,23 @@ export async function updateStudySessionSection(input: {
   return normalizeSession(payload);
 }
 
+export async function cancelStudySessionFollowUps(input: {
+  sessionId: string;
+}): Promise<StudySessionRecord> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/follow-ups/cancel`, {
+      method: "POST",
+    })
+  );
+  return normalizeSession(payload);
+}
+
 export async function sendStudyMessage(input: {
   sessionId: string;
   message: string;
   messageKind?: string;
   followUpId?: string;
+  hiddenMessagePrefix?: string;
   attachments?: File[];
 }): Promise<StudyChatExchangeResponse> {
   const hasAttachments = Boolean(input.attachments?.length);
@@ -2173,6 +2211,7 @@ export async function sendStudyMessage(input: {
           form.set("message", input.message);
           form.set("message_kind", input.messageKind ?? "learner");
           form.set("follow_up_id", input.followUpId ?? "");
+          form.set("hidden_message_prefix", input.hiddenMessagePrefix ?? "");
           (input.attachments ?? []).forEach((file) => {
             form.append("files", file);
           });
@@ -2188,6 +2227,7 @@ export async function sendStudyMessage(input: {
           message: input.message,
           message_kind: input.messageKind ?? "learner",
           follow_up_id: input.followUpId ?? "",
+          hidden_message_prefix: input.hiddenMessagePrefix ?? "",
         })
       });
   const payload = await readJson<any>(response);

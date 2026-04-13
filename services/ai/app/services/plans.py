@@ -45,7 +45,9 @@ class LearningPlanService:
         persona: PersonaProfile,
         debug_report: DocumentDebugRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> LearningPlanRecord:
+        _call_interrupt(interrupt_check)
         progress_document_id = document.id if document is not None else ""
         if document is not None and debug_report is not None and not document.study_units:
             study_units = self.arrangement_service.build_study_units(
@@ -118,7 +120,9 @@ class LearningPlanService:
             document_path=document_path,
             debug_report=debug_report,
             progress_callback=progress_callback,
+            interrupt_check=interrupt_check,
         )
+        _call_interrupt(interrupt_check)
         if model_plan.revised_study_units:
             plan.study_units = model_plan.revised_study_units
             if document is not None:
@@ -729,6 +733,12 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _call_interrupt(callback: Callable[[], None] | None) -> None:
+    if callback is None:
+        return
+    callback()
 
 
 def _project_sections_from_study_units(study_units: list[StudyUnitRecord]) -> list[DocumentSection]:

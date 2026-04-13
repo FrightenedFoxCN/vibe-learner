@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import type {
@@ -20,6 +19,7 @@ import type {
 import { CharacterShell } from "./character-shell";
 import { RichTextMessage } from "./rich-text-message";
 import type { StudyConsolePageCache } from "../lib/learning-workspace-page-cache";
+import { AppLink } from "../lib/app-navigation";
 
 interface StudyConsoleProps {
   isPending: boolean;
@@ -53,6 +53,8 @@ interface StudyConsoleProps {
   persona: PersonaProfile;
   sceneProfile?: SceneProfile | null;
   pendingFollowUps?: SessionFollowUp[];
+  isDialogueInterrupted?: boolean;
+  onInterruptDialogue?: () => void | Promise<void>;
   affinityState?: SessionAffinityState;
   projectedPdf?: StudySessionRecord["projectedPdf"];
   planConfirmations?: SessionPlanConfirmation[];
@@ -92,6 +94,8 @@ export function StudyConsole({
   persona,
   sceneProfile,
   pendingFollowUps = [],
+  isDialogueInterrupted = false,
+  onInterruptDialogue,
   affinityState,
   projectedPdf,
   planConfirmations = [],
@@ -122,6 +126,7 @@ export function StudyConsole({
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const activeFollowUp = pendingFollowUps.find((item) => item.status === "pending") ?? null;
 
   const sortedTurns = [...turns].sort((a, b) => {
     const aTime = Date.parse(a.createdAt || "") || 0;
@@ -209,6 +214,17 @@ export function StudyConsole({
               >
                 定位章节首页
               </button>
+              <button
+                type="button"
+                style={{
+                  ...styles.ghostBtn,
+                  ...(isPending || disabled || !onInterruptDialogue || isDialogueInterrupted ? styles.btnDisabled : {})
+                }}
+                disabled={isPending || disabled || !onInterruptDialogue || isDialogueInterrupted}
+                onClick={() => { if (onInterruptDialogue) void onInterruptDialogue(); }}
+              >
+                {isDialogueInterrupted ? "已举手打断" : "举手打断"}
+              </button>
             </div>
 
             <div style={styles.themeRow}>
@@ -230,6 +246,30 @@ export function StudyConsole({
                 </select>
               </label>
             </div>
+
+            {(activeFollowUp || isDialogueInterrupted) ? (
+              <div style={styles.followUpBanner}>
+                <div style={styles.followUpMeta}>
+                  <span style={styles.caption}>自动续接</span>
+                  <span style={styles.followUpText}>
+                    {activeFollowUp
+                      ? `老师已安排下一轮自动续接，预计 ${formatFollowUpDueAt(activeFollowUp.dueAt)} 继续。${activeFollowUp.reason ? ` ${activeFollowUp.reason}` : ""}`
+                      : "当前已暂停自动续接；提交答案后不会立刻续聊，答题结果会在你下一次主动发言前补入。"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  style={{
+                    ...styles.followUpInterruptBtn,
+                    ...(isPending || disabled || !onInterruptDialogue || isDialogueInterrupted ? styles.btnDisabled : {})
+                  }}
+                  disabled={isPending || disabled || !onInterruptDialogue || isDialogueInterrupted}
+                  onClick={() => { if (onInterruptDialogue) void onInterruptDialogue(); }}
+                >
+                  {isDialogueInterrupted ? "已举手打断" : "举手打断"}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div style={styles.transcript}>
@@ -515,8 +555,8 @@ export function StudyConsole({
               <div style={styles.companionHeader}>
                 <span style={styles.caption}>教师信息</span>
                 <div style={styles.companionLinks}>
-                  <Link href="/persona-spectrum" style={styles.companionLink}>人格库</Link>
-                  <Link href="/scene-setup" style={styles.companionLink}>场景编辑</Link>
+                  <AppLink path="/persona-spectrum" style={styles.companionLink}>人格库</AppLink>
+                  <AppLink path="/scene-setup" style={styles.companionLink}>场景编辑</AppLink>
                 </div>
               </div>
               <div style={styles.companionRow}>
@@ -539,7 +579,7 @@ export function StudyConsole({
                 pending={isPending}
                 affinityState={affinityState}
                 projectedPdf={projectedPdf}
-                nextFollowUp={pendingFollowUps.find((item) => item.status === "pending") ?? null}
+                nextFollowUp={activeFollowUp}
                 variant="embedded"
               />
             </div>
@@ -577,6 +617,38 @@ const styles: Record<string, CSSProperties> = {
     padding: "14px 16px",
     border: "1px solid var(--border)",
     background: "rgba(255, 255, 255, 0.78)",
+  },
+  followUpBanner: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: "10px 12px",
+    border: "1px solid rgba(21, 144, 155, 0.24)",
+    background: "rgba(21, 144, 155, 0.08)",
+    flexWrap: "wrap",
+  },
+  followUpMeta: {
+    display: "grid",
+    gap: 4,
+    minWidth: 0,
+    flex: 1,
+  },
+  followUpText: {
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--ink-2)",
+  },
+  followUpInterruptBtn: {
+    border: "1px solid rgba(10, 103, 114, 0.28)",
+    height: 34,
+    padding: "0 12px",
+    background: "white",
+    color: "var(--teal)",
+    fontSize: 12,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+    cursor: "pointer",
   },
   sidebar: {
     minWidth: 0,
@@ -1254,6 +1326,20 @@ function formatTurnTime(value: string) {
   });
 }
 
+function formatFollowUpDueAt(value: string) {
+  if (!value) {
+    return "稍后";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "稍后";
+  }
+  return date.toLocaleTimeString("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function buildTurnKey(createdAt: string, index: number) {
   return `${createdAt}:${index}`;
 }
@@ -1362,13 +1448,15 @@ function renderInteractiveQuestion(input: {
           >
             提交答案
           </button>
-          <button
-            type="button"
-            style={styles.inlineGhostBtn}
-            onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
-          >
-            {explanationVisible ? "收起解析" : "查看解析"}
-          </button>
+          {isLocked ? (
+            <button
+              type="button"
+              style={styles.inlineGhostBtn}
+              onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
+            >
+              {explanationVisible ? "收起解析" : "查看解析"}
+            </button>
+          ) : null}
           <button
             type="button"
             style={styles.inlineGhostBtn}
@@ -1442,13 +1530,15 @@ function renderInteractiveQuestion(input: {
         >
           提交答案
         </button>
-        <button
-          type="button"
-          style={styles.inlineGhostBtn}
-          onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
-        >
-          {explanationVisible ? "收起解析" : "查看解析"}
-        </button>
+        {isLocked ? (
+          <button
+            type="button"
+            style={styles.inlineGhostBtn}
+            onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
+          >
+            {explanationVisible ? "收起解析" : "查看解析"}
+          </button>
+        ) : null}
         <button
           type="button"
           style={styles.inlineGhostBtn}

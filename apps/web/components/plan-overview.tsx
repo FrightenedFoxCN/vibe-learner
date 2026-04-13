@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type { DocumentRecord, DocumentSection, LearningPlan, SceneProfile, StudyUnit } from "@vibe-learner/shared";
+
+import { AppLink } from "../lib/app-navigation";
 
 interface PlanOverviewProps {
   plan: LearningPlan | null;
@@ -28,6 +29,12 @@ interface PlanOverviewProps {
     questionId: string;
     answer: string;
   }) => Promise<boolean>;
+  onStartStudyFromPlan: (input: {
+    sectionId: string;
+    chapter: string;
+    page: number;
+    scheduleIds: string[];
+  }) => void | Promise<void>;
 }
 
 export function PlanOverview({
@@ -44,6 +51,7 @@ export function PlanOverview({
   onUpdateStudyChapters,
   onUpdatePlanProgress,
   onAnswerPlanningQuestion,
+  onStartStudyFromPlan,
 }: PlanOverviewProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingStudyChapters, setIsEditingStudyChapters] = useState(false);
@@ -272,10 +280,15 @@ export function PlanOverview({
                         style={styles.ghostButton}
                         disabled={isBusy || !item.scheduleIds.length || item.status === "in_progress"}
                         onClick={() => {
-                          void onUpdatePlanProgress({
-                            planId: plan.id,
+                          const chapterUnit = plan.studyUnits.find((unit) => unit.id === item.unitId);
+                          if (!chapterUnit) {
+                            return;
+                          }
+                          void onStartStudyFromPlan({
+                            sectionId: item.unitId,
+                            chapter: resolveChapterTitleForUnit(plan, item.unitId, item.title),
+                            page: chapterUnit.pageStart,
                             scheduleIds: item.scheduleIds,
-                            status: "in_progress"
                           });
                         }}
                       >
@@ -328,10 +341,16 @@ export function PlanOverview({
                       style={styles.ghostButton}
                       disabled={isBusy || item.status === "in_progress"}
                       onClick={() => {
-                        void onUpdatePlanProgress({
-                          planId: plan.id,
+                        const chapterTitle = resolveChapterTitleForUnit(plan, item.unitId, item.title);
+                        const studyUnit = resolveStudyUnitById(plan, item.unitId);
+                        if (!studyUnit) {
+                          return;
+                        }
+                        void onStartStudyFromPlan({
+                          sectionId: item.unitId,
+                          chapter: chapterTitle,
+                          page: studyUnit.pageStart,
                           scheduleIds: [item.id],
-                          status: "in_progress"
                         });
                       }}
                     >
@@ -519,41 +538,37 @@ export function PlanOverview({
                     const subsections = resolveSubsectionsForStudyUnit(document, studyUnit);
                     return (
                       <>
-                        <Link
-                          href={{
-                            pathname: "/study",
-                            query: {
-                              plan: plan.id,
-                              chapter: focus,
-                              page: String(studyUnit.pageStart),
-                            }
+                        <AppLink
+                          path="/study"
+                          query={{
+                            plan: plan.id,
+                            chapter: focus,
+                            page: studyUnit.pageStart,
                           }}
                           style={styles.pageTag}
                           title={`跳转到第 ${studyUnit.pageStart} 页并打开章节对话`}
                         >
                           跳转到第 {studyUnit.pageStart} 页
                           {studyUnit.pageEnd > studyUnit.pageStart ? ` · p.${studyUnit.pageStart}-${studyUnit.pageEnd}` : ""}
-                        </Link>
+                        </AppLink>
                         {subsections.length ? (
                           <div style={styles.subsectionList}>
                             {subsections.map((subsection) => (
-                              <Link
+                              <AppLink
                                 key={subsection.id}
-                                href={{
-                                  pathname: "/study",
-                                  query: {
-                                    plan: plan.id,
-                                    chapter: focus,
-                                    subsection: subsection.id,
-                                    page: String(subsection.pageStart),
-                                  }
+                                path="/study"
+                                query={{
+                                  plan: plan.id,
+                                  chapter: focus,
+                                  subsection: subsection.id,
+                                  page: subsection.pageStart,
                                 }}
                                 style={styles.subsectionTag}
                                 title={`跳转到子章节 ${subsection.title}`}
                               >
                                 <span style={styles.subsectionName}>{subsection.title}</span>
                                 <span style={styles.subsectionPage}>p.{subsection.pageStart}-{subsection.pageEnd}</span>
-                              </Link>
+                              </AppLink>
                             ))}
                           </div>
                         ) : null}
@@ -1107,6 +1122,31 @@ function resolveStudyUnitForChapter(plan: LearningPlan, chapter: string, chapter
   }
 
   return null;
+}
+
+function resolveStudyUnitById(plan: LearningPlan, unitId: string): StudyUnit | null {
+  return plan.studyUnits.find((unit) => unit.id === unitId) ?? null;
+}
+
+function resolveChapterTitleForUnit(
+  plan: LearningPlan,
+  unitId: string,
+  fallbackTitle: string
+): string {
+  const chapterProgressMatch = plan.chapterProgress.find((item) => item.unitId === unitId);
+  if (chapterProgressMatch?.title) {
+    return chapterProgressMatch.title;
+  }
+  const chapterScopedUnits = plan.studyUnits.filter((unit) => unit.includeInPlan);
+  const chapterIndex = chapterScopedUnits.findIndex((unit) => unit.id === unitId);
+  if (chapterIndex >= 0 && plan.studyChapters[chapterIndex]) {
+    return plan.studyChapters[chapterIndex];
+  }
+  const scheduleMatch = plan.schedule.find((item) => item.unitId === unitId);
+  if (scheduleMatch?.focus?.trim()) {
+    return scheduleMatch.focus.trim();
+  }
+  return fallbackTitle;
 }
 
 function resolveSubsectionsForStudyUnit(

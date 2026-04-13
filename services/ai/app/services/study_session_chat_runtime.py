@@ -32,6 +32,7 @@ SESSION_CHAT_TOOL_NAMES = (
     "update_learning_plan_progress",
     "project_uploaded_pdf",
     "project_uploaded_image",
+    "generate_projected_image",
     "read_projected_pdf_content",
     "read_projected_pdf_images",
     "focus_projected_pdf_page",
@@ -53,6 +54,7 @@ class StudySessionChatToolRuntime:
         plan_id: str | None = None,
         transient_attachments: list[LearnerAttachmentRecord] | None = None,
         multimodal_enabled: bool = False,
+        model_provider: Any | None = None,
     ) -> None:
         self._session_service = session_service
         self._plan_service = plan_service
@@ -60,6 +62,7 @@ class StudySessionChatToolRuntime:
         self.plan_id = plan_id.strip() if plan_id else ""
         self._transient_attachments = list(transient_attachments or [])
         self._multimodal_enabled = multimodal_enabled
+        self._model_provider = model_provider
         self._response_citations: list[Citation] = []
 
     def has_tool(self, tool_name: str) -> bool:
@@ -69,6 +72,11 @@ class StudySessionChatToolRuntime:
             return False
         if tool_name == "read_projected_pdf_images" and not self._multimodal_enabled:
             return False
+        if tool_name == "generate_projected_image":
+            return bool(
+                self._model_provider is not None
+                and getattr(self._model_provider, "supports_chat_generated_image_tools", lambda: False)()
+            )
         return tool_name in SESSION_CHAT_TOOL_NAMES
 
     def session_context(self) -> str:
@@ -290,6 +298,38 @@ class StudySessionChatToolRuntime:
                     },
                 },
             },
+            *(
+                [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "generate_projected_image",
+                            "description": TOOL_CATALOG[CHAT_STAGE]["generate_projected_image"]["description"],
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "prompt": {
+                                        "type": "string",
+                                        "description": "要生成并投到预览窗口的图像描述，应明确主题、构图和关键标注。",
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "description": "可选。预览窗口中的图像标题。",
+                                    },
+                                    "size": {
+                                        "type": "string",
+                                        "description": "可选。图像尺寸，例如 1024x1024、1536x1024 或 1024x1536。",
+                                    },
+                                },
+                                "required": ["prompt"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    }
+                ]
+                if self.has_tool("generate_projected_image")
+                else []
+            ),
             {
                 "type": "function",
                 "function": {
@@ -734,6 +774,46 @@ class StudySessionChatToolRuntime:
                 "citation": citation.model_dump(mode="json"),
             }
 
+        if tool_name == "generate_projected_image":
+            if self._model_provider is None:
+                raise HTTPException(status_code=422, detail="chat_image_generation_unsupported")
+            prompt = str(arguments.get("prompt") or "").strip()
+            title = str(arguments.get("title") or "").strip() or "AI 生成图像"
+            size = str(arguments.get("size") or "1024x1024").strip() or "1024x1024"
+            if not prompt:
+                raise HTTPException(status_code=422, detail="chat_image_generation_prompt_required")
+            try:
+                generated = self._model_provider.generate_projected_image(
+                    prompt=prompt,
+                    size=size,
+                )
+            except RuntimeError as exc:
+                return {
+                    "ok": False,
+                    "tool_name": tool_name,
+                    "error": str(exc),
+                }
+            projected_pdf = SessionProjectedPdfRecord(
+                source_kind="generated_image",
+                source_id=f"generated-image-{uuid4().hex[:10]}",
+                title=title,
+                page_number=1,
+                page_count=1,
+                image_url=str(generated.get("image_url") or ""),
+                overlays=[],
+                updated_at=datetime.now().astimezone().isoformat(),
+            )
+            self._session_service.upsert_projected_pdf(
+                session_id=self.session_id,
+                projected_pdf=projected_pdf,
+            )
+            return {
+                "ok": True,
+                "tool_name": tool_name,
+                "projected_pdf": projected_pdf.model_dump(mode="json"),
+                "revised_prompt": str(generated.get("revised_prompt") or ""),
+            }
+
         if tool_name == "read_projected_pdf_content":
             attachment, projected_pdf = self._require_projected_pdf_attachment()
             page_start = max(1, int(arguments.get("page_start") or projected_pdf.page_number or 1))
@@ -891,7 +971,7 @@ class StudySessionChatToolRuntime:
             }
 
         if tool_name == "annotate_projected_image_region":
-            attachment, _ = self._require_projected_image_attachment()
+            projected_pdf = self._require_projected_image_projection()
             label = str(arguments.get("label") or "").strip()
             color = str(arguments.get("color") or "#38BDF8").strip() or "#38BDF8"
             rect = PdfRectRecord(
@@ -914,18 +994,22 @@ class StudySessionChatToolRuntime:
                 overlay=overlay,
                 page_number=1,
             )
-            citation = self._push_citation(
-                title=attachment.name,
-                page_start=1,
-                page_end=1,
-                source_kind="attachment_image",
-                source_id=attachment.attachment_id,
+            citation = (
+                self._push_citation(
+                    title=projected_pdf.title,
+                    page_start=1,
+                    page_end=1,
+                    source_kind="attachment_image",
+                    source_id=projected_pdf.source_id,
+                )
+                if projected_pdf.source_kind == "attachment_image"
+                else None
             )
             return {
                 "ok": True,
                 "tool_name": tool_name,
                 "overlay": overlay.model_dump(mode="json"),
-                "citation": citation.model_dump(mode="json"),
+                "citation": citation.model_dump(mode="json") if citation is not None else None,
             }
 
         if tool_name == "clear_projected_pdf_overlays":
@@ -1082,15 +1166,14 @@ class StudySessionChatToolRuntime:
         attachment = self._require_pdf_attachment(projected_pdf.source_id)
         return attachment, projected_pdf
 
-    def _require_projected_image_attachment(self) -> tuple[LearnerAttachmentRecord, SessionProjectedPdfRecord]:
+    def _require_projected_image_projection(self) -> SessionProjectedPdfRecord:
         session = self._session_service.require_session(self.session_id)
         projected_pdf = session.projected_pdf
         if projected_pdf is None:
             raise HTTPException(status_code=409, detail="projected_pdf_not_set")
-        if projected_pdf.source_kind != "attachment_image":
+        if projected_pdf.source_kind not in {"attachment_image", "generated_image"}:
             raise HTTPException(status_code=422, detail="projected_image_source_unsupported")
-        attachment = self._require_image_attachment(projected_pdf.source_id)
-        return attachment, projected_pdf
+        return projected_pdf
 
     def _push_citation(
         self,

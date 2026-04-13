@@ -110,7 +110,7 @@ export function CharacterShell({
             <span style={styles.noteKey}>当前材料</span>
             <p style={styles.noteText}>
               {projectedPdf.title}
-              {projectedPdf.sourceKind === "attachment_image"
+              {projectedPdf.sourceKind === "attachment_image" || projectedPdf.sourceKind === "generated_image"
                 ? " · 图片"
                 : ` · 第 ${projectedPdf.pageNumber} 页${projectedPdf.pageCount ? ` / 共 ${projectedPdf.pageCount} 页` : ""}`}
               {projectedPdf.overlays.length ? ` · ${projectedPdf.overlays.length} 个标注` : ""}
@@ -229,6 +229,9 @@ function formatFollowUpState(value: SessionFollowUp) {
 function formatProjectedPreview(value: SessionProjectedPdf) {
   if (value.sourceKind === "attachment_image") {
     return value.overlays.length ? `图片 · ${value.overlays.length} 标注` : "图片";
+  }
+  if (value.sourceKind === "generated_image") {
+    return value.overlays.length ? `生成图像 · ${value.overlays.length} 标注` : "生成图像";
   }
   return `p.${value.pageNumber}${value.pageCount ? ` / ${value.pageCount}` : ""}`;
 }

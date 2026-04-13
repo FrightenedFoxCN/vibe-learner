@@ -1,4 +1,5 @@
 export {
+  cancelStudySessionFollowUps,
   createStudySession,
   listStudySessions,
   resolveStudyPlanConfirmation,

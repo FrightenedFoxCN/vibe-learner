@@ -144,6 +144,7 @@ class SessionProjectedPdfRecord(BaseModel):
     title: str
     page_number: int = 1
     page_count: int = 0
+    image_url: str = ""
     overlays: list[ProjectedPdfOverlayRecord] = Field(default_factory=list)
     updated_at: str
 

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type {
@@ -14,12 +13,14 @@ import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import type { SceneLibraryItemPayload } from "../lib/data/scenes";
 import { MaterialIcon } from "./material-icon";
 import { PersonaSelector } from "./persona-selector";
+import { AppLink } from "../lib/app-navigation";
 
 interface DocumentSetupProps {
   personas: PersonaProfile[];
   selectedPersonaId: string;
   onSelectPersonaId: (personaId: string) => void;
   onGenerate: (input: { mode: "document" | "goal_only"; file?: File | null; objective: string }) => void;
+  onInterruptGeneration: () => void;
   onOpenStudyDialog: () => void;
   canOpenStudyDialog: boolean;
   hasStudySession: boolean;
@@ -38,6 +39,9 @@ interface DocumentSetupProps {
   sceneProfile?: SceneProfile | null;
   planStreamEvents: StreamEventItem[];
   planStreamStatus: string;
+  canInterruptGeneration: boolean;
+  isInterruptingGeneration: boolean;
+  generationBlockedReason?: string;
   cachedState?: PlanSetupPageCache;
   onCachedStateChange?: (state: PlanSetupPageCache) => void;
 }
@@ -52,6 +56,7 @@ export function DocumentSetup({
   selectedPersonaId,
   onSelectPersonaId,
   onGenerate,
+  onInterruptGeneration,
   onOpenStudyDialog,
   canOpenStudyDialog,
   hasStudySession,
@@ -66,6 +71,9 @@ export function DocumentSetup({
   sceneProfile,
   planStreamEvents,
   planStreamStatus,
+  canInterruptGeneration,
+  isInterruptingGeneration,
+  generationBlockedReason,
   cachedState,
   onCachedStateChange,
 }: DocumentSetupProps) {
@@ -143,9 +151,9 @@ export function DocumentSetup({
         </label>
 
         <div style={styles.actionRow}>
-          <Link href="/scene-setup" style={styles.iconButton} aria-label="打开场景编辑" title="去场景编辑">
+          <AppLink path="/scene-setup" style={styles.iconButton} aria-label="打开场景编辑" title="去场景编辑">
             <MaterialIcon name="account_tree" size={18} />
-          </Link>
+          </AppLink>
           <button
             type="button"
             style={{
@@ -204,9 +212,11 @@ export function DocumentSetup({
           type="button"
           style={{
             ...styles.primaryButton,
-            ...((isBusy || (generationMode === "document" && !file)) ? styles.buttonDisabled : {})
+            ...((isBusy || (generationMode === "document" && !file) || Boolean(generationBlockedReason))
+              ? styles.buttonDisabled
+              : {})
           }}
-          disabled={isBusy || (generationMode === "document" && !file)}
+          disabled={isBusy || (generationMode === "document" && !file) || Boolean(generationBlockedReason)}
           onClick={() => {
             if (generationMode === "document" && !file) return;
             console.info("[vibe-learner] ui:upload_click", {
@@ -221,6 +231,31 @@ export function DocumentSetup({
           <MaterialIcon name="upload" size={18} />
           {isBusy ? "处理中…" : generationMode === "document" ? "生成计划" : "按目标生成"}
         </button>
+
+        {generationBlockedReason ? (
+          <div style={styles.warningCard}>
+            <span style={styles.warningTitle}>开始前需要先修正运行设置</span>
+            <span style={styles.warningText}>{generationBlockedReason}</span>
+            <AppLink path="/settings" style={styles.warningLink}>
+              前往统一设置
+            </AppLink>
+          </div>
+        ) : null}
+
+        {canInterruptGeneration ? (
+          <button
+            type="button"
+            style={{
+              ...styles.secondaryButton,
+              ...(isInterruptingGeneration ? styles.buttonDisabled : {})
+            }}
+            disabled={isInterruptingGeneration}
+            onClick={onInterruptGeneration}
+          >
+            <MaterialIcon name="close" size={18} />
+            {isInterruptingGeneration ? "中断中…" : "中断当前任务"}
+          </button>
+        ) : null}
 
         {shouldShowPlanRounds ? (
           <div style={styles.progressSection}>
@@ -518,9 +553,46 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     gap: 8
   },
+  secondaryButton: {
+    border: "1px solid rgba(180, 35, 24, 0.24)",
+    minHeight: 36,
+    padding: "0 14px",
+    background: "rgba(180, 35, 24, 0.06)",
+    color: "var(--danger, #b42318)",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 13,
+    justifySelf: "start",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8
+  },
   buttonDisabled: {
     opacity: 0.45,
     cursor: "not-allowed"
+  },
+  warningCard: {
+    display: "grid",
+    gap: 6,
+    padding: "12px 14px",
+    border: "1px solid rgba(180, 35, 24, 0.16)",
+    background: "rgba(180, 35, 24, 0.05)",
+  },
+  warningTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "var(--danger, #b42318)",
+  },
+  warningText: {
+    fontSize: 12,
+    lineHeight: 1.6,
+    color: "var(--ink-2)",
+  },
+  warningLink: {
+    width: "fit-content",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--accent)",
   },
   progressSection: {
     display: "grid",
@@ -893,6 +965,11 @@ function summarizePlanRounds(events: StreamEventItem[]) {
       continue;
     }
 
+    if (event.stage === "stream_cancelled") {
+      latestMessage = "生成已中断。";
+      continue;
+    }
+
     if (event.stage === "stream_completed" && !latestMessage) {
       latestMessage = "生成完成。";
     }
@@ -917,6 +994,8 @@ function formatPlanStreamStatus(status: string) {
       return "生成中";
     case "completed":
       return "已完成";
+    case "cancelled":
+      return "已中断";
     case "error":
       return "出错";
     default:
@@ -950,6 +1029,14 @@ function statusBadgeStyle(status: string): CSSProperties {
       color: "var(--danger, #b42318)",
       borderColor: "rgba(180, 35, 24, 0.24)",
       background: "rgba(180, 35, 24, 0.06)",
+    };
+  }
+  if (status === "cancelled") {
+    return {
+      ...styles.progressStat,
+      color: "#8a5a00",
+      borderColor: "rgba(138, 90, 0, 0.24)",
+      background: "rgba(138, 90, 0, 0.06)",
     };
   }
   if (status === "running") {

@@ -21,6 +21,15 @@ export type StudyDialogPreviewState =
       title: string;
       page: number;
       pageCount: number;
+      imageUrl?: string;
+    }
+  | {
+      kind: "generated_image";
+      sourceId: string;
+      title: string;
+      page: number;
+      pageCount: number;
+      imageUrl: string;
     };
 
 export interface PlanSetupPageCache {
@@ -145,13 +154,46 @@ function normalizePreviewState(value: unknown): StudyDialogPreviewState | null {
     return null;
   }
   const raw = value as Record<string, unknown>;
-  const kind = raw.kind === "attachment_pdf" || raw.kind === "attachment_image" ? raw.kind : "document";
+  const sourceId = String(raw.sourceId ?? "");
+  const title = String(raw.title ?? "");
+  const page = Number(raw.page ?? 1);
+  const pageCount = Number(raw.pageCount ?? 0);
+
+  if (raw.kind === "attachment_pdf") {
+    return {
+      kind: "attachment_pdf",
+      sourceId,
+      title,
+      page,
+      pageCount,
+    };
+  }
+  if (raw.kind === "attachment_image") {
+    return {
+      kind: "attachment_image",
+      sourceId,
+      title,
+      page,
+      pageCount,
+      imageUrl: String(raw.imageUrl ?? ""),
+    };
+  }
+  if (raw.kind === "generated_image") {
+    return {
+      kind: "generated_image",
+      sourceId,
+      title,
+      page,
+      pageCount,
+      imageUrl: String(raw.imageUrl ?? ""),
+    };
+  }
   return {
-    kind,
-    sourceId: String(raw.sourceId ?? ""),
-    title: String(raw.title ?? ""),
-    page: Number(raw.page ?? 1),
-    pageCount: Number(raw.pageCount ?? 0),
+    kind: "document",
+    sourceId,
+    title,
+    page,
+    pageCount,
   };
 }
 

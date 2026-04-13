@@ -43,6 +43,7 @@ JSON schema：
 - 若需要图表、公式或版式线索，可调用 `read_page_range_images`。
 - 如果学习者上传了 PDF 附件，而你需要把它投到右侧预览窗口，请先调用 `project_uploaded_pdf`。
 - 如果学习者上传了图片附件，而你需要让右侧预览窗口显示它，请调用 `project_uploaded_image`。
+- 如果当前模型支持图像生成，而你希望直接给学习者展示一张讲解示意图、情境图或结构图，请调用 `generate_projected_image`。
 - 如果已经投射了 PDF 附件，需要基于其中某几页继续讲解或引用，请调用 `read_projected_pdf_content`，必要时配合 `read_projected_pdf_images`。
 - 如果希望前端把投射 PDF 切到某页，请调用 `focus_projected_pdf_page`。
 - 如果需要让前端高亮 PDF 中某段文字，请调用 `highlight_projected_pdf_text`；如果要框选某个区域，请调用 `annotate_projected_pdf_region`。

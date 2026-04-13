@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import Link from "next/link";
 
+import { AppLink } from "../lib/app-navigation";
 import { MaterialIcon, type MaterialIconName } from "../components/material-icon";
 import { TopNav } from "../components/top-nav";
 
@@ -47,6 +47,13 @@ const PAGES = [
     title: "统一设置",
     desc: "管理运行参数与连接。",
   },
+  {
+    num: "07",
+    href: "/model-usage" as const,
+    icon: "bar_chart" as MaterialIconName,
+    title: "用量审计",
+    desc: "查看模型调用与 Token 用量。",
+  },
 ];
 
 export default function HomePage() {
@@ -62,9 +69,9 @@ export default function HomePage() {
 
       <nav className="home-nav-grid">
         {PAGES.map((page) => (
-          <Link
+          <AppLink
             key={page.href}
-            href={page.href as never}
+            path={page.href}
             className="home-nav-item"
             style={styles.navItem}
           >
@@ -79,7 +86,7 @@ export default function HomePage() {
             <span style={styles.navArrow}>
               <MaterialIcon name="arrow_forward" size={18} />
             </span>
-          </Link>
+          </AppLink>
         ))}
       </nav>
     </main>

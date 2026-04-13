@@ -1,18 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 
 import { DocumentSetup } from "./document-setup";
 import { PlanHistory } from "./plan-history";
 import { PlanOverview } from "./plan-overview";
 import { TopNav } from "./top-nav";
+import { useAppNavigator } from "../lib/app-navigation";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
 import type { PlanSetupPageCache } from "../lib/learning-workspace-page-cache";
 import { useLearningWorkspace } from "./learning-workspace-provider";
 
 export function LearningWorkspace() {
-  const router = useRouter();
+  const appNavigator = useAppNavigator();
   const {
     personas,
     selectedPersona,
@@ -25,6 +25,9 @@ export function LearningWorkspace() {
     studySession,
     notice,
     isBusy,
+    isGeneratingPlan,
+    isInterruptingPlan,
+    planGenerationBlockedReason,
     isSnapshotRefreshing,
     planStreamEvents,
     planStreamStatus,
@@ -33,6 +36,7 @@ export function LearningWorkspace() {
     setSelectedSceneLibraryId,
     selectedSceneProfile,
     generatePlanWorkflow,
+    cancelPlanGeneration,
     selectPlan,
     createSessionForActivePlan,
     renamePlanTitle,
@@ -42,6 +46,7 @@ export function LearningWorkspace() {
     renameStudyUnitTitle,
     removePlan,
     refreshPlanSnapshot,
+    handleSwitchSection,
     getPageCache,
     setPageCache,
   } = useLearningWorkspace();
@@ -52,8 +57,32 @@ export function LearningWorkspace() {
       await createSessionForActivePlan();
     }
     if (studySession || activePlan) {
-      router.push("/study");
+      appNavigator.push("/study");
     }
+  };
+
+  const handleStartStudyFromPlan = async (input: {
+    sectionId: string;
+    chapter: string;
+    page: number;
+    scheduleIds: string[];
+  }) => {
+    if (!activePlan || !input.sectionId) {
+      return;
+    }
+    if (input.scheduleIds.length) {
+      await updatePlanProgress({
+        planId: activePlan.id,
+        scheduleIds: input.scheduleIds,
+        status: "in_progress",
+      });
+    }
+    await handleSwitchSection(input.sectionId);
+    appNavigator.push("/study", {
+      plan: activePlan.id,
+      chapter: input.chapter,
+      page: Math.max(1, input.page),
+    });
   };
 
   return (
@@ -79,12 +108,16 @@ export function LearningWorkspace() {
           onSelectSceneLibraryId={setSelectedSceneLibraryId}
           sceneProfile={selectedSceneProfile ?? activePlan?.sceneProfile ?? studySession?.sceneProfile ?? null}
           onGenerate={(input) => { void generatePlanWorkflow(input); }}
+          onInterruptGeneration={() => { void cancelPlanGeneration(); }}
           onOpenStudyDialog={() => { void handleOpenStudyDialog(); }}
           canOpenStudyDialog={Boolean(studySession || activePlan)}
           hasStudySession={Boolean(studySession)}
           onRenameStudyUnitTitle={renameStudyUnitTitle}
           planStreamEvents={planStreamEvents}
           planStreamStatus={planStreamStatus}
+          canInterruptGeneration={isGeneratingPlan}
+          isInterruptingGeneration={isInterruptingPlan}
+          generationBlockedReason={planGenerationBlockedReason}
           cachedState={planSetupCache}
           onCachedStateChange={(nextState: PlanSetupPageCache) => setPageCache("planSetup", nextState)}
         />
@@ -108,6 +141,7 @@ export function LearningWorkspace() {
             onUpdateStudyChapters={updatePlanStudyChapters}
             onUpdatePlanProgress={updatePlanProgress}
             onAnswerPlanningQuestion={answerPlanQuestion}
+            onStartStudyFromPlan={handleStartStudyFromPlan}
           />
 
           <PlanHistory

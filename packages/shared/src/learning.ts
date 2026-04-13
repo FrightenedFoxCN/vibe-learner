@@ -116,6 +116,7 @@ export interface SessionProjectedPdf {
   title: string;
   pageNumber: number;
   pageCount: number;
+  imageUrl?: string;
   overlays: ProjectedPdfOverlay[];
   updatedAt: string;
 }

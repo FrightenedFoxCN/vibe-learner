@@ -1,5 +1,6 @@
 export {
   answerLearningPlanQuestion,
+  cancelStreamRun,
   createLearningPlan,
   createLearningPlanStream,
   deleteLearningPlan,

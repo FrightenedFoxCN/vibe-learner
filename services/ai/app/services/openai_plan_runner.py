@@ -41,6 +41,7 @@ class OpenAIPlanRunner:
         messages: list[dict[str, Any]],
         tool_runtime: PlanToolRuntime,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
     ) -> OpenAIPlanRunnerResult:
         current_messages: list[dict[str, Any]] = [*messages]
         prompt_template = load_prompt_template("openai_plan_runner_prompt.txt")
@@ -60,6 +61,7 @@ class OpenAIPlanRunner:
         content_filter_retries = 0
         pending_recoveries: list[dict[str, object]] = []
         while round_index < max_rounds:
+            _call_interrupt(interrupt_check)
             round_recovery_start = len(get_model_recovery_state())
             _emit_progress(
                 progress_callback,
@@ -81,6 +83,7 @@ class OpenAIPlanRunner:
             else:
                 payload["response_format"] = {"type": "json_object"}
             raw_payload, elapsed_ms = self.request_chat_completion(payload)
+            _call_interrupt(interrupt_check)
             choice = raw_payload["choices"][0]
             message = choice["message"]
             thinking = _extract_reasoning_text(
@@ -112,6 +115,7 @@ class OpenAIPlanRunner:
                     }
                 )
                 for tool_call in tool_calls:
+                    _call_interrupt(interrupt_check)
                     execution = tool_runtime.execute_tool_call(tool_call)
                     _emit_progress(
                         progress_callback,
@@ -347,6 +351,12 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _call_interrupt(callback: Callable[[], None] | None) -> None:
+    if callback is None:
+        return
+    callback()
 
 
 def _now() -> str:

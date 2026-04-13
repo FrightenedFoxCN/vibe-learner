@@ -88,6 +88,7 @@ from app.services.model_recovery import consume_model_recovery_state, reset_mode
 from app.services.study_chat_attachments import prepare_study_chat_attachments
 from app.services.study_chat_attachments import render_pdf_page_png_bytes
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
+from app.services.stream_interrupts import StreamInterruptedError
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -116,6 +117,13 @@ def _into_response_with_model_recoveries(
     if recoveries and "model_recoveries" not in payload:
         payload["model_recoveries"] = [item.model_dump(mode="json") for item in recoveries]
     return response_model.model_validate(payload)
+
+
+def _with_stream_id(stream_id: str, payload: dict[str, object]) -> dict[str, object]:
+    return {
+        **payload,
+        "stream_id": stream_id,
+    }
 
 def _map_openai_upstream_error(detail_prefix: str, exc: RuntimeError) -> HTTPException:
     detail = str(exc)
@@ -557,6 +565,10 @@ def process_document_stream(
 ) -> StreamingResponse:
     force_ocr = payload.force_ocr if payload else False
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
+    interrupt_handle = container.stream_interrupt_registry.create(
+        stream_kind="document_process",
+        target_id=document_id,
+    )
     recorder = StreamReportRecorder(
         store=container.store,
         category=DOCUMENT_PROCESS_STREAM_CATEGORY,
@@ -565,8 +577,10 @@ def process_document_stream(
     )
 
     def report(stage: str, event_payload: dict[str, object]) -> None:
-        recorder.emit(stage, event_payload)
-        event_queue.put({"stage": stage, "payload": event_payload})
+        interrupt_handle.raise_if_cancelled()
+        payload_with_stream = _with_stream_id(interrupt_handle.stream_id, event_payload)
+        recorder.emit(stage, payload_with_stream)
+        event_queue.put({"stage": stage, "payload": payload_with_stream})
 
     def run() -> None:
         try:
@@ -574,42 +588,57 @@ def process_document_stream(
                 document_id,
                 force_ocr=force_ocr,
                 progress_callback=report,
+                interrupt_check=interrupt_handle.raise_if_cancelled,
             )
             recorder.emit(
                 "stream_completed",
-                {
+                _with_stream_id(interrupt_handle.stream_id, {
                     "document_id": document.id,
                     "status": document.status,
-                },
+                }),
             )
             event_queue.put(
                 {
                     "stage": "stream_completed",
-                    "payload": {
+                    "payload": _with_stream_id(interrupt_handle.stream_id, {
                         "document_id": document.id,
                         "status": document.status,
-                    },
+                    }),
                     "document": document.model_dump(mode="json"),
                 }
             )
+        except StreamInterruptedError:
+            payload = _with_stream_id(
+                interrupt_handle.stream_id,
+                {
+                    "document_id": document_id,
+                    "detail": "stream_interrupted",
+                },
+            )
+            recorder.emit("stream_cancelled", payload)
+            event_queue.put(
+                {
+                    "stage": "stream_cancelled",
+                    "payload": payload,
+                }
+            )
         except Exception as exc:
-            recorder.emit(
-                "stream_error",
+            payload = _with_stream_id(
+                interrupt_handle.stream_id,
                 {
                     "document_id": document_id,
                     "error": _stringify_error(exc),
                 },
             )
+            recorder.emit("stream_error", payload)
             event_queue.put(
                 {
                     "stage": "stream_error",
-                    "payload": {
-                        "document_id": document_id,
-                        "error": str(exc),
-                    },
+                    "payload": payload,
                 }
             )
         finally:
+            interrupt_handle.mark_completed()
             event_queue.put(None)
 
     threading.Thread(target=run, daemon=True).start()
@@ -958,6 +987,7 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
         message=payload.message,
         message_kind=payload.message_kind,
         follow_up_id=payload.follow_up_id,
+        hidden_message_prefix=payload.hidden_message_prefix,
     )
 
 
@@ -967,6 +997,7 @@ def study_chat_with_attachments(
     message: str = Form(...),
     message_kind: str = Form("learner"),
     follow_up_id: str = Form(""),
+    hidden_message_prefix: str = Form(""),
     files: list[UploadFile] | None = File(default=None),
 ) -> StudyChatExchangeResponse:
     prepared = prepare_study_chat_attachments(
@@ -980,10 +1011,17 @@ def study_chat_with_attachments(
         message=message,
         message_kind=message_kind,
         follow_up_id=follow_up_id,
+        hidden_message_prefix=hidden_message_prefix,
         learner_attachments=prepared.records,
         attachment_context=prepared.attachment_context,
         learner_multimodal_parts=prepared.multimodal_parts,
     )
+
+
+@router.post("/study-sessions/{session_id}/follow-ups/cancel", response_model=StudySessionResponse)
+def cancel_study_session_follow_ups(session_id: str) -> StudySessionResponse:
+    session = container.study_session_service.cancel_pending_follow_ups(session_id=session_id)
+    return _into_response(StudySessionResponse, session)
 
 
 def _run_study_chat(
@@ -992,6 +1030,7 @@ def _run_study_chat(
     message: str,
     message_kind: str = "learner",
     follow_up_id: str = "",
+    hidden_message_prefix: str = "",
     learner_attachments=None,
     attachment_context: str = "",
     learner_multimodal_parts=None,
@@ -1061,6 +1100,7 @@ def _run_study_chat(
         plan_id=active_plan.id if active_plan is not None else session.plan_id,
         transient_attachments=learner_attachments or [],
         multimodal_enabled=container.model_provider.supports_chat_page_image_tools(),
+        model_provider=container.model_provider,
     )
     session_state_context = _resolve_session_state_context(
         session_tool_runtime=session_tool_runtime,
@@ -1070,11 +1110,15 @@ def _run_study_chat(
         session=session,
         session_state_context=session_state_context,
     )
+    model_message = _compose_hidden_prefixed_message(
+        message=message,
+        hidden_message_prefix=hidden_message_prefix,
+    )
     try:
         response = container.pedagogy_orchestrator.generate_chat_reply(
             session_id=session_id,
             persona=persona,
-            message=message,
+            message=model_message,
             section_id=session.section_id,
             section_title=session.section_title,
             theme_hint=session.theme_hint,
@@ -1130,6 +1174,20 @@ def _run_study_chat(
     return StudyChatExchangeResponse(
         **response.model_dump(mode="json"),
         session=_into_response(StudySessionResponse, session),
+    )
+
+
+def _compose_hidden_prefixed_message(*, message: str, hidden_message_prefix: str) -> str:
+    visible_message = message.strip()
+    hidden_prefix = hidden_message_prefix.strip()
+    if not hidden_prefix:
+        return visible_message
+    if not visible_message:
+        return hidden_prefix
+    return (
+        "以下内容是上一轮遗留的隐藏衔接上下文，只用于帮助你承接本轮，不要把它当成学习者这次显式发言来逐条复述：\n"
+        f"{hidden_prefix}\n\n"
+        f"学习者这一轮真正发出的新消息：{visible_message}"
     )
 
 
@@ -1583,6 +1641,10 @@ def create_learning_plan_stream(
         )
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
     stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
+    interrupt_handle = container.stream_interrupt_registry.create(
+        stream_kind="learning_plan",
+        target_id=stream_document_id,
+    )
     recorder = StreamReportRecorder(
         store=container.store,
         category=LEARNING_PLAN_STREAM_CATEGORY,
@@ -1591,8 +1653,10 @@ def create_learning_plan_stream(
     )
 
     def report(stage: str, event_payload: dict[str, object]) -> None:
-        recorder.emit(stage, event_payload)
-        event_queue.put({"stage": stage, "payload": event_payload})
+        interrupt_handle.raise_if_cancelled()
+        payload_with_stream = _with_stream_id(interrupt_handle.stream_id, event_payload)
+        recorder.emit(stage, payload_with_stream)
+        event_queue.put({"stage": stage, "payload": payload_with_stream})
 
     def run() -> None:
         reset_model_recovery_state()
@@ -1612,30 +1676,46 @@ def create_learning_plan_stream(
                 persona=persona,
                 debug_report=debug_report,
                 progress_callback=report,
+                interrupt_check=interrupt_handle.raise_if_cancelled,
             )
             recorder.emit(
                 "stream_completed",
-                {
+                _with_stream_id(interrupt_handle.stream_id, {
                     "document_id": payload.document_id,
                     "plan_id": plan.id,
                     "creation_mode": plan.creation_mode,
-                },
+                }),
             )
             event_queue.put(
                 {
                     "stage": "stream_completed",
-                    "payload": {
+                    "payload": _with_stream_id(interrupt_handle.stream_id, {
                         "document_id": payload.document_id,
                         "plan_id": plan.id,
                         "creation_mode": plan.creation_mode,
-                    },
+                    }),
                     "plan": plan.model_dump(mode="json"),
+                }
+            )
+        except StreamInterruptedError:
+            payload_with_stream = _with_stream_id(
+                interrupt_handle.stream_id,
+                {
+                    "document_id": payload.document_id,
+                    "detail": "stream_interrupted",
+                },
+            )
+            recorder.emit("stream_cancelled", payload_with_stream)
+            event_queue.put(
+                {
+                    "stage": "stream_cancelled",
+                    "payload": payload_with_stream,
                 }
             )
         except RuntimeError as exc:
             http_error = _map_plan_generation_error(exc)
-            recorder.emit(
-                "stream_error",
+            payload_with_stream = _with_stream_id(
+                interrupt_handle.stream_id,
                 {
                     "document_id": payload.document_id,
                     "detail": http_error.detail,
@@ -1644,36 +1724,30 @@ def create_learning_plan_stream(
                     "retry_attempts": _runtime_error_retry_attempts(exc),
                 },
             )
+            recorder.emit("stream_error", payload_with_stream)
             event_queue.put(
                 {
                     "stage": "stream_error",
-                    "payload": {
-                        "document_id": payload.document_id,
-                        "detail": http_error.detail,
-                        "status_code": http_error.status_code,
-                        "internal_error_code": str(exc),
-                        "retry_attempts": _runtime_error_retry_attempts(exc),
-                    },
+                    "payload": payload_with_stream,
                 }
             )
         except Exception as exc:
-            recorder.emit(
-                "stream_error",
+            payload_with_stream = _with_stream_id(
+                interrupt_handle.stream_id,
                 {
                     "document_id": payload.document_id,
                     "detail": str(exc),
                 },
             )
+            recorder.emit("stream_error", payload_with_stream)
             event_queue.put(
                 {
                     "stage": "stream_error",
-                    "payload": {
-                        "document_id": payload.document_id,
-                        "detail": str(exc),
-                    },
+                    "payload": payload_with_stream,
                 }
             )
         finally:
+            interrupt_handle.mark_completed()
             event_queue.put(None)
 
     threading.Thread(target=run, daemon=True).start()
@@ -1686,6 +1760,18 @@ def create_learning_plan_stream(
             yield json.dumps(item, ensure_ascii=False) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@router.post("/stream-runs/{stream_id}/cancel")
+def cancel_stream_run(stream_id: str) -> dict[str, object]:
+    handle = container.stream_interrupt_registry.cancel(stream_id=stream_id)
+    return {
+        "stream_id": handle.stream_id,
+        "stream_kind": handle.stream_kind,
+        "target_id": handle.target_id,
+        "cancelled": handle.cancelled(),
+        "cancelled_at": handle.cancelled_at,
+    }
 
 
 @router.get("/learning-plans/{plan_id}", response_model=LearningPlanResponse)

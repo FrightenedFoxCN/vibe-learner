@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
 import type { Citation, DocumentRecord, DocumentSection, LearningPlan, StudySessionRecord, StudyUnit } from "@vibe-learner/shared";
@@ -10,6 +9,7 @@ import { useLearningWorkspace } from "./learning-workspace-provider";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
+import { AppLink } from "../lib/app-navigation";
 import { getAiBaseUrl } from "../lib/runtime-config";
 import type {
   StudyConsolePageCache,
@@ -42,6 +42,7 @@ export function StudyDialogPage() {
     response,
     notice,
     isBusy,
+    isDialogueInterrupted,
     chatImageUploadEnabled,
     createSessionForActivePlan,
     handleAsk,
@@ -51,6 +52,7 @@ export function StudyDialogPage() {
     handleSwitchSection,
     handleSubmitQuestionAttempt,
     handleResolvePlanConfirmation,
+    interruptDialogue,
     getPageCache,
     setPageCache,
   } = useLearningWorkspace();
@@ -329,20 +331,44 @@ export function StudyDialogPage() {
 
   useEffect(() => {
     if (!projectedPdf) return;
-    setPreviewState({
-      kind:
-        projectedPdf.sourceKind === "attachment_pdf"
-          ? "attachment_pdf"
-          : projectedPdf.sourceKind === "attachment_image"
-            ? "attachment_image"
-            : "document",
-      sourceId: projectedPdf.sourceId,
-      title: projectedPdf.title,
-      page: projectedPdf.pageNumber,
-      pageCount: projectedPdf.pageCount,
-    });
+    if (projectedPdf.sourceKind === "attachment_pdf") {
+      setPreviewState({
+        kind: "attachment_pdf",
+        sourceId: projectedPdf.sourceId,
+        title: projectedPdf.title,
+        page: projectedPdf.pageNumber,
+        pageCount: projectedPdf.pageCount,
+      });
+    } else if (projectedPdf.sourceKind === "attachment_image") {
+      setPreviewState({
+        kind: "attachment_image",
+        sourceId: projectedPdf.sourceId,
+        title: projectedPdf.title,
+        page: projectedPdf.pageNumber,
+        pageCount: projectedPdf.pageCount,
+        imageUrl: projectedPdf.imageUrl || "",
+      });
+    } else if (projectedPdf.sourceKind === "generated_image") {
+      setPreviewState({
+        kind: "generated_image",
+        sourceId: projectedPdf.sourceId,
+        title: projectedPdf.title,
+        page: projectedPdf.pageNumber,
+        pageCount: projectedPdf.pageCount,
+        imageUrl: projectedPdf.imageUrl || "",
+      });
+    } else {
+      setPreviewState({
+        kind: "document",
+        sourceId: projectedPdf.sourceId,
+        title: projectedPdf.title,
+        page: projectedPdf.pageNumber,
+        pageCount: projectedPdf.pageCount,
+      });
+    }
     setIsPdfPreviewOpen(true);
   }, [
+    projectedPdf?.imageUrl,
     projectedPdf?.pageNumber,
     projectedPdf?.pageCount,
     projectedPdf?.sourceId,
@@ -383,6 +409,8 @@ export function StudyDialogPage() {
   const previewFileHref =
     effectivePreview?.kind === "document"
       ? `${AI_BASE_URL()}/documents/${effectivePreview.sourceId}/file`
+      : effectivePreview?.kind === "generated_image"
+        ? effectivePreview.imageUrl
       : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
         ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
         : "";
@@ -390,11 +418,17 @@ export function StudyDialogPage() {
   const previewFileUrl =
     effectivePreview?.kind === "document"
       ? `${AI_BASE_URL()}/documents/${effectivePreview.sourceId}/file`
+      : effectivePreview?.kind === "generated_image"
+        ? effectivePreview.imageUrl
       : (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") && studySession?.id
         ? `${AI_BASE_URL()}/study-sessions/${studySession.id}/attachments/${effectivePreview.sourceId}/file`
         : "";
   const previewOverlays =
-    (effectivePreview?.kind === "attachment_pdf" || effectivePreview?.kind === "attachment_image") &&
+    (
+      effectivePreview?.kind === "attachment_pdf" ||
+      effectivePreview?.kind === "attachment_image" ||
+      effectivePreview?.kind === "generated_image"
+    ) &&
     projectedPdf?.sourceId === effectivePreview.sourceId
       ? projectedPdf.overlays.filter((item) => item.pageNumber === previewPage)
       : [];
@@ -444,7 +478,7 @@ export function StudyDialogPage() {
           </button>
         ) : null}
 
-        <Link href="/plan" style={styles.toolbarLink}>返回计划生成</Link>
+        <AppLink path="/plan" style={styles.toolbarLink}>返回计划生成</AppLink>
         {notice ? <span style={styles.notice}>{notice}</span> : null}
       </div>
 
@@ -468,6 +502,8 @@ export function StudyDialogPage() {
             persona={selectedPersona}
             sceneProfile={activeSceneProfile}
             pendingFollowUps={studySession?.pendingFollowUps ?? []}
+            isDialogueInterrupted={isDialogueInterrupted}
+            onInterruptDialogue={() => { void interruptDialogue(); }}
             affinityState={studySession?.affinityState}
             projectedPdf={studySession?.projectedPdf ?? null}
             planConfirmations={studySession?.planConfirmations ?? []}
@@ -493,8 +529,10 @@ export function StudyDialogPage() {
                     ? "会话材料"
                     : effectivePreview.kind === "attachment_image"
                       ? "会话图片"
+                      : effectivePreview.kind === "generated_image"
+                        ? "AI 生成图像"
                       : "教材材料"}
-                  {effectivePreview.kind === "attachment_image"
+                  {effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image"
                     ? " · 可框选引用与标注"
                     : ` · 第 ${previewPage} 页${previewPageCount > 0 ? ` / ${previewPageCount}` : ""}`}
                 </span>
@@ -508,12 +546,16 @@ export function StudyDialogPage() {
                   }}
                   onClick={() => {
                     if (!effectivePreview || previewPage <= 1) return;
-                    if (effectivePreview.kind === "attachment_image") return;
+                    if (effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image") return;
                     const nextPage = previewPage - 1;
                     setPdfPage(nextPage);
                     setPreviewState({ ...effectivePreview, page: nextPage });
                   }}
-                  disabled={previewPage <= 1 || effectivePreview.kind === "attachment_image"}
+                  disabled={
+                    previewPage <= 1 ||
+                    effectivePreview.kind === "attachment_image" ||
+                    effectivePreview.kind === "generated_image"
+                  }
                 >
                   上一页
                 </button>
@@ -525,13 +567,17 @@ export function StudyDialogPage() {
                   }}
                   onClick={() => {
                     if (!effectivePreview) return;
-                    if (effectivePreview.kind === "attachment_image") return;
+                    if (effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image") return;
                     if (previewPageCount > 0 && previewPage >= previewPageCount) return;
                     const nextPage = previewPage + 1;
                     setPdfPage(nextPage);
                     setPreviewState({ ...effectivePreview, page: nextPage });
                   }}
-                  disabled={effectivePreview.kind === "attachment_image" || (previewPageCount > 0 && previewPage >= previewPageCount)}
+                  disabled={
+                    effectivePreview.kind === "attachment_image" ||
+                    effectivePreview.kind === "generated_image" ||
+                    (previewPageCount > 0 && previewPage >= previewPageCount)
+                  }
                 >
                   下一页
                 </button>
@@ -552,7 +598,19 @@ export function StudyDialogPage() {
             <div style={styles.previewStage}>
               {previewFileUrl ? (
                 <div style={styles.previewCanvas}>
-                  {effectivePreview?.kind === "attachment_image" ? (
+                  {effectivePreview?.kind === "generated_image" ? (
+                    <ProjectedImageViewer
+                      fileUrl={previewFileUrl}
+                      title={previewTitle}
+                      overlays={previewOverlays}
+                      onInsertReference={(text) => {
+                        setPendingComposerInsert({
+                          id: `${Date.now()}:generated-image:${text.slice(0, 24)}`,
+                          text,
+                        });
+                      }}
+                    />
+                  ) : effectivePreview?.kind === "attachment_image" ? (
                     <ProjectedImageViewer
                       fileUrl={previewFileUrl}
                       title={previewTitle}
@@ -602,7 +660,7 @@ export function StudyDialogPage() {
             style={styles.pdfDock}
             onClick={() => setIsPdfPreviewOpen(true)}
           >
-            材料预览 · {effectivePreview.kind === "attachment_image" ? "图像" : `p.${previewPage}`}
+            材料预览 · {(effectivePreview.kind === "attachment_image" || effectivePreview.kind === "generated_image") ? "图像" : `p.${previewPage}`}
           </button>
         )
       ) : (

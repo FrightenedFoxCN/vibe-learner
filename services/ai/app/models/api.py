@@ -557,6 +557,7 @@ class StudyChatRequest(BaseModel):
     message: str
     message_kind: str = "learner"
     follow_up_id: str = ""
+    hidden_message_prefix: str = ""
 
 
 class StudyChatResponse(BaseModel):
