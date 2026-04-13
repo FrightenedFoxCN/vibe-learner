@@ -3,9 +3,12 @@ from pathlib import Path
 from app.services.document_parser import DocumentParser
 from app.core.logging import get_logger
 from app.core.settings import Settings
+from app.persistence.database import Database
+from app.persistence.storage import StorageManager
+from app.persistence.migrate_local_data import migrate_from_legacy_store
 from app.services.model_provider import MockModelProvider, OpenAIModelProvider
 from app.services.documents import DocumentService
-from app.services.local_store import LocalJsonStore
+from app.services.local_store import LegacyLocalJsonStore, LocalJsonStore
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
 from app.services.plans import LearningPlanService
@@ -19,6 +22,7 @@ from app.services.scene_setup import SceneSetupService
 from app.services.session_scene import SessionSceneService
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_sessions import StudySessionService
+from app.services.storage_lifecycle import StorageLifecycleService
 from app.services.token_usage import TokenUsageService
 
 logger = get_logger("vibe_learner.bootstrap")
@@ -26,13 +30,25 @@ logger = get_logger("vibe_learner.bootstrap")
 
 class Container:
     def __init__(self) -> None:
-        data_root = Path(__file__).resolve().parents[2] / "data"
         self.base_settings = Settings.from_env()
-        self.store = LocalJsonStore(data_root)
-        self.document_parser = DocumentParser()
+        data_root = Path(self.base_settings.storage_root).expanduser() if self.base_settings.storage_root else (
+            Path(__file__).resolve().parents[2] / "data"
+        )
+        self.storage = StorageManager(data_root)
+        self.database = Database(self.base_settings.database_url)
+        self.database.create_schema()
+        self.store = LocalJsonStore(self.database, self.storage)
+        self.document_parser = DocumentParser(self.storage.ensure_runtime_temp_root())
+        if self.base_settings.auto_migrate_local_data and self.store.count_bucket("documents") == 0:
+            migrate_from_legacy_store(
+                LegacyLocalJsonStore(data_root),
+                self.store,
+                TokenUsageService(self.database),
+                data_root,
+            )
         self.model_tool_config_service = ModelToolConfigService(self.store)
         self.runtime_settings_service = RuntimeSettingsService(self.store, self.base_settings)
-        self.token_usage_service = TokenUsageService(data_root)
+        self.token_usage_service = TokenUsageService(self.database)
         self.scene_setup_service = SceneSetupService(self.store)
         self.scene_library_service = SceneLibraryService(self.store)
         self.reusable_scene_node_library_service = ReusableSceneNodeLibraryService(self.store)
@@ -53,6 +69,10 @@ class Container:
             self.model_provider,
         )
         self.study_session_service = StudySessionService(self.store)
+        self.storage_lifecycle_service = StorageLifecycleService(
+            self.store,
+            self.token_usage_service,
+        )
         self.pedagogy_orchestrator = PedagogyOrchestrator(
             model_provider=self.model_provider,
             performance_mapper=self.performance_mapper,

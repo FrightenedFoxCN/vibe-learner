@@ -1,19 +1,18 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 from uuid import uuid4
 
 from app.models.domain import TokenUsageRecord
+from app.persistence.database import Database
+from app.persistence.models import TokenUsageRow
 
 
 class TokenUsageService:
-    """Appends and reads per-request token usage records stored in a JSONL file."""
+    """Stores per-request token usage records in the primary database."""
 
-    def __init__(self, data_root: Path) -> None:
-        self._path = data_root / "token_usage.jsonl"
-        data_root.mkdir(parents=True, exist_ok=True)
+    def __init__(self, db: Database) -> None:
+        self._db = db
 
     def record(
         self,
@@ -33,20 +32,36 @@ class TokenUsageService:
             total_tokens=total_tokens,
             created_at=datetime.now(tz=timezone.utc).isoformat(),
         )
-        with self._path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(entry.model_dump(mode="json"), ensure_ascii=False) + "\n")
+        self.record_entry(entry)
+
+    def record_entry(self, entry: TokenUsageRecord) -> None:
+        payload = entry.model_dump(mode="json")
+        with self._db.session() as session:
+            session.add(
+                TokenUsageRow(
+                    id=entry.id,
+                    feature=entry.feature,
+                    model=entry.model,
+                    prompt_tokens=entry.prompt_tokens,
+                    completion_tokens=entry.completion_tokens,
+                    total_tokens=entry.total_tokens,
+                    created_at=entry.created_at,
+                    payload=payload,
+                )
+            )
 
     def load_all(self) -> list[TokenUsageRecord]:
-        if not self._path.exists():
-            return []
-        records: list[TokenUsageRecord] = []
-        with self._path.open(encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    records.append(TokenUsageRecord.model_validate(json.loads(line)))
-                except Exception:
-                    pass
-        return records
+        with self._db.session() as session:
+            rows = (
+                session.query(TokenUsageRow)
+                .order_by(TokenUsageRow.created_at.desc(), TokenUsageRow.id.desc())
+                .all()
+            )
+            return [TokenUsageRecord.model_validate(row.payload or {}) for row in rows]
+
+    def clear(self) -> int:
+        with self._db.session() as session:
+            rows = session.query(TokenUsageRow).all()
+            for row in rows:
+                session.delete(row)
+            return len(rows)

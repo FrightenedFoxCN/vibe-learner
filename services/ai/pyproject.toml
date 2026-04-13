@@ -5,11 +5,14 @@ description = "AI service for persona-aware learning orchestration"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
+  "alembic>=1.16.0",
   "fastapi>=0.116.0",
   "litellm>=1.82.1",
   "PyMuPDF>=1.26.0",
   "pydantic>=2.11.0",
+  "psycopg[binary]>=3.2.0",
   "python-multipart>=0.0.20",
+  "SQLAlchemy>=2.0.41",
   "uvicorn>=0.35.0"
 ]
 

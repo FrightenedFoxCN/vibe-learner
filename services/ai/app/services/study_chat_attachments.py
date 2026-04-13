@@ -305,7 +305,7 @@ def _store_session_attachment_file(
     filename: str,
     raw_bytes: bytes,
 ) -> Path:
-    attachment_root = store.root / "chat_attachments" / session_id
+    attachment_root = store.chat_attachment_root / session_id
     attachment_root.mkdir(parents=True, exist_ok=True)
     safe_name = _sanitize_filename(filename)
     path = attachment_root / f"{attachment_id}-{safe_name}"

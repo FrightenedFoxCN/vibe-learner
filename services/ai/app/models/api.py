@@ -356,6 +356,37 @@ class RuntimeSettingsProbeResponse(BaseModel):
     error: str = ""
 
 
+class StorageBucketSummaryResponse(BaseModel):
+    bucket: str
+    layer: str
+    lifecycle: str
+    item_count: int
+    size_bytes: int = 0
+    mutable: bool
+    path: str = ""
+    description: str = ""
+
+
+class StorageSummaryResponse(BaseModel):
+    buckets: list[StorageBucketSummaryResponse]
+    orphaned_uploads: list[str] = Field(default_factory=list)
+
+
+class StorageCleanupRequest(BaseModel):
+    buckets: list[str] = Field(default_factory=list)
+    document_id: str = ""
+    session_id: str = ""
+
+
+class StorageCleanupItemResponse(BaseModel):
+    bucket: str
+    removed_count: int
+
+
+class StorageCleanupResponse(BaseModel):
+    items: list[StorageCleanupItemResponse]
+
+
 class PlanToolCallTraceResponse(PlanToolCallTraceRecord):
     pass
 

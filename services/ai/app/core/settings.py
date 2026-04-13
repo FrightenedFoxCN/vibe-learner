@@ -7,6 +7,9 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Settings:
+    database_url: str = "sqlite:///services/ai/data/vibe_learner.db"
+    storage_root: str = ""
+    auto_migrate_local_data: bool = False
     plan_provider: str = "mock"
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
@@ -38,7 +41,15 @@ class Settings:
         _load_dotenv()
         global_api_key = os.getenv("OPENAI_API_KEY", "").strip()
         global_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+        project_data_root = Path(__file__).resolve().parents[2] / "data"
+        default_database_url = f"sqlite:///{project_data_root / 'vibe_learner.db'}"
         return cls(
+            database_url=os.getenv("DATABASE_URL", default_database_url).strip() or default_database_url,
+            storage_root=os.getenv("VIBE_LEARNER_STORAGE_ROOT", "").strip(),
+            auto_migrate_local_data=_to_bool(
+                os.getenv("VIBE_LEARNER_AUTO_MIGRATE_LOCAL_DATA", "false"),
+                default=False,
+            ),
             plan_provider=_normalize_plan_provider(
                 os.getenv("VIBE_LEARNER_PLAN_PROVIDER", "mock").strip().lower() or "mock"
             ),

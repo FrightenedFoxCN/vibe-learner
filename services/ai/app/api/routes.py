@@ -68,6 +68,9 @@ from app.models.api import (
     StudySessionPlanConfirmationDecisionRequest,
     StudySessionPlanConfirmationDecisionResponse,
     StudyQuestionAttemptRequest,
+    StorageCleanupRequest,
+    StorageCleanupResponse,
+    StorageSummaryResponse,
     StudySessionListResponse,
     StudySessionResponse,
     UpdatePersonaRequest,
@@ -206,6 +209,27 @@ def _map_persona_card_generation_error(exc: RuntimeError) -> HTTPException:
 @router.get("/health")
 def healthcheck() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@router.get("/storage/summary", response_model=StorageSummaryResponse)
+def get_storage_summary() -> StorageSummaryResponse:
+    return StorageSummaryResponse(
+        buckets=container.storage_lifecycle_service.summarize(),
+        orphaned_uploads=container.storage_lifecycle_service.list_orphaned_uploads(),
+    )
+
+
+@router.post("/storage/cleanup", response_model=StorageCleanupResponse)
+def cleanup_storage(payload: StorageCleanupRequest) -> StorageCleanupResponse:
+    try:
+        items = container.storage_lifecycle_service.cleanup(
+            buckets=payload.buckets,
+            document_id=payload.document_id,
+            session_id=payload.session_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return StorageCleanupResponse(items=items)
 
 
 @router.get("/model-tools/config", response_model=ModelToolConfigResponse)

@@ -63,6 +63,9 @@ class ParsedPage:
 
 
 class DocumentParser:
+    def __init__(self, runtime_temp_root: Path | None = None) -> None:
+        self.runtime_temp_root = runtime_temp_root
+
     def parse(
         self,
         *,
@@ -730,7 +733,11 @@ class DocumentParser:
         return merged
 
     def _ocr_page(self, page: fitz.Page) -> str:
-        with tempfile.TemporaryDirectory(prefix="vibe-learner-ocr-") as temp_dir:
+        temp_dir_kwargs: dict[str, str] = {"prefix": "vibe-learner-ocr-"}
+        if self.runtime_temp_root is not None:
+            self.runtime_temp_root.mkdir(parents=True, exist_ok=True)
+            temp_dir_kwargs["dir"] = str(self.runtime_temp_root)
+        with tempfile.TemporaryDirectory(**temp_dir_kwargs) as temp_dir:
             image_path = Path(temp_dir) / "page.png"
             pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
             pixmap.save(image_path)

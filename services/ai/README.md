@@ -18,6 +18,18 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
+Database migration:
+
+```bash
+alembic upgrade head
+```
+
+Legacy JSON data import:
+
+```bash
+uv run python -m app.persistence.migrate_local_data
+```
+
 Plan generation and chapter chat support real LLM calls when configured.
 
 ```bash
@@ -27,6 +39,7 @@ cp .env.example .env
 Example:
 
 ```bash
+DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:5432/vibe_learner
 VIBE_LEARNER_PLAN_PROVIDER=litellm
 OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=http://127.0.0.1:4000
@@ -43,6 +56,14 @@ OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_CHAT_MODEL_MULTIMODAL=false
 OPENAI_TIMEOUT_SECONDS=30
 ```
+
+Storage notes:
+
+- primary structured data now lives in PostgreSQL through SQLAlchemy ORM
+- uploaded PDFs remain on disk under `services/ai/data/uploads/`
+- session attachment temp files live under `services/ai/data/chat_attachments/`
+- OCR/runtime temp files live under `services/ai/data/_tmp/`
+- debug traces and stream reports are now database-backed cache buckets and can be inspected/cleared through `/storage/summary` and `/storage/cleanup`
 
 Without those vars, the service falls back to the mock planner.
 
