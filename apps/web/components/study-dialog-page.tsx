@@ -77,11 +77,6 @@ export function StudyDialogPage() {
   const chapterOptions = activePlan?.studyChapters ?? [];
   const currentChapter = selectedChapter || chapterOptions[0] || "";
   const activeSceneProfile = studySession?.sceneProfile ?? activePlan?.sceneProfile ?? null;
-  const activeSceneSourceLabel = studySession?.sceneProfile
-    ? "会话副本"
-    : activePlan?.sceneProfile
-      ? "学习计划"
-      : "";
   const projectedPdf = studySession?.projectedPdf ?? null;
   const currentChapterStudyUnit = resolveStudyUnitByChapter(activePlan, currentChapter);
   const subsectionOptions = resolveSubsectionsForStudyUnit(activeDocument, currentChapterStudyUnit);
@@ -411,7 +406,6 @@ export function StudyDialogPage() {
       {/* ── Heading ── */}
       <div style={styles.heading}>
         <h1 style={styles.pageTitle}>章节对话</h1>
-        <p style={styles.pageDesc}>让对话成为主界面；章节切换、练习反馈与教材引用围绕同一个会话流展开，教材预览统一收进右侧浮窗。</p>
       </div>
 
       {/* ── Toolbar ── */}
@@ -473,8 +467,6 @@ export function StudyDialogPage() {
             session={response}
             persona={selectedPersona}
             sceneProfile={activeSceneProfile}
-            sceneSourceLabel={activeSceneSourceLabel}
-            sceneInstanceId={studySession?.sceneInstanceId ?? ""}
             pendingFollowUps={studySession?.pendingFollowUps ?? []}
             affinityState={studySession?.affinityState}
             projectedPdf={studySession?.projectedPdf ?? null}

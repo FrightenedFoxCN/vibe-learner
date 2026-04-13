@@ -9,7 +9,14 @@ use std::time::{Duration, Instant};
 
 use argon2::{Algorithm, Argon2, Params, Version};
 use serde::Serialize;
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::{Emitter, Manager, Runtime};
+
+const DESKTOP_VIEW_MENU_ID: &str = "desktop-view-menu";
+const DESKTOP_VIEW_TOGGLE_NAV_ID: &str = "desktop-view-toggle-sidebar";
+const DESKTOP_VIEW_TOGGLE_DEBUG_ID: &str = "desktop-view-toggle-debug-overlay";
+const DESKTOP_VIEW_TOGGLE_NAV_EVENT: &str = "desktop-view-toggle-sidebar";
+const DESKTOP_VIEW_TOGGLE_DEBUG_EVENT: &str = "desktop-view-toggle-debug-overlay";
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -225,6 +232,92 @@ fn stronghold_key_deriver(password: &str) -> Vec<u8> {
     output.to_vec()
 }
 
+fn build_desktop_view_submenu<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<Submenu<R>> {
+    let toggle_nav = MenuItem::with_id(
+        app,
+        DESKTOP_VIEW_TOGGLE_NAV_ID,
+        "切换导航侧栏",
+        true,
+        Some("CmdOrCtrl+Alt+1"),
+    )?;
+    let toggle_debug = MenuItem::with_id(
+        app,
+        DESKTOP_VIEW_TOGGLE_DEBUG_ID,
+        "切换调试浮窗",
+        true,
+        Some("CmdOrCtrl+Alt+D"),
+    )?;
+    Submenu::with_id_and_items(
+        app,
+        DESKTOP_VIEW_MENU_ID,
+        "View",
+        true,
+        &[&toggle_nav, &toggle_debug],
+    )
+}
+
+fn append_desktop_view_items<R: Runtime>(
+    submenu: &Submenu<R>,
+    app: &tauri::AppHandle<R>,
+) -> tauri::Result<()> {
+    let separator = PredefinedMenuItem::separator(app)?;
+    let toggle_nav = MenuItem::with_id(
+        app,
+        DESKTOP_VIEW_TOGGLE_NAV_ID,
+        "切换导航侧栏",
+        true,
+        Some("CmdOrCtrl+Alt+1"),
+    )?;
+    let toggle_debug = MenuItem::with_id(
+        app,
+        DESKTOP_VIEW_TOGGLE_DEBUG_ID,
+        "切换调试浮窗",
+        true,
+        Some("CmdOrCtrl+Alt+D"),
+    )?;
+    submenu.append(&separator)?;
+    submenu.append(&toggle_nav)?;
+    submenu.append(&toggle_debug)?;
+    Ok(())
+}
+
+fn install_desktop_menu<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
+    let menu = Menu::default(app)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        let existing_view_menu = menu.items()?.into_iter().find_map(|item| {
+            let submenu = item.as_submenu()?.clone();
+            match submenu.text() {
+                Ok(text) if text == "View" => Some(submenu),
+                _ => None,
+            }
+        });
+
+        if let Some(view_menu) = existing_view_menu {
+            append_desktop_view_items(&view_menu, app)?;
+        } else {
+            let view_menu = build_desktop_view_submenu(app)?;
+            menu.insert(&view_menu, 2)?;
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let view_menu = build_desktop_view_submenu(app)?;
+        menu.insert(&view_menu, 2)?;
+    }
+
+    app.set_menu(menu)?;
+    Ok(())
+}
+
+fn emit_desktop_view_event<R: Runtime>(app: &tauri::AppHandle<R>, event_name: &str) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.emit(event_name, ());
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_stronghold::Builder::new(|password| {
@@ -232,6 +325,7 @@ pub fn run() {
         }).build())
         .invoke_handler(tauri::generate_handler![desktop_runtime_config])
         .setup(|app| {
+            install_desktop_menu(&app.handle())?;
             let state = build_desktop_state(&app.handle())
                 .map_err(|err| tauri::Error::Anyhow(std::io::Error::other(err).into()))?;
             app.manage(state);
@@ -246,6 +340,13 @@ pub fn run() {
             let app_handle = window_handle.app_handle();
             let state = app_handle.state::<DesktopAppState>();
             let _ = inject_runtime_config_webview(window, state.inner());
+        })
+        .on_menu_event(|app, event| {
+            if event.id() == DESKTOP_VIEW_TOGGLE_NAV_ID {
+                emit_desktop_view_event(app, DESKTOP_VIEW_TOGGLE_NAV_EVENT);
+            } else if event.id() == DESKTOP_VIEW_TOGGLE_DEBUG_ID {
+                emit_desktop_view_event(app, DESKTOP_VIEW_TOGGLE_DEBUG_EVENT);
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running vibe learner desktop shell");

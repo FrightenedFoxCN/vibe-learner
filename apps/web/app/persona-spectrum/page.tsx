@@ -46,6 +46,7 @@ import {
   generatePersonaCards,
   listPersonaCards,
 } from "../../lib/data/persona-cards";
+import { broadcastPersonaLibraryUpdated } from "../../lib/persona-library-sync";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
   worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
@@ -271,13 +272,13 @@ export default function PersonaSpectrumPage() {
   const debugSnapshot = useMemo(
     () => ({
       title: "人格页调试面板",
-      subtitle: "显示当前编辑区、生成结果、卡片库和各类错误，便于核对人格生成和写回链路。",
+      subtitle: "查看草稿、生成结果和错误。",
       error: [loadError, saveError, assistError, configError, cardError, personaLibraryError]
         .filter(Boolean)
         .join("；"),
       summary: [
         { label: "加载状态", value: loadError ? "异常" : "就绪" },
-        { label: "当前人格", value: selectedPersona?.name || "-" },
+        { label: "人格", value: selectedPersona?.name || "-" },
         { label: "槽位数", value: String(draft.slots.length) },
         { label: "生成卡片", value: String(generatedCards.length) },
         { label: "卡片库", value: String(personaCards.length) },
@@ -579,6 +580,7 @@ export default function PersonaSpectrumPage() {
       mergePersonaIntoList(created);
       const latest = await listPersonas();
       setPersonas(latest);
+      broadcastPersonaLibraryUpdated();
       setSelectedPersonaId(created.id);
       setDraft(personaToDraft(created));
       dismissSystemPromptSuggestion();
@@ -604,6 +606,7 @@ export default function PersonaSpectrumPage() {
       mergePersonaIntoList(updated);
       const latest = await listPersonas();
       setPersonas(latest);
+      broadcastPersonaLibraryUpdated();
       setSelectedPersonaId(updated.id);
       setDraft(personaToDraft(updated));
       dismissSystemPromptSuggestion();
@@ -857,6 +860,7 @@ export default function PersonaSpectrumPage() {
       mergePersonaIntoList(created);
       const latest = await listPersonas();
       setPersonas(latest);
+      broadcastPersonaLibraryUpdated();
       setSelectedPersonaId(created.id);
       setDraft(personaToDraft(created));
       dismissSystemPromptSuggestion();
@@ -885,6 +889,7 @@ export default function PersonaSpectrumPage() {
       await deletePersona(persona.id);
       const latest = await listPersonas();
       setPersonas(latest);
+      broadcastPersonaLibraryUpdated();
       const nextSelectedId =
         selectedPersonaId === persona.id || !latest.some((item) => item.id === selectedPersonaId)
           ? (latest[0]?.id ?? "")
@@ -997,7 +1002,7 @@ export default function PersonaSpectrumPage() {
               setPersonaLibraryMessage(`已载入人格「${persona.name}」。`);
             }}
           >
-            {isSelected ? "当前编辑中" : "载入编辑区"}
+            {isSelected ? "编辑中" : "载入"}
           </button>
           {persona.source === "user" ? (
             <button
@@ -1055,7 +1060,7 @@ export default function PersonaSpectrumPage() {
               </div>
               <div style={styles.panelBody}>
                 <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>当前人格</label>
+                <label style={styles.fieldLabel}>人格</label>
                 <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
                   {personas.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
@@ -1133,7 +1138,6 @@ export default function PersonaSpectrumPage() {
               <div style={styles.fieldGroup}>
                 <div style={styles.fieldHeaderRow}>
                   <label style={styles.fieldLabel}>附加系统约束（可选）</label>
-                  <span style={styles.fieldHint}>这里只写高级附加约束，最终运行时提示词会自动组装</span>
                 </div>
                 <textarea
                   style={styles.textareaLg}
@@ -1144,11 +1148,11 @@ export default function PersonaSpectrumPage() {
                 {systemPromptSuggestion ? (
                   <div style={styles.promptSuggestionCard}>
                     <div style={styles.promptSuggestionHeader}>
-                      <span style={styles.panelTitle}>AI 附加约束建议</span>
+                      <span style={styles.panelTitle}>AI 建议</span>
                       <span style={styles.promptSuggestionSource}>{systemPromptSuggestionSource || "AI 生成"}</span>
                     </div>
                     <p style={styles.promptSuggestionNote}>
-                      这是对“附加约束”字段的建议，不会改变下方运行时人格主设定。
+                      这只会写入上面的附加约束。
                     </p>
                     <p style={styles.promptSuggestionBody}>{systemPromptSuggestion}</p>
                     <div style={styles.actionsRow}>
@@ -1161,24 +1165,23 @@ export default function PersonaSpectrumPage() {
                     </div>
                   </div>
                 ) : (
-                  <span style={styles.mutedText}>这一栏是可选附加约束，不再直接代表最终运行时人格提示词。</span>
+                  <span style={styles.mutedText}>这一栏可以留空。</span>
                 )}
               </div>
 
               <div style={styles.fieldGroup}>
                 <div style={styles.fieldHeaderRow}>
                   <label style={styles.fieldLabel}>运行时人格提示词预览</label>
-                  <span style={styles.fieldHint}>只读，由人格元信息、插槽和附加约束自动组装</span>
                 </div>
                 <pre style={styles.runtimePromptPreview}>{runtimePromptPreview}</pre>
               </div>
 
               <div style={styles.actionsRow}>
                 <button style={styles.primaryBtn} disabled={savingPersona} onClick={handleCreatePersona}>
-                  {savingPersona ? "保存中…" : "创建新人格"}
+                  {savingPersona ? "保存中…" : "创建人格"}
                 </button>
                 <button style={styles.ghostBtn} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
-                  {savingPersona ? "保存中…" : "更新当前人格"}
+                  {savingPersona ? "保存中…" : "更新人格"}
                 </button>
                 {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
               </div>
@@ -1410,7 +1413,7 @@ export default function PersonaSpectrumPage() {
                   placeholder="搜索标题、内容、标签、关键词"
                 />
                 <span style={styles.mutedText}>
-                  共 {personaCards.length} 张库卡片，{generatedCards.length} 张本轮生成结果，当前选中 {selectedCards.length} 张。
+                  库卡片 {personaCards.length} 张，本轮 {generatedCards.length} 张，已选 {selectedCards.length} 张。
                 </span>
               </div>
             ) : null}
@@ -1418,7 +1421,7 @@ export default function PersonaSpectrumPage() {
 
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
-              <span style={styles.panelTitle}>关键词生成 / 长文本提取</span>
+              <span style={styles.panelTitle}>生成卡片</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("generate") ? (

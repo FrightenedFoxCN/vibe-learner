@@ -50,6 +50,10 @@ import {
 } from "../lib/learning-workspace-state";
 import { readSceneProfileFromLocalStorage } from "../lib/scene-profile";
 import {
+  PERSONA_LIBRARY_UPDATED_EVENT,
+  isPersonaLibraryStorageEvent,
+} from "../lib/persona-library-sync";
+import {
   createInitialLearningWorkspaceState,
   learningWorkspaceReducer
 } from "../lib/learning-workspace-reducer";
@@ -234,6 +238,18 @@ export function useLearningWorkspaceController({
     }
   };
 
+  const refreshPersonaLibrary = async () => {
+    try {
+      const personas = await listPersonas();
+      dispatch({
+        type: "personas_refreshed",
+        personas,
+      });
+    } catch (error) {
+      logWorkspaceError("workflow:persona_library:refresh_error", error);
+    }
+  };
+
   const applyWorkspaceSnapshot = (
     snapshot: WorkspaceSnapshot,
     preferredPlanId: string
@@ -368,7 +384,7 @@ export function useLearningWorkspaceController({
         setPlanStreamDocumentId(uploadedDocument.id);
         dispatch({
           type: "notice_set",
-          notice: "教材已上传，正在解析内容与章节结构。"
+          notice: "教材已上传，正在解析。"
         });
         logWorkspaceInfo("workflow:upload:document_uploaded", {
           documentId: uploadedDocument.id,
@@ -389,7 +405,7 @@ export function useLearningWorkspaceController({
             setProcessStreamStatus(resolveStreamStatus(event.stage));
             dispatch({
               type: "notice_set",
-              notice: `教材处理中: ${event.stage}`
+              notice: "正在解析教材…"
             });
             logWorkspaceInfo("workflow:upload:process_event", {
               documentId: uploadedDocument.id,
@@ -407,14 +423,14 @@ export function useLearningWorkspaceController({
         applyGeneratedDocument(nextDocument);
         dispatch({
           type: "notice_set",
-          notice: "教材解析完成，正在生成学习计划。"
+          notice: "教材解析完成，正在生成计划。"
         });
       } else {
         setProcessStreamDocumentId("");
         setPlanStreamDocumentId("");
         dispatch({
           type: "notice_set",
-          notice: "正在根据学习目标生成计划骨架。"
+          notice: "正在生成计划。"
         });
         logWorkspaceInfo("workflow:goal_only:start", {
           personaId: selectedPersona.id,
@@ -442,7 +458,7 @@ export function useLearningWorkspaceController({
           setPlanStreamStatus(resolveStreamStatus(event.stage));
           dispatch({
             type: "notice_set",
-            notice: `学习计划处理中: ${event.stage}`
+            notice: "正在生成计划…"
           });
           logWorkspaceInfo("workflow:plan_event", {
             documentId: nextDocument?.id ?? "",
@@ -473,7 +489,7 @@ export function useLearningWorkspaceController({
           type: "notice_set",
           notice:
             nextPlan.creationMode === "goal_only"
-              ? "目标计划已生成，并已创建首个学习会话。"
+              ? "目标计划已生成，会话已创建。"
               : PLAN_GENERATED_NOTICE
         });
       } catch (sessionError) {
@@ -488,7 +504,7 @@ export function useLearningWorkspaceController({
       setPlanStreamStatus((current) => (current === "running" ? "error" : current));
       dispatch({
         type: "notice_set",
-        notice: `${input.mode === "document" ? "教材处理失败" : "目标计划生成失败"}: ${String(error)}`
+        notice: `${input.mode === "document" ? "教材处理失败" : "目标计划生成失败"}：${String(error)}`
       });
       logWorkspaceError("workflow:upload:error", error);
     } finally {
@@ -526,7 +542,7 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `创建学习会话失败: ${String(error)}`
+        notice: `创建会话失败：${String(error)}`
       });
       logWorkspaceError("workflow:session_create:error", error);
     } finally {
@@ -548,13 +564,13 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已更新计划题目。"
+        notice: "题目已更新。"
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `更新计划题目失败: ${String(error)}`
+        notice: `更新题目失败：${String(error)}`
       });
       logWorkspaceError("workflow:plan_title_update:error", error);
       return false;
@@ -581,13 +597,13 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已删除学习计划。"
+        notice: "计划已删除。"
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `删除学习计划失败: ${String(error)}`
+        notice: `删除计划失败：${String(error)}`
       });
       logWorkspaceError("workflow:plan_delete:error", error);
       return false;
@@ -619,13 +635,13 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已更新学习单元标题。"
+        notice: "学习单元已更新。"
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `更新学习单元标题失败: ${String(error)}`
+        notice: `更新学习单元失败：${String(error)}`
       });
       logWorkspaceError("workflow:study_unit_title_update:error", error);
       return false;
@@ -648,13 +664,13 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已更新学习章节。"
+        notice: "学习章节已更新。"
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `更新学习章节失败: ${String(error)}`
+        notice: `更新学习章节失败：${String(error)}`
       });
       logWorkspaceError("workflow:plan_study_chapters_update:error", error);
       return false;
@@ -681,13 +697,13 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已更新计划完成度。"
+        notice: "完成度已更新。"
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `更新计划完成度失败: ${String(error)}`
+        notice: `更新完成度失败：${String(error)}`
       });
       logWorkspaceError("workflow:plan_progress_update:error", error);
       return false;
@@ -713,13 +729,13 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: "已保存规划问题回答，并按最新反馈刷新了学习计划。"
+        notice: "回答已保存，计划已更新。"
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `保存规划问题回答失败: ${String(error)}`
+        notice: `保存回答失败：${String(error)}`
       });
       logWorkspaceError("workflow:plan_question_answer:error", error);
       return false;
@@ -834,7 +850,7 @@ export function useLearningWorkspaceController({
         try {
           dispatch({
             type: "notice_set",
-            notice: "会话已失效，正在自动重建并重试…"
+            notice: "会话失效，正在恢复…"
           });
           if (!activePlan) {
             throw new Error("active_plan_missing");
@@ -863,13 +879,13 @@ export function useLearningWorkspaceController({
           applyChatExchange(recovered);
           dispatch({
             type: "notice_set",
-            notice: "会话已恢复，已继续当前章节对话。"
+            notice: "会话已恢复。"
           });
           return;
         } catch (recoveryError) {
           dispatch({
             type: "notice_set",
-            notice: `会话恢复失败: ${String(recoveryError)}`
+            notice: `会话恢复失败：${String(recoveryError)}`
           });
           logWorkspaceError("workflow:study_chat:session_recover_error", recoveryError);
           return;
@@ -884,7 +900,7 @@ export function useLearningWorkspaceController({
         });
         dispatch({
           type: "notice_set",
-          notice: "模型输出格式异常，请点击“重试发送”再次请求。"
+          notice: "响应格式异常，请重试。"
         });
         return;
       }
@@ -896,7 +912,7 @@ export function useLearningWorkspaceController({
       });
       dispatch({
         type: "notice_set",
-        notice: `导学请求失败: ${String(error)}`
+        notice: `发送失败：${String(error)}`
       });
       logWorkspaceError("workflow:study_chat:error", error);
     } finally {
@@ -918,8 +934,8 @@ export function useLearningWorkspaceController({
         type: "notice_set",
         notice:
           beforeSessionId === nextSession.id
-            ? `已切换到章节 ${sectionId}。`
-            : `已切换到章节 ${sectionId}，并定位到对应会话。`
+            ? "已切换章节。"
+            : "已切换章节，并打开对应会话。"
       });
       logWorkspaceInfo("workflow:study_session:section_switched", {
         sessionId: nextSession.id,
@@ -928,7 +944,7 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `切换章节失败: ${String(error)}`
+        notice: `切换章节失败：${String(error)}`
       });
       logWorkspaceError("workflow:study_session:section_switch_error", error);
     } finally {
@@ -973,7 +989,7 @@ export function useLearningWorkspaceController({
         } catch (callbackError) {
           dispatch({
             type: "notice_set",
-            notice: `答案已记录，但自动续问失败: ${String(callbackError)}`
+            notice: `答案已记录，续问失败：${String(callbackError)}`
           });
           logWorkspaceError("workflow:study_attempt:callback_error", callbackError);
         } finally {
@@ -987,7 +1003,7 @@ export function useLearningWorkspaceController({
           dispatch({ type: "busy_started" });
           dispatch({
             type: "notice_set",
-            notice: "答题会话已失效，正在自动重建…"
+            notice: "答题会话失效，正在恢复…"
           });
           const recoveredSession = await ensureSessionForSection(state.studySession.sectionId, {
             clearResponseOnSwitch: false,
@@ -1006,13 +1022,13 @@ export function useLearningWorkspaceController({
           });
           dispatch({
             type: "notice_set",
-            notice: "已恢复答题会话并写入记录。"
+            notice: "答题会话已恢复。"
           });
           return;
         } catch (recoveryError) {
           dispatch({
             type: "notice_set",
-            notice: `答题会话恢复失败: ${String(recoveryError)}`
+            notice: `答题会话恢复失败：${String(recoveryError)}`
           });
           logWorkspaceError("workflow:study_attempt:session_recover_error", recoveryError);
           return;
@@ -1022,7 +1038,7 @@ export function useLearningWorkspaceController({
       }
       dispatch({
         type: "notice_set",
-        notice: `写入答题记录失败: ${String(error)}`
+        notice: `记录答案失败：${String(error)}`
       });
       logWorkspaceError("workflow:study_attempt:error", error);
     }
@@ -1057,13 +1073,13 @@ export function useLearningWorkspaceController({
       }
       dispatch({
         type: "notice_set",
-        notice: input.decision === "approve" ? "已确认并应用计划变更。" : "已拒绝本次计划变更。",
+        notice: input.decision === "approve" ? "计划已更新。" : "已保留原计划。",
       });
       return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `处理计划确认失败: ${String(error)}`,
+        notice: `处理计划变更失败：${String(error)}`,
       });
       logWorkspaceError("workflow:study_plan_confirmation:error", error);
       return false;
@@ -1125,6 +1141,7 @@ export function useLearningWorkspaceController({
         includePersonas: false,
         preferredPlanId: state.selectedPlanId
       });
+      void refreshPersonaLibrary();
       void refreshSceneLibrary();
     };
     window.addEventListener("focus", handleFocus);
@@ -1132,6 +1149,24 @@ export function useLearningWorkspaceController({
       window.removeEventListener("focus", handleFocus);
     };
   }, [state.selectedPlanId]);
+
+  useEffect(() => {
+    const handlePersonasUpdated = () => {
+      void refreshPersonaLibrary();
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (isPersonaLibraryStorageEvent(event)) {
+        void refreshPersonaLibrary();
+      }
+    };
+
+    window.addEventListener(PERSONA_LIBRARY_UPDATED_EVENT, handlePersonasUpdated);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener(PERSONA_LIBRARY_UPDATED_EVENT, handlePersonasUpdated);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1187,7 +1222,7 @@ export function useLearningWorkspaceController({
       } catch (error) {
         dispatch({
           type: "notice_set",
-          notice: `章节预处理失败: ${String(error)}`,
+          notice: `章节准备失败：${String(error)}`,
         });
         logWorkspaceError("workflow:study_session:prelude_error", error);
       } finally {
@@ -1247,7 +1282,7 @@ export function useLearningWorkspaceController({
               }
               dispatch({
                 type: "notice_set",
-                notice: `自动续接失败: ${String(error)}`,
+                notice: `自动续接失败：${String(error)}`,
               });
               logWorkspaceError("workflow:study_follow_up:error", error);
             } finally {

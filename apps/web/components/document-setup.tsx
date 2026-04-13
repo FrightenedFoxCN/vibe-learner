@@ -108,14 +108,12 @@ export function DocumentSetup({
   return (
     <div className="plan-setup-column" style={styles.wrap}>
       <div style={styles.sectionHead}>
-        <span style={styles.sectionTitle}>计划设置</span>
-        <span style={styles.sectionMeta}>先确定陪伴人格与场景，再上传教材开始分析。</span>
+        <span style={styles.sectionTitle}>创建计划</span>
       </div>
 
       <section style={styles.card}>
         <div style={styles.cardHead}>
-          <span style={styles.cardTitle}>上传前配置</span>
-          <span style={styles.cardMeta}>人格、场景、章节入口</span>
+          <span style={styles.cardTitle}>基础设置</span>
         </div>
 
         <label style={styles.field}>
@@ -129,7 +127,7 @@ export function DocumentSetup({
         </label>
 
         <label style={styles.field}>
-          <span style={styles.fieldLabel}>计划使用场景</span>
+          <span style={styles.fieldLabel}>计划场景</span>
           <select
             value={selectedSceneLibraryId}
             onChange={(event) => onSelectSceneLibraryId(event.target.value)}
@@ -142,16 +140,11 @@ export function DocumentSetup({
               </option>
             ))}
           </select>
-          <span style={styles.fieldHint}>
-            {sceneProfile
-              ? `当前将使用：${formatSceneSummary(sceneProfile)}`
-              : "未选择场景时会回退到本地场景草稿（若存在）。"}
-          </span>
         </label>
 
         <div style={styles.actionRow}>
           <Link href="/scene-setup" style={styles.iconButton} aria-label="打开场景编辑" title="去场景编辑">
-            <MaterialIcon name="landscape" size={18} />
+            <MaterialIcon name="account_tree" size={18} />
           </Link>
           <button
             type="button"
@@ -171,8 +164,8 @@ export function DocumentSetup({
 
       <section style={styles.card}>
         <div style={styles.cardHead}>
-          <span style={styles.cardTitle}>教材上传与分析</span>
-          <span style={styles.cardMeta}>上传 PDF 生成计划，学习目标会参与标题、任务和章节取舍</span>
+          <span style={styles.cardTitle}>教材与目标</span>
+          <span style={styles.cardMeta}>上传教材或直接按目标生成计划</span>
         </div>
 
         <div style={styles.form}>
@@ -186,11 +179,6 @@ export function DocumentSetup({
               <option value="document">教材 + 目标</option>
               <option value="goal_only">仅学习目标</option>
             </select>
-            <span style={styles.fieldHint}>
-              {generationMode === "document"
-                ? "标准模式：先解析教材，再结合目标生成学习计划。"
-                : "轻量模式：不上传教材，直接围绕目标生成一版阶段性计划。"}
-            </span>
           </label>
           <label style={styles.field}>
             <span style={styles.fieldLabel}>教材文件（PDF）</span>
@@ -201,9 +189,6 @@ export function DocumentSetup({
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
               disabled={generationMode === "goal_only"}
             />
-            {generationMode === "goal_only" ? (
-              <span style={styles.fieldHint}>当前为仅目标模式，本轮不会上传教材。</span>
-            ) : null}
           </label>
           <label style={styles.field}>
             <span style={styles.fieldLabel}>学习目标</span>
@@ -234,15 +219,14 @@ export function DocumentSetup({
           }}
         >
           <MaterialIcon name="upload" size={18} />
-          {isBusy ? "处理中…" : generationMode === "document" ? "上传并生成计划" : "直接生成目标计划"}
+          {isBusy ? "处理中…" : generationMode === "document" ? "生成计划" : "按目标生成"}
         </button>
 
         {shouldShowPlanRounds ? (
           <div style={styles.progressSection}>
             <div style={styles.progressHeader}>
               <div style={styles.progressHeaderMeta}>
-                <span style={styles.progressTitle}>计划生成轮次</span>
-                <span style={styles.progressMeta}>直接显示模型轮次，不再只藏在 Debug 浮窗里。</span>
+                <span style={styles.progressTitle}>生成进度</span>
               </div>
               <span style={statusBadgeStyle(planStreamStatus)}>
                 {formatPlanStreamStatus(planStreamStatus)}
@@ -250,9 +234,9 @@ export function DocumentSetup({
             </div>
 
             <div style={styles.progressStats}>
-              <span style={styles.progressStat}>已见轮次 {planRoundSummary.rounds.length}</span>
-              <span style={styles.progressStat}>工具调用 {planRoundSummary.totalToolCalls}</span>
-              <span style={styles.progressStat}>规划提问 {planRoundSummary.planningQuestions.length}</span>
+              <span style={styles.progressStat}>轮次 {planRoundSummary.rounds.length}</span>
+              <span style={styles.progressStat}>调用 {planRoundSummary.totalToolCalls}</span>
+              <span style={styles.progressStat}>问题 {planRoundSummary.planningQuestions.length}</span>
             </div>
 
             {planRoundSummary.latestMessage ? (
@@ -263,9 +247,9 @@ export function DocumentSetup({
               <div style={styles.questionNotice}>
                 {planRoundSummary.planningQuestions.map((item) => (
                   <div key={item.id} style={styles.questionNoticeItem}>
-                    <strong style={styles.questionNoticeLabel}>待确认</strong>
+                    <strong style={styles.questionNoticeLabel}>待回答</strong>
                     <span>{item.question}</span>
-                    {item.reason ? <span style={styles.questionNoticeReason}>原因：{item.reason}</span> : null}
+                    {item.reason ? <span style={styles.questionNoticeReason}>备注：{item.reason}</span> : null}
                   </div>
                 ))}
               </div>
@@ -276,7 +260,7 @@ export function DocumentSetup({
                 {planRoundSummary.rounds.map((round) => (
                   <div key={round.roundIndex} style={styles.roundCard}>
                     <div style={styles.roundHeader}>
-                      <strong style={styles.roundTitle}>Round {round.roundIndex + 1}</strong>
+                      <strong style={styles.roundTitle}>第 {round.roundIndex + 1} 轮</strong>
                       <span style={roundStatusBadgeStyle(round.status)}>
                         {formatRoundStatus(round.status)}
                       </span>
@@ -286,7 +270,7 @@ export function DocumentSetup({
                       {round.finishReason ? ` · finish=${round.finishReason}` : ""}
                       {typeof round.elapsedMs === "number" ? ` · ${round.elapsedMs} ms` : ""}
                     </span>
-                    {round.error ? <span style={styles.roundError}>失败原因：{round.error}</span> : null}
+                    {round.error ? <span style={styles.roundError}>出错：{round.error}</span> : null}
                     {round.toolCalls.length ? (
                       <div style={styles.roundToolList}>
                         {round.toolCalls.map((toolName, index) => (
@@ -299,9 +283,7 @@ export function DocumentSetup({
                   </div>
                 ))}
               </div>
-            ) : (
-              <span style={styles.fieldHint}>计划流已启动，等待首个模型轮次事件。</span>
-            )}
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -339,7 +321,7 @@ export function DocumentSetup({
 
       {displayedStudyUnits.length ? (
         <div style={styles.unitSection}>
-          <span style={styles.unitSectionLabel}>学习单元清单</span>
+          <span style={styles.unitSectionLabel}>学习单元</span>
           <div style={styles.unitList}>
             {displayedStudyUnits.map((unit) => (
               <div key={unit.id} style={styles.unitItem}>
@@ -399,7 +381,7 @@ export function DocumentSetup({
                         setUnitTitleDraft(unit.title);
                       }}
                     >
-                      编辑标题
+                      改名
                     </button>
                   </div>
                 )}
@@ -848,7 +830,7 @@ function summarizePlanRounds(events: StreamEventItem[]) {
       const round = ensureRound();
       if (round) {
         round.status = "running";
-        latestMessage = `Round ${round.roundIndex + 1} 已启动。`;
+        latestMessage = `第 ${round.roundIndex + 1} 轮开始。`;
       }
       continue;
     }
@@ -859,7 +841,7 @@ function summarizePlanRounds(events: StreamEventItem[]) {
       if (round && toolName) {
         round.toolCalls.push(toolName);
         totalToolCalls += 1;
-        latestMessage = `Round ${round.roundIndex + 1} 调用了工具 ${toolName}。`;
+        latestMessage = `第 ${round.roundIndex + 1} 轮调用了 ${toolName}。`;
       }
       continue;
     }
@@ -873,7 +855,7 @@ function summarizePlanRounds(events: StreamEventItem[]) {
           question,
           reason: String(event.payload.reason ?? "").trim()
         });
-        latestMessage = "计划器提出了一个待确认问题。";
+        latestMessage = "有待回答问题。";
       }
       continue;
     }
@@ -884,7 +866,7 @@ function summarizePlanRounds(events: StreamEventItem[]) {
         round.status = "completed";
         round.finishReason = String(event.payload.finish_reason ?? "").trim();
         round.elapsedMs = toNumber(event.payload.elapsed_ms) ?? undefined;
-        latestMessage = `Round ${round.roundIndex + 1} 已完成。`;
+        latestMessage = `第 ${round.roundIndex + 1} 轮完成。`;
       }
       continue;
     }
@@ -896,23 +878,23 @@ function summarizePlanRounds(events: StreamEventItem[]) {
         round.finishReason = String(event.payload.finish_reason ?? "").trim();
         round.elapsedMs = toNumber(event.payload.elapsed_ms) ?? undefined;
         round.error = String(event.payload.error ?? "").trim();
-        latestMessage = `Round ${round.roundIndex + 1} 失败。`;
+        latestMessage = `第 ${round.roundIndex + 1} 轮失败。`;
       }
       continue;
     }
 
     if (event.stage === "learning_plan_completed") {
-      latestMessage = "学习计划已生成完成。";
+      latestMessage = "计划已生成。";
       continue;
     }
 
     if (event.stage === "stream_error") {
-      latestMessage = `计划流出错：${String(event.payload.error ?? "未知错误")}`;
+      latestMessage = `生成出错：${String(event.payload.error ?? "未知错误")}`;
       continue;
     }
 
     if (event.stage === "stream_completed" && !latestMessage) {
-      latestMessage = "计划流已完成。";
+      latestMessage = "生成完成。";
     }
   }
 

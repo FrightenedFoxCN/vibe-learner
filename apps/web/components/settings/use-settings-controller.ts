@@ -24,6 +24,7 @@ import {
 import { getDesktopRuntimeConfig } from "../../lib/runtime-config";
 import {
   AUTO_SAVE_DELAY_MS,
+  buildProbeEndpointKey,
   buildNumericDrafts,
   buildRuntimeSettingsPatch,
   CAPABILITY_AUDIT_CONFIGS,
@@ -73,6 +74,17 @@ export interface SettingsController {
   retrySave: () => void;
 }
 
+const PROBE_SCOPES: ProbeScope[] = ["global", "plan", "setting", "chat"];
+
+interface CachedProbeResult {
+  available: boolean;
+  models: string[];
+  capabilities: ScopeProbeState["capabilities"];
+  error: string;
+  lastCheckedAt: string;
+  sourceScope: ProbeScope;
+}
+
 export function useSettingsController(): SettingsController {
   const runtimeSettings = useRuntimeSettings();
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
@@ -113,6 +125,7 @@ export function useSettingsController(): SettingsController {
   const lastSavedSerializedRef = useRef("");
   const blockedSerializedRef = useRef("");
   const savingRef = useRef(false);
+  const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -148,6 +161,32 @@ export function useSettingsController(): SettingsController {
     lastSavedSerializedRef.current = serializeSettings(nextSettings);
     setSavePhase("saved");
   }, [runtimeSettings.settings]);
+
+  useEffect(() => {
+    if (!settings) {
+      return;
+    }
+
+    setProbeState((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      for (const scope of PROBE_SCOPES) {
+        const endpointKey = buildProbeEndpointKey(resolveScopeEndpoint(settings, scope));
+        if (prev[scope].endpointKey === endpointKey) {
+          continue;
+        }
+
+        const cached = endpointKey ? probeCacheRef.current.get(endpointKey) : null;
+        next[scope] = cached
+          ? buildScopeProbeState(cached, endpointKey, scope === cached.sourceScope ? null : cached.sourceScope)
+          : { ...EMPTY_PROBE_STATE, endpointKey };
+        changed = true;
+      }
+
+      return changed ? next : prev;
+    });
+  }, [settings]);
 
   const persistSnapshot = useEffectEvent(async (snapshot: RuntimeSettings, serialized: string) => {
     if (savingRef.current) {
@@ -260,6 +299,7 @@ export function useSettingsController(): SettingsController {
     }
 
     const endpoint = resolveScopeEndpoint(settings, scope);
+    const endpointKey = buildProbeEndpointKey(endpoint);
     if (!endpoint.apiKey || !endpoint.baseUrl) {
       setProbeState((prev) => ({
         ...prev,
@@ -270,31 +310,54 @@ export function useSettingsController(): SettingsController {
           models: [],
           capabilities: {},
           error: "请先填写可用的访问密钥和服务地址",
-          lastCheckedAt: prev[scope].lastCheckedAt
+          lastCheckedAt: prev[scope].lastCheckedAt,
+          endpointKey,
+          sharedFromScope: null
         }
       }));
       return;
     }
 
-    setProbeState((prev) => ({
-      ...prev,
-      [scope]: {
-        ...prev[scope],
-        loading: true,
-        error: ""
+    const cached = probeCacheRef.current.get(endpointKey);
+    if (cached) {
+      const refreshed = {
+        ...cached,
+        sourceScope: scope,
+      };
+      probeCacheRef.current.set(endpointKey, refreshed);
+      syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, refreshed);
+      return;
+    }
+
+    setProbeState((prev) => {
+      const next = { ...prev };
+      for (const candidate of PROBE_SCOPES) {
+        if (buildProbeEndpointKey(resolveScopeEndpoint(settings, candidate)) !== endpointKey) {
+          continue;
+        }
+        next[candidate] = {
+          ...prev[candidate],
+          loading: true,
+          error: "",
+          endpointKey,
+          sharedFromScope: candidate === scope ? null : scope
+        };
       }
-    }));
+      return next;
+    });
 
     try {
       const result = await probeRuntimeOpenAIModels(endpoint);
-      setProbeState((prev) => ({
-        ...prev,
-        [scope]: {
-          ...result,
-          loading: false,
-          lastCheckedAt: new Date().toISOString()
-        }
-      }));
+      const nextCached: CachedProbeResult = {
+        available: result.available,
+        models: result.models,
+        capabilities: result.capabilities,
+        error: result.error,
+        lastCheckedAt: new Date().toISOString(),
+        sourceScope: scope
+      };
+      probeCacheRef.current.set(endpointKey, nextCached);
+      syncProbeScopesFromCache(settingsRef.current ?? settings, endpointKey, nextCached);
     } catch (err) {
       setProbeState((prev) => ({
         ...prev,
@@ -304,10 +367,35 @@ export function useSettingsController(): SettingsController {
           available: false,
           models: [],
           capabilities: {},
-          error: String(err)
+          error: String(err),
+          endpointKey,
+          sharedFromScope: null
         }
       }));
     }
+  }
+
+  function syncProbeScopesFromCache(
+    currentSettings: RuntimeSettings,
+    endpointKey: string,
+    cached: CachedProbeResult
+  ) {
+    setProbeState((prev) => {
+      const next = { ...prev };
+
+      for (const scope of PROBE_SCOPES) {
+        if (buildProbeEndpointKey(resolveScopeEndpoint(currentSettings, scope)) !== endpointKey) {
+          continue;
+        }
+        next[scope] = buildScopeProbeState(
+          cached,
+          endpointKey,
+          scope === cached.sourceScope ? null : cached.sourceScope
+        );
+      }
+
+      return next;
+    });
   }
 
   function syncCapabilitySetting(scope: Extract<ProbeScope, "plan" | "setting" | "chat">) {
@@ -458,6 +546,23 @@ export function useSettingsController(): SettingsController {
     lockDesktopVault: handleLockDesktopVault,
     clearDesktopSecrets: handleClearDesktopSecrets,
     retrySave
+  };
+}
+
+function buildScopeProbeState(
+  cached: CachedProbeResult,
+  endpointKey: string,
+  sharedFromScope: ProbeScope | null
+): ScopeProbeState {
+  return {
+    loading: false,
+    available: cached.available,
+    models: cached.models,
+    capabilities: cached.capabilities,
+    error: cached.error,
+    lastCheckedAt: cached.lastCheckedAt,
+    endpointKey,
+    sharedFromScope
   };
 }
 

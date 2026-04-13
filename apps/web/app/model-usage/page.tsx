@@ -270,7 +270,7 @@ export default function ModelUsagePage() {
   const debugSnapshot = useMemo(
     () => ({
       title: "用量审计调试面板",
-      subtitle: "显示 token 统计请求状态和原始统计载荷，便于定位聚合数据是否丢失或被截断。",
+      subtitle: "查看用量统计和原始数据。",
       error,
       summary: [
         { label: "加载状态", value: loading ? "加载中" : "就绪" },
@@ -298,7 +298,6 @@ export default function ModelUsagePage() {
       <div style={styles.content}>
         <div style={styles.heading}>
           <h1 style={styles.pageTitle}>用量审计</h1>
-          <p style={styles.pageDesc}>各功能模型调用的 token 消耗汇总，按日期和功能分组。</p>
         </div>
 
         {loading && <div style={styles.statusText}>加载中…</div>}

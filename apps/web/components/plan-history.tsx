@@ -28,7 +28,7 @@ export function PlanHistory({
       <div style={styles.headerRow}>
         <div style={styles.headerMeta}>
           <span style={styles.label}>计划历史 {items.length ? `· ${items.length} 条` : ""}</span>
-          <span style={styles.subtle}>切换查看旧计划，或直接删除不再需要的版本。</span>
+          <span style={styles.subtle}>查看或删除旧计划。</span>
         </div>
         <button
           type="button"
@@ -96,7 +96,7 @@ export function PlanHistory({
           })}
         </div>
       ) : (
-        <p style={styles.empty}>暂无计划历史。上传教材后会自动生成第一版计划。</p>
+        <p style={styles.empty}>还没有历史计划。</p>
       )}
     </section>
   );

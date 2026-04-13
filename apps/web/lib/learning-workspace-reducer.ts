@@ -79,6 +79,10 @@ type LearningWorkspaceAction =
   | {
       type: "persona_selected";
       personaId: string;
+    }
+  | {
+      type: "personas_refreshed";
+      personas: PersonaProfile[];
     };
 
 export function createInitialLearningWorkspaceState(input: {
@@ -240,6 +244,14 @@ export function learningWorkspaceReducer(
       return {
         ...state,
         selectedPersonaId: action.personaId
+      };
+    case "personas_refreshed":
+      return {
+        ...state,
+        personas: action.personas,
+        selectedPersonaId: action.personas.some((persona) => persona.id === state.selectedPersonaId)
+          ? state.selectedPersonaId
+          : action.personas[0]?.id ?? ""
       };
     default:
       return state;

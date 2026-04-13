@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BrandMark, brandMarkStyle } from "../components/brand-mark";
 
 export const dynamic = "force-static";
 
@@ -19,13 +20,10 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(145deg, #c55c3b, #f2a56f)",
-          color: "white",
-          fontSize: 34,
-          fontWeight: 700
+          background: "transparent"
         }}
       >
-        VL
+        <BrandMark size={64} style={brandMarkStyle} />
       </div>
     ),
     size

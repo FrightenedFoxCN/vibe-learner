@@ -362,7 +362,7 @@ export default function SceneSetupPage() {
   const debugSnapshot = useMemo(
     () => ({
       title: "场景页调试面板",
-      subtitle: "展示当前场景树、生成候选、已保存场景和错误信息，便于检查场景搭建链路。",
+      subtitle: "查看场景树、生成结果和错误。",
       error: [rewriteError, sceneGenerateError, reusableError].filter(Boolean).join("；"),
       summary: [
         { label: "场景名称", value: sceneName || "-" },
@@ -1084,7 +1084,7 @@ export default function SceneSetupPage() {
                     style={styles.input}
                     value={selectedLayer.tags}
                     onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, tags: event.target.value }))}
-                    placeholder="用逗号分隔，便于后续搜索和复用。"
+                    placeholder="用逗号分隔"
                   />
                 </label>
 
@@ -1270,8 +1270,8 @@ export default function SceneSetupPage() {
                       </details>
                       <div style={styles.actionsRowInline}>
                         <SceneIconButton
-                          icon={reusableActionPendingId === object.id ? "replay" : "library_add"}
-                          label="把物体加入可复用节点库"
+                          icon={reusableActionPendingId === object.id ? "replay" : "create_new_folder"}
+                          label="加入节点库"
                           onClick={() => void saveObjectToReusableLibrary(object)}
                           disabled={reusableActionPendingId === object.id}
                         />
@@ -1284,8 +1284,8 @@ export default function SceneSetupPage() {
               <div style={styles.editorActions}>
                 <SceneIconButton icon="add" label="新增下级层级" variant="accent" onClick={() => addChildLayer(selectedLayer.id)} />
                 <SceneIconButton
-                  icon={reusableActionPendingId === selectedLayer.id ? "replay" : "library_add"}
-                  label="把当前层级加入可复用节点库"
+                  icon={reusableActionPendingId === selectedLayer.id ? "replay" : "create_new_folder"}
+                  label="加入节点库"
                   onClick={() => void saveSelectedLayerToReusableLibrary()}
                   disabled={reusableActionPendingId === selectedLayer.id}
                 />
@@ -1299,7 +1299,7 @@ export default function SceneSetupPage() {
               </div>
             </>
           ) : (
-            <p style={styles.emptyState}>选择一个层级后，这里会显示它的设定、对象和子层级操作。</p>
+            <p style={styles.emptyState}>选择层级后在这里编辑。</p>
           )}
           </div>
         </div>
@@ -1311,7 +1311,7 @@ export default function SceneSetupPage() {
 
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("draft")}>
-              <span style={styles.panelTitle}>当前草稿</span>
+              <span style={styles.panelTitle}>草稿</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("draft") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("draft") ? (
@@ -1326,7 +1326,7 @@ export default function SceneSetupPage() {
                   />
                 </label>
                 <label style={styles.sceneSummaryLabel}>
-                  <span style={styles.fieldLabel}>场景 summary</span>
+                  <span style={styles.fieldLabel}>场景摘要</span>
                   <textarea
                     style={styles.sceneSummaryInput}
                     value={sceneSummary}
@@ -1354,10 +1354,10 @@ export default function SceneSetupPage() {
                     step={1}
                     value={sceneGenerateLayerCount}
                     onChange={(event) => setSceneGenerateLayerCount(event.target.value)}
-                    placeholder="留空表示不限制层级数"
+                    placeholder="留空表示不限"
                   />
                 </label>
-                <p style={styles.sidebarHint}>留空表示不限制层级深度，模型也可以在同一父节点下生成多个平行兄弟区域。</p>
+                <p style={styles.sidebarHint}>留空表示不限层级深度。</p>
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabel}>关键词搜索</span>
                   <textarea
@@ -1373,7 +1373,7 @@ export default function SceneSetupPage() {
                   onClick={() => void handleGenerateScene("keywords")}
                   disabled={sceneGeneratePending !== null}
                 >
-                  {sceneGeneratePending === "keywords" ? "生成中…" : "根据关键词生成场景树"}
+                  {sceneGeneratePending === "keywords" ? "生成中…" : "生成场景树"}
                 </button>
                 <label style={styles.fieldGroup}>
                   <span style={styles.fieldLabel}>长文本提取</span>
@@ -1381,7 +1381,7 @@ export default function SceneSetupPage() {
                     style={styles.sceneSummaryInput}
                     value={sceneLongTextInput}
                     onChange={(event) => setSceneLongTextInput(event.target.value)}
-                    placeholder="输入较长的设定描述，提取成可编辑、可复用的场景树。"
+                    placeholder="输入长文本描述。"
                   />
                 </label>
                 <button
@@ -1390,7 +1390,7 @@ export default function SceneSetupPage() {
                   onClick={() => void handleGenerateScene("long_text")}
                   disabled={sceneGeneratePending !== null}
                 >
-                  {sceneGeneratePending === "long_text" ? "提取中…" : "根据长文本提取场景树"}
+                  {sceneGeneratePending === "long_text" ? "提取中…" : "从长文本提取"}
                 </button>
                 {sceneGenerateError ? <p style={styles.errorText}>{sceneGenerateError}</p> : null}
                 {sceneGenerateMessage ? <p style={styles.sidebarHint}>{sceneGenerateMessage}</p> : null}
@@ -1404,7 +1404,7 @@ export default function SceneSetupPage() {
                       {countSceneNodes(generatedSceneCandidate.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 节点
                     </p>
                     <button type="button" style={styles.btnPrimary} onClick={applyGeneratedSceneCandidateToEditor}>
-                      应用到当前编辑区
+                      应用到编辑区
                     </button>
                   </div>
                 ) : null}
@@ -1425,7 +1425,7 @@ export default function SceneSetupPage() {
                     style={styles.input}
                     value={reusableSearchQuery}
                     onChange={(event) => setReusableSearchQuery(event.target.value)}
-                    placeholder="按标题、标签、复用说明搜索"
+                    placeholder="搜索标题、标签、复用说明"
                   />
                 </label>
                 {reusableError ? <p style={styles.errorText}>{reusableError}</p> : null}
@@ -1455,7 +1455,7 @@ export default function SceneSetupPage() {
                       </div>
                     </article>
                   )) : (
-                    <p style={styles.sidebarHint}>节点库还是空的。先把右侧当前层级或物体加入节点库，再从这里复用。</p>
+                    <p style={styles.sidebarHint}>节点库还是空的。</p>
                   )}
                 </div>
               </div>
@@ -1464,7 +1464,7 @@ export default function SceneSetupPage() {
 
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("io")}>
-              <span style={styles.panelTitle}>场景库 / 导入 / 导出</span>
+              <span style={styles.panelTitle}>场景库</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("io") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("io") ? (

@@ -31,6 +31,8 @@ export type NumericDraftState = Record<NumericSettingKey, string>;
 export interface ScopeProbeState extends RuntimeOpenAIProbeResult {
   loading: boolean;
   lastCheckedAt: string;
+  endpointKey: string;
+  sharedFromScope: ProbeScope | null;
 }
 
 export type SettingsSavePhase = "idle" | "pending" | "saving" | "saved" | "error";
@@ -54,7 +56,9 @@ export const EMPTY_PROBE_STATE: ScopeProbeState = {
   models: [],
   capabilities: {},
   error: "",
-  lastCheckedAt: ""
+  lastCheckedAt: "",
+  endpointKey: "",
+  sharedFromScope: null
 };
 
 export const NUMERIC_SETTING_CONFIGS: Record<NumericSettingKey, NumericSettingConfig> = {
@@ -168,6 +172,15 @@ export function resolveScopeEndpoint(
   };
 }
 
+export function buildProbeEndpointKey(endpoint: { apiKey: string; baseUrl: string }) {
+  const apiKey = endpoint.apiKey.trim();
+  const baseUrl = endpoint.baseUrl.trim();
+  if (!apiKey || !baseUrl) {
+    return "";
+  }
+  return `${baseUrl}::${apiKey}`;
+}
+
 export function uniqueWithCurrent(models: string[], current: string): string[] {
   const set = new Set<string>();
   const list: string[] = [];
@@ -205,15 +218,18 @@ export function parseNumericSetting(value: string, config: NumericSettingConfig)
 
 export function formatProbeHint(state: ScopeProbeState): string {
   if (state.loading) {
-    return "正在拉取模型列表与能力信息...";
+    return "拉取中…";
   }
   if (state.error) {
     return `失败：${state.error}`;
   }
   if (state.available) {
-    return `已拉取 ${state.models.length} 个模型${state.lastCheckedAt ? "，能力信息已更新" : ""}`;
+    if (state.sharedFromScope) {
+      return `已同步 ${state.models.length} 个模型`;
+    }
+    return `已拉取 ${state.models.length} 个模型`;
   }
-  return "尚未拉取";
+  return "";
 }
 
 export function resolveCapabilitySignal(
@@ -224,7 +240,7 @@ export function resolveCapabilitySignal(
     return {
       status: "unknown",
       source: "unavailable",
-      note: "先拉取当前连接的模型能力信息，才能对照这个开关。"
+      note: ""
     };
   }
   return key === "multimodal" ? capability.multimodal : capability.webSearch;
@@ -252,10 +268,10 @@ export function formatCapabilityStatus(signal: RuntimeCapabilitySignal): string 
 
 export function formatCapabilitySource(signal: RuntimeCapabilitySignal): string {
   if (signal.source === "metadata") {
-    return "来自模型元数据";
+    return "模型元数据";
   }
   if (signal.source === "model_name") {
-    return "来自模型名推断";
+    return "模型名推断";
   }
-  return "暂无显式能力信息";
+  return "未检测";
 }

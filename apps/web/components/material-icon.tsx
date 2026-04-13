@@ -5,6 +5,7 @@ export type MaterialIconName =
   | "description"
   | "chat"
   | "person"
+  | "account_tree"
   | "landscape"
   | "visibility"
   | "settings"
@@ -23,6 +24,7 @@ export type MaterialIconName =
   | "add"
   | "delete"
   | "library_add"
+  | "create_new_folder"
   | "subdirectory_arrow_right"
   | "replay"
   | "adjust"
@@ -94,6 +96,18 @@ function renderIcon(name: MaterialIconName): ReactNode {
         <>
           <circle cx="12" cy="8" r="3.25" />
           <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+        </>
+      );
+    case "account_tree":
+      return (
+        <>
+          <circle cx="12" cy="6.5" r="2" />
+          <circle cx="7" cy="17.5" r="2" />
+          <circle cx="17" cy="17.5" r="2" />
+          <path d="M12 8.5v4" />
+          <path d="M7 12.5h10" />
+          <path d="M7 12.5v3" />
+          <path d="M17 12.5v3" />
         </>
       );
     case "landscape":
@@ -225,6 +239,15 @@ function renderIcon(name: MaterialIconName): ReactNode {
           <path d="M9 3.5h10v14" />
           <path d="M10 12h6" />
           <path d="M13 9v6" />
+        </>
+      );
+    case "create_new_folder":
+      return (
+        <>
+          <path d="M4.5 8.5h15v8.25A1.75 1.75 0 0 1 17.75 18.5H6.25A1.75 1.75 0 0 1 4.5 16.75Z" />
+          <path d="M4.5 8.5V7.25A1.75 1.75 0 0 1 6.25 5.5H9l1.75 2h7A1.75 1.75 0 0 1 19.5 9.25V10" />
+          <path d="M12 11.5v4" />
+          <path d="M10 13.5h4" />
         </>
       );
     case "subdirectory_arrow_right":

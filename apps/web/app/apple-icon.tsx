@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BrandMark, brandMarkStyle } from "../components/brand-mark";
 
 export const dynamic = "force-static";
 
@@ -19,13 +20,10 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(160deg, #3f8c85, #8ed2c9)",
-          color: "#fff7ee",
-          fontSize: 76,
-          fontWeight: 700
+          background: "transparent"
         }}
       >
-        VL
+        <BrandMark size={180} style={brandMarkStyle} />
       </div>
     ),
     size

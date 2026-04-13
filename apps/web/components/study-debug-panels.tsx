@@ -22,7 +22,7 @@ export function StudyDebugPanels({
   response
 }: StudyDebugPanelsProps) {
   if (!session) {
-    return <DebugEmptyState message="当前还没有章节会话，无法显示对话调试信息。" />;
+    return <DebugEmptyState message="暂无会话" />;
   }
 
   const latestTurn = session.turns[session.turns.length - 1] ?? null;
@@ -84,7 +84,7 @@ export function StudyDebugPanels({
         {latestCharacterEvents.length ? (
           <pre style={styles.pre}>{JSON.stringify(latestCharacterEvents, null, 2)}</pre>
         ) : (
-          <DebugEmptyState message="当前轮没有角色事件。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -101,7 +101,7 @@ export function StudyDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前轮没有恢复记录。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -119,7 +119,7 @@ export function StudyDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前轮没有工具调用。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -136,7 +136,7 @@ export function StudyDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前轮没有人格插槽 trace。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -155,7 +155,7 @@ export function StudyDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前轮没有记忆检索命中。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -179,7 +179,7 @@ export function StudyDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前会话还没有历史对话。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
     </div>

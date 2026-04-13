@@ -52,8 +52,6 @@ interface StudyConsoleProps {
   session: StudyChatResponse | null;
   persona: PersonaProfile;
   sceneProfile?: SceneProfile | null;
-  sceneSourceLabel?: string;
-  sceneInstanceId?: string;
   pendingFollowUps?: SessionFollowUp[];
   affinityState?: SessionAffinityState;
   projectedPdf?: StudySessionRecord["projectedPdf"];
@@ -93,8 +91,6 @@ export function StudyConsole({
   session,
   persona,
   sceneProfile,
-  sceneSourceLabel,
-  sceneInstanceId,
   pendingFollowUps = [],
   affinityState,
   projectedPdf,
@@ -171,21 +167,14 @@ export function StudyConsole({
     selectedChoices,
   ]);
 
-  const supportedAttachmentHint = chatImageUploadEnabled
-    ? "支持图片、PDF、txt、md、json、csv 等附件；图片会按多模态输入发送。"
-    : "支持 PDF、txt、md、json、csv 等文本附件；图片上传需要先在设置里开启对话多模态。";
-
   return (
     <div style={styles.wrap}>
       <div className="study-console-layout" style={styles.consoleCard}>
         <section style={styles.chatPanel}>
           <div style={styles.consoleHead}>
             <div style={styles.consoleMeta}>
-              <span style={styles.caption}>章节对话主界面</span>
+              <span style={styles.caption}>章节对话</span>
               <h2 style={styles.consoleTitle}>{selectedChapter || "选择章节后开始对话"}</h2>
-              <p style={styles.consoleSummary}>
-                左侧保持常规聊天窗口，历史消息会被新内容向上推走；右侧单列只保留人格与场景陪伴信息。
-              </p>
             </div>
           </div>
 
@@ -230,7 +219,7 @@ export function StudyConsole({
                   value={selectedSubsectionId ?? ""}
                   onChange={(event) => { if (onChangeSubsection) onChangeSubsection(event.target.value); }}
                   disabled={isPending || disabled || !subsectionOptions.length || !onChangeSubsection}
-                  title={selectedSubsectionId || "当前按整章范围学习"}
+                  title={selectedSubsectionId || "整章"}
                 >
                   <option value="">整章范围</option>
                   {subsectionOptions.map((subsection) => (
@@ -240,11 +229,6 @@ export function StudyConsole({
                   ))}
                 </select>
               </label>
-              <span style={styles.subsectionHint}>
-                {subsectionOptions.length
-                  ? "选择更细的子章节后，会话和教材预览会同步切到对应 section。"
-                  : "当前章节没有可用的子章节，保持整章范围。"}
-              </span>
             </div>
           </div>
 
@@ -366,7 +350,7 @@ export function StudyConsole({
             ) : (
               <div style={styles.emptyTranscriptCard}>
                 <span style={styles.caption}>对话记录</span>
-                <p style={styles.emptyTranscriptText}>创建会话后，从当前章节开始提问，回答、练习题和引用页码都会集中显示在这里。</p>
+                <p style={styles.emptyTranscriptText}>开始提问后会显示在这里。</p>
               </div>
             )}
           </div>
@@ -399,7 +383,7 @@ export function StudyConsole({
                       <span style={styles.confirmationTitle}>{item.title}</span>
                       <span style={styles.confirmationMeta}>{formatToolName(item.toolName)}</span>
                     </div>
-                    <p style={styles.confirmationSummary}>{item.summary || "模型希望你确认这项计划调整。"}</p>
+                    <p style={styles.confirmationSummary}>{item.summary || "请确认这项调整。"}</p>
                     {item.previewLines.length ? (
                       <div style={styles.confirmationLines}>
                         {item.previewLines.map((line, index) => (
@@ -481,7 +465,6 @@ export function StudyConsole({
                 >
                   添加附件
                 </button>
-                <span style={styles.attachmentHint}>{supportedAttachmentHint}</span>
               </div>
               {attachments.length ? (
                 <div style={styles.attachmentDraftList}>
@@ -530,7 +513,7 @@ export function StudyConsole({
           <div style={styles.companionCard}>
             <div style={styles.companionMeta}>
               <div style={styles.companionHeader}>
-                <span style={styles.caption}>陪伴设定</span>
+                <span style={styles.caption}>教师信息</span>
                 <div style={styles.companionLinks}>
                   <Link href="/persona-spectrum" style={styles.companionLink}>人格库</Link>
                   <Link href="/scene-setup" style={styles.companionLink}>场景编辑</Link>
@@ -541,8 +524,6 @@ export function StudyConsole({
                 <span style={styles.companionChip}>关系 · {persona.relationship || "未设"}</span>
                 <span style={styles.companionChip}>称呼 · {persona.learnerAddress || "未设"}</span>
                 <span style={styles.companionChip}>场景 · {sceneProfile?.title || "未设置"}</span>
-                {sceneSourceLabel ? <span style={styles.companionChip}>来源 · {sceneSourceLabel}</span> : null}
-                {sceneInstanceId ? <span style={styles.companionChip}>副本 · {sceneInstanceId}</span> : null}
               </div>
               <p style={styles.companionSummary}>
                 {sceneProfile?.summary || persona.summary || "尚未配置场景摘要。"}

@@ -62,9 +62,6 @@ export function LearningWorkspace() {
 
       <div style={styles.heading}>
         <h1 style={styles.pageTitle}>计划生成</h1>
-        <p style={styles.pageDesc}>
-          左侧先确认人格与场景，再上传教材开始分析；右侧集中查看、编辑和管理学习计划。
-        </p>
         {notice ? <div style={styles.notice}>{notice}</div> : null}
       </div>
 

@@ -13,7 +13,6 @@ interface PageDebugPanelProps {
 
 export function PageDebugPanel({
   title,
-  subtitle,
   error = "",
   summary = [],
   details = [],
@@ -22,7 +21,6 @@ export function PageDebugPanel({
   return (
     <details style={styles.card} open>
       <summary style={styles.summary}>{title}</summary>
-      {subtitle ? <p style={styles.subtitle}>{subtitle}</p> : null}
       {error ? <div style={styles.error}>{error}</div> : null}
       {summary.length ? (
         <div style={styles.summaryGrid}>
@@ -78,12 +76,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
     fontWeight: 700,
     color: "var(--ink)"
-  },
-  subtitle: {
-    margin: "8px 0 0",
-    fontSize: 12,
-    color: "var(--muted)",
-    lineHeight: 1.6
   },
   error: {
     marginTop: 12,

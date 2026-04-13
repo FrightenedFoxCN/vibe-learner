@@ -22,7 +22,7 @@ export function SettingsPage() {
   const debugSnapshot = useMemo(
     () => ({
       title: "设置页调试面板",
-      subtitle: "显示运行时设置、自动保存状态和模型探测结果，便于核对配置是否被正确写回。",
+      subtitle: "查看设置、保存状态和探测结果。",
       error: [controller.loadError, controller.saveError].filter(Boolean).join("；"),
       summary: [
         { label: "加载状态", value: controller.loading ? "加载中" : "就绪" },
@@ -60,7 +60,7 @@ export function SettingsPage() {
 
       <SettingsHeader />
 
-      {controller.loading ? <div style={styles.loading}>正在加载设置...</div> : null}
+      {controller.loading ? <div style={styles.loading}>正在加载设置…</div> : null}
       {controller.loadError ? <div style={styles.error}>设置加载失败：{controller.loadError}</div> : null}
 
       {!controller.loading && controller.settings ? (

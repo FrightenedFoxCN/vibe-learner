@@ -11,8 +11,12 @@ import { useCurrentPageDebugSnapshot } from "./page-debug-context";
 import { useLearningWorkspace } from "./learning-workspace-provider";
 import { useRuntimeSettings } from "./runtime-settings-provider";
 import { StudyDebugPanels } from "./study-debug-panels";
-
-const STORAGE_KEY = "vibe-debug-overlay-open";
+import {
+  BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT,
+  DEBUG_OVERLAY_OPEN_STORAGE_KEY,
+  readStoredBoolean,
+  writeStoredBoolean
+} from "../lib/view-preferences";
 
 export function DebugOverlay() {
   const pathname = usePathname();
@@ -29,20 +33,30 @@ export function DebugOverlay() {
   );
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === "1") {
-      setOpen(true);
-    }
+    setOpen(readStoredBoolean(DEBUG_OVERLAY_OPEN_STORAGE_KEY));
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, open ? "1" : "0");
+    writeStoredBoolean(DEBUG_OVERLAY_OPEN_STORAGE_KEY, open);
   }, [open]);
 
   useEffect(() => {
     if (!showDebugInfo) {
       setOpen(false);
     }
+  }, [showDebugInfo]);
+
+  useEffect(() => {
+    const handleToggle = () => {
+      if (!showDebugInfo) {
+        return;
+      }
+      setOpen((value) => !value);
+    };
+    window.addEventListener(BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT, handleToggle);
+    return () => {
+      window.removeEventListener(BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT, handleToggle);
+    };
   }, [showDebugInfo]);
 
   useEffect(() => {
@@ -66,8 +80,6 @@ export function DebugOverlay() {
     return null;
   }
 
-  const pageLabel = getDebugPageLabel(pathname);
-
   return (
     <>
       {open ? <button type="button" style={styles.scrim} onClick={() => setOpen(false)} aria-label="关闭调试浮窗背景遮罩" /> : null}
@@ -85,15 +97,6 @@ export function DebugOverlay() {
             <header style={styles.overlayHeader}>
               <div style={styles.headerCopy}>
                 <span style={styles.title}>{title}</span>
-                <span style={styles.subtitle}>
-                  {pageLabel} · {workspace.activeDocument?.title ?? pageSnapshot?.title ?? "未关联上下文"}
-                </span>
-                {pathname === "/plan" && (debugData.lastUpdatedAt || debugData.autoRefreshActive) ? (
-                  <span style={styles.metaLine}>
-                    {debugData.lastUpdatedAt ? `最近刷新 ${formatDebugTime(debugData.lastUpdatedAt)}` : "等待首轮调试数据"}
-                    {debugData.autoRefreshActive ? " · 自动刷新中" : ""}
-                  </span>
-                ) : null}
               </div>
               <div style={styles.headerActions}>
                 {pathname === "/plan" ? (
@@ -131,8 +134,6 @@ export function DebugOverlay() {
                   planLiveStatus={workspace.planStreamStatus}
                   loading={debugData.loading}
                   error={debugData.error}
-                  lastUpdatedAt={debugData.lastUpdatedAt}
-                  autoRefreshActive={debugData.autoRefreshActive}
                 />
               ) : pathname === "/study" ? (
                 <StudyDebugPanels
@@ -144,13 +145,12 @@ export function DebugOverlay() {
               ) : pageSnapshot ? (
                 <PageDebugPanel
                   title={pageSnapshot.title}
-                  subtitle={pageSnapshot.subtitle}
                   error={pageSnapshot.error}
                   summary={pageSnapshot.summary}
                   details={pageSnapshot.details}
                 />
               ) : (
-                <div style={styles.emptyState}>当前页面还没有注册调试面板。</div>
+                <div style={styles.emptyState}>暂无调试面板。</div>
               )}
             </div>
           </section>
@@ -229,18 +229,6 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 800,
     color: "var(--ink)"
   },
-  subtitle: {
-    fontSize: 12,
-    color: "var(--muted)",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    maxWidth: "100%"
-  },
-  metaLine: {
-    fontSize: 11,
-    color: "var(--muted)"
-  },
   headerActions: {
     display: "flex",
     gap: 8,
@@ -305,44 +293,6 @@ function getDebugTitle(pathname: string) {
     return "感官工具调试浮窗";
   }
   return "调试浮窗";
-}
-
-function formatDebugTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleTimeString("zh-CN", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
-
-function getDebugPageLabel(pathname: string) {
-  if (pathname === "/plan") {
-    return "计划生成";
-  }
-  if (pathname === "/study") {
-    return "章节对话";
-  }
-  if (pathname === "/settings") {
-    return "统一设置";
-  }
-  if (pathname === "/model-usage") {
-    return "用量审计";
-  }
-  if (pathname === "/persona-spectrum") {
-    return "人格色谱";
-  }
-  if (pathname === "/scene-setup") {
-    return "场景搭建";
-  }
-  if (pathname === "/sensory-tools") {
-    return "感官工具";
-  }
-  return pathname || "当前页面";
 }
 
 function getFabMeta(pathname: string) {

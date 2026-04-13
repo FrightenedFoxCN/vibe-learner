@@ -4,7 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { BrandMark } from "./brand-mark";
 import { MaterialIcon, type MaterialIconName } from "./material-icon";
+import {
+  APP_NAV_COLLAPSED_STORAGE_KEY,
+  BROWSER_VIEW_TOGGLE_NAV_EVENT,
+  readStoredBoolean,
+  writeStoredBoolean
+} from "../lib/view-preferences";
 
 interface TopNavProps {
   currentPath: "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/sensory-tools" | "/settings" | "/model-usage";
@@ -19,7 +26,7 @@ const NAV_ITEMS: Array<{
   { href: "/plan", label: "计划生成", icon: "description" },
   { href: "/study", label: "章节对话", icon: "chat" },
   { href: "/persona-spectrum", label: "人格色谱", icon: "person" },
-  { href: "/scene-setup", label: "场景搭建", icon: "landscape" },
+  { href: "/scene-setup", label: "场景搭建", icon: "account_tree" },
   { href: "/sensory-tools", label: "感官工具", icon: "visibility" },
   { href: "/settings", label: "统一设置", icon: "settings" },
   { href: "/model-usage", label: "用量审计", icon: "bar_chart" },
@@ -29,20 +36,31 @@ export function TopNav({ currentPath }: TopNavProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("vibe-nav-collapsed");
-    if (saved === "1") setCollapsed(true);
+    setCollapsed(readStoredBoolean(APP_NAV_COLLAPSED_STORAGE_KEY));
+  }, []);
+
+  useEffect(() => {
+    const handleToggle = () => {
+      setCollapsed((value) => !value);
+    };
+    window.addEventListener(BROWSER_VIEW_TOGGLE_NAV_EVENT, handleToggle);
+    return () => {
+      window.removeEventListener(BROWSER_VIEW_TOGGLE_NAV_EVENT, handleToggle);
+    };
   }, []);
 
   useEffect(() => {
     const width = collapsed ? "56px" : "200px";
     document.documentElement.style.setProperty("--app-nav-width", width);
-    window.localStorage.setItem("vibe-nav-collapsed", collapsed ? "1" : "0");
+    writeStoredBoolean(APP_NAV_COLLAPSED_STORAGE_KEY, collapsed);
   }, [collapsed]);
 
   return (
     <aside className="app-side-nav" style={styles.aside} aria-label="Primary navigation">
       <div className="app-nav-brand-row" style={styles.topRow}>
-        <div style={styles.brandMark}>VL</div>
+        <div style={styles.brandMark}>
+          <BrandMark size={28} />
+        </div>
         {!collapsed ? <span style={styles.brandName}>Vibe Learner</span> : null}
       </div>
 
@@ -129,14 +147,9 @@ const styles: Record<string, CSSProperties> = {
   brandMark: {
     width: 28,
     height: 28,
-    background: "var(--accent)",
-    color: "white",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 11,
-    fontWeight: 800,
-    letterSpacing: "0.06em",
     flexShrink: 0,
   },
   brandName: {

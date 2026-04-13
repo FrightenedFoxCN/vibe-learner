@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "icons": "node scripts/generate-icon-assets.mjs src-tauri/icons/icon-source.svg src-tauri/icons",
     "dev": "tauri dev",
     "build": "tauri build"
   },

@@ -50,9 +50,9 @@ export function CharacterShell({
 
       <section style={styles.statusCard}>
         <div style={styles.sectionHead}>
-          <strong style={styles.sectionTitle}>当前状态</strong>
+          <strong style={styles.sectionTitle}>状态</strong>
           <span style={styles.sectionMeta}>
-            {pending ? "正在生成下一轮状态" : currentEvent ? "已同步最新回复" : "等待首次事件"}
+            {pending ? "更新中" : currentEvent ? "已同步" : "待开始"}
           </span>
         </div>
         <div style={styles.stateGrid}>
@@ -62,19 +62,19 @@ export function CharacterShell({
         </div>
         {actionText ? (
           <div style={styles.noteBlock}>
-            <span style={styles.noteKey}>动作呈现</span>
+            <span style={styles.noteKey}>动作</span>
             <p style={styles.noteText}>{actionText}</p>
           </div>
         ) : null}
         {deliveryCue ? (
           <div style={styles.noteBlock}>
-            <span style={styles.noteKey}>语气提示</span>
+            <span style={styles.noteKey}>语气</span>
             <p style={styles.noteText}>{deliveryCue}</p>
           </div>
         ) : null}
         {primaryNote ? (
           <div style={styles.noteBlock}>
-            <span style={styles.noteKey}>状态解说</span>
+            <span style={styles.noteKey}>说明</span>
             <p style={styles.noteText}>{primaryNote}</p>
           </div>
         ) : null}
@@ -82,8 +82,8 @@ export function CharacterShell({
 
       <section style={styles.statusCard}>
         <div style={styles.sectionHead}>
-          <strong style={styles.sectionTitle}>会话状态</strong>
-          <span style={styles.sectionMeta}>随当前会话实时同步</span>
+          <strong style={styles.sectionTitle}>会话信息</strong>
+          <span style={styles.sectionMeta}>实时</span>
         </div>
         <div style={styles.stateGrid}>
           <StateChip
@@ -91,23 +91,23 @@ export function CharacterShell({
             value={`${formatAffinityLevel(affinityState?.level)} · ${affinityState?.score ?? 0}`}
           />
           <StateChip
-            label="材料投射"
+            label="投射"
             value={projectedPdf ? formatProjectedPreview(projectedPdf) : "未投射"}
           />
           <StateChip
-            label="自动续接"
+            label="续接"
             value={nextFollowUp ? formatFollowUpState(nextFollowUp) : "无"}
           />
         </div>
         {affinityState?.summary ? (
           <div style={styles.noteBlock}>
-            <span style={styles.noteKey}>关系备注</span>
+            <span style={styles.noteKey}>备注</span>
             <p style={styles.noteText}>{affinityState.summary}</p>
           </div>
         ) : null}
         {projectedPdf ? (
           <div style={styles.noteBlock}>
-            <span style={styles.noteKey}>当前投射材料</span>
+            <span style={styles.noteKey}>当前材料</span>
             <p style={styles.noteText}>
               {projectedPdf.title}
               {projectedPdf.sourceKind === "attachment_image"
@@ -119,9 +119,9 @@ export function CharacterShell({
         ) : null}
         {nextFollowUp ? (
           <div style={styles.noteBlock}>
-            <span style={styles.noteKey}>下一次自动续接</span>
+            <span style={styles.noteKey}>下次续接</span>
             <p style={styles.noteText}>
-              {formatDueAt(nextFollowUp.dueAt)} · {nextFollowUp.reason || "自动续接当前话题"}
+              {formatDueAt(nextFollowUp.dueAt)} · {nextFollowUp.reason || "继续当前话题"}
             </p>
           </div>
         ) : null}
@@ -159,12 +159,12 @@ function formatEmotionLabel(value: string) {
 function formatActionText(value: string) {
   const normalized = value.trim().toLowerCase();
   if (!normalized || normalized === "idle") return "";
-  if (normalized === "nod") return "轻轻点头，示意可以继续。";
-  if (normalized === "point") return "抬手指向当前重点，提醒把注意力收回来。";
-  if (normalized === "lean_in") return "身体微微前倾，像是在等你接住这个问题。";
-  if (normalized === "smile") return "嘴角带笑，顺势把鼓励递出来。";
-  if (normalized === "pause") return "短暂停住动作，像是在给思路留出落点。";
-  if (normalized === "write") return "抬手书写比划，把结构关系描出来。";
+  if (normalized === "nod") return "轻轻点头。";
+  if (normalized === "point") return "指向重点。";
+  if (normalized === "lean_in") return "微微前倾。";
+  if (normalized === "smile") return "带着笑意。";
+  if (normalized === "pause") return "短暂停顿。";
+  if (normalized === "write") return "比划书写。";
   return value.trim();
 }
 

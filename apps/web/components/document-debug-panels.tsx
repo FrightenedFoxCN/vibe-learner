@@ -37,8 +37,6 @@ interface DocumentDebugPanelsProps {
   planLiveStatus?: string;
   loading?: boolean;
   error?: string;
-  lastUpdatedAt?: string;
-  autoRefreshActive?: boolean;
 }
 
 export function DocumentDebugPanels({
@@ -62,12 +60,10 @@ export function DocumentDebugPanels({
   planLiveEvents = [],
   planLiveStatus = "idle",
   loading = false,
-  error = "",
-  lastUpdatedAt = "",
-  autoRefreshActive = false
+  error = ""
 }: DocumentDebugPanelsProps) {
   if (!document) {
-    return <DebugEmptyState message="当前还没有可检查的教材。先上传教材或切换到已有学习计划。" />;
+    return <DebugEmptyState message="暂无教材" />;
   }
 
   const useLiveProcess = processLiveDocumentId === document.id && processLiveEvents.length > 0;
@@ -101,8 +97,6 @@ export function DocumentDebugPanels({
         <div style={styles.statusStrip}>
           <StatusPill label="process" status={displayProcessStatus} />
           <StatusPill label="plan" status={displayPlanStatus} />
-          {lastUpdatedAt ? <span style={styles.metaText}>最近刷新：{formatDateTime(lastUpdatedAt)}</span> : null}
-          {autoRefreshActive ? <span style={styles.liveText}>自动刷新中</span> : null}
         </div>
         <div style={styles.summaryGrid}>
           <SummaryItem label="Pages" value={String(debugRecord?.pageCount ?? document.pageCount)} />
@@ -158,7 +152,7 @@ export function DocumentDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前文档还没有章节猜测结果。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -174,12 +168,12 @@ export function DocumentDebugPanels({
                   p.{unit.pageStart}–{unit.pageEnd} · {unit.unitKind}
                   {unit.includeInPlan ? "" : " · skipped"}
                 </span>
-                <span style={styles.bodyText}>{truncateText(unit.summary || "暂无摘要。", 220)}</span>
+                <span style={styles.bodyText}>{truncateText(unit.summary || "-", 220)}</span>
               </div>
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前文档还没有学习单元。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -226,9 +220,7 @@ export function DocumentDebugPanels({
                     </span>
                   ))}
                 </div>
-              ) : (
-                <span style={styles.caption}>暂无 planning context 工具清单。</span>
-              )}
+              ) : null}
             </div>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>模型工具开关</span>
@@ -251,9 +243,7 @@ export function DocumentDebugPanels({
                     </div>
                   ))}
                 </div>
-              ) : (
-                <span style={styles.caption}>暂无模型工具配置。</span>
-              )}
+              ) : null}
             </div>
             <div style={styles.subSection}>
               <span style={styles.subTitle}>Study Unit Detail</span>
@@ -268,7 +258,7 @@ export function DocumentDebugPanels({
                         <span style={styles.caption}>
                           p.{unit.pageStart}–{unit.pageEnd} · detail chunks: {detail?.chunkCount ?? 0}
                         </span>
-                        <span style={styles.bodyText}>{truncateText(unit.summary || "暂无摘要。", 180)}</span>
+                        <span style={styles.bodyText}>{truncateText(unit.summary || "-", 180)}</span>
                         {detail?.subsectionTitles.length ? (
                           <div style={styles.tagRow}>
                             {detail.subsectionTitles.map((title, index) => (
@@ -285,13 +275,11 @@ export function DocumentDebugPanels({
                     );
                   })}
                 </div>
-              ) : (
-                <span style={styles.caption}>暂无章节细节。</span>
-              )}
+              ) : null}
             </div>
           </div>
         ) : (
-          <DebugEmptyState message="当前没有可展示的计划工具和章节详情。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -341,7 +329,7 @@ export function DocumentDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="暂无计划模型 trace。先生成一次学习计划。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -360,7 +348,7 @@ export function DocumentDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前没有解析告警。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -379,7 +367,7 @@ export function DocumentDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前没有 chunk 调试信息。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
 
@@ -407,7 +395,7 @@ export function DocumentDebugPanels({
             ))}
           </div>
         ) : (
-          <DebugEmptyState message="当前没有逐页抽取结果。" />
+          <DebugEmptyState message="暂无数据" />
         )}
       </details>
     </div>

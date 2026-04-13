@@ -26,7 +26,7 @@ const MODEL_SCOPE_CONFIGS: ScopeModelConfig[] = [
   {
     scope: "plan",
     title: "计划生成",
-    description: "专门负责学习计划编排，可覆盖默认连接与模型。",
+    description: "用于学习计划生成。",
     apiKeyKey: "openaiPlanApiKey",
     baseUrlKey: "openaiPlanBaseUrl",
     modelKey: "openaiPlanModel"
@@ -34,7 +34,7 @@ const MODEL_SCOPE_CONFIGS: ScopeModelConfig[] = [
   {
     scope: "setting",
     title: "人格设定辅助",
-    description: "用于人格卡、设定词和系统提示词的润色与扩展。",
+    description: "用于人格内容生成与润色。",
     apiKeyKey: "openaiSettingApiKey",
     baseUrlKey: "openaiSettingBaseUrl",
     modelKey: "openaiSettingModel"
@@ -42,7 +42,7 @@ const MODEL_SCOPE_CONFIGS: ScopeModelConfig[] = [
   {
     scope: "chat",
     title: "学习对话",
-    description: "负责章节聊天、追问与后续工具调用。",
+    description: "用于章节对话。",
     apiKeyKey: "openaiChatApiKey",
     baseUrlKey: "openaiChatBaseUrl",
     modelKey: "openaiChatModel"
@@ -53,9 +53,6 @@ export function SettingsHeader() {
   return (
     <header style={styles.header}>
       <h1 style={styles.title}>统一设置</h1>
-      <p style={styles.subtitle}>
-        统一管理 LiteLLM 接入、分场景模型和运行开关。页面会自动保存，模型能力可以单独拉取并回填，减少多模态和联网配置与事实不一致的情况。
-      </p>
     </header>
   );
 }
@@ -75,10 +72,6 @@ export function DesktopSecurityCard({ controller }: { controller: SettingsContro
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>桌面密钥库</h2>
-      <p style={styles.cardDescription}>
-        API key 不再写入后端数据库。桌面版会把密钥保存在本地加密 vault 中，解锁后仅同步到本次运行的 sidecar 内存。
-      </p>
-
       <div style={styles.subCard}>
         <div style={styles.probeRow}>
           <StatusBadge
@@ -129,7 +122,7 @@ export function DesktopSecurityCard({ controller }: { controller: SettingsContro
                     : controller.unlockDesktopVault(password))
                 }
               >
-                {isBusy ? "处理中..." : isUnconfigured ? "创建并解锁 vault" : "解锁 vault"}
+                {isBusy ? "处理中…" : isUnconfigured ? "创建并解锁" : "解锁"}
               </button>
               {isUnconfigured && password && confirmPassword && password !== confirmPassword ? (
                 <span style={styles.probeHint}>两次输入的密码不一致。</span>
@@ -139,12 +132,12 @@ export function DesktopSecurityCard({ controller }: { controller: SettingsContro
         ) : (
           <div style={styles.probeRow}>
             <button type="button" style={styles.secondaryBtn} disabled={isBusy} onClick={() => void controller.lockDesktopVault()}>
-              {isBusy ? "处理中..." : "锁定 vault"}
+              {isBusy ? "处理中…" : "锁定"}
             </button>
             <button type="button" style={styles.ghostBtn} disabled={isBusy} onClick={() => void controller.clearDesktopSecrets()}>
               清空已保存密钥
             </button>
-            <span style={styles.probeHint}>锁定后，后端本次运行中的 session secrets 会一起清除。</span>
+            <span style={styles.probeHint}>锁定后会清除本次运行中的密钥。</span>
           </div>
         )}
       </div>
@@ -162,7 +155,6 @@ export function ProviderCard({
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>运行提供器</h2>
-      <p style={styles.cardDescription}>“本地模拟”适合稳定调试，“LiteLLM SDK”则直接走 LiteLLM Python SDK，可直连带 provider 前缀的模型，也可接入 LiteLLM Proxy 等 OpenAI 兼容网关。</p>
       <label style={styles.field}>
         <span style={styles.label}>模型接口协议</span>
         <select
@@ -195,14 +187,10 @@ export function ConnectionModelsCard({
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>连接与模型分配</h2>
-      <p style={styles.cardDescription}>
-        默认连接会作为各个场景的回退来源。这里既可以填 LiteLLM Proxy，也可以填 LiteLLM SDK 可访问的上游地址；但“拉取模型/能力”当前仍优先依赖 `/models` 兼容响应，若上游不提供该接口，可直接手填模型名。
-      </p>
-
       <div style={styles.subCard}>
         <div style={styles.subCardHeader}>
           <h3 style={styles.subTitle}>默认连接</h3>
-          <p style={styles.tip}>当下方场景未单独填写密钥或地址时，会自动继承这里的配置。</p>
+          <p style={styles.tip}>未单独设置时会继承这里的配置。</p>
         </div>
 
         <label style={styles.field}>
@@ -224,8 +212,8 @@ export function ConnectionModelsCard({
           {desktopManagedSecrets ? (
             <span style={styles.fieldHint}>
               {settings.openaiApiKeyConfigured
-                ? "当前默认密钥已存入桌面密钥库，后端不会持久化明文。"
-                : "桌面模式下，密钥只能在 vault 解锁后编辑。"}
+                ? "默认密钥已存入桌面密钥库。"
+                : "解锁后才能编辑密钥。"}
             </span>
           ) : null}
         </label>
@@ -244,7 +232,7 @@ export function ConnectionModelsCard({
             disabled={controller.probeState.global.loading || desktopManagedSecrets}
             onClick={() => void controller.probeScope("global")}
           >
-            {controller.probeState.global.loading ? "拉取中..." : "拉取默认连接模型"}
+            {controller.probeState.global.loading ? "拉取中…" : "拉取默认模型"}
           </button>
           <span style={styles.probeHint}>{formatProbeHint(controller.probeState.global)}</span>
         </div>
@@ -270,7 +258,6 @@ export function ConnectionModelsCard({
           onChange={(event) => controller.setNumericDraft("openaiTimeoutSeconds", event.target.value)}
           onBlur={() => controller.commitNumericSetting("openaiTimeoutSeconds")}
         />
-        <span style={styles.fieldHint}>所有模型连接都会复用这个超时值，建议保持在 15 到 60 秒之间。</span>
       </label>
     </section>
   );
@@ -286,10 +273,6 @@ export function CapabilityAuditCard({
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>能力对照与回填</h2>
-      <p style={styles.cardDescription}>
-        这里把“手工开关”和“刚刚拉取到的模型能力”放在一起看。检测值有明确结论时，可以一键回填，避免把联网或多模态能力开错。
-      </p>
-
       <div style={styles.auditGrid}>
         {CAPABILITY_AUDIT_CONFIGS.map((config) => {
           const modelName = String(settings[config.modelKey] || "");
@@ -335,9 +318,9 @@ export function CapabilityAuditCard({
                     label={sourceText}
                     tone={signal.source === "metadata" ? "positive" : signal.source === "model_name" ? "muted" : "muted"}
                   />
-                  {mismatch ? <StatusBadge label="当前开关与检测结果不一致" tone="negative" /> : null}
+                  {mismatch ? <StatusBadge label="开关与检测不一致" tone="negative" /> : null}
                 </div>
-                <p style={styles.capabilityNote}>{signal.note}</p>
+                {signal.note ? <p style={styles.capabilityNote}>{signal.note}</p> : null}
                 {showModalities ? (
                   <div style={styles.ruleText}>
                     输入模态：{capability?.inputModalities?.join(", ") || "-"}
@@ -349,7 +332,7 @@ export function CapabilityAuditCard({
                   <div style={styles.ruleText}>工具类型：{capability?.toolTypes.join(", ")}</div>
                 ) : null}
                 {!probe.lastCheckedAt ? (
-                  <div style={styles.ruleText}>还没有拉取这个连接的模型能力，请先回到上方连接区执行拉取。</div>
+                  <div style={styles.ruleText}>还没有拉取能力信息。</div>
                 ) : null}
               </div>
 
@@ -360,7 +343,7 @@ export function CapabilityAuditCard({
                   disabled={probe.loading}
                   onClick={() => void controller.probeScope(config.scope)}
                 >
-                  {probe.loading ? "拉取中..." : "刷新能力信息"}
+                  {probe.loading ? "拉取中…" : "刷新能力"}
                 </button>
                 <button
                   type="button"
@@ -368,7 +351,7 @@ export function CapabilityAuditCard({
                   disabled={detectedValue === null}
                   onClick={() => controller.syncCapabilitySetting(config.scope)}
                 >
-                  {signal.source === "model_name" ? "按推断结果回填" : "按检测结果回填"}
+                  {signal.source === "model_name" ? "按推断回填" : "按检测回填"}
                 </button>
               </div>
             </section>
@@ -398,10 +381,6 @@ export function AdvancedSettingsCard({
           {controller.advancedExpanded ? "收起高级设置" : "展开高级设置"}
         </button>
       </div>
-      <p style={styles.cardDescription}>
-        这些参数主要影响人格设定辅助、学习对话和工具链回退逻辑。默认值已经偏稳妥，只有在你明确知道要调什么时再改。
-      </p>
-
       {controller.advancedExpanded ? (
         <div style={styles.advancedContent}>
           <div style={styles.grid2}>
@@ -519,7 +498,6 @@ export function DebugVisibilityCard({
   return (
     <section style={styles.card}>
       <h2 style={styles.cardTitle}>调试信息显示</h2>
-      <p style={styles.cardDescription}>控制计划页和学习对话页里的调试悬浮信息是否可见，这个开关和模型提供器无关。</p>
       <label style={styles.switchField}>
         <input
           type="checkbox"
@@ -601,7 +579,7 @@ function ScopeModelCard({
         />
         {desktopManagedSecrets ? (
           <span style={styles.fieldHint}>
-            {configured ? "当前场景已有可用密钥，解锁后会显示明文输入框。" : "未检测到该场景的可用密钥。"}
+            {configured ? "该场景已有密钥，解锁后可编辑。" : "该场景还没有密钥。"}
           </span>
         ) : null}
       </label>
@@ -625,7 +603,7 @@ function ScopeModelCard({
           disabled={probe.loading || desktopManagedSecrets}
           onClick={() => void controller.probeScope(config.scope)}
         >
-          {probe.loading ? "拉取中..." : "拉取模型与能力"}
+          {probe.loading ? "拉取中…" : "拉取模型与能力"}
         </button>
         <span style={styles.probeHint}>{formatProbeHint(probe)}</span>
       </div>
@@ -706,16 +684,16 @@ function savePhaseBadge(phase: SettingsController["savePhase"]): {
 
 function savePhaseText(phase: SettingsController["savePhase"], error: string): string {
   if (phase === "saving") {
-    return "正在把最新修改同步到后端。";
+    return "正在保存修改。";
   }
   if (phase === "pending") {
-    return "检测到更改，稍后会自动保存。";
+    return "等待保存。";
   }
   if (phase === "error") {
     return `自动保存失败：${error || "未知错误"}`;
   }
   if (phase === "saved") {
-    return "最近一次修改已经自动保存。";
+    return "已保存。";
   }
-  return "设置加载后会进入自动保存模式。";
+  return "";
 }

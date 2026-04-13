@@ -70,7 +70,7 @@ export function PlanOverview({
         plan.courseTitle,
         plan.creationMode === "goal_only" ? "目标导向学习计划" : documentTitle
       )
-    : "上传教材后，这里会显示当前计划。";
+    : "这里会显示当前计划。";
 
   const handleSaveTitle = async () => {
     if (!plan) {
@@ -104,8 +104,7 @@ export function PlanOverview({
     <section style={styles.wrap}>
       <div style={styles.headerRow}>
         <div style={styles.headerMeta}>
-          <span style={styles.sectionLabel}>当前计划</span>
-          <span style={styles.sectionHint}>右侧查看详情，左侧继续生成新计划。</span>
+          <span style={styles.sectionLabel}>计划</span>
         </div>
         {plan ? <span style={styles.badge}>{planPositionLabel}</span> : null}
       </div>
@@ -182,7 +181,7 @@ export function PlanOverview({
               <dd style={styles.metaVal}>{personaName}</dd>
             </div>
             <div style={styles.metaItem}>
-              <dt style={styles.metaKey}>场景使用</dt>
+              <dt style={styles.metaKey}>场景</dt>
               <dd style={styles.metaVal}>
                 {sceneProfile ? formatSceneProfile(sceneProfile) : plan.sceneProfileSummary || "未配置"}
               </dd>
@@ -196,17 +195,14 @@ export function PlanOverview({
           {sceneProfile ? (
             <div style={styles.sceneCard}>
               <div style={styles.sceneCardHead}>
-                <span style={styles.sectionLabel}>当前学习场景</span>
+                <span style={styles.sectionLabel}>学习场景</span>
                 <span style={styles.count}>{countSceneNodes(sceneProfile.sceneTree)} 节点</span>
               </div>
-              <p style={styles.sceneName}>云端名称：{sceneProfile.sceneName || "未命名"}</p>
+              <p style={styles.sceneName}>场景名：{sceneProfile.sceneName || "未命名"}</p>
               <div style={styles.sceneTitleRow}>
                 <strong style={styles.sceneTitle}>{sceneProfile.title}</strong>
                 <span style={styles.scenePath}>{sceneProfile.selectedPath.join(" / ")}</span>
               </div>
-              <p style={styles.scenePath}>
-                场景树根节点：{sceneProfile.sceneTree.map((node) => node.title).join(" / ") || "未配置"}
-              </p>
               <p style={styles.sceneSummary}>{sceneProfile.summary}</p>
               <div style={styles.sceneTags}>
                 {sceneProfile.tags.slice(0, 4).map((tag) => (
@@ -253,7 +249,7 @@ export function PlanOverview({
                       <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
                     </div>
                     <span style={styles.scheduleFocus}>
-                      {item.objectiveFragment || "当前章节尚未写入额外目标说明。"}
+                      {item.objectiveFragment || "暂无补充说明。"}
                     </span>
                     <div style={styles.chapterProgressTrack}>
                       <div
@@ -379,7 +375,7 @@ export function PlanOverview({
             <div style={styles.questionCard}>
               <div style={styles.sectionHead}>
                 <div style={styles.sectionHeadMeta}>
-                  <span style={styles.sectionLabel}>规划问题</span>
+                  <span style={styles.sectionLabel}>补充信息</span>
                   <span style={styles.count}>{pendingPlanningQuestions.length} 条待答</span>
                 </div>
               </div>
@@ -392,12 +388,7 @@ export function PlanOverview({
                         {item.status === "answered" ? "已回答" : "待回答"}
                       </span>
                     </div>
-                    {item.reason ? <span style={styles.questionReason}>原因：{item.reason}</span> : null}
-                    {item.assumptions.length ? (
-                      <span style={styles.questionReason}>
-                        继续规划时采用的保守假设：{item.assumptions.join("；")}
-                      </span>
-                    ) : null}
+                    {item.reason ? <span style={styles.questionReason}>备注：{item.reason}</span> : null}
                     <textarea
                       value={planningAnswerDrafts[item.id] ?? ""}
                       onChange={(event) =>
@@ -407,7 +398,7 @@ export function PlanOverview({
                         }))
                       }
                       style={styles.focusTextarea}
-                      placeholder="补充你的回答，后续可用于继续修订计划。"
+                      placeholder="输入回答"
                       disabled={isBusy}
                     />
                     <div style={styles.titleActions}>
@@ -437,7 +428,7 @@ export function PlanOverview({
 
           <div style={styles.actionRow}>
             {hasSession ? (
-              <span style={styles.sessionConnected}>章节会话已连接</span>
+              <span style={styles.sessionConnected}>会话已创建</span>
             ) : (
               <button
                 type="button"
@@ -456,7 +447,7 @@ export function PlanOverview({
       ) : (
         <div style={styles.emptyState}>
           <h2 style={styles.title}>暂无学习计划</h2>
-          <p style={styles.overview}>上传教材并完成分析后，这里会显示课程题目、学习章节和计划概览。</p>
+          <p style={styles.overview}>生成计划后会显示在这里。</p>
         </div>
       )}
 
@@ -473,7 +464,7 @@ export function PlanOverview({
               disabled={isBusy}
               onClick={() => setIsEditingStudyChapters((current) => !current)}
             >
-              {isEditingStudyChapters ? "收起编辑" : "编辑学习章节"}
+              {isEditingStudyChapters ? "收起编辑" : "编辑章节"}
             </button>
           ) : null}
         </div>
@@ -515,7 +506,7 @@ export function PlanOverview({
         <ol style={styles.list}>
           {(plan?.studyChapters.length
             ? plan.studyChapters
-            : ["暂无学习章节，上传教材后可生成或手动补充。"]
+            : ["还没有学习章节。"]
           ).map((focus, index) => (
             <li key={`${focus}-${index}`} style={styles.listItem}>
               <span style={styles.idx}>{index + 1}</span>

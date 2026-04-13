@@ -16,7 +16,7 @@ export default function SensoryToolsPage() {
   const debugSnapshot = useMemo(
     () => ({
       title: "感官工具调试面板",
-      subtitle: "展示当前模型工具配置、阶段可用性和本页操作错误，便于核对工具链是否被正确下发。",
+      subtitle: "查看工具配置和本页错误。",
       error,
       summary: [
         { label: "加载状态", value: loading ? "加载中" : "就绪" },
@@ -112,10 +112,9 @@ export default function SensoryToolsPage() {
 
       <header style={styles.header}>
         <h1 style={styles.title}>感官工具</h1>
-        <p style={styles.subtitle}>统一管理模型在不同阶段可调用的工具，包括教材感官、记忆检索、练习评测，以及会话场景工具。</p>
       </header>
 
-      {loading ? <div style={styles.loading}>正在加载工具配置...</div> : null}
+      {loading ? <div style={styles.loading}>正在加载工具配置…</div> : null}
       {error ? <div style={styles.error}>配置更新失败：{error}</div> : null}
 
       {!loading && config ? (
