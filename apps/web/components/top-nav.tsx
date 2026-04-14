@@ -23,11 +23,11 @@ const NAV_ITEMS: Array<{
   icon: MaterialIconName;
 }> = [
   { href: "/", label: "导航首页", icon: "home" },
-  { href: "/plan", label: "计划生成", icon: "description" },
-  { href: "/study", label: "章节对话", icon: "chat" },
-  { href: "/persona-spectrum", label: "人格色谱", icon: "person" },
+  { href: "/plan", label: "计划生成", icon: "event_note" },
+  { href: "/study", label: "章节对话", icon: "forum" },
+  { href: "/persona-spectrum", label: "人格色谱", icon: "psychology_alt" },
   { href: "/scene-setup", label: "场景搭建", icon: "account_tree" },
-  { href: "/sensory-tools", label: "感官工具", icon: "visibility" },
+  { href: "/sensory-tools", label: "感官工具", icon: "tune" },
   { href: "/settings", label: "统一设置", icon: "settings" },
   { href: "/model-usage", label: "用量审计", icon: "bar_chart" },
 ];

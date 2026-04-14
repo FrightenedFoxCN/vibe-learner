@@ -3,11 +3,15 @@ import type { CSSProperties, ReactNode } from "react";
 export type MaterialIconName =
   | "home"
   | "description"
+  | "event_note"
   | "chat"
+  | "forum"
   | "person"
+  | "psychology_alt"
   | "account_tree"
   | "landscape"
   | "visibility"
+  | "tune"
   | "settings"
   | "bar_chart"
   | "chevron_left"
@@ -22,14 +26,24 @@ export type MaterialIconName =
   | "auto_awesome"
   | "undo"
   | "add"
+  | "add_circle"
   | "delete"
   | "library_add"
   | "create_new_folder"
   | "subdirectory_arrow_right"
   | "replay"
+  | "refresh"
   | "adjust"
+  | "check_circle"
+  | "category"
   | "upload"
+  | "upload_file"
+  | "attach_file"
   | "download"
+  | "save"
+  | "file_open"
+  | "input"
+  | "crop_free"
   | "arrow_forward"
   | "send"
   | "menu_book"
@@ -89,6 +103,17 @@ function renderIcon(name: MaterialIconName): ReactNode {
           <path d="M9.5 18h3.5" />
         </>
       );
+    case "event_note":
+      return (
+        <>
+          <path d="M7 5.5h10a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 17 19.5H7A1.5 1.5 0 0 1 5.5 18V7A1.5 1.5 0 0 1 7 5.5Z" />
+          <path d="M8 3.5v4" />
+          <path d="M16 3.5v4" />
+          <path d="M5.5 9.5h13" />
+          <path d="M9 13h6" />
+          <path d="M9 16h4" />
+        </>
+      );
     case "chat":
       return (
         <>
@@ -97,11 +122,28 @@ function renderIcon(name: MaterialIconName): ReactNode {
           <path d="M9 13.5h4.5" />
         </>
       );
+    case "forum":
+      return (
+        <>
+          <path d="M4.5 7.5h10v7H9L5 18v-3.5Z" />
+          <path d="M14 8.5h5.5v7H17l-2.5 2v-2" />
+          <path d="M8 10.5h4" />
+          <path d="M16 11h1.5" />
+        </>
+      );
     case "person":
       return (
         <>
           <circle cx="12" cy="8" r="3.25" />
           <path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+        </>
+      );
+    case "psychology_alt":
+      return (
+        <>
+          <path d="M12 4.5a6.5 6.5 0 0 0-6.5 6.5c0 2.4 1.1 4.5 2.8 5.9V20l2.2-1.5a7.4 7.4 0 0 0 1.5.15 6.5 6.5 0 1 0 0-13Z" />
+          <path d="M10 10.25c.5-.75 1.2-1.25 2-1.25 1 0 1.75.7 1.75 1.6 0 .75-.45 1.2-1.1 1.65-.75.5-1.15.95-1.15 1.75" />
+          <circle cx="11.5" cy="15.2" r=".9" fill="currentColor" stroke="none" />
         </>
       );
     case "account_tree":
@@ -129,6 +171,15 @@ function renderIcon(name: MaterialIconName): ReactNode {
         <>
           <path d="M3.5 12s3.25-5 8.5-5 8.5 5 8.5 5-3.25 5-8.5 5-8.5-5-8.5-5Z" />
           <circle cx="12" cy="12" r="2.75" />
+        </>
+      );
+    case "tune":
+      return (
+        <>
+          <path d="M5 7.5h14" />
+          <path d="M5 16.5h14" />
+          <circle cx="9" cy="7.5" r="2" />
+          <circle cx="15" cy="16.5" r="2" />
         </>
       );
     case "settings":
@@ -270,6 +321,14 @@ function renderIcon(name: MaterialIconName): ReactNode {
           <path d="M5 12h14" />
         </>
       );
+    case "add_circle":
+      return (
+        <>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 8.5v7" />
+          <path d="M8.5 12h7" />
+        </>
+      );
     case "delete":
       return (
         <>
@@ -312,11 +371,36 @@ function renderIcon(name: MaterialIconName): ReactNode {
           <path d="M19.5 9.5a7.5 7.5 0 1 0 1.9 5" />
         </>
       );
+    case "refresh":
+      return (
+        <>
+          <path d="M18.5 8.5A7 7 0 0 0 6.2 7" />
+          <path d="M5.5 4.5v4h4" />
+          <path d="M5.5 15.5A7 7 0 0 0 17.8 17" />
+          <path d="M18.5 19.5v-4h-4" />
+        </>
+      );
     case "adjust":
       return (
         <>
           <circle cx="12" cy="12" r="6.5" />
           <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+        </>
+      );
+    case "check_circle":
+      return (
+        <>
+          <circle cx="12" cy="12" r="8" />
+          <path d="m8.75 12.25 2.25 2.25 4.5-5" />
+        </>
+      );
+    case "category":
+      return (
+        <>
+          <rect x="5" y="5.5" width="5" height="5" rx="1" />
+          <circle cx="16.5" cy="8" r="2.5" />
+          <path d="m6 18.5 3-4.5 3 4.5Z" />
+          <path d="M13.5 15h6v3.5h-6Z" />
         </>
       );
     case "upload":
@@ -327,11 +411,68 @@ function renderIcon(name: MaterialIconName): ReactNode {
           <path d="M5 18.5h14" />
         </>
       );
+    case "upload_file":
+      return (
+        <>
+          <path d="M7 3.5h7l4 4V20.5H7z" />
+          <path d="M14 3.5v4h4" />
+          <path d="M12 17.5v-6" />
+          <path d="m9.5 14 2.5-2.5 2.5 2.5" />
+        </>
+      );
+    case "attach_file":
+      return (
+        <>
+          <path d="m8.5 12.5 5.75-5.75a2.75 2.75 0 1 1 3.9 3.9l-7.25 7.25a4.25 4.25 0 1 1-6-6l6.75-6.75" />
+        </>
+      );
     case "arrow_forward":
       return (
         <>
           <path d="M5 12h14" />
           <path d="m13 7 5 5-5 5" />
+        </>
+      );
+    case "save":
+      return (
+        <>
+          <path d="M6.5 4.5h9l3 3V19.5H5.5V5.5a1 1 0 0 1 1-1Z" />
+          <path d="M8.5 4.5v5h6v-5" />
+          <path d="M8.5 16h7" />
+        </>
+      );
+    case "file_open":
+      return (
+        <>
+          <path d="M4.5 8.5V7a1.5 1.5 0 0 1 1.5-1.5H9l1.75 2H18A1.5 1.5 0 0 1 19.5 9v1" />
+          <path d="M4.5 10.5h15l-1.5 7.5H6z" />
+          <path d="M11 13.5h5" />
+          <path d="m13.5 11 2.5 2.5-2.5 2.5" />
+        </>
+      );
+    case "input":
+      return (
+        <>
+          <path d="M18.5 5.5v13" />
+          <path d="M5 12h10" />
+          <path d="m11.5 8.5 4 3.5-4 3.5" />
+        </>
+      );
+    case "crop_free":
+      return (
+        <>
+          <path d="M7 4.5H4.5V7" />
+          <path d="M17 4.5h2.5V7" />
+          <path d="M17 19.5h2.5V17" />
+          <path d="M7 19.5H4.5V17" />
+          <path d="M4.5 11V9.5" />
+          <path d="M19.5 11V9.5" />
+          <path d="M4.5 14.5V13" />
+          <path d="M19.5 14.5V13" />
+          <path d="M11 4.5H9.5" />
+          <path d="M14.5 4.5H13" />
+          <path d="M11 19.5H9.5" />
+          <path d="M14.5 19.5H13" />
         </>
       );
     case "hourglass_top":

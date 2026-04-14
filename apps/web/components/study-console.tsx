@@ -415,7 +415,7 @@ export function StudyConsole({
                   aria-label="添加附件"
                   title="添加附件"
                 >
-                  <MaterialIcon name="add" size={16} />
+                  <MaterialIcon name="attach_file" size={16} />
                 </button>
                 {onInterruptDialogue ? (
                   <button

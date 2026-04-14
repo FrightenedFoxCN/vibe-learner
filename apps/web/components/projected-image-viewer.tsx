@@ -91,7 +91,7 @@ export function ProjectedImageViewer({
     <div style={styles.wrap}>
       <div style={styles.floatingBar}>
         <span style={styles.selectionBadge}>
-          <MaterialIcon name="drag_indicator" size={14} />
+          <MaterialIcon name="crop_free" size={14} />
         </span>
         {selectedRegion ? (
           <button
@@ -101,7 +101,7 @@ export function ProjectedImageViewer({
             title="插入选区"
             aria-label="插入选区"
           >
-            <MaterialIcon name="add" size={15} />
+            <MaterialIcon name="input" size={15} />
           </button>
         ) : null}
         {(selectedRegion || draftRegion) ? (

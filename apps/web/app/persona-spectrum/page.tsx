@@ -921,7 +921,7 @@ export default function PersonaSpectrumPage() {
             title="插入当前人格"
             aria-label="插入当前人格"
           >
-            <MaterialIcon name="subdirectory_arrow_right" size={16} />
+            <MaterialIcon name="input" size={16} />
           </button>
           <button
             data-card-action="true"
@@ -932,7 +932,7 @@ export default function PersonaSpectrumPage() {
             title={cardDeletePendingId === card.id ? "删除中" : "删除"}
             aria-label={cardDeletePendingId === card.id ? "删除中" : "删除"}
           >
-            <MaterialIcon name={cardDeletePendingId === card.id ? "replay" : "delete"} size={16} />
+            <MaterialIcon name={cardDeletePendingId === card.id ? "hourglass_top" : "delete"} size={16} />
           </button>
         </div>
       </article>
@@ -975,7 +975,7 @@ export default function PersonaSpectrumPage() {
             title={isSelected ? "编辑中" : "载入"}
             aria-label={isSelected ? "编辑中" : "载入"}
           >
-            <MaterialIcon name={isSelected ? "adjust" : "arrow_forward"} size={16} />
+            <MaterialIcon name={isSelected ? "check_circle" : "file_open"} size={16} />
           </button>
           {persona.source === "user" ? (
             <button
@@ -986,7 +986,7 @@ export default function PersonaSpectrumPage() {
               title={personaDeletePendingId === persona.id ? "删除中" : "删除"}
               aria-label={personaDeletePendingId === persona.id ? "删除中" : "删除"}
             >
-              <MaterialIcon name={personaDeletePendingId === persona.id ? "replay" : "delete"} size={16} />
+              <MaterialIcon name={personaDeletePendingId === persona.id ? "hourglass_top" : "delete"} size={16} />
             </button>
           ) : null}
         </div>
@@ -1045,7 +1045,7 @@ export default function PersonaSpectrumPage() {
                       title={assistPending ? "AI 重写中" : "AI 重写"}
                       aria-label={assistPending ? "AI 重写中" : "AI 重写"}
                     >
-                      <MaterialIcon name={assistPending ? "replay" : "auto_awesome"} size={16} />
+                      <MaterialIcon name={assistPending ? "hourglass_top" : "auto_awesome"} size={16} />
                     </button>
                     {isRewritePopoverOpen ? (
                       <div style={styles.rewritePopover}>
@@ -1081,7 +1081,7 @@ export default function PersonaSpectrumPage() {
                     title={savingPersona ? "创建人格中" : "创建人格"}
                     aria-label={savingPersona ? "创建人格中" : "创建人格"}
                   >
-                    <MaterialIcon name="add" size={18} />
+                    <MaterialIcon name="add_circle" size={18} />
                   </button>
                   <button
                     type="button"
@@ -1091,7 +1091,7 @@ export default function PersonaSpectrumPage() {
                     title={savingPersona ? "更新人格中" : "更新人格"}
                     aria-label={savingPersona ? "更新人格中" : "更新人格"}
                   >
-                    <MaterialIcon name="upload" size={16} />
+                    <MaterialIcon name="save" size={16} />
                   </button>
                 </div>
               </div>
@@ -1350,7 +1350,7 @@ export default function PersonaSpectrumPage() {
                                 onClick={() => void handleAssistSlot(index)}
                                 disabled={assistPending || slotAssistIndex === index || Boolean(slot.locked)}
                               >
-                                <MaterialIcon name={slotAssistIndex === index ? "replay" : "auto_awesome"} size={15} />
+                                <MaterialIcon name={slotAssistIndex === index ? "hourglass_top" : "auto_awesome"} size={15} />
                               </button>
                             </div>
                           </>
@@ -1480,8 +1480,8 @@ export default function PersonaSpectrumPage() {
                     <MaterialIcon
                       name={
                         cardGenerationMode === "keywords"
-                          ? (cardActionPending === "generate_keywords" ? "replay" : "auto_awesome")
-                          : (cardActionPending === "generate_long_text" ? "replay" : "description")
+                          ? (cardActionPending === "generate_keywords" ? "hourglass_top" : "auto_awesome")
+                          : (cardActionPending === "generate_long_text" ? "hourglass_top" : "description")
                       }
                       size={14}
                     />
@@ -1526,7 +1526,7 @@ export default function PersonaSpectrumPage() {
                         title="应用到当前编辑区"
                         aria-label="应用到当前编辑区"
                       >
-                        <MaterialIcon name="subdirectory_arrow_right" size={14} />
+                        <MaterialIcon name="input" size={14} />
                       </button>
                     </div>
                   </div>

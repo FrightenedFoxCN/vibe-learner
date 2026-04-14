@@ -58,7 +58,7 @@ export function PlanHistory({
             aria-label={isRefreshing ? "刷新中" : "刷新计划历史"}
             title={isRefreshing ? "刷新中…" : "刷新"}
           >
-            <MaterialIcon name="replay" size={16} />
+            <MaterialIcon name={isRefreshing ? "hourglass_top" : "refresh"} size={16} />
           </button>
           {items.length ? (
             <button
@@ -109,7 +109,7 @@ export function PlanHistory({
                       onClick={() => { if (!selected) onSelect(item.id); }}
                       disabled={selected || isBusy}
                     >
-                      <MaterialIcon name="description" size={16} />
+                      <MaterialIcon name="event_note" size={16} />
                       <span>{selected ? "当前计划" : "查看计划"}</span>
                     </button>
                     {pendingDeletePlanId === item.id ? (

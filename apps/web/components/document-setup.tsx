@@ -103,7 +103,7 @@ export function DocumentSetup({
             disabled={isGenerateDisabled}
             onClick={handleGenerate}
           >
-            <MaterialIcon name="upload" size={18} />
+            <MaterialIcon name="auto_awesome" size={18} />
             {generateButtonLabel}
           </button>
         </div>

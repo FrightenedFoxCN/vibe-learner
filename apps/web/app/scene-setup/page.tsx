@@ -1347,7 +1347,7 @@ export default function SceneSetupPage() {
                 title={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
                 aria-label={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
               >
-                <MaterialIcon name="upload" size={14} />
+                <MaterialIcon name="save" size={14} />
               </button>
               <button
                 style={styles.sidebarIconButton}
@@ -1365,7 +1365,7 @@ export default function SceneSetupPage() {
                 title="导入 JSON"
                 aria-label="导入 JSON"
               >
-                <MaterialIcon name="add" size={14} />
+                <MaterialIcon name="upload_file" size={14} />
               </button>
               <button
                 style={styles.sidebarIconButton}
@@ -1506,8 +1506,8 @@ export default function SceneSetupPage() {
                     <MaterialIcon
                       name={
                         sceneGenerateMode === "keywords"
-                          ? (sceneGeneratePending === "keywords" ? "replay" : "auto_awesome")
-                          : (sceneGeneratePending === "long_text" ? "replay" : "description")
+                          ? (sceneGeneratePending === "keywords" ? "hourglass_top" : "auto_awesome")
+                          : (sceneGeneratePending === "long_text" ? "hourglass_top" : "description")
                       }
                       size={14}
                     />
@@ -1551,7 +1551,7 @@ export default function SceneSetupPage() {
                         title="应用到编辑区"
                         aria-label="应用到编辑区"
                       >
-                        <MaterialIcon name="subdirectory_arrow_right" size={14} />
+                        <MaterialIcon name="input" size={14} />
                       </button>
                     </div>
                   </div>
@@ -1598,7 +1598,7 @@ export default function SceneSetupPage() {
                           title="插入到当前层级"
                           aria-label="插入到当前层级"
                         >
-                          <MaterialIcon name="subdirectory_arrow_right" size={14} />
+                          <MaterialIcon name="input" size={14} />
                         </button>
                         <button
                           style={styles.sidebarIconButton}
@@ -1608,7 +1608,7 @@ export default function SceneSetupPage() {
                           title={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
                           aria-label={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
                         >
-                          <MaterialIcon name={reusableActionPendingId === item.nodeId ? "replay" : "delete"} size={14} />
+                          <MaterialIcon name={reusableActionPendingId === item.nodeId ? "hourglass_top" : "delete"} size={14} />
                         </button>
                       </div>
                     </article>
@@ -1653,7 +1653,7 @@ export default function SceneSetupPage() {
                               title="载入场景"
                               aria-label="载入场景"
                             >
-                              <MaterialIcon name="replay" size={14} />
+                              <MaterialIcon name="file_open" size={14} />
                             </button>
                             <button
                               style={isSelected ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
@@ -1662,7 +1662,7 @@ export default function SceneSetupPage() {
                               title={isSelected ? "当前更新目标" : "作为更新目标"}
                               aria-label={isSelected ? "当前更新目标" : "作为更新目标"}
                             >
-                              <MaterialIcon name="adjust" size={14} />
+                              <MaterialIcon name="check_circle" size={14} />
                             </button>
                             <button
                               style={styles.sidebarIconButton}
@@ -1783,10 +1783,10 @@ function SceneLayerCard({
         ) : null}
 
         <div style={styles.cardActions}>
-          <SceneIconButton icon="add" label="添加子层" size="micro" variant="accent" onClick={stopCardAction(() => onAddChild(layer.id))} />
-          <SceneIconButton icon="adjust" label="添加物体" size="micro" onClick={stopCardAction(() => onAddObject(layer.id))} />
+          <SceneIconButton icon="add_circle" label="添加子层" size="micro" variant="accent" onClick={stopCardAction(() => onAddChild(layer.id))} />
+          <SceneIconButton icon="category" label="添加物体" size="micro" onClick={stopCardAction(() => onAddObject(layer.id))} />
           <SceneIconButton
-            icon={reusableActionPendingId === layer.id ? "replay" : "create_new_folder"}
+            icon={reusableActionPendingId === layer.id ? "hourglass_top" : "create_new_folder"}
             label="加入节点库"
             size="micro"
             onClick={stopCardAction(() => onSaveToReusable(layer.id))}
@@ -1890,7 +1890,7 @@ function SceneObjectCard({
       >
         <div style={styles.objectNodeTopRow}>
           <div style={styles.objectNodeBadge}>
-            <MaterialIcon name="adjust" size={14} />
+            <MaterialIcon name="category" size={14} />
           </div>
           <div style={styles.layerHeadCopy}>
             <span style={styles.layerScope}>物体节点</span>
@@ -1914,7 +1914,7 @@ function SceneObjectCard({
 
         <div style={styles.cardActions}>
           <SceneIconButton
-            icon={reusableActionPendingId === object.id ? "replay" : "create_new_folder"}
+            icon={reusableActionPendingId === object.id ? "hourglass_top" : "create_new_folder"}
             label="加入节点库"
             size="micro"
             onClick={stopCardAction(() => onSaveToReusable(object))}

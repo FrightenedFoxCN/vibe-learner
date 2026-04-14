@@ -222,7 +222,7 @@ export function ProjectedPdfViewer({
             title="框选"
             aria-label="框选"
           >
-            <MaterialIcon name="drag_indicator" size={15} />
+            <MaterialIcon name="crop_free" size={15} />
           </button>
 
           {textSelection ? <span style={styles.selectionBadge}>已选文段</span> : null}
@@ -236,7 +236,7 @@ export function ProjectedPdfViewer({
               title="插入引用"
               aria-label="插入引用"
             >
-              <MaterialIcon name="add" size={15} />
+              <MaterialIcon name="input" size={15} />
             </button>
           ) : null}
           {selectedRegion ? (
@@ -247,7 +247,7 @@ export function ProjectedPdfViewer({
               title="插入选区"
               aria-label="插入选区"
             >
-              <MaterialIcon name="add" size={15} />
+              <MaterialIcon name="input" size={15} />
             </button>
           ) : null}
           {(textSelection || selectedRegion || draftRegion) ? (

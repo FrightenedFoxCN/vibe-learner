@@ -8,21 +8,21 @@ const PAGES = [
   {
     num: "01",
     href: "/plan" as const,
-    icon: "description" as MaterialIconName,
+    icon: "event_note" as MaterialIconName,
     title: "计划生成",
     desc: "上传教材并生成学习计划。",
   },
   {
     num: "02",
     href: "/study" as const,
-    icon: "chat" as MaterialIconName,
+    icon: "forum" as MaterialIconName,
     title: "章节对话",
     desc: "按章节提问，联动查看教材。",
   },
   {
     num: "03",
     href: "/persona-spectrum" as const,
-    icon: "person" as MaterialIconName,
+    icon: "psychology_alt" as MaterialIconName,
     title: "人格色谱",
     desc: "管理教师人格与风格。",
   },
@@ -36,7 +36,7 @@ const PAGES = [
   {
     num: "05",
     href: "/sensory-tools" as const,
-    icon: "visibility" as MaterialIconName,
+    icon: "tune" as MaterialIconName,
     title: "感官工具",
     desc: "管理对话可用工具。",
   },
