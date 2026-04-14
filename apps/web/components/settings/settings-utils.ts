@@ -82,15 +82,6 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
     capabilityKey: "multimodal"
   },
   {
-    scope: "setting",
-    title: "人格设定辅助模型",
-    description: "对照网络访问能力与人格设定的联网开关。",
-    modelKey: "openaiSettingModel",
-    manualKey: "openaiSettingWebSearchEnabled",
-    manualLabel: "允许联网检索",
-    capabilityKey: "webSearch"
-  },
-  {
     scope: "chat",
     title: "学习对话模型",
     description: "对照图像输入能力与学习对话多模态开关。",
@@ -98,6 +89,15 @@ export const CAPABILITY_AUDIT_CONFIGS: CapabilityAuditConfig[] = [
     manualKey: "openaiChatModelMultimodal",
     manualLabel: "对话支持图像输入",
     capabilityKey: "multimodal"
+  },
+  {
+    scope: "setting",
+    title: "设定辅助模型",
+    description: "对照网络访问能力与设定辅助的联网开关。",
+    modelKey: "openaiSettingModel",
+    manualKey: "openaiSettingWebSearchEnabled",
+    manualLabel: "允许联网检索",
+    capabilityKey: "webSearch"
   }
 ];
 

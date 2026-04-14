@@ -911,6 +911,19 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertIsNotNone(saved_record)
         self.assertEqual(saved_record.openai_api_key, "")
 
+    def test_settings_detect_runtime_api_keys_per_feature(self) -> None:
+        from app.core.settings import Settings
+
+        settings = Settings(
+            plan_provider="litellm",
+            openai_setting_api_key="sk-setting-only",
+        )
+
+        self.assertTrue(settings.has_any_runtime_api_key())
+        self.assertFalse(settings.has_plan_api_key())
+        self.assertTrue(settings.has_setting_api_key())
+        self.assertFalse(settings.has_chat_api_key())
+
     def test_parse_chat_model_reply_accepts_plain_text_without_warning_path(self) -> None:
         raw_payload = {
             "choices": [

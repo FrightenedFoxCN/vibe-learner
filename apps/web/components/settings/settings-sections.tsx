@@ -32,20 +32,20 @@ const MODEL_SCOPE_CONFIGS: ScopeModelConfig[] = [
     modelKey: "openaiPlanModel"
   },
   {
-    scope: "setting",
-    title: "人格设定辅助",
-    description: "用于人格内容生成与润色。",
-    apiKeyKey: "openaiSettingApiKey",
-    baseUrlKey: "openaiSettingBaseUrl",
-    modelKey: "openaiSettingModel"
-  },
-  {
     scope: "chat",
     title: "学习对话",
     description: "用于章节对话。",
     apiKeyKey: "openaiChatApiKey",
     baseUrlKey: "openaiChatBaseUrl",
     modelKey: "openaiChatModel"
+  },
+  {
+    scope: "setting",
+    title: "设定辅助",
+    description: "用于人格与场景设定内容生成与润色。",
+    apiKeyKey: "openaiSettingApiKey",
+    baseUrlKey: "openaiSettingBaseUrl",
+    modelKey: "openaiSettingModel"
   }
 ];
 

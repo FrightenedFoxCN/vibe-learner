@@ -40,6 +40,23 @@ class Settings:
     openai_plan_fallback_model: str = ""
     openai_plan_fallback_disable_tools: bool = True
 
+    def has_any_runtime_api_key(self) -> bool:
+        return bool(
+            self.openai_api_key.strip()
+            or self.openai_plan_api_key.strip()
+            or self.openai_setting_api_key.strip()
+            or self.openai_chat_api_key.strip()
+        )
+
+    def has_plan_api_key(self) -> bool:
+        return bool(self.openai_plan_api_key.strip() or self.openai_api_key.strip())
+
+    def has_setting_api_key(self) -> bool:
+        return bool(self.openai_setting_api_key.strip() or self.openai_api_key.strip())
+
+    def has_chat_api_key(self) -> bool:
+        return bool(self.openai_chat_api_key.strip() or self.openai_api_key.strip())
+
     @classmethod
     def from_env(cls) -> "Settings":
         _load_dotenv()

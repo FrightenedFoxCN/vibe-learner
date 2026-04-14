@@ -110,11 +110,23 @@ class Container:
 
     def _build_model_provider(self, settings: Settings):
         if settings.plan_provider in {"openai", "litellm"}:
-            if not (settings.openai_plan_api_key or settings.openai_api_key):
+            if not settings.has_any_runtime_api_key():
                 logger.warning(
-                    "bootstrap.model_provider litellm requested but OPENAI_PLAN_API_KEY/OPENAI_API_KEY missing; falling back to mock"
+                    "bootstrap.model_provider litellm requested but all OPENAI runtime API keys are missing; falling back to mock"
                 )
                 return MockModelProvider()
+            if not settings.has_plan_api_key():
+                logger.warning(
+                    "bootstrap.model_provider litellm enabled without plan API key; learning plan generation will stay unavailable until OPENAI_PLAN_API_KEY or OPENAI_API_KEY is configured"
+                )
+            if not settings.has_setting_api_key():
+                logger.warning(
+                    "bootstrap.model_provider litellm enabled without setting API key; persona and scene setting features will stay unavailable until OPENAI_SETTING_API_KEY or OPENAI_API_KEY is configured"
+                )
+            if not settings.has_chat_api_key():
+                logger.warning(
+                    "bootstrap.model_provider litellm enabled without chat API key; study chat features will stay unavailable until OPENAI_CHAT_API_KEY or OPENAI_API_KEY is configured"
+                )
             logger.info(
                 "bootstrap.model_provider provider=litellm plan_model=%s base_url=%s",
                 settings.openai_plan_model,
