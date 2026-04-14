@@ -63,11 +63,17 @@ export function PlanHistory({
           {items.length ? (
             <button
               type="button"
-              style={styles.toggleButton}
+              style={styles.iconButton}
               onClick={() => setIsExpanded((current) => !current)}
               disabled={isBusy}
+              aria-label={isExpanded ? "收起历史" : "展开历史"}
+              title={isExpanded ? "收起历史" : "展开历史"}
             >
-              {isExpanded ? "收起历史" : "展开历史"}
+              <MaterialIcon
+                name="expand_more"
+                size={16}
+                style={{ transform: isExpanded ? "rotate(180deg)" : "none" }}
+              />
             </button>
           ) : null}
         </div>
@@ -166,8 +172,8 @@ const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
     gap: 12,
-    paddingTop: 18,
-    borderTop: "1px solid var(--border)",
+    paddingTop: 16,
+    borderTop: "1px solid color-mix(in srgb, var(--border) 76%, white)",
   },
   headerRow: {
     display: "flex",
@@ -180,9 +186,11 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
   },
   label: {
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: 700,
-    color: "var(--ink)",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "var(--muted)",
   },
   headerActions: {
     display: "flex",
@@ -192,25 +200,15 @@ const styles: Record<string, CSSProperties> = {
   iconButton: {
     width: 30,
     height: 30,
-    border: "1px solid var(--border)",
+    border: "none",
     padding: 0,
-    background: "transparent",
-    color: "var(--muted)",
-    fontSize: 12,
+    background: "color-mix(in srgb, white 70%, var(--surface))",
+    color: "var(--ink-2)",
+    fontSize: 11,
     cursor: "pointer",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-  },
-  toggleButton: {
-    minHeight: 30,
-    border: "1px solid color-mix(in srgb, var(--accent) 18%, var(--border))",
-    padding: "0 10px",
-    background: "white",
-    color: "var(--accent)",
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: "pointer",
   },
   list: {
     display: "grid",
@@ -220,11 +218,12 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 10,
     padding: "14px 16px",
-    border: "1px solid var(--border)",
-    background: "white",
+    border: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+    background: "color-mix(in srgb, white 84%, var(--surface))",
   },
   itemActive: {
-    background: "var(--panel)",
+    borderColor: "color-mix(in srgb, var(--accent) 20%, var(--border))",
+    background: "color-mix(in srgb, white 74%, var(--accent-soft))",
   },
   itemTop: {
     display: "flex",
@@ -238,18 +237,19 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   itemTitle: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: 600,
     color: "var(--ink)",
   },
   itemMeta: {
-    fontSize: 12,
+    fontSize: 11,
     color: "var(--muted)",
   },
   badge: {
-    fontSize: 11,
+    fontSize: 10,
     color: "var(--accent)",
-    border: "1px solid color-mix(in srgb, var(--accent) 18%, var(--border))",
-    background: "white",
+    border: "none",
+    background: "color-mix(in srgb, white 68%, var(--accent-soft))",
     padding: "2px 6px",
     whiteSpace: "nowrap",
   },
@@ -257,7 +257,7 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
     color: "var(--muted)",
     lineHeight: 1.6,
-    fontSize: 13,
+    fontSize: 14,
     display: "-webkit-box",
     WebkitLineClamp: 2,
     WebkitBoxOrient: "vertical",
@@ -270,11 +270,11 @@ const styles: Record<string, CSSProperties> = {
   },
   itemButton: {
     minHeight: 30,
-    border: "1px solid var(--border)",
+    border: "none",
     padding: "0 10px",
-    background: "white",
+    background: "color-mix(in srgb, white 70%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
     cursor: "pointer",
     display: "inline-flex",
@@ -282,17 +282,17 @@ const styles: Record<string, CSSProperties> = {
     gap: 6,
   },
   itemButtonSelected: {
-    background: "var(--accent-soft)",
+    background: "color-mix(in srgb, white 68%, var(--accent-soft))",
     color: "var(--accent)",
   },
   itemDeleteButton: {
     width: 30,
     height: 30,
-    border: "1px solid color-mix(in srgb, var(--negative) 28%, var(--border))",
+    border: "none",
     padding: 0,
-    background: "white",
+    background: "color-mix(in srgb, white 84%, var(--negative) 16%)",
     color: "var(--negative)",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 600,
     cursor: "pointer",
     display: "inline-flex",
@@ -301,11 +301,11 @@ const styles: Record<string, CSSProperties> = {
   },
   confirmDeleteButton: {
     minHeight: 30,
-    border: "1px solid color-mix(in srgb, var(--negative) 28%, var(--border))",
+    border: "none",
     padding: "0 10px",
-    background: "color-mix(in srgb, white 88%, var(--negative) 12%)",
+    background: "color-mix(in srgb, white 84%, var(--negative) 16%)",
     color: "var(--negative)",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
     cursor: "pointer",
     display: "inline-flex",
@@ -319,7 +319,7 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
     color: "var(--muted)",
     lineHeight: 1.6,
-    fontSize: 13,
+    fontSize: 14,
   },
 };
 

@@ -58,7 +58,7 @@ export function DocumentSetup({
     () => cachedState?.generationMode ?? "document"
   );
   const [objective, setObjective] = useState(
-    () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先排出学习排期，再为每个排期项拆分可执行的学习章节子项。"
+    () => cachedState?.objective ?? "请基于教材结构生成首轮学习计划，先排出清晰、可执行的学习排期。"
   );
   const [showRoundDetails, setShowRoundDetails] = useState(false);
 
@@ -110,73 +110,66 @@ export function DocumentSetup({
       </div>
 
       <section style={styles.card}>
-        <div style={styles.cardHead}>
-          <span style={styles.cardTitle}>基础设置</span>
-        </div>
-
-        <label style={styles.field}>
-          <span style={styles.fieldLabel}>教师人格</span>
-          <PersonaSelector
-            personas={personas}
-            selectedPersonaId={selectedPersonaId}
-            onChange={onSelectPersonaId}
-            compact
-          />
-        </label>
-
-        <label style={styles.field}>
-          <span style={styles.fieldLabel}>计划场景</span>
-          <select
-            value={selectedSceneLibraryId}
-            onChange={(event) => onSelectSceneLibraryId(event.target.value)}
-            style={styles.select}
-          >
-            <option value="">不使用场景库场景</option>
-            {sceneLibraryItems.map((item) => (
-              <option key={item.sceneId} value={item.sceneId}>
-                {item.sceneName}
-              </option>
-            ))}
-          </select>
-        </label>
-
-      </section>
-
-      <section style={styles.card}>
-        <div style={styles.cardHead}>
-          <span style={styles.cardTitle}>教材与目标</span>
-        </div>
-
-        <div style={styles.form}>
+        <div style={styles.formSection}>
           <label style={styles.field}>
-            <span style={styles.fieldLabel}>创建方式</span>
+            <span style={styles.fieldLabel}>教师人格</span>
+            <PersonaSelector
+              personas={personas}
+              selectedPersonaId={selectedPersonaId}
+              onChange={onSelectPersonaId}
+              compact
+            />
+          </label>
+
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>计划场景</span>
             <select
-              value={generationMode}
-              onChange={(event) => setGenerationMode(event.target.value === "goal_only" ? "goal_only" : "document")}
+              value={selectedSceneLibraryId}
+              onChange={(event) => onSelectSceneLibraryId(event.target.value)}
               style={styles.select}
             >
-              <option value="document">教材 + 目标</option>
-              <option value="goal_only">仅学习目标</option>
+              <option value="">不使用场景库场景</option>
+              {sceneLibraryItems.map((item) => (
+                <option key={item.sceneId} value={item.sceneId}>
+                  {item.sceneName}
+                </option>
+              ))}
             </select>
           </label>
-          <label style={styles.field}>
-            <span style={styles.fieldLabel}>教材文件（PDF）</span>
-            <input
-              type="file"
-              accept=".pdf"
-              style={styles.fileInput}
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              disabled={generationMode === "goal_only"}
-            />
-          </label>
-          <label style={styles.field}>
-            <span style={styles.fieldLabel}>学习目标</span>
-            <textarea
-              value={objective}
-              onChange={(event) => setObjective(event.target.value)}
-              style={styles.textarea}
-            />
-          </label>
+        </div>
+
+        <div style={{ ...styles.formSection, ...styles.formSectionSeparated }}>
+          <div style={styles.form}>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>创建方式</span>
+              <select
+                value={generationMode}
+                onChange={(event) => setGenerationMode(event.target.value === "goal_only" ? "goal_only" : "document")}
+                style={styles.select}
+              >
+                <option value="document">教材 + 目标</option>
+                <option value="goal_only">仅学习目标</option>
+              </select>
+            </label>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>教材文件（PDF）</span>
+              <input
+                type="file"
+                accept=".pdf"
+                style={styles.fileInput}
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                disabled={generationMode === "goal_only"}
+              />
+            </label>
+            <label style={styles.field}>
+              <span style={styles.fieldLabel}>学习目标</span>
+              <textarea
+                value={objective}
+                onChange={(event) => setObjective(event.target.value)}
+                style={styles.textarea}
+              />
+            </label>
+          </div>
         </div>
 
         {generationBlockedReason ? (
@@ -289,20 +282,25 @@ const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
     gap: 16,
+    paddingTop: 14,
     paddingRight: 4,
   },
   sectionHead: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 12,
     flexWrap: "wrap",
-    minHeight: 24
+    minHeight: 24,
+    paddingBottom: 10,
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)"
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 10,
     fontWeight: 700,
-    color: "var(--ink)"
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "var(--muted)"
   },
   sectionActions: {
     display: "flex",
@@ -312,85 +310,84 @@ const styles: Record<string, CSSProperties> = {
   card: {
     display: "grid",
     gap: 14,
-    padding: 16,
-    border: "1px solid var(--border)",
-    background: "white"
+    padding: 0,
+    border: "none",
+    background: "transparent"
   },
-  cardHead: {
+  formSection: {
     display: "grid",
-    gap: 2
+    gap: 12,
   },
-  cardTitle: {
-    fontSize: 13,
-    fontWeight: 700,
-    color: "var(--ink)"
+  formSectionSeparated: {
+    paddingTop: 14,
+    borderTop: "1px solid color-mix(in srgb, var(--border) 68%, white)",
   },
   form: {
     display: "grid",
-    gap: 14
+    gap: 12
   },
   field: {
     display: "grid",
-    gap: 6
+    gap: 7
   },
   fieldLabel: {
     fontSize: 11,
     fontWeight: 600,
+    letterSpacing: "0.04em",
     textTransform: "uppercase",
-    letterSpacing: "0.07em",
     color: "var(--muted)"
   },
   textarea: {
     width: "100%",
-    minHeight: 88,
-    border: "1px solid var(--border)",
-    padding: "8px 10px",
-    background: "white",
+    minHeight: 96,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    padding: "10px 12px",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     resize: "vertical",
-    fontSize: 13,
-    lineHeight: 1.6,
+    fontSize: 14,
+    lineHeight: 1.65,
     color: "var(--ink)"
   },
   fileInput: {
     width: "100%",
-    border: "1px solid var(--border)",
-    padding: "6px 8px",
-    background: "white",
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    padding: "8px 10px",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 13
+    fontSize: 14
   },
   select: {
     width: "100%",
-    height: 36,
-    border: "1px solid var(--border)",
+    height: 38,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
     padding: "0 10px",
-    background: "white",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 13
+    fontSize: 14
   },
   primaryButton: {
     border: "none",
-    minHeight: 36,
-    padding: "0 14px",
+    minHeight: 32,
+    padding: "0 12px",
     background: "var(--accent)",
     color: "white",
     fontWeight: 600,
     cursor: "pointer",
-    fontSize: 13,
+    fontSize: 11,
     justifySelf: "start",
     display: "inline-flex",
     alignItems: "center",
     gap: 8
   },
   secondaryButton: {
-    border: "1px solid rgba(180, 35, 24, 0.24)",
+    border: "none",
     minHeight: 36,
     padding: "0 14px",
-    background: "rgba(180, 35, 24, 0.06)",
+    background: "color-mix(in srgb, white 84%, var(--negative) 16%)",
     color: "var(--danger, #b42318)",
     fontWeight: 600,
     cursor: "pointer",
-    fontSize: 13,
+    fontSize: 12,
     justifySelf: "start",
     display: "inline-flex",
     alignItems: "center",
@@ -404,30 +401,32 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 6,
     padding: "12px 14px",
-    border: "1px solid rgba(180, 35, 24, 0.16)",
-    background: "rgba(180, 35, 24, 0.05)",
+    border: "none",
+    background: "color-mix(in srgb, white 84%, var(--negative) 16%)",
   },
   warningTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
     color: "var(--danger, #b42318)",
   },
   warningText: {
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.6,
     color: "var(--ink-2)",
   },
   warningLink: {
     width: "fit-content",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 600,
     color: "var(--accent)",
   },
   progressSection: {
     display: "grid",
     gap: 10,
-    paddingTop: 14,
-    borderTop: "1px solid var(--border)"
+    paddingTop: 16,
+    borderTop: "1px solid color-mix(in srgb, var(--border) 68%, white)"
   },
   progressHeader: {
     display: "flex",
@@ -441,37 +440,35 @@ const styles: Record<string, CSSProperties> = {
     gap: 2
   },
   progressTitle: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 700,
     color: "var(--ink)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em"
+    letterSpacing: "0.12em"
   },
   progressMeta: {
-    fontSize: 12,
+    fontSize: 11,
     color: "var(--muted)",
     lineHeight: 1.5
   },
   progressStats: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 8
+    gap: 6
   },
   progressStat: {
     padding: "5px 8px",
-    borderWidth: 1,
-    borderStyle: "solid",
-    borderColor: "var(--border)",
-    background: "white",
-    fontSize: 12,
+    border: "none",
+    background: "color-mix(in srgb, white 68%, var(--surface))",
+    fontSize: 11,
     color: "var(--muted)"
   },
   progressNotice: {
     padding: "8px 10px",
-    border: "1px solid var(--border)",
-    background: "white",
+    border: "none",
+    background: "color-mix(in srgb, white 68%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.6
   },
   questionNotice: {
@@ -482,17 +479,17 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 4,
     padding: "10px 12px",
-    border: "1px solid var(--border)",
-    background: "white",
-    fontSize: 12,
+    border: "none",
+    background: "color-mix(in srgb, white 68%, var(--surface))",
+    fontSize: 13,
     color: "var(--ink)",
     lineHeight: 1.6
   },
   questionNoticeLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: "var(--muted)",
     textTransform: "uppercase",
-    letterSpacing: "0.06em"
+    letterSpacing: "0.12em"
   },
   questionNoticeReason: {
     color: "var(--muted)"
@@ -505,8 +502,8 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 6,
     padding: "10px 12px",
-    border: "1px solid var(--border)",
-    background: "white"
+    border: "none",
+    background: "color-mix(in srgb, white 68%, var(--surface))"
   },
   roundHeader: {
     display: "flex",

@@ -111,14 +111,25 @@ textarea {
 /* Plan page: form (left) | overview (right) */
 .plan-content-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(296px, 336px) minmax(0, 1fr);
   align-items: start;
-  gap: 28px;
+  gap: 22px;
+}
+
+.plan-setup-shell {
+  min-width: 0;
 }
 
 .plan-setup-column {
-  position: sticky;
-  top: 28px;
+  position: fixed;
+  top: var(--plan-heading-offset, 72px);
+  left: max(
+    calc((100vw - 1600px) / 2 + var(--app-nav-width) + 24px),
+    calc(var(--app-nav-width) + 24px)
+  );
+  width: min(336px, calc(100vw - var(--app-nav-width) - 56px));
+  max-height: calc(100vh - var(--plan-heading-offset, 72px) - 20px);
+  overflow-y: auto;
   align-self: start;
 }
 
@@ -244,6 +255,15 @@ textarea {
 
   .plan-setup-column {
     position: static;
+    width: auto;
+    max-height: none;
+    overflow: visible;
+    left: auto;
+    top: auto;
+  }
+
+  .plan-setup-shell {
+    min-width: 0;
   }
 
   .plan-main-column {

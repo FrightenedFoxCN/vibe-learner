@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { DocumentSetup } from "./document-setup";
@@ -13,6 +14,8 @@ import { useLearningWorkspace } from "./learning-workspace-provider";
 
 export function LearningWorkspace() {
   const appNavigator = useAppNavigator();
+  const headingRef = useRef<HTMLDivElement | null>(null);
+  const [planHeadingHeight, setPlanHeadingHeight] = useState(72);
   const {
     personas,
     selectedPersona,
@@ -48,6 +51,24 @@ export function LearningWorkspace() {
   } = useLearningWorkspace();
   const planSetupCache = getPageCache("planSetup");
 
+  useEffect(() => {
+    const node = headingRef.current;
+    if (!node) {
+      return;
+    }
+
+    const syncHeight = () => {
+      setPlanHeadingHeight(Math.ceil(node.getBoundingClientRect().height));
+    };
+
+    syncHeight();
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   const handleStartStudyFromPlan = async (input: {
     studyUnitId: string;
     scheduleId: string;
@@ -75,12 +96,16 @@ export function LearningWorkspace() {
       page: Math.max(1, input.page),
     });
   };
+  const pageStyle = {
+    ...styles.page,
+    ["--plan-heading-offset" as string]: `${planHeadingHeight}px`,
+  } as CSSProperties;
 
   return (
-    <main className="with-app-nav" style={styles.page}>
+    <main className="with-app-nav" style={pageStyle}>
       <TopNav currentPath="/plan" />
 
-      <div style={styles.heading}>
+      <div ref={headingRef} style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>计划生成</h1>
           {notice ? <div style={styles.notice}>{notice}</div> : null}
@@ -88,24 +113,26 @@ export function LearningWorkspace() {
       </div>
 
       <div className="plan-content-grid">
-        <DocumentSetup
-          personas={personas}
-          selectedPersonaId={selectedPersona.id}
-          onSelectPersonaId={setSelectedPersonaId}
-          isBusy={isBusy}
-          sceneLibraryItems={sceneLibraryItems}
-          selectedSceneLibraryId={selectedSceneLibraryId}
-          onSelectSceneLibraryId={setSelectedSceneLibraryId}
-          onGenerate={(input) => { void generatePlanWorkflow(input); }}
-          onInterruptGeneration={() => { void cancelPlanGeneration(); }}
-          planStreamEvents={planStreamEvents}
-          planStreamStatus={planStreamStatus}
-          canInterruptGeneration={isGeneratingPlan}
-          isInterruptingGeneration={isInterruptingPlan}
-          generationBlockedReason={planGenerationBlockedReason}
-          cachedState={planSetupCache}
-          onCachedStateChange={(nextState: PlanSetupPageCache) => setPageCache("planSetup", nextState)}
-        />
+        <div className="plan-setup-shell" style={styles.planSetupShell}>
+          <DocumentSetup
+            personas={personas}
+            selectedPersonaId={selectedPersona.id}
+            onSelectPersonaId={setSelectedPersonaId}
+            isBusy={isBusy}
+            sceneLibraryItems={sceneLibraryItems}
+            selectedSceneLibraryId={selectedSceneLibraryId}
+            onSelectSceneLibraryId={setSelectedSceneLibraryId}
+            onGenerate={(input) => { void generatePlanWorkflow(input); }}
+            onInterruptGeneration={() => { void cancelPlanGeneration(); }}
+            planStreamEvents={planStreamEvents}
+            planStreamStatus={planStreamStatus}
+            canInterruptGeneration={isGeneratingPlan}
+            isInterruptingGeneration={isInterruptingPlan}
+            generationBlockedReason={planGenerationBlockedReason}
+            cachedState={planSetupCache}
+            onCachedStateChange={(nextState: PlanSetupPageCache) => setPageCache("planSetup", nextState)}
+          />
+        </div>
 
         <div className="plan-main-column" style={styles.planColumn}>
           <PlanOverview
@@ -146,16 +173,22 @@ const styles: Record<string, CSSProperties> = {
     minHeight: "100vh",
     maxWidth: 1600,
     margin: "0 auto",
-    padding: "28px 32px 56px",
+    padding: "0 28px 48px",
     display: "grid",
-    gap: 22,
+    gap: 0,
     alignContent: "start"
   },
   heading: {
     display: "grid",
-    gap: 10,
-    paddingBottom: 10,
-    borderBottom: "1px solid var(--border)"
+    gap: 6,
+    position: "sticky",
+    top: 0,
+    zIndex: 15,
+    paddingTop: 20,
+    marginBottom: 18,
+    paddingBottom: 16,
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 92%, var(--bg))"
   },
   headingRow: {
     display: "flex",
@@ -165,7 +198,7 @@ const styles: Record<string, CSSProperties> = {
   },
   pageTitle: {
     margin: 0,
-    fontSize: "clamp(1.4rem, 2vw, 1.9rem)",
+    fontSize: 20,
     fontWeight: 700,
     color: "var(--ink)",
     lineHeight: 1.2
@@ -173,18 +206,21 @@ const styles: Record<string, CSSProperties> = {
   notice: {
     width: "fit-content",
     maxWidth: "100%",
-    minHeight: 28,
-    padding: "0 10px",
-    border: "1px solid color-mix(in srgb, var(--accent) 20%, var(--border))",
-    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
-    color: "var(--teal)",
+    minHeight: 24,
+    padding: "0 8px",
+    border: "none",
+    background: "color-mix(in srgb, white 72%, var(--accent-soft))",
+    color: "var(--ink-2)",
     fontSize: 12,
     lineHeight: 1,
     display: "inline-flex",
     alignItems: "center"
   },
+  planSetupShell: {
+    minWidth: 0,
+  },
   planColumn: {
     display: "grid",
-    gap: 18
+    gap: 14
   }
 };

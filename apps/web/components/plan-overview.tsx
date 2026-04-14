@@ -9,8 +9,6 @@ import type {
   StudyUnit,
 } from "@vibe-learner/shared";
 
-import { AppLink } from "../lib/app-navigation";
-
 interface PlanOverviewProps {
   plan: LearningPlan | null;
   document: DocumentRecord | null;
@@ -58,13 +56,13 @@ export function PlanOverview({
   const [titleDraft, setTitleDraft] = useState("");
   const [planningAnswerDrafts, setPlanningAnswerDrafts] = useState<Record<string, string>>({});
   const [showScheduleDetails, setShowScheduleDetails] = useState(false);
-  const [showScheduleChapters, setShowScheduleChapters] = useState(false);
+  const [expandedScheduleItems, setExpandedScheduleItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setTitleDraft(plan?.courseTitle ?? "");
     setIsEditingTitle(false);
     setShowScheduleDetails(false);
-    setShowScheduleChapters(false);
+    setExpandedScheduleItems({});
   }, [plan?.courseTitle, plan?.id]);
 
   useEffect(() => {
@@ -94,15 +92,10 @@ export function PlanOverview({
   const pendingPlanningQuestions = (plan?.planningQuestions ?? []).filter(
     (item) => item.status !== "answered"
   );
-  const todayTasks = (plan?.todayTasks ?? []).filter(Boolean);
   const visibleScheduleItems = showScheduleDetails
     ? (plan?.schedule ?? [])
     : (plan?.schedule ?? []).slice(0, 4);
   const hasCollapsedScheduleItems = (plan?.schedule.length ?? 0) > visibleScheduleItems.length;
-  const scheduleChapterCount = (plan?.schedule ?? []).reduce(
-    (sum, item) => sum + item.scheduleChapters.length,
-    0
-  );
   const metaItems = plan
     ? [
         `教材 ${plan.creationMode === "goal_only" ? "仅学习目标" : documentTitle}`,
@@ -264,107 +257,94 @@ export function PlanOverview({
               <span style={styles.progressStat}>阻塞 {plan.progressSummary.blockedScheduleCount}</span>
             </div>
 
-            {todayTasks.length ? (
-              <div style={styles.todayTaskSection}>
-                <div style={styles.sectionHead}>
-                  <div style={styles.sectionHeadMeta}>
-                    <span style={styles.sectionLabel}>今日任务</span>
-                    <span style={styles.count}>{todayTasks.length} 条</span>
-                  </div>
-                </div>
-                <div style={styles.todayTaskList}>
-                  {todayTasks.map((task, index) => (
-                    <div key={`${task}-${index}`} style={styles.todayTaskItem}>
-                      <span style={styles.todayTaskMarker}>{index + 1}</span>
-                      <span style={styles.todayTaskText}>{task}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {plan.schedule.length ? (
               <div style={styles.scheduleList}>
                 {visibleScheduleItems.map((item) => (
                   <div key={item.id} style={styles.scheduleItem}>
-                    <div style={styles.scheduleMeta}>
+                    <div style={styles.scheduleHeader}>
                       <span style={styles.scheduleTitle}>{item.title}</span>
-                      <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
+                      <div style={styles.scheduleHeaderActions}>
+                        <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
+                        {item.scheduleChapters.length ? (
+                          <button
+                            type="button"
+                            style={styles.inlineButton}
+                            disabled={isBusy}
+                            aria-expanded={expandedScheduleItems[item.id] ? "true" : "false"}
+                            onClick={() =>
+                              setExpandedScheduleItems((current) => ({
+                                ...current,
+                                [item.id]: !current[item.id],
+                              }))
+                            }
+                          >
+                            {expandedScheduleItems[item.id]
+                              ? `收起章节 · ${item.scheduleChapters.length}`
+                              : `展开章节 · ${item.scheduleChapters.length}`}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          style={styles.ghostButton}
+                          disabled={isBusy || item.status === "in_progress"}
+                          onClick={() => {
+                            const studyUnit = resolveStudyUnitById(plan, item.unitId);
+                            if (!studyUnit) {
+                              return;
+                            }
+                            const firstScheduleChapter = item.scheduleChapters[0];
+                            void onStartStudyFromPlan({
+                              studyUnitId: item.unitId,
+                              scheduleId: item.id,
+                              scheduleChapterId: firstScheduleChapter?.id,
+                              chapter: firstScheduleChapter?.title || item.title,
+                              page: firstScheduleChapter?.anchorPageStart || studyUnit.pageStart,
+                              scheduleIds: [item.id],
+                            });
+                          }}
+                        >
+                          开始
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.primaryButton}
+                          disabled={isBusy || item.status === "completed"}
+                          onClick={() => {
+                            void onUpdatePlanProgress({
+                              planId: plan.id,
+                              scheduleIds: [item.id],
+                              status: "completed",
+                            });
+                          }}
+                        >
+                          完成
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.ghostButton}
+                          disabled={isBusy || item.status === "planned"}
+                          onClick={() => {
+                            void onUpdatePlanProgress({
+                              planId: plan.id,
+                              scheduleIds: [item.id],
+                              status: "planned",
+                            });
+                          }}
+                        >
+                          重置
+                        </button>
+                      </div>
                     </div>
                     <span style={styles.scheduleFocus}>{item.focus}</span>
-                    <div style={styles.scheduleActions}>
-                      <button
-                        type="button"
-                        style={styles.ghostButton}
-                        disabled={isBusy || item.status === "in_progress"}
-                        onClick={() => {
-                          const studyUnit = resolveStudyUnitById(plan, item.unitId);
-                          if (!studyUnit) {
-                            return;
-                          }
-                          const firstScheduleChapter = item.scheduleChapters[0];
-                          void onStartStudyFromPlan({
-                            studyUnitId: item.unitId,
-                            scheduleId: item.id,
-                            scheduleChapterId: firstScheduleChapter?.id,
-                            chapter: firstScheduleChapter?.title || item.title,
-                            page: firstScheduleChapter?.anchorPageStart || studyUnit.pageStart,
-                            scheduleIds: [item.id],
-                          });
-                        }}
-                      >
-                        开始
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.primaryButton}
-                        disabled={isBusy || item.status === "completed"}
-                        onClick={() => {
-                          void onUpdatePlanProgress({
-                            planId: plan.id,
-                            scheduleIds: [item.id],
-                            status: "completed",
-                          });
-                        }}
-                      >
-                        完成
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.ghostButton}
-                        disabled={isBusy || item.status === "planned"}
-                        onClick={() => {
-                          void onUpdatePlanProgress({
-                            planId: plan.id,
-                            scheduleIds: [item.id],
-                            status: "planned",
-                          });
-                        }}
-                      >
-                        重置
-                      </button>
-                    </div>
-                    {item.scheduleChapters.length ? (
+                    {item.scheduleChapters.length && expandedScheduleItems[item.id] ? (
                       <div style={styles.subsectionList}>
                         {item.scheduleChapters.map((chapter) => (
-                          <AppLink
-                            key={chapter.id}
-                            path="/study"
-                            query={{
-                              plan: plan.id,
-                              schedule: item.id,
-                              scheduleChapter: chapter.id,
-                              chapter: chapter.title,
-                              page: chapter.anchorPageStart,
-                            }}
-                            style={styles.subsectionTag}
-                            title={`跳转到学习章节 ${chapter.title}`}
-                          >
+                          <div key={chapter.id} style={styles.subsectionTag}>
                             <span style={styles.subsectionName}>{chapter.title}</span>
                             <span style={styles.subsectionPage}>
                               p.{chapter.anchorPageStart}-{chapter.anchorPageEnd}
                             </span>
-                          </AppLink>
+                          </div>
                         ))}
                       </div>
                     ) : null}
@@ -384,64 +364,6 @@ export function PlanOverview({
               </div>
             ) : null}
           </div>
-
-          <div style={styles.section}>
-            <div style={styles.sectionHead}>
-              <div style={styles.sectionHeadMeta}>
-                <span style={styles.sectionLabel}>学习章节子项</span>
-                <span style={styles.count}>{scheduleChapterCount}</span>
-              </div>
-              <div style={styles.sectionActions}>
-                <button
-                  type="button"
-                  style={styles.ghostButton}
-                  disabled={isBusy}
-                  onClick={() => setShowScheduleChapters((current) => !current)}
-                >
-                  {showScheduleChapters ? "收起目录" : "查看目录"}
-                </button>
-              </div>
-            </div>
-
-            {showScheduleChapters ? (
-              <div style={styles.scheduleList}>
-                {plan.schedule.map((item) => (
-                  <div key={`${item.id}:chapter-list`} style={styles.scheduleItem}>
-                    <div style={styles.scheduleMeta}>
-                      <span style={styles.scheduleTitle}>{item.title}</span>
-                      <span style={scheduleStatusStyle(item.status)}>{formatScheduleStatus(item.status)}</span>
-                    </div>
-                    {item.scheduleChapters.length ? (
-                      <div style={styles.subsectionList}>
-                        {item.scheduleChapters.map((chapter) => (
-                          <AppLink
-                            key={chapter.id}
-                            path="/study"
-                            query={{
-                              plan: plan.id,
-                              schedule: item.id,
-                              scheduleChapter: chapter.id,
-                              chapter: chapter.title,
-                              page: chapter.anchorPageStart,
-                            }}
-                            style={styles.subsectionTag}
-                            title={`跳转到学习章节 ${chapter.title}`}
-                          >
-                            <span style={styles.subsectionName}>{chapter.title}</span>
-                            <span style={styles.subsectionPage}>
-                              p.{chapter.anchorPageStart}-{chapter.anchorPageEnd}
-                            </span>
-                          </AppLink>
-                        ))}
-                      </div>
-                    ) : (
-                      <span style={styles.scheduleFocus}>当前排期项还没有学习章节子项。</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
         </>
       ) : (
         <div style={styles.emptyState}>
@@ -456,15 +378,15 @@ export function PlanOverview({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "grid",
-    gap: 16,
+    gap: 14,
   },
   headerRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
-    paddingBottom: 12,
-    borderBottom: "1px solid var(--border)",
+    gap: 10,
+    paddingBottom: 10,
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
   },
   headerMeta: {
     display: "flex",
@@ -473,7 +395,7 @@ const styles: Record<string, CSSProperties> = {
   titleBlock: {
     paddingTop: 4,
     display: "grid",
-    gap: 10,
+    gap: 8,
   },
   titleRow: {
     display: "flex",
@@ -488,45 +410,53 @@ const styles: Record<string, CSSProperties> = {
   },
   title: {
     margin: 0,
-    fontSize: "clamp(1.2rem, 1.8vw, 1.5rem)",
-    lineHeight: 1.25,
+    fontSize: "clamp(1.32rem, 1.95vw, 1.72rem)",
+    lineHeight: 1.18,
     fontWeight: 700,
     color: "var(--ink)",
+    letterSpacing: "-0.02em",
   },
   titleInput: {
     width: "100%",
     minHeight: 42,
-    border: "1px solid var(--border-strong)",
+    border: "1px solid color-mix(in srgb, var(--border-strong) 82%, white)",
     padding: "8px 10px",
-    background: "white",
+    background: "color-mix(in srgb, white 74%, var(--surface))",
     color: "var(--ink)",
     fontSize: 15,
     fontWeight: 600,
   },
   badge: {
-    fontSize: 12,
-    color: "var(--muted)",
+    minHeight: 20,
+    padding: "0 6px",
+    border: "none",
+    background: "color-mix(in srgb, white 70%, var(--surface))",
+    fontSize: 10,
+    color: "var(--ink-2)",
     whiteSpace: "nowrap",
+    display: "inline-flex",
+    alignItems: "center",
   },
   overview: {
     margin: 0,
-    color: "var(--muted)",
-    fontSize: 13,
+    color: "var(--ink-2)",
+    fontSize: 15,
     lineHeight: 1.6,
+    maxWidth: "72ch",
   },
   metaStrip: {
     display: "flex",
     flexWrap: "wrap",
     alignItems: "center",
-    gap: 8,
+    gap: 14,
   },
   metaChip: {
-    minHeight: 28,
-    padding: "0 10px",
-    border: "1px solid var(--border)",
-    background: "white",
+    minHeight: "auto",
+    padding: 0,
+    border: "none",
+    background: "transparent",
     color: "var(--muted)",
-    fontSize: 12,
+    fontSize: 11,
     display: "inline-flex",
     alignItems: "center",
   },
@@ -538,25 +468,25 @@ const styles: Record<string, CSSProperties> = {
     color: "white",
     fontWeight: 600,
     cursor: "pointer",
-    fontSize: 13,
+    fontSize: 12,
   },
   ghostButton: {
     minHeight: 34,
-    border: "1px solid var(--border)",
+    border: "none",
     padding: "0 12px",
-    background: "white",
-    color: "var(--muted)",
-    fontSize: 13,
+    background: "color-mix(in srgb, white 70%, var(--surface))",
+    color: "var(--ink-2)",
+    fontSize: 12,
     cursor: "pointer",
   },
   inlineButton: {
     minHeight: 30,
     width: "fit-content",
-    border: "1px solid var(--border)",
+    border: "none",
     padding: "0 10px",
-    background: "white",
-    color: "var(--muted)",
-    fontSize: 12,
+    background: "color-mix(in srgb, white 70%, var(--surface))",
+    color: "var(--ink-2)",
+    fontSize: 11,
     cursor: "pointer",
   },
   buttonDisabled: {
@@ -566,9 +496,9 @@ const styles: Record<string, CSSProperties> = {
   progressCard: {
     display: "grid",
     gap: 12,
-    padding: 16,
-    border: "1px solid var(--border)",
-    background: "white",
+    padding: 18,
+    border: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+    background: "color-mix(in srgb, white 84%, var(--surface))",
   },
   progressHead: {
     display: "flex",
@@ -588,18 +518,18 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
   },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 700,
     textTransform: "uppercase",
-    letterSpacing: "0.07em",
+    letterSpacing: "0.12em",
     color: "var(--muted)",
   },
   count: {
-    fontSize: 11,
+    fontSize: 10,
     color: "var(--muted)",
   },
   progressPercent: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 700,
     color: "var(--accent)",
   },
@@ -615,46 +545,14 @@ const styles: Record<string, CSSProperties> = {
   progressStats: {
     display: "flex",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 6,
   },
   progressStat: {
     padding: "4px 8px",
-    border: "1px solid var(--border)",
-    background: "white",
-    fontSize: 12,
+    border: "none",
+    background: "color-mix(in srgb, white 70%, var(--surface))",
+    fontSize: 11,
     color: "var(--muted)",
-  },
-  todayTaskSection: {
-    display: "grid",
-    gap: 8,
-  },
-  todayTaskList: {
-    display: "grid",
-    gap: 4,
-  },
-  todayTaskItem: {
-    display: "grid",
-    gridTemplateColumns: "26px minmax(0, 1fr)",
-    gap: 10,
-    alignItems: "start",
-    padding: "8px 0",
-    borderBottom: "1px solid color-mix(in srgb, var(--border) 72%, white)",
-  },
-  todayTaskMarker: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 22,
-    height: 22,
-    border: "1px solid var(--border)",
-    color: "var(--muted)",
-    fontSize: 12,
-    fontWeight: 700,
-  },
-  todayTaskText: {
-    fontSize: 13,
-    lineHeight: 1.6,
-    color: "var(--ink)",
   },
   scheduleList: {
     display: "grid",
@@ -667,6 +565,20 @@ const styles: Record<string, CSSProperties> = {
     padding: "12px 0",
     borderBottom: "1px solid color-mix(in srgb, var(--border) 72%, white)",
   },
+  scheduleHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  scheduleHeaderActions: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+    flexWrap: "wrap",
+  },
   scheduleToggle: {
     minHeight: 42,
     border: "none",
@@ -678,45 +590,33 @@ const styles: Record<string, CSSProperties> = {
     textAlign: "left",
     cursor: "pointer",
   },
-  scheduleMeta: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    flexWrap: "wrap",
-  },
   scheduleTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 600,
     color: "var(--ink)",
   },
   scheduleFocus: {
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.6,
-    color: "var(--muted)",
-  },
-  scheduleActions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
+    color: "var(--ink-2)",
   },
   questionCard: {
     display: "grid",
     gap: 10,
-    padding: 16,
-    border: "1px solid var(--border)",
-    background: "white",
+    padding: 18,
+    border: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+    background: "color-mix(in srgb, white 84%, var(--surface))",
   },
   questionList: {
     display: "grid",
-    gap: 10,
+    gap: 0,
   },
   questionItem: {
     display: "grid",
     gap: 8,
-    padding: "12px 14px",
-    border: "1px solid var(--border)",
-    background: "white",
+    padding: "12px 0",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+    background: "transparent",
   },
   questionHeader: {
     display: "flex",
@@ -726,11 +626,11 @@ const styles: Record<string, CSSProperties> = {
     flexWrap: "wrap",
   },
   questionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: "var(--ink)",
   },
   questionReason: {
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.6,
     color: "var(--muted)",
   },
@@ -752,70 +652,20 @@ const styles: Record<string, CSSProperties> = {
   focusTextarea: {
     width: "100%",
     minHeight: 112,
-    border: "1px solid var(--border-strong)",
+    border: "1px solid color-mix(in srgb, var(--border-strong) 82%, white)",
     padding: "10px 12px",
-    background: "white",
+    background: "color-mix(in srgb, white 74%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 1.6,
     resize: "vertical",
-  },
-  list: {
-    margin: 0,
-    padding: 0,
-    listStyle: "none",
-    display: "grid",
-    gap: 8,
-  },
-  listItem: {
-    display: "grid",
-    gridTemplateColumns: "28px minmax(0, 1fr)",
-    gap: 10,
-    alignItems: "start",
-    padding: "10px 0",
-    borderBottom: "1px solid color-mix(in srgb, var(--border) 72%, white)",
-  },
-  idx: {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 22,
-    height: 22,
-    border: "1px solid var(--border)",
-    color: "var(--muted)",
-    fontSize: 12,
-    fontWeight: 700,
-  },
-  chapterItem: {
-    display: "grid",
-    gap: 6,
-    minWidth: 0,
-  },
-  chapterTitle: {
-    fontSize: 13,
-    color: "var(--ink)",
-    lineHeight: 1.6,
-  },
-  pageTag: {
-    display: "inline-flex",
-    width: "fit-content",
-    alignItems: "center",
-    minHeight: 28,
-    padding: "0 10px",
-    border: "1px solid var(--border)",
-    background: "white",
-    color: "var(--ink)",
-    fontSize: 12,
-    fontWeight: 600,
-    lineHeight: 1,
-    textDecoration: "none",
   },
   subsectionList: {
     display: "grid",
     gap: 6,
-    paddingTop: 4,
+    paddingTop: 2,
     paddingLeft: 14,
-    borderLeft: "1px solid color-mix(in srgb, var(--border) 75%, white)",
+    borderLeft: "1px solid color-mix(in srgb, var(--border) 62%, white)",
   },
   subsectionTag: {
     display: "flex",
@@ -824,19 +674,19 @@ const styles: Record<string, CSSProperties> = {
     gap: 12,
     minHeight: 32,
     padding: "0 10px",
-    border: "1px solid var(--border)",
-    background: "white",
+    border: "none",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink-2)",
     textDecoration: "none",
   },
   subsectionName: {
     minWidth: 0,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 1.5,
     color: "var(--ink)",
   },
   subsectionPage: {
-    fontSize: 11,
+    fontSize: 10,
     color: "var(--muted)",
     whiteSpace: "nowrap",
     flexShrink: 0,
@@ -885,36 +735,36 @@ function scheduleStatusStyle(status: string): CSSProperties {
   if (status === "completed") {
     return {
       padding: "3px 8px",
-      border: "1px solid color-mix(in srgb, var(--accent) 20%, var(--border))",
-      background: "color-mix(in srgb, var(--accent-soft) 65%, white)",
+      border: "none",
+      background: "color-mix(in srgb, var(--accent-soft) 72%, white)",
       color: "var(--accent)",
-      fontSize: 11,
+      fontSize: 10,
     };
   }
   if (status === "in_progress") {
     return {
       padding: "3px 8px",
-      border: "1px solid color-mix(in srgb, #c97a00 24%, var(--border))",
-      background: "rgba(201, 122, 0, 0.08)",
+      border: "none",
+      background: "rgba(201, 122, 0, 0.10)",
       color: "#8a5700",
-      fontSize: 11,
+      fontSize: 10,
     };
   }
   if (status === "blocked") {
     return {
       padding: "3px 8px",
-      border: "1px solid rgba(180, 35, 24, 0.24)",
-      background: "rgba(180, 35, 24, 0.06)",
+      border: "none",
+      background: "rgba(180, 35, 24, 0.10)",
       color: "var(--danger, #b42318)",
-      fontSize: 11,
+      fontSize: 10,
     };
   }
   return {
     padding: "3px 8px",
-    border: "1px solid var(--border)",
-    background: "white",
+    border: "none",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--muted)",
-    fontSize: 11,
+    fontSize: 10,
   };
 }
 

@@ -260,8 +260,8 @@ function renderIcon(name: MaterialIconName): ReactNode {
     case "replay":
       return (
         <>
-          <path d="M18 9V5h-4" />
-          <path d="M18 5a8 8 0 1 0 2 5.3" />
+          <path d="M19.5 4.5v5h-5" />
+          <path d="M19.5 9.5a7.5 7.5 0 1 0 1.9 5" />
         </>
       );
     case "adjust":

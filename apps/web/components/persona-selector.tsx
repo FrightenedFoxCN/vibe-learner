@@ -102,13 +102,12 @@ const styles: Record<string, CSSProperties> = {
   },
   selectCompact: {
     width: "100%",
-    height: 32,
-    borderRadius: 4,
-    border: "1px solid var(--border)",
-    padding: "0 8px",
-    background: "var(--panel-strong)",
+    height: 38,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    padding: "0 10px",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     color: "var(--ink)",
-    fontSize: 13
+    fontSize: 14
   },
   card: {
     display: "grid",

@@ -50,7 +50,7 @@ export const mockPlan: LearningPlan = {
   creationMode: "document",
   courseTitle: "力学导论 / 牛顿定律",
   objective: "掌握力学导论",
-  overview: "先完成力学导论的首轮精读排期，再在排期项下推进定义、受力分析与例题复述等学习章节子项。",
+  overview: "先完成力学导论的首轮精读排期，再依次推进定义、受力分析与例题复述等关键内容。",
   todayTasks: [
     "阅读教材第 12-18 页，标出本章定义句。",
     "向教师人格提问并完成一次复述练习。",
