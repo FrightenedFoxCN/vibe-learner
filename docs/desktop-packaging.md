@@ -78,3 +78,30 @@ The workflow:
 - uploads the generated installer as a workflow artifact
 
 These artifacts are intentionally unsigned. Signing, notarization, and auto-update release plumbing remain separate release-hardening work.
+
+## GitHub Release Builds
+
+GitHub releases are produced by `.github/workflows/desktop-release.yml`.
+
+The workflow:
+
+- triggers when a tag matching `v*` is pushed
+- can also be re-run manually from the GitHub Actions UI on an existing tag ref
+- validates that the tag version matches all desktop-facing version files:
+  - root `package.json`
+  - `apps/web/package.json`
+  - `apps/desktop/package.json`
+  - `packages/shared/package.json`
+  - `services/ai/pyproject.toml`
+  - `apps/desktop/src-tauri/tauri.conf.json`
+- builds the macOS `dmg`, Windows `nsis`, and Linux `AppImage`
+- creates a GitHub Release and uploads the installers plus `SHA256SUMS.txt`
+
+Release usage:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+If the tag does not match the checked-in version values, the workflow fails before any packaging starts.
