@@ -913,9 +913,9 @@ export function useLearningWorkspaceController({
 
   const handleAsk = async (message: string, attachments: File[] = []) => {
     if (!state.studySession) {
-      return;
+      return false;
     }
-    await handleAskForSection(message, state.studySession.studyUnitId, attachments);
+    return handleAskForSection(message, state.studySession.studyUnitId, attachments);
   };
 
   const ensureSessionForSection = async (
@@ -963,7 +963,7 @@ export function useLearningWorkspaceController({
       clearResponseOnSwitch: false,
     });
     if (!targetSession) {
-      return;
+      return false;
     }
     const hiddenMessagePrefix =
       isDialogueInterruptedForSession(targetSession.id)
@@ -989,6 +989,7 @@ export function useLearningWorkspaceController({
         citations: next.citations.length,
         characterEvents: next.characterEvents.length
       });
+      return true;
     } catch (error) {
       const detail = String(error);
       if (detail.includes("session_not_found")) {
@@ -1028,14 +1029,14 @@ export function useLearningWorkspaceController({
             type: "notice_set",
             notice: "会话已恢复。"
           });
-          return;
+          return true;
         } catch (recoveryError) {
           dispatch({
             type: "notice_set",
             notice: `会话恢复失败：${String(recoveryError)}`
           });
           logWorkspaceError("workflow:study_chat:session_recover_error", recoveryError);
-          return;
+          return false;
         }
       }
       if (detail.includes("chat_model_invalid_payload")) {
@@ -1049,7 +1050,7 @@ export function useLearningWorkspaceController({
           type: "notice_set",
           notice: "响应格式异常，请重试。"
         });
-        return;
+        return false;
       }
       setChatFailure({
         message,
@@ -1062,6 +1063,7 @@ export function useLearningWorkspaceController({
         notice: `发送失败：${String(error)}`
       });
       logWorkspaceError("workflow:study_chat:error", error);
+      return false;
     } finally {
       dispatch({ type: "busy_finished" });
     }
@@ -1474,7 +1476,9 @@ export function useLearningWorkspaceController({
   useEffect(() => {
     let active = true;
     const hydrateSessions = async () => {
-      if (!activePlan || !activeDocument) {
+      // Goal-only plans intentionally have no bound document, but they still
+      // own study sessions that should be restored on desktop app relaunch.
+      if (!activePlan) {
         return;
       }
       try {

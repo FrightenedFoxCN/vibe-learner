@@ -7,8 +7,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type DragEvent as ReactDragEvent,
-  type MouseEvent as ReactMouseEvent
+  type DragEvent as ReactDragEvent
 } from "react";
 import type { CSSProperties } from "react";
 import {
@@ -19,7 +18,6 @@ import {
   PERSONA_SLOT_KIND_LABELS,
   PERSONA_SLOT_KINDS,
   type CreatePersonaInput,
-  type CreatePersonaCardInput,
   type PersonaCard,
   type ModelRecovery,
   type PersonaProfile,
@@ -41,7 +39,6 @@ import {
   updatePersona,
 } from "../../lib/data/personas";
 import {
-  createPersonaCardsBatch,
   deletePersonaCard,
   generatePersonaCards,
   listPersonaCards,
@@ -78,6 +75,8 @@ interface GeneratedPersonaMeta {
   learnerAddress: string;
 }
 
+type CardGenerationMode = "keywords" | "long_text";
+
 function clampWeight(value: number): number {
   const n = Number.isFinite(value) ? Math.round(value) : 50;
   return Math.max(0, Math.min(100, n));
@@ -95,14 +94,6 @@ const EMPTY_DRAFT: PersonaDraft = {
   availableActionsText: CHARACTER_ACTIONS.join(", "),
   defaultSpeechStyle: "warm"
 };
-
-const SLOT_TEMPLATES: Array<{ kind: PersonaSlotKind; text: string }> = [
-  { kind: "worldview", text: "你曾在一所强调自学与互助的学院担任导学员，习惯先给学习者稳定感，再推进挑战。" },
-  { kind: "past_experiences", text: "曾参与多个跨学科项目，习惯将复杂问题拆解为可验证的小步骤，再带领学习者逐步落地。" },
-  { kind: "thinking_style", text: "常用短句确认学习者状态，例如「我们先把这一点站稳」，避免连续高压输出。" },
-  { kind: "teaching_method", text: "讲解时遵循「概念-例子-反例-迁移」的节奏，每次只推进一个关键难点。" },
-  { kind: "correction_style", text: "纠错优先指出可操作改进，不使用否定人格的措辞；鼓励具体进步，不做空泛夸奨。" }
-];
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
@@ -123,6 +114,9 @@ const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   defaultSpeechStyle: "warm"
 };
 
+const BASIC_PANE_WIDTH = 300;
+const SIDEBAR_PANE_WIDTH = 360;
+
 export default function PersonaSpectrumPage() {
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
@@ -142,15 +136,13 @@ export default function PersonaSpectrumPage() {
   const [configError, setConfigError] = useState("");
   const [personaCards, setPersonaCards] = useState<PersonaCard[]>([]);
   const [generatedCards, setGeneratedCards] = useState<PersonaCard[]>([]);
-  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const [cardGenerationMode, setCardGenerationMode] = useState<CardGenerationMode>("keywords");
   const [cardKeywordInput, setCardKeywordInput] = useState("");
-  const [cardLongTextInput, setCardLongTextInput] = useState("");
+  const [cardLongTextFile, setCardLongTextFile] = useState<File | null>(null);
   const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [cardGenerateCount, setCardGenerateCount] = useState("");
   const [clearBeforeBackfill, setClearBeforeBackfill] = useState(true);
-  const [cardActionPending, setCardActionPending] = useState<
-    null | "generate_keywords" | "generate_long_text" | "save_generated" | "create_persona"
-  >(null);
+  const [cardActionPending, setCardActionPending] = useState<null | "generate_keywords" | "generate_long_text">(null);
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [cardMessage, setCardMessage] = useState("");
   const [cardError, setCardError] = useState("");
@@ -169,14 +161,15 @@ export default function PersonaSpectrumPage() {
   const [expandedSlotIndex, setExpandedSlotIndex] = useState<number | null>(null);
   const [movePulse, setMovePulse] = useState<{ index: number; direction: -1 | 1 } | null>(null);
 
-  const [basicPaneWidth, setBasicPaneWidth] = useState(260);
-  const [sidebarWidth, setSidebarWidth] = useState(380);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const [isRewritePopoverOpen, setIsRewritePopoverOpen] = useState(false);
+  const [isSystemPromptExpanded, setIsSystemPromptExpanded] = useState(false);
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
   const [personaLibraryQuery, setPersonaLibraryQuery] = useState("");
   const [personaDeletePendingId, setPersonaDeletePendingId] = useState("");
   const [personaLibraryMessage, setPersonaLibraryMessage] = useState("");
   const [personaLibraryError, setPersonaLibraryError] = useState("");
-  const colResizeRef = useRef<{ which: "basic" | "sidebar"; startX: number; startWidth: number } | null>(null);
+  const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     selectedPersonaIdRef.current = selectedPersonaId;
@@ -191,6 +184,28 @@ export default function PersonaSpectrumPage() {
     }, 140);
     return () => window.clearTimeout(timer);
   }, [movePulse]);
+
+  useEffect(() => {
+    const syncLayout = () => {
+      setIsCompactLayout(window.innerWidth < 1320);
+    };
+    syncLayout();
+    window.addEventListener("resize", syncLayout);
+    return () => window.removeEventListener("resize", syncLayout);
+  }, []);
+
+  useEffect(() => {
+    if (!isRewritePopoverOpen) {
+      return;
+    }
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!rewritePopoverRef.current?.contains(event.target as Node)) {
+        setIsRewritePopoverOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isRewritePopoverOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,16 +245,6 @@ export default function PersonaSpectrumPage() {
     [personas, selectedPersonaId]
   );
   const isReadonlyPersona = selectedPersona?.source === "builtin";
-
-  const allCards = useMemo(() => [...generatedCards, ...personaCards], [generatedCards, personaCards]);
-  const selectedCards = useMemo(
-    () => allCards.filter((card) => selectedCardIds.includes(card.id)),
-    [allCards, selectedCardIds]
-  );
-  const filteredGeneratedCards = useMemo(
-    () => generatedCards.filter((card) => matchesPersonaCard(card, cardSearchQuery)),
-    [generatedCards, cardSearchQuery]
-  );
   const filteredPersonaCards = useMemo(
     () => personaCards.filter((card) => matchesPersonaCard(card, cardSearchQuery)),
     [personaCards, cardSearchQuery]
@@ -269,10 +274,40 @@ export default function PersonaSpectrumPage() {
     }),
     [draft]
   );
+  const pageNotice = useMemo(() => {
+    if (savingPersona) {
+      return "人格保存中";
+    }
+    if (assistPending) {
+      return "AI 正在润色基础设定";
+    }
+    if (slotAssistIndex !== null) {
+      return `AI 正在改写第 ${slotAssistIndex + 1} 个插槽`;
+    }
+    if (cardActionPending === "generate_keywords") {
+      return "正在根据关键词生成人格卡片";
+    }
+    if (cardActionPending === "generate_long_text") {
+      return "正在从长文本提取人格卡片";
+    }
+    if (selectedPersona) {
+      return isReadonlyPersona
+        ? `当前编辑 · ${selectedPersona.name} · 内置只读`
+        : `当前编辑 · ${selectedPersona.name}`;
+    }
+    return "从人格库选择或创建一个教师人格";
+  }, [
+    assistPending,
+    cardActionPending,
+    isReadonlyPersona,
+    savingPersona,
+    selectedPersona,
+    slotAssistIndex,
+  ]);
   const debugSnapshot = useMemo(
     () => ({
       title: "人格页调试面板",
-      subtitle: "查看草稿、生成结果和错误。",
+      subtitle: "查看草稿、卡片状态和错误。",
       error: [loadError, saveError, assistError, configError, cardError, personaLibraryError]
         .filter(Boolean)
         .join("；"),
@@ -294,7 +329,6 @@ export default function PersonaSpectrumPage() {
         { title: "附加约束建议", value: { source: systemPromptSuggestionSource, value: systemPromptSuggestion } },
         { title: "生成摘要信息", value: generatedPersonaMeta },
         { title: "生成卡片（前 24 条）", value: generatedCards.slice(0, 24) },
-        { title: "当前勾选卡片", value: selectedCards },
         { title: "设定/槽位辅助恢复记录", value: assistModelRecoveries },
         { title: "卡片生成恢复记录", value: cardModelRecoveries }
       ]
@@ -313,7 +347,6 @@ export default function PersonaSpectrumPage() {
       personaLibraryError,
       personaCards.length,
       saveError,
-      selectedCards,
       selectedPersona,
       runtimePromptPreview,
       assistModelRecoveries,
@@ -361,7 +394,6 @@ export default function PersonaSpectrumPage() {
 
   function handleAddSlot(kind: PersonaSlotKind | string) {
     const label = PERSONA_SLOT_KIND_LABELS[kind as PersonaSlotKind] ?? kind;
-    const template = SLOT_TEMPLATES.find((t) => t.kind === kind);
     setDraft((prev) => ({
       ...prev,
       slots: [
@@ -369,13 +401,20 @@ export default function PersonaSpectrumPage() {
         {
           kind,
           label,
-          content: template?.text ?? "",
+          content: "",
           weight: 50,
           locked: false,
           sortOrder: prev.slots.length * 10,
         },
       ]
     }));
+  }
+
+  function handleClearSlots() {
+    setDraft((prev) => ({ ...prev, slots: [] }));
+    setExpandedSlotIndex(null);
+    setDraggingSlotIndex(null);
+    setSlotInsertIndex(null);
   }
 
   function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: PersonaSlot[keyof PersonaSlot]) {
@@ -484,7 +523,7 @@ export default function PersonaSpectrumPage() {
 
   function handleSlotInsertDrop(index: number) {
     if (draggingPersonaCardId) {
-      const card = allCards.find((item) => item.id === draggingPersonaCardId);
+      const card = personaCards.find((item) => item.id === draggingPersonaCardId);
       setDraggingPersonaCardId("");
       setSlotInsertIndex(null);
       if (!card) {
@@ -537,6 +576,7 @@ export default function PersonaSpectrumPage() {
     setAssistError("");
     setAssistModelRecoveries([]);
     setAssistPending(true);
+    setIsRewritePopoverOpen(false);
     try {
       const result = await assistPersonaSetting({
         name: draft.name.trim(),
@@ -664,20 +704,6 @@ export default function PersonaSpectrumPage() {
     }
   }
 
-  function toggleCardSelection(cardId: string) {
-    setSelectedCardIds((prev) => (
-      prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
-    ));
-  }
-
-  function handlePersonaCardClick(cardId: string, event: ReactMouseEvent<HTMLElement>) {
-    const target = event.target as HTMLElement;
-    if (target.closest("[data-card-action='true']")) {
-      return;
-    }
-    toggleCardSelection(cardId);
-  }
-
   function handlePersonaCardDragStart(cardId: string) {
     setDraggingPersonaCardId(cardId);
     setSlotInsertIndex(draft.slots.length);
@@ -751,9 +777,23 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleGenerateCards(mode: "keywords" | "long_text") {
-    const inputText = mode === "keywords" ? cardKeywordInput.trim() : cardLongTextInput.trim();
+    let inputText = "";
+    if (mode === "keywords") {
+      inputText = cardKeywordInput.trim();
+    } else {
+      if (!cardLongTextFile) {
+        setCardError("请先上传纯文本文件。");
+        return;
+      }
+      try {
+        inputText = (await cardLongTextFile.text()).trim();
+      } catch (error) {
+        setCardError(`读取文本文件失败：${String(error)}`);
+        return;
+      }
+    }
     if (!inputText) {
-      setCardError(mode === "keywords" ? "请先输入关键词。" : "请先输入长文本。");
+      setCardError(mode === "keywords" ? "请先输入关键词。" : "上传的文本文件为空。");
       return;
     }
     const countText = cardGenerateCount.trim();
@@ -783,32 +823,9 @@ export default function PersonaSpectrumPage() {
         learnerAddress: result.learnerAddress,
       });
       setCardModelRecoveries(result.modelRecoveries ?? []);
-      setSelectedCardIds(result.items.map((item) => item.id));
       setCardMessage(
         `已生成 ${result.items.length} 张卡片。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
       );
-    } catch (error) {
-      setCardError(String(error));
-    } finally {
-      setCardActionPending(null);
-    }
-  }
-
-  async function handleSaveGeneratedCardsToLibrary() {
-    const generatedSelected = selectedCards.filter((card) => card.source !== "manual");
-    if (!generatedSelected.length) {
-      setCardError("请先选中生成结果中的卡片，再加入卡片库。");
-      return;
-    }
-    setCardError("");
-    setCardMessage("");
-    setCardActionPending("save_generated");
-    try {
-      const created = await createPersonaCardsBatch(
-        generatedSelected.map((card) => createPersonaCardInputFromCard(card))
-      );
-      setPersonaCards((prev) => [...created, ...prev]);
-      setCardMessage(`已将 ${created.length} 张卡片加入卡片库。`);
     } catch (error) {
       setCardError(String(error));
     } finally {
@@ -823,54 +840,10 @@ export default function PersonaSpectrumPage() {
     try {
       await deletePersonaCard(cardId);
       setPersonaCards((prev) => prev.filter((card) => card.id !== cardId));
-      setSelectedCardIds((prev) => prev.filter((id) => id !== cardId));
     } catch (error) {
       setCardError(String(error));
     } finally {
       setCardDeletePendingId("");
-    }
-  }
-
-  async function handleCreatePersonaFromSelectedCards() {
-    if (!selectedCards.length) {
-      setCardError("请先选择要组装的人格卡片。");
-      return;
-    }
-    const containsGeneratedCards = selectedCards.some((card) => card.source !== "manual");
-    const payload = draftToCreatePersonaInput(draft);
-    if (!payload.name) {
-      setCardError("请先在左侧填写人格名称，再直接组装保存。");
-      return;
-    }
-    if (containsGeneratedCards) {
-      payload.summary = generatedPersonaMeta.summary || payload.summary;
-      payload.relationship = generatedPersonaMeta.relationship || payload.relationship;
-      payload.learnerAddress = generatedPersonaMeta.learnerAddress || payload.learnerAddress;
-    }
-    payload.referenceHints = mergeReferenceHints(
-      payload.referenceHints ?? [],
-      collectReferenceHintsFromCards(selectedCards)
-    );
-    payload.slots = cardsToPersonaSlots(selectedCards);
-    setCardError("");
-    setCardMessage("");
-    setCardActionPending("create_persona");
-    try {
-      const created = await createPersona(payload);
-      mergePersonaIntoList(created);
-      const latest = await listPersonas();
-      setPersonas(latest);
-      broadcastPersonaLibraryUpdated();
-      setSelectedPersonaId(created.id);
-      setDraft(personaToDraft(created));
-      dismissSystemPromptSuggestion();
-      setPersonaLibraryMessage(`已基于卡片创建人格「${created.name}」。`);
-      setPersonaLibraryError("");
-      setCardMessage(`已基于 ${selectedCards.length} 张卡片创建新人格。`);
-    } catch (error) {
-      setCardError(String(error));
-    } finally {
-      setCardActionPending(null);
     }
   }
 
@@ -908,17 +881,14 @@ export default function PersonaSpectrumPage() {
     }
   }
 
-  function renderPersonaCard(card: PersonaCard, badge: string, generated: boolean) {
-    const isSelected = selectedCardIds.includes(card.id);
+  function renderPersonaCard(card: PersonaCard) {
     return (
       <article
         key={card.id}
         style={{
           ...styles.personaSlotLibraryCard,
-          ...(isSelected ? styles.personaSlotLibraryCardSelected : null),
           ...(draggingPersonaCardId === card.id ? styles.personaSlotLibraryCardDragging : null),
         }}
-        onClick={(event) => handlePersonaCardClick(card.id, event)}
       >
         <div style={styles.libraryCardHeader}>
           <div style={styles.libraryCardTitleRow}>
@@ -935,34 +905,35 @@ export default function PersonaSpectrumPage() {
             </button>
             <span style={styles.libraryCardTitle}>{card.title}</span>
           </div>
-          <span style={styles.libraryCardBadge}>{badge}</span>
+          <span style={styles.libraryCardBadge}>卡片</span>
         </div>
         <div style={styles.libraryCardMetaRow}>
           <span>{PERSONA_SLOT_KIND_LABELS[card.kind as PersonaSlotKind] ?? card.label}</span>
           {card.tags.length ? <span>{card.tags.join(" · ")}</span> : null}
         </div>
-        {generated ? (
-          <div style={styles.libraryCardMetaRow}>
-            <span>关键词：{card.searchKeywords || "自定义"}</span>
-          </div>
-        ) : null}
         <p style={styles.libraryCardContent}>{card.content}</p>
-        {generated && card.sourceNote ? <p style={styles.libraryCardNote}>{card.sourceNote}</p> : null}
-        <div style={styles.actionsRow}>
-          <button data-card-action="true" style={styles.ghostBtn} type="button" onClick={() => insertCardsIntoDraft([card])}>
-            插入当前人格
+        <div style={styles.sidebarCardActions}>
+          <button
+            data-card-action="true"
+            style={styles.sidebarIconButton}
+            type="button"
+            onClick={() => insertCardsIntoDraft([card])}
+            title="插入当前人格"
+            aria-label="插入当前人格"
+          >
+            <MaterialIcon name="subdirectory_arrow_right" size={16} />
           </button>
-          {!generated ? (
-            <button
-              data-card-action="true"
-              style={styles.ghostBtn}
-              type="button"
-              disabled={cardDeletePendingId === card.id}
-              onClick={() => void handleDeletePersonaCard(card.id)}
-            >
-              {cardDeletePendingId === card.id ? "删除中…" : "删除"}
-            </button>
-          ) : null}
+          <button
+            data-card-action="true"
+            style={styles.sidebarIconButton}
+            type="button"
+            disabled={cardDeletePendingId === card.id}
+            onClick={() => void handleDeletePersonaCard(card.id)}
+            title={cardDeletePendingId === card.id ? "删除中" : "删除"}
+            aria-label={cardDeletePendingId === card.id ? "删除中" : "删除"}
+          >
+            <MaterialIcon name={cardDeletePendingId === card.id ? "replay" : "delete"} size={16} />
+          </button>
         </div>
       </article>
     );
@@ -992,26 +963,30 @@ export default function PersonaSpectrumPage() {
           <span>称呼：{persona.learnerAddress || "未填写"}</span>
           <span>{persona.slots.length} 个插槽</span>
         </div>
-        <div style={styles.actionsRow}>
+        <div style={styles.sidebarCardActions}>
           <button
             type="button"
-            style={isSelected ? styles.primaryBtn : styles.ghostBtn}
+            style={isSelected ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
             onClick={() => {
               setSelectedPersonaId(persona.id);
               setPersonaLibraryError("");
               setPersonaLibraryMessage(`已载入人格「${persona.name}」。`);
             }}
+            title={isSelected ? "编辑中" : "载入"}
+            aria-label={isSelected ? "编辑中" : "载入"}
           >
-            {isSelected ? "编辑中" : "载入"}
+            <MaterialIcon name={isSelected ? "adjust" : "arrow_forward"} size={16} />
           </button>
           {persona.source === "user" ? (
             <button
               type="button"
-              style={styles.ghostBtn}
+              style={styles.sidebarIconButton}
               disabled={personaDeletePendingId === persona.id}
               onClick={() => void handleDeletePersona(persona)}
+              title={personaDeletePendingId === persona.id ? "删除中" : "删除"}
+              aria-label={personaDeletePendingId === persona.id ? "删除中" : "删除"}
             >
-              {personaDeletePendingId === persona.id ? "删除中…" : "删除"}
+              <MaterialIcon name={personaDeletePendingId === persona.id ? "replay" : "delete"} size={16} />
             </button>
           ) : null}
         </div>
@@ -1019,46 +994,109 @@ export default function PersonaSpectrumPage() {
     );
   }
 
-  function startColumnResize(which: "basic" | "sidebar", e: ReactMouseEvent) {
-    e.preventDefault();
-    colResizeRef.current = {
-      which,
-      startX: e.clientX,
-      startWidth: which === "basic" ? basicPaneWidth : sidebarWidth,
-    };
-    function onMove(me: MouseEvent) {
-      const s = colResizeRef.current;
-      if (!s) return;
-      const delta = me.clientX - s.startX;
-      const w = Math.max(160, Math.min(560, s.startWidth + (s.which === "basic" ? delta : -delta)));
-      if (s.which === "basic") setBasicPaneWidth(w); else setSidebarWidth(w);
-    }
-    function onUp() {
-      colResizeRef.current = null;
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    }
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  }
-
   return (
     <main className="with-app-nav" style={styles.page}>
-      <div style={styles.pageHeader}>
-        <TopNav currentPath="/persona-spectrum" />
-        <div style={styles.titleBar}>
+      <TopNav currentPath="/persona-spectrum" />
+
+      <div style={styles.heading}>
+        <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>人格色谱</h1>
+          <div style={styles.notice}>{pageNotice}</div>
         </div>
       </div>
-      <div style={styles.workspaceShell}>
-        <div style={styles.mainColumn}>
-          {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
-          <div style={styles.editorArea}>
-            <div style={{ ...styles.basicPane, width: basicPaneWidth, flexShrink: 0 }}>
-              <div style={styles.panelHeader}>
-                <span style={styles.panelTitle}>基本设定</span>
+
+      {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
+
+      <div
+        style={{
+          ...styles.workspaceShell,
+          ...(isCompactLayout ? styles.workspaceShellCompact : {}),
+        }}
+      >
+        <div
+          style={{
+            ...styles.mainColumn,
+            ...(isCompactLayout ? styles.mainColumnCompact : {}),
+          }}
+        >
+          <div
+            style={{
+              ...styles.editorArea,
+              ...(isCompactLayout ? styles.editorAreaCompact : {}),
+            }}
+          >
+            <div
+              style={{
+                ...styles.basicPane,
+                ...(isCompactLayout ? styles.compactPane : {}),
+                width: isCompactLayout ? "100%" : BASIC_PANE_WIDTH,
+                flexShrink: 0,
+              }}
+            >
+              <div style={styles.basicPaneHead}>
+                <span style={styles.basicPaneTitle}>基本设定</span>
+                <div style={styles.basicPaneActions}>
+                  <div ref={rewritePopoverRef} style={styles.rewritePopoverWrap}>
+                    <button
+                      type="button"
+                      style={{ ...styles.basicIconButton, ...(assistPending ? styles.basicIconButtonDisabled : {}) }}
+                      disabled={assistPending}
+                      onClick={() => setIsRewritePopoverOpen((current) => !current)}
+                      title={assistPending ? "AI 重写中" : "AI 重写"}
+                      aria-label={assistPending ? "AI 重写中" : "AI 重写"}
+                    >
+                      <MaterialIcon name={assistPending ? "replay" : "auto_awesome"} size={16} />
+                    </button>
+                    {isRewritePopoverOpen ? (
+                      <div style={styles.rewritePopover}>
+                        <div style={styles.rewritePopoverSection}>
+                          <span style={styles.panelTitle}>保留原文比例</span>
+                          <span style={styles.rewritePopoverValue}>{(retainRatio * 100).toFixed(0)}%</span>
+                        </div>
+                        <input
+                          style={styles.range}
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={retainRatio}
+                          onChange={(e) => setRetainRatio(Number(e.target.value))}
+                        />
+                        <p style={styles.rewritePopoverHint}>数值越高，AI 重写时越接近原始设定。</p>
+                        <button
+                          type="button"
+                          style={styles.rewritePopoverButton}
+                          onClick={() => { void handleAssistSetting(); }}
+                        >
+                          开始重写
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    style={{ ...styles.basicIconButton, ...styles.basicIconButtonPrimary, ...(savingPersona ? styles.basicIconButtonDisabled : {}) }}
+                    disabled={savingPersona}
+                    onClick={handleCreatePersona}
+                    title={savingPersona ? "创建人格中" : "创建人格"}
+                    aria-label={savingPersona ? "创建人格中" : "创建人格"}
+                  >
+                    <MaterialIcon name="add" size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...styles.basicIconButton, ...(savingPersona || isReadonlyPersona ? styles.basicIconButtonDisabled : {}) }}
+                    disabled={savingPersona || isReadonlyPersona}
+                    onClick={handleUpdatePersona}
+                    title={savingPersona ? "更新人格中" : "更新人格"}
+                    aria-label={savingPersona ? "更新人格中" : "更新人格"}
+                  >
+                    <MaterialIcon name="upload" size={16} />
+                  </button>
+                </div>
               </div>
-              <div style={styles.panelBody}>
+              <section style={styles.basicPaneCard}>
+                <div style={styles.basicPanePrimarySection}>
                 <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>人格</label>
                 <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
@@ -1068,30 +1106,14 @@ export default function PersonaSpectrumPage() {
                 </select>
               </div>
 
-              {selectedPersona ? (
-                <div style={styles.personaCard}>
-                  <div style={styles.personaCardHead}>
-                    <span style={styles.personaCardName}>{selectedPersona.name}</span>
-                    <span style={styles.personaCardSource}>{selectedPersona.source === "builtin" ? "内置人格" : "用户人格"}</span>
-                  </div>
-                  <p style={styles.personaCardSummary}>{selectedPersona.summary || "未填写摘要"}</p>
-                  <div style={styles.personaCardMetaGrid}>
-                    <span style={styles.personaCardMetaLabel}>关系</span>
-                    <span style={styles.personaCardMetaValue}>{selectedPersona.relationship || "未填写"}</span>
-                    <span style={styles.personaCardMetaLabel}>称呼</span>
-                    <span style={styles.personaCardMetaValue}>{selectedPersona.learnerAddress || "未填写"}</span>
-                  </div>
-                </div>
-              ) : null}
-
               <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>名称</label>
                 <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
               </div>
 
-              <div style={styles.fieldGroup}>
+              <div style={styles.summaryFieldGroup}>
                 <label style={styles.fieldLabel}>摘要</label>
-                <textarea style={styles.textarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
+                <textarea style={styles.summaryTextarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
               </div>
 
               <div style={styles.compactGrid}>
@@ -1115,84 +1137,55 @@ export default function PersonaSpectrumPage() {
                 </div>
               </div>
 
-              <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>保留原文比例 {(retainRatio * 100).toFixed(0)}%</label>
-                <input
-                  style={styles.range}
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={retainRatio}
-                  onChange={(e) => setRetainRatio(Number(e.target.value))}
-                />
-              </div>
-
-              <div style={styles.actionsRow}>
-                <button style={styles.ghostBtn} type="button" disabled={assistPending} onClick={handleAssistSetting}>
-                  {assistPending ? "AI 完善中…" : "AI 辅助完善设定"}
-                </button>
-                {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
-              </div>
-
-              <div style={styles.fieldGroup}>
-                <div style={styles.fieldHeaderRow}>
-                  <label style={styles.fieldLabel}>附加系统约束（可选）</label>
+              {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
                 </div>
-                <textarea
-                  style={styles.textareaLg}
-                  value={draft.systemPrompt}
-                  onChange={(e) => updateDraft("systemPrompt", e.target.value)}
-                  placeholder="例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。"
-                />
-                {systemPromptSuggestion ? (
-                  <div style={styles.promptSuggestionCard}>
-                    <div style={styles.promptSuggestionHeader}>
-                      <span style={styles.panelTitle}>AI 建议</span>
-                      <span style={styles.promptSuggestionSource}>{systemPromptSuggestionSource || "AI 生成"}</span>
-                    </div>
-                    <p style={styles.promptSuggestionNote}>
-                      这只会写入上面的附加约束。
-                    </p>
-                    <p style={styles.promptSuggestionBody}>{systemPromptSuggestion}</p>
-                    <div style={styles.actionsRow}>
-                      <button type="button" style={styles.primaryBtn} onClick={applySystemPromptSuggestion}>
-                        应用建议
-                      </button>
-                      <button type="button" style={styles.ghostBtn} onClick={dismissSystemPromptSuggestion}>
-                        忽略建议
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <span style={styles.mutedText}>这一栏可以留空。</span>
-                )}
-              </div>
 
-              <div style={styles.fieldGroup}>
-                <div style={styles.fieldHeaderRow}>
-                  <label style={styles.fieldLabel}>运行时人格提示词预览</label>
+              <div style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
+                <div style={styles.fieldGroup}>
+                  <button
+                    type="button"
+                    style={styles.collapsibleFieldToggle}
+                    onClick={() => setIsSystemPromptExpanded((current) => !current)}
+                  >
+                    <span style={styles.fieldLabel}>附加系统约束（可选）</span>
+                    <span style={styles.sidebarToggleIcon}>
+                      <MaterialIcon name={isSystemPromptExpanded ? "expand_more" : "chevron_right"} size={16} />
+                    </span>
+                  </button>
+                  {isSystemPromptExpanded ? (
+                    <>
+                      <textarea
+                        style={styles.textareaLg}
+                        value={draft.systemPrompt}
+                        onChange={(e) => updateDraft("systemPrompt", e.target.value)}
+                        placeholder="例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。"
+                      />
+                      {systemPromptSuggestion ? (
+                        <div style={styles.promptSuggestionCard}>
+                          <div style={styles.promptSuggestionHeader}>
+                            <span style={styles.panelTitle}>AI 建议</span>
+                            <span style={styles.promptSuggestionSource}>{systemPromptSuggestionSource || "AI 生成"}</span>
+                          </div>
+                          <p style={styles.promptSuggestionNote}>
+                            这只会写入上面的附加约束。
+                          </p>
+                          <p style={styles.promptSuggestionBody}>{systemPromptSuggestion}</p>
+                          <div style={styles.actionsRow}>
+                            <button type="button" style={styles.primaryBtn} onClick={applySystemPromptSuggestion}>
+                              应用建议
+                            </button>
+                            <button type="button" style={styles.ghostBtn} onClick={dismissSystemPromptSuggestion}>
+                              忽略建议
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
                 </div>
-                <pre style={styles.runtimePromptPreview}>{runtimePromptPreview}</pre>
               </div>
 
-              <div style={styles.actionsRow}>
-                <button style={styles.primaryBtn} disabled={savingPersona} onClick={handleCreatePersona}>
-                  {savingPersona ? "保存中…" : "创建人格"}
-                </button>
-                <button style={styles.ghostBtn} disabled={savingPersona || isReadonlyPersona} onClick={handleUpdatePersona}>
-                  {savingPersona ? "保存中…" : "更新人格"}
-                </button>
-                {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
-              </div>
-              {isReadonlyPersona ? (
-                <span style={styles.mutedText}>只读 — 编辑后可另存为新人格</span>
-              ) : null}
-
-              <section style={styles.inlinePanel}>
-                <div style={styles.panelHead}>
-                  <span style={styles.panelTitle}>配置导入/导出</span>
-                </div>
+              <section style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
                 <div style={styles.actionsRow}>
                   <button style={styles.ghostBtn} type="button" onClick={handleDownloadTemplate}>下载模板</button>
                   <button style={styles.ghostBtn} type="button" onClick={handleExportConfig}>导出配置</button>
@@ -1201,18 +1194,31 @@ export default function PersonaSpectrumPage() {
                     <input type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
                   </label>
                 </div>
+                {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
+                {isReadonlyPersona ? (
+                  <span style={styles.mutedText}>只读 — 编辑后可另存为新人格</span>
+                ) : null}
                 {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
                 {configError ? <span style={styles.errorInline}>{configError}</span> : null}
               </section>
-              </div>{/* panelBody */}
+              </section>
             </div>
-            <div style={styles.resizer} onMouseDown={(e) => startColumnResize("basic", e)} />
-            <div style={styles.slotsPane}>
+            <div
+              style={{
+                ...styles.slotsPane,
+                ...(isCompactLayout ? styles.compactPane : {}),
+              }}
+            >
               <div style={styles.panelHeader}>
                 <span style={styles.panelTitle}>人格插槽</span>
-                <button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理</button>
+                <div style={styles.panelHeaderActions}>
+                  <button type="button" style={styles.ghostBtn} onClick={handleClearSlots} disabled={!draft.slots.length}>清空</button>
+                  <button type="button" style={styles.ghostBtn} onClick={() => handleAddSlot("custom")}>添加</button>
+                  <button type="button" style={styles.ghostBtn} onClick={handleSortSlotsByPriority}>按优先级整理</button>
+                </div>
               </div>
               <div style={styles.panelBody}>
+              <div style={styles.slotPaneContent}>
               <div
                 style={{
                   ...styles.slotDropArea,
@@ -1255,50 +1261,54 @@ export default function PersonaSpectrumPage() {
                           style={styles.slotHeader}
                           onClick={() => setExpandedSlotIndex((prev) => (prev === index ? null : index))}
                         >
-                          <span
-                            style={styles.dragHandle}
-                            title="拖动排序"
-                            draggable
-                            onDragStart={(e) => { e.stopPropagation(); handleDragStart(index); }}
-                            onDragEnd={handleDragEnd}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MaterialIcon name="drag_indicator" size={16} />
-                          </span>
-                          <select
-                            style={styles.slotKindSelect}
-                            value={slot.kind}
-                            onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
-                            disabled={Boolean(slot.locked)}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {PERSONA_SLOT_KINDS.map((k) => (
-                              <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
-                            ))}
-                          </select>
-                          <input
-                            style={styles.slotLabelInput}
-                            value={slot.label}
-                            placeholder="显示标签"
-                            onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
-                            disabled={Boolean(slot.locked)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                          <div style={styles.slotHeaderMain}>
+                            <span
+                              style={styles.dragHandle}
+                              title="拖动排序"
+                              draggable
+                              onDragStart={(e) => { e.stopPropagation(); handleDragStart(index); }}
+                              onDragEnd={handleDragEnd}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MaterialIcon name="drag_indicator" size={16} />
+                            </span>
+                            <select
+                              style={styles.slotKindSelect}
+                              value={slot.kind}
+                              onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
+                              disabled={Boolean(slot.locked)}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {PERSONA_SLOT_KINDS.map((k) => (
+                                <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
+                              ))}
+                            </select>
+                            <input
+                              style={styles.slotLabelInput}
+                              value={slot.label}
+                              placeholder="显示标签"
+                              onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
+                              disabled={Boolean(slot.locked)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div style={styles.slotHeaderActions}>
+                              <button
+                                type="button"
+                                style={styles.slotToggleBtn}
+                                onClick={(e) => { e.stopPropagation(); setExpandedSlotIndex((prev) => (prev === index ? null : index)); }}
+                              >
+                                <MaterialIcon name={expandedSlotIndex === index ? "expand_more" : "chevron_right"} size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                style={styles.removeBtn}
+                                onClick={(e) => { e.stopPropagation(); handleRemoveSlot(index); }}
+                              ><MaterialIcon name="close" size={16} /></button>
+                            </div>
+                          </div>
                           {expandedSlotIndex !== index ? (
-                            <span style={styles.slotPreview}>{slot.content.slice(0, 40) || "—"}</span>
+                            <span style={styles.slotPreview}>{slot.content.slice(0, 56) || "—"}</span>
                           ) : null}
-                          <button
-                            type="button"
-                            style={styles.slotToggleBtn}
-                            onClick={(e) => { e.stopPropagation(); setExpandedSlotIndex((prev) => (prev === index ? null : index)); }}
-                          >
-                            <MaterialIcon name={expandedSlotIndex === index ? "expand_more" : "chevron_right"} size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            style={styles.removeBtn}
-                            onClick={(e) => { e.stopPropagation(); handleRemoveSlot(index); }}
-                          ><MaterialIcon name="close" size={16} /></button>
                         </div>
                         {expandedSlotIndex === index ? (
                           <>
@@ -1384,41 +1394,29 @@ export default function PersonaSpectrumPage() {
                     </div>
                   )}
                 </div>
-                <div style={styles.addSlotRow}>
-                  {SLOT_TEMPLATES.map((t) => (
-                    <button key={t.kind} type="button" style={styles.tagBtn} onClick={() => handleAddSlot(t.kind)}>
-                      {PERSONA_SLOT_KIND_LABELS[t.kind]}
-                    </button>
-                  ))}
-                  <button type="button" style={styles.tagBtn} onClick={() => handleAddSlot("custom")}>自定义</button>
+              </div>
+              </div>
+
+              <div style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
+                <div style={styles.fieldGroup}>
+                  <div style={styles.fieldHeaderRow}>
+                    <label style={styles.fieldLabel}>运行时人格提示词预览</label>
+                  </div>
+                  <pre style={styles.runtimePromptPreview}>{runtimePromptPreview}</pre>
                 </div>
               </div>
               </div>{/* panelBody */}
             </div>
           </div>
         </div>
-        <div style={styles.resizer} onMouseDown={(e) => startColumnResize("sidebar", e)} />
-        <aside style={{ ...styles.sidebarPane, width: sidebarWidth, flexShrink: 0 }}>
-          <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("library")}>
-              <span style={styles.panelTitle}>人格卡片库</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("library") ? "chevron_right" : "expand_more"} size={16} /></span>
-            </button>
-            {!collapsedSidebarSections.includes("library") ? (
-              <div style={styles.sidebarSectionBody}>
-                <input
-                  style={styles.input}
-                  value={cardSearchQuery}
-                  onChange={(e) => setCardSearchQuery(e.target.value)}
-                  placeholder="搜索标题、内容、标签、关键词"
-                />
-                <span style={styles.mutedText}>
-                  库卡片 {personaCards.length} 张，本轮 {generatedCards.length} 张，已选 {selectedCards.length} 张。
-                </span>
-              </div>
-            ) : null}
-          </div>
-
+        <aside
+          style={{
+            ...styles.sidebarPane,
+            ...(isCompactLayout ? styles.sidebarPaneCompact : {}),
+            width: isCompactLayout ? "100%" : SIDEBAR_PANE_WIDTH,
+            flexShrink: 0,
+          }}
+        >
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
               <span style={styles.panelTitle}>生成卡片</span>
@@ -1438,109 +1436,123 @@ export default function PersonaSpectrumPage() {
                     placeholder="留空表示不限制卡片数量"
                   />
                 </label>
-                <p style={styles.sidebarHint}>留空表示不限制卡片数量，由模型根据关键词或长文本的信息密度自由决定。</p>
                 <label style={styles.checkboxRow}>
                   <input
                     type="checkbox"
                     checked={clearBeforeBackfill}
                     onChange={(event) => setClearBeforeBackfill(event.target.checked)}
                   />
-                  <span style={styles.checkboxLabel}>应用生成结果到编辑区时，先清空摘要/关系/称呼/卡片插槽，保留附加系统约束</span>
+                  <span style={styles.checkboxLabel}>应用前清空已有摘要与插槽</span>
                 </label>
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>关键词搜索</span>
-                  <input
-                    style={styles.input}
-                    value={cardKeywordInput}
-                    onChange={(e) => setCardKeywordInput(e.target.value)}
-                    placeholder="例如：冷静学术、学院派导师、侦探式推理"
-                  />
-                </label>
-                <button
-                  style={styles.primaryBtn}
-                  type="button"
-                  disabled={cardActionPending !== null}
-                  onClick={() => void handleGenerateCards("keywords")}
-                >
-                  {cardActionPending === "generate_keywords" ? "生成中…" : "根据关键词生成人格卡片"}
-                </button>
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>长文本提取</span>
-                  <textarea
-                    style={styles.textarea}
-                    value={cardLongTextInput}
-                    onChange={(e) => setCardLongTextInput(e.target.value)}
-                    placeholder="输入长文本设定，提取成可复用的人格卡片。"
-                  />
-                </label>
-                <button
-                  style={styles.ghostBtn}
-                  type="button"
-                  disabled={cardActionPending !== null}
-                  onClick={() => void handleGenerateCards("long_text")}
-                >
-                  {cardActionPending === "generate_long_text" ? "提取中…" : "根据长文本提取人格卡片"}
-                </button>
+                <div style={styles.modeSwitchRow}>
+                  <div style={styles.modeSwitch}>
+                    <button
+                      type="button"
+                      style={cardGenerationMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
+                      onClick={() => setCardGenerationMode("keywords")}
+                    >
+                      关键词搜索
+                    </button>
+                    <button
+                      type="button"
+                      style={cardGenerationMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
+                      onClick={() => setCardGenerationMode("long_text")}
+                    >
+                      长文本提取
+                    </button>
+                  </div>
+                  <button
+                    style={styles.sidebarIconButton}
+                    type="button"
+                    disabled={cardActionPending !== null}
+                    onClick={() => void handleGenerateCards(cardGenerationMode)}
+                    title={
+                      cardGenerationMode === "keywords"
+                        ? (cardActionPending === "generate_keywords" ? "生成中" : "根据关键词生成人格卡片")
+                        : (cardActionPending === "generate_long_text" ? "提取中" : "根据长文本提取人格卡片")
+                    }
+                    aria-label={
+                      cardGenerationMode === "keywords"
+                        ? (cardActionPending === "generate_keywords" ? "生成中" : "根据关键词生成人格卡片")
+                        : (cardActionPending === "generate_long_text" ? "提取中" : "根据长文本提取人格卡片")
+                    }
+                  >
+                    <MaterialIcon
+                      name={
+                        cardGenerationMode === "keywords"
+                          ? (cardActionPending === "generate_keywords" ? "replay" : "auto_awesome")
+                          : (cardActionPending === "generate_long_text" ? "replay" : "description")
+                      }
+                      size={14}
+                    />
+                  </button>
+                </div>
+                {cardGenerationMode === "keywords" ? (
+                  <label key="keywords-mode" style={styles.fieldGroup}>
+                    <input
+                      style={styles.input}
+                      value={cardKeywordInput}
+                      onChange={(e) => setCardKeywordInput(e.target.value)}
+                      placeholder="例如：冷静学术、学院派导师、侦探式推理"
+                    />
+                  </label>
+                ) : (
+                  <label key="long-text-mode" style={styles.fieldGroup}>
+                    <input
+                      type="file"
+                      accept=".txt,.md,text/plain,text/markdown"
+                      style={styles.fileInput}
+                      onChange={(event) => setCardLongTextFile(event.target.files?.[0] ?? null)}
+                    />
+                    {cardLongTextFile ? <span style={styles.mutedText}>{cardLongTextFile.name}</span> : null}
+                  </label>
+                )}
                 {cardError ? <p style={styles.errorText}>{cardError}</p> : null}
                 {cardMessage ? <p style={styles.sidebarHint}>{cardMessage}</p> : null}
                 {(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress) ? (
                   <div style={styles.generatedResultCard}>
                     <strong style={styles.generatedResultTitle}>{generatedPersonaMeta.summary || "本轮生成人格草案"}</strong>
-                    <p style={styles.generatedResultSummary}>
-                      {generatedPersonaMeta.summary || "已生成一组可继续筛选、写回或组装的人格卡片。"}
-                    </p>
                     <p style={styles.generatedResultMeta}>
                       {generatedCards.length} 张卡片
                       {generatedPersonaMeta.relationship ? ` · ${generatedPersonaMeta.relationship}` : ""}
                       {generatedPersonaMeta.learnerAddress ? ` · 称呼：${generatedPersonaMeta.learnerAddress}` : ""}
                     </p>
-                    <button
-                      style={styles.primaryBtn}
-                      type="button"
-                      onClick={applyGeneratedCardsToDraft}
-                    >
-                      应用到当前编辑区
-                    </button>
+                    <div style={styles.sidebarActionRow}>
+                      <button
+                        style={styles.sidebarIconButton}
+                        type="button"
+                        disabled={!(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress)}
+                        onClick={applyGeneratedCardsToDraft}
+                        title="应用到当前编辑区"
+                        aria-label="应用到当前编辑区"
+                      >
+                        <MaterialIcon name="subdirectory_arrow_right" size={14} />
+                      </button>
+                    </div>
                   </div>
                 ) : null}
-                <div style={styles.actionsRow}>
-                  <button style={styles.ghostBtn} type="button" disabled={!selectedCards.length} onClick={() => insertCardsIntoDraft(selectedCards)}>
-                    插入当前人格
-                  </button>
-                  <button style={styles.ghostBtn} type="button" disabled={cardActionPending !== null} onClick={() => void handleSaveGeneratedCardsToLibrary()}>
-                    {cardActionPending === "save_generated" ? "保存中…" : "加入卡片库"}
-                  </button>
-                  <button style={styles.ghostBtn} type="button" disabled={cardActionPending !== null} onClick={() => void handleCreatePersonaFromSelectedCards()}>
-                    {cardActionPending === "create_persona" ? "创建中…" : "直接组装"}
-                  </button>
-                </div>
               </div>
             ) : null}
           </div>
 
           <div style={styles.sidebarSection}>
             <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("results")}>
-              <span style={styles.panelTitle}>生成结果 / 卡片库</span>
+              <span style={styles.panelTitle}>卡片库</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("results") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
             {!collapsedSidebarSections.includes("results") ? (
               <div style={styles.sidebarSectionBody}>
-                <span style={styles.panelTitle}>生成结果</span>
-                {filteredGeneratedCards.length ? (
-                  <div style={styles.cardList}>
-                    {filteredGeneratedCards.map((card) => renderPersonaCard(card, "生成", true))}
-                  </div>
-                ) : (
-                  <span style={styles.mutedText}>暂无匹配的生成结果。</span>
-                )}
-                <span style={styles.panelTitle}>卡片库</span>
+                <input
+                  style={styles.input}
+                  value={cardSearchQuery}
+                  onChange={(e) => setCardSearchQuery(e.target.value)}
+                  placeholder="搜索标题、内容、标签、关键词"
+                />
                 {filteredPersonaCards.length ? (
                   <div style={styles.cardList}>
-                    {filteredPersonaCards.map((card) => renderPersonaCard(card, "卡片库", false))}
+                    {filteredPersonaCards.map((card) => renderPersonaCard(card))}
                   </div>
-                ) : (
-                  <span style={styles.mutedText}>暂无匹配的人格卡片。</span>
-                )}
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -1558,28 +1570,19 @@ export default function PersonaSpectrumPage() {
                   onChange={(e) => setPersonaLibraryQuery(e.target.value)}
                   placeholder="搜索人格名称、摘要、关系或称呼"
                 />
-                <span style={styles.mutedText}>
-                  共 {personas.length} 个人格，内置 {personas.filter((persona) => persona.source === "builtin").length} 个，用户 {personas.filter((persona) => persona.source === "user").length} 个。
-                </span>
                 {personaLibraryMessage ? <p style={styles.sidebarHint}>{personaLibraryMessage}</p> : null}
                 {personaLibraryError ? <p style={styles.errorText}>{personaLibraryError}</p> : null}
 
-                {builtinPersonas.length ? <span style={styles.panelTitle}>内置人格</span> : null}
                 {builtinPersonas.length ? (
                   <div style={styles.cardList}>
                     {builtinPersonas.map(renderPersonaLibraryCard)}
                   </div>
                 ) : null}
 
-                {userPersonas.length ? <span style={styles.panelTitle}>用户人格</span> : null}
                 {userPersonas.length ? (
                   <div style={styles.cardList}>
                     {userPersonas.map(renderPersonaLibraryCard)}
                   </div>
-                ) : null}
-
-                {!builtinPersonas.length && !userPersonas.length ? (
-                  <span style={styles.mutedText}>暂无匹配人格。</span>
                 ) : null}
               </div>
             ) : null}
@@ -1677,19 +1680,6 @@ function createInputToDraft(snapshot: CreatePersonaInput): PersonaDraft {
   };
 }
 
-function createPersonaCardInputFromCard(card: PersonaCard): CreatePersonaCardInput {
-  return {
-    title: card.title,
-    kind: card.kind,
-    label: card.label,
-    content: card.content,
-    tags: card.tags,
-    searchKeywords: card.searchKeywords,
-    source: card.source,
-    sourceNote: card.sourceNote,
-  };
-}
-
 function buildDraftWithInsertedCards(
   draft: PersonaDraft,
   cards: PersonaCard[],
@@ -1739,17 +1729,6 @@ function clearDraftForGeneratedBackfill(draft: PersonaDraft): PersonaDraft {
     referenceHints: [],
     slots: [],
   };
-}
-
-function cardsToPersonaSlots(cards: PersonaCard[]): PersonaSlot[] {
-  return cards.map((card, index) => ({
-    kind: card.kind,
-    label: card.label,
-    content: card.content,
-    weight: 50,
-    locked: false,
-    sortOrder: index * 10,
-  }));
 }
 
 function matchesPersonaCard(card: PersonaCard, query: string): boolean {
@@ -1912,21 +1891,53 @@ function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): Create
 const styles: Record<string, CSSProperties> = {
   /* Page shell */
   page: {
+    width: "100%",
     height: "100vh",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
-    maxWidth: 1400,
+    boxSizing: "border-box",
+    maxWidth: 1600,
     margin: "0 auto",
-    padding: 0,
+    padding: "0 28px 28px",
+    background: "var(--bg)",
   },
-  pageHeader: {
-    flexShrink: 0,
-    borderBottom: "1px solid var(--border)",
+  heading: {
+    display: "grid",
+    gap: 8,
+    position: "sticky",
+    top: 0,
+    zIndex: 15,
+    paddingTop: 20,
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 92%, var(--bg))",
   },
-  titleBar: {
-    padding: "8px 24px",
+  headingRow: {
     display: "flex",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  pageTitle: {
+    margin: 0,
+    fontSize: 20,
+    fontWeight: 700,
+    color: "var(--ink)",
+    lineHeight: 1.2,
+  },
+  notice: {
+    width: "fit-content",
+    maxWidth: "100%",
+    minHeight: 24,
+    padding: "0 8px",
+    border: "none",
+    background: "color-mix(in srgb, white 72%, var(--accent-soft))",
+    color: "var(--ink-2)",
+    fontSize: 12,
+    lineHeight: 1,
+    display: "inline-flex",
     alignItems: "center",
   },
   workspaceShell: {
@@ -1934,6 +1945,11 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
     minHeight: 0,
     overflow: "hidden",
+    gap: 14,
+  },
+  workspaceShellCompact: {
+    flexDirection: "column",
+    overflowY: "auto",
   },
   mainColumn: {
     flex: 1,
@@ -1942,16 +1958,28 @@ const styles: Record<string, CSSProperties> = {
     flexDirection: "column",
     overflow: "hidden",
   },
+  mainColumnCompact: {
+    overflow: "visible",
+  },
   editorArea: {
     display: "flex",
     flex: 1,
     minHeight: 0,
     overflow: "hidden",
+    gap: 14,
+  },
+  editorAreaCompact: {
+    flexDirection: "column",
+    overflow: "visible",
   },
   basicPane: {
     display: "flex",
     flexDirection: "column",
+    minHeight: 0,
     overflow: "hidden",
+    minWidth: 0,
+    border: "none",
+    background: "transparent",
   },
   slotsPane: {
     flex: 1,
@@ -1959,33 +1987,158 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-  },
-  panelHeader: {
-    flexShrink: 0,
-    padding: "8px 16px",
-    borderBottom: "1px solid var(--border)",
+    border: "1px solid var(--border)",
     background: "var(--panel)",
+  },
+  compactPane: {
+    overflow: "visible",
+  },
+  basicPaneHead: {
+    position: "relative",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 36,
+    gap: 12,
+    flexWrap: "wrap",
+    minHeight: 24,
+    padding: "0 4px 10px 0",
+  },
+  basicPaneTitle: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "var(--muted)",
+  },
+  basicPaneActions: {
+    display: "flex",
+    flexWrap: "wrap",
     gap: 8,
+  },
+  rewritePopoverWrap: {
+    position: "static",
+    display: "inline-flex",
+  },
+  basicIconButton: {
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    width: 32,
+    height: 32,
+    padding: 0,
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    color: "var(--ink)",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  basicIconButtonPrimary: {
+    border: "none",
+    background: "var(--accent)",
+    color: "white",
+  },
+  basicIconButtonDisabled: {
+    opacity: 0.45,
+    cursor: "not-allowed",
+  },
+  rewritePopover: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    left: 0,
+    zIndex: 20,
+    width: 220,
+    display: "grid",
+    gap: 10,
+    padding: "12px 12px 10px",
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "var(--panel)",
+    boxShadow: "0 12px 28px rgba(13, 32, 40, 0.12)",
+  },
+  rewritePopoverSection: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  rewritePopoverValue: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "var(--ink)",
+  },
+  rewritePopoverHint: {
+    margin: 0,
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "var(--muted)",
+  },
+  rewritePopoverButton: {
+    border: "none",
+    minHeight: 32,
+    padding: "0 12px",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  basicPaneCard: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 0,
+    paddingTop: 12,
+    background: "transparent",
+    flex: 1,
+    minHeight: 0,
+  },
+  basicPaneSection: {
+    display: "grid",
+    gap: 12,
+  },
+  basicPanePrimarySection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    flex: 1,
+    minHeight: 0,
+  },
+  basicPaneSectionSeparated: {
+    paddingTop: 14,
+    marginTop: 14,
+    borderTop: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+  },
+  panelHeader: {
+    flexShrink: 0,
+    padding: "10px 16px",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "transparent",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 40,
+    gap: 8,
+  },
+  panelHeaderActions: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
   },
   panelBody: {
     flex: 1,
     minHeight: 0,
     overflowY: "auto",
-    padding: "16px 20px",
+    padding: "16px 18px 18px",
     display: "flex",
     flexDirection: "column",
-    gap: 14,
+    gap: 12,
   },
   slotDropArea: {
     display: "flex",
     flexDirection: "column",
     gap: 0,
   },
-  pageTitle: { margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ink)", lineHeight: 1.2 },
 
   /* Left: editor */
   editorPanel: {
@@ -1996,27 +2149,30 @@ const styles: Record<string, CSSProperties> = {
     gap: 14,
     alignContent: "start",
   },
-  inlinePanel: {
-    borderTop: "1px solid var(--border)",
-    paddingTop: 14,
-    display: "grid",
-    gap: 10,
-    alignContent: "start",
-  },
   sidebarPane: {
     display: "flex",
     flexDirection: "column",
+    gap: 10,
+    minHeight: 0,
     overflowY: "auto",
-    background: "var(--bg)",
+  },
+  sidebarPaneCompact: {
+    overflow: "visible",
   },
   resizer: {
     width: 4,
     flexShrink: 0,
+    alignSelf: "stretch",
     background: "var(--border)",
     cursor: "col-resize",
   },
+  resizerHidden: {
+    display: "none",
+  },
   sidebarSection: {
-    borderBottom: "1px solid var(--border)",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 99%, var(--panel))",
+    overflow: "hidden",
     flexShrink: 0,
   },
   sidebarSectionHeader: {
@@ -2026,14 +2182,14 @@ const styles: Record<string, CSSProperties> = {
     width: "100%",
     border: "none",
     background: "transparent",
-    padding: "14px 16px",
+    padding: "10px 12px",
     cursor: "pointer",
     textAlign: "left",
   },
   sidebarSectionBody: {
-    padding: "0 16px 14px",
+    padding: "0 12px 12px",
     display: "grid",
-    gap: 10,
+    gap: 8,
     alignContent: "start",
   },
   sidebarListSection: {
@@ -2051,8 +2207,8 @@ const styles: Record<string, CSSProperties> = {
   /* Panel header */
   panelHead: {
     paddingBottom: 10,
-    borderBottom: "1px solid var(--border)",
-    marginBottom: 2,
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+    marginBottom: 0,
   },
   sidebarHint: {
     margin: 0,
@@ -2072,17 +2228,35 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--muted)",
   },
   panelTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 700,
-    color: "var(--muted)",
+    letterSpacing: "0.12em",
     textTransform: "uppercase",
-    letterSpacing: "0.06em",
+    color: "var(--muted)",
   },
 
   /* Form elements */
   fieldGroup: {
     display: "grid",
-    gap: 6,
+    gap: 4,
+  },
+  collapsibleFieldToggle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    padding: 0,
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  summaryFieldGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    flex: 1,
+    minHeight: 0,
   },
   fieldHeaderRow: {
     display: "flex",
@@ -2102,6 +2276,14 @@ const styles: Record<string, CSSProperties> = {
     padding: 8,
     background: "color-mix(in srgb, white 70%, var(--accent-soft))",
   },
+  slotPaneContent: {
+    width: "100%",
+    maxWidth: 760,
+    margin: "0 auto",
+    minWidth: 0,
+    display: "grid",
+    gap: 0,
+  },
   slotList: {
     display: "grid",
     gap: 0,
@@ -2115,6 +2297,43 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--accent)",
     boxShadow: "0 0 0 3px var(--accent-soft)",
     transform: "scaleY(1.2)",
+  },
+  modeSwitch: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+  },
+  modeSwitchRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  modeSwitchButton: {
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    minHeight: 28,
+    padding: "0 10px",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    color: "var(--muted)",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 600,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modeSwitchButtonActive: {
+    border: "none",
+    minHeight: 28,
+    padding: "0 10px",
+    background: "var(--accent)",
+    color: "white",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 600,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptySlotDropTarget: {
     border: "1px dashed var(--border)",
@@ -2130,112 +2349,89 @@ const styles: Record<string, CSSProperties> = {
     background: "color-mix(in srgb, white 70%, var(--accent-soft))",
     color: "var(--ink)",
   },
-  personaCard: {
-    display: "grid",
-    gap: 8,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: 12,
-  },
-  personaCardHead: {
-    display: "flex",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  personaCardName: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "var(--ink)",
-  },
-  personaCardSource: {
-    fontSize: 11,
-    color: "var(--muted)",
-  },
-  personaCardSummary: {
-    margin: 0,
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: "var(--muted)",
-  },
-  personaCardMetaGrid: {
-    display: "grid",
-    gridTemplateColumns: "auto 1fr",
-    gap: "4px 8px",
-    alignItems: "center",
-  },
-  personaCardMetaLabel: {
-    fontSize: 11,
-    color: "var(--muted)",
-    letterSpacing: "0.04em",
-  },
-  personaCardMetaValue: {
-    fontSize: 12,
-    color: "var(--ink)",
-  },
   fieldLabel: {
     fontSize: 11,
     fontWeight: 600,
+    letterSpacing: "0.04em",
     textTransform: "uppercase",
-    letterSpacing: "0.07em",
     color: "var(--muted)",
   },
   input: {
     width: "100%",
-    height: 36,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    height: 38,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     padding: "0 10px",
     color: "var(--ink)",
-    fontSize: 13,
+    fontSize: 14,
   },
   select: {
     width: "100%",
-    height: 36,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "0 8px",
+    height: 38,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    padding: "0 10px",
     color: "var(--ink)",
-    fontSize: 13,
+    fontSize: 14,
   },
   selectCompact: {
     width: 88,
-    height: 36,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    height: 38,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
     padding: "0 8px",
     color: "var(--ink)",
-    fontSize: 13,
+    fontSize: 14,
   },
   textarea: {
     width: "100%",
-    minHeight: 72,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "8px 10px",
+    minHeight: 96,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    padding: "10px 12px",
     resize: "vertical",
     color: "var(--ink)",
-    fontSize: 13,
-    lineHeight: 1.6,
+    fontSize: 14,
+    lineHeight: 1.65,
+  },
+  summaryTextarea: {
+    width: "100%",
+    minHeight: 0,
+    flex: 1,
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    padding: "10px 12px",
+    resize: "vertical",
+    color: "var(--ink)",
+    fontSize: 14,
+    lineHeight: 1.65,
   },
   textareaLg: {
     width: "100%",
     minHeight: 120,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "8px 10px",
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    padding: "10px 12px",
     resize: "vertical",
     color: "var(--ink)",
-    fontSize: 13,
-    lineHeight: 1.6,
+    fontSize: 14,
+    lineHeight: 1.65,
+  },
+  fileInput: {
+    width: "100%",
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    padding: "8px 10px",
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    color: "var(--ink)",
+    fontSize: 14,
   },
   promptSuggestionCard: {
-    border: "1px solid color-mix(in srgb, var(--accent) 30%, var(--border))",
-    background: "color-mix(in srgb, white 88%, var(--accent-soft))",
-    padding: 12,
+    border: "none",
+    borderLeft: "2px solid color-mix(in srgb, var(--accent) 52%, var(--border))",
+    background: "transparent",
+    padding: "4px 0 4px 10px",
     display: "grid",
-    gap: 8,
+    gap: 6,
   },
   promptSuggestionHeader: {
     display: "flex",
@@ -2245,7 +2441,7 @@ const styles: Record<string, CSSProperties> = {
     flexWrap: "wrap",
   },
   promptSuggestionSource: {
-    fontSize: 11,
+    fontSize: 12,
     color: "var(--muted)",
   },
   promptSuggestionNote: {
@@ -2256,21 +2452,23 @@ const styles: Record<string, CSSProperties> = {
   },
   promptSuggestionBody: {
     margin: 0,
-    fontSize: 13,
-    lineHeight: 1.7,
+    fontSize: 14,
+    lineHeight: 1.65,
     color: "var(--ink)",
     whiteSpace: "pre-wrap",
   },
   runtimePromptPreview: {
     margin: 0,
-    minHeight: 180,
+    minHeight: 96,
+    maxHeight: 156,
     border: "1px solid var(--border)",
-    background: "color-mix(in srgb, white 94%, var(--panel))",
-    padding: "12px 14px",
+    background: "var(--bg)",
+    padding: "10px 12px",
     color: "var(--ink)",
     fontSize: 12,
-    lineHeight: 1.7,
+    lineHeight: 1.6,
     whiteSpace: "pre-wrap",
+    overflowY: "auto",
     overflowX: "auto",
   },
   range: {
@@ -2279,69 +2477,84 @@ const styles: Record<string, CSSProperties> = {
 
   /* Slot card */
   slotCard: {
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    padding: "10px",
+    border: "none",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+    background: "transparent",
+    padding: "6px 0 8px",
     display: "grid",
-    gap: 8,
-    marginBottom: 6,
+    gap: 4,
+    marginBottom: 0,
     transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease",
   },
   slotCardDragging: {
     opacity: 0.7,
     transform: "scale(0.99)",
-    border: "1px solid var(--teal)",
-    boxShadow: "0 8px 18px rgba(10, 48, 51, 0.14)",
+    borderBottom: "1px solid var(--teal)",
   },
   slotCardMoveUp: {
     transform: "translateY(-8px)",
-    border: "1px solid var(--accent)",
-    boxShadow: "0 0 0 2px var(--accent-soft) inset",
+    borderBottom: "1px solid var(--accent)",
   },
   slotCardMoveDown: {
     transform: "translateY(8px)",
-    border: "1px solid var(--accent)",
-    boxShadow: "0 0 0 2px var(--accent-soft) inset",
+    borderBottom: "1px solid var(--accent)",
   },
   slotHeader: {
-    display: "flex",
+    display: "grid",
+    gap: 4,
+    cursor: "pointer",
+    minWidth: 0,
+  },
+  slotHeaderMain: {
+    display: "grid",
+    gridTemplateColumns: "18px minmax(110px, 132px) minmax(0, 1fr) auto",
     gap: 6,
     alignItems: "center",
-    cursor: "pointer",
+    minWidth: 0,
+  },
+  slotHeaderActions: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 2,
+    flexShrink: 0,
   },
   dragHandle: {
     color: "var(--muted)",
     cursor: "grab",
     userSelect: "none",
-    padding: "0 2px",
+    padding: 0,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
   },
   slotKindSelect: {
-    flex: "0 0 auto",
-    height: 30,
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    padding: "0 6px",
+    width: "100%",
+    minWidth: 0,
+    height: 28,
+    border: "none",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+    background: "transparent",
+    padding: "0 2px 0 0",
     fontSize: 12,
     color: "var(--ink)",
   },
   slotLabelInput: {
-    flex: 1,
-    height: 30,
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    padding: "0 8px",
+    width: "100%",
+    minWidth: 0,
+    height: 28,
+    border: "none",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+    background: "transparent",
+    padding: "0 2px",
     fontSize: 12,
     color: "var(--ink)",
   },
   removeBtn: {
     flex: "0 0 auto",
-    height: 30,
-    width: 30,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    height: 24,
+    width: 24,
+    border: "none",
+    background: "transparent",
     color: "var(--muted)",
     cursor: "pointer",
     display: "flex",
@@ -2350,10 +2563,10 @@ const styles: Record<string, CSSProperties> = {
   },
   slotContent: {
     width: "100%",
-    minHeight: 64,
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    padding: "6px 8px",
+    minHeight: 60,
+    border: "1px solid color-mix(in srgb, var(--border) 62%, white)",
+    background: "color-mix(in srgb, white 55%, var(--bg))",
+    padding: "8px 10px",
     resize: "vertical",
     fontSize: 12,
     lineHeight: 1.6,
@@ -2367,19 +2580,13 @@ const styles: Record<string, CSSProperties> = {
   weightRow: {
     display: "grid",
     gridTemplateColumns: "auto 1fr",
-    gap: 8,
-    alignItems: "center",
-  },
-  addSlotRow: {
-    display: "flex",
     gap: 6,
     alignItems: "center",
-    flexWrap: "wrap",
-    paddingTop: 10,
-    borderTop: "1px solid var(--border)",
   },
   slotPreview: {
-    flex: 1,
+    display: "block",
+    maxWidth: "56ch",
+    paddingLeft: 24,
     fontSize: 11,
     color: "var(--muted)",
     overflow: "hidden",
@@ -2388,12 +2595,13 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   slotToggleBtn: {
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    color: "var(--ink)",
+    border: "none",
+    background: "transparent",
+    color: "var(--muted)",
     cursor: "pointer",
-    padding: "0 8px",
-    height: 28,
+    padding: 0,
+    width: 24,
+    height: 24,
     flexShrink: 0,
     display: "inline-flex",
     alignItems: "center",
@@ -2403,46 +2611,44 @@ const styles: Record<string, CSSProperties> = {
   /* Compact 2-col grid */
   compactGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "1fr",
     gap: 10,
   },
 
   /* Buttons */
   primaryBtn: {
     border: "1px solid color-mix(in srgb, var(--accent) 38%, var(--border))",
-    background: "color-mix(in srgb, white 82%, var(--accent-soft))",
+    background: "color-mix(in srgb, white 86%, var(--accent-soft))",
     color: "var(--ink)",
     height: 36,
     padding: "0 14px",
     cursor: "pointer",
     fontWeight: 700,
     fontSize: 12,
-    letterSpacing: "0.04em",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
   },
   ghostBtn: {
     border: "1px solid var(--border)",
-    background: "var(--panel)",
+    background: "color-mix(in srgb, white 98%, var(--panel))",
     color: "var(--ink)",
     height: 36,
     padding: "0 12px",
     cursor: "pointer",
     fontSize: 12,
     fontWeight: 600,
-    letterSpacing: "0.03em",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
   },
   iconBtn: {
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    color: "var(--ink)",
-    height: 26,
-    minWidth: 26,
-    padding: "0 6px",
+    border: "none",
+    background: "transparent",
+    color: "var(--muted)",
+    height: 24,
+    minWidth: 24,
+    padding: 0,
     cursor: "pointer",
     display: "inline-flex",
     alignItems: "center",
@@ -2451,20 +2657,50 @@ const styles: Record<string, CSSProperties> = {
   },
   tagBtn: {
     border: "1px solid var(--border)",
-    background: "color-mix(in srgb, white 86%, var(--accent-soft))",
+    background: "transparent",
     color: "var(--ink)",
     height: 28,
     padding: "0 10px",
     cursor: "pointer",
     fontSize: 12,
     fontWeight: 600,
-    letterSpacing: "0.03em",
   },
   actionsRow: {
     display: "flex",
     gap: 8,
     alignItems: "center",
     flexWrap: "wrap",
+  },
+  sidebarActionRow: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+  },
+  sidebarCardActions: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  sidebarIconButton: {
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    width: 28,
+    height: 28,
+    padding: 0,
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    color: "var(--ink)",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  sidebarIconButtonPrimary: {
+    border: "none",
+    background: "var(--accent)",
+    color: "white",
   },
   cardSummaryGrid: {
     display: "grid",
@@ -2473,7 +2709,7 @@ const styles: Record<string, CSSProperties> = {
   },
   cardSummaryItem: {
     border: "1px solid var(--border)",
-    background: "var(--panel)",
+    background: "color-mix(in srgb, white 98%, var(--panel))",
     padding: "10px 12px",
     display: "grid",
     gap: 4,
@@ -2491,38 +2727,35 @@ const styles: Record<string, CSSProperties> = {
   },
   cardList: {
     display: "grid",
-    gap: 10,
+    gap: 6,
   },
   personaSlotLibraryCard: {
     border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, color-mix(in srgb, white 94%, var(--panel)) 0%, var(--panel) 100%)",
-    padding: 12,
+    background: "transparent",
+    padding: 10,
     display: "grid",
-    gap: 8,
+    gap: 6,
     cursor: "pointer",
     transition: "transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, border-color 160ms ease, background 160ms ease",
   },
   personaSlotLibraryCardSelected: {
     border: "1px solid var(--accent)",
-    boxShadow: "0 0 0 2px var(--accent-soft) inset",
-    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
+    background: "color-mix(in srgb, white 92%, var(--accent-soft))",
   },
   personaSlotLibraryCardDragging: {
     opacity: 0.7,
     transform: "scale(0.99)",
-    boxShadow: "0 8px 18px rgba(10, 48, 51, 0.14)",
   },
   personaLibraryCard: {
     border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, color-mix(in srgb, white 96%, var(--panel)) 0%, var(--panel) 100%)",
-    padding: 12,
+    background: "transparent",
+    padding: 10,
     display: "grid",
-    gap: 8,
+    gap: 6,
   },
   personaLibraryCardSelected: {
     border: "1px solid var(--accent)",
-    boxShadow: "0 0 0 2px var(--accent-soft) inset",
-    background: "color-mix(in srgb, white 88%, var(--accent-soft))",
+    background: "color-mix(in srgb, white 94%, var(--accent-soft))",
   },
   libraryCardHeader: {
     display: "flex",
@@ -2556,15 +2789,13 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   libraryCardBadge: {
-    border: "1px solid var(--border)",
-    padding: "2px 8px",
+    padding: 0,
     fontSize: 11,
     color: "var(--muted)",
-    background: "var(--bg)",
   },
   libraryCardMetaRow: {
     display: "flex",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap",
     fontSize: 11,
     color: "var(--muted)",
@@ -2585,17 +2816,18 @@ const styles: Record<string, CSSProperties> = {
   /* Asset info card */
   assetCard: {
     border: "1px solid var(--border)",
-    background: "var(--panel)",
+    background: "transparent",
     padding: "10px",
     display: "grid",
     gap: 6,
   },
   generatedResultCard: {
     display: "grid",
-    gap: 6,
-    padding: 10,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    gap: 4,
+    paddingTop: 8,
+    border: "none",
+    borderTop: "1px solid color-mix(in srgb, var(--border) 68%, white)",
+    background: "transparent",
   },
   generatedResultTitle: {
     fontSize: 13,
@@ -2641,7 +2873,8 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid color-mix(in srgb, var(--negative) 40%, transparent)",
     background: "color-mix(in srgb, var(--negative) 8%, white)",
     color: "var(--negative)",
-    padding: "8px 12px",
+    padding: "10px 12px",
+    marginBottom: 14,
     fontSize: 13,
   },
   errorText: { fontSize: 12, color: "var(--negative)", lineHeight: 1.5, margin: 0 },

@@ -27,7 +27,7 @@ interface StudyConsoleProps {
   onSelectPlan: (planId: string) => void;
   onCreateSession?: () => void;
   showCreateSession?: boolean;
-  onAsk: (message: string, attachments: File[]) => void;
+  onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
@@ -438,8 +438,12 @@ export function StudyConsole({
                     ...(isPending || disabled ? styles.btnDisabled : {})
                   }}
                   disabled={isPending || disabled}
-                  onClick={() => {
-                    onAsk(message, attachments);
+                  onClick={async () => {
+                    const didSend = await onAsk(message, attachments);
+                    if (!didSend) {
+                      return;
+                    }
+                    setMessage("");
                     setAttachments([]);
                   }}
                   aria-label={isPending ? "发送中" : "发送"}
@@ -1298,7 +1302,7 @@ function renderInteractiveQuestion(input: {
   setQuestionFeedback: Dispatch<SetStateAction<Record<string, { ok: boolean; text: string }>>>;
   expandedExplanation: Record<string, boolean>;
   setExpandedExplanation: Dispatch<SetStateAction<Record<string, boolean>>>;
-  onAsk: (message: string, attachments: File[]) => void;
+  onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;

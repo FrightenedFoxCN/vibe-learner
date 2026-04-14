@@ -1051,6 +1051,8 @@ class PersonaPipelineTests(unittest.TestCase):
             )
 
         self.assertEqual(reply.action, "lean_in")
+        self.assertIsNotNone(reply.interactive_question)
+        self.assertTrue(reply.interactive_question["call_back"])
         self.assertGreaterEqual(len(captured_payloads), 2)
         second_messages = captured_payloads[1]["messages"]
         self.assertTrue(

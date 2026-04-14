@@ -198,10 +198,9 @@ export function StudyDialogPage() {
     async (message: string, attachments: File[] = []) => {
       const targetStudyUnitId = currentStudyUnitId || studySession?.studyUnitId || "";
       if (targetStudyUnitId) {
-        await handleAskForSection(message, targetStudyUnitId, attachments);
-        return;
+        return handleAskForSection(message, targetStudyUnitId, attachments);
       }
-      await handleAsk(message, attachments);
+      return handleAsk(message, attachments);
     },
     [currentStudyUnitId, handleAsk, handleAskForSection, studySession?.studyUnitId]
   );

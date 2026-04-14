@@ -218,7 +218,9 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 10,
     padding: "14px 16px",
-    border: "1px solid color-mix(in srgb, var(--border) 72%, white)",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "color-mix(in srgb, var(--border) 72%, white)",
     background: "color-mix(in srgb, white 84%, var(--surface))",
   },
   itemActive: {
