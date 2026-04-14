@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { ModelRecovery, SceneProfile } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
@@ -261,6 +261,7 @@ const INITIAL_SCENE: SceneLayer[] = [
 ];
 
 const SCENE_STORAGE_KEY = "vibe-learner.scene-setup.v1";
+const SCENE_SIDEBAR_WIDTH = 360;
 
 export default function SceneSetupPage() {
   const [sceneLayers, setSceneLayers] = useState<SceneLayer[]>(INITIAL_SCENE);
@@ -278,7 +279,8 @@ export default function SceneSetupPage() {
   const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
   const [sceneIoMessage, setSceneIoMessage] = useState("");
   const [sceneKeywordInput, setSceneKeywordInput] = useState("");
-  const [sceneLongTextInput, setSceneLongTextInput] = useState("");
+  const [sceneLongTextFile, setSceneLongTextFile] = useState<File | null>(null);
+  const [sceneGenerateMode, setSceneGenerateMode] = useState<"keywords" | "long_text">("keywords");
   const [sceneGenerateLayerCount, setSceneGenerateLayerCount] = useState("");
   const [sceneGeneratePending, setSceneGeneratePending] = useState<null | "keywords" | "long_text">(null);
   const [sceneGenerateError, setSceneGenerateError] = useState("");
@@ -301,17 +303,26 @@ export default function SceneSetupPage() {
   } | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [leftColWidth, setLeftColWidth] = useState(260);
-  const [rightColWidth, setRightColWidth] = useState(300);
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
-  const colResizeRef = useRef<{ which: "left" | "right"; startX: number; startWidth: number } | null>(null);
+  const [collapsedNodeEditorSectionsByLayer, setCollapsedNodeEditorSectionsByLayer] = useState<Record<string, string[]>>({});
+  const [selectedObjectId, setSelectedObjectId] = useState("");
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
 
   const selectedLayer = useMemo(() => findLayerById(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
+  const selectedObjectTarget = useMemo(
+    () => (selectedObjectId ? findObjectById(sceneLayers, selectedObjectId) : null),
+    [sceneLayers, selectedObjectId]
+  );
   const selectedPath = useMemo(() => findLayerPath(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
   const sceneProfilePreview = useMemo(
     () => deriveSceneProfile(sceneLayers, selectedLayerId, sceneName.trim(), sceneSummary.trim()),
     [sceneLayers, selectedLayerId, sceneName, sceneSummary]
   );
+  const sceneNodeCount = useMemo(
+    () => countSceneNodes(sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer))),
+    [sceneLayers]
+  );
+  const sceneObjectCount = useMemo(() => countSceneObjects(sceneLayers), [sceneLayers]);
   const filteredReusableNodes = useMemo(() => {
     const query = reusableSearchQuery.trim().toLowerCase();
     if (!query) {
@@ -328,12 +339,79 @@ export default function SceneSetupPage() {
       return haystack.includes(query);
     });
   }, [reusableNodes, reusableSearchQuery]);
+  const headerMessage = useMemo(() => {
+    const io = sceneIoMessage.trim();
+    const generate = sceneGenerateMessage.trim();
+    const reusable = reusableMessage.trim();
+    return io || generate || reusable;
+  }, [reusableMessage, sceneGenerateMessage, sceneIoMessage]);
+  const currentCollapsedNodeEditorSections = useMemo(
+    () => (selectedLayerId ? (collapsedNodeEditorSectionsByLayer[selectedLayerId] ?? []) : []),
+    [collapsedNodeEditorSectionsByLayer, selectedLayerId]
+  );
+
+  const pageNotice = useMemo(() => {
+    if (rewritePendingKey) {
+      return "AI 正在重写场景字段";
+    }
+    if (sceneGeneratePending === "keywords") {
+      return "正在根据关键词生成场景树";
+    }
+    if (sceneGeneratePending === "long_text") {
+      return "正在从长文本提取场景树";
+    }
+    if (reusableActionPendingId) {
+      return "可复用节点库更新中";
+    }
+    if (pendingDeleteLayerId) {
+      return "等待确认删除层级";
+    }
+    if (headerMessage) {
+      return headerMessage;
+    }
+    if (selectedObjectTarget?.object.name) {
+      return `当前编辑 · ${selectedObjectTarget.object.name}`;
+    }
+    if (selectedLayer?.title) {
+      return `当前编辑 · ${selectedLayer.title}`;
+    }
+    return "从左侧层级结构中选择一个节点开始编辑";
+  }, [headerMessage, pendingDeleteLayerId, reusableActionPendingId, rewritePendingKey, sceneGeneratePending, selectedLayer, selectedObjectTarget]);
 
   useEffect(() => {
-    if (!selectedLayer && sceneLayers[0]?.id) {
+    if (selectedLayerId && !selectedLayer && sceneLayers[0]?.id) {
       setSelectedLayerId(sceneLayers[0].id);
     }
-  }, [sceneLayers, selectedLayer]);
+  }, [sceneLayers, selectedLayer, selectedLayerId]);
+
+  useEffect(() => {
+    if (selectedObjectId && !selectedObjectTarget) {
+      setSelectedObjectId("");
+    }
+  }, [selectedObjectId, selectedObjectTarget]);
+
+  useEffect(() => {
+    const syncLayout = () => {
+      setIsCompactLayout(window.innerWidth < 1320);
+    };
+    syncLayout();
+    window.addEventListener("resize", syncLayout);
+    return () => window.removeEventListener("resize", syncLayout);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedLayerId) {
+      return;
+    }
+    const editorId = `scene-node-editor-${selectedLayerId}`;
+    const timer = window.setTimeout(() => {
+      const nodeEditor = document.getElementById(editorId);
+      nodeEditor?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 40);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [selectedLayerId]);
 
   useEffect(() => {
     let active = true;
@@ -474,27 +552,28 @@ export default function SceneSetupPage() {
     return text.split(",").map((item) => item.trim()).filter(Boolean);
   }
 
-  async function saveSelectedLayerToReusableLibrary() {
-    if (!selectedLayer) {
+  async function saveLayerToReusableLibrary(layerId: string) {
+    const targetLayer = findLayerById(sceneLayers, layerId);
+    if (!targetLayer) {
       return;
     }
     setReusableError("");
     setReusableMessage("");
-    setReusableActionPendingId(selectedLayer.id);
+    setReusableActionPendingId(targetLayer.id);
     try {
       const created = await createReusableSceneNode({
         nodeType: "layer",
-        title: selectedLayer.title,
-        summary: selectedLayer.summary,
-        tags: parseTagList(selectedLayer.tags),
-        reuseId: selectedLayer.reuseId,
-        reuseHint: selectedLayer.reuseHint,
+        title: targetLayer.title,
+        summary: targetLayer.summary,
+        tags: parseTagList(targetLayer.tags),
+        reuseId: targetLayer.reuseId,
+        reuseHint: targetLayer.reuseHint,
         sourceSceneId: sceneProfilePreview?.sceneId ?? "",
         sourceSceneName: sceneName.trim(),
-        layerNode: normalizeSceneTreeNodeForProfile(selectedLayer),
+        layerNode: normalizeSceneTreeNodeForProfile(targetLayer),
       });
       setReusableNodes((current) => [created, ...current]);
-      setReusableMessage(`已将层级 "${selectedLayer.title}" 加入可复用节点库。`);
+      setReusableMessage(`已将层级 "${targetLayer.title}" 加入可复用节点库。`);
     } catch (error) {
       setReusableError(String(error));
     } finally {
@@ -601,10 +680,18 @@ export default function SceneSetupPage() {
   }
 
   function addObject(layerId: string) {
+    const newObject = createSceneObject();
     updateLayer(layerId, (layer) => ({
       ...layer,
-      objects: [...layer.objects, createSceneObject()]
+      objects: [...layer.objects, newObject]
     }));
+    setSelectedLayerId("");
+    setSelectedObjectId(newObject.id);
+    const targetId = `scene-object-editor-${layerId}-${newObject.id}`;
+    globalThis.setTimeout(() => {
+      const target = document.getElementById(targetId);
+      target?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 80);
   }
 
   function updateObject(layerId: string, objectId: string, key: keyof SceneObject, value: string) {
@@ -617,6 +704,9 @@ export default function SceneSetupPage() {
   }
 
   function removeObject(layerId: string, objectId: string) {
+    if (selectedObjectId === objectId) {
+      setSelectedObjectId("");
+    }
     updateLayer(layerId, (layer) => ({
       ...layer,
       objects: layer.objects.filter((object) => object.id !== objectId)
@@ -654,14 +744,6 @@ export default function SceneSetupPage() {
     }
     removeLayer(pendingDeleteLayerId);
     setPendingDeleteLayerId("");
-  }
-
-  function toggleLayerCollapsed(layerId: string) {
-    setCollapsedLayerIds((current) =>
-      current.includes(layerId)
-        ? current.filter((id) => id !== layerId)
-        : [...current, layerId]
-    );
   }
 
   function undoLastRewrite() {
@@ -800,9 +882,24 @@ export default function SceneSetupPage() {
   }
 
   async function handleGenerateScene(mode: "keywords" | "long_text") {
-    const inputText = mode === "keywords" ? sceneKeywordInput.trim() : sceneLongTextInput.trim();
+    let inputText = "";
+    if (mode === "keywords") {
+      inputText = sceneKeywordInput.trim();
+    } else {
+      const longTextFile = sceneLongTextFile;
+      if (!longTextFile) {
+        setSceneGenerateError("请先上传长文本文件。");
+        return;
+      }
+      try {
+        inputText = (await longTextFile.text()).trim();
+      } catch {
+        setSceneGenerateError("读取长文本文件失败，请重试。");
+        return;
+      }
+    }
     if (!inputText) {
-      setSceneGenerateError(mode === "keywords" ? "请先输入关键词。" : "请先输入长文本。");
+      setSceneGenerateError(mode === "keywords" ? "请先输入关键词。" : "上传文件内容为空，请更换文件。");
       return;
     }
     const layerCountText = sceneGenerateLayerCount.trim();
@@ -955,47 +1052,333 @@ export default function SceneSetupPage() {
     }
   }
 
-  function startColumnResize(which: "left" | "right", e: React.MouseEvent) {
-    e.preventDefault();
-    colResizeRef.current = { which, startX: e.clientX, startWidth: which === "left" ? leftColWidth : rightColWidth };
-    function onMove(me: MouseEvent) {
-      const s = colResizeRef.current;
-      if (!s) return;
-      const delta = me.clientX - s.startX;
-      const w = Math.max(160, Math.min(560, s.startWidth + (s.which === "left" ? delta : -delta)));
-      if (s.which === "left") setLeftColWidth(w); else setRightColWidth(w);
-    }
-    function onUp() {
-      colResizeRef.current = null;
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    }
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  }
-
   function toggleSidebarSection(key: string) {
     setCollapsedSidebarSections((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   }
 
+  function toggleNodeEditorSection(key: string) {
+    const layerId = selectedLayerId;
+    if (!layerId) {
+      return;
+    }
+    setCollapsedNodeEditorSectionsByLayer((prev) => {
+      const current = prev[layerId] ?? [];
+      const next = current.includes(key)
+        ? current.filter((k) => k !== key)
+        : [...current, key];
+      return {
+        ...prev,
+        [layerId]: next,
+      };
+    });
+  }
+
+  function toggleLayerEditor(layerId: string) {
+    setSelectedObjectId("");
+    setSelectedLayerId((current) => (current === layerId ? "" : layerId));
+  }
+
+  function toggleObjectEditor(objectId: string) {
+    setSelectedLayerId("");
+    setSelectedObjectId((current) => (current === objectId ? "" : objectId));
+  }
+
+  function handleSelectLayer(layerId: string) {
+    setSelectedObjectId("");
+    setSelectedLayerId(layerId);
+  }
+
+  function renderSelectedLayerEditor(): ReactNode {
+    if (!selectedLayer) {
+      return <p style={styles.emptyState}>选择层级后在这里编辑。</p>;
+    }
+
+    return (
+      <>
+        {rewriteError ? (
+          <div style={styles.rewriteControlRow}>
+            <span style={styles.errorText}>{rewriteError}</span>
+          </div>
+        ) : null}
+
+        <div style={styles.editorSection}>
+          <button type="button" style={styles.editorSectionHeader} onClick={() => toggleNodeEditorSection("basic")}> 
+            <span style={styles.panelTitle}>基础设定</span>
+            <span style={styles.sidebarToggleIcon}><MaterialIcon name={currentCollapsedNodeEditorSections.includes("basic") ? "chevron_right" : "expand_more"} size={16} /></span>
+          </button>
+          {!currentCollapsedNodeEditorSections.includes("basic") ? (
+            <div style={styles.editorSectionBody}>
+        <div style={styles.formGrid}>
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabel}>层级名称</span>
+            <input
+              style={styles.input}
+              value={selectedLayer.title}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, title: event.target.value }))}
+            />
+          </label>
+
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabel}>层级作用</span>
+            <input
+              style={styles.input}
+              value={selectedLayer.scopeLabel}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, scopeLabel: event.target.value }))}
+            />
+          </label>
+
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabel}>层级标签</span>
+            <input
+              style={styles.input}
+              value={selectedLayer.tags}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, tags: event.target.value }))}
+              placeholder="用逗号分隔"
+            />
+          </label>
+
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabelRow}>
+              <span style={styles.fieldLabel}>层级总述</span>
+              <RewriteStateButton
+                actionKey={`${selectedLayer.id}:summary`}
+                label="层级总述"
+                pendingKey={rewritePendingKey}
+                lastRewrite={lastRewrite}
+                rewriteStrength={rewriteStrength}
+                onRewriteStrengthChange={setRewriteStrength}
+                onRewrite={() => void rewriteLayerField(selectedLayer.id, "summary", "层级总述")}
+                onUndo={undoLastRewrite}
+              />
+            </span>
+            <textarea
+              style={styles.textarea}
+              value={selectedLayer.summary}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, summary: event.target.value }))}
+            />
+          </label>
+
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabelRow}>
+              <span style={styles.fieldLabel}>氛围与感知</span>
+              <RewriteStateButton
+                actionKey={`${selectedLayer.id}:atmosphere`}
+                label="氛围与感知"
+                pendingKey={rewritePendingKey}
+                lastRewrite={lastRewrite}
+                rewriteStrength={rewriteStrength}
+                onRewriteStrengthChange={setRewriteStrength}
+                onRewrite={() => void rewriteLayerField(selectedLayer.id, "atmosphere", "氛围与感知")}
+                onUndo={undoLastRewrite}
+              />
+            </span>
+            <textarea
+              style={styles.textarea}
+              value={selectedLayer.atmosphere}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, atmosphere: event.target.value }))}
+            />
+          </label>
+
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabelRow}>
+              <span style={styles.fieldLabel}>进入方式 / 过渡</span>
+              <RewriteStateButton
+                actionKey={`${selectedLayer.id}:entrance`}
+                label="进入方式 / 过渡"
+                pendingKey={rewritePendingKey}
+                lastRewrite={lastRewrite}
+                rewriteStrength={rewriteStrength}
+                onRewriteStrengthChange={setRewriteStrength}
+                onRewrite={() => void rewriteLayerField(selectedLayer.id, "entrance", "进入方式 / 过渡")}
+                onUndo={undoLastRewrite}
+              />
+            </span>
+            <textarea
+              style={styles.textarea}
+              value={selectedLayer.entrance}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, entrance: event.target.value }))}
+            />
+          </label>
+
+          <label style={styles.fieldGroup}>
+            <span style={styles.fieldLabelRow}>
+              <span style={styles.fieldLabel}>层级规则</span>
+              <RewriteStateButton
+                actionKey={`${selectedLayer.id}:rules`}
+                label="层级规则"
+                pendingKey={rewritePendingKey}
+                lastRewrite={lastRewrite}
+                rewriteStrength={rewriteStrength}
+                onRewriteStrengthChange={setRewriteStrength}
+                onRewrite={() => void rewriteLayerField(selectedLayer.id, "rules", "层级规则")}
+                onUndo={undoLastRewrite}
+              />
+            </span>
+            <textarea
+              style={styles.textarea}
+              value={selectedLayer.rules}
+              onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, rules: event.target.value }))}
+            />
+          </label>
+
+        </div>
+            </div>
+          ) : null}
+        </div>
+      </>
+    );
+  }
+
+  function renderObjectEditor(layerId: string, object: SceneObject): ReactNode {
+    return (
+      <>
+        {rewriteError ? (
+          <div style={styles.rewriteControlRow}>
+            <span style={styles.errorText}>{rewriteError}</span>
+          </div>
+        ) : null}
+
+        <div style={styles.editorSection}>
+          <div style={styles.editorSectionBody}>
+            <div style={styles.formGrid}>
+              <label style={styles.fieldGroup}>
+                <span style={styles.fieldLabel}>物体名称</span>
+                <input
+                  style={styles.input}
+                  value={object.name}
+                  onChange={(event) => updateObject(layerId, object.id, "name", event.target.value)}
+                />
+              </label>
+
+              <label style={styles.fieldGroup}>
+                <span style={styles.fieldLabelRow}>
+                  <span style={styles.fieldLabel}>外观 / 说明</span>
+                  <RewriteStateButton
+                    actionKey={`${layerId}:${object.id}:description`}
+                    label="物体外观 / 说明"
+                    pendingKey={rewritePendingKey}
+                    lastRewrite={lastRewrite}
+                    rewriteStrength={rewriteStrength}
+                    onRewriteStrengthChange={setRewriteStrength}
+                    onRewrite={() => void rewriteObjectField(layerId, object.id, "description", "物体外观与说明")}
+                    onUndo={undoLastRewrite}
+                  />
+                </span>
+                <textarea
+                  style={styles.textarea}
+                  value={object.description}
+                  onChange={(event) => updateObject(layerId, object.id, "description", event.target.value)}
+                />
+              </label>
+
+              <label style={styles.fieldGroup}>
+                <span style={styles.fieldLabelRow}>
+                  <span style={styles.fieldLabel}>交互方式</span>
+                  <RewriteStateButton
+                    actionKey={`${layerId}:${object.id}:interaction`}
+                    label="物体交互方式"
+                    pendingKey={rewritePendingKey}
+                    lastRewrite={lastRewrite}
+                    rewriteStrength={rewriteStrength}
+                    onRewriteStrengthChange={setRewriteStrength}
+                    onRewrite={() => void rewriteObjectField(layerId, object.id, "interaction", "物体交互方式")}
+                    onUndo={undoLastRewrite}
+                  />
+                </span>
+                <textarea
+                  style={styles.textarea}
+                  value={object.interaction}
+                  onChange={(event) => updateObject(layerId, object.id, "interaction", event.target.value)}
+                />
+              </label>
+
+              <label style={styles.fieldGroup}>
+                <span style={styles.fieldLabel}>标签</span>
+                <input
+                  style={styles.input}
+                  value={object.tags}
+                  onChange={(event) => updateObject(layerId, object.id, "tags", event.target.value)}
+                  placeholder="用逗号分隔"
+                />
+              </label>
+
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <main className="with-app-nav" style={styles.page}>
-      <div style={styles.pageHeader}>
-        <TopNav currentPath="/scene-setup" />
-        <div style={styles.titleBar}>
+      <TopNav currentPath="/scene-setup" />
+
+      <div style={styles.heading}>
+        <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>场景搭建</h1>
+          <div style={styles.notice}>{pageNotice}</div>
         </div>
       </div>
 
-      <div style={styles.workspaceShell}>
-        {/* ── Panel 1: Layer Tree ── */}
-        <div style={{ ...styles.panel, width: leftColWidth, flexShrink: 0 }}>
+      <div
+        style={{
+          ...styles.workspaceShell,
+          ...(isCompactLayout ? styles.workspaceShellCompact : null),
+        }}
+      >
+        {/* ── Panel 1: Scene Tree + Node Editor ── */}
+        <div
+          style={{
+            ...styles.panel,
+            ...(isCompactLayout ? styles.panelCompact : null),
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
           <div style={styles.panelHeader}>
-            <span style={styles.panelTitle}>层级结构</span>
+            <span style={styles.panelTitle}>场景树与节点编辑器</span>
+            <div style={styles.panelHeaderActions}>
+              <button
+                style={selectedSavedSceneId ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
+                type="button"
+                onClick={() => void saveLibraryScene("upsert")}
+                title={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
+                aria-label={selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
+              >
+                <MaterialIcon name="upload" size={14} />
+              </button>
+              <button
+                style={styles.sidebarIconButton}
+                type="button"
+                onClick={() => void saveLibraryScene("create")}
+                title="另存为新场景"
+                aria-label="另存为新场景"
+              >
+                <MaterialIcon name="library_add" size={14} />
+              </button>
+              <button
+                style={styles.sidebarIconButton}
+                type="button"
+                onClick={requestImportScene}
+                title="导入 JSON"
+                aria-label="导入 JSON"
+              >
+                <MaterialIcon name="add" size={14} />
+              </button>
+              <button
+                style={styles.sidebarIconButton}
+                type="button"
+                onClick={exportScene}
+                title="导出 JSON"
+                aria-label="导出 JSON"
+              >
+                <MaterialIcon name="download" size={14} />
+              </button>
+            </div>
           </div>
-          <div style={styles.panelBody}>
+          <div style={{ ...styles.panelBody, ...(isCompactLayout ? styles.panelBodyCompact : null) }}>
           <input
             ref={importInputRef}
             type="file"
@@ -1010,332 +1393,62 @@ export default function SceneSetupPage() {
                 layer={layer}
                 index={index}
                 selectedLayerId={selectedLayerId}
-                collapsedLayerIds={collapsedLayerIds}
-                onSelect={setSelectedLayerId}
-                onToggleCollapse={toggleLayerCollapsed}
+                selectedObjectId={selectedObjectId}
+                onSelect={handleSelectLayer}
+                onToggleEditor={toggleLayerEditor}
                 onAddChild={addChildLayer}
+                onAddObject={addObject}
+                onSaveToReusable={(layerId) => { void saveLayerToReusableLibrary(layerId); }}
+                onSelectObject={toggleObjectEditor}
+                onSaveObjectToReusable={(object) => { void saveObjectToReusableLibrary(object); }}
+                onRemoveObject={removeObject}
+                reusableActionPendingId={reusableActionPendingId}
+                onRequestDelete={requestDeleteLayer}
                 canDeleteLayerForId={(layerId) => canDeleteLayerSafely(sceneLayers, layerId)}
+                editorContent={renderSelectedLayerEditor()}
+                renderObjectEditor={renderObjectEditor}
               />
             ))}
           </div>
           </div>
         </div>
-        <div style={styles.resizer} onMouseDown={(e) => startColumnResize("left", e)} />
-
-        {/* ── Panel 2: Layer Editor ── */}
-        <div style={{ ...styles.panel, flex: 1, minWidth: 0 }}>
-          <div style={styles.panelHeader}>
-            <span style={styles.panelTitle}>层级编辑器</span>
-          </div>
-          <div style={styles.panelBody}>
-
-          {selectedLayer ? (
-            <>
-              <div style={styles.pathChipRow}>
-                {selectedPath.map((segment, index) => (
-                  <span key={`${segment}-${index}`} style={styles.pathChip}>{segment}</span>
-                ))}
-              </div>
-
-              <div style={styles.rewriteControlRow}>
-                <label style={styles.rewriteControlLabel}>AI 重写强度 {(rewriteStrength * 100).toFixed(0)}%</label>
-                <input
-                  style={styles.rewriteSlider}
-                  type="range"
-                  min={0.05}
-                  max={1}
-                  step={0.05}
-                  value={rewriteStrength}
-                  onChange={(event) => setRewriteStrength(Number(event.target.value))}
-                />
-                {lastRewrite ? (
-                  <SceneIconButton
-                    icon="undo"
-                    label={`撤销重写：${lastRewrite.label}`}
-                    onClick={undoLastRewrite}
-                    disabled={Boolean(rewritePendingKey)}
-                  />
-                ) : null}
-                {rewriteError ? <span style={styles.errorText}>{rewriteError}</span> : null}
-              </div>
-
-              <div style={styles.formGrid}>
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>层级名称</span>
-                  <input
-                    style={styles.input}
-                    value={selectedLayer.title}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, title: event.target.value }))}
-                  />
-                </label>
-
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>层级作用</span>
-                  <input
-                    style={styles.input}
-                    value={selectedLayer.scopeLabel}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, scopeLabel: event.target.value }))}
-                  />
-                </label>
-
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>层级标签</span>
-                  <input
-                    style={styles.input}
-                    value={selectedLayer.tags}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, tags: event.target.value }))}
-                    placeholder="用逗号分隔"
-                  />
-                </label>
-
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabelRow}>
-                    <span style={styles.fieldLabel}>层级总述</span>
-                    <SceneIconButton
-                      icon={rewritePendingKey === `${selectedLayer.id}:summary` ? "replay" : "auto_awesome"}
-                      label="AI 重写层级总述"
-                      onClick={() => void rewriteLayerField(selectedLayer.id, "summary", "层级总述")}
-                      disabled={Boolean(rewritePendingKey)}
-                    />
-                  </span>
-                  <textarea
-                    style={styles.textarea}
-                    value={selectedLayer.summary}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, summary: event.target.value }))}
-                  />
-                </label>
-
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabelRow}>
-                    <span style={styles.fieldLabel}>氛围与感知</span>
-                    <SceneIconButton
-                      icon={rewritePendingKey === `${selectedLayer.id}:atmosphere` ? "replay" : "auto_awesome"}
-                      label="AI 重写氛围与感知"
-                      onClick={() => void rewriteLayerField(selectedLayer.id, "atmosphere", "氛围与感知")}
-                      disabled={Boolean(rewritePendingKey)}
-                    />
-                  </span>
-                  <textarea
-                    style={styles.textarea}
-                    value={selectedLayer.atmosphere}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, atmosphere: event.target.value }))}
-                  />
-                </label>
-
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabelRow}>
-                    <span style={styles.fieldLabel}>进入方式 / 过渡</span>
-                    <SceneIconButton
-                      icon={rewritePendingKey === `${selectedLayer.id}:entrance` ? "replay" : "auto_awesome"}
-                      label="AI 重写进入方式 / 过渡"
-                      onClick={() => void rewriteLayerField(selectedLayer.id, "entrance", "进入方式 / 过渡")}
-                      disabled={Boolean(rewritePendingKey)}
-                    />
-                  </span>
-                  <textarea
-                    style={styles.textarea}
-                    value={selectedLayer.entrance}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, entrance: event.target.value }))}
-                  />
-                </label>
-
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabelRow}>
-                    <span style={styles.fieldLabel}>层级规则</span>
-                    <SceneIconButton
-                      icon={rewritePendingKey === `${selectedLayer.id}:rules` ? "replay" : "auto_awesome"}
-                      label="AI 重写层级规则"
-                      onClick={() => void rewriteLayerField(selectedLayer.id, "rules", "层级规则")}
-                      disabled={Boolean(rewritePendingKey)}
-                    />
-                  </span>
-                  <textarea
-                    style={styles.textarea}
-                    value={selectedLayer.rules}
-                    onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, rules: event.target.value }))}
-                  />
-                </label>
-
-                <details style={styles.detailsGroup}>
-                  <summary style={styles.detailsSummary}>复用设置（高级）</summary>
-                  <div style={styles.detailsContent}>
-                    <label style={styles.fieldGroup}>
-                      <span style={styles.fieldLabel}>复用 ID</span>
-                      <input
-                        style={styles.input}
-                        value={selectedLayer.reuseId}
-                        onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, reuseId: event.target.value }))}
-                      />
-                    </label>
-                    <label style={styles.fieldGroup}>
-                      <span style={styles.fieldLabel}>复用说明</span>
-                      <textarea
-                        style={styles.textarea}
-                        value={selectedLayer.reuseHint}
-                        onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, reuseHint: event.target.value }))}
-                        placeholder="说明这个层级节点以后保留什么结构即可被再次复用。"
-                      />
-                    </label>
-                  </div>
-                </details>
-              </div>
-
-              <div style={styles.objectsSection}>
-                  <div style={styles.objectsHead}>
-                  <div>
-                    <p style={styles.objectsTitle}>可互动物体</p>
-                  </div>
-                  <SceneIconButton icon="add" label="添加物体" variant="accent" onClick={() => addObject(selectedLayer.id)} />
-                </div>
-
-                <div style={styles.objectList}>
-                  {selectedLayer.objects.map((object) => (
-                    <article key={object.id} style={styles.objectCard}>
-                      <div style={styles.objectRow}>
-                        <label style={styles.compactField}>
-                          <span style={styles.fieldLabel}>物体名称</span>
-                          <input
-                            style={styles.input}
-                            value={object.name}
-                            onChange={(event) => updateObject(selectedLayer.id, object.id, "name", event.target.value)}
-                          />
-                        </label>
-                        <SceneIconButton icon="delete" label="删除物体" variant="danger" onClick={() => removeObject(selectedLayer.id, object.id)} />
-                      </div>
-
-                      <label style={styles.fieldGroup}>
-                        <span style={styles.fieldLabelRow}>
-                          <span style={styles.fieldLabel}>外观 / 说明</span>
-                          <SceneIconButton
-                            icon={rewritePendingKey === `${selectedLayer.id}:${object.id}:description` ? "replay" : "auto_awesome"}
-                            label="AI 重写物体外观 / 说明"
-                            onClick={() => void rewriteObjectField(selectedLayer.id, object.id, "description", "物体外观与说明")}
-                            disabled={Boolean(rewritePendingKey)}
-                          />
-                        </span>
-                        <textarea
-                          style={styles.textarea}
-                          value={object.description}
-                          onChange={(event) => updateObject(selectedLayer.id, object.id, "description", event.target.value)}
-                        />
-                      </label>
-
-                      <label style={styles.fieldGroup}>
-                        <span style={styles.fieldLabelRow}>
-                          <span style={styles.fieldLabel}>交互方式</span>
-                          <SceneIconButton
-                            icon={rewritePendingKey === `${selectedLayer.id}:${object.id}:interaction` ? "replay" : "auto_awesome"}
-                            label="AI 重写物体交互方式"
-                            onClick={() => void rewriteObjectField(selectedLayer.id, object.id, "interaction", "物体交互方式")}
-                            disabled={Boolean(rewritePendingKey)}
-                          />
-                        </span>
-                        <textarea
-                          style={styles.textarea}
-                          value={object.interaction}
-                          onChange={(event) => updateObject(selectedLayer.id, object.id, "interaction", event.target.value)}
-                        />
-                      </label>
-
-                      <label style={styles.fieldGroup}>
-                        <span style={styles.fieldLabel}>标签</span>
-                        <input
-                          style={styles.input}
-                          value={object.tags}
-                          onChange={(event) => updateObject(selectedLayer.id, object.id, "tags", event.target.value)}
-                        />
-                      </label>
-
-                      <details style={styles.detailsGroup}>
-                        <summary style={styles.detailsSummary}>复用设置（高级）</summary>
-                        <div style={styles.detailsContent}>
-                          <label style={styles.fieldGroup}>
-                            <span style={styles.fieldLabel}>复用 ID</span>
-                            <input
-                              style={styles.input}
-                              value={object.reuseId}
-                              onChange={(event) => updateObject(selectedLayer.id, object.id, "reuseId", event.target.value)}
-                            />
-                          </label>
-                          <label style={styles.fieldGroup}>
-                            <span style={styles.fieldLabel}>复用说明</span>
-                            <textarea
-                              style={styles.textarea}
-                              value={object.reuseHint}
-                              onChange={(event) => updateObject(selectedLayer.id, object.id, "reuseHint", event.target.value)}
-                              placeholder="说明这个物体抽离出来后适合在哪些场景继续使用。"
-                            />
-                          </label>
-                        </div>
-                      </details>
-                      <div style={styles.actionsRowInline}>
-                        <SceneIconButton
-                          icon={reusableActionPendingId === object.id ? "replay" : "create_new_folder"}
-                          label="加入节点库"
-                          onClick={() => void saveObjectToReusableLibrary(object)}
-                          disabled={reusableActionPendingId === object.id}
-                        />
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-
-              <div style={styles.editorActions}>
-                <SceneIconButton icon="add" label="新增下级层级" variant="accent" onClick={() => addChildLayer(selectedLayer.id)} />
-                <SceneIconButton
-                  icon={reusableActionPendingId === selectedLayer.id ? "replay" : "create_new_folder"}
-                  label="加入节点库"
-                  onClick={() => void saveSelectedLayerToReusableLibrary()}
-                  disabled={reusableActionPendingId === selectedLayer.id}
-                />
-                <SceneIconButton
-                  icon="delete"
-                  label="删除当前层级"
-                  variant="danger"
-                  onClick={() => requestDeleteLayer(selectedLayer.id)}
-                  disabled={!canDeleteLayerSafely(sceneLayers, selectedLayer.id)}
-                />
-              </div>
-            </>
-          ) : (
-            <p style={styles.emptyState}>选择层级后在这里编辑。</p>
-          )}
-          </div>
-        </div>
-        <div style={styles.resizer} onMouseDown={(e) => startColumnResize("right", e)} />
 
         {/* ── Panel 3: Sidebar ── */}
-        <aside style={{ ...styles.sidebarPane, width: rightColWidth, flexShrink: 0 }}>
-          {sceneIoMessage && <p style={styles.sidebarStatusMsg}>{sceneIoMessage}</p>}
-
+        <aside
+          style={{
+            ...styles.sidebarPane,
+            ...(isCompactLayout ? styles.sidebarPaneCompact : null),
+            width: isCompactLayout ? "100%" : SCENE_SIDEBAR_WIDTH,
+            flexShrink: 0,
+          }}
+        >
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("draft")}>
-              <span style={styles.panelTitle}>草稿</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("draft") ? "chevron_right" : "expand_more"} size={16} /></span>
-            </button>
-            {!collapsedSidebarSections.includes("draft") ? (
-              <div style={styles.sidebarSectionBody}>
-                <label style={styles.sceneNameLabel}>
-                  <span style={styles.fieldLabel}>场景名称</span>
-                  <input
-                    style={styles.sceneNameInput}
-                    value={sceneName}
-                    onChange={(event) => setSceneName(event.target.value)}
-                    placeholder="例如：高一物理-力学基础"
-                  />
-                </label>
-                <label style={styles.sceneSummaryLabel}>
-                  <span style={styles.fieldLabel}>场景摘要</span>
-                  <textarea
-                    style={styles.sceneSummaryInput}
-                    value={sceneSummary}
-                    onChange={(event) => setSceneSummary(event.target.value)}
-                    placeholder="用自己的话描述这个场景。"
-                  />
-                </label>
-              </div>
-            ) : null}
+            <div style={styles.sidebarSectionStaticHeader}>
+              <span style={styles.panelTitle}>当前场景</span>
+              <span style={styles.sidebarSectionMeta}>
+                {sceneNodeCount} 节点 · {sceneObjectCount} 物体
+              </span>
+            </div>
+            <div style={{ ...styles.sidebarSectionBody, ...styles.sceneMetaSectionBody }}>
+              <label style={styles.sceneNameLabel}>
+                <span style={styles.fieldLabel}>场景名称</span>
+                <input
+                  style={styles.sceneNameInput}
+                  value={sceneName}
+                  onChange={(event) => setSceneName(event.target.value)}
+                  placeholder="例如：高一物理-力学基础"
+                />
+              </label>
+              <label style={styles.sceneSummaryLabel}>
+                <span style={styles.fieldLabel}>场景摘要</span>
+                <textarea
+                  style={styles.sceneSummaryInput}
+                  value={sceneSummary}
+                  onChange={(event) => setSceneSummary(event.target.value)}
+                  placeholder="用自己的话描述这个场景。"
+                />
+              </label>
+            </div>
           </div>
 
           <div style={styles.sidebarSection}>
@@ -1357,43 +1470,70 @@ export default function SceneSetupPage() {
                     placeholder="留空表示不限"
                   />
                 </label>
-                <p style={styles.sidebarHint}>留空表示不限层级深度。</p>
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>关键词搜索</span>
-                  <textarea
-                    style={styles.sceneSummaryInput}
-                    value={sceneKeywordInput}
-                    onChange={(event) => setSceneKeywordInput(event.target.value)}
-                    placeholder="输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
-                  />
-                </label>
-                <button
-                  type="button"
-                  style={styles.btnPrimary}
-                  onClick={() => void handleGenerateScene("keywords")}
-                  disabled={sceneGeneratePending !== null}
-                >
-                  {sceneGeneratePending === "keywords" ? "生成中…" : "生成场景树"}
-                </button>
-                <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>长文本提取</span>
-                  <textarea
-                    style={styles.sceneSummaryInput}
-                    value={sceneLongTextInput}
-                    onChange={(event) => setSceneLongTextInput(event.target.value)}
-                    placeholder="输入长文本描述。"
-                  />
-                </label>
-                <button
-                  type="button"
-                  style={styles.btnGhost}
-                  onClick={() => void handleGenerateScene("long_text")}
-                  disabled={sceneGeneratePending !== null}
-                >
-                  {sceneGeneratePending === "long_text" ? "提取中…" : "从长文本提取"}
-                </button>
+                <div style={styles.modeSwitchRow}>
+                  <div style={styles.modeSwitch}>
+                    <button
+                      type="button"
+                      style={sceneGenerateMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
+                      onClick={() => setSceneGenerateMode("keywords")}
+                    >
+                      关键词搜索
+                    </button>
+                    <button
+                      type="button"
+                      style={sceneGenerateMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
+                      onClick={() => setSceneGenerateMode("long_text")}
+                    >
+                      长文本提取
+                    </button>
+                  </div>
+                  <button
+                    style={styles.sidebarIconButton}
+                    type="button"
+                    disabled={sceneGeneratePending !== null}
+                    onClick={() => void handleGenerateScene(sceneGenerateMode)}
+                    title={
+                      sceneGenerateMode === "keywords"
+                        ? (sceneGeneratePending === "keywords" ? "生成中" : "根据关键词生成场景树")
+                        : (sceneGeneratePending === "long_text" ? "提取中" : "根据长文本提取场景树")
+                    }
+                    aria-label={
+                      sceneGenerateMode === "keywords"
+                        ? (sceneGeneratePending === "keywords" ? "生成中" : "根据关键词生成场景树")
+                        : (sceneGeneratePending === "long_text" ? "提取中" : "根据长文本提取场景树")
+                    }
+                  >
+                    <MaterialIcon
+                      name={
+                        sceneGenerateMode === "keywords"
+                          ? (sceneGeneratePending === "keywords" ? "replay" : "auto_awesome")
+                          : (sceneGeneratePending === "long_text" ? "replay" : "description")
+                      }
+                      size={14}
+                    />
+                  </button>
+                </div>
+                {sceneGenerateMode === "keywords" ? (
+                  <label key="keywords-mode" style={styles.fieldGroup}>
+                    <input
+                      style={styles.input}
+                      value={sceneKeywordInput}
+                      onChange={(event) => setSceneKeywordInput(event.target.value)}
+                      placeholder="输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
+                    />
+                  </label>
+                ) : (
+                  <label key="long-text-mode" style={styles.fieldGroup}>
+                    <input
+                      type="file"
+                      accept=".txt,.md,text/plain,text/markdown"
+                      style={styles.fileInput}
+                      onChange={(event) => setSceneLongTextFile(event.target.files?.[0] ?? null)}
+                    />
+                    {sceneLongTextFile ? <span style={styles.helperText}>{sceneLongTextFile.name}</span> : null}
+                  </label>
+                )}
                 {sceneGenerateError ? <p style={styles.errorText}>{sceneGenerateError}</p> : null}
-                {sceneGenerateMessage ? <p style={styles.sidebarHint}>{sceneGenerateMessage}</p> : null}
                 {generatedSceneCandidate ? (
                   <div style={styles.generatedSceneCard}>
                     <strong style={styles.generatedSceneTitle}>{generatedSceneCandidate.sceneName}</strong>
@@ -1403,9 +1543,17 @@ export default function SceneSetupPage() {
                       {generatedSceneCandidate.usedModel || "unknown"} ·
                       {countSceneNodes(generatedSceneCandidate.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 节点
                     </p>
-                    <button type="button" style={styles.btnPrimary} onClick={applyGeneratedSceneCandidateToEditor}>
-                      应用到编辑区
-                    </button>
+                    <div style={styles.sidebarActionRow}>
+                      <button
+                        style={styles.sidebarIconButton}
+                        type="button"
+                        onClick={applyGeneratedSceneCandidateToEditor}
+                        title="应用到编辑区"
+                        aria-label="应用到编辑区"
+                      >
+                        <MaterialIcon name="subdirectory_arrow_right" size={14} />
+                      </button>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -1429,7 +1577,6 @@ export default function SceneSetupPage() {
                   />
                 </label>
                 {reusableError ? <p style={styles.errorText}>{reusableError}</p> : null}
-                {reusableMessage ? <p style={styles.sidebarHint}>{reusableMessage}</p> : null}
                 <div style={styles.reusableNodeList}>
                   {filteredReusableNodes.length ? filteredReusableNodes.map((item) => (
                     <article key={item.nodeId} style={styles.reusableNodeCard}>
@@ -1443,43 +1590,31 @@ export default function SceneSetupPage() {
                         {(item.tags.length ? item.tags.join(" · ") : "无标签")}
                         {item.sourceSceneName ? ` · 来自 ${item.sourceSceneName}` : ""}
                       </p>
-                      <div style={styles.savedSceneActions}>
-                        <SceneIconButton icon="subdirectory_arrow_right" label="插入到当前层级" onClick={() => insertReusableNode(item)} />
-                        <SceneIconButton
-                          icon={reusableActionPendingId === item.nodeId ? "replay" : "delete"}
-                          label="删除复用节点"
-                          variant="danger"
-                          onClick={() => void deleteReusableNode(item.nodeId)}
+                      <div style={styles.sidebarCardActions}>
+                        <button
+                          style={styles.sidebarIconButton}
+                          type="button"
+                          onClick={() => insertReusableNode(item)}
+                          title="插入到当前层级"
+                          aria-label="插入到当前层级"
+                        >
+                          <MaterialIcon name="subdirectory_arrow_right" size={14} />
+                        </button>
+                        <button
+                          style={styles.sidebarIconButton}
+                          type="button"
                           disabled={reusableActionPendingId === item.nodeId}
-                        />
+                          onClick={() => void deleteReusableNode(item.nodeId)}
+                          title={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
+                          aria-label={reusableActionPendingId === item.nodeId ? "删除中" : "删除复用节点"}
+                        >
+                          <MaterialIcon name={reusableActionPendingId === item.nodeId ? "replay" : "delete"} size={14} />
+                        </button>
                       </div>
                     </article>
                   )) : (
                     <p style={styles.sidebarHint}>节点库还是空的。</p>
                   )}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("io")}>
-              <span style={styles.panelTitle}>场景库</span>
-              <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("io") ? "chevron_right" : "expand_more"} size={16} /></span>
-            </button>
-            {!collapsedSidebarSections.includes("io") ? (
-              <div style={styles.sidebarSectionBody}>
-                <div style={styles.sceneActionButtons}>
-                  <button type="button" style={styles.btnPrimary} onClick={() => void saveLibraryScene("upsert")}>
-                    {selectedSavedSceneId ? "更新已保存场景" : "保存到场景库"}
-                  </button>
-                  <button type="button" style={styles.btnGhost} onClick={() => void saveLibraryScene("create")}>
-                    另存为新场景
-                  </button>
-                </div>
-                <div style={styles.sceneActionButtons}>
-                  <button type="button" style={styles.btnGhost} onClick={requestImportScene}>导入 JSON</button>
-                  <button type="button" style={styles.btnGhost} onClick={exportScene}>导出 JSON</button>
                 </div>
               </div>
             ) : null}
@@ -1510,10 +1645,34 @@ export default function SceneSetupPage() {
                             <p style={styles.savedSceneSummary}>{item.sceneSummary || "未填写 summary"}</p>
                             <p style={styles.savedSceneMeta}>{item.sceneProfile?.title ?? "未生成快照"} · {countSceneNodes(item.sceneProfile?.sceneTree ?? [])} 节点</p>
                           </button>
-                          <div style={styles.savedSceneActions}>
-                            <SceneIconButton icon="replay" label="载入场景" onClick={() => void loadSavedScene(item.sceneId)} />
-                            <SceneIconButton icon="adjust" label="作为更新目标" onClick={() => setSelectedSavedSceneId(item.sceneId)} />
-                            <SceneIconButton icon="delete" label="删除已保存场景" variant="danger" onClick={() => void deleteSavedScene(item.sceneId)} />
+                          <div style={styles.sidebarCardActions}>
+                            <button
+                              style={styles.sidebarIconButton}
+                              type="button"
+                              onClick={() => void loadSavedScene(item.sceneId)}
+                              title="载入场景"
+                              aria-label="载入场景"
+                            >
+                              <MaterialIcon name="replay" size={14} />
+                            </button>
+                            <button
+                              style={isSelected ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
+                              type="button"
+                              onClick={() => setSelectedSavedSceneId(item.sceneId)}
+                              title={isSelected ? "当前更新目标" : "作为更新目标"}
+                              aria-label={isSelected ? "当前更新目标" : "作为更新目标"}
+                            >
+                              <MaterialIcon name="adjust" size={14} />
+                            </button>
+                            <button
+                              style={styles.sidebarIconButton}
+                              type="button"
+                              onClick={() => void deleteSavedScene(item.sceneId)}
+                              title="删除已保存场景"
+                              aria-label="删除已保存场景"
+                            >
+                              <MaterialIcon name="delete" size={14} />
+                            </button>
                           </div>
                         </div>
                       );
@@ -1549,24 +1708,43 @@ function SceneLayerCard({
   layer,
   index,
   selectedLayerId,
-  collapsedLayerIds,
+  selectedObjectId,
   onSelect,
-  onToggleCollapse,
+  onToggleEditor,
   onAddChild,
-  canDeleteLayerForId
+  onAddObject,
+  onSaveToReusable,
+  onSelectObject,
+  onSaveObjectToReusable,
+  onRemoveObject,
+  reusableActionPendingId,
+  onRequestDelete,
+  canDeleteLayerForId,
+  editorContent,
+  renderObjectEditor,
 }: {
   layer: SceneLayer;
   index: number;
   selectedLayerId: string;
-  collapsedLayerIds: string[];
+  selectedObjectId: string;
   onSelect: (layerId: string) => void;
-  onToggleCollapse: (layerId: string) => void;
+  onToggleEditor: (layerId: string) => void;
   onAddChild: (layerId: string) => void;
+  onAddObject: (layerId: string) => void;
+  onSaveToReusable: (layerId: string) => void;
+  onSelectObject: (objectId: string) => void;
+  onSaveObjectToReusable: (object: SceneObject) => void;
+  onRemoveObject: (layerId: string, objectId: string) => void;
+  reusableActionPendingId: string;
+  onRequestDelete: (layerId: string) => void;
   canDeleteLayerForId: (layerId: string) => boolean;
+  editorContent: ReactNode;
+  renderObjectEditor: (layerId: string, object: SceneObject) => ReactNode;
 }) {
   const isSelected = layer.id === selectedLayerId;
-  const isCollapsed = collapsedLayerIds.includes(layer.id);
+  const isCollapsed = false;
   const hasChildren = layer.children.length > 0;
+  const hasObjects = layer.objects.length > 0;
   const stopCardAction = (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     handler();
@@ -1588,48 +1766,177 @@ function SceneLayerCard({
           </div>
         </div>
 
-        <p style={styles.layerSummary}>{layer.summary}</p>
+        {!isSelected ? (
+          <>
+            <p style={styles.layerSummary}>{layer.summary}</p>
 
-        <div style={styles.objectChipRow}>
-          {layer.tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2).map((tag) => (
-            <span key={`${layer.id}:${tag}`} style={styles.tagChip}>#{tag}</span>
-          ))}
-          {layer.objects.slice(0, 3).map((object) => (
-            <span key={object.id} style={styles.objectChip}>{object.name}</span>
-          ))}
-          {layer.objects.length > 3 ? <span style={styles.objectChip}>+{layer.objects.length - 3}</span> : null}
-        </div>
+            <div style={styles.objectChipRow}>
+              {layer.tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 2).map((tag) => (
+                <span key={`${layer.id}:${tag}`} style={styles.tagChip}>#{tag}</span>
+              ))}
+              {layer.objects.slice(0, 3).map((object) => (
+                <span key={object.id} style={styles.objectChip}>{object.name}</span>
+              ))}
+              {layer.objects.length > 3 ? <span style={styles.objectChip}>+{layer.objects.length - 3}</span> : null}
+            </div>
+          </>
+        ) : null}
 
         <div style={styles.cardActions}>
           <SceneIconButton icon="add" label="添加子层" size="micro" variant="accent" onClick={stopCardAction(() => onAddChild(layer.id))} />
-          {hasChildren ? (
-            <SceneIconButton
-              icon={isCollapsed ? "chevron_right" : "expand_more"}
-              label={isCollapsed ? "展开子树" : "收起子树"}
-              size="micro"
-              onClick={stopCardAction(() => onToggleCollapse(layer.id))}
-            />
-          ) : null}
+          <SceneIconButton icon="adjust" label="添加物体" size="micro" onClick={stopCardAction(() => onAddObject(layer.id))} />
+          <SceneIconButton
+            icon={reusableActionPendingId === layer.id ? "replay" : "create_new_folder"}
+            label="加入节点库"
+            size="micro"
+            onClick={stopCardAction(() => onSaveToReusable(layer.id))}
+            disabled={reusableActionPendingId === layer.id}
+          />
+          <SceneIconButton
+            icon="delete"
+            label="删除当前层级"
+            size="micro"
+            variant="danger"
+            onClick={stopCardAction(() => onRequestDelete(layer.id))}
+            disabled={!canDeleteLayerForId(layer.id)}
+          />
+          <SceneIconButton
+            icon={isSelected ? "expand_more" : "chevron_right"}
+            label={isSelected ? "收起节点编辑器" : "展开节点编辑器"}
+            size="micro"
+            onClick={stopCardAction(() => onToggleEditor(layer.id))}
+          />
         </div>
       </article>
 
-      {hasChildren && !isCollapsed ? (
+      {isSelected ? <div id={`scene-node-editor-${layer.id}`} style={styles.nodeInlineEditor}>{editorContent}</div> : null}
+
+      {(hasObjects || hasChildren) && !isCollapsed ? (
         <div style={styles.childStack}>
+          {layer.objects.map((object) => (
+            <SceneObjectCard
+              key={object.id}
+              object={object}
+              layerId={layer.id}
+              selectedObjectId={selectedObjectId}
+              onSelect={onSelectObject}
+              onSaveToReusable={onSaveObjectToReusable}
+              onRemove={onRemoveObject}
+              reusableActionPendingId={reusableActionPendingId}
+              editorContent={renderObjectEditor(layer.id, object)}
+            />
+          ))}
           {layer.children.map((child, childIndex) => (
             <SceneLayerCard
               key={child.id}
               layer={child}
               index={childIndex}
               selectedLayerId={selectedLayerId}
-              collapsedLayerIds={collapsedLayerIds}
+              selectedObjectId={selectedObjectId}
               onSelect={onSelect}
-              onToggleCollapse={onToggleCollapse}
+              onToggleEditor={onToggleEditor}
               onAddChild={onAddChild}
+              onAddObject={onAddObject}
+              onSaveToReusable={onSaveToReusable}
+              onSelectObject={onSelectObject}
+              onSaveObjectToReusable={onSaveObjectToReusable}
+              onRemoveObject={onRemoveObject}
+              reusableActionPendingId={reusableActionPendingId}
+              onRequestDelete={onRequestDelete}
               canDeleteLayerForId={canDeleteLayerForId}
+              editorContent={editorContent}
+              renderObjectEditor={renderObjectEditor}
             />
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function SceneObjectCard({
+  object,
+  layerId,
+  selectedObjectId,
+  onSelect,
+  onSaveToReusable,
+  onRemove,
+  reusableActionPendingId,
+  editorContent,
+}: {
+  object: SceneObject;
+  layerId: string;
+  selectedObjectId: string;
+  onSelect: (objectId: string) => void;
+  onSaveToReusable: (object: SceneObject) => void;
+  onRemove: (layerId: string, objectId: string) => void;
+  reusableActionPendingId: string;
+  editorContent: ReactNode;
+}) {
+  const isSelected = object.id === selectedObjectId;
+  const stopCardAction = (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    handler();
+  };
+
+  return (
+    <div style={styles.cardGroup}>
+      <article
+        style={{
+          ...styles.objectNodeCard,
+          ...(isSelected ? styles.objectNodeCardActive : null),
+        }}
+        onClick={() => onSelect(object.id)}
+      >
+        <div style={styles.objectNodeTopRow}>
+          <div style={styles.objectNodeBadge}>
+            <MaterialIcon name="adjust" size={14} />
+          </div>
+          <div style={styles.layerHeadCopy}>
+            <span style={styles.layerScope}>物体节点</span>
+            <h3 style={styles.layerTitle}>{object.name}</h3>
+          </div>
+        </div>
+
+        {!isSelected ? (
+          <>
+            <p style={styles.layerSummary}>
+              {(object.description || object.interaction || "尚未填写细节").slice(0, 96)}
+              {(object.description || object.interaction || "").length > 96 ? "..." : ""}
+            </p>
+            <div style={styles.objectChipRow}>
+              {object.tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 3).map((tag) => (
+                <span key={`${object.id}:${tag}`} style={styles.tagChip}>#{tag}</span>
+              ))}
+            </div>
+          </>
+        ) : null}
+
+        <div style={styles.cardActions}>
+          <SceneIconButton
+            icon={reusableActionPendingId === object.id ? "replay" : "create_new_folder"}
+            label="加入节点库"
+            size="micro"
+            onClick={stopCardAction(() => onSaveToReusable(object))}
+            disabled={reusableActionPendingId === object.id}
+          />
+          <SceneIconButton
+            icon="delete"
+            label="删除物体"
+            size="micro"
+            variant="danger"
+            onClick={stopCardAction(() => onRemove(layerId, object.id))}
+          />
+          <SceneIconButton
+            icon={isSelected ? "expand_more" : "chevron_right"}
+            label={isSelected ? "收起物体编辑器" : "展开物体编辑器"}
+            size="micro"
+            onClick={stopCardAction(() => onSelect(object.id))}
+          />
+        </div>
+      </article>
+
+      {isSelected ? <div id={`scene-object-editor-${layerId}-${object.id}`} style={styles.nodeInlineEditor}>{editorContent}</div> : null}
     </div>
   );
 }
@@ -1665,6 +1972,109 @@ function SceneIconButton({
     <button type="button" aria-label={label} title={label} style={style} onClick={onClick} disabled={disabled}>
       <MaterialIcon name={icon} size={size === "micro" ? 14 : 16} />
     </button>
+  );
+}
+
+function RewriteStateButton({
+  actionKey,
+  label,
+  pendingKey,
+  lastRewrite,
+  rewriteStrength,
+  onRewriteStrengthChange,
+  onRewrite,
+  onUndo,
+}: {
+  actionKey: string;
+  label: string;
+  pendingKey: string;
+  lastRewrite: RewriteUndoEntry | null;
+  rewriteStrength: number;
+  onRewriteStrengthChange: (value: number) => void;
+  onRewrite: () => void;
+  onUndo: () => void;
+}) {
+  const [isStrengthOpen, setIsStrengthOpen] = useState(false);
+  const strengthPopoverRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isStrengthOpen) {
+      return;
+    }
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!strengthPopoverRef.current?.contains(event.target as Node)) {
+        setIsStrengthOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isStrengthOpen]);
+
+  const isPending = pendingKey === actionKey;
+  const isUndo = !isPending && lastRewrite?.key === actionKey;
+  const icon = isPending ? "hourglass_top" : isUndo ? "undo" : "auto_awesome";
+  const buttonLabel = isPending
+    ? "重写中"
+    : isUndo
+      ? `撤销重写：${lastRewrite?.label ?? label}`
+      : `AI 重写${label}`;
+
+  useEffect(() => {
+    if (isPending) {
+      setIsStrengthOpen(false);
+    }
+  }, [isPending]);
+
+  return (
+    <div style={styles.rewriteActionGroup}>
+      <SceneIconButton
+        icon={icon}
+        label={buttonLabel}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (isPending) {
+            return;
+          }
+          if (isUndo) {
+            onUndo();
+            return;
+          }
+          setIsStrengthOpen((current) => !current);
+        }}
+        disabled={Boolean(pendingKey)}
+      />
+      {(!isPending && !isUndo && isStrengthOpen) ? (
+        <div ref={strengthPopoverRef} style={styles.rewritePopoverWrap}>
+          <div style={styles.rewritePopover} onClick={(event) => event.stopPropagation()}>
+            <div style={styles.rewritePopoverSection}>
+              <span style={styles.rewritePopoverTitle}>重写强度</span>
+              <span style={styles.rewritePopoverValue}>{(rewriteStrength * 100).toFixed(0)}%</span>
+            </div>
+            <input
+              style={styles.rewriteSlider}
+              type="range"
+              min={0.05}
+              max={1}
+              step={0.05}
+              value={rewriteStrength}
+              onChange={(event) => onRewriteStrengthChange(Number(event.target.value))}
+            />
+            <p style={styles.rewritePopoverHint}>数值越高，AI 重写时越接近原始设定。</p>
+            <button
+              type="button"
+              style={styles.rewritePopoverButton}
+              onClick={(event) => {
+                event.stopPropagation();
+                setIsStrengthOpen(false);
+                onRewrite();
+              }}
+            >
+              开始重写
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1730,6 +2140,13 @@ function normalizeSceneTreeNodeForProfile(layer: SceneLayer): import("@vibe-lear
 
 function countSceneNodes(nodes: import("@vibe-learner/shared").SceneTreeNode[]): number {
   return nodes.reduce((count, node) => count + 1 + countSceneNodes(node.children), 0);
+}
+
+function countSceneObjects(layers: SceneLayer[]): number {
+  return layers.reduce(
+    (count, layer) => count + layer.objects.length + countSceneObjects(layer.children),
+    0
+  );
 }
 
 function removeLayerTree(layers: SceneLayer[], targetId: string): SceneLayer[] {
@@ -1901,6 +2318,23 @@ function findLayerById(layers: SceneLayer[], targetId: string): SceneLayer | nul
   return null;
 }
 
+function findObjectById(
+  layers: SceneLayer[],
+  targetId: string,
+): { layer: SceneLayer; object: SceneObject } | null {
+  for (const layer of layers) {
+    const object = layer.objects.find((item) => item.id === targetId);
+    if (object) {
+      return { layer, object };
+    }
+    const childMatch = findObjectById(layer.children, targetId);
+    if (childMatch) {
+      return childMatch;
+    }
+  }
+  return null;
+}
+
 function findLayerPath(layers: SceneLayer[], targetId: string, trail: string[] = []): string[] {
   for (const layer of layers) {
     const nextTrail = [...trail, layer.title];
@@ -1932,21 +2366,47 @@ function inferTemplateIndexFromLayer(layer: SceneLayer): number {
 const styles: Record<string, CSSProperties> = {
   // ── page shell ────────────────────────────────────────────
   page: {
+    width: "100%",
     height: "100vh",
-    maxWidth: 1400,
+    boxSizing: "border-box",
+    maxWidth: 1600,
     margin: "0 auto",
-    padding: 0,
+    padding: "0 28px 28px",
     overflow: "hidden",
     display: "flex",
     flexDirection: "column",
+    gap: 0,
+    background: "var(--bg)",
   },
-  pageHeader: {
-    flexShrink: 0,
-    borderBottom: "1px solid var(--border)",
+  heading: {
+    display: "grid",
+    gap: 8,
+    position: "sticky",
+    top: 0,
+    zIndex: 15,
+    paddingTop: 20,
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "color-mix(in srgb, white 92%, var(--bg))",
   },
-  titleBar: {
-    padding: "8px 24px",
+  headingRow: {
     display: "flex",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  notice: {
+    width: "fit-content",
+    maxWidth: "100%",
+    minHeight: 24,
+    padding: "0 8px",
+    border: "none",
+    background: "color-mix(in srgb, white 72%, var(--accent-soft))",
+    color: "var(--ink-2)",
+    fontSize: 12,
+    lineHeight: 1,
+    display: "inline-flex",
     alignItems: "center",
   },
   workspaceShell: {
@@ -1954,11 +2414,22 @@ const styles: Record<string, CSSProperties> = {
     flex: 1,
     minHeight: 0,
     overflow: "hidden",
+    gap: 14,
+  },
+  workspaceShellCompact: {
+    flexDirection: "column",
+    overflowY: "auto",
   },
   panel: {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 99%, var(--panel))",
+    minHeight: 0,
+  },
+  panelCompact: {
+    overflow: "visible",
   },
   resizer: {
     width: 4,
@@ -1967,37 +2438,73 @@ const styles: Record<string, CSSProperties> = {
     cursor: "col-resize",
   },
   panelHeader: {
-    flexShrink: 0,
-    padding: "8px 16px",
-    borderBottom: "1px solid var(--border)",
-    background: "var(--panel)",
+    position: "relative",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: 36,
+    gap: 12,
+    flexWrap: "wrap",
+    minHeight: 40,
+    padding: "10px 16px",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "transparent",
+    flexShrink: 0,
+  },
+  panelHeaderActions: {
+    display: "inline-flex",
+    alignItems: "center",
     gap: 8,
+    flexWrap: "wrap",
   },
   panelBody: {
     flex: 1,
     minHeight: 0,
     overflowY: "auto",
-    padding: "16px 20px",
+    padding: "16px 18px 18px",
     display: "grid",
     gap: 14,
     alignContent: "start",
   },
+  panelBodyCompact: {
+    overflow: "visible",
+  },
+  nodeInlineEditor: {
+    marginTop: 6,
+    paddingTop: 14,
+    borderTop: "1px solid color-mix(in srgb, var(--border) 74%, white)",
+    display: "grid",
+    gap: 12,
+    alignContent: "start",
+  },
+  editorSection: {
+    border: "1px solid color-mix(in srgb, var(--border) 80%, white)",
+    background: "color-mix(in srgb, white 99%, var(--panel))",
+    display: "grid",
+    gap: 0,
+    overflow: "hidden",
+  },
+  editorSectionHeader: {
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "9px 10px",
+    cursor: "pointer",
+    textAlign: "left",
+  },
+  editorSectionBody: {
+    padding: "0 10px 10px",
+    display: "grid",
+    gap: 10,
+  },
   pageTitle: {
     margin: 0,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 700,
     color: "var(--ink)",
     lineHeight: 1.2,
-  },
-  pageDesc: {
-    margin: 0,
-    fontSize: 13,
-    color: "var(--muted)",
-    lineHeight: 1.6,
   },
   // ── sidebar fields ────────────────────────────────────────
   sceneNameLabel: { display: "grid", gap: 6 },
@@ -2006,7 +2513,7 @@ const styles: Record<string, CSSProperties> = {
     width: "100%",
     border: "1px solid var(--border)",
     padding: "7px 10px",
-    background: "var(--panel)",
+    background: "var(--bg)",
     color: "var(--ink)",
     fontSize: 13,
     outline: "none",
@@ -2017,7 +2524,7 @@ const styles: Record<string, CSSProperties> = {
     resize: "vertical",
     border: "1px solid var(--border)",
     padding: "7px 10px",
-    background: "var(--panel)",
+    background: "var(--bg)",
     color: "var(--ink)",
     fontSize: 13,
     lineHeight: 1.6,
@@ -2038,8 +2545,8 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 6,
     padding: 10,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    border: "1px solid color-mix(in srgb, var(--border) 80%, white)",
+    background: "color-mix(in srgb, white 96%, var(--panel))",
     width: "100%",
   },
   savedSceneItemSelected: {
@@ -2065,10 +2572,34 @@ const styles: Record<string, CSSProperties> = {
   savedSceneMeta: { fontSize: 11, color: "var(--muted)", margin: 0, lineHeight: 1.4 },
   savedSceneSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
   savedSceneActions: { display: "flex", flexWrap: "wrap", gap: 4 },
-  sidebarPane: { display: "flex", flexDirection: "column", overflowY: "auto" },
+  sidebarPane: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    minHeight: 0,
+    overflowY: "auto",
+  },
+  sidebarPaneCompact: {
+    overflow: "visible",
+  },
   sidebarSection: {
-    borderBottom: "1px solid var(--border)",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 99%, var(--panel))",
+    overflow: "hidden",
     flexShrink: 0,
+  },
+  sidebarSectionStaticHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    padding: "10px 12px",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+  },
+  sidebarSectionMeta: {
+    fontSize: 11,
+    color: "var(--muted)",
+    whiteSpace: "nowrap",
   },
   sidebarSectionHeader: {
     display: "flex",
@@ -2077,28 +2608,60 @@ const styles: Record<string, CSSProperties> = {
     width: "100%",
     border: "none",
     background: "transparent",
-    padding: "14px 16px",
+    padding: "10px 12px",
     cursor: "pointer",
     textAlign: "left",
   },
   sidebarSectionBody: {
-    padding: "0 16px 14px",
+    padding: "0 12px 12px",
     display: "grid",
-    gap: 10,
+    gap: 8,
+    alignContent: "start",
+  },
+  sceneMetaSectionBody: {
+    paddingTop: 16,
+  },
+  sidebarFlatSection: {
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 99%, var(--panel))",
+    overflow: "hidden",
+    flexShrink: 0,
+  },
+  sidebarFlatBody: {
+    padding: "12px",
+    display: "grid",
+    gap: 8,
     alignContent: "start",
   },
   sidebarToggleIcon: { color: "var(--muted)", display: "inline-flex", alignItems: "center", justifyContent: "center" },
   sidebarHint: { margin: 0, fontSize: 12, color: "var(--muted)", lineHeight: 1.6 },
-  sidebarStatusMsg: { margin: 0, padding: "8px 16px", fontSize: 12, color: "var(--muted)", borderBottom: "1px solid var(--border)" },
+  sidebarStatusMsg: {
+    margin: 0,
+    padding: "8px 10px",
+    fontSize: 12,
+    color: "var(--muted)",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 96%, var(--panel))",
+  },
   treePane: { padding: "16px 20px", display: "grid", gap: 14, alignContent: "start", overflowY: "auto" },
   editorPane: { borderLeft: "1px solid var(--border)", padding: "16px 20px", display: "grid", gap: 16, alignContent: "start", overflowY: "auto" },
   panelHead: { paddingBottom: 10, borderBottom: "1px solid var(--border)", display: "grid", gap: 3 },
-  panelTitle: { fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.06em" },
+  panelTitle: { fontSize: 10, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.12em" },
   hiddenInput: { display: "none" },
   treeStack: { display: "grid", gap: 8 },
   cardGroup: { display: "grid", gap: 6 },
-  layerCard: { borderWidth: 1, borderStyle: "solid", borderColor: "var(--border)", background: "var(--panel)", padding: 12, display: "grid", gap: 8, cursor: "pointer" },
-  layerCardActive: { borderColor: "var(--accent)", boxShadow: "0 0 0 2px var(--accent-soft) inset" },
+  layerCard: {
+    border: "none",
+    background: "color-mix(in srgb, white 54%, var(--accent-soft))",
+    padding: 12,
+    display: "grid",
+    gap: 8,
+    cursor: "pointer",
+  },
+  layerCardActive: {
+    background: "color-mix(in srgb, white 28%, var(--accent-soft))",
+    boxShadow: "0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent) inset",
+  },
   layerTopRow: { display: "flex", alignItems: "flex-start", gap: 8 },
   layerIndexBadge: { width: 22, height: 22, background: "var(--accent)", color: "#fff", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", flexShrink: 0 },
   layerHeadCopy: { display: "grid", gap: 2, minWidth: 0 },
@@ -2106,47 +2669,169 @@ const styles: Record<string, CSSProperties> = {
   layerTitle: { margin: 0, fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2 },
   layerSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
   layerReuseHint: { margin: 0, fontSize: 11, lineHeight: 1.5, color: "var(--ink)" },
+  objectNodeCard: {
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "color-mix(in srgb, var(--border) 82%, white)",
+    background: "color-mix(in srgb, white 98%, var(--panel))",
+    padding: 12,
+    display: "grid",
+    gap: 8,
+    cursor: "pointer",
+  },
+  objectNodeCardActive: {
+    borderColor: "var(--accent)",
+    boxShadow: "0 0 0 2px var(--accent-soft) inset",
+  },
+  objectNodeTopRow: { display: "flex", alignItems: "flex-start", gap: 8 },
+  objectNodeBadge: {
+    width: 22,
+    height: 22,
+    border: "1px solid color-mix(in srgb, var(--accent) 40%, var(--border))",
+    background: "color-mix(in srgb, white 84%, var(--accent-soft))",
+    color: "var(--accent)",
+    display: "grid",
+    placeItems: "center",
+    flexShrink: 0,
+  },
   objectChipRow: { display: "flex", flexWrap: "wrap", gap: 4 },
   tagChip: { padding: "2px 6px", border: "1px solid var(--accent-soft)", background: "var(--accent-soft)", fontSize: 10, color: "var(--accent)" },
   objectChip: { padding: "2px 6px", border: "1px solid var(--border)", background: "var(--bg)", fontSize: 10, color: "var(--muted)" },
   cardActions: { display: "flex", flexWrap: "wrap", gap: 4 },
   childStack: { paddingLeft: 12, borderLeft: "2px solid var(--border)", display: "grid", gap: 6 },
   pathChipRow: { display: "flex", flexWrap: "wrap", gap: 4 },
-  pathChip: { padding: "2px 6px", background: "var(--panel)", border: "1px solid var(--border)", fontSize: 11, color: "var(--muted)" },
+  pathChip: { padding: "2px 6px", background: "color-mix(in srgb, white 90%, var(--panel))", border: "1px solid var(--border)", fontSize: 11, color: "var(--muted)" },
   rewriteControlRow: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, paddingBottom: 4, borderBottom: "1px solid var(--border)" },
-  rewriteControlLabel: { fontSize: 11, color: "var(--muted)" },
-  rewriteSlider: { width: 80, flexShrink: 0 },
+  rewriteActionGroup: { display: "inline-flex", alignItems: "center", gap: 4, position: "relative" },
+  rewritePopoverWrap: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    zIndex: 20,
+  },
+  rewritePopover: {
+    position: "relative",
+    width: 220,
+    display: "grid",
+    gap: 10,
+    padding: "12px 12px 10px",
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    background: "var(--panel)",
+    boxShadow: "0 12px 28px rgba(13, 32, 40, 0.12)",
+  },
+  rewritePopoverSection: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  rewritePopoverTitle: { fontSize: 12, fontWeight: 600, color: "var(--ink)" },
+  rewritePopoverValue: { fontSize: 12, fontWeight: 600, color: "var(--ink)" },
+  rewritePopoverHint: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
+  rewritePopoverButton: {
+    border: "none",
+    height: 30,
+    background: "var(--accent)",
+    color: "white",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  rewriteSlider: { width: "100%", flexShrink: 0 },
   formGrid: { display: "grid", gap: 12 },
   fieldGroup: { display: "grid", gap: 6 },
   compactField: { display: "grid", gap: 6, flex: 1 },
-  detailsGroup: { borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 2 },
-  detailsSummary: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)", cursor: "pointer", userSelect: "none", listStyle: "none", display: "flex", alignItems: "center", gap: 4 },
-  detailsContent: { display: "grid", gap: 12, paddingTop: 10 },
   fieldLabel: { fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--muted)" },
   fieldLabelRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 },
   input: { width: "100%", height: 36, border: "1px solid var(--border)", background: "var(--panel)", padding: "0 10px", color: "var(--ink)", fontSize: 13, outline: "none" },
   textarea: { width: "100%", minHeight: 72, border: "1px solid var(--border)", background: "var(--panel)", padding: "8px 10px", color: "var(--ink)", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none" },
-  objectsSection: { display: "grid", gap: 10 },
-  objectsHead: { display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" },
-  objectsTitle: { margin: 0, fontSize: 13, fontWeight: 600, color: "var(--ink)" },
-  objectsHint: { margin: "2px 0 0", fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
-  objectList: { display: "grid", gap: 8 },
-  objectCard: { padding: 12, border: "1px solid var(--border)", background: "var(--panel)", display: "grid", gap: 10 },
-  objectRow: { display: "flex", alignItems: "end", gap: 10 },
-  actionsRowInline: { display: "flex", justifyContent: "flex-end", gap: 8 },
-  editorActions: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", paddingTop: 4, borderTop: "1px solid var(--border)" },
   helperText: { fontSize: 12, color: "var(--muted)" },
   emptyState: { margin: 0, padding: "20px 0", color: "var(--muted)", lineHeight: 1.7, fontSize: 13 },
   errorText: { fontSize: 12, color: "var(--danger, #b42318)", lineHeight: 1.5 },
-  generatedSceneCard: { display: "grid", gap: 6, padding: 10, border: "1px solid var(--border)", background: "var(--panel)" },
+  generatedSceneCard: { display: "grid", gap: 6, padding: 10, border: "1px solid color-mix(in srgb, var(--border) 80%, white)", background: "color-mix(in srgb, white 96%, var(--panel))" },
   generatedSceneTitle: { fontSize: 13, color: "var(--ink)" },
   generatedSceneSummary: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--muted)" },
   generatedSceneMeta: { margin: 0, fontSize: 11, lineHeight: 1.4, color: "var(--muted)" },
   reusableNodeList: { display: "grid", gap: 8, maxHeight: 320, overflowY: "auto" },
-  reusableNodeCard: { display: "grid", gap: 6, padding: 10, border: "1px solid var(--border)", background: "var(--panel)" },
+  reusableNodeCard: { display: "grid", gap: 6, padding: 10, border: "1px solid color-mix(in srgb, var(--border) 80%, white)", background: "color-mix(in srgb, white 96%, var(--panel))" },
+  fileInput: {
+    width: "100%",
+    border: "1px solid var(--border)",
+    background: "var(--panel)",
+    color: "var(--ink)",
+    padding: "6px 8px",
+    fontSize: 12,
+  },
+  modeSwitchRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    justifyContent: "space-between",
+    flexWrap: "nowrap",
+  },
+  modeSwitch: {
+    display: "inline-flex",
+    border: "1px solid var(--border)",
+    background: "color-mix(in srgb, white 88%, var(--panel))",
+    minHeight: 28,
+    minWidth: 0,
+    flex: 1,
+  },
+  modeSwitchButton: {
+    border: "none",
+    background: "transparent",
+    color: "var(--muted)",
+    padding: "0 10px",
+    fontSize: 12,
+    cursor: "pointer",
+    minHeight: 28,
+    flex: 1,
+  },
+  modeSwitchButtonActive: {
+    border: "none",
+    background: "color-mix(in srgb, white 65%, var(--accent-soft))",
+    color: "var(--ink)",
+    fontWeight: 600,
+    padding: "0 10px",
+    fontSize: 12,
+    cursor: "pointer",
+    minHeight: 28,
+    flex: 1,
+  },
   btnPrimary: { border: "none", background: "var(--accent)", color: "white", height: 34, padding: "0 14px", fontWeight: 600, cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnGhost: { border: "1px solid var(--border)", background: "transparent", color: "var(--ink)", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, flexShrink: 0, display: "inline-flex", alignItems: "center" },
   btnDanger: { border: "none", background: "var(--danger, #b42318)", color: "white", height: 34, padding: "0 12px", cursor: "pointer", fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center" },
+  sidebarActionRow: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+  },
+  sidebarCardActions: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  sidebarIconButton: {
+    border: "1px solid color-mix(in srgb, var(--border) 76%, white)",
+    width: 28,
+    height: 28,
+    padding: 0,
+    background: "color-mix(in srgb, white 72%, var(--surface))",
+    color: "var(--ink)",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  sidebarIconButtonPrimary: {
+    border: "none",
+    background: "var(--accent)",
+    color: "white",
+  },
   iconButton: { borderWidth: 1, borderStyle: "solid", borderColor: "var(--border)", background: "var(--panel)", color: "var(--ink)", height: 28, minWidth: 28, padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   iconButtonAccent: { borderColor: "color-mix(in srgb, var(--accent) 40%, var(--border))", background: "color-mix(in srgb, white 76%, var(--accent-soft))", color: "var(--accent)" },
   iconButtonDanger: { borderColor: "color-mix(in srgb, var(--danger, #b42318) 38%, var(--border))", background: "color-mix(in srgb, white 88%, var(--danger, #b42318))", color: "var(--danger, #b42318)" },

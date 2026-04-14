@@ -34,7 +34,8 @@ export type MaterialIconName =
   | "send"
   | "menu_book"
   | "back_hand"
-  | "front_hand";
+  | "front_hand"
+  | "hourglass_top";
 
 interface MaterialIconProps {
   name: MaterialIconName;
@@ -331,6 +332,16 @@ function renderIcon(name: MaterialIconName): ReactNode {
         <>
           <path d="M5 12h14" />
           <path d="m13 7 5 5-5 5" />
+        </>
+      );
+    case "hourglass_top":
+      return (
+        <>
+          <path d="M7 4.5h10" />
+          <path d="M7 19.5h10" />
+          <path d="M8.5 5.5c0 3 1.7 4.3 3.5 6.5-1.8 2.2-3.5 3.5-3.5 6.5" />
+          <path d="M15.5 5.5c0 3-1.7 4.3-3.5 6.5 1.8 2.2 3.5 3.5 3.5 6.5" />
+          <path d="M10.5 12h3" />
         </>
       );
     default:
