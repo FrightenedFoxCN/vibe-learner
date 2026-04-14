@@ -1,9 +1,11 @@
 "use client";
 
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import type { PdfRect, ProjectedPdfOverlay } from "@vibe-learner/shared";
+
+import { MaterialIcon } from "./material-icon";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
@@ -14,6 +16,7 @@ interface ProjectedPdfViewerProps {
   overlays?: ProjectedPdfOverlay[];
   onInsertReference?: (text: string) => void;
   onPageCountChange?: (pageCount: number) => void;
+  onPageRequest?: (delta: -1 | 1) => void;
 }
 
 type TextSelectionState = {
@@ -28,13 +31,16 @@ export function ProjectedPdfViewer({
   overlays = [],
   onInsertReference,
   onPageCountChange,
+  onPageRequest,
 }: ProjectedPdfViewerProps) {
   const viewerId = useId();
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pageShellRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{ pointerId: number; startX: number; startY: number } | null>(null);
   const draftRegionRef = useRef<PdfRect | null>(null);
-  const [pageWidth, setPageWidth] = useState(0);
+  const wheelDeltaRef = useRef(0);
+  const wheelNavAtRef = useRef(0);
+  const [pageHeight, setPageHeight] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [isRegionMode, setIsRegionMode] = useState(false);
   const [textSelection, setTextSelection] = useState<TextSelectionState | null>(null);
@@ -45,7 +51,7 @@ export function ProjectedPdfViewer({
     const node = viewportRef.current;
     if (!node) return;
     const measure = () => {
-      setPageWidth(Math.max(240, Math.floor(node.clientWidth)));
+      setPageHeight(Math.max(240, Math.floor(node.clientHeight)));
     };
     measure();
     const observer = new ResizeObserver(() => measure());
@@ -56,6 +62,7 @@ export function ProjectedPdfViewer({
   useEffect(() => {
     setLoadError("");
     clearInteractionState();
+    wheelDeltaRef.current = 0;
   }, [fileUrl, pageNumber]);
 
   const clearInteractionState = () => {
@@ -102,6 +109,7 @@ export function ProjectedPdfViewer({
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!isRegionMode || !pageShellRef.current) return;
+    event.preventDefault();
     const pageRect = pageShellRef.current.getBoundingClientRect();
     dragStateRef.current = {
       pointerId: event.pointerId,
@@ -118,6 +126,7 @@ export function ProjectedPdfViewer({
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const dragState = dragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId || !pageShellRef.current) return;
+    event.preventDefault();
     const pageRect = pageShellRef.current.getBoundingClientRect();
     const nextRegion = buildRect(
       dragState.startX,
@@ -162,40 +171,94 @@ export function ProjectedPdfViewer({
     clearInteractionState();
   };
 
+  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    if (!onPageRequest) {
+      return;
+    }
+    const now = Date.now();
+    if (now - wheelNavAtRef.current < 240) {
+      return;
+    }
+    wheelDeltaRef.current += event.deltaY;
+    if (Math.abs(wheelDeltaRef.current) < 180) {
+      return;
+    }
+    const direction: -1 | 1 = wheelDeltaRef.current > 0 ? 1 : -1;
+    wheelDeltaRef.current = 0;
+    wheelNavAtRef.current = now;
+    event.preventDefault();
+    onPageRequest(direction);
+  };
+
   return (
     <div style={styles.wrap}>
-      <div style={styles.viewport} ref={viewportRef}>
+      <div style={styles.viewport} ref={viewportRef} onWheel={handleWheel}>
         <div style={styles.floatingBar}>
           <button
             type="button"
             style={{
-              ...styles.modeButton,
-              ...(isRegionMode ? styles.modeButtonActive : {}),
+              ...styles.iconButton,
+              ...(!isRegionMode ? styles.iconButtonActive : {}),
             }}
             onClick={() => {
-              setIsRegionMode((current) => !current);
+              setIsRegionMode(false);
               clearInteractionState();
             }}
+            title="文本选择"
+            aria-label="文本选择"
           >
-            {isRegionMode ? "框选中" : "文本引用"}
+            <MaterialIcon name="description" size={15} />
+          </button>
+          <button
+            type="button"
+            style={{
+              ...styles.iconButton,
+              ...(isRegionMode ? styles.iconButtonActive : {}),
+            }}
+            onClick={() => {
+              setIsRegionMode(true);
+              clearInteractionState();
+            }}
+            title="框选"
+            aria-label="框选"
+          >
+            <MaterialIcon name="drag_indicator" size={15} />
           </button>
 
           {textSelection ? <span style={styles.selectionBadge}>已选文段</span> : null}
           {selectedRegion ? <span style={styles.selectionBadge}>已框选</span> : null}
 
           {textSelection ? (
-            <button type="button" style={styles.actionButton} onClick={insertTextReference}>
-              插入引用
+            <button
+              type="button"
+              style={{ ...styles.iconButton, ...styles.iconActionButton }}
+              onClick={insertTextReference}
+              title="插入引用"
+              aria-label="插入引用"
+            >
+              <MaterialIcon name="add" size={15} />
             </button>
           ) : null}
           {selectedRegion ? (
-            <button type="button" style={styles.actionButton} onClick={insertRegionReference}>
-              插入选区
+            <button
+              type="button"
+              style={{ ...styles.iconButton, ...styles.iconActionButton }}
+              onClick={insertRegionReference}
+              title="插入选区"
+              aria-label="插入选区"
+            >
+              <MaterialIcon name="add" size={15} />
             </button>
           ) : null}
           {(textSelection || selectedRegion || draftRegion) ? (
-            <button type="button" style={styles.clearButton} onClick={clearInteractionState}>
-              清除
+            <button
+              type="button"
+              style={styles.iconButton}
+              onClick={clearInteractionState}
+              title="清除"
+              aria-label="清除"
+            >
+              <MaterialIcon name="close" size={15} />
             </button>
           ) : null}
         </div>
@@ -219,9 +282,9 @@ export function ProjectedPdfViewer({
               onMouseUp={handleMouseUp}
             >
               <Page
-                className="pdf-preview-page"
+                className={isRegionMode ? "pdf-preview-page pdf-preview-page--region" : "pdf-preview-page"}
                 pageNumber={pageNumber}
-                width={pageWidth || undefined}
+                height={pageHeight || undefined}
                 renderTextLayer
                 renderAnnotationLayer={false}
                 loading={<div style={styles.loadingState}>PDF 页面加载中…</div>}
@@ -344,18 +407,19 @@ function clamp01(value: number) {
 const styles: Record<string, CSSProperties> = {
   wrap: {
     minHeight: "100%",
+    height: "100%",
   },
   viewport: {
     position: "relative",
     minHeight: 0,
-    overflow: "auto",
-    paddingTop: 42,
+    height: "100%",
+    overflow: "hidden",
   },
   floatingBar: {
     position: "absolute",
     top: 10,
     right: 10,
-    zIndex: 4,
+    zIndex: 8,
     display: "flex",
     alignItems: "center",
     gap: 8,
@@ -367,24 +431,31 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid rgba(148, 163, 184, 0.24)",
     boxShadow: "0 10px 24px rgba(15, 23, 42, 0.10)",
     backdropFilter: "blur(10px)",
+    pointerEvents: "auto",
   },
-  modeButton: {
+  iconButton: {
     borderWidth: 1,
     borderStyle: "solid",
     borderColor: "rgba(148, 163, 184, 0.32)",
     background: "rgba(248, 250, 252, 0.96)",
-    color: "var(--ink)",
+    color: "var(--ink-2)",
+    width: 28,
     height: 28,
-    padding: "0 10px",
-    fontSize: 12,
-    fontWeight: 700,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 999,
     cursor: "pointer",
   },
-  modeButtonActive: {
+  iconButtonActive: {
     borderColor: "rgba(14, 165, 233, 0.36)",
     background: "rgba(14, 165, 233, 0.12)",
     color: "#0369a1",
+  },
+  iconActionButton: {
+    borderColor: "var(--accent)",
+    background: "var(--accent)",
+    color: "white",
   },
   selectionBadge: {
     height: 28,
@@ -397,31 +468,11 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
   },
-  actionButton: {
-    border: "1px solid var(--accent)",
-    background: "var(--accent)",
-    color: "white",
-    height: 28,
-    padding: "0 11px",
-    fontSize: 12,
-    fontWeight: 700,
-    borderRadius: 999,
-    cursor: "pointer",
-  },
-  clearButton: {
-    border: "1px solid rgba(148, 163, 184, 0.32)",
-    background: "white",
-    color: "var(--ink-2)",
-    height: 28,
-    padding: "0 10px",
-    fontSize: 12,
-    fontWeight: 600,
-    borderRadius: 999,
-    cursor: "pointer",
-  },
   pageShell: {
     position: "relative",
-    width: "100%",
+    width: "fit-content",
+    maxWidth: "100%",
+    margin: "0 auto",
     userSelect: "text",
   },
   pageShellRegionMode: {
@@ -473,8 +524,11 @@ const styles: Record<string, CSSProperties> = {
   regionCaptureLayer: {
     position: "absolute",
     inset: 0,
+    zIndex: 2,
     pointerEvents: "auto",
     cursor: "crosshair",
+    touchAction: "none",
+    background: "transparent",
   },
   regionDraftBox: {
     position: "absolute",

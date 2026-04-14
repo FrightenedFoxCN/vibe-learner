@@ -1099,6 +1099,69 @@ export function useLearningWorkspaceController({
     }
   };
 
+  const runSessionPrelude = async (input: {
+    session: StudySessionRecord;
+    studyUnitId: string;
+    sectionTitle: string;
+    themeHint: string;
+    force?: boolean;
+  }) => {
+    const normalizedStudyUnitId = input.studyUnitId.trim();
+    if (!normalizedStudyUnitId) {
+      return false;
+    }
+    if (!input.force && input.session.preparedStudyUnitIds?.includes(normalizedStudyUnitId)) {
+      return false;
+    }
+    const requestKey = `${input.session.id}:${normalizedStudyUnitId}`;
+    if (preludeInFlightRef.current.has(requestKey)) {
+      return false;
+    }
+    preludeInFlightRef.current.add(requestKey);
+    try {
+      dispatch({ type: "busy_started" });
+      await sendHiddenSessionMessage({
+        sessionId: input.session.id,
+        message: buildSessionPreludeMessage({
+          sectionTitle: input.sectionTitle,
+          themeHint: input.themeHint,
+        }),
+        messageKind: "session_prelude",
+      });
+      return true;
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: `章节准备失败：${String(error)}`,
+      });
+      logWorkspaceError("workflow:study_session:prelude_error", error);
+      return false;
+    } finally {
+      preludeInFlightRef.current.delete(requestKey);
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
+  const triggerSessionPrelude = async (input: {
+    studyUnitId: string;
+    sectionTitle?: string;
+    themeHint?: string;
+  }) => {
+    const session = await ensureSessionForSection(input.studyUnitId, {
+      clearResponseOnSwitch: false,
+    });
+    if (!session) {
+      return false;
+    }
+    return runSessionPrelude({
+      session,
+      studyUnitId: input.studyUnitId,
+      sectionTitle: input.sectionTitle || session.studyUnitTitle || session.studyUnitId,
+      themeHint: input.themeHint ?? session.themeHint ?? "",
+      force: true,
+    });
+  };
+
   const triggerInteractiveQuestionCallback = async (
     session: StudySessionRecord,
     input: {
@@ -1440,36 +1503,16 @@ export function useLearningWorkspaceController({
     }
     const session = state.studySession;
     const studyUnitId = session.studyUnitId;
-    if (!studyUnitId || session.preparedStudyUnitIds?.includes(studyUnitId) || state.isBusy) {
+    if (!studyUnitId || state.isBusy) {
       return;
     }
-    const requestKey = `${session.id}:${studyUnitId}`;
-    if (preludeInFlightRef.current.has(requestKey)) {
-      return;
-    }
-    preludeInFlightRef.current.add(requestKey);
-    void (async () => {
-      try {
-        dispatch({ type: "busy_started" });
-        await sendHiddenSessionMessage({
-          sessionId: session.id,
-          message: buildSessionPreludeMessage({
-            sectionTitle: session.studyUnitTitle ?? session.studyUnitId,
-            themeHint: session.themeHint ?? "",
-          }),
-          messageKind: "session_prelude",
-        });
-      } catch (error) {
-        dispatch({
-          type: "notice_set",
-          notice: `章节准备失败：${String(error)}`,
-        });
-        logWorkspaceError("workflow:study_session:prelude_error", error);
-      } finally {
-        preludeInFlightRef.current.delete(requestKey);
-        dispatch({ type: "busy_finished" });
-      }
-    })();
+    void runSessionPrelude({
+      session,
+      studyUnitId,
+      sectionTitle: session.studyUnitTitle ?? session.studyUnitId,
+      themeHint: session.themeHint ?? "",
+      force: false,
+    });
   }, [state.isBusy, state.studySession]);
 
   useEffect(() => {
@@ -1594,6 +1637,7 @@ export function useLearningWorkspaceController({
     renameStudyUnitTitle,
     removePlan,
     handleSwitchSection,
+    triggerSessionPrelude,
     handleAsk,
     handleAskForSection,
     chatFailure,

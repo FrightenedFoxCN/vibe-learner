@@ -7,7 +7,6 @@ import type {
   Citation,
   InteractiveQuestion,
   PersonaProfile,
-  ScheduleChapter,
   SceneProfile,
   SessionAffinityState,
   SessionFollowUp,
@@ -17,12 +16,17 @@ import type {
 } from "@vibe-learner/shared";
 
 import { CharacterShell } from "./character-shell";
+import { MaterialIcon } from "./material-icon";
 import { RichTextMessage } from "./rich-text-message";
 import type { StudyConsolePageCache } from "../lib/learning-workspace-page-cache";
-import { AppLink } from "../lib/app-navigation";
 
 interface StudyConsoleProps {
   isPending: boolean;
+  selectedPlanId: string;
+  planOptions: Array<{ id: string; title: string }>;
+  onSelectPlan: (planId: string) => void;
+  onCreateSession?: () => void;
+  showCreateSession?: boolean;
   onAsk: (message: string, attachments: File[]) => void;
   onSubmitQuestionAttempt: (input: {
     questionType: "multiple_choice" | "fill_blank";
@@ -41,13 +45,12 @@ interface StudyConsoleProps {
   onOpenCitation?: (citation: Citation) => void;
   onJumpToScheduleStart?: () => void;
   canJumpToScheduleStart?: boolean;
+  onCompleteCurrentSchedule?: () => void | Promise<void>;
+  canCompleteCurrentSchedule?: boolean;
   chatErrorMessage?: string;
   onRetryLastAsk?: () => void | Promise<void>;
   selectedScheduleId: string;
   scheduleOptions: Array<{ id: string; title: string }>;
-  selectedScheduleChapterId?: string;
-  scheduleChapterOptions?: ScheduleChapter[];
-  onChangeScheduleChapter?: (scheduleChapterId: string) => void;
   turns: StudySessionRecord["turns"];
   session: StudyChatResponse | null;
   persona: PersonaProfile;
@@ -56,7 +59,6 @@ interface StudyConsoleProps {
   isDialogueInterrupted?: boolean;
   onInterruptDialogue?: () => void | Promise<void>;
   affinityState?: SessionAffinityState;
-  projectedPdf?: StudySessionRecord["projectedPdf"];
   planConfirmations?: SessionPlanConfirmation[];
   onResolvePlanConfirmation?: (input: {
     confirmationId: string;
@@ -76,19 +78,23 @@ interface StudyConsoleProps {
 
 export function StudyConsole({
   isPending,
+  selectedPlanId,
+  planOptions,
+  onSelectPlan,
+  onCreateSession,
+  showCreateSession = false,
   onAsk,
   onSubmitQuestionAttempt,
   onChangeSchedule,
   onOpenCitation,
   onJumpToScheduleStart,
   canJumpToScheduleStart,
+  onCompleteCurrentSchedule,
+  canCompleteCurrentSchedule,
   chatErrorMessage,
   onRetryLastAsk,
   selectedScheduleId,
   scheduleOptions,
-  selectedScheduleChapterId,
-  scheduleChapterOptions = [],
-  onChangeScheduleChapter,
   turns,
   session,
   persona,
@@ -97,7 +103,6 @@ export function StudyConsole({
   isDialogueInterrupted = false,
   onInterruptDialogue,
   affinityState,
-  projectedPdf,
   planConfirmations = [],
   onResolvePlanConfirmation,
   chatImageUploadEnabled,
@@ -172,113 +177,18 @@ export function StudyConsole({
     selectedChoices,
   ]);
 
+  useEffect(() => {
+    const node = textareaRef.current;
+    if (!node) return;
+    node.style.height = "0px";
+    node.style.height = `${Math.min(node.scrollHeight, 220)}px`;
+  }, [message]);
+
   return (
     <div style={styles.wrap}>
       <div className="study-console-layout" style={styles.consoleCard}>
         <section style={styles.chatPanel}>
-          <div style={styles.consoleHead}>
-            <div style={styles.consoleMeta}>
-              <span style={styles.caption}>章节对话</span>
-              <h2 style={styles.consoleTitle}>
-                {scheduleOptions.find((item) => item.id === selectedScheduleId)?.title || "选择排期项后开始对话"}
-              </h2>
-            </div>
-          </div>
-
-          <div style={styles.controlStack}>
-            <div style={styles.themeRow}>
-              <label style={styles.themeLabel}>
-                <span style={styles.caption}>排期项</span>
-                <select
-                  style={styles.select}
-                  value={selectedScheduleId}
-                  onChange={(event) => onChangeSchedule(event.target.value)}
-                  disabled={isPending || disabled}
-                  title={scheduleOptions.find((item) => item.id === selectedScheduleId)?.title || "暂无排期项"}
-                >
-                  {scheduleOptions.length ? (
-                    scheduleOptions.map((item) => (
-                      <option key={item.id} value={item.id}>{item.title}</option>
-                    ))
-                  ) : (
-                    <option value="">暂无排期项</option>
-                  )}
-                </select>
-              </label>
-              <button
-                type="button"
-                style={{
-                  ...styles.ghostBtn,
-                  ...(isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart ? styles.btnDisabled : {})
-                }}
-                disabled={isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart}
-                onClick={() => { if (onJumpToScheduleStart) onJumpToScheduleStart(); }}
-              >
-                定位排期首页
-              </button>
-              <button
-                type="button"
-                style={{
-                  ...styles.ghostBtn,
-                  ...(isPending || disabled || !onInterruptDialogue || isDialogueInterrupted ? styles.btnDisabled : {})
-                }}
-                disabled={isPending || disabled || !onInterruptDialogue || isDialogueInterrupted}
-                onClick={() => { if (onInterruptDialogue) void onInterruptDialogue(); }}
-              >
-                {isDialogueInterrupted ? "已举手打断" : "举手打断"}
-              </button>
-            </div>
-
-            <div style={styles.themeRow}>
-              <label style={styles.themeLabel}>
-                <span style={styles.caption}>学习章节</span>
-                <select
-                  style={styles.select}
-                  value={selectedScheduleChapterId ?? ""}
-                  onChange={(event) => { if (onChangeScheduleChapter) onChangeScheduleChapter(event.target.value); }}
-                  disabled={isPending || disabled || !scheduleChapterOptions.length || !onChangeScheduleChapter}
-                  title={selectedScheduleChapterId || "整项范围"}
-                >
-                  <option value="">整项范围</option>
-                  {scheduleChapterOptions.map((chapter) => (
-                    <option key={chapter.id} value={chapter.id}>
-                      {chapter.title} · p.{chapter.anchorPageStart}-{chapter.anchorPageEnd}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            {(activeFollowUp || isDialogueInterrupted) ? (
-              <div style={styles.followUpBanner}>
-                <div style={styles.followUpMeta}>
-                  <span style={styles.caption}>自动续接</span>
-                  <span style={styles.followUpText}>
-                    {activeFollowUp
-                      ? `老师已安排下一轮自动续接，预计 ${formatFollowUpDueAt(activeFollowUp.dueAt)} 继续。${activeFollowUp.reason ? ` ${activeFollowUp.reason}` : ""}`
-                      : "当前已暂停自动续接；提交答案后不会立刻续聊，答题结果会在你下一次主动发言前补入。"}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  style={{
-                    ...styles.followUpInterruptBtn,
-                    ...(isPending || disabled || !onInterruptDialogue || isDialogueInterrupted ? styles.btnDisabled : {})
-                  }}
-                  disabled={isPending || disabled || !onInterruptDialogue || isDialogueInterrupted}
-                  onClick={() => { if (onInterruptDialogue) void onInterruptDialogue(); }}
-                >
-                  {isDialogueInterrupted ? "已举手打断" : "举手打断"}
-                </button>
-              </div>
-            ) : null}
-          </div>
-
           <div style={styles.transcript}>
-            <div style={styles.transcriptHeader}>
-              <span style={styles.caption}>对话记录</span>
-              <span style={styles.transcriptMeta}>{turns.length} 轮内容</span>
-            </div>
             {turns.length ? (
               <div ref={transcriptRef} style={styles.turnList}>
                 {sortedTurns.map((turn, index) => (
@@ -307,7 +217,7 @@ export function StudyConsole({
 
                     <div style={styles.aiSection}>
                       <div style={styles.turnMeta}>
-                        <span style={styles.aiLabel}>AI</span>
+                        <span style={styles.aiLabel}>{persona.name}</span>
                         <span style={styles.timeLabel}>{formatTurnTime(turn.createdAt)}</span>
                       </div>
                       <div style={styles.aiBubble}>
@@ -361,7 +271,7 @@ export function StudyConsole({
                 <div style={styles.turnCard}>
                   <div style={styles.aiSection}>
                     <div style={styles.turnMeta}>
-                      <span style={styles.aiLabel}>AI</span>
+                      <span style={styles.aiLabel}>{persona.name}</span>
                     </div>
                     <div style={styles.aiBubble}>
                       <RichTextMessage
@@ -391,7 +301,6 @@ export function StudyConsole({
               </div>
             ) : (
               <div style={styles.emptyTranscriptCard}>
-                <span style={styles.caption}>对话记录</span>
                 <p style={styles.emptyTranscriptText}>开始提问后会显示在这里。</p>
               </div>
             )}
@@ -469,7 +378,6 @@ export function StudyConsole({
                 style={styles.textarea}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                placeholder="继续输入问题，或追问上一轮内容…"
               />
               <div style={styles.attachmentToolbar}>
                 <input
@@ -499,13 +407,45 @@ export function StudyConsole({
                 <button
                   type="button"
                   style={{
-                    ...styles.ghostBtn,
+                    ...styles.iconToolButton,
                     ...(disabled || isPending ? styles.btnDisabled : {})
                   }}
                   disabled={disabled || isPending}
                   onClick={() => attachmentInputRef.current?.click()}
+                  aria-label="添加附件"
+                  title="添加附件"
                 >
-                  添加附件
+                  <MaterialIcon name="add" size={16} />
+                </button>
+                {onInterruptDialogue ? (
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.iconToolButton,
+                      ...(disabled || isPending || isDialogueInterrupted ? styles.btnDisabled : {})
+                    }}
+                    disabled={disabled || isPending || isDialogueInterrupted}
+                  onClick={() => { void onInterruptDialogue(); }}
+                  aria-label={isDialogueInterrupted ? "已举手打断" : "举手打断"}
+                  title={isDialogueInterrupted ? "已举手打断" : "举手打断"}
+                >
+                    <MaterialIcon name="front_hand" size={16} />
+                  </button>
+                ) : null}
+                <button
+                  style={{
+                    ...styles.iconSendButton,
+                    ...(isPending || disabled ? styles.btnDisabled : {})
+                  }}
+                  disabled={isPending || disabled}
+                  onClick={() => {
+                    onAsk(message, attachments);
+                    setAttachments([]);
+                  }}
+                  aria-label={isPending ? "发送中" : "发送"}
+                  title={isPending ? "发送中" : "发送"}
+                >
+                  <MaterialIcon name="send" size={16} />
                 </button>
               </div>
               {attachments.length ? (
@@ -535,55 +475,120 @@ export function StudyConsole({
                 </div>
               ) : null}
             </div>
-            <button
-              style={{
-                ...styles.sendBtn,
-                ...(isPending || disabled ? styles.btnDisabled : {})
-              }}
-              disabled={isPending || disabled}
-              onClick={() => {
-                onAsk(message, attachments);
-                setAttachments([]);
-              }}
-            >
-              {isPending ? "发送中…" : "发送"}
-            </button>
           </div>
+
         </section>
 
         <aside style={styles.sidebar}>
-          <div style={styles.companionCard}>
-            <div style={styles.companionMeta}>
-              <div style={styles.companionHeader}>
-                <span style={styles.caption}>教师信息</span>
-                <div style={styles.companionLinks}>
-                  <AppLink path="/persona-spectrum" style={styles.companionLink}>人格库</AppLink>
-                  <AppLink path="/scene-setup" style={styles.companionLink}>场景编辑</AppLink>
+          <div style={styles.sidebarStack}>
+            <div style={styles.controlCard}>
+              <div style={styles.controlStack}>
+                <div style={styles.themeRow}>
+                  <label style={{ ...styles.themeLabel, ...styles.primarySelectLabel }}>
+                    <span style={styles.caption}>学习计划</span>
+                    <select
+                      style={styles.select}
+                      value={selectedPlanId}
+                      onChange={(event) => onSelectPlan(event.target.value)}
+                      disabled={!planOptions.length}
+                      title={planOptions.find((item) => item.id === selectedPlanId)?.title || "暂无学习计划"}
+                    >
+                      {planOptions.length ? (
+                        planOptions.map((item) => (
+                          <option key={item.id} value={item.id}>{item.title}</option>
+                        ))
+                      ) : (
+                        <option value="">暂无学习计划</option>
+                      )}
+                    </select>
+                  </label>
+                  {showCreateSession ? (
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.primaryBtn,
+                        ...(isPending || !onCreateSession ? styles.btnDisabled : {})
+                      }}
+                      disabled={isPending || !onCreateSession}
+                      onClick={() => { if (onCreateSession) onCreateSession(); }}
+                    >
+                      {isPending ? "创建中…" : "创建会话"}
+                    </button>
+                  ) : null}
+                </div>
+
+                <div style={styles.themeRow}>
+                  <label style={styles.themeLabel}>
+                    <span style={styles.caption}>排期项</span>
+                    <select
+                      style={styles.select}
+                      value={selectedScheduleId}
+                      onChange={(event) => onChangeSchedule(event.target.value)}
+                      disabled={isPending || disabled}
+                      title={scheduleOptions.find((item) => item.id === selectedScheduleId)?.title || "暂无排期项"}
+                    >
+                      {scheduleOptions.length ? (
+                        scheduleOptions.map((item) => (
+                          <option key={item.id} value={item.id}>{item.title}</option>
+                        ))
+                      ) : (
+                        <option value="">暂无排期项</option>
+                      )}
+                    </select>
+                  </label>
+                </div>
+
+                <div style={styles.themeRow}>
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.ghostBtn,
+                      ...(isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart ? styles.btnDisabled : {})
+                    }}
+                    disabled={isPending || disabled || !onJumpToScheduleStart || !canJumpToScheduleStart}
+                    onClick={() => { if (onJumpToScheduleStart) onJumpToScheduleStart(); }}
+                  >
+                    定位排期首页
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.primaryBtn,
+                      ...(isPending || disabled || !onCompleteCurrentSchedule || !canCompleteCurrentSchedule ? styles.btnDisabled : {})
+                    }}
+                    disabled={isPending || disabled || !onCompleteCurrentSchedule || !canCompleteCurrentSchedule}
+                    onClick={() => { if (onCompleteCurrentSchedule) void onCompleteCurrentSchedule(); }}
+                  >
+                    完成当前排期
+                  </button>
                 </div>
               </div>
-              <div style={styles.companionRow}>
-                <span style={styles.companionChip}>人格 · {persona.name}</span>
-                <span style={styles.companionChip}>关系 · {persona.relationship || "未设"}</span>
-                <span style={styles.companionChip}>称呼 · {persona.learnerAddress || "未设"}</span>
-                <span style={styles.companionChip}>场景 · {sceneProfile?.title || "未设置"}</span>
-              </div>
-              <p style={styles.companionSummary}>
-                {sceneProfile?.summary || persona.summary || "尚未配置场景摘要。"}
-              </p>
-              {sceneProfile?.selectedPath.length ? (
-                <p style={styles.companionPath}>{sceneProfile.selectedPath.join(" / ")}</p>
-              ) : null}
             </div>
-            <div style={styles.shellCard}>
-              <CharacterShell
-                persona={persona}
-                response={session}
-                pending={isPending}
-                affinityState={affinityState}
-                projectedPdf={projectedPdf}
-                nextFollowUp={activeFollowUp}
-                variant="embedded"
-              />
+
+            <div style={styles.companionCard}>
+              <div style={styles.companionMeta}>
+                <div style={styles.companionHeader}>
+                  <span style={styles.caption}>教师人格</span>
+                </div>
+                <div style={styles.companionRow}>
+                  <span style={styles.companionChip}>人格 · {persona.name}</span>
+                  <span style={styles.companionChip}>场景 · {sceneProfile?.title || "未设置"}</span>
+                </div>
+                <p style={styles.companionSummary}>
+                  {sceneProfile?.summary || persona.summary || "尚未配置场景摘要。"}
+                </p>
+              </div>
+              <div style={styles.shellCard}>
+                <CharacterShell
+                  persona={persona}
+                  response={session}
+                  pending={isPending}
+                  turnCount={turns.length}
+                  affinityState={affinityState}
+                  nextFollowUp={activeFollowUp}
+                  variant="embedded"
+                />
+              </div>
             </div>
           </div>
         </aside>
@@ -595,165 +600,118 @@ export function StudyConsole({
 const styles: Record<string, CSSProperties> = {
   wrap: {
     display: "block",
+    width: "100%",
   },
   consoleCard: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.75fr) minmax(320px, 0.82fr)",
-    gap: 20,
+    gridTemplateColumns: "minmax(0, 1fr) 280px",
+    gap: 10,
     alignItems: "start",
+    width: "100%",
   },
   chatPanel: {
     display: "grid",
-    gridTemplateRows: "auto auto minmax(0, 1fr) auto auto",
-    gap: 14,
+    gridTemplateRows: "minmax(0, 1fr) auto auto",
+    gap: 12,
     minWidth: 0,
+    width: "100%",
     minHeight: "calc(100vh - 220px)",
-    padding: 20,
-    border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, #fbfdfe 0%, #f3f7f8 100%)",
-    boxShadow: "0 22px 60px rgba(13, 32, 40, 0.08)",
+    padding: 0,
+    background: "transparent",
   },
   controlStack: {
     display: "grid",
     gap: 10,
-    padding: "14px 16px",
-    border: "1px solid var(--border)",
-    background: "rgba(255, 255, 255, 0.78)",
-  },
-  followUpBanner: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: "10px 12px",
-    border: "1px solid rgba(21, 144, 155, 0.24)",
-    background: "rgba(21, 144, 155, 0.08)",
-    flexWrap: "wrap",
-  },
-  followUpMeta: {
-    display: "grid",
-    gap: 4,
+    background: "transparent",
     minWidth: 0,
-    flex: 1,
   },
-  followUpText: {
-    fontSize: 12,
-    lineHeight: 1.6,
-    color: "var(--ink-2)",
-  },
-  followUpInterruptBtn: {
-    border: "1px solid rgba(10, 103, 114, 0.28)",
-    height: 34,
-    padding: "0 12px",
+  controlCard: {
+    display: "grid",
+    gap: 10,
+    border: "1px solid var(--border)",
     background: "white",
-    color: "var(--teal)",
-    fontSize: 12,
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
+    padding: "12px",
+    minWidth: 0,
+    overflow: "hidden",
   },
   sidebar: {
     minWidth: 0,
+    width: 280,
+    maxWidth: 280,
     position: "sticky",
-    top: 128,
+    top: "calc(var(--study-heading-offset, 112px) + 18px)",
   },
-  consoleHead: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 16,
-    flexWrap: "wrap",
-  },
-  consoleMeta: {
+  sidebarStack: {
     display: "grid",
-    gap: 6,
+    gap: 10,
     minWidth: 0,
-    flex: 1,
-  },
-  consoleTitle: {
-    margin: 0,
-    fontSize: 24,
-    lineHeight: 1.15,
-    color: "var(--ink)",
-  },
-  consoleSummary: {
-    margin: 0,
-    maxWidth: 720,
-    fontSize: 13,
-    lineHeight: 1.7,
-    color: "var(--muted)",
   },
   companionCard: {
     display: "grid",
-    gap: 14,
+    gap: 10,
     border: "1px solid var(--border)",
-    background: "linear-gradient(180deg, #fbfdfe 0%, #f4f7f8 100%)",
-    padding: "16px 16px 18px",
-    boxShadow: "0 18px 48px rgba(13, 32, 40, 0.08)",
+    background: "white",
+    padding: "12px",
+    minWidth: 0,
+    overflow: "hidden",
   },
   companionMeta: {
     display: "grid",
-    gap: 10,
+    gap: 6,
     alignContent: "start",
   },
   companionHeader: {
     display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
+    gap: 8,
     alignItems: "center",
-    flexWrap: "wrap",
-  },
-  companionLinks: {
-    display: "flex",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  companionLink: {
-    fontSize: 12,
-    color: "var(--accent)",
-    fontWeight: 600,
   },
   companionRow: {
     display: "flex",
-    gap: 8,
+    gap: 6,
     flexWrap: "wrap",
+    minWidth: 0,
   },
   companionChip: {
     fontSize: 12,
     color: "var(--ink-2)",
     border: "1px solid var(--border)",
-    background: "white",
+    background: "var(--panel)",
     padding: "2px 8px",
+    minWidth: 0,
+    maxWidth: "100%",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
   companionSummary: {
     margin: 0,
     fontSize: 12,
     color: "var(--muted)",
     lineHeight: 1.6,
-  },
-  companionPath: {
-    margin: 0,
-    fontSize: 12,
-    color: "var(--ink-2)",
-    lineHeight: 1.6,
+    minWidth: 0,
+    wordBreak: "break-word",
+    overflowWrap: "anywhere",
   },
   shellCard: {
     minWidth: 0,
-    padding: "12px 14px",
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
+    padding: 0,
   },
   themeRow: {
     display: "flex",
     alignItems: "flex-end",
     gap: 8,
     flexWrap: "wrap",
+    minWidth: 0,
+    width: "100%",
   },
   themeLabel: {
     display: "grid",
     gap: 4,
     flex: 1,
     minWidth: 0,
+  },
+  primarySelectLabel: {
+    flex: "1.4 1 320px",
   },
   caption: {
     fontSize: 11,
@@ -764,12 +722,14 @@ const styles: Record<string, CSSProperties> = {
   },
   select: {
     width: "100%",
-    height: 34,
+    height: 36,
     border: "1px solid var(--border)",
-    padding: "0 8px",
-    background: "var(--panel)",
+    padding: "0 10px",
+    background: "white",
     color: "var(--ink)",
     fontSize: 13,
+    minWidth: 0,
+    maxWidth: "100%",
   },
   subsectionHint: {
     minHeight: 34,
@@ -782,28 +742,36 @@ const styles: Record<string, CSSProperties> = {
   },
   ghostBtn: {
     border: "1px solid var(--border)",
-    height: 34,
+    height: 36,
     padding: "0 12px",
-    background: "transparent",
+    background: "white",
     color: "var(--ink-2)",
     fontSize: 12,
-    fontWeight: 500,
+    fontWeight: 600,
     whiteSpace: "nowrap",
     flexShrink: 0,
     cursor: "pointer",
   },
+  primaryBtn: {
+    border: "1px solid var(--accent)",
+    height: 36,
+    padding: "0 14px",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: 13,
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  },
   inputArea: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: 8,
-    alignItems: "end",
+    gap: 10,
     position: "sticky",
     bottom: 0,
     zIndex: 8,
-    padding: "14px 16px 16px",
-    border: "1px solid var(--border)",
-    background: "rgba(255, 255, 255, 0.92)",
-    boxShadow: "0 -10px 26px rgba(13, 32, 40, 0.08)",
+    padding: "12px 0 18px",
+    background: "rgba(255, 255, 255, 0.96)",
   },
   inputStack: {
     display: "grid",
@@ -811,11 +779,12 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 0,
   },
   textarea: {
-    minHeight: 84,
+    height: 40,
     border: "1px solid var(--border)",
-    padding: "8px 10px",
+    padding: "9px 10px",
     background: "white",
-    resize: "vertical",
+    resize: "none",
+    overflow: "hidden",
     fontSize: 14,
     lineHeight: 1.6,
     color: "var(--ink)",
@@ -825,6 +794,18 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     alignItems: "center",
     flexWrap: "wrap",
+  },
+  iconToolButton: {
+    width: 36,
+    height: 36,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid var(--border)",
+    background: "white",
+    color: "var(--ink-2)",
+    cursor: "pointer",
+    flexShrink: 0,
   },
   hiddenFileInput: {
     display: "none",
@@ -845,7 +826,7 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
     padding: "8px 10px",
     border: "1px solid var(--border)",
-    background: "rgba(248, 252, 252, 0.92)",
+    background: "var(--panel)",
   },
   attachmentDraftText: {
     fontSize: 12,
@@ -863,17 +844,18 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     flexShrink: 0,
   },
-  sendBtn: {
-    border: "none",
-    height: 84,
-    padding: "0 20px",
+  iconSendButton: {
+    border: "1px solid var(--accent)",
+    width: 36,
+    height: 36,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: "auto",
     background: "var(--accent)",
     color: "white",
-    fontWeight: 600,
     cursor: "pointer",
-    fontSize: 13,
-    whiteSpace: "nowrap",
-    alignSelf: "stretch",
+    flexShrink: 0,
   },
   btnDisabled: {
     opacity: 0.45,
@@ -1026,29 +1008,22 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gridTemplateRows: "auto minmax(0, 1fr)",
     gap: 12,
-    padding: "16px 16px 10px",
-    border: "1px solid var(--border)",
-    background: "white",
+    padding: "8px 0 6px",
+    background: "transparent",
     minHeight: 0,
     overflow: "hidden",
-  },
-  transcriptHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    flexWrap: "wrap",
-  },
-  transcriptMeta: {
-    fontSize: 12,
-    color: "var(--muted)",
+    width: "100%",
+    minWidth: 0,
   },
   turnList: {
     display: "grid",
     gap: 16,
     overflowY: "auto",
-    paddingRight: 6,
+    paddingRight: 0,
     alignContent: "start",
+    width: "100%",
+    minWidth: 0,
+    overflowX: "hidden",
   },
   turnCard: {
     display: "grid",
@@ -1057,11 +1032,13 @@ const styles: Record<string, CSSProperties> = {
   userSection: {
     display: "grid",
     gap: 6,
+    width: "100%",
     justifyItems: "end",
   },
   aiSection: {
     display: "grid",
     gap: 8,
+    width: "100%",
     justifyItems: "start",
   },
   turnMeta: {
@@ -1087,27 +1064,29 @@ const styles: Record<string, CSSProperties> = {
   userMessage: {
     margin: 0,
     padding: "10px 12px",
-    background: "linear-gradient(180deg, #e7f5f7 0%, #dff0f2 100%)",
-    border: "1px solid #b8dde2",
-    maxWidth: "min(82%, 720px)",
+    background: "color-mix(in srgb, white 60%, var(--accent-soft))",
+    border: "1px solid color-mix(in srgb, var(--accent) 20%, var(--border))",
+    maxWidth: "min(96%, 1200px)",
     fontSize: 14,
     lineHeight: 1.7,
     color: "var(--ink-2)",
     whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    overflowWrap: "anywhere",
   },
   attachmentChipRow: {
     display: "flex",
     gap: 6,
     flexWrap: "wrap",
     justifyContent: "flex-end",
-    maxWidth: "min(82%, 720px)",
+    maxWidth: "min(96%, 1200px)",
   },
   attachmentChip: {
     display: "inline-flex",
     alignItems: "center",
     padding: "3px 8px",
-    border: "1px solid #b8dde2",
-    background: "rgba(231, 245, 247, 0.68)",
+    border: "1px solid color-mix(in srgb, var(--accent) 20%, var(--border))",
+    background: "color-mix(in srgb, white 74%, var(--accent-soft))",
     color: "var(--ink-2)",
     fontSize: 11,
     lineHeight: 1.4,
@@ -1125,18 +1104,20 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.75,
     color: "var(--ink)",
     whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    overflowWrap: "anywhere",
   },
   aiBubble: {
     display: "grid",
     gap: 10,
-    width: "min(100%, 820px)",
+    width: "min(100%, 1200px)",
     padding: "12px 14px",
     border: "1px solid var(--border)",
-    background: "#fcfefe",
+    background: "white",
   },
   eventInline: {
     display: "grid",
-    gap: 8,
+    gap: 4,
     minWidth: 0,
   },
   eventNotes: {
@@ -1149,32 +1130,6 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.6,
     color: "var(--muted)",
     wordBreak: "break-word",
-  },
-  eventBadgeRow: {
-    display: "flex",
-    gap: 6,
-    flexWrap: "wrap",
-  },
-  eventBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "3px 8px",
-    borderRadius: 999,
-    border: "1px solid var(--border)",
-    background: "var(--panel)",
-    color: "var(--ink)",
-    fontSize: 11,
-    lineHeight: 1.4,
-    maxWidth: "100%",
-  },
-  eventBadgeMuted: {
-    background: "var(--bg)",
-    color: "var(--muted)",
-  },
-  eventBadgeAccent: {
-    background: "rgba(29, 125, 117, 0.14)",
-    color: "var(--teal)",
-    border: "1px solid rgba(29, 125, 117, 0.22)",
   },
   questionWrap: {
     display: "grid",
@@ -1325,20 +1280,6 @@ function formatTurnTime(value: string) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
-  });
-}
-
-function formatFollowUpDueAt(value: string) {
-  if (!value) {
-    return "稍后";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "稍后";
-  }
-  return date.toLocaleTimeString("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -1603,36 +1544,17 @@ function CharacterEventInline({ events }: { events: CharacterStateEvent[] }) {
   }
 
   const descriptionLines = collectEventDescriptions(events);
-  const badges = collectEventBadges(events);
-  if (!descriptionLines.length && !badges.length) {
+  if (!descriptionLines.length) {
     return null;
   }
 
   return (
     <div style={styles.eventInline}>
-      {descriptionLines.length ? (
-        <div style={styles.eventNotes}>
-          {descriptionLines.map((line, index) => (
-            <p key={`${line}:${index}`} style={styles.eventNoteText}>{line}</p>
-          ))}
-        </div>
-      ) : null}
-      {badges.length ? (
-        <div style={styles.eventBadgeRow}>
-          {badges.map((badge, index) => (
-            <span
-              key={`${badge.label}:${badge.value}:${index}`}
-              style={{
-                ...styles.eventBadge,
-                ...(badge.kind === "accent" ? styles.eventBadgeAccent : {}),
-                ...(badge.kind === "muted" ? styles.eventBadgeMuted : {})
-              }}
-            >
-              {badge.label}·{badge.value}
-            </span>
-          ))}
-        </div>
-      ) : null}
+      <div style={styles.eventNotes}>
+        {descriptionLines.map((line, index) => (
+          <p key={`${line}:${index}`} style={styles.eventNoteText}>{line}</p>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1644,12 +1566,11 @@ function collectEventDescriptions(events: CharacterStateEvent[]) {
   events.forEach((event) => {
     [
       formatActionDescription(event.action),
-      event.commentary,
       event.deliveryCue,
       event.toolSummary
     ].forEach((item) => {
       const text = String(item ?? "").trim();
-      if (!text || text.length < 12 || seen.has(text)) {
+      if (!text || text.length < 6 || seen.has(text)) {
         return;
       }
       seen.add(text);
@@ -1660,60 +1581,16 @@ function collectEventDescriptions(events: CharacterStateEvent[]) {
   return lines.slice(0, 3);
 }
 
-function collectEventBadges(events: CharacterStateEvent[]) {
-  const badges: Array<{ label: string; value: string; kind?: "default" | "muted" | "accent" }> = [];
-  const seen = new Set<string>();
-
-  const pushBadge = (
-    label: string,
-    value: string,
-    kind: "default" | "muted" | "accent" = "default"
-  ) => {
-    const normalizedValue = value.trim();
-    if (!normalizedValue) {
-      return;
-    }
-    const key = `${label}:${normalizedValue}:${kind}`;
-    if (seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    badges.push({ label, value: normalizedValue, kind });
-  };
-
-  events.forEach((event) => {
-    pushBadge("情绪", formatEmotionLabel(event.emotion));
-    pushBadge("语气", formatSpeechStyleLabel(event.speechStyle), "muted");
-    pushBadge("场景", formatSceneHint(event.sceneHint), "muted");
-    if (event.toolName) {
-      pushBadge("工具", formatToolName(event.toolName), "accent");
-    }
-  });
-
-  return badges.slice(0, 12);
-}
-
-function formatEmotionLabel(value: string) {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === "calm") return "冷静";
-  if (normalized === "encouraging") return "鼓励";
-  if (normalized === "playful") return "轻快";
-  if (normalized === "serious") return "认真";
-  if (normalized === "excited") return "兴奋";
-  if (normalized === "concerned") return "关注";
-  return value || "未标注";
-}
-
 function formatActionDescription(value: string) {
   const normalized = value.trim().toLowerCase();
   if (!normalized || normalized === "idle") return "";
-  if (normalized === "nod") return "动作：轻轻点头，示意可以继续。";
-  if (normalized === "point") return "动作：抬手指向当前重点，提醒注意关键位置。";
-  if (normalized === "lean_in") return "动作：身体微微前倾，像是在等你回应。";
-  if (normalized === "smile") return "动作：嘴角带笑，把鼓励自然递出来。";
-  if (normalized === "pause") return "动作：短暂停住，像是在给思路留白。";
-  if (normalized === "write") return "动作：抬手书写比划，把结构关系描出来。";
-  return `动作：${value.trim()}`;
+  if (normalized === "nod") return "轻轻点头。";
+  if (normalized === "point") return "指向当前重点。";
+  if (normalized === "lean_in") return "微微前倾。";
+  if (normalized === "smile") return "带着笑意。";
+  if (normalized === "pause") return "短暂停顿。";
+  if (normalized === "write") return "抬手书写比划。";
+  return value.trim();
 }
 
 function formatSpeechStyleLabel(value: string) {
@@ -1726,42 +1603,10 @@ function formatSpeechStyleLabel(value: string) {
   return value || "默认";
 }
 
-function formatSceneHint(value: string) {
-  if (!value) {
-    return "学习场景";
-  }
-  if (value.startsWith("study_session:")) {
-    const detail = value.replace("study_session:", "");
-    return `学习场景:${detail}`;
-  }
-  if (value.startsWith("scene_tool:")) {
-    return `场景工具:${formatToolName(value.replace("scene_tool:", ""))}`;
-  }
-  return value
-    .replaceAll("study_session", "学习场景")
-    .replaceAll("overview", "概览")
-    .replaceAll("scene_tool", "场景工具");
-}
-
 function formatToolName(value: string) {
   const normalized = value.trim().toLowerCase();
-  if (normalized === "read_scene_overview") return "读取场景";
-  if (normalized === "add_scene") return "新增场景层";
-  if (normalized === "move_to_scene") return "切换场景层";
-  if (normalized === "add_object") return "新增物件";
-  if (normalized === "update_object_description") return "更新物件描述";
-  if (normalized === "delete_object") return "删除物件";
-  if (normalized === "retrieve_memory_context") return "检索记忆";
-  if (normalized === "read_session_memory") return "读取临时记忆";
-  if (normalized === "write_session_memory") return "写入临时记忆";
-  if (normalized === "read_system_time") return "读取系统时间";
-  if (normalized === "schedule_session_follow_up") return "安排自动续接";
-  if (normalized === "read_affinity_state") return "读取好感度";
-  if (normalized === "update_affinity_state") return "更新好感度";
   if (normalized === "update_learning_plan") return "提出计划修改";
   if (normalized === "update_learning_plan_progress") return "提出进度修改";
-  if (normalized === "read_page_range_content") return "读取教材正文";
-  if (normalized === "read_page_range_images") return "读取教材图像";
   return value || "工具事件";
 }
 

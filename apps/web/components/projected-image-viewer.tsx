@@ -4,6 +4,8 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useRef, useState } from "react";
 import type { PdfRect, ProjectedPdfOverlay } from "@vibe-learner/shared";
 
+import { MaterialIcon } from "./material-icon";
+
 interface ProjectedImageViewerProps {
   fileUrl: string;
   title: string;
@@ -32,6 +34,7 @@ export function ProjectedImageViewer({
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!imageShellRef.current) return;
+    event.preventDefault();
     const rect = imageShellRef.current.getBoundingClientRect();
     dragStateRef.current = {
       pointerId: event.pointerId,
@@ -47,6 +50,7 @@ export function ProjectedImageViewer({
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const dragState = dragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId || !imageShellRef.current) return;
+    event.preventDefault();
     const rect = imageShellRef.current.getBoundingClientRect();
     const nextRegion = buildRect(
       dragState.startX,
@@ -86,15 +90,29 @@ export function ProjectedImageViewer({
   return (
     <div style={styles.wrap}>
       <div style={styles.floatingBar}>
-        <span style={styles.selectionBadge}>{selectedRegion ? "已框选" : "图片框选"}</span>
+        <span style={styles.selectionBadge}>
+          <MaterialIcon name="drag_indicator" size={14} />
+        </span>
         {selectedRegion ? (
-          <button type="button" style={styles.actionButton} onClick={insertRegionReference}>
-            插入选区
+          <button
+            type="button"
+            style={{ ...styles.iconButton, ...styles.iconActionButton }}
+            onClick={insertRegionReference}
+            title="插入选区"
+            aria-label="插入选区"
+          >
+            <MaterialIcon name="add" size={15} />
           </button>
         ) : null}
         {(selectedRegion || draftRegion) ? (
-          <button type="button" style={styles.clearButton} onClick={clearSelection}>
-            清除
+          <button
+            type="button"
+            style={styles.iconButton}
+            onClick={clearSelection}
+            title="清除"
+            aria-label="清除"
+          >
+            <MaterialIcon name="close" size={15} />
           </button>
         ) : null}
       </div>
@@ -201,43 +219,39 @@ const styles: Record<string, CSSProperties> = {
     backdropFilter: "blur(10px)",
   },
   selectionBadge: {
+    width: 28,
     height: 28,
     display: "inline-flex",
     alignItems: "center",
-    padding: "0 10px",
+    justifyContent: "center",
     borderRadius: 999,
     background: "rgba(15, 23, 42, 0.05)",
     color: "var(--ink-2)",
-    fontSize: 12,
-    fontWeight: 700,
+    flexShrink: 0,
   },
-  actionButton: {
-    border: "1px solid var(--accent)",
+  iconButton: {
+    border: "1px solid rgba(148, 163, 184, 0.32)",
+    background: "rgba(248, 250, 252, 0.96)",
+    color: "var(--ink-2)",
+    width: 28,
+    height: 28,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    cursor: "pointer",
+  },
+  iconActionButton: {
+    borderColor: "var(--accent)",
     background: "var(--accent)",
     color: "white",
-    height: 28,
-    padding: "0 11px",
-    fontSize: 12,
-    fontWeight: 700,
-    borderRadius: 999,
-    cursor: "pointer",
-  },
-  clearButton: {
-    border: "1px solid rgba(148, 163, 184, 0.32)",
-    background: "white",
-    color: "var(--ink-2)",
-    height: 28,
-    padding: "0 10px",
-    fontSize: 12,
-    fontWeight: 600,
-    borderRadius: 999,
-    cursor: "pointer",
   },
   imageShell: {
     position: "relative",
     width: "100%",
     cursor: "crosshair",
     userSelect: "none",
+    touchAction: "none",
   },
   image: {
     display: "block",

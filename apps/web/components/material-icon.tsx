@@ -29,7 +29,12 @@ export type MaterialIconName =
   | "replay"
   | "adjust"
   | "upload"
-  | "arrow_forward";
+  | "download"
+  | "arrow_forward"
+  | "send"
+  | "menu_book"
+  | "back_hand"
+  | "front_hand";
 
 interface MaterialIconProps {
   name: MaterialIconName;
@@ -184,6 +189,48 @@ function renderIcon(name: MaterialIconName): ReactNode {
         <>
           <path d="M12 5v12" />
           <path d="m16.5 12.5-4.5 4.5-4.5-4.5" />
+        </>
+      );
+    case "download":
+      return (
+        <>
+          <path d="M12 4.5v10" />
+          <path d="m16 11.5-4 4-4-4" />
+          <path d="M5 19.5h14" />
+        </>
+      );
+    case "send":
+      return (
+        <>
+          <path d="M3.5 11.75 20 4.5l-4.75 15-4.25-5-7.5-2.75Z" />
+          <path d="M10.75 14.5 20 4.5" />
+        </>
+      );
+    case "menu_book":
+      return (
+        <>
+          <path d="M5.5 5.5A2.5 2.5 0 0 1 8 3h10.5v16H8a2.5 2.5 0 0 0-2.5 2.5" />
+          <path d="M5.5 5.5V21" />
+          <path d="M8.5 7.5h7" />
+          <path d="M8.5 11h7" />
+        </>
+      );
+    case "back_hand":
+      return (
+        <>
+          <path d="M8 20V9.5a1.5 1.5 0 0 1 3 0V13" />
+          <path d="M11 13V7.5a1.5 1.5 0 0 1 3 0V13" />
+          <path d="M14 13V8.5a1.5 1.5 0 0 1 3 0V14" />
+          <path d="M17 14v-3a1.5 1.5 0 0 1 3 0v5.5a5.5 5.5 0 0 1-5.5 5.5H12A4 4 0 0 1 8 18v-2.5l-1.2.8A1.5 1.5 0 0 1 4.5 15l3-2.5A1 1 0 0 1 8 12.3" />
+        </>
+      );
+    case "front_hand":
+      return (
+        <>
+          <path d="M7 20V9.5a1.5 1.5 0 0 1 3 0V13" />
+          <path d="M10 13V6.5a1.5 1.5 0 0 1 3 0V13" />
+          <path d="M13 13V7.5a1.5 1.5 0 0 1 3 0V13.5" />
+          <path d="M16 13.5V9a1.5 1.5 0 0 1 3 0v7a5.5 5.5 0 0 1-5.5 5.5H12A5 5 0 0 1 7 16.5v-2.2l-1.1-.7A1.5 1.5 0 1 0 4.3 16l2.7 2" />
         </>
       );
     case "lock":
