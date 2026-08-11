@@ -2,17 +2,18 @@
 
 ## Repo Scan Snapshot
 
-This repository was scanned from the root with `rg --files` on 2026-04-09. The current workspace contains 54 tracked files. The codebase is a small monorepo with three active product surfaces and one docs area:
+This repository was rescanned from the root on 2026-08-12. The current workspace contains roughly 244 tracked and in-flight project files. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
 
 - `apps/web`: Next.js 16 app-router frontend for upload, debug, plan generation, plan history, and persona-aware study UI.
 - `services/ai`: FastAPI backend for document ingestion, OCR parsing, study-unit cleanup, planning, persona APIs, and debug traces.
 - `packages/shared`: shared TypeScript contracts used by the frontend.
+- `apps/desktop`: Tauri 2 desktop shell, bundle scripts, icons, and Rust sidecar integration.
 - `docs`: project docs. Keep architecture and API reference here.
 
 ## Key Entry Points
 
 - Web app entry: `apps/web/app/page.tsx`
-- Debug page entry: `apps/web/app/debug/page.tsx`
+- Debug entry: global `apps/web/components/debug-overlay.tsx`; the old `/debug` page no longer exists.
 - Frontend API client: `apps/web/lib/api.ts`
 - API router: `services/ai/app/api/routes.py`
 - Backend container bootstrap: `services/ai/app/core/bootstrap.py`
@@ -21,11 +22,14 @@ This repository was scanned from the root with `rg --files` on 2026-04-09. The c
 - Plan prompting and tool context: `services/ai/app/services/plan_prompt.py`
 - Model/tool-call planner: `services/ai/app/services/model_provider.py`
 - Shared contracts: `packages/shared/src/`
+- Harness contracts: `services/ai/app/models/harness.py` and `packages/shared/src/harness.ts`
+- Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 
 ## Current Runtime Layout
 
 - Frontend runs separately from backend.
-- Backend persists local JSON data under `services/ai/data/`.
+- Backend defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`.
+- `LocalJsonStore` is now a compatibility/database wrapper and still mirrors several legacy aggregates to JSON under `services/ai/data/`; do not route new append-heavy domains through `save_list`.
 - Uploaded files are stored under `services/ai/data/uploads/`.
 - Document debug artifacts live under `services/ai/data/document_debug/`.
 - Planning traces live under `services/ai/data/planning_trace/`.
@@ -49,6 +53,12 @@ The planner receives cleaned study units plus finer outline/detail context. When
 `POST /study-sessions` -> `POST /study-sessions/{id}/chat`
 
 The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing.
+
+### 4. Tavern interaction (active implementation)
+
+Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, and `tavern_runs`; messages are append-only and use a per-room sequence. Do not add Tavern fields to `StudySessionRecord`.
+
+Read `docs/tavern-architecture.md` and `docs/harness-engineering.md` before modifying Tavern or reliability behavior.
 
 ## Local Development Commands
 
@@ -90,6 +100,13 @@ Build the frontend:
 npm run build:web
 ```
 
+Targeted Tavern schema tests:
+
+```bash
+cd services/ai
+uv run python -m unittest tests.test_tavern_schema
+```
+
 ## Configuration Notes
 
 - Python work in this repo is `uv`-first. Do not assume a globally activated virtualenv.
@@ -100,7 +117,9 @@ npm run build:web
 ## Working Conventions
 
 - Keep the backend/frontend contract aligned through `packages/shared/src/` and the response normalizers in `apps/web/lib/api.ts`.
-- For new backend routes, update both `services/ai/app/models/api.py` and the frontend client.
+- For new backend routes, update the appropriate bounded model module (for Tavern, `models/tavern.py`), `apps/web/lib/api.ts`, and `packages/shared/src/`.
+- New model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
+- Keep application-owned IDs, speaker identity, revision, sequence, and committed state effects out of model-owned schemas.
 - Preserve the split between:
   - learning UI
   - character shell
@@ -113,8 +132,23 @@ Use the following standard names when discussing frontend pages and page blocks.
 
 ### Page Names
 
-- `/` = `Learning Workspace`
-- `/debug` = `Document Debug Console`
+- `/` = `Navigation Home`
+- `/plan` = `Plan Workspace`
+- `/study` = `Study Dialog`
+- `/persona-spectrum` = `Persona Spectrum`
+- `/scene-setup` = `Scene Setup`
+- `/tavern` = `Tavern Workspace` (active implementation)
+- Debug is a global overlay, not a standalone page.
+
+### `Tavern Workspace` Block Names
+
+- `Tavern Header`: page title, active room title, create action, and status.
+- `Tavern Session Panel`: recent rooms, resume, archive, and room management.
+- `Tavern Setup Panel`: persona multi-select, optional scene, title, and room creation.
+- `Tavern Conversation Panel`: ordered user/director/persona/system transcript.
+- `Participant Roster`: cast, target selection, and per-persona generation state.
+- `Interaction Composer`: visible message, optional next-round guidance, recipient preview, and send/stop actions.
+- `Reliability Details`: collapsed user-readable Harness recovery summary; raw trace belongs in debug UI.
 
 ### `Learning Workspace` Block Names
 
@@ -161,6 +195,11 @@ Use the following standard names when discussing frontend pages and page blocks.
 - `Learning Plan`: persisted planner output.
 - `Study Session`: interactive tutor session bound to one document, persona, and active section.
 - `Character Event`: structured performance instruction consumed by the character layer.
+- `Tavern Room`: durable free-interaction container with an optional scene and persona snapshots.
+- `Tavern Participant`: room-scoped immutable persona snapshot plus prompt hash.
+- `Tavern Message`: append-only attributed message with a monotonic room sequence.
+- `Tavern Run`: idempotent, revision-checked generation attempt and Harness trace.
+- `Harness Trace`: workflow-neutral validate/repair evidence; it applies across parsing, planning, generation, study, Tavern, and frontend decoding.
 
 ## Documentation Map
 
@@ -168,6 +207,8 @@ Use the following standard names when discussing frontend pages and page blocks.
 - Docs index: `docs/README.md`
 - Architecture: `docs/architecture.md`
 - API reference: `docs/api-reference.md`
+- Harness engineering: `docs/harness-engineering.md`
+- Tavern architecture: `docs/tavern-architecture.md`
 - Active backlog: `TODO.md`
 
 ## Near-Term Risks
@@ -175,3 +216,5 @@ Use the following standard names when discussing frontend pages and page blocks.
 - OCR cleanup is still heuristic-heavy and remains the main source of planning noise.
 - Tool-enabled planning increases latency and timeout pressure on upstream model providers.
 - The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
+- Existing Study Session writes use aggregate read-modify-write and can lose concurrent turns; do not reuse that path for Tavern.
+- `npm run lint:web` is currently invalid under Next.js 16 and is tracked as `QG-001`.

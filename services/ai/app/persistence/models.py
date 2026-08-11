@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import JSON, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -52,6 +52,78 @@ class StudySessionRow(Base):
     status: Mapped[str] = mapped_column(String(32), default="active")
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
+
+
+class TavernRoomRow(Base):
+    __tablename__ = "tavern_rooms"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    title: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(32), index=True, default="active")
+    scene_profile: Mapped[dict[str, Any] | None] = mapped_column(JSON_PAYLOAD, nullable=True)
+    harness_policy: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    last_sequence: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    updated_at: Mapped[str] = mapped_column(String(64), index=True, default="")
+
+
+class TavernParticipantRow(Base):
+    __tablename__ = "tavern_participants"
+    __table_args__ = (UniqueConstraint("room_id", "display_order", name="uq_tavern_participant_order"),)
+
+    room_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("tavern_rooms.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    persona_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    display_order: Mapped[int] = mapped_column(Integer)
+    display_name: Mapped[str] = mapped_column(Text, default="")
+    persona_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    prompt_hash: Mapped[str] = mapped_column(String(64), default="")
+    joined_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class TavernRunRow(Base):
+    __tablename__ = "tavern_runs"
+    __table_args__ = (UniqueConstraint("room_id", "idempotency_key", name="uq_tavern_run_idempotency"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    room_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("tavern_rooms.id", ondelete="CASCADE"),
+        index=True,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(32), index=True, default="pending")
+    mode: Mapped[str] = mapped_column(String(32), default="direct")
+    input_message_id: Mapped[str] = mapped_column(String(64), default="")
+    expected_room_revision: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+    completed_at: Mapped[str] = mapped_column(String(64), default="")
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
+
+
+class TavernMessageRow(Base):
+    __tablename__ = "tavern_messages"
+    __table_args__ = (UniqueConstraint("room_id", "sequence", name="uq_tavern_message_sequence"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    room_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("tavern_rooms.id", ondelete="CASCADE"),
+        index=True,
+    )
+    sequence: Mapped[int] = mapped_column(Integer)
+    run_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    author_kind: Mapped[str] = mapped_column(String(32))
+    persona_id: Mapped[str] = mapped_column(String(64), index=True, default="")
+    client_request_id: Mapped[str] = mapped_column(String(80), default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default="")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
 
 
