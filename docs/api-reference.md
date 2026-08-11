@@ -606,6 +606,112 @@ Response body:
 }
 ```
 
+## Tavern Rooms
+
+Tavern is independent from Study Sessions. It supports free interaction with a room-scoped persona snapshot and uses normalized, append-only messages.
+
+### `POST /tavern/rooms`
+
+Creates a room. `idempotency_key` is required so retries and double clicks return the same room.
+Reusing the same key with a different normalized payload returns `409` with
+`tavern_idempotency_key_reused:room_creation`.
+
+```json
+{
+  "title": "夜航酒馆",
+  "persona_ids": ["persona-a"],
+  "scene_profile": null,
+  "opening_prompt": "",
+  "idempotency_key": "create-room-123456"
+}
+```
+
+Returns `TavernRoomDetail` with `room`, ordered `participants`, paged `messages`, `message_count`, and `next_after_sequence`.
+
+### `GET /tavern/rooms`
+
+Returns lightweight summaries without loading transcripts or persona snapshots:
+
+```json
+{
+  "items": [
+    {
+      "id": "tavern-...",
+      "title": "夜航酒馆",
+      "participant_persona_ids": ["persona-a"],
+      "participant_names": ["阿澜"],
+      "message_count": 2,
+      "revision": 1,
+      "status": "active",
+      "created_at": "...",
+      "updated_at": "..."
+    }
+  ]
+}
+```
+
+### `GET /tavern/rooms/{room_id}`
+
+Query parameters:
+
+- `after_sequence`: exclusive message cursor, default `0`;
+- `limit`: page size from `1` to `200`, default `200`.
+
+### `PATCH /tavern/rooms/{room_id}`
+
+Updates title, cast, scene snapshot, or `active`/`archived` status. `expected_revision` is mandatory; stale writers receive `409` with `tavern_revision_conflict:{current_revision}`.
+
+Removing a participant only changes future scheduling. Historical messages retain their saved `persona_name` and `persona_id`.
+
+### `DELETE /tavern/rooms/{room_id}`
+
+Permanently deletes one room and its participants, runs, and messages. The `expected_revision` query parameter is required; stale deletion returns `409`. Product UI should prefer archive and require confirmation before calling this route.
+A room with a pending run returns `409`; its user message and failure/recovery evidence cannot be deleted while model work is in flight.
+
+### `GET /tavern/rooms/{room_id}/runs`
+
+Returns up to `limit` recent runs (`1`–`100`, default `50`) in reverse creation order. This is the recovery/debug boundary after a turn returns `502`: the client can restore the failed status, stable error code, attempts, recovery strategy, and Harness checks without parsing logs.
+
+### `POST /tavern/rooms/{room_id}/turns`
+
+The current usable slice supports `direct` mode only. `facilitated` is reserved by the strict schema and returns `501` until its independently tested implementation lands.
+
+```json
+{
+  "message": "今晚适合聊些什么？",
+  "mode": "direct",
+  "target_persona_ids": ["persona-a"],
+  "guidance": "先接住情绪，不急着给建议",
+  "max_character_messages": 1,
+  "idempotency_key": "turn-request-123456",
+  "expected_room_revision": 0
+}
+```
+
+The route first commits the user message and pending run, generates outside the transaction, validates strict `TavernActorReply`, then atomically appends the attributed persona message and completes the run. The model cannot set speaker, room, run, or sequence fields.
+
+Response fields:
+
+- `run`: idempotency, status, generated message IDs, and Harness traces;
+- `generated_messages`: messages appended by this run;
+- `room`: refreshed room detail.
+
+Reliability behavior:
+
+- duplicate idempotency keys replay a completed run without duplicate messages;
+- reusing an idempotency key with a different normalized request returns `409` instead of silently replaying unrelated work;
+- stale revisions and another pending room run return `409`;
+- schema/provider failures keep the user message and a failed run but commit no persona message;
+- semantic Harness failures return `502` and preserve the failed trace for debug replay.
+
+Room revision claims are atomic at the database boundary. This applies to SQLite and PostgreSQL and does not depend on one Python process owning an in-memory lock.
+
+### Tavern Harness transport
+
+OpenAI-compatible actor generation first requests strict `json_schema` for `TavernActorReply`. Providers returning `400`/`422` for that transport retry once with `json_object`, followed by the same Pydantic schema validation. Invalid actor payloads receive at most one low-temperature schema repair.
+
+The transport schema follows the OpenAI Structured Outputs subset: every property is required and objects forbid additional properties. Application-only string length bounds remain enforced by Pydantic after decode rather than being sent as unsupported string keywords.
+
 ## Exercises
 
 ### `POST /exercises/generate`
@@ -665,5 +771,8 @@ When updating this API, keep these files aligned:
 - `services/ai/app/api/routes.py`
 - `services/ai/app/models/api.py`
 - `services/ai/app/models/domain.py`
+- `services/ai/app/api/tavern_routes.py`
+- `services/ai/app/models/tavern.py`
+- `services/ai/app/models/harness.py`
 - `apps/web/lib/api.ts`
 - `packages/shared/src/`

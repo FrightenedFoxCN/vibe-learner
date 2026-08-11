@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import router
+from app.api.tavern_routes import router as tavern_router
 from app.core.logging import configure_logging, get_logger
 from app.core.settings import Settings
 
@@ -61,4 +62,5 @@ def create_app() -> FastAPI:
         return response
 
     app.include_router(router)
+    app.include_router(tavern_router)
     return app

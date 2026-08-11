@@ -5,6 +5,7 @@ from app.core.logging import get_logger
 from app.core.settings import Settings
 from app.persistence.database import Database
 from app.persistence.storage import StorageManager
+from app.persistence.tavern_repository import TavernRepository
 from app.persistence.migrate_local_data import migrate_from_legacy_store
 from app.services.model_provider import MockModelProvider, OpenAIModelProvider
 from app.services.documents import DocumentService
@@ -25,6 +26,7 @@ from app.services.study_sessions import StudySessionService
 from app.services.storage_lifecycle import StorageLifecycleService
 from app.services.stream_interrupts import StreamInterruptRegistry
 from app.services.token_usage import TokenUsageService
+from app.services.tavern import TavernService
 
 logger = get_logger("vibe_learner.bootstrap")
 
@@ -38,6 +40,7 @@ class Container:
         self.storage = StorageManager(data_root)
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()
+        self.tavern_repository = TavernRepository(self.database)
         self.store = LocalJsonStore(self.database, self.storage)
         self.document_parser = DocumentParser(
             self.storage.ensure_runtime_temp_root(),
@@ -62,7 +65,10 @@ class Container:
         self.session_scene_service = SessionSceneService(self.store)
         self.model_provider = self._build_model_provider(self.runtime_settings_service.effective_settings())
         self.performance_mapper = PerformanceMapper()
-        self.persona_engine = PersonaEngine(self.store)
+        self.persona_engine = PersonaEngine(
+            self.store,
+            tavern_reference_counter=self.tavern_repository.count_persona_references,
+        )
         self.study_arrangement_service = StudyArrangementService()
         self.document_service = DocumentService(
             self.store,
@@ -83,6 +89,11 @@ class Container:
             model_provider=self.model_provider,
             performance_mapper=self.performance_mapper,
         )
+        self.tavern_service = TavernService(
+            repository=self.tavern_repository,
+            persona_engine=self.persona_engine,
+            model_provider=self.model_provider,
+        )
 
     def update_runtime_settings(self, updates: dict[str, object]) -> None:
         self.runtime_settings_service.update(updates)
@@ -91,6 +102,7 @@ class Container:
         )
         self.plan_service.model_provider = self.model_provider
         self.pedagogy_orchestrator.model_provider = self.model_provider
+        self.tavern_service.model_provider = self.model_provider
 
     def apply_runtime_session_secrets(self, updates: dict[str, object]) -> None:
         self.runtime_settings_service.apply_session_secrets(updates)
@@ -99,6 +111,7 @@ class Container:
         )
         self.plan_service.model_provider = self.model_provider
         self.pedagogy_orchestrator.model_provider = self.model_provider
+        self.tavern_service.model_provider = self.model_provider
 
     def clear_runtime_session_secrets(self) -> None:
         self.runtime_settings_service.clear_session_secrets()
@@ -107,6 +120,7 @@ class Container:
         )
         self.plan_service.model_provider = self.model_provider
         self.pedagogy_orchestrator.model_provider = self.model_provider
+        self.tavern_service.model_provider = self.model_provider
 
     def _build_model_provider(self, settings: Settings):
         if settings.plan_provider in {"openai", "litellm"}:

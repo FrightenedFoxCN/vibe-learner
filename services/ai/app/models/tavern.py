@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.domain import PersonaProfile, SceneProfileRecord
 from app.models.harness import HarnessTraceRecord
@@ -44,6 +44,8 @@ class TavernHarnessPolicy(BaseModel):
 
 class TavernRoomRecord(BaseModel):
     id: str
+    creation_key: str = ""
+    creation_input_digest: str = ""
     title: str
     scene_profile: SceneProfileRecord | None = None
     harness_policy: TavernHarnessPolicy = Field(default_factory=TavernHarnessPolicy)
@@ -86,6 +88,7 @@ class TavernRunRecord(BaseModel):
     id: str
     room_id: str
     idempotency_key: str
+    request_digest: str = ""
     mode: TavernInteractionMode
     input_message_id: str = ""
     requested_participant_ids: list[str] = Field(default_factory=list)
@@ -126,12 +129,21 @@ class TavernActorReply(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     text: str = Field(min_length=1, max_length=4000)
-    mood: str = Field(default="calm", min_length=1, max_length=80)
-    action: str = Field(default="", max_length=160)
-    speech_style: str = Field(default="", max_length=80)
-    delivery_cue: str = Field(default="", max_length=160)
-    state_commentary: str = Field(default="", max_length=280)
-    addressed_participant_ids: list[str] = Field(default_factory=list, max_length=6)
+    mood: str = Field(min_length=1, max_length=80)
+    action: str = Field(max_length=160)
+    speech_style: str = Field(max_length=80)
+    delivery_cue: str = Field(max_length=160)
+    state_commentary: str = Field(max_length=280)
+    addressed_participant_ids: list[str] = Field(max_length=6)
+
+    @classmethod
+    def transport_json_schema(cls) -> dict[str, object]:
+        """OpenAI Structured Outputs subset; Pydantic keeps semantic string bounds."""
+
+        normalized = _without_unsupported_transport_keywords(cls.model_json_schema())
+        if not isinstance(normalized, dict):
+            raise RuntimeError("tavern_actor_transport_schema_invalid")
+        return normalized
 
 
 class CreateTavernRoomRequest(BaseModel):
@@ -140,6 +152,17 @@ class CreateTavernRoomRequest(BaseModel):
     scene_profile: SceneProfileRecord | None = None
     opening_prompt: str = Field(default="", max_length=2000)
     harness_policy: TavernHarnessPolicy = Field(default_factory=TavernHarnessPolicy)
+    idempotency_key: str = Field(min_length=8, max_length=80)
+
+    @field_validator("title", "idempotency_key", mode="before")
+    @classmethod
+    def strip_required_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("opening_prompt", mode="before")
+    @classmethod
+    def strip_optional_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def validate_personas(self) -> "CreateTavernRoomRequest":
@@ -151,7 +174,13 @@ class UpdateTavernRoomRequest(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=80)
     persona_ids: list[str] | None = Field(default=None, min_length=1, max_length=6)
     scene_profile: SceneProfileRecord | None = None
+    status: TavernRoomStatus | None = None
     expected_revision: int = Field(ge=0)
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def strip_title(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
     @model_validator(mode="after")
     def validate_personas(self) -> "UpdateTavernRoomRequest":
@@ -169,6 +198,16 @@ class TavernTurnRequest(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=80)
     expected_room_revision: int = Field(ge=0)
 
+    @field_validator("message", "idempotency_key", mode="before")
+    @classmethod
+    def strip_required_text(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("guidance", mode="before")
+    @classmethod
+    def strip_guidance(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
     @model_validator(mode="after")
     def validate_targets(self) -> "TavernTurnRequest":
         self.target_persona_ids = _distinct_ids(
@@ -178,11 +217,17 @@ class TavernTurnRequest(BaseModel):
         )
         if self.mode == TavernInteractionMode.DIRECT and self.max_character_messages != 1:
             raise ValueError("tavern_direct_mode_requires_one_character_message")
+        if self.mode == TavernInteractionMode.DIRECT and len(self.target_persona_ids) != 1:
+            raise ValueError("tavern_direct_mode_requires_one_target")
         return self
 
 
 class TavernRoomListResponse(BaseModel):
     items: list[TavernRoomSummary]
+
+
+class TavernRunListResponse(BaseModel):
+    items: list[TavernRunRecord]
 
 
 class TavernTurnResponse(BaseModel):
@@ -203,3 +248,15 @@ def _distinct_ids(
     if len(normalized) != len(set(normalized)):
         raise ValueError(f"tavern_{field_name}_must_be_distinct")
     return normalized
+
+
+def _without_unsupported_transport_keywords(value: object) -> object:
+    if isinstance(value, dict):
+        return {
+            key: _without_unsupported_transport_keywords(item)
+            for key, item in value.items()
+            if key not in {"title", "minLength", "maxLength"}
+        }
+    if isinstance(value, list):
+        return [_without_unsupported_transport_keywords(item) for item in value]
+    return value

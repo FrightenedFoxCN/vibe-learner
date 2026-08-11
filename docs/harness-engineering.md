@@ -67,7 +67,7 @@ Workflow-specific policies remain in their domain schema. For example, Tavern li
 | Planning | strict-ish JSON, model recovery records, tool trace | true JSON schema validation, effect boundary, unified trace, eval matrix |
 | Persona/scene generation | Pydantic normalization, retry | prompt/version digest, semantic invariants, regression fixtures |
 | Study chat | reply recovery, tool trace, citations | transactional tool-effect proposals, request revision/idempotency, strict decoder |
-| Tavern | normalized schema and strict actor DTO | compiler, scheduler, validator/repair, atomic run lifecycle, evals |
+| Tavern | normalized schema, low-trust persona compiler, strict actor decode, semantic checks, bounded recovery trace, atomic direct-run lifecycle | facilitated scheduler, partial retry/cancel, prompt budget, eval matrix |
 | Frontend API | response normalizers | runtime decoder, timeout/cancel, stale-response rejection, trace forwarding |
 
 ## User-facing transparency
@@ -92,3 +92,5 @@ Each workflow must add fixtures for malformed schemas, boundary violations, retr
 - workflow-specific accuracy, grounding, or identity-consistency metrics.
 
 No workflow should be described as harnessed until its failure path and replay/evaluation path are tested, not merely its happy-path prompt.
+
+The matrix records incremental adoption, not a Tavern-only rollout. A completed Tavern slice does not change the status of parsing, planning, persona/scene generation, Study Chat, or frontend decoding; each remains open until its own effect, failure, and replay boundaries pass the same rubric.

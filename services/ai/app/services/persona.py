@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from fastapi import HTTPException
 
 from app.models.api import CreatePersonaRequest, UpdatePersonaRequest
@@ -18,8 +20,14 @@ from app.services.local_store import LocalJsonStore
 
 
 class PersonaEngine:
-    def __init__(self, store: LocalJsonStore | None = None) -> None:
+    def __init__(
+        self,
+        store: LocalJsonStore | None = None,
+        *,
+        tavern_reference_counter: Callable[[str], int] | None = None,
+    ) -> None:
         self._store = store
+        self._tavern_reference_counter = tavern_reference_counter
         self._personas: dict[str, PersonaProfile] = {}
         for persona in self._builtin_personas():
             self._personas[persona.id] = persona
@@ -148,6 +156,7 @@ class PersonaEngine:
                 "plans": 0,
                 "sessions": 0,
                 "scene_instances": 0,
+                "tavern_rooms": 0,
             }
 
         return {
@@ -165,6 +174,11 @@ class PersonaEngine:
                 1
                 for scene in self._store.load_category_items("session_scenes", SessionSceneRecord)
                 if scene.persona_id == persona_id
+            ),
+            "tavern_rooms": (
+                self._tavern_reference_counter(persona_id)
+                if self._tavern_reference_counter is not None
+                else 0
             ),
         }
 

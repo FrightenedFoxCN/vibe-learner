@@ -7,6 +7,7 @@ from sqlalchemy import inspect
 
 from app.models.domain import PersonaProfile
 from app.models.tavern import (
+    CreateTavernRoomRequest,
     TavernActorReply,
     TavernAuthorKind,
     TavernHarnessPolicy,
@@ -15,6 +16,7 @@ from app.models.tavern import (
     TavernParticipantRecord,
     TavernRoomRecord,
     TavernTurnRequest,
+    UpdateTavernRoomRequest,
 )
 from app.persistence.database import Database
 from app.persistence.tavern_repository import TavernRepository
@@ -59,6 +61,36 @@ class TavernSchemaTests(unittest.TestCase):
             <= tables
         )
         self.assertNotIn("tavern_sessions", tables)
+
+    def test_sqlite_existing_tavern_room_table_adds_creation_key(self) -> None:
+        legacy_path = Path(self.temp_dir.name) / "tavern-schema-v2.db"
+        legacy_database = Database(f"sqlite:///{legacy_path}")
+        try:
+            with legacy_database.engine.begin() as connection:
+                connection.exec_driver_sql(
+                    """
+                    CREATE TABLE tavern_rooms (
+                        id VARCHAR(64) PRIMARY KEY,
+                        title TEXT NOT NULL DEFAULT '',
+                        status VARCHAR(32) NOT NULL DEFAULT 'active',
+                        scene_profile JSON,
+                        harness_policy JSON NOT NULL DEFAULT '{}',
+                        revision INTEGER NOT NULL DEFAULT 0,
+                        last_sequence INTEGER NOT NULL DEFAULT 0,
+                        created_at VARCHAR(64) NOT NULL DEFAULT '',
+                        updated_at VARCHAR(64) NOT NULL DEFAULT ''
+                    )
+                    """
+                )
+            legacy_database.create_schema()
+            columns = {
+                item["name"]
+                for item in inspect(legacy_database.engine).get_columns("tavern_rooms")
+            }
+            self.assertIn("creation_key", columns)
+            self.assertIn("creation_input_digest", columns)
+        finally:
+            legacy_database.dispose()
 
     def test_room_repository_roundtrip_and_summary(self) -> None:
         room = TavernRoomRecord(
@@ -115,9 +147,9 @@ class TavernSchemaTests(unittest.TestCase):
         self.assertEqual(summaries[0].message_count, 1)
         self.assertEqual(self.repository.count_persona_references("persona-a"), 1)
 
-        self.assertTrue(self.repository.delete_room(room.id))
+        self.assertTrue(self.repository.delete_room(room.id, expected_revision=0))
         self.assertEqual(self.repository.list_rooms(), [])
-        self.assertFalse(self.repository.delete_room(room.id))
+        self.assertFalse(self.repository.delete_room(room.id, expected_revision=0))
 
     def test_tavern_model_owned_reply_is_strict(self) -> None:
         with self.assertRaises(ValidationError):
@@ -129,6 +161,16 @@ class TavernSchemaTests(unittest.TestCase):
                     "speaker_persona_id": "model-must-not-own-speaker-id",
                 }
             )
+
+        schema = TavernActorReply.model_json_schema()
+        self.assertEqual(set(schema["required"]), set(schema["properties"]))
+        transport_schema = TavernActorReply.transport_json_schema()
+        self.assertEqual(
+            set(transport_schema["required"]),
+            set(transport_schema["properties"]),
+        )
+        self.assertNotIn("minLength", str(transport_schema))
+        self.assertNotIn("maxLength", str(transport_schema))
 
     def test_direct_turn_has_one_server_scheduled_character_message(self) -> None:
         request = TavernTurnRequest(
@@ -148,6 +190,35 @@ class TavernSchemaTests(unittest.TestCase):
                 target_persona_ids=["persona-a", "persona-b"],
                 max_character_messages=2,
                 idempotency_key="request-abcdefgh",
+                expected_room_revision=0,
+            )
+
+    def test_request_text_is_normalized_before_bounds_validation(self) -> None:
+        with self.assertRaises(ValidationError):
+            CreateTavernRoomRequest(
+                title="   ",
+                persona_ids=["persona-a"],
+                idempotency_key="request-room-key",
+            )
+        with self.assertRaises(ValidationError):
+            UpdateTavernRoomRequest(title="\n\t", expected_revision=0)
+        with self.assertRaises(ValidationError):
+            TavernTurnRequest(
+                message="   ",
+                mode=TavernInteractionMode.DIRECT,
+                target_persona_ids=["persona-a"],
+                max_character_messages=1,
+                idempotency_key="request-turn-key",
+                expected_room_revision=0,
+            )
+
+        with self.assertRaises(ValidationError):
+            TavernTurnRequest(
+                message="没有指定角色。",
+                mode=TavernInteractionMode.DIRECT,
+                target_persona_ids=[],
+                max_character_messages=1,
+                idempotency_key="request-no-target",
                 expected_room_revision=0,
             )
 

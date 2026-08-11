@@ -4,7 +4,7 @@
 
 The Tavern is a separate interaction domain for conversations with saved personas and for user-directed interaction between personas. It reuses persona and scene snapshots, but it does not inherit the textbook, plan, citation, or Study Unit requirements of a Study Session. Its validation uses the repository-wide harness trace contract defined in `harness-engineering.md`; the harness is not Tavern-only.
 
-The first schema landed before the runtime/API so the persistence and harness boundaries can be reviewed independently. User-facing routes remain follow-up work until the complete turn flow is validated.
+The first schema landed before the runtime/API so the persistence and harness boundaries could be reviewed independently. Tavern CRUD and the direct single-persona turn flow are now the first usable runtime slice; facilitated multi-persona scheduling remains a separate iteration.
 
 ## Canonical vocabulary
 
@@ -26,7 +26,7 @@ erDiagram
 
 The migration creates:
 
-- `tavern_rooms`: title, scene snapshot, harness policy, status, revision, and last sequence.
+- `tavern_rooms`: title, scene snapshot, harness policy, status, revision, last sequence, and creation-request digest.
 - `tavern_participants`: ordered cast with immutable persona snapshot and prompt hash; unique per room/persona.
 - `tavern_messages`: append-only content with unique `(room_id, sequence)`.
 - `tavern_runs`: unique `(room_id, idempotency_key)` generation attempt and recovery trace.
@@ -48,11 +48,13 @@ Those fields are assigned and validated by the server-side harness.
 
 ## Required transaction flow
 
-1. Transaction A locks the room, checks `expected_room_revision` and the idempotency key, appends the user message, and creates a pending run.
+1. Transaction A atomically claims `expected_room_revision`, verifies the idempotency key and normalized request digest, appends the user message, and creates a pending run.
 2. The director/actor model work happens outside a database transaction and uses read-only context.
 3. The harness validates speaker identity, targets, persona boundaries, length, and strict response shape.
 4. Transaction B locks the room, appends only validated persona messages with unique sequences, and completes the run.
 5. On failure, the user message and failed run remain explainable; unvalidated persona output and partial state effects are not committed.
+
+Room update, turn start, and destructive deletion compete through the same database-owned claim. SQLite does not rely on `SELECT FOR UPDATE`; PostgreSQL and SQLite therefore expose the same revision/run-in-progress conflicts. Permanent deletion is rejected while a run is pending.
 
 ## Product-level interaction modes
 
@@ -68,3 +70,11 @@ The UI derives the mode from recipient selection. Internal scheduling details an
 - Message reads are cursor-based and capped at 200 rows per request.
 - Room history lists use batched participant and message-count queries rather than loading transcripts.
 - Long-context summary/embedding work is deferred; raw history must remain bounded by a prompt budget before it is enabled.
+
+## Direct turn implementation
+
+`POST /tavern/rooms/{room_id}/turns` currently accepts exactly one participant target and one generated character message. Room creation and turns both require idempotency keys. Every write checks the room revision, and one room is serialized in-process while PostgreSQL uses row locks inside the repository transaction.
+
+The Tavern-specific persona compiler is separate from the teaching compiler. It keeps persona anchors, relationship, address, slots, and relevant additional setting, while explicitly removing the requirement to force conversation back to textbooks or learning tasks. Persona fields are user-editable, so compiled persona material is passed as delimited low-trust data; only invariant platform rules and the strict output schema occupy the system layer.
+
+Actor generation requests strict `TavernActorReply` JSON in which every declared property is required and exposes only model-owned text/performance/target proposals. The semantic harness then checks speaker attribution, target membership, length, prompt-material leakage across every persisted display field, and non-empty output. Transport/schema recovery is merged into the persisted trace; exhausted decode and provider failures also produce failed traces. Failed output is not stored as a persona message, and recent-run history makes the evidence recoverable after refresh.

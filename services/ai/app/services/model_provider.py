@@ -31,10 +31,19 @@ from app.models.domain import (
     persona_slot_content,
     persona_sorted_slots,
 )
+from app.models.tavern import (
+    TavernActorReply,
+    TavernMessageRecord,
+    TavernParticipantRecord,
+)
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
 from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.token_usage import TokenUsageService
+from app.services.tavern_prompt import (
+    build_tavern_actor_messages,
+    build_tavern_actor_recovery_message,
+)
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
     build_learning_plan_context,
@@ -472,6 +481,19 @@ class ModelProvider:
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         return []
 
+    def generate_tavern_actor_reply(
+        self,
+        *,
+        persona: PersonaProfile,
+        participants: list[TavernParticipantRecord],
+        scene_profile: SceneProfileRecord | None,
+        recent_messages: list[TavernMessageRecord],
+        user_message: str,
+        guidance: str,
+        allowed_target_ids: list[str],
+    ) -> TavernActorReply:
+        raise NotImplementedError
+
     def generate_exercise(
         self, *, persona: PersonaProfile, section_id: str, topic: str
     ) -> ModelReply:
@@ -650,6 +672,38 @@ class MockModelProvider(ModelProvider):
             delivery_cue="提问时把语气往前推一点，给学习者明确的答题起点。",
             state_commentary=f"正在把 {topic} 转成可作答的小练习。",
             rich_blocks=[],
+        )
+
+    def generate_tavern_actor_reply(
+        self,
+        *,
+        persona: PersonaProfile,
+        participants: list[TavernParticipantRecord],
+        scene_profile: SceneProfileRecord | None,
+        recent_messages: list[TavernMessageRecord],
+        user_message: str,
+        guidance: str,
+        allowed_target_ids: list[str],
+    ) -> TavernActorReply:
+        relationship = persona.relationship.strip() or "同行者"
+        scene_hint = (
+            f"在{scene_profile.scene_name or scene_profile.title}里，"
+            if scene_profile is not None
+            else ""
+        )
+        guidance_hint = f"我会顺着“{guidance[:36]}”来回应。" if guidance.strip() else ""
+        return TavernActorReply(
+            text=(
+                f"{scene_hint}我听见你说“{user_message.strip()}”。"
+                f"作为你的{relationship}，我想先接住这句话，再和你一起把它聊开。"
+                f"{guidance_hint}"
+            ),
+            mood="calm",
+            action="微微前倾，把注意力放回眼前的对话",
+            speech_style=persona.default_speech_style,
+            delivery_cue="自然停顿后再回应，不抢替对方下结论。",
+            state_commentary="保持当前角色身份并直接回应用户。",
+            addressed_participant_ids=[],
         )
 
     def grade_submission(
@@ -1290,6 +1344,103 @@ class OpenAIModelProvider(MockModelProvider):
                 strategy="retry_without_tools",
                 attempts=2,
             )
+            return recovered
+
+    def generate_tavern_actor_reply(
+        self,
+        *,
+        persona: PersonaProfile,
+        participants: list[TavernParticipantRecord],
+        scene_profile: SceneProfileRecord | None,
+        recent_messages: list[TavernMessageRecord],
+        user_message: str,
+        guidance: str,
+        allowed_target_ids: list[str],
+    ) -> TavernActorReply:
+        actor_schema = TavernActorReply.transport_json_schema()
+        actor_schema_text = json.dumps(actor_schema, ensure_ascii=False, sort_keys=True)
+        messages = build_tavern_actor_messages(
+            persona=persona,
+            participants=participants,
+            scene_profile=scene_profile,
+            recent_messages=recent_messages,
+            user_message=user_message,
+            guidance=guidance,
+            allowed_target_ids=allowed_target_ids,
+            actor_reply_schema=actor_schema_text,
+        )
+        response_format: dict[str, Any] = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "tavern_actor_reply",
+                "strict": True,
+                "schema": actor_schema,
+            },
+        }
+        payload: dict[str, Any] = {
+            "model": self.chat_model,
+            "temperature": self.chat_temperature,
+            "max_tokens": self.chat_max_tokens,
+            "messages": messages,
+            "response_format": response_format,
+        }
+        try:
+            raw_payload, _ = self._request_openai_chat_completion(
+                payload,
+                request_kind="chat",
+                model=self.chat_model,
+            )
+        except ModelRequestError as exc:
+            if exc.status_code not in {"400", "422"}:
+                raise
+            logger.warning(
+                "model.tavern.schema_transport_fallback status=%s upstream_code=%s",
+                exc.status_code,
+                exc.upstream_code,
+            )
+            record_model_recovery(
+                category="transport_compatibility",
+                reason="tavern_json_schema_unsupported",
+                strategy="retry_json_object",
+                attempts=2,
+            )
+            payload["response_format"] = {"type": "json_object"}
+            raw_payload, _ = self._request_openai_chat_completion(
+                payload,
+                request_kind="chat",
+                model=self.chat_model,
+            )
+
+        try:
+            return _parse_tavern_actor_reply(raw_payload)
+        except RuntimeError as exc:
+            recovery_reason = str(exc)
+            logger.warning("model.tavern.recovery reason=%s", recovery_reason)
+            record_model_recovery(
+                category="semantic_retry",
+                reason=recovery_reason,
+                strategy="retry_strict_actor_reply",
+                attempts=2,
+            )
+            recovery_payload: dict[str, Any] = {
+                "model": self.chat_model,
+                "temperature": min(self.chat_temperature, 0.2),
+                "max_tokens": max(self.chat_max_tokens, 900),
+                "messages": [
+                    *messages,
+                    {
+                        "role": "user",
+                        "content": build_tavern_actor_recovery_message(actor_schema_text),
+                    },
+                ],
+                "response_format": payload["response_format"],
+            }
+            recovery_raw_payload, _ = self._request_openai_chat_completion(
+                recovery_payload,
+                request_kind="chat",
+                model=self.chat_model,
+            )
+            recovered = _parse_tavern_actor_reply(recovery_raw_payload)
             return recovered
 
     def assist_persona_setting(
@@ -3327,6 +3478,21 @@ def _parse_chat_model_reply(
         tool_calls=tool_traces,
         scene_profile=scene_profile,
     )
+
+
+def _parse_tavern_actor_reply(raw_payload: dict[str, Any]) -> TavernActorReply:
+    try:
+        content = _extract_choice_content(raw_payload)
+        parsed = _extract_json_payload(
+            content,
+            invalid_json_code="tavern_actor_invalid_payload",
+            invalid_payload_code="tavern_actor_invalid_payload",
+        )
+        return TavernActorReply.model_validate(parsed)
+    except Exception as exc:
+        if isinstance(exc, ModelRequestError):
+            raise
+        raise RuntimeError("tavern_actor_invalid_payload") from exc
 
 
 def _extract_memory_trace_payload(

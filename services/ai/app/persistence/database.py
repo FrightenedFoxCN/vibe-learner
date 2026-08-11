@@ -61,6 +61,22 @@ class Database:
                 )
             }
 
+            if "tavern_rooms" in table_names:
+                tavern_columns = self._sqlite_column_names(connection, "tavern_rooms")
+                if "creation_key" not in tavern_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE tavern_rooms ADD COLUMN creation_key VARCHAR(80)"
+                    )
+                if "creation_input_digest" not in tavern_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE tavern_rooms ADD COLUMN "
+                        "creation_input_digest VARCHAR(64) NOT NULL DEFAULT ''"
+                    )
+                connection.exec_driver_sql(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_tavern_rooms_creation_key "
+                    "ON tavern_rooms (creation_key) WHERE creation_key IS NOT NULL"
+                )
+
             # Recover partially applied migrations that left a duplicate legacy table behind.
             if "study_sessions_legacy" in table_names and "study_sessions" not in table_names:
                 connection.exec_driver_sql("ALTER TABLE study_sessions_legacy RENAME TO study_sessions")

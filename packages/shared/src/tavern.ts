@@ -17,6 +17,8 @@ export interface TavernHarnessPolicy {
 
 export interface TavernRoom {
   id: string;
+  creationKey?: string;
+  creationInputDigest?: string;
   title: string;
   sceneProfile?: SceneProfile;
   harnessPolicy: TavernHarnessPolicy;
@@ -59,6 +61,7 @@ export interface TavernRun {
   id: string;
   roomId: string;
   idempotencyKey: string;
+  requestDigest?: string;
   mode: TavernInteractionMode;
   inputMessageId: string;
   requestedParticipantIds: string[];
@@ -99,6 +102,7 @@ export interface CreateTavernRoomInput {
   sceneProfile?: SceneProfile;
   openingPrompt?: string;
   harnessPolicy?: TavernHarnessPolicy;
+  idempotencyKey: string;
 }
 
 export interface TavernTurnInput {
@@ -115,4 +119,8 @@ export interface TavernTurnResult {
   run: TavernRun;
   generatedMessages: TavernMessage[];
   room: TavernRoomDetail;
+}
+
+export interface TavernRunListResult {
+  items: TavernRun[];
 }

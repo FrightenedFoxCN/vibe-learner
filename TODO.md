@@ -3,10 +3,12 @@
 ## 酒馆与角色可靠性
 
 - [x] `TAV-001` 建立独立 Tavern Room / Participant / Message / Run 规范化 schema；验收：Alembic 迁移存在，SQLite schema 测试通过，消息序号与 run 幂等键具备唯一约束。
-- [ ] `TAV-002` 完成 Tavern CRUD 与 direct 单角色闭环；验收：创建、恢复、归档、直聊 API 集成测试通过。
+- [x] `TAV-002` 完成 Tavern CRUD 与 direct 单角色闭环；验收：创建、恢复、归档、直聊 API 集成测试通过。
 - [ ] `TAV-003` 完成 facilitated 多角色顺序互动；验收：每位目标至多发言一次、顺序可预览、部分失败可恢复。
-- [ ] `HRN-001` 实现 Tavern 专用 persona compiler 与 strict ActorReply；验收：任意闲聊不被拉回教材，模型不能决定 speaker/sequence。
+- [ ] `TAV-004` 增加 pending run 超时接管、停止与定向重试；验收：进程中断后不会永久锁房间，已完成消息不重放。
+- [x] `HRN-001` 实现 Tavern 专用 persona compiler 与 strict ActorReply；验收：任意闲聊不被拉回教材，模型不能决定 speaker/sequence。
 - [ ] `HRN-002` 建立身份、称呼、目标、跨角色冒充和 prompt injection 回归矩阵；验收：测试记录 schema-valid rate、repair rate 与身份一致率。
+- [ ] `HRN-TAV-PERF-001` 为 Tavern prompt 增加字符/token 总预算、场景快照尺寸和嵌套深度限制；验收：最坏 6 人长对话仍在配置预算内，截断/摘要写入 trace。
 - [ ] `UX-001` 新增 Tavern Workspace；验收：空状态、1–6 人选择、单聊、多人讨论、刷新恢复、IME Enter 和 390px 移动视口通过人工检查。
 
 ## 审计与质量门
@@ -16,6 +18,7 @@
 - [ ] `HRN-PLAN-001` 将计划 schema、工具调用和持久化接入 validate/repair/commit；验收：模型副作用在校验前不提交，trace 可用于 fixture replay。
 - [ ] `HRN-STUDY-001` 将学习对话工具写操作改为 effect proposal；验收：最终回复失败时记忆、好感、follow-up、场景均不发生半提交。
 - [ ] `HRN-WEB-001` 建立前端 runtime decoder、超时/取消和 stale response harness；验收：缺字段、乱序和重复响应均有确定降级路径。
+- [ ] `HRN-EVAL-001` 建立跨工作流 fixture/eval 运行器与版本基线；验收：解析、计划、人格/场景、Study Chat、Tavern、前端解码分别报告通过率、修复率、失败率和 p95。
 
 - [ ] `AUD-001` 修复 Study Session 并发追加丢消息；验收：两个并发 append 均保留且序号唯一。
 - [ ] `QG-001` 替换 Next 16 已失效的 `next lint`，统一 `check` 命令并接入发布工作流。

@@ -59,6 +59,8 @@ class TavernRoomRow(Base):
     __tablename__ = "tavern_rooms"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    creation_key: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True)
+    creation_input_digest: Mapped[str] = mapped_column(String(64), default="")
     title: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(32), index=True, default="active")
     scene_profile: Mapped[dict[str, Any] | None] = mapped_column(JSON_PAYLOAD, nullable=True)
