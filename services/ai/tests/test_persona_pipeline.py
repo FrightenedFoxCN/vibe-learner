@@ -6,10 +6,12 @@ import json
 import sqlite3
 import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 import fitz
 from fastapi import HTTPException
+from sqlalchemy.orm.attributes import flag_modified
 from app.api.routes import (
     _map_chat_generation_error,
     _map_plan_generation_error,
@@ -21,6 +23,7 @@ from app.models.domain import (
     ChatToolCallTraceRecord,
     Citation,
     DocumentDebugRecord,
+    InteractiveQuestion,
     LearningPlanRecord,
     LearningGoalInput,
     PersonaProfile,
@@ -48,7 +51,12 @@ from app.services.model_provider import (
     _parse_chat_model_reply,
 )
 from app.persistence.database import Database
+from app.persistence.models import StudySessionRow
 from app.persistence.storage import StorageManager
+from app.persistence.study_session_repository import (
+    StudySessionLegacyImportConflict,
+    StudySessionRevisionConflict,
+)
 from app.services.runtime_settings import RuntimeSettingsService
 from app.services.pedagogy import PedagogyOrchestrator
 from app.services.performance import PerformanceMapper
@@ -731,6 +739,528 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertIn("chapter-2", updated_session.prepared_study_unit_ids)
         self.assertEqual(updated_session.turns[-1].learner_message_kind, "session_prelude")
 
+    def test_concurrent_append_turns_are_all_preserved_with_unique_sequences(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-concurrent-turns",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-concurrent",
+        )
+        append_count = 8
+        barrier = threading.Barrier(append_count)
+
+        def append(index: int) -> StudySessionRecord:
+            barrier.wait(timeout=5)
+            return self.study_session_service.append_turn(
+                session_id=session.id,
+                learner_message=f"并发问题 {index}",
+                result=StudyChatResult(
+                    reply=f"并发回答 {index}",
+                    citations=[],
+                    character_events=[],
+                ),
+            )
+
+        with ThreadPoolExecutor(max_workers=append_count) as executor:
+            results = list(executor.map(append, range(append_count)))
+
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(len(results), append_count)
+        self.assertEqual(len(persisted.turns), append_count)
+        self.assertEqual(
+            [turn.sequence for turn in persisted.turns],
+            list(range(1, append_count + 1)),
+        )
+        self.assertEqual(len({turn.id for turn in persisted.turns}), append_count)
+        self.assertEqual(persisted.last_turn_sequence, append_count)
+        self.assertEqual(persisted.revision, append_count)
+        self.assertEqual(
+            {turn.learner_message for turn in persisted.turns},
+            {f"并发问题 {index}" for index in range(append_count)},
+        )
+
+    def test_cas_retry_does_not_duplicate_mutation_owned_ids(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-concurrent-effects",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-concurrent",
+        )
+        barrier = threading.Barrier(2)
+
+        def add_follow_up(index: int):
+            barrier.wait(timeout=5)
+            return self.study_session_service.schedule_follow_up(
+                session_id=session.id,
+                delay_seconds=index,
+                hidden_message=f"续接 {index}",
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            follow_ups = list(executor.map(add_follow_up, range(2)))
+
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(len(persisted.pending_follow_ups), 2)
+        self.assertEqual(len({item.id for item in persisted.pending_follow_ups}), 2)
+        self.assertEqual(
+            {item.id for item in persisted.pending_follow_ups},
+            {item.id for item in follow_ups},
+        )
+
+    def test_session_repository_rejects_immutable_identity_mutation(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-immutable",
+            document_id="doc-immutable",
+            persona_id="mentor-aurora",
+            plan_id="plan-immutable",
+            study_unit_id="chapter-immutable",
+        )
+
+        def change_identity(record: StudySessionRecord) -> None:
+            record.id = "session-rebound"
+            record.document_id = "doc-rebound"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_immutable_field_changed:id",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=change_identity,
+            )
+
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(persisted.id, "session-immutable")
+        self.assertEqual(persisted.document_id, "doc-immutable")
+        self.assertIsNone(self.study_session_service.repository.get("session-rebound"))
+
+        def change_created_at(record: StudySessionRecord) -> None:
+            record.created_at = "2026-08-12T23:59:59+00:00"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_immutable_field_changed:created_at",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=change_created_at,
+            )
+
+    def test_session_repository_rejects_payload_row_projection_drift(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-projection-drift",
+            document_id="doc-projection-drift",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-projection-drift",
+        )
+        with self.store.database.session() as db_session:
+            row = db_session.get(StudySessionRow, session.id)
+            assert row is not None
+            payload = dict(row.payload or {})
+            payload["document_id"] = "doc-tampered"
+            row.payload = payload
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_projection_mismatch:document_id",
+        ):
+            self.study_session_service.require_session(session.id)
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_projection_mismatch:document_id",
+        ):
+            self.store.load_list("sessions", StudySessionRecord)
+
+    def test_session_repository_rejects_committed_turn_identity_rewrite(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-turn-identity",
+            document_id="doc-turn-identity",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-turn-identity",
+        )
+        committed = self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="Original turn",
+            result=StudyChatResult(
+                reply="Original reply",
+                citations=[],
+                character_events=[],
+            ),
+        )
+
+        def rewrite_turn_identity(record: StudySessionRecord) -> None:
+            record.turns[0].id = "turn-rewritten"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_committed_turn_identity_changed:id",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=rewrite_turn_identity,
+            )
+
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(persisted.turns[0].id, committed.turns[0].id)
+
+        def rewrite_turn_content(record: StudySessionRecord) -> None:
+            record.turns[0].assistant_reply = "Rewritten reply"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_committed_turn_content_changed",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=rewrite_turn_content,
+            )
+        self.assertEqual(
+            self.study_session_service.require_session(session.id).turns[0].assistant_reply,
+            "Original reply",
+        )
+
+        second = self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="Second turn",
+            result=StudyChatResult(
+                reply="Second reply",
+                citations=[],
+                character_events=[],
+            ),
+        )
+
+        def remove_turn(record: StudySessionRecord) -> None:
+            record.turns.pop(0)
+            record.last_turn_sequence -= 1
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_committed_turn_removed",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=remove_turn,
+            )
+
+        def reorder_turns(record: StudySessionRecord) -> None:
+            record.turns.reverse()
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_committed_turn_identity_changed:id",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=reorder_turns,
+            )
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(
+            [turn.id for turn in persisted.turns],
+            [turn.id for turn in second.turns],
+        )
+
+    def test_committed_turn_answer_patch_requires_explicit_policy(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-turn-answer-policy",
+            document_id="doc-turn-answer-policy",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-turn-answer-policy",
+        )
+        self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="Answer this",
+            result=StudyChatResult(
+                reply="Question ready",
+                citations=[],
+                character_events=[],
+                interactive_question=InteractiveQuestion(
+                    question_type="fill_blank",
+                    prompt="2 + 2 = ?",
+                ),
+            ),
+        )
+
+        def implicit_answer_patch(record: StudySessionRecord) -> None:
+            assert record.turns[0].interactive_question is not None
+            record.turns[0].interactive_question.submitted_answer = "4"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_committed_turn_content_changed",
+        ):
+            self.study_session_service.repository.mutate(
+                session_id=session.id,
+                mutation=implicit_answer_patch,
+            )
+
+        updated = self.study_session_service.append_attempt_turn(
+            session_id=session.id,
+            prompt="2 + 2 = ?",
+            submitted_answer="4",
+            is_correct=True,
+            feedback_text="Correct",
+        )
+        question = updated.turns[0].interactive_question
+        assert question is not None
+        self.assertEqual(question.submitted_answer, "4")
+        self.assertTrue(question.is_correct)
+        self.assertEqual(question.feedback_text, "Correct")
+
+    def test_session_schema_rejects_partial_legacy_turn_identity(self) -> None:
+        payload = {
+            "id": "session-partial-legacy-turn",
+            "document_id": "doc-partial-legacy-turn",
+            "persona_id": "mentor-aurora",
+            "study_unit_id": "chapter-partial-legacy-turn",
+            "status": "active",
+            "turns": [
+                {
+                    "id": "turn-existing",
+                    "sequence": 1,
+                    "learner_message": "First",
+                    "assistant_reply": "First reply",
+                    "citations": [],
+                    "character_events": [],
+                    "created_at": "2026-08-12T00:00:00+00:00",
+                },
+                {
+                    "learner_message": "Second",
+                    "assistant_reply": "Second reply",
+                    "citations": [],
+                    "character_events": [],
+                    "created_at": "2026-08-12T00:00:01+00:00",
+                },
+            ],
+            "last_turn_sequence": 2,
+            "created_at": "2026-08-12T00:00:00+00:00",
+            "updated_at": "2026-08-12T00:00:01+00:00",
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_legacy_turn_identity_partial",
+        ):
+            StudySessionRecord.model_validate(payload)
+
+    def test_session_repository_rejects_missing_committed_watermarks(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-watermark-drift",
+            document_id="doc-watermark-drift",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-watermark-drift",
+        )
+        self.study_session_service.append_turn(
+            session_id=session.id,
+            learner_message="Persist one turn",
+            result=StudyChatResult(
+                reply="Persisted",
+                citations=[],
+                character_events=[],
+            ),
+        )
+        with self.store.database.session() as db_session:
+            row = db_session.get(StudySessionRow, session.id)
+            assert row is not None
+            payload = dict(row.payload or {})
+            payload.pop("revision", None)
+            payload.pop("last_turn_sequence", None)
+            row.payload = payload
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_session_projection_mismatch:revision",
+        ):
+            self.study_session_service.require_session(session.id)
+
+    def test_session_repository_rejects_coerced_watermark_types(self) -> None:
+        for suffix, field_name, invalid_value in (
+            ("revision-string", "revision", "0"),
+            ("revision-boolean", "revision", False),
+            ("revision-float", "revision", 0.0),
+            ("turn-string", "last_turn_sequence", "0"),
+            ("turn-boolean", "last_turn_sequence", False),
+            ("turn-float", "last_turn_sequence", 0.0),
+        ):
+            session = self.study_session_service.create_session(
+                session_id=f"session-watermark-{suffix}",
+                document_id=f"doc-watermark-{suffix}",
+                persona_id="mentor-aurora",
+                study_unit_id="chapter-watermark",
+            )
+            with self.store.database.session() as db_session:
+                row = db_session.get(StudySessionRow, session.id)
+                assert row is not None
+                payload = dict(row.payload or {})
+                payload[field_name] = invalid_value
+                row.payload = payload
+                # False and 0.0 compare equal to integer zero in Python. Force
+                # the adversarial JSON projection to disk so the repository's
+                # decoder, rather than SQLAlchemy dirty tracking, is exercised.
+                flag_modified(row, "payload")
+            with self.assertRaisesRegex(
+                ValueError,
+                f"study_session_projection_mismatch:{field_name}",
+            ):
+                self.study_session_service.require_session(session.id)
+
+    def test_session_repository_reports_bounded_cas_exhaustion(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-cas-exhaustion",
+            document_id="doc-cas-exhaustion",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-cas-exhaustion",
+        )
+        barrier = threading.Barrier(2)
+
+        def mutate(index: int) -> str:
+            def mutation(record: StudySessionRecord) -> None:
+                barrier.wait(timeout=5)
+                record.status = f"active-{index}"
+
+            try:
+                self.study_session_service.repository.mutate(
+                    session_id=session.id,
+                    mutation=mutation,
+                    max_attempts=1,
+                )
+                return "committed"
+            except StudySessionRevisionConflict:
+                return "conflict"
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            outcomes = list(executor.map(mutate, range(2)))
+
+        self.assertEqual(sorted(outcomes), ["committed", "conflict"])
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(persisted.revision, 1)
+
+    def test_session_service_maps_cas_exhaustion_to_http_conflict(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-cas-http-conflict",
+            document_id="doc-cas-http-conflict",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-cas-http-conflict",
+        )
+        with patch.object(
+            self.study_session_service.repository,
+            "mutate",
+            side_effect=StudySessionRevisionConflict(session.id),
+        ):
+            with self.assertRaises(HTTPException) as context:
+                self.study_session_service.update_session(
+                    session_id=session.id,
+                    study_unit_id="chapter-next",
+                )
+        self.assertEqual(context.exception.status_code, 409)
+        self.assertEqual(context.exception.detail, "session_revision_conflict")
+
+    def test_concurrent_session_creation_does_not_delete_siblings(self) -> None:
+        create_count = 8
+        barrier = threading.Barrier(create_count)
+
+        def create(index: int) -> str:
+            barrier.wait(timeout=5)
+            return self.study_session_service.create_session(
+                session_id=f"session-created-{index}",
+                document_id=f"doc-created-{index}",
+                persona_id="mentor-aurora",
+                study_unit_id="chapter-created",
+            ).id
+
+        with ThreadPoolExecutor(max_workers=create_count) as executor:
+            created_ids = set(executor.map(create, range(create_count)))
+
+        persisted_ids = {
+            item.id
+            for item in self.study_session_service.list_sessions()
+            if item.id.startswith("session-created-")
+        }
+        self.assertEqual(persisted_ids, created_ids)
+
+    def test_legacy_session_import_cannot_replace_or_delete_repository_rows(self) -> None:
+        owned = self.study_session_service.create_session(
+            session_id="session-runtime-owned",
+            document_id="doc-runtime-owned",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-runtime-owned",
+        )
+        stale = owned.model_copy(deep=True)
+        stale.status = "stale-overwrite"
+        legacy_only = self.study_session_service.create_session(
+            session_id="session-legacy-source",
+            document_id="doc-legacy-source",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-legacy-source",
+        )
+        with self.store.database.session() as db_session:
+            row = db_session.get(StudySessionRow, legacy_only.id)
+            assert row is not None
+            db_session.delete(row)
+
+        with self.assertRaises(StudySessionLegacyImportConflict):
+            self.store.save_list("sessions", [legacy_only, stale])
+        self.assertIsNone(self.study_session_service.repository.get(legacy_only.id))
+
+        self.store.save_list("sessions", [owned, legacy_only])
+
+        persisted_owned = self.study_session_service.require_session(owned.id)
+        persisted_legacy = self.study_session_service.require_session(legacy_only.id)
+        self.assertEqual(persisted_owned.status, "active")
+        self.assertEqual(persisted_legacy.document_id, "doc-legacy-source")
+
+    def test_concurrent_legacy_session_import_keeps_complete_unique_set(self) -> None:
+        import_count = 8
+        barrier = threading.Barrier(import_count)
+        records = [
+            self.study_session_service.create_session(
+                session_id=f"session-import-{index}",
+                document_id=f"doc-import-{index}",
+                persona_id="mentor-aurora",
+                study_unit_id="chapter-import",
+            )
+            for index in range(import_count)
+        ]
+        with self.store.database.session() as db_session:
+            for record in records:
+                row = db_session.get(StudySessionRow, record.id)
+                assert row is not None
+                db_session.delete(row)
+
+        def import_record(index: int) -> None:
+            barrier.wait(timeout=5)
+            self.store.save_list("sessions", [records[index]])
+
+        with ThreadPoolExecutor(max_workers=import_count) as executor:
+            list(executor.map(import_record, range(import_count)))
+
+        persisted_ids = {item.id for item in self.study_session_service.list_sessions()}
+        self.assertTrue({record.id for record in records}.issubset(persisted_ids))
+
+    def test_database_session_commit_does_not_depend_on_legacy_json_write(self) -> None:
+        session = self.study_session_service.create_session(
+            session_id="session-json-independent",
+            document_id="doc-json-independent",
+            persona_id="mentor-aurora",
+            study_unit_id="chapter-json-independent",
+        )
+        with patch.object(
+            self.store._legacy,
+            "save_list",
+            side_effect=OSError("legacy mirror unavailable"),
+        ):
+            updated = self.study_session_service.append_turn(
+                session_id=session.id,
+                learner_message="Database commit must still succeed",
+                result=StudyChatResult(
+                    reply="Committed without the legacy mirror",
+                    citations=[],
+                    character_events=[],
+                ),
+            )
+
+        self.assertEqual(updated.last_turn_sequence, 1)
+        self.assertEqual(
+            self.study_session_service.require_session(session.id).turns[0].id,
+            updated.turns[0].id,
+        )
+
     def test_session_service_tracks_follow_up_memory_and_affinity(self) -> None:
         session = self.study_session_service.create_session(
             document_id="doc-1",
@@ -826,6 +1356,8 @@ class PersonaPipelineTests(unittest.TestCase):
         store = LocalJsonStore(Path(self.temp_dir.name))
         barrier = threading.Barrier(4)
         errors: list[Exception] = []
+        expected_ids: set[str] = set()
+        expected_ids_lock = threading.Lock()
 
         def writer(index: int) -> None:
             try:
@@ -837,6 +1369,8 @@ class PersonaPipelineTests(unittest.TestCase):
                         persona_id="mentor-aurora",
                         study_unit_id=f"chapter-{turn_index}",
                     )
+                    with expected_ids_lock:
+                        expected_ids.add(session.id)
                     store.save_list("sessions", [session])
             except Exception as exc:
                 errors.append(exc)
@@ -849,7 +1383,9 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertFalse(errors, msg=str(errors))
         saved_sessions = store.load_list("sessions", StudySessionRecord)
-        self.assertTrue(saved_sessions)
+        saved_ids = {session.id for session in saved_sessions}
+        self.assertTrue(expected_ids.issubset(saved_ids))
+        store.close()
 
     def test_runtime_settings_migrates_missing_fields_from_base_settings(self) -> None:
         store = LocalJsonStore(Path(self.temp_dir.name))
@@ -3464,7 +4000,15 @@ class PersonaPipelineTests(unittest.TestCase):
                             "section_id": "section-legacy-1",
                             "section_title": "Legacy Section",
                             "status": "active",
-                            "turns": [],
+                            "turns": [
+                                {
+                                    "learner_message": "Legacy question",
+                                    "assistant_reply": "Legacy answer",
+                                    "citations": [],
+                                    "character_events": [],
+                                    "created_at": "2026-04-12T00:00:01+00:00",
+                                }
+                            ],
                             "created_at": "2026-04-12T00:00:00+00:00",
                             "updated_at": "2026-04-12T00:00:00+00:00",
                         },
@@ -3487,8 +4031,28 @@ class PersonaPipelineTests(unittest.TestCase):
             self.assertEqual(len(sessions), 1)
             self.assertEqual(sessions[0].study_unit_id, "section-legacy-1")
             self.assertEqual(sessions[0].study_unit_title, "Legacy Section")
+            self.assertEqual(sessions[0].last_turn_sequence, 1)
+            self.assertEqual(sessions[0].turns[0].sequence, 1)
+            self.assertTrue(sessions[0].turns[0].id.startswith("turn-legacy-"))
 
-            created = StudySessionService(store).create_session(
+            service = StudySessionService(store)
+            appended = service.append_turn(
+                session_id="session-legacy-1",
+                learner_message="New question",
+                result=StudyChatResult(
+                    reply="New answer",
+                    citations=[],
+                    character_events=[],
+                ),
+            )
+            self.assertEqual(
+                [turn.sequence for turn in appended.turns],
+                [1, 2],
+            )
+            self.assertEqual(appended.last_turn_sequence, 2)
+            self.assertEqual(appended.revision, 1)
+
+            created = service.create_session(
                 document_id="doc-legacy-1",
                 persona_id="mentor-aurora",
                 plan_id="plan-legacy-1",

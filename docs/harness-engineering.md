@@ -97,7 +97,7 @@ See `harness-schema-ownership.md` for the workflow ownership registry, nullabili
 | Document parsing | OCR fallback, warnings, debug record | versioned checks, stage traces, replay fixtures, performance budgets |
 | Planning | strict-ish JSON, model recovery records, tool trace | true JSON schema validation, effect boundary, unified trace, eval matrix |
 | Persona/scene generation | Pydantic normalization, retry | prompt/version digest, semantic invariants, regression fixtures |
-| Study chat | reply recovery, tool trace, citations | transactional tool-effect proposals, request revision/idempotency, strict decoder |
+| Study chat | reply recovery, tool trace, citations, Study Session revision CAS and sequenced turn append | durable request admission/idempotency, transactional tool-effect proposals, strict decoder, v3 evidence |
 | Tavern | normalized room/run/step schema, low-trust persona compiler, strict actor decode, server-owned scheduler, semantic checks, bounded recovery trace, per-actor commit, partial state, scoped child retry, leased resume/cancel fencing, strict browser v1 decode | v3 runtime/artifact migration, total prompt budget, authoritative retry-chain view, eval matrix |
 | Frontend API | Tavern fail-closed decoder, request/room fencing, monotonic terminal reconciliation | repository-wide runtime decoders, timeout/cancel semantics, trace forwarding |
 

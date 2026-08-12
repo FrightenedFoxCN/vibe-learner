@@ -262,6 +262,7 @@ npm run lint:web     # 前端 lint
 npm run test:ai      # 运行后端测试（unittest）
 npm run test:contracts # 校验共享 TypeScript 合同
 npm run test:web:tavern # Tavern 前端状态与 strict decoder 测试
+npm run test:web:reliability # Tavern 与 Study committed-identity 前端可靠性测试
 ```
 
 注意：Next.js 16 下当前 `npm run lint:web` 已失效，替代检查命令正在 `QG-001` 中跟踪。

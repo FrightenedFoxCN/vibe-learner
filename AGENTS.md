@@ -28,12 +28,14 @@ This repository was rescanned from the root on 2026-08-12. The current workspace
 - Independent audit evidence: `docs/independent-product-audit-2026-08-12.md`
 - Versioned performance gates: `docs/performance-budgets-v1.md`
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
+- Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
 
 ## Current Runtime Layout
 
 - Frontend runs separately from backend.
 - Backend defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`.
-- `LocalJsonStore` is now a compatibility/database wrapper and still mirrors several legacy aggregates to JSON under `services/ai/data/`; do not route new append-heavy domains through `save_list`.
+- `LocalJsonStore` is now a compatibility/database wrapper and still mirrors several legacy aggregates to JSON under `services/ai/data/`; do not route new append-heavy domains through `save_list`. For Study Sessions specifically, `save_list("sessions")` is insert-only legacy import, rejects same-ID divergence, and never replaces/deletes runtime rows.
+- Study Sessions are database-authoritative. The legacy `sessions.json` is import compatibility only; normal Session writes use row CAS and do not synchronously rewrite the full JSON list.
 - Uploaded files are stored under `services/ai/data/uploads/`.
 - Document debug artifacts live under `services/ai/data/document_debug/`.
 - Planning traces live under `services/ai/data/planning_trace/`.
@@ -124,6 +126,18 @@ Tavern frontend state and strict-decoder tests:
 npm run test:web:tavern
 ```
 
+Repository frontend reliability tests, including Tavern and the narrow Study
+Session committed-identity decoder:
+
+```bash
+npm run test:web:reliability
+```
+
+This Study decoder gate covers Session revision/turn watermark and committed
+Turn identity/order only. It does not close the broader citations, Character
+Events, effect receipts, or recovery boundary tracked by
+`HRN-WEB-STUDY-DEC-001`.
+
 Run the optional live-backend decoder acceptance against a populated local service. The database must already contain a Tavern room with messages and at least one terminal run; without `TAVERN_TEST_API_URL` this case is intentionally skipped:
 
 ```bash
@@ -146,6 +160,7 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - Tavern persona Messages persist server-only operation/effect receipt metadata atomically. Keep it out of API/OpenAPI, and use `get_actor_commit_read_back` so Message/Run/Step/Participant/reply-anchor evidence comes from one database snapshot.
 - Treat Harness as a repository-wide lifecycle, not a Tavern feature. `build_harness_context` and v3 fixtures are foundation only; do not mark Document/OCR/Study Unit/Planning/Persona/Scene/Study Chat/Tavern/Frontend Decode adopted until their own TODO gates pass.
 - Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document and Planning repair their current multi-write boundary before adding v3 lifecycle evidence; Scene separates model proposal, user-authored save, committed projection, and API DTO before Harness adoption.
+- Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; CAS completion closes `AUD-001` only and is not durable request admission or successful Harness commit evidence.
 - UX/reliability findings require independent revalidation before closure; developer-authored happy-path tests alone do not close `docs/independent-product-audit-2026-08-12.md` findings.
 - Treat `HarnessStage`, `HarnessAttemptPhase`, and stream event types as separate vocabularies. Stages are domain operations such as page extraction or one planning tool execution; generate/decode/validate/repair/commit/rollback are phases inside a stage; progress names such as `page_parsed` are stream events. Keep the Python/TypeScript operation-stage registry and its shared golden fixture atomic.
 - An application component contract versions reviewed algorithm behavior; it is not a dependency/model version. An unaudited component uses a null registration and blocks context construction—never invent `pending-*`, `latest`, `unknown`, or a package version as adoption evidence.
@@ -250,7 +265,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 - OCR cleanup is still heuristic-heavy and remains the main source of planning noise.
 - Tool-enabled planning increases latency and timeout pressure on upstream model providers.
 - The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
-- Existing Study Session writes use aggregate read-modify-write and can lose concurrent turns; do not reuse that path for Tavern.
+- Study Session aggregate writes now use revision CAS and contiguous turn sequencing; compatibility reads share repository projection validation, and committed Turn content is immutable except the dedicated interactive-answer fields. Its remaining unsafe boundary is Study Chat request/effect replay, not lost-update append. Tavern keeps its separate normalized Room/Run/Step/Message repository.
 - Most production workflows still predate the v3 Harness runtime. Do not infer repository-wide adoption from the Tavern v1 path or the v2/v3 schema fixtures.
 - Harness resource references need evidence policies; never pass a constant `revision=0` for a resource that has no authoritative revision.
 - Use `HARNESS_RESOURCE_EVIDENCE_POLICIES` before constructing v3 context or commit evidence. A Tavern Room revision covers metadata and run-admission CAS, not transcript drift; a Tavern Message is currently unsupported as a context subject until a room-scoped protected transcript snapshot can be resolved. One committed Tavern Message uses one room-scoped sequence point, never a range. Unsupported resources may appear as honest `not_committed` attempts but cannot claim committed or rolled-back proof.

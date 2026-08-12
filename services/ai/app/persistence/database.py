@@ -143,6 +143,17 @@ class Database:
             columns = self._sqlite_column_names(connection, "study_sessions")
             if "study_unit_id" not in columns and "section_id" in columns:
                 self._rebuild_legacy_study_sessions_table(connection, source_table="study_sessions")
+                columns = self._sqlite_column_names(connection, "study_sessions")
+            if "revision" not in columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE study_sessions ADD COLUMN "
+                    "revision INTEGER NOT NULL DEFAULT 0"
+                )
+            if "last_turn_sequence" not in columns:
+                connection.exec_driver_sql(
+                    "ALTER TABLE study_sessions ADD COLUMN "
+                    "last_turn_sequence INTEGER NOT NULL DEFAULT 0"
+                )
 
     def _repair_sqlite_tavern_run_foreign_key(self) -> None:
         with self.engine.connect() as connection:
@@ -342,6 +353,8 @@ class Database:
                 plan_id,
                 study_unit_id,
                 status,
+                revision,
+                last_turn_sequence,
                 created_at,
                 updated_at,
                 payload
@@ -353,6 +366,8 @@ class Database:
                 plan_id,
                 section_id,
                 status,
+                0,
+                0,
                 created_at,
                 updated_at,
                 payload

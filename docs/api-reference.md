@@ -603,7 +603,15 @@ Request body:
 }
 ```
 
-Returns the persisted `StudySessionRecord`.
+Returns the persisted `StudySessionRecord`. The server owns:
+
+- `revision`, a monotonic per-session CAS watermark;
+- `last_turn_sequence`, the current contiguous turn watermark;
+- each `turns[].id` and `turns[].sequence`.
+
+These fields are committed-record identity and ordering evidence. They are not model proposal fields, a Study Chat idempotency receipt, or proof that tool/file/provider effects are exactly once.
+
+The browser rejects missing, non-integer, duplicate, empty, gapped, or watermark-mismatched committed turn identity before rendering. This narrow decoder does not yet strictly validate every nested Study Chat citation, Character Event, attachment, or future effect receipt; that broader boundary remains `HRN-WEB-STUDY-DEC-001`.
 
 ### `GET /study-sessions`
 
@@ -632,6 +640,8 @@ Notes:
 - chat generation now includes recent dialogue turns as model context
 - citations are grounded from the document debug artifacts (study-unit/section/chunk page ranges)
 - returned `character_events[].scene_hint` carries chapter/page render context for character-layer drawing
+- the final visible turn appends through bounded revision CAS, preserving concurrent session mutations and assigning a unique contiguous turn sequence
+- the endpoint does not yet accept a stable client request ID; retries may still replay model/tool/file effects and are tracked by `STUDY-OP-ADMIT-001`
 - when model payload is invalid or empty, backend returns `502` with `detail=chat_model_invalid_payload`
 - frontend is expected to surface this as an explicit error and provide manual retry action
 

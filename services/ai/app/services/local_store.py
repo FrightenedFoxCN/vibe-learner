@@ -71,6 +71,8 @@ def _session_metadata(payload: dict[str, Any]) -> dict[str, Any]:
         "plan_id": str(payload.get("plan_id") or ""),
         "study_unit_id": str(payload.get("study_unit_id") or payload.get("section_id") or ""),
         "status": str(payload.get("status") or ""),
+        "revision": int(payload.get("revision") or 0),
+        "last_turn_sequence": int(payload.get("last_turn_sequence") or 0),
         "created_at": str(payload.get("created_at") or ""),
         "updated_at": str(payload.get("updated_at") or ""),
     }
@@ -261,6 +263,10 @@ class LocalJsonStore:
         self.chat_attachment_root = storage.chat_attachment_root
         self.runtime_temp_root = storage.runtime_temp_root
 
+    @property
+    def database(self) -> Database:
+        return self._db
+
     def close(self) -> None:
         self._db.dispose()
 
@@ -271,6 +277,17 @@ class LocalJsonStore:
             pass
 
     def load_list(self, name: str, model: type[T]) -> list[T]:
+        if name == "sessions":
+            from app.persistence.study_session_repository import StudySessionRepository
+
+            repository_items = StudySessionRepository(self._db).list()
+            if repository_items:
+                return repository_items  # type: ignore[return-value]
+            legacy_items = self._legacy.load_list(name, model)
+            if legacy_items:
+                self.save_list(name, legacy_items)
+                return StudySessionRepository(self._db).list()  # type: ignore[return-value]
+            return []
         spec = LIST_SPECS[name]
         with self._db.session() as session:
             rows = session.scalars(self._ordered_select(spec)).all()
@@ -284,6 +301,10 @@ class LocalJsonStore:
     def save_list(self, name: str, items: list[BaseModel]) -> None:
         spec = LIST_SPECS[name]
         serialized = [item.model_dump(mode="json") for item in items]
+        if name == "sessions":
+            self._import_legacy_sessions(serialized, spec)
+            self._legacy.save_list(name, items)
+            return
         incoming_keys = {
             str(spec.metadata_builder(payload)[spec.key_attr])
             for payload in serialized
@@ -302,6 +323,29 @@ class LocalJsonStore:
                 if key not in incoming_keys:
                     session.delete(row)
         self._legacy.save_list(name, items)
+
+    def _import_legacy_sessions(
+        self,
+        payloads: list[dict[str, Any]],
+        spec: _RepoSpec,
+    ) -> None:
+        """Import missing legacy Session aggregates without replacing runtime rows.
+
+        Study Sessions are database-authoritative after their first import. A
+        compatibility caller can seed an absent legacy row, but it cannot
+        overwrite or delete a Session that the CAS repository already owns.
+        """
+        from app.models.domain import StudySessionRecord
+        from app.persistence.study_session_repository import StudySessionRepository
+
+        records: list[StudySessionRecord] = []
+        for payload in payloads:
+            metadata = spec.metadata_builder(payload)
+            key = str(metadata[spec.key_attr])
+            if not key:
+                raise ValueError("study_session_legacy_import_id_required")
+            records.append(StudySessionRecord.model_validate(payload))
+        StudySessionRepository(self._db).import_legacy(records)
 
     def load_item(self, category: str, item_id: str, model: type[T]) -> T | None:
         if category in STREAM_CATEGORIES:

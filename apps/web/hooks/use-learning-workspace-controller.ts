@@ -75,6 +75,10 @@ import {
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
 import {
+  resolveStudyChatFailurePresentation,
+  resolveStudySessionErrorNotice,
+} from "../lib/study-session-decode";
+import {
   logWorkspaceError,
   logWorkspaceInfo
 } from "../lib/learning-workspace-telemetry";
@@ -651,7 +655,11 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `创建会话失败：${String(error)}`
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `创建会话失败：${String(error)}`,
+          "update",
+        )
       });
       logWorkspaceError("workflow:session_create:error", error);
     } finally {
@@ -959,9 +967,23 @@ export function useLearningWorkspaceController({
 
   const handleAskForSection = async (message: string, studyUnitId: string, attachments: File[] = []) => {
     setChatFailure(null);
-    const targetSession = await ensureSessionForSection(studyUnitId, {
-      clearResponseOnSwitch: false,
-    });
+    let targetSession: StudySessionRecord | null;
+    try {
+      targetSession = await ensureSessionForSection(studyUnitId, {
+        clearResponseOnSwitch: false,
+      });
+    } catch (error) {
+      dispatch({
+        type: "notice_set",
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `打开学习会话失败：${String(error)}`,
+          "history",
+        ),
+      });
+      logWorkspaceError("workflow:study_session:open_error", error);
+      return false;
+    }
     if (!targetSession) {
       return false;
     }
@@ -1033,7 +1055,11 @@ export function useLearningWorkspaceController({
         } catch (recoveryError) {
           dispatch({
             type: "notice_set",
-            notice: `会话恢复失败：${String(recoveryError)}`
+            notice: resolveStudySessionErrorNotice(
+              recoveryError,
+              `会话恢复失败：${String(recoveryError)}`,
+              "response",
+            )
           });
           logWorkspaceError("workflow:study_chat:session_recover_error", recoveryError);
           return false;
@@ -1052,15 +1078,24 @@ export function useLearningWorkspaceController({
         });
         return false;
       }
-      setChatFailure({
-        message,
-        studyUnitId,
-        detail,
-        attachments,
-      });
+      const failurePresentation = resolveStudyChatFailurePresentation(error);
+      setChatFailure(
+        failurePresentation?.retryAllowed
+          ? {
+              message,
+              studyUnitId,
+              detail: failurePresentation.detail,
+              attachments,
+            }
+          : null,
+      );
       dispatch({
         type: "notice_set",
-        notice: `发送失败：${String(error)}`
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `发送失败：${String(error)}`,
+          "response",
+        )
       });
       logWorkspaceError("workflow:study_chat:error", error);
       return false;
@@ -1093,7 +1128,11 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `切换章节失败：${String(error)}`
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `切换章节失败：${String(error)}`,
+          "update",
+        )
       });
       logWorkspaceError("workflow:study_session:section_switch_error", error);
     } finally {
@@ -1134,7 +1173,11 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `章节准备失败：${String(error)}`,
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `章节准备失败：${String(error)}`,
+          "response",
+        ),
       });
       logWorkspaceError("workflow:study_session:prelude_error", error);
       return false;
@@ -1202,7 +1245,11 @@ export function useLearningWorkspaceController({
     } catch (callbackError) {
       dispatch({
         type: "notice_set",
-        notice: `答案已记录，续问失败：${String(callbackError)}`
+        notice: resolveStudySessionErrorNotice(
+          callbackError,
+          `答案已记录，续问失败：${String(callbackError)}`,
+          "response",
+        )
       });
       logWorkspaceError("workflow:study_attempt:callback_error", callbackError);
     } finally {
@@ -1277,7 +1324,11 @@ export function useLearningWorkspaceController({
         } catch (recoveryError) {
           dispatch({
             type: "notice_set",
-            notice: `答题会话恢复失败：${String(recoveryError)}`
+            notice: resolveStudySessionErrorNotice(
+              recoveryError,
+              `答题会话恢复失败：${String(recoveryError)}`,
+              "update",
+            )
           });
           logWorkspaceError("workflow:study_attempt:session_recover_error", recoveryError);
           return;
@@ -1287,7 +1338,11 @@ export function useLearningWorkspaceController({
       }
       dispatch({
         type: "notice_set",
-        notice: `记录答案失败：${String(error)}`
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `记录答案失败：${String(error)}`,
+          "update",
+        )
       });
       logWorkspaceError("workflow:study_attempt:error", error);
     }
@@ -1328,7 +1383,11 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `处理计划变更失败：${String(error)}`,
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `处理计划变更失败：${String(error)}`,
+          "update",
+        ),
       });
       logWorkspaceError("workflow:study_plan_confirmation:error", error);
       return false;
@@ -1384,7 +1443,11 @@ export function useLearningWorkspaceController({
     } catch (error) {
       dispatch({
         type: "notice_set",
-        notice: `打断自动续接失败：${String(error)}`
+        notice: resolveStudySessionErrorNotice(
+          error,
+          `打断自动续接失败：${String(error)}`,
+          "update",
+        )
       });
       logWorkspaceError("workflow:study_follow_up:interrupt_error", error);
       return false;
@@ -1407,10 +1470,18 @@ export function useLearningWorkspaceController({
           type: "notice_set",
           notice: CONNECTED_NOTICE
         });
-      } catch {
+      } catch (error) {
         if (active) {
-          dispatch({ type: "notice_set", notice: DISCONNECTED_NOTICE });
+          dispatch({
+            type: "notice_set",
+            notice: resolveStudySessionErrorNotice(
+              error,
+              DISCONNECTED_NOTICE,
+              "history",
+            ),
+          });
         }
+        logWorkspaceError("workflow:workspace_snapshot:load_error", error);
       } finally {
         if (active) {
           dispatch({ type: "snapshot_refresh_finished" });
@@ -1492,6 +1563,13 @@ export function useLearningWorkspaceController({
           clearResponse: true,
         });
       } catch (error) {
+        const notice = resolveStudySessionErrorNotice(error, "", "history");
+        if (active && notice) {
+          dispatch({
+            type: "notice_set",
+            notice,
+          });
+        }
         logWorkspaceError("workflow:study_session:hydrate_error", error);
       }
     };
@@ -1569,7 +1647,11 @@ export function useLearningWorkspaceController({
               }
               dispatch({
                 type: "notice_set",
-                notice: `自动续接失败：${String(error)}`,
+                notice: resolveStudySessionErrorNotice(
+                  error,
+                  `自动续接失败：${String(error)}`,
+                  "response",
+                ),
               });
               logWorkspaceError("workflow:study_follow_up:error", error);
             } finally {

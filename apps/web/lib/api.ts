@@ -32,12 +32,14 @@ import type {
 
 import { compactPreviewString, compactPreviewValue } from "./preview";
 import { getAiBaseUrl, getDesktopRuntimeConfig } from "./runtime-config";
+import { decodeStudySessionCommittedIdentity } from "./study-session-decode";
 
 export {
   normalizeTavernRoomDetail,
   normalizeTavernTurnResult,
   TavernDecodeError,
 } from "./tavern-decode";
+export { StudySessionDecodeError } from "./study-session-decode";
 import {
   normalizeTavernRoomDetail,
   normalizeTavernRoomList,
@@ -1155,6 +1157,7 @@ function dedupeRichBlocks(items: Array<{ kind: string; content: string }>) {
 }
 
 function normalizeSession(session: any): StudySessionRecord {
+  const committed = decodeStudySessionCommittedIdentity(session);
   const studyUnitId = String(session.study_unit_id ?? session.section_id ?? "");
   const studyUnitTitle = String(session.study_unit_title ?? session.section_title ?? "");
   const preparedStudyUnitIds = Array.isArray(session.prepared_study_unit_ids)
@@ -1174,12 +1177,16 @@ function normalizeSession(session: any): StudySessionRecord {
     themeHint: session.theme_hint ?? "",
     sessionSystemPrompt: compactPreviewString(session.session_system_prompt ?? "", 1200),
     status: session.status,
-    turns: (session.turns ?? []).map((turn: any) => {
+    revision: committed.revision,
+    lastTurnSequence: committed.lastTurnSequence,
+    turns: (session.turns ?? []).map((turn: any, turnIndex: number) => {
       const repaired = repairLegacyRichReply(
         String(turn.assistant_reply ?? ""),
         normalizeRichBlocks(turn.rich_blocks)
       );
       return {
+        id: committed.turns[turnIndex]!.id,
+        sequence: committed.turns[turnIndex]!.sequence,
         learnerMessage: turn.learner_message,
         learnerMessageKind: String(turn.learner_message_kind ?? "learner"),
         learnerAttachments: normalizeLearnerAttachments(turn.learner_attachments),

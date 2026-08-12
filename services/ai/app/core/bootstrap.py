@@ -5,6 +5,7 @@ from app.core.logging import get_logger
 from app.core.settings import Settings
 from app.persistence.database import Database
 from app.persistence.storage import StorageManager
+from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.tavern_repository import TavernRepository
 from app.persistence.migrate_local_data import migrate_from_legacy_store
 from app.services.model_provider import MockModelProvider, OpenAIModelProvider
@@ -80,7 +81,11 @@ class Container:
             self.study_arrangement_service,
             self.model_provider,
         )
-        self.study_session_service = StudySessionService(self.store)
+        self.study_session_repository = StudySessionRepository(self.database)
+        self.study_session_service = StudySessionService(
+            self.store,
+            repository=self.study_session_repository,
+        )
         self.storage_lifecycle_service = StorageLifecycleService(
             self.store,
             self.token_usage_service,

@@ -16,6 +16,7 @@
     "lint:web": "npm --workspace @vibe-learner/web run lint",
     "test:contracts": "tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json && node packages/shared/tests/harness-policy-registry.mjs",
     "test:web:tavern": "npm --workspace @vibe-learner/web run test:tavern",
+    "test:web:reliability": "npm --workspace @vibe-learner/web run test:reliability",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai"
   },

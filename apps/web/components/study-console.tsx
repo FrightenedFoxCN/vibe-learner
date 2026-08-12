@@ -14,6 +14,7 @@ import type {
   StudyChatResponse,
   StudySessionRecord
 } from "@vibe-learner/shared";
+import { orderStudySessionTurns } from "../lib/study-session-decode";
 
 import { CharacterShell } from "./character-shell";
 import { MaterialIcon } from "./material-icon";
@@ -133,11 +134,7 @@ export function StudyConsole({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const activeFollowUp = pendingFollowUps.find((item) => item.status === "pending") ?? null;
 
-  const sortedTurns = [...turns].sort((a, b) => {
-    const aTime = Date.parse(a.createdAt || "") || 0;
-    const bTime = Date.parse(b.createdAt || "") || 0;
-    return aTime - bTime;
-  });
+  const sortedTurns = orderStudySessionTurns(turns);
 
   useEffect(() => {
     const node = transcriptRef.current;
@@ -191,9 +188,9 @@ export function StudyConsole({
           <div style={styles.transcript}>
             {turns.length ? (
               <div ref={transcriptRef} style={styles.turnList}>
-                {sortedTurns.map((turn, index) => (
+                {sortedTurns.map((turn) => (
                   <div
-                    key={buildTurnKey(turn.createdAt, index)}
+                    key={turn.id}
                     style={styles.turnCard}
                   >
                     {!isHiddenLearnerMessage(turn) ? (
@@ -230,7 +227,7 @@ export function StudyConsole({
                         <div style={styles.questionWrap}>
                             {renderInteractiveQuestion({
                               question: turn.interactiveQuestion,
-                              turnKey: buildTurnKey(turn.createdAt, index),
+                              turnKey: turn.id,
                               selectedChoices,
                               blankAnswers,
                               questionFeedback,
@@ -249,7 +246,7 @@ export function StudyConsole({
                           <div style={styles.citations}>
                             {turn.citations.map((citation, citationIndex) => (
                               <button
-                                key={`${turn.createdAt}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
+                                key={`${turn.id}:${citation.sectionId}:${citation.pageStart}:${citation.pageEnd}:${citationIndex}`}
                                 type="button"
                                 style={styles.citation}
                                 onClick={() => { if (onOpenCitation) onOpenCitation(citation); }}
@@ -1285,10 +1282,6 @@ function formatTurnTime(value: string) {
     hour: "2-digit",
     minute: "2-digit"
   });
-}
-
-function buildTurnKey(createdAt: string, index: number) {
-  return `${createdAt}:${index}`;
 }
 
 function renderInteractiveQuestion(input: {

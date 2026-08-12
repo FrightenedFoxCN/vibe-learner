@@ -143,7 +143,9 @@ The planning proposal/tool boundary and document/debug/trace/plan commit are not
 
 The frontend never parses performance instructions out of roleplay text. Character performance remains structured so a future renderer can consume it independently.
 
-Study Session storage still uses aggregate read-modify-write. Tool-driven state effects can also occur before final reply validation, and turn/follow-up writes are not one transaction. Concurrent append and typed effect commit work remains under `AUD-001` and `HRN-STUDY-001`.
+Study Session persistence is database-authoritative and uses a per-session revision CAS with bounded retry. Turns carry application-owned IDs plus a contiguous session-local sequence; legacy aggregate turns receive deterministic compatibility identities when decoded, while partial legacy identities fail closed. All Session reads validate row/payload projections. Legacy list import inserts only absent records and rejects same-ID divergence, so it cannot replace runtime state or delete siblings. Committed Turn identity/content is prefix-immutable except for the dedicated interactive-answer fields. Concurrent turn, follow-up, memory, affinity, confirmation, and projected-PDF updates no longer overwrite a stale whole-session list.
+
+This fixes the aggregate concurrency defect only. Study Chat still executes tool-driven state and file/provider effects before the final reply boundary, has no durable request admission receipt, and does not atomically commit the final reply with every tool effect. `STUDY-OP-ADMIT-001`, `SCH-HRN-EFFECT-001`, `STUDY-EFFECT-COMMIT-001`, and `HRN-STUDY-001` remain open; the CAS must not be presented as exactly-once Study Chat or v3 Harness adoption.
 
 ### 4. Tavern interaction
 
@@ -214,7 +216,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - no background queue, Live2D, or TTS runtime;
 - OCR cleanup remains heuristic-heavy;
 - tool-enabled model calls increase provider latency and timeout pressure;
-- legacy Study Session aggregate writes can lose concurrent turns;
+- Study Chat request admission and effect commit remain non-idempotent even though the underlying Study Session aggregate now uses revision CAS;
 - production Harness v3 adoption is incomplete outside schema/context foundations;
 - Tavern prompt/token/scene-depth budgets and eval metrics remain open;
 - `npm run lint:web` invokes removed Next.js 16 behavior and is tracked by `QG-001`.

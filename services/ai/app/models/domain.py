@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
@@ -782,6 +783,8 @@ class InteractiveQuestion(BaseModel):
 
 
 class DialogueTurnRecord(BaseModel):
+    id: str = ""
+    sequence: int = Field(default=0, ge=0)
     learner_message: str
     learner_message_kind: str = "learner"
     learner_attachments: list[LearnerAttachmentRecord] = []
@@ -864,6 +867,8 @@ class StudySessionRecord(BaseModel):
     session_system_prompt: str = ""
     status: str
     turns: list[DialogueTurnRecord]
+    revision: int = Field(default=0, ge=0)
+    last_turn_sequence: int = Field(default=0, ge=0)
     prepared_study_unit_ids: list[str] = Field(default_factory=list)
     pending_follow_ups: list[SessionFollowUpRecord] = Field(default_factory=list)
     session_memory: list[SessionMemoryRecord] = Field(default_factory=list)
@@ -887,7 +892,47 @@ class StudySessionRecord(BaseModel):
             and value.get("prepared_section_ids") is not None
         ):
             value["prepared_study_unit_ids"] = value.get("prepared_section_ids")
+        turns = value.get("turns")
+        if isinstance(turns, list) and turns:
+            identity_state = [
+                (
+                    bool(str(turn.get("id") or "").strip()),
+                    turn.get("sequence") not in (None, "", 0),
+                )
+                for turn in turns
+                if isinstance(turn, dict)
+            ]
+            if identity_state and all(
+                not has_id and not has_sequence
+                for has_id, has_sequence in identity_state
+            ):
+                session_id = str(value.get("id") or "")
+                for index, turn in enumerate(turns, start=1):
+                    if not isinstance(turn, dict):
+                        continue
+                    digest = hashlib.sha256(
+                        f"study-turn-legacy-v1\0{session_id}\0{index}".encode("utf-8")
+                    ).hexdigest()[:24]
+                    turn["id"] = f"turn-legacy-{digest}"
+                    turn["sequence"] = index
+                value["last_turn_sequence"] = len(turns)
+            elif any(not has_id or not has_sequence for has_id, has_sequence in identity_state):
+                raise ValueError("study_session_legacy_turn_identity_partial")
         return value
+
+    @model_validator(mode="after")
+    def validate_turn_sequence(self) -> "StudySessionRecord":
+        sequences = [turn.sequence for turn in self.turns]
+        turn_ids = [turn.id for turn in self.turns]
+        if any(not turn_id for turn_id in turn_ids):
+            raise ValueError("study_session_sequenced_turn_id_required")
+        if len(turn_ids) != len(set(turn_ids)):
+            raise ValueError("study_session_turn_id_duplicate")
+        if sequences != list(range(1, len(self.turns) + 1)):
+            raise ValueError("study_session_turn_sequence_not_contiguous")
+        if self.last_turn_sequence != len(self.turns):
+            raise ValueError("study_session_last_turn_sequence_mismatch")
+        return self
 
 
 class ExerciseResult(BaseModel):

@@ -50,6 +50,8 @@ class StudySessionRow(Base):
     plan_id: Mapped[str] = mapped_column(String(64), index=True, default="")
     study_unit_id: Mapped[str] = mapped_column(String(128), default="")
     status: Mapped[str] = mapped_column(String(32), default="active")
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    last_turn_sequence: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)

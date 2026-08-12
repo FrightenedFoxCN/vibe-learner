@@ -604,6 +604,8 @@ export interface StudyScheduleItem {
 }
 
 export interface DialogueTurnRecord {
+  id: string;
+  sequence: number;
   learnerMessage: string;
   learnerMessageKind?: string;
   learnerAttachments?: LearnerAttachment[];
@@ -650,6 +652,8 @@ export interface StudySessionRecord {
   themeHint?: string;
   sessionSystemPrompt?: string;
   status: string;
+  revision: number;
+  lastTurnSequence: number;
   turns: DialogueTurnRecord[];
   preparedStudyUnitIds?: string[];
   pendingFollowUps?: SessionFollowUp[];

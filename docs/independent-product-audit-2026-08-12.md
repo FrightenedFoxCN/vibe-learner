@@ -38,6 +38,25 @@ the audit Browser could not reach the host localhost service.
 
 ## P0 — Study Chat can replay already-committed tool effects
 
+### Revalidation status
+
+The underlying aggregate lost-update prerequisite passed independent
+persistence and UX revalidation under `AUD-001`. Concurrent Study Session
+append/create/import retains every sibling with unique contiguous Turn
+sequences; Session mutation uses bounded revision CAS; legacy and partially
+migrated schemas recover without silently accepting partial Turn identity;
+same-ID divergent imports, coerced watermarks, immutable committed-Turn
+rewrites, and row/payload projection drift fail closed. The browser narrowly
+decodes committed Session revision, Turn watermark, ID, and sequence, orders by
+sequence, and shows a safe visible error without leaking decoder paths or
+offering a blind retry.
+
+This closes the aggregate lost-update prerequisite only and narrows, but does
+not close, this P0 finding. Stable Study Chat request admission, terminal
+receipt read-back, typed effect proposals, attachment staging, and truthful
+`uncertain` recovery remain absent; the broader frontend Study DTO boundary is
+still open under `HRN-WEB-STUDY-DEC-001`.
+
 ### Evidence
 
 - `apps/web/hooks/use-learning-workspace-controller.ts` resends a visible
