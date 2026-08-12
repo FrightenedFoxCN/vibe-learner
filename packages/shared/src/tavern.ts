@@ -109,6 +109,7 @@ export interface TavernSpeakerStep {
   replyToMessageId?: string;
   errorCode?: string;
   harnessTrace?: HarnessTrace;
+  claimCount: number;
   startedAt?: string;
   completedAt?: string;
 }

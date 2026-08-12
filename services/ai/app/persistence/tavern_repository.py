@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -369,9 +370,42 @@ class TavernRepository:
         *,
         run_id: str,
         step_index: int,
-        started_at: str,
+        lease_owner: str,
+        lease_seconds: float,
+        max_claims: int,
+        exhaustion_trace: HarnessTraceRecord,
+        reply_to_message_id: str | None = None,
     ) -> TavernSpeakerStepRecord:
+        normalized_owner = lease_owner.strip()
+        if not normalized_owner:
+            raise ValueError("tavern_step_lease_owner_required")
+        if lease_seconds < 1 or lease_seconds > 900:
+            raise ValueError("tavern_step_lease_seconds_invalid")
+        if max_claims < 1 or max_claims > 5:
+            raise ValueError("tavern_step_max_claims_invalid")
+        exhausted_run: TavernRunRecord | None = None
         with self.database.session() as session:
+            database_now = _database_utc_now(session)
+            canonical_started_at = _canonical_utc_timestamp(database_now)
+            canonical_lease_expires_at = _canonical_utc_timestamp(
+                database_now + timedelta(seconds=lease_seconds)
+            )
+            # All run/step mutations take the run row first. This keeps the
+            # PostgreSQL lock order aligned with complete/fail/cancel and avoids
+            # an exhaustion-vs-cancel run<->step deadlock.
+            run_claim = session.execute(
+                update(TavernRunRow)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .values(status=TavernRunRow.status)
+            )
+            run_row = session.get(TavernRunRow, run_id)
+            if run_row is None:
+                raise LookupError("tavern_run_not_found")
+            if run_claim.rowcount != 1:
+                raise TavernRunTerminalConflict(run_id, run_row.status)
             run_pending = select(TavernRunRow.id).where(
                 TavernRunRow.id == run_id,
                 TavernRunRow.status == TavernRunStatus.PENDING.value,
@@ -379,7 +413,14 @@ class TavernRepository:
             claim_conditions = [
                 TavernRunStepRow.run_id == run_id,
                 TavernRunStepRow.step_index == step_index,
-                TavernRunStepRow.status == TavernSpeakerStepStatus.PENDING.value,
+                (
+                    (TavernRunStepRow.status == TavernSpeakerStepStatus.PENDING.value)
+                    | (
+                        (TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value)
+                        & (TavernRunStepRow.lease_expires_at <= canonical_started_at)
+                    )
+                ),
+                TavernRunStepRow.claim_count < max_claims,
                 run_pending,
             ]
             if step_index > 0:
@@ -395,42 +436,159 @@ class TavernRepository:
                 .where(*claim_conditions)
                 .values(
                     status=TavernSpeakerStepStatus.GENERATING.value,
-                    started_at=started_at,
+                    started_at=canonical_started_at,
+                    lease_owner=normalized_owner,
+                    lease_expires_at=canonical_lease_expires_at,
+                    claim_count=TavernRunStepRow.claim_count + 1,
+                    **(
+                        {"reply_to_message_id": reply_to_message_id}
+                        if reply_to_message_id is not None
+                        else {}
+                    ),
                 )
             )
             if claimed.rowcount != 1:
-                run_row = session.get(TavernRunRow, run_id)
-                if run_row is None:
-                    raise LookupError("tavern_run_not_found")
                 step_row = session.get(TavernRunStepRow, (run_id, step_index))
                 if step_row is None:
                     raise LookupError("tavern_run_step_not_found")
-                raise TavernStepClaimConflict(step_index, step_row.status)
+                exhausted = session.execute(
+                    update(TavernRunStepRow)
+                    .where(
+                        TavernRunStepRow.run_id == run_id,
+                        TavernRunStepRow.step_index == step_index,
+                        TavernRunStepRow.claim_count >= max_claims,
+                        (
+                            (TavernRunStepRow.status == TavernSpeakerStepStatus.PENDING.value)
+                            | (
+                                (TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value)
+                                & (
+                                    TavernRunStepRow.lease_expires_at
+                                    <= canonical_started_at
+                                )
+                            )
+                        ),
+                        run_pending,
+                    )
+                    .values(
+                        status=TavernSpeakerStepStatus.FAILED.value,
+                        error_code="tavern_step_claims_exhausted",
+                        completed_at=canonical_started_at,
+                        lease_owner="",
+                        lease_expires_at="",
+                        payload={
+                            "harness_trace": exhaustion_trace.model_dump(mode="json")
+                        },
+                    )
+                )
+                if exhausted.rowcount == 1:
+                    session.execute(
+                        update(TavernRunStepRow)
+                        .where(
+                            TavernRunStepRow.run_id == run_id,
+                            TavernRunStepRow.step_index > step_index,
+                            TavernRunStepRow.status
+                            == TavernSpeakerStepStatus.PENDING.value,
+                        )
+                        .values(
+                            status=TavernSpeakerStepStatus.BLOCKED.value,
+                            error_code="tavern_previous_step_claims_exhausted",
+                        )
+                    )
+                    completed_count = int(
+                        session.scalar(
+                            select(func.count(TavernRunStepRow.step_index)).where(
+                                TavernRunStepRow.run_id == run_id,
+                                TavernRunStepRow.status
+                                == TavernSpeakerStepStatus.COMPLETED.value,
+                            )
+                        )
+                        or 0
+                    )
+                    room_row = session.get(TavernRoomRow, run_row.room_id)
+                    if room_row is None:
+                        raise LookupError("tavern_room_not_found")
+                    run_row.status = (
+                        TavernRunStatus.PARTIAL.value
+                        if completed_count
+                        else TavernRunStatus.FAILED.value
+                    )
+                    run_row.error_code = "tavern_run_claims_exhausted"
+                    run_row.completed_at = canonical_started_at
+                    payload = dict(run_row.payload or {})
+                    payload["terminal_sequence"] = room_row.last_sequence
+                    run_row.payload = payload
+                    session.flush()
+                    exhausted_run = self._hydrate_run(session, run_row)
+                else:
+                    session.refresh(run_row)
+                    session.refresh(step_row)
+                    raise TavernStepClaimConflict(step_index, step_row.status)
             step_row = session.get(TavernRunStepRow, (run_id, step_index))
             if step_row is None:
                 raise LookupError("tavern_run_step_not_found")
-            return _step_from_row(step_row)
+            if exhausted_run is None:
+                return _step_from_row(step_row)
+        if exhausted_run is None:
+            raise RuntimeError("tavern_step_claim_exhaustion_state_missing")
+        raise TavernStepClaimsExhausted(exhausted_run)
 
-    def set_step_reply_anchor(
+    def renew_step_lease(
         self,
         *,
         run_id: str,
         step_index: int,
-        reply_to_message_id: str,
-    ) -> None:
-        updated = None
+        lease_owner: str,
+        claim_count: int,
+        lease_seconds: float,
+    ) -> str | None:
+        if lease_seconds < 1 or lease_seconds > 900:
+            raise ValueError("tavern_step_lease_seconds_invalid")
         with self.database.session() as session:
-            updated = session.execute(
+            database_now = _database_utc_now(session)
+            canonical_now = _canonical_utc_timestamp(database_now)
+            canonical_expiry = _canonical_utc_timestamp(
+                database_now + timedelta(seconds=lease_seconds)
+            )
+            run_claim = session.execute(
+                update(TavernRunRow)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .values(status=TavernRunRow.status)
+            )
+            if run_claim.rowcount != 1:
+                return None
+            run_pending = select(TavernRunRow.id).where(
+                TavernRunRow.id == run_id,
+                TavernRunRow.status == TavernRunStatus.PENDING.value,
+            ).exists()
+            renewed = session.execute(
                 update(TavernRunStepRow)
                 .where(
                     TavernRunStepRow.run_id == run_id,
                     TavernRunStepRow.step_index == step_index,
-                    TavernRunStepRow.status == TavernSpeakerStepStatus.PENDING.value,
+                    TavernRunStepRow.status
+                    == TavernSpeakerStepStatus.GENERATING.value,
+                    TavernRunStepRow.lease_owner == lease_owner,
+                    TavernRunStepRow.claim_count == claim_count,
+                    TavernRunStepRow.lease_expires_at > canonical_now,
+                    run_pending,
                 )
-                .values(reply_to_message_id=reply_to_message_id)
+                .values(lease_expires_at=canonical_expiry)
             )
-        if updated is None or updated.rowcount != 1:
-            raise TavernStepClaimConflict(step_index, "anchor_not_pending")
+            return canonical_expiry if renewed.rowcount == 1 else None
+
+    def is_run_pending(self, run_id: str) -> bool:
+        with self.database.session() as session:
+            return bool(
+                session.scalar(
+                    select(TavernRunRow.id).where(
+                        TavernRunRow.id == run_id,
+                        TavernRunRow.status == TavernRunStatus.PENDING.value,
+                    )
+                )
+            )
 
     def get_retry_child(self, parent_run_id: str) -> TavernRunRecord | None:
         with self.database.session() as session:
@@ -447,18 +605,35 @@ class TavernRepository:
         message: TavernMessageRecord,
         completed_at: str,
         finalize_run: bool,
+        lease_owner: str,
+        claim_count: int,
     ) -> TavernRunRecord:
         with self.database.session() as session:
+            canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
+            run_claim = session.execute(
+                update(TavernRunRow)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .values(status=TavernRunRow.status)
+            )
             run_row = session.get(TavernRunRow, run_id)
             if run_row is None:
                 raise LookupError("tavern_run_not_found")
-            if run_row.status != TavernRunStatus.PENDING.value:
-                raise RuntimeError(f"tavern_run_not_pending:{run_row.status}")
+            if run_claim.rowcount != 1:
+                raise TavernRunTerminalConflict(run_id, run_row.status)
             step_row = session.get(TavernRunStepRow, (run_id, step_index))
             if step_row is None:
                 raise LookupError("tavern_run_step_not_found")
             if step_row.status != TavernSpeakerStepStatus.GENERATING.value:
                 raise TavernStepClaimConflict(step_index, step_row.status)
+            if step_row.lease_owner != lease_owner:
+                raise TavernStepClaimConflict(step_index, "lease_lost")
+            if step_row.claim_count != claim_count:
+                raise TavernStepClaimConflict(step_index, "fencing_epoch_lost")
+            if step_row.lease_expires_at <= canonical_now:
+                raise TavernStepClaimConflict(step_index, "lease_expired")
 
             advanced = session.execute(
                 update(TavernRoomRow)
@@ -484,11 +659,16 @@ class TavernRepository:
                     TavernRunStepRow.run_id == run_id,
                     TavernRunStepRow.step_index == step_index,
                     TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value,
+                    TavernRunStepRow.lease_owner == lease_owner,
+                    TavernRunStepRow.claim_count == claim_count,
+                    TavernRunStepRow.lease_expires_at > canonical_now,
                 )
                 .values(
                     status=TavernSpeakerStepStatus.COMPLETED.value,
                     message_id=message.id,
                     completed_at=completed_at,
+                    lease_owner="",
+                    lease_expires_at="",
                     payload={
                         "harness_trace": (
                             message.harness_trace.model_dump(mode="json")
@@ -531,12 +711,23 @@ class TavernRepository:
         error_code: str,
         completed_at: str,
         harness_trace: HarnessTraceRecord,
+        lease_owner: str,
+        claim_count: int,
     ) -> TavernRunRecord:
         with self.database.session() as session:
+            canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
+            run_claim = session.execute(
+                update(TavernRunRow)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .values(status=TavernRunRow.status)
+            )
             run_row = session.get(TavernRunRow, run_id)
             if run_row is None:
                 raise LookupError("tavern_run_not_found")
-            if run_row.status != TavernRunStatus.PENDING.value:
+            if run_claim.rowcount != 1:
                 existing = self._hydrate_run(session, run_row)
                 return existing
             step_row = session.get(TavernRunStepRow, (run_id, step_index))
@@ -544,17 +735,28 @@ class TavernRepository:
                 raise LookupError("tavern_run_step_not_found")
             if step_row.status != TavernSpeakerStepStatus.GENERATING.value:
                 raise TavernStepClaimConflict(step_index, step_row.status)
+            if step_row.lease_owner != lease_owner:
+                raise TavernStepClaimConflict(step_index, "lease_lost")
+            if step_row.claim_count != claim_count:
+                raise TavernStepClaimConflict(step_index, "fencing_epoch_lost")
+            if step_row.lease_expires_at <= canonical_now:
+                raise TavernStepClaimConflict(step_index, "lease_expired")
             failed_step = session.execute(
                 update(TavernRunStepRow)
                 .where(
                     TavernRunStepRow.run_id == run_id,
                     TavernRunStepRow.step_index == step_index,
                     TavernRunStepRow.status == TavernSpeakerStepStatus.GENERATING.value,
+                    TavernRunStepRow.lease_owner == lease_owner,
+                    TavernRunStepRow.claim_count == claim_count,
+                    TavernRunStepRow.lease_expires_at > canonical_now,
                 )
                 .values(
                     status=TavernSpeakerStepStatus.FAILED.value,
                     error_code=error_code[:128],
                     completed_at=completed_at,
+                    lease_owner="",
+                    lease_expires_at="",
                     payload={"harness_trace": harness_trace.model_dump(mode="json")},
                 )
             )
@@ -595,6 +797,66 @@ class TavernRepository:
         if failed is None:
             raise LookupError("tavern_run_not_found")
         return failed
+
+    def cancel_run(
+        self,
+        *,
+        room_id: str,
+        run_id: str,
+        canceled_at: str,
+    ) -> tuple[TavernRunRecord, bool]:
+        """Cancel a pending run with the same database CAS used by step commits.
+
+        Returns ``(run, changed)``. Repeating cancellation of an already canceled
+        run is idempotent; other terminal runs are returned unchanged so the
+        service can report a conflict.
+        """
+
+        with self.database.session() as session:
+            canceled = session.execute(
+                update(TavernRunRow)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.room_id == room_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .values(
+                    status=TavernRunStatus.CANCELED.value,
+                    error_code="tavern_run_canceled",
+                    completed_at=canceled_at,
+                )
+            )
+            run_row = session.get(TavernRunRow, run_id)
+            if run_row is None or run_row.room_id != room_id:
+                raise LookupError("tavern_run_not_found")
+            if canceled.rowcount == 1:
+                session.execute(
+                    update(TavernRunStepRow)
+                    .where(
+                        TavernRunStepRow.run_id == run_id,
+                        TavernRunStepRow.status.in_(
+                            [
+                                TavernSpeakerStepStatus.PENDING.value,
+                                TavernSpeakerStepStatus.GENERATING.value,
+                            ]
+                        ),
+                    )
+                    .values(
+                        status=TavernSpeakerStepStatus.CANCELED.value,
+                        error_code="tavern_run_canceled",
+                        completed_at=canceled_at,
+                        lease_owner="",
+                        lease_expires_at="",
+                    )
+                )
+                room_row = session.get(TavernRoomRow, room_id)
+                if room_row is None:
+                    raise LookupError("tavern_room_not_found")
+                payload = dict(run_row.payload or {})
+                payload["terminal_sequence"] = room_row.last_sequence
+                run_row.payload = payload
+            hydrated = self._hydrate_run(session, run_row)
+            return hydrated, canceled.rowcount == 1
 
     def list_run_messages(self, run_id: str) -> list[TavernMessageRecord]:
         with self.database.session() as session:
@@ -975,6 +1237,7 @@ def _step_to_row(step: TavernSpeakerStepRecord) -> TavernRunStepRow:
         error_code=step.error_code,
         started_at=step.started_at,
         completed_at=step.completed_at,
+        claim_count=step.claim_count,
         payload={
             "harness_trace": (
                 step.harness_trace.model_dump(mode="json")
@@ -1000,6 +1263,7 @@ def _step_from_row(row: TavernRunStepRow) -> TavernSpeakerStepRecord:
         harness_trace=(
             HarnessTraceRecord.model_validate(trace_payload) if trace_payload else None
         ),
+        claim_count=row.claim_count,
         started_at=row.started_at,
         completed_at=row.completed_at,
     )
@@ -1078,3 +1342,38 @@ class TavernStepClaimConflict(RuntimeError):
         super().__init__(f"tavern_step_claim_conflict:{step_index}:{status}")
         self.step_index = step_index
         self.status = status
+
+
+class TavernRunTerminalConflict(RuntimeError):
+    def __init__(self, run_id: str, status: str) -> None:
+        super().__init__(f"tavern_run_not_pending:{run_id}:{status}")
+        self.run_id = run_id
+        self.status = status
+
+
+class TavernStepClaimsExhausted(RuntimeError):
+    def __init__(self, run: TavernRunRecord) -> None:
+        super().__init__(f"tavern_step_claims_exhausted:{run.id}")
+        self.run = run
+
+
+def _database_utc_now(session) -> datetime:
+    if session.bind is not None and session.bind.dialect.name == "sqlite":
+        value = session.scalar(
+            select(func.strftime("%Y-%m-%dT%H:%M:%f", "now"))
+        )
+    else:
+        value = session.scalar(select(func.current_timestamp()))
+    if isinstance(value, str):
+        parsed = datetime.fromisoformat(value.replace(" ", "T"))
+    elif isinstance(value, datetime):
+        parsed = value
+    else:
+        raise RuntimeError("tavern_database_clock_unavailable")
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _canonical_utc_timestamp(value: datetime) -> str:
+    return value.astimezone(timezone.utc).isoformat(timespec="microseconds")

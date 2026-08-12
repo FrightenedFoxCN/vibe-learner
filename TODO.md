@@ -7,7 +7,7 @@
 - [x] `TAV-001` 建立独立 Tavern Room / Participant / Message / Run 规范化 schema；验收：Alembic 迁移存在，SQLite schema 测试通过，消息序号与 run 幂等键具备唯一约束。
 - [x] `TAV-002` 完成 Tavern CRUD 与 direct 单角色闭环；验收：创建、恢复、归档、直聊 API 集成测试通过。
 - [x] `TAV-003` 完成 facilitated 多角色顺序互动与剩余角色 child retry；验收：服务器按 roster 固化顺序、每位目标至多发言一次、逐角色落盘、部分失败保留、重试不重复已完成角色。
-- [ ] `TAV-004` 增加 pending/generating run 超时接管、停止与取消；验收：进程中断后不会永久锁房间，已完成消息不重放，接管与原 worker 通过 CAS 竞争。
+- [x] `TAV-004` 增加 pending/generating run 超时接管、停止与取消；验收：进程中断后不会永久锁房间，已完成消息不重放，数据库时钟租约与 heartbeat 避免活 worker 误接管，每步 initial + 2 takeover 的 claim 预算耗尽后落 durable failed/partial，接管/cancel 与原 worker 通过 owner + claim epoch + run CAS 竞争。Cancel 只保证立即拒收结果并阻断后续 fallback/retry；已发出的同步上游请求仍可能运行到 provider timeout。
 - [x] `HRN-TAV-001` 实现 Tavern 专用 persona compiler 与 strict ActorReply；验收：任意闲聊不被拉回教材，模型不能决定 speaker/sequence。
 - [ ] `HRN-TAV-002` 建立身份、称呼、目标、跨角色冒充和 prompt injection 回归矩阵；验收：测试记录 schema-valid rate、repair rate 与身份一致率。
 - [ ] `HRN-TAV-PERF-001` 为 Tavern prompt 增加字符/token 总预算、场景快照尺寸和嵌套深度限制；验收：最坏 6 人长对话仍在配置预算内，截断/摘要写入 trace。
@@ -17,6 +17,7 @@
 - [ ] `TAV-RECOVERY-CLIENT-001` 前端 API client 自动执行 Tavern `502` 同 key 终态恢复；验收：保留原 revision/key，按 `run.status` 归一化 completed/partial/failed，不把 HTTP 200 等同成功完成。
 - [ ] `TAV-RUN-VIEW-001` 增加可靠的 retry-chain 聚合读取；验收：单次读取不会因 run list 分页截断而遗漏 child，latest leaf 决定可恢复动作。
 - [ ] `TAV-ERROR-001` Tavern 冲突/执行失败改用结构化错误 envelope；验收：code、run/child ID、current revision 与 recovery action 可直接 decode，前端不解析冒号字符串。
+- [ ] `TAV-CANCEL-TRANSPORT-001` 将 Tavern provider 改为真正可取消的传输；验收：Cancel 能中断已发出的上游请求而不只 fencing 结果，释放连接/worker 并停止 token 消耗；在此之前 UI 文案必须称“取消接收结果”，不能承诺已停止模型计算。
 - [ ] `TAV-UX-COPY-001` 固化 pending/generating/completed/partial/failed/blocked/retry/stale/archived 中文文案；验收：blocked 不显示为角色失败，raw code 只进入 Reliability Details/debug。
 
 ## 审计与质量门

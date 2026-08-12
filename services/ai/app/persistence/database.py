@@ -80,6 +80,24 @@ class Database:
                     "ON tavern_rooms (creation_key) WHERE creation_key IS NOT NULL"
                 )
 
+            if "tavern_run_steps" in table_names:
+                step_columns = self._sqlite_column_names(connection, "tavern_run_steps")
+                if "lease_owner" not in step_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE tavern_run_steps ADD COLUMN "
+                        "lease_owner VARCHAR(64) NOT NULL DEFAULT ''"
+                    )
+                if "lease_expires_at" not in step_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE tavern_run_steps ADD COLUMN "
+                        "lease_expires_at VARCHAR(64) NOT NULL DEFAULT ''"
+                    )
+                if "claim_count" not in step_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE tavern_run_steps ADD COLUMN "
+                        "claim_count INTEGER NOT NULL DEFAULT 0"
+                    )
+
             # Recover partially applied migrations that left a duplicate legacy table behind.
             if "study_sessions_legacy" in table_names and "study_sessions" not in table_names:
                 connection.exec_driver_sql("ALTER TABLE study_sessions_legacy RENAME TO study_sessions")
@@ -259,6 +277,9 @@ class Database:
                     error_code,
                     started_at,
                     completed_at,
+                    lease_owner,
+                    lease_expires_at,
+                    claim_count,
                     payload
                 )
                 SELECT
@@ -272,6 +293,9 @@ class Database:
                     error_code,
                     started_at,
                     completed_at,
+                    '',
+                    '',
+                    0,
                     payload
                 FROM {legacy_steps}
                 """

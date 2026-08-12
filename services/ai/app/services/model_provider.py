@@ -493,6 +493,7 @@ class ModelProvider:
         allowed_target_ids: list[str],
         turn_kind: str = "user_message",
         required_target_id: str = "",
+        should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
         raise NotImplementedError
 
@@ -688,7 +689,10 @@ class MockModelProvider(ModelProvider):
         allowed_target_ids: list[str],
         turn_kind: str = "user_message",
         required_target_id: str = "",
+        should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
+        if should_continue is not None and not should_continue():
+            raise RuntimeError("tavern_actor_generation_canceled")
         relationship = persona.relationship.strip() or "同行者"
         scene_hint = (
             f"在{scene_profile.scene_name or scene_profile.title}里，"
@@ -1367,7 +1371,10 @@ class OpenAIModelProvider(MockModelProvider):
         allowed_target_ids: list[str],
         turn_kind: str = "user_message",
         required_target_id: str = "",
+        should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
+        if should_continue is not None and not should_continue():
+            raise RuntimeError("tavern_actor_generation_canceled")
         actor_schema = TavernActorReply.transport_json_schema()
         actor_schema_text = json.dumps(actor_schema, ensure_ascii=False, sort_keys=True)
         messages = build_tavern_actor_messages(
@@ -1406,6 +1413,8 @@ class OpenAIModelProvider(MockModelProvider):
         except ModelRequestError as exc:
             if exc.status_code not in {"400", "422"}:
                 raise
+            if should_continue is not None and not should_continue():
+                raise RuntimeError("tavern_actor_generation_canceled") from exc
             logger.warning(
                 "model.tavern.schema_transport_fallback status=%s upstream_code=%s",
                 exc.status_code,
@@ -1428,6 +1437,8 @@ class OpenAIModelProvider(MockModelProvider):
             return _parse_tavern_actor_reply(raw_payload)
         except RuntimeError as exc:
             recovery_reason = str(exc)
+            if should_continue is not None and not should_continue():
+                raise RuntimeError("tavern_actor_generation_canceled") from exc
             logger.warning("model.tavern.recovery reason=%s", recovery_reason)
             record_model_recovery(
                 category="semantic_retry",

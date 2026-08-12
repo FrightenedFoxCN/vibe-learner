@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timezone
-from threading import RLock
+from threading import Event, RLock, Thread
 import time
+from typing import Callable
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -37,7 +38,10 @@ from app.persistence.tavern_repository import (
     TavernRepository,
     TavernRetryAlreadyCreated,
     TavernRevisionConflict,
+    TavernRunTerminalConflict,
     TavernRunInProgress,
+    TavernStepClaimConflict,
+    TavernStepClaimsExhausted,
 )
 from app.services.model_recovery import (
     consume_model_recovery_state,
@@ -53,6 +57,10 @@ from app.services.tavern_harness import (
 )
 
 
+TAVERN_STEP_LEASE_SECONDS = 120
+TAVERN_MAX_STEP_CLAIMS = 3
+
+
 class TavernService:
     def __init__(
         self,
@@ -60,11 +68,16 @@ class TavernService:
         repository: TavernRepository,
         persona_engine: PersonaEngine,
         model_provider: ModelProvider,
+        step_lease_seconds: int = TAVERN_STEP_LEASE_SECONDS,
+        max_step_claims: int = TAVERN_MAX_STEP_CLAIMS,
     ) -> None:
         self.repository = repository
         self.persona_engine = persona_engine
         self.model_provider = model_provider
         self.actor_harness = TavernActorHarness()
+        self.step_lease_seconds = max(1, min(900, step_lease_seconds))
+        self.max_step_claims = max(1, min(5, max_step_claims))
+        self._worker_id = f"tavern-worker-{uuid4().hex[:12]}"
         self._locks_guard = RLock()
         self._room_locks: defaultdict[str, RLock] = defaultdict(RLock)
         self._creation_lock = RLock()
@@ -219,7 +232,7 @@ class TavernService:
                     status_code=409,
                     detail="tavern_idempotency_key_reused:turn",
                 )
-            return self._replay_run(duplicate)
+            return self._resume_or_replay_run(duplicate)
 
         detail = self.require_room(room_id)
         if detail.room.status != TavernRoomStatus.ACTIVE:
@@ -310,7 +323,7 @@ class TavernService:
         if duplicate is not None:
             if duplicate.request_digest and duplicate.request_digest != digest:
                 raise HTTPException(status_code=409, detail="tavern_idempotency_key_reused:retry")
-            return self._replay_run(duplicate)
+            return self._resume_or_replay_run(duplicate)
 
         detail = self.require_room(room_id)
         if detail.room.status != TavernRoomStatus.ACTIVE:
@@ -471,70 +484,133 @@ class TavernService:
         detail: TavernRoomDetail,
         input_content: str,
     ) -> TavernTurnResponse:
+        persisted = self.repository.get_run(run.id)
+        if persisted is None:
+            raise HTTPException(status_code=404, detail="tavern_run_not_found")
+        run = persisted
         participant_map = {item.persona_id: item for item in detail.participants}
         generated_messages: list[TavernMessageRecord] = []
         reply_anchor_id = run.anchor_message_id
+        execution_owner = f"{self._worker_id}-{uuid4().hex[:12]}"
         for index, actor_id in enumerate(run.scheduled_participant_ids):
+            persisted_step = run.speaker_steps[index]
+            if persisted_step.status == TavernSpeakerStepStatus.COMPLETED:
+                committed = self.repository.get_message(persisted_step.message_id)
+                if committed is None:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="tavern_completed_step_message_missing",
+                    )
+                generated_messages.append(committed)
+                reply_anchor_id = committed.id
+                continue
             actor = participant_map[actor_id]
             recent_messages: list[TavernMessageRecord] = []
             step_claimed = False
             execution_stage = "step_claim"
             try:
-                if index > 0:
-                    self.repository.set_step_reply_anchor(
-                        run_id=run.id,
-                        step_index=index,
-                        reply_to_message_id=reply_anchor_id,
-                    )
                 step = self.repository.claim_step(
                     run_id=run.id,
                     step_index=index,
-                    started_at=_now(),
+                    lease_owner=execution_owner,
+                    lease_seconds=self.step_lease_seconds,
+                    max_claims=self.max_step_claims,
+                    exhaustion_trace=self.actor_harness.build_lease_exhaustion_trace(
+                        actor=actor,
+                        policy=detail.room.harness_policy,
+                        claim_count=self.max_step_claims,
+                        max_claims=self.max_step_claims,
+                    ),
+                    reply_to_message_id=(reply_anchor_id if index > 0 else None),
                 )
                 step_claimed = True
-                execution_stage = "context_load"
-                recent_messages = self.repository.list_recent_messages(
-                    run.room_id,
-                    limit=detail.room.harness_policy.context_message_limit,
-                    exclude_message_id=run.input_message_id or "",
-                )
-                anchor_message = self.repository.get_message(step.reply_to_message_id)
-                required_target_id = (
-                    anchor_message.persona_id
-                    if anchor_message is not None
-                    and anchor_message.author_kind == TavernAuthorKind.PERSONA
-                    and anchor_message.persona_id != actor.persona_id
-                    else ""
-                )
-                execution_stage = "actor_generation"
-                generated = self._generate_actor_message(
-                    run=run,
-                    actor=actor,
-                    detail=detail,
-                    recent_messages=recent_messages,
-                    input_content=input_content,
-                    required_target_id=required_target_id,
-                )
-                execution_stage = "atomic_commit"
-                completed_run = self.repository.complete_step(
+                with _StepLeaseHeartbeat(
+                    repository=self.repository,
                     run_id=run.id,
                     step_index=index,
-                    message=generated,
-                    completed_at=_now(),
-                    finalize_run=index == len(run.scheduled_participant_ids) - 1,
-                )
+                    lease_owner=execution_owner,
+                    claim_count=step.claim_count,
+                    lease_seconds=self.step_lease_seconds,
+                ) as heartbeat:
+                    execution_stage = "context_load"
+                    recent_messages = self.repository.list_recent_messages(
+                        run.room_id,
+                        limit=detail.room.harness_policy.context_message_limit,
+                        exclude_message_id=run.input_message_id or "",
+                    )
+                    anchor_message = self.repository.get_message(step.reply_to_message_id)
+                    required_target_id = (
+                        anchor_message.persona_id
+                        if anchor_message is not None
+                        and anchor_message.author_kind == TavernAuthorKind.PERSONA
+                        and anchor_message.persona_id != actor.persona_id
+                        else ""
+                    )
+                    execution_stage = "actor_generation"
+                    generated = self._generate_actor_message(
+                        run=run,
+                        actor=actor,
+                        detail=detail,
+                        recent_messages=recent_messages,
+                        input_content=input_content,
+                        required_target_id=required_target_id,
+                        should_continue=heartbeat.should_continue,
+                    )
+                    heartbeat.ensure_active()
+                    execution_stage = "atomic_commit"
+                    completed_run = self.repository.complete_step(
+                        run_id=run.id,
+                        step_index=index,
+                        message=generated,
+                        completed_at=_now(),
+                        finalize_run=index == len(run.scheduled_participant_ids) - 1,
+                        lease_owner=execution_owner,
+                        claim_count=step.claim_count,
+                    )
             except TavernActorExecutionError as exc:
-                failed_run = self.repository.fail_step(
-                    run_id=run.id,
-                    step_index=index,
-                    error_code=exc.error_code,
-                    completed_at=_now(),
-                    harness_trace=exc.trace,
-                )
+                try:
+                    failed_run = self.repository.fail_step(
+                        run_id=run.id,
+                        step_index=index,
+                        error_code=exc.error_code,
+                        completed_at=_now(),
+                        harness_trace=exc.trace,
+                        lease_owner=execution_owner,
+                        claim_count=step.claim_count,
+                    )
+                except TavernStepClaimConflict as conflict:
+                    raise self._step_conflict_response(run.id, conflict) from conflict
+                if failed_run.status == TavernRunStatus.CANCELED:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"tavern_run_canceled:{run.id}",
+                    ) from exc
+                if failed_run.status not in {
+                    TavernRunStatus.FAILED,
+                    TavernRunStatus.PARTIAL,
+                }:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"tavern_run_superseded:{run.id}:{failed_run.status.value}",
+                    ) from exc
                 raise HTTPException(
                     status_code=502,
                     detail=f"tavern_run_failed:{failed_run.id}:{failed_run.status.value}",
                 ) from exc.cause
+            except TavernStepClaimsExhausted as exc:
+                return self._replay_run(exc.run)
+            except TavernStepClaimConflict as exc:
+                raise self._step_conflict_response(run.id, exc) from exc
+            except TavernRunTerminalConflict as exc:
+                if exc.status == TavernRunStatus.CANCELED.value:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"tavern_run_canceled:{run.id}",
+                    ) from exc
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"tavern_run_superseded:{run.id}:{exc.status}",
+                ) from exc
             except Exception as exc:
                 if not step_claimed:
                     raise
@@ -549,16 +625,35 @@ class TavernService:
                     policy=detail.room.harness_policy,
                     recoveries=[],
                 )
-                self.repository.fail_step(
-                    run_id=run.id,
-                    step_index=index,
-                    error_code=_error_code(exc),
-                    completed_at=_now(),
-                    harness_trace=failure_trace,
-                )
+                try:
+                    failed_run = self.repository.fail_step(
+                        run_id=run.id,
+                        step_index=index,
+                        error_code=_error_code(exc),
+                        completed_at=_now(),
+                        harness_trace=failure_trace,
+                        lease_owner=execution_owner,
+                        claim_count=step.claim_count,
+                    )
+                except TavernStepClaimConflict as conflict:
+                    raise self._step_conflict_response(run.id, conflict) from conflict
+                if failed_run.status == TavernRunStatus.CANCELED:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"tavern_run_canceled:{run.id}",
+                    ) from exc
+                if failed_run.status not in {
+                    TavernRunStatus.FAILED,
+                    TavernRunStatus.PARTIAL,
+                }:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"tavern_run_superseded:{run.id}:{failed_run.status.value}",
+                    ) from exc
                 raise
             generated_messages.append(generated)
             reply_anchor_id = generated.id
+            run = completed_run
 
         return TavernTurnResponse(
             run=completed_run,
@@ -581,6 +676,7 @@ class TavernService:
         recent_messages: list[TavernMessageRecord],
         input_content: str,
         required_target_id: str,
+        should_continue: Callable[[], bool] | None = None,
     ) -> TavernMessageRecord:
         reset_model_recovery_state()
         generation_started_at = time.perf_counter()
@@ -596,6 +692,7 @@ class TavernService:
                 allowed_target_ids=[item.persona_id for item in detail.participants],
                 turn_kind=run.trigger_kind.value,
                 required_target_id=required_target_id,
+                should_continue=should_continue,
             )
             model_recoveries = consume_model_recovery_state()
             reply, trace = self.actor_harness.validate_and_repair(
@@ -675,6 +772,86 @@ class TavernService:
             room_state=_to_room_state(self.require_room(run.room_id, limit=1).room),
         )
 
+    def _resume_or_replay_run(self, run: TavernRunRecord) -> TavernTurnResponse:
+        if run.status != TavernRunStatus.PENDING:
+            return self._replay_run(run)
+        detail = self.require_room(run.room_id)
+        if detail.room.status != TavernRoomStatus.ACTIVE:
+            raise HTTPException(status_code=409, detail="tavern_room_not_active")
+        if (
+            detail.room.revision != run.expected_room_revision + 1
+            or (
+                run.context_digest
+                and run.context_digest != _room_context_digest(detail)
+            )
+        ):
+            raise HTTPException(status_code=409, detail="tavern_run_context_changed")
+        participant_map = {item.persona_id: item for item in detail.participants}
+        if any(
+            step.persona_id not in participant_map
+            or participant_map[step.persona_id].prompt_hash
+            != step.participant_prompt_hash
+            for step in run.speaker_steps
+        ):
+            raise HTTPException(status_code=409, detail="tavern_run_participant_changed")
+        root = self.repository.get_run(run.root_run_id or run.id)
+        if root is None:
+            raise HTTPException(status_code=409, detail="tavern_retry_root_missing")
+        input_content = ""
+        if root.input_message_id:
+            input_message = self.repository.get_message(root.input_message_id)
+            if input_message is None:
+                raise HTTPException(status_code=409, detail="tavern_run_input_message_missing")
+            input_content = input_message.content
+        try:
+            return self._execute_run(
+                run=run,
+                detail=detail,
+                input_content=input_content,
+            )
+        except TavernStepClaimConflict as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"tavern_run_in_progress:{run.id}",
+            ) from exc
+
+    def cancel_run(self, *, room_id: str, run_id: str) -> TavernTurnResponse:
+        self.require_room(room_id, limit=1)
+        try:
+            run, changed = self.repository.cancel_run(
+                room_id=room_id,
+                run_id=run_id,
+                canceled_at=_now(),
+            )
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail="tavern_run_not_found") from exc
+        if not changed and run.status != TavernRunStatus.CANCELED:
+            raise HTTPException(
+                status_code=409,
+                detail=f"tavern_run_not_cancelable:{run.status.value}",
+            )
+        return self._replay_run(run)
+
+    def _step_conflict_response(
+        self,
+        run_id: str,
+        conflict: TavernStepClaimConflict,
+    ) -> HTTPException:
+        current = self.repository.get_run(run_id)
+        if current is not None and current.status == TavernRunStatus.CANCELED:
+            detail = f"tavern_run_canceled:{run_id}"
+        elif current is not None and current.status != TavernRunStatus.PENDING:
+            detail = f"tavern_run_superseded:{run_id}:{current.status.value}"
+        else:
+            detail = f"tavern_run_in_progress:{run_id}"
+        return HTTPException(status_code=409, detail=detail)
+
+    def resume_run(self, *, room_id: str, run_id: str) -> TavernTurnResponse:
+        run = self.repository.get_run(run_id)
+        if run is None or run.room_id != room_id:
+            raise HTTPException(status_code=404, detail="tavern_run_not_found")
+        return self._resume_or_replay_run(run)
+
     def _build_participants(
         self,
         *,
@@ -709,8 +886,75 @@ class TavernService:
             return self._room_locks[room_id]
 
 
+class _StepLeaseHeartbeat:
+    """Renew a claimed step while synchronous provider work is in flight."""
+
+    def __init__(
+        self,
+        *,
+        repository: TavernRepository,
+        run_id: str,
+        step_index: int,
+        lease_owner: str,
+        claim_count: int,
+        lease_seconds: float,
+    ) -> None:
+        self.repository = repository
+        self.run_id = run_id
+        self.step_index = step_index
+        self.lease_owner = lease_owner
+        self.claim_count = claim_count
+        self.lease_seconds = lease_seconds
+        self.interval_seconds = max(0.25, lease_seconds / 3)
+        self._stop = Event()
+        self._lost = Event()
+        self._thread: Thread | None = None
+
+    def __enter__(self) -> _StepLeaseHeartbeat:
+        self._thread = Thread(
+            target=self._run,
+            name=f"tavern-lease-{self.run_id[-8:]}-{self.step_index}",
+            daemon=True,
+        )
+        self._thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.interval_seconds + 0.25))
+
+    def _run(self) -> None:
+        while not self._stop.wait(self.interval_seconds):
+            try:
+                renewed = self.repository.renew_step_lease(
+                    run_id=self.run_id,
+                    step_index=self.step_index,
+                    lease_owner=self.lease_owner,
+                    claim_count=self.claim_count,
+                    lease_seconds=self.lease_seconds,
+                )
+            except Exception:
+                self._lost.set()
+                return
+            if renewed is None:
+                self._lost.set()
+                return
+
+    def should_continue(self) -> bool:
+        return (
+            not self._lost.is_set()
+            and not self._stop.is_set()
+            and self.repository.is_run_pending(self.run_id)
+        )
+
+    def ensure_active(self) -> None:
+        if not self.should_continue():
+            raise TavernStepClaimConflict(self.step_index, "lease_lost")
+
+
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
 
 def _error_code(exc: Exception) -> str:

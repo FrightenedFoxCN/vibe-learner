@@ -135,6 +135,9 @@ class TavernRunStepRow(Base):
     error_code: Mapped[str] = mapped_column(String(128), default="")
     started_at: Mapped[str] = mapped_column(String(64), default="")
     completed_at: Mapped[str] = mapped_column(String(64), default="")
+    lease_owner: Mapped[str] = mapped_column(String(64), default="")
+    lease_expires_at: Mapped[str] = mapped_column(String(64), default="")
+    claim_count: Mapped[int] = mapped_column(Integer, default=0)
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
 
 

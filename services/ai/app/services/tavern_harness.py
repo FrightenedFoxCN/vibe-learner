@@ -22,6 +22,40 @@ from app.services.tavern_prompt import TAVERN_ACTOR_PROMPT_VERSION
 
 
 class TavernActorHarness:
+    def build_lease_exhaustion_trace(
+        self,
+        *,
+        actor: TavernParticipantRecord,
+        policy: TavernHarnessPolicy,
+        claim_count: int,
+        max_claims: int,
+    ) -> HarnessTraceRecord:
+        return HarnessTraceRecord(
+            version=f"{policy.version}/{TAVERN_ACTOR_PROMPT_VERSION}",
+            workflow="tavern",
+            stage="lease_recovery",
+            status=HarnessStatus.FAILED,
+            schema_name="TavernSpeakerStepLease",
+            context_digest=_digest(
+                {
+                    "actor_id": actor.persona_id,
+                    "prompt_hash": actor.prompt_hash,
+                }
+            ),
+            checks=[
+                HarnessCheckRecord(
+                    name="bounded_step_claims",
+                    status=HarnessCheckStatus.FAILED,
+                    code="tavern_step_claims_exhausted",
+                    message=(
+                        f"角色步骤已耗尽 {claim_count}/{max_claims} 次运行所有权。"
+                    ),
+                )
+            ],
+            attempts=max(1, min(3, claim_count)),
+            recovery_strategy="lease_takeover_exhausted",
+        )
+
     def validate_and_repair(
         self,
         *,

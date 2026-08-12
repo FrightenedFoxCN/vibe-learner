@@ -737,6 +737,18 @@ Reliability behavior:
 
 Room revision claims are atomic at the database boundary. This applies to SQLite and PostgreSQL and does not depend on one Python process owning an in-memory lock.
 
+Pending speaker steps expose `claim_count`. A generating step owns a database-clock lease renewed by heartbeat. A crashed worker can be taken over only after expiry; owner plus claim epoch fence stale commits. Every step permits at most three claims (initial plus two takeovers). Exhaustion persists a terminal `failed`/`partial` run with `tavern_run_claims_exhausted` and a `lease_recovery` Harness trace; HTTP `200` still requires the client to inspect `run.status`.
+
+### `POST /tavern/rooms/{room_id}/runs/{run_id}/resume`
+
+Resumes a pending run after a process or worker interruption. Completed steps and messages are reused, never regenerated. An active lease returns `409 tavern_run_in_progress:{run_id}`. An expired lease is claimed with a new fencing epoch; claim-budget exhaustion returns the durable terminal recovery envelope.
+
+### `POST /tavern/rooms/{room_id}/runs/{run_id}/cancel`
+
+Atomically changes a pending run and its pending/generating steps to `canceled`. Repeating cancel on the same canceled run is idempotent and returns `200`; other terminal states return `409`.
+
+Cancel immediately prevents message commit and prevents later provider fallback/recovery calls. The current synchronous provider transport cannot abort an already-issued upstream request, so that request may continue until its configured timeout even though its result is rejected. UI copy must describe this as canceling receipt of the result, not as guaranteed termination of model compute.
+
 ### `POST /tavern/rooms/{room_id}/runs/{run_id}/retry`
 
 Creates one child run for only the source run's `failed` and `blocked` actors:

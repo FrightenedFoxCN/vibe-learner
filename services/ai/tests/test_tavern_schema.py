@@ -7,6 +7,12 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 
 from app.models.domain import PersonaProfile
+from app.models.harness import (
+    HarnessCheckRecord,
+    HarnessCheckStatus,
+    HarnessStatus,
+    HarnessTraceRecord,
+)
 from app.models.tavern import (
     CreateTavernRoomRequest,
     TavernActorReply,
@@ -58,6 +64,24 @@ class TavernSchemaTests(unittest.TestCase):
         self.database.dispose()
         self.temp_dir.cleanup()
 
+    @staticmethod
+    def _lease_failure_trace() -> HarnessTraceRecord:
+        return HarnessTraceRecord(
+            version="tavern-harness-v1/test",
+            workflow="tavern",
+            stage="lease_recovery",
+            status=HarnessStatus.FAILED,
+            schema_name="TavernSpeakerStepLease",
+            checks=[
+                HarnessCheckRecord(
+                    name="bounded_step_claims",
+                    status=HarnessCheckStatus.FAILED,
+                    code="tavern_step_claims_exhausted",
+                )
+            ],
+            recovery_strategy="lease_takeover_exhausted",
+        )
+
     def test_schema_uses_normalized_tavern_tables(self) -> None:
         tables = set(inspect(self.database.engine).get_table_names())
         self.assertTrue(
@@ -76,6 +100,12 @@ class TavernSchemaTests(unittest.TestCase):
         inspector = inspect(self.database.engine)
         run_columns = {item["name"] for item in inspector.get_columns("tavern_runs")}
         self.assertIn("parent_run_id", run_columns)
+        step_columns = {
+            item["name"] for item in inspector.get_columns("tavern_run_steps")
+        }
+        self.assertTrue(
+            {"lease_owner", "lease_expires_at", "claim_count"} <= step_columns
+        )
 
         step_primary_key = inspector.get_pk_constraint("tavern_run_steps")
         self.assertEqual(
@@ -302,6 +332,15 @@ class TavernSchemaTests(unittest.TestCase):
             self.assertEqual(child.parent_run_id, "root-run")
             self.assertEqual(child.speaker_steps[0].persona_id, "persona-b")
             self.assertEqual(child.speaker_steps[0].message_id, "message-b")
+            step_columns = {
+                item["name"]
+                for item in inspect(legacy_database.engine).get_columns(
+                    "tavern_run_steps"
+                )
+            }
+            self.assertTrue(
+                {"lease_owner", "lease_expires_at", "claim_count"} <= step_columns
+            )
             with legacy_database.engine.connect() as connection:
                 self.assertEqual(
                     connection.exec_driver_sql("PRAGMA foreign_key_check").all(),
@@ -409,8 +448,22 @@ class TavernSchemaTests(unittest.TestCase):
         )
         self.repository.begin_run(run=run, user_message=user_message)
         with self.assertRaises(TavernStepClaimConflict):
-            self.repository.claim_step(run_id=run.id, step_index=1, started_at=NOW)
-        self.repository.claim_step(run_id=run.id, step_index=0, started_at=NOW)
+            self.repository.claim_step(
+                run_id=run.id,
+                step_index=1,
+                lease_owner="test-worker",
+                lease_seconds=120,
+                max_claims=3,
+                exhaustion_trace=self._lease_failure_trace(),
+            )
+        first_claim = self.repository.claim_step(
+            run_id=run.id,
+            step_index=0,
+            lease_owner="test-worker",
+            lease_seconds=120,
+            max_claims=3,
+            exhaustion_trace=self._lease_failure_trace(),
+        )
         generated = TavernMessageRecord(
             id="message-early-finalize-persona",
             room_id=room.id,
@@ -428,6 +481,8 @@ class TavernSchemaTests(unittest.TestCase):
                 message=generated,
                 completed_at=NOW,
                 finalize_run=True,
+                lease_owner="test-worker",
+                claim_count=first_claim.claim_count,
             )
 
         persisted = self.repository.require_room(room.id)
@@ -440,6 +495,73 @@ class TavernSchemaTests(unittest.TestCase):
             [item.status.value for item in persisted_run.speaker_steps],
             ["generating", "pending"],
         )
+
+        with self.database.engine.begin() as connection:
+            connection.exec_driver_sql(
+                "UPDATE tavern_run_steps SET lease_expires_at = ? "
+                "WHERE run_id = ? AND step_index = 0",
+                ("2020-01-01T00:00:00.000000+00:00", run.id),
+            )
+
+        takeover = self.repository.claim_step(
+            run_id=run.id,
+            step_index=0,
+            lease_owner="takeover-worker",
+            lease_seconds=120,
+            max_claims=3,
+            exhaustion_trace=self._lease_failure_trace(),
+        )
+        self.assertEqual(takeover.status.value, "generating")
+        with self.assertRaisesRegex(TavernStepClaimConflict, "lease_lost"):
+            self.repository.complete_step(
+                run_id=run.id,
+                step_index=0,
+                message=generated,
+                completed_at="2026-08-12T00:04:00+00:00",
+                finalize_run=False,
+                lease_owner="test-worker",
+                claim_count=first_claim.claim_count,
+            )
+        recovered = self.repository.complete_step(
+            run_id=run.id,
+            step_index=0,
+            message=generated,
+            completed_at="2026-08-12T00:04:00+00:00",
+            finalize_run=False,
+            lease_owner="takeover-worker",
+            claim_count=takeover.claim_count,
+        )
+        self.assertEqual(recovered.speaker_steps[0].status.value, "completed")
+        self.assertEqual(len(self.repository.list_run_messages(run.id)), 1)
+
+    def test_step_lease_rejects_invalid_budgets_or_owner(self) -> None:
+        with self.assertRaisesRegex(ValueError, "tavern_step_lease_owner_required"):
+            self.repository.claim_step(
+                run_id="missing-run",
+                step_index=0,
+                lease_owner="",
+                lease_seconds=120,
+                max_claims=3,
+                exhaustion_trace=self._lease_failure_trace(),
+            )
+        with self.assertRaisesRegex(ValueError, "tavern_step_lease_seconds_invalid"):
+            self.repository.claim_step(
+                run_id="missing-run",
+                step_index=0,
+                lease_owner="test-worker",
+                lease_seconds=0,
+                max_claims=3,
+                exhaustion_trace=self._lease_failure_trace(),
+            )
+        with self.assertRaisesRegex(ValueError, "tavern_step_max_claims_invalid"):
+            self.repository.claim_step(
+                run_id="missing-run",
+                step_index=0,
+                lease_owner="test-worker",
+                lease_seconds=120,
+                max_claims=6,
+                exhaustion_trace=self._lease_failure_trace(),
+            )
 
     def test_tavern_model_owned_reply_is_strict(self) -> None:
         with self.assertRaises(ValidationError):

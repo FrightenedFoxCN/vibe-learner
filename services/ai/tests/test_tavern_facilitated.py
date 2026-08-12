@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from concurrent.futures import ThreadPoolExecutor
-from threading import Barrier
+from threading import Barrier, Event
 from types import SimpleNamespace
+import time
 import unittest
 from unittest.mock import patch
 
@@ -13,7 +14,7 @@ from fastapi.testclient import TestClient
 
 from app.api import tavern_routes
 from app.models.api import CreatePersonaRequest
-from app.models.tavern import RetryTavernRunRequest, TavernActorReply
+from app.models.tavern import RetryTavernRunRequest, TavernActorReply, TavernTurnRequest
 from app.persistence.database import Database
 from app.persistence.models import TavernMessageRow, TavernRoomRow
 from app.persistence.storage import StorageManager
@@ -495,6 +496,404 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             ["failed", "blocked", "blocked"],
         )
         self.assertEqual(run.speaker_steps[0].harness_trace.stage, "context_load")
+
+    def test_pending_run_after_begin_crash_resumes_after_service_restart(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="takeover-begin-crash", revision=0)
+        )
+        with patch.object(self.service, "_execute_run", side_effect=SystemExit("crash")):
+            with self.assertRaises(SystemExit):
+                self.service.run_turn(room_id=room_id, payload=payload)
+
+        abandoned = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert abandoned is not None
+        self.assertEqual(abandoned.status.value, "pending")
+        self.assertEqual([step.status.value for step in abandoned.speaker_steps], ["pending"] * 3)
+
+        restarted = TavernService(
+            repository=self.repository,
+            persona_engine=self.persona_engine,
+            model_provider=self.provider,
+        )
+        tavern_routes.container.tavern_service = restarted
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{abandoned.id}/resume"
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        recovered = response.json()
+        self.assertEqual(recovered["run"]["status"], "completed")
+        self.assertEqual(len(recovered["generated_messages"]), 3)
+        room = self.repository.require_room(room_id)
+        self.assertEqual(
+            [item.author_kind.value for item in room.messages],
+            ["user", "persona", "persona", "persona"],
+        )
+
+    def test_expired_generating_step_takeover_skips_completed_messages(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="takeover-claim-crash", revision=0)
+        )
+        original_generate = self.provider.generate_tavern_actor_reply
+
+        def crash_second_actor(**kwargs):
+            reply = original_generate(**kwargs)
+            if len(self.provider.calls) == 2:
+                raise SystemExit("crash-after-claim")
+            return reply
+
+        with patch.object(
+            self.provider,
+            "generate_tavern_actor_reply",
+            side_effect=crash_second_actor,
+        ):
+            with self.assertRaises(SystemExit):
+                self.service.run_turn(room_id=room_id, payload=payload)
+
+        abandoned = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert abandoned is not None
+        self.assertEqual(
+            [step.status.value for step in abandoned.speaker_steps],
+            ["completed", "generating", "pending"],
+        )
+        first_message_id = abandoned.speaker_steps[0].message_id
+
+        active_lease = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{abandoned.id}/resume"
+        )
+        self.assertEqual(active_lease.status_code, 409, active_lease.text)
+        self.assertIn("tavern_run_in_progress", active_lease.text)
+        self.assertEqual(len(self.provider.calls), 2)
+
+        with self.database.engine.begin() as connection:
+            connection.exec_driver_sql(
+                "UPDATE tavern_run_steps SET lease_expires_at = ? "
+                "WHERE run_id = ? AND step_index = 1",
+                ("2020-01-01T00:00:00+00:00", abandoned.id),
+            )
+
+        restarted = TavernService(
+            repository=self.repository,
+            persona_engine=self.persona_engine,
+            model_provider=self.provider,
+        )
+        tavern_routes.container.tavern_service = restarted
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{abandoned.id}/resume"
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        recovered = response.json()
+        self.assertEqual(recovered["run"]["status"], "completed")
+        self.assertEqual(recovered["run"]["speaker_steps"][0]["message_id"], first_message_id)
+        self.assertEqual(len(self.repository.list_run_messages(abandoned.id)), 3)
+        self.assertEqual(len(self.provider.calls), 4)
+
+    def test_legacy_generating_step_without_lease_is_immediately_takeable(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="legacy-empty-lease", revision=0)
+        )
+        with patch.object(self.service, "_execute_run", side_effect=SystemExit("crash")):
+            with self.assertRaises(SystemExit):
+                self.service.run_turn(room_id=room_id, payload=payload)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert run is not None
+        with self.database.engine.begin() as connection:
+            connection.exec_driver_sql(
+                "UPDATE tavern_run_steps SET status = 'generating', lease_owner = '', "
+                "lease_expires_at = '', claim_count = 0 WHERE run_id = ? AND step_index = 0",
+                (run.id,),
+            )
+
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{run.id}/resume"
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["run"]["status"], "completed")
+        self.assertEqual(response.json()["run"]["speaker_steps"][0]["claim_count"], 1)
+
+    def test_terminal_resume_replays_and_terminal_cancel_conflicts(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        completed = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="terminal-completed", revision=0),
+        )
+        self.assertEqual(completed.status_code, 200, completed.text)
+        completed_run = completed.json()["run"]
+        resumed = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{completed_run['id']}/resume"
+        )
+        self.assertEqual(resumed.status_code, 200, resumed.text)
+        self.assertEqual(resumed.json()["run"]["id"], completed_run["id"])
+        rejected_cancel = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{completed_run['id']}/cancel"
+        )
+        self.assertEqual(rejected_cancel.status_code, 409, rejected_cancel.text)
+        self.assertIn("tavern_run_not_cancelable:completed", rejected_cancel.text)
+
+        self.provider.fail_calls = {len(self.provider.calls) + 2}
+        partial = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="terminal-partial", revision=1),
+        )
+        self.assertEqual(partial.status_code, 502, partial.text)
+        partial_run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="terminal-partial",
+        )
+        assert partial_run is not None
+        messages_before = [item.id for item in self.repository.list_run_messages(partial_run.id)]
+        resumed_partial = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{partial_run.id}/resume"
+        )
+        self.assertEqual(resumed_partial.status_code, 200, resumed_partial.text)
+        self.assertEqual(resumed_partial.json()["run"]["status"], "partial")
+        rejected_partial_cancel = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{partial_run.id}/cancel"
+        )
+        self.assertEqual(rejected_partial_cancel.status_code, 409)
+        self.assertEqual(
+            [item.id for item in self.repository.list_run_messages(partial_run.id)],
+            messages_before,
+        )
+
+    def test_cancel_during_generation_returns_conflict_to_original_worker(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="cancel-live-worker", revision=0)
+        )
+        generation_started = Event()
+        release_generation = Event()
+        original_generate = self.provider.generate_tavern_actor_reply
+
+        def wait_for_cancel(**kwargs):
+            generation_started.set()
+            if not release_generation.wait(timeout=3):
+                raise RuntimeError("cancel_test_release_timeout")
+            return original_generate(**kwargs)
+
+        with patch.object(
+            self.provider,
+            "generate_tavern_actor_reply",
+            side_effect=wait_for_cancel,
+        ):
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                worker = executor.submit(
+                    self.service.run_turn,
+                    room_id=room_id,
+                    payload=payload,
+                )
+                self.assertTrue(generation_started.wait(timeout=3))
+                run = self.repository.get_run_by_idempotency_key(
+                    room_id=room_id,
+                    idempotency_key=payload.idempotency_key,
+                )
+                assert run is not None
+                canceled = self.client.post(
+                    f"/tavern/rooms/{room_id}/runs/{run.id}/cancel"
+                )
+                self.assertEqual(canceled.status_code, 200, canceled.text)
+                release_generation.set()
+                with self.assertRaises(HTTPException) as context:
+                    worker.result(timeout=3)
+
+        self.assertEqual(context.exception.status_code, 409)
+        self.assertIn("tavern_run_canceled", str(context.exception.detail))
+        self.assertEqual(self.repository.list_run_messages(run.id), [])
+        persisted = self.repository.require_room(room_id)
+        self.assertEqual(
+            [item.author_kind.value for item in persisted.messages],
+            ["user"],
+        )
+
+        repeated = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{run.id}/cancel"
+        )
+        self.assertEqual(repeated.status_code, 200, repeated.text)
+        self.assertEqual(repeated.json()["run"]["status"], "canceled")
+
+    def test_active_heartbeat_prevents_false_takeover_past_original_lease(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="heartbeat-live-worker", revision=0)
+        )
+        generation_started = Event()
+        release_generation = Event()
+        original_generate = self.provider.generate_tavern_actor_reply
+
+        def wait_past_lease(**kwargs):
+            generation_started.set()
+            if not release_generation.wait(timeout=5):
+                raise RuntimeError("heartbeat_test_release_timeout")
+            return original_generate(**kwargs)
+
+        heartbeat_service = TavernService(
+            repository=self.repository,
+            persona_engine=self.persona_engine,
+            model_provider=self.provider,
+            step_lease_seconds=2,
+        )
+        tavern_routes.container.tavern_service = heartbeat_service
+        with patch.object(
+            self.provider,
+            "generate_tavern_actor_reply",
+            side_effect=wait_past_lease,
+        ):
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                worker = executor.submit(
+                    heartbeat_service.run_turn,
+                    room_id=room_id,
+                    payload=payload,
+                )
+                self.assertTrue(generation_started.wait(timeout=3))
+                run = self.repository.get_run_by_idempotency_key(
+                    room_id=room_id,
+                    idempotency_key=payload.idempotency_key,
+                )
+                assert run is not None
+                time.sleep(2.4)
+                takeover = self.client.post(
+                    f"/tavern/rooms/{room_id}/runs/{run.id}/resume"
+                )
+                self.assertEqual(takeover.status_code, 409, takeover.text)
+                self.assertIn("tavern_run_in_progress", takeover.text)
+                self.assertEqual(len(self.provider.calls), 0)
+                release_generation.set()
+                completed = worker.result(timeout=3)
+
+        self.assertEqual(completed.run.status.value, "completed")
+        persisted = self.repository.get_run(run.id)
+        assert persisted is not None
+        self.assertEqual(persisted.speaker_steps[0].claim_count, 1)
+
+    def test_expired_step_claim_budget_becomes_durable_failure(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="lease-claims-exhausted", revision=0)
+        )
+        with patch.object(self.service, "_execute_run", side_effect=SystemExit("crash")):
+            with self.assertRaises(SystemExit):
+                self.service.run_turn(room_id=room_id, payload=payload)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert run is not None
+        actor = self.repository.require_room(room_id).participants[0]
+        trace = self.service.actor_harness.build_lease_exhaustion_trace(
+            actor=actor,
+            policy=self.repository.require_room(room_id).room.harness_policy,
+            claim_count=2,
+            max_claims=2,
+        )
+        for claim_number in range(2):
+            self.repository.claim_step(
+                run_id=run.id,
+                step_index=0,
+                lease_owner=f"abandoned-worker-{claim_number}",
+                lease_seconds=120,
+                max_claims=2,
+                exhaustion_trace=trace,
+            )
+            with self.database.engine.begin() as connection:
+                connection.exec_driver_sql(
+                    "UPDATE tavern_run_steps SET lease_expires_at = ? "
+                    "WHERE run_id = ? AND step_index = 0",
+                    ("2020-01-01T00:00:00.000000+00:00", run.id),
+                )
+
+        bounded_service = TavernService(
+            repository=self.repository,
+            persona_engine=self.persona_engine,
+            model_provider=self.provider,
+            max_step_claims=2,
+        )
+        tavern_routes.container.tavern_service = bounded_service
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{run.id}/resume"
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        terminal = response.json()["run"]
+        self.assertEqual(terminal["status"], "failed")
+        self.assertEqual(terminal["error_code"], "tavern_run_claims_exhausted")
+        self.assertEqual(terminal["speaker_steps"][0]["status"], "failed")
+        self.assertEqual(terminal["speaker_steps"][0]["claim_count"], 2)
+        self.assertEqual(
+            terminal["speaker_steps"][0]["harness_trace"]["stage"],
+            "lease_recovery",
+        )
+        self.assertEqual(len(self.provider.calls), 0)
+
+    def test_cancel_wins_cas_against_original_worker_commit(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="cancel-cas-race", revision=0)
+        )
+        with patch.object(self.service, "_execute_run", side_effect=SystemExit("crash")):
+            with self.assertRaises(SystemExit):
+                self.service.run_turn(room_id=room_id, payload=payload)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert run is not None
+        step = self.repository.claim_step(
+            run_id=run.id,
+            step_index=0,
+            lease_owner="original-worker",
+            lease_seconds=120,
+            max_claims=3,
+            exhaustion_trace=self.service.actor_harness.build_lease_exhaustion_trace(
+                actor=self.repository.require_room(room_id).participants[0],
+                policy=self.repository.require_room(room_id).room.harness_policy,
+                claim_count=3,
+                max_claims=3,
+            ),
+        )
+        canceled = self.client.post(f"/tavern/rooms/{room_id}/runs/{run.id}/cancel")
+        self.assertEqual(canceled.status_code, 200, canceled.text)
+        self.assertEqual(canceled.json()["run"]["status"], "canceled")
+        self.assertEqual(
+            [item["status"] for item in canceled.json()["run"]["speaker_steps"]],
+            ["canceled", "canceled", "canceled"],
+        )
+        message = self.service._generate_actor_message(
+            run=run,
+            actor=self.repository.require_room(room_id).participants[0],
+            detail=self.repository.require_room(room_id),
+            recent_messages=[],
+            input_content="请大家依次谈谈这个选择。",
+            required_target_id="",
+        )
+        with self.assertRaisesRegex(Exception, "lease_lost|canceled"):
+            self.repository.complete_step(
+                run_id=run.id,
+                step_index=step.step_index,
+                message=message,
+                completed_at="2026-08-12T00:01:00+00:00",
+                finalize_run=False,
+                lease_owner="original-worker",
+                claim_count=step.claim_count,
+            )
+        self.assertEqual(self.repository.list_run_messages(run.id), [])
 
     def test_retry_context_digest_detects_prompt_hash_tampering_without_revision_change(self) -> None:
         created = self._create_room()

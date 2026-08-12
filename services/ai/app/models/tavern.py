@@ -120,6 +120,7 @@ class TavernSpeakerStepRecord(BaseModel):
     reply_to_message_id: str = ""
     error_code: str = ""
     harness_trace: HarnessTraceRecord | None = None
+    claim_count: int = Field(default=0, ge=0, le=5)
     started_at: str = ""
     completed_at: str = ""
 

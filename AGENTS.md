@@ -57,7 +57,7 @@ The frontend consumes structured chat replies with citations and `character_even
 
 ### 4. Tavern interaction (active implementation)
 
-Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`; messages are append-only and use a per-room sequence. Direct and facilitated runs are active. Facilitated targets are a set; the server schedules them by participant `display_order`, commits each validated actor separately, and records partial/failed/blocked steps for scoped child retry. Do not add Tavern fields to `StudySessionRecord`.
+Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`; messages are append-only and use a per-room sequence. Direct and facilitated runs are active. Facilitated targets are a set; the server schedules them by participant `display_order`, commits each validated actor separately, and records partial/failed/blocked steps for scoped child retry. Generating steps use database-clock leases, heartbeat renewal, owner/claim fencing, and at most three claims. Cancel immediately fences persistence and later recovery calls; an already-issued synchronous provider request is best-effort and may run until its own timeout. Do not add Tavern fields to `StudySessionRecord`.
 
 Read `docs/harness-engineering.md` and `docs/harness-schema-ownership.md` before modifying any reliability or model-owned schema boundary. Also read `docs/tavern-architecture.md` for Tavern changes.
 

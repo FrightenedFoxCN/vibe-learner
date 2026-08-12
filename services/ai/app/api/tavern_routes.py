@@ -112,3 +112,25 @@ def retry_tavern_run(
     except RuntimeError as exc:
         logger.exception("tavern.retry_failed room_id=%s run_id=%s", room_id, run_id)
         raise HTTPException(status_code=502, detail="tavern_model_upstream_error") from exc
+
+
+@router.post(
+    "/rooms/{room_id}/runs/{run_id}/cancel",
+    response_model=TavernTurnResponse,
+)
+def cancel_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
+    return container.tavern_service.cancel_run(room_id=room_id, run_id=run_id)
+
+
+@router.post(
+    "/rooms/{room_id}/runs/{run_id}/resume",
+    response_model=TavernTurnResponse,
+)
+def resume_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
+    try:
+        return container.tavern_service.resume_run(room_id=room_id, run_id=run_id)
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        logger.exception("tavern.resume_failed room_id=%s run_id=%s", room_id, run_id)
+        raise HTTPException(status_code=502, detail="tavern_model_upstream_error") from exc

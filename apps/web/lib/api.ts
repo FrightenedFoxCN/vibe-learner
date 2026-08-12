@@ -512,6 +512,7 @@ function normalizeTavernSpeakerStep(raw: any): TavernSpeakerStep {
     harnessTrace: raw?.harness_trace
       ? normalizeHarnessTrace(raw.harness_trace)
       : undefined,
+    claimCount: Number(raw?.claim_count ?? 0),
     startedAt: raw?.started_at ? String(raw.started_at) : undefined,
     completedAt: raw?.completed_at ? String(raw.completed_at) : undefined,
   };
@@ -1593,6 +1594,30 @@ export async function retryTavernRun(
         idempotency_key: input.idempotencyKey,
         expected_room_revision: input.expectedRoomRevision,
       }),
+    })
+  );
+  return normalizeTavernTurnResult(payload);
+}
+
+export async function resumeTavernRun(
+  roomId: string,
+  runId: string
+): Promise<TavernTurnResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/resume`, {
+      method: "POST",
+    })
+  );
+  return normalizeTavernTurnResult(payload);
+}
+
+export async function cancelTavernRun(
+  roomId: string,
+  runId: string
+): Promise<TavernTurnResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/cancel`, {
+      method: "POST",
     })
   );
   return normalizeTavernTurnResult(payload);
