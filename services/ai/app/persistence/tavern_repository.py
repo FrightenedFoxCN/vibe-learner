@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.harness import HarnessTraceRecord
 from app.models.tavern import (
+    TavernAuthorKind,
     TavernHarnessPolicy,
     TavernMessageRecord,
     TavernParticipantRecord,
@@ -893,6 +894,56 @@ class TavernRepository:
             row = session.get(TavernMessageRow, message_id)
             return _message_from_row(row) if row is not None else None
 
+    def get_actor_commit_read_back(
+        self,
+        *,
+        message_id: str,
+    ) -> tuple[
+        TavernMessageRecord,
+        TavernRunRecord,
+        TavernSpeakerStepRecord,
+        list[TavernParticipantRecord],
+        TavernMessageRecord,
+    ]:
+        """Read one actor commit graph from a single consistent DB snapshot."""
+
+        with self.database.session() as session:
+            message_row = session.get(TavernMessageRow, message_id)
+            if message_row is None:
+                raise LookupError("tavern_message_not_found")
+            message = _message_from_row(message_row)
+            if message.author_kind != TavernAuthorKind.PERSONA:
+                raise ValueError("tavern_actor_commit_message_required")
+            run_row = session.get(TavernRunRow, message.run_id)
+            if run_row is None or run_row.room_id != message.room_id:
+                raise LookupError("tavern_run_not_found")
+            step_rows = session.scalars(
+                select(TavernRunStepRow)
+                .where(TavernRunStepRow.run_id == run_row.id)
+                .order_by(TavernRunStepRow.step_index)
+            ).all()
+            run = _run_from_row(run_row, step_rows)
+            matching_steps = [
+                item for item in run.speaker_steps if item.message_id == message.id
+            ]
+            if len(matching_steps) != 1:
+                raise ValueError("tavern_actor_commit_step_mismatch")
+            participant_rows = session.scalars(
+                select(TavernParticipantRow)
+                .where(TavernParticipantRow.room_id == message.room_id)
+                .order_by(TavernParticipantRow.display_order)
+            ).all()
+            anchor_row = session.get(TavernMessageRow, message.reply_to_message_id)
+            if anchor_row is None:
+                raise LookupError("tavern_actor_commit_reply_anchor_not_found")
+            return (
+                message,
+                run,
+                matching_steps[0],
+                [_participant_from_row(row) for row in participant_rows],
+                _message_from_row(anchor_row),
+            )
+
     def get_latest_message(self, room_id: str) -> TavernMessageRecord | None:
         with self.database.session() as session:
             row = session.scalar(
@@ -1124,6 +1175,11 @@ def _message_to_row(item: TavernMessageRecord) -> TavernMessageRow:
             "harness_trace": (
                 item.harness_trace.model_dump(mode="json") if item.harness_trace else None
             ),
+            "commit_metadata": (
+                item.commit_metadata.model_dump(mode="json")
+                if item.commit_metadata
+                else None
+            ),
         },
     )
 
@@ -1131,6 +1187,7 @@ def _message_to_row(item: TavernMessageRecord) -> TavernMessageRow:
 def _message_from_row(row: TavernMessageRow) -> TavernMessageRecord:
     payload = row.payload or {}
     harness_payload = payload.get("harness_trace")
+    commit_metadata_payload = payload.get("commit_metadata")
     return TavernMessageRecord(
         id=row.id,
         room_id=row.room_id,
@@ -1152,6 +1209,7 @@ def _message_from_row(row: TavernMessageRow) -> TavernMessageRecord:
         harness_trace=(
             HarnessTraceRecord.model_validate(harness_payload) if harness_payload else None
         ),
+        commit_metadata=commit_metadata_payload,
     )
 
 

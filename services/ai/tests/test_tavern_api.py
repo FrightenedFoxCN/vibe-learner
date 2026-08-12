@@ -175,6 +175,26 @@ class TavernApiTests(unittest.TestCase):
         trace = result["generated_messages"][0]["harness_trace"]
         self.assertEqual(trace["workflow"], "tavern")
         self.assertEqual(trace["status"], "passed")
+        self.assertNotIn("commit_metadata", result["generated_messages"][0])
+        read_back = self.repository.get_actor_commit_read_back(
+            message_id=result["generated_messages"][0]["id"],
+        )
+        persisted_message, persisted_run, persisted_step, participants, anchor = (
+            read_back
+        )
+        self.assertEqual(persisted_run.id, result["run"]["id"])
+        self.assertEqual(persisted_step.message_id, persisted_message.id)
+        self.assertEqual(anchor.id, result["input_message"]["id"])
+        self.assertEqual(participants[0].persona_id, self.persona.id)
+        assert persisted_message.commit_metadata is not None
+        self.assertRegex(
+            persisted_message.commit_metadata.operation_id,
+            r"^harness-operation-[0-9a-f]{32}$",
+        )
+        self.assertEqual(
+            persisted_message.commit_metadata.effect_batch_id,
+            f"effect-{persisted_message.id}",
+        )
 
         replay = self.client.post(f"/tavern/rooms/{room_id}/turns", json=turn_payload)
         self.assertEqual(replay.status_code, 200, replay.text)

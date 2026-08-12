@@ -1,0 +1,53 @@
+{
+  "schema_name": "HarnessOperationCommitPolicyRegistry",
+  "schema_version": "harness-operation-commit-policies-v1",
+  "policies": [
+    {
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "trace_contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "payload_contract": {
+        "name": "TavernPersonaMessageCommittedProjection",
+        "version": "tavern-persona-message-committed-projection-v1"
+      },
+      "projection_contract": {
+        "name": "TavernPersonaMessageCommittedProjection",
+        "version": "tavern-persona-message-committed-projection-v1"
+      },
+      "binding_contract": {
+        "name": "TavernPersonaMessageCommitBinding",
+        "version": "tavern-persona-message-commit-binding-v1"
+      },
+      "digest_scope": "committed_projection",
+      "evidence_scope": "primary_output_only",
+      "subject_resource_type": "tavern_room",
+      "subject_resource_count": 1,
+      "status_rules": [
+        {
+          "trace_status": "failed",
+          "commit_status": "not_committed"
+        },
+        {
+          "trace_status": "passed",
+          "commit_status": "committed"
+        },
+        {
+          "trace_status": "repaired",
+          "commit_status": "committed"
+        }
+      ],
+      "resource_rules": [
+        {
+          "resource_type": "tavern_message",
+          "committed_attempted_count": 1,
+          "committed_resource_count": 1,
+          "not_committed_attempted_min": 1,
+          "not_committed_attempted_max": 1
+        }
+      ]
+    }
+  ]
+}

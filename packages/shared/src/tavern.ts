@@ -74,6 +74,30 @@ export interface TavernMessage {
   harnessTrace?: HarnessTrace;
 }
 
+/** Complete app-owned digest projection; store content only in protected artifacts. */
+export interface TavernPersonaMessageCommittedProjectionV1 {
+  schemaName: "TavernPersonaMessageCommittedProjection";
+  schemaVersion: "tavern-persona-message-committed-projection-v1";
+  operationId: string;
+  effectBatchId: string;
+  roomId: string;
+  messageId: string;
+  sequence: number;
+  runId: string;
+  stepIndex: number;
+  replyToMessageId: string;
+  authorKind: "persona";
+  personaId: string;
+  personaName: string;
+  content: string;
+  emotion: string;
+  action: string;
+  speechStyle: string;
+  addressedParticipantIds: string[];
+  clientRequestId: string;
+  createdAt: string;
+}
+
 export interface TavernRun {
   id: string;
   roomId: string;

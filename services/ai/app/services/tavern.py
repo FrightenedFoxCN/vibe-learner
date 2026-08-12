@@ -34,6 +34,7 @@ from app.models.tavern import (
     RetryTavernRunRequest,
     UpdateTavernRoomRequest,
 )
+from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
 from app.persistence.tavern_repository import (
     TavernIdempotencyConflict,
     TavernRepository,
@@ -559,6 +560,10 @@ class TavernService:
                     )
                     heartbeat.ensure_active()
                     execution_stage = "atomic_commit"
+                    generated.commit_metadata = TavernPersonaMessageCommitMetadataV1(
+                        operation_id=f"harness-operation-{uuid4().hex}",
+                        effect_batch_id=f"effect-{generated.id}",
+                    )
                     completed_run = self.repository.complete_step(
                         run_id=run.id,
                         step_index=index,

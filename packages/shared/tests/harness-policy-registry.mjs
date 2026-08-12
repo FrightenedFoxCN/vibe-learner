@@ -3,8 +3,10 @@ import { readFile } from "node:fs/promises";
 
 import {
   HARNESS_COMPONENT_REGISTRATIONS,
+  HARNESS_OPERATION_COMMIT_POLICIES,
   HARNESS_OPERATION_STAGE_REGISTRATIONS,
   HARNESS_STAGE_WORKFLOWS,
+  harnessOperationCommitPolicyRegistrySnapshot,
   harnessOperationStageRegistrySnapshot,
   harnessResourceEvidencePolicyRegistrySnapshot,
 } from "../dist-test/harness.js";
@@ -25,12 +27,25 @@ const expectedStages = JSON.parse(await readFile(stageFixtureUrl, "utf8"));
 
 assert.deepEqual(harnessOperationStageRegistrySnapshot(), expectedStages);
 
+const commitFixtureUrl = new URL(
+  "../fixtures/harness/operation-commit-policies-v1.json",
+  import.meta.url,
+);
+const expectedCommitPolicies = JSON.parse(await readFile(commitFixtureUrl, "utf8"));
+
+assert.deepEqual(harnessOperationCommitPolicyRegistrySnapshot(), expectedCommitPolicies);
+
 assert.equal(Object.isFrozen(HARNESS_COMPONENT_REGISTRATIONS), true);
 assert.equal(
   Object.isFrozen(HARNESS_COMPONENT_REGISTRATIONS.tavern_actor_prompt.contract),
   true,
 );
 assert.equal(Object.isFrozen(HARNESS_OPERATION_STAGE_REGISTRATIONS), true);
+assert.equal(Object.isFrozen(HARNESS_OPERATION_COMMIT_POLICIES), true);
+assert.equal(
+  Object.isFrozen(Object.values(HARNESS_OPERATION_COMMIT_POLICIES)[0].resourceRules),
+  true,
+);
 assert.equal(Object.isFrozen(HARNESS_STAGE_WORKFLOWS), true);
 assert.equal(
   Object.isFrozen(HARNESS_OPERATION_STAGE_REGISTRATIONS["tavern:actor_reply"].componentNames),

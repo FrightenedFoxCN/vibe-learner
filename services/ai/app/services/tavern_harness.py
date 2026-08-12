@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import re
 import time
 
@@ -18,6 +16,7 @@ from app.models.tavern import (
     TavernMessageRecord,
     TavernParticipantRecord,
 )
+from app.models.tavern_integrity import persona_prompt_hash, tavern_payload_digest
 from app.services.tavern_prompt import TAVERN_ACTOR_PROMPT_VERSION
 
 
@@ -354,14 +353,5 @@ class TavernHarnessViolation(RuntimeError):
         self.trace = trace
 
 
-def persona_prompt_hash(persona_payload: object) -> str:
-    return tavern_payload_digest(persona_payload)
-
-
-def tavern_payload_digest(payload: object) -> str:
-    return _digest(payload)
-
-
 def _digest(value: object) -> str:
-    encoded = json.dumps(value, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()[:16]
+    return tavern_payload_digest(value)

@@ -4,9 +4,16 @@ from enum import StrEnum
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic.json_schema import SkipJsonSchema
 
 from app.models.domain import PersonaProfile, SceneProfileRecord
 from app.models.harness import HarnessTraceRecord
+from app.models.tavern_commit import (
+    TavernPersonaMessageCommitMetadataV1,
+    TavernPersonaMessageCommittedProjectionV1,
+    revalidate_tavern_message_commit_metadata,
+)
+from app.models.tavern_integrity import persona_prompt_hash
 
 
 class TavernRoomStatus(StrEnum):
@@ -108,6 +115,13 @@ class TavernMessageRecord(BaseModel):
     client_request_id: str = ""
     created_at: str
     harness_trace: HarnessTraceRecord | None = None
+    commit_metadata: SkipJsonSchema[
+        TavernPersonaMessageCommitMetadataV1 | None
+    ] = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+    )
 
 
 class TavernSpeakerStepRecord(BaseModel):
@@ -192,6 +206,142 @@ class TavernActorReply(BaseModel):
         if not isinstance(normalized, dict):
             raise RuntimeError("tavern_actor_transport_schema_invalid")
         return normalized
+
+
+def build_tavern_persona_message_committed_projection(
+    *,
+    message: TavernMessageRecord,
+    run: TavernRunRecord,
+    step: TavernSpeakerStepRecord,
+    participants: list[TavernParticipantRecord],
+    reply_anchor: TavernMessageRecord,
+) -> TavernPersonaMessageCommittedProjectionV1:
+    """Project one repository-read actor append into canonical digest input.
+
+    The caller must supply records read after the short commit transaction. This
+    prevents a self-consistent but unrelated room/run/step tuple from becoming
+    commit evidence.
+    """
+
+    if message.commit_metadata is None:
+        raise ValueError("tavern_commit_metadata_missing")
+    metadata = revalidate_tavern_message_commit_metadata(message.commit_metadata)
+    participant_map = {item.persona_id: item for item in participants}
+    if len(participant_map) != len(participants):
+        raise ValueError("tavern_commit_participant_duplicate")
+    display_orders = [item.display_order for item in participants]
+    if len(display_orders) != len(set(display_orders)):
+        raise ValueError("tavern_commit_participant_display_order_duplicate")
+    if any(item.room_id != message.room_id for item in participants):
+        raise ValueError("tavern_commit_participant_room_mismatch")
+    for item in participants:
+        if (
+            item.persona_snapshot.id != item.persona_id
+            or item.persona_snapshot.name != item.display_name
+        ):
+            raise ValueError("tavern_commit_participant_snapshot_identity_mismatch")
+        if (
+            persona_prompt_hash(item.persona_snapshot.model_dump(mode="json"))
+            != item.prompt_hash
+        ):
+            raise ValueError("tavern_commit_participant_snapshot_hash_mismatch")
+    participant = participant_map.get(message.persona_id)
+    if participant is None:
+        raise ValueError("tavern_commit_persona_not_in_room")
+    if participant.room_id != message.room_id or participant.room_id != run.room_id:
+        raise ValueError("tavern_commit_room_binding_mismatch")
+    if message.author_kind != TavernAuthorKind.PERSONA:
+        raise ValueError("tavern_commit_author_kind_invalid")
+    if message.run_id != run.id or step.run_id != run.id:
+        raise ValueError("tavern_commit_run_binding_mismatch")
+    if step.status != TavernSpeakerStepStatus.COMPLETED:
+        raise ValueError("tavern_commit_step_not_completed")
+    if step.message_id != message.id:
+        raise ValueError("tavern_commit_step_message_mismatch")
+    if step.persona_id != message.persona_id:
+        raise ValueError("tavern_commit_step_persona_mismatch")
+    if step.participant_prompt_hash != participant.prompt_hash:
+        raise ValueError("tavern_commit_participant_prompt_hash_mismatch")
+    if step.reply_to_message_id != message.reply_to_message_id:
+        raise ValueError("tavern_commit_reply_anchor_mismatch")
+    if participant.display_name != message.persona_name:
+        raise ValueError("tavern_commit_persona_name_mismatch")
+    if message.client_request_id != run.idempotency_key:
+        raise ValueError("tavern_commit_client_request_mismatch")
+    if message.id not in run.generated_message_ids:
+        raise ValueError("tavern_commit_run_message_missing")
+    if len(run.generated_message_ids) != len(set(run.generated_message_ids)):
+        raise ValueError("tavern_commit_run_message_duplicate")
+    if len(run.scheduled_participant_ids) != len(
+        set(run.scheduled_participant_ids)
+    ):
+        raise ValueError("tavern_commit_schedule_persona_duplicate")
+    if any(item not in participant_map for item in run.scheduled_participant_ids):
+        raise ValueError("tavern_commit_schedule_persona_not_in_room")
+    expected_schedule = sorted(
+        run.scheduled_participant_ids,
+        key=lambda persona_id: participant_map[persona_id].display_order,
+    )
+    if run.scheduled_participant_ids != expected_schedule:
+        raise ValueError("tavern_commit_schedule_display_order_mismatch")
+    if step.step_index >= len(run.scheduled_participant_ids):
+        raise ValueError("tavern_commit_schedule_index_missing")
+    if run.scheduled_participant_ids[step.step_index] != step.persona_id:
+        raise ValueError("tavern_commit_schedule_persona_mismatch")
+    if len(run.speaker_steps) != len(run.scheduled_participant_ids):
+        raise ValueError("tavern_commit_schedule_step_count_mismatch")
+    if any(
+        item.step_index != index
+        or item.run_id != run.id
+        or item.persona_id != run.scheduled_participant_ids[index]
+        or item.participant_prompt_hash
+        != participant_map[item.persona_id].prompt_hash
+        for index, item in enumerate(run.speaker_steps)
+    ):
+        raise ValueError("tavern_commit_schedule_step_mismatch")
+    matching_steps = [
+        item
+        for item in run.speaker_steps
+        if item.step_index == step.step_index and item.run_id == run.id
+    ]
+    if len(matching_steps) != 1 or matching_steps[0] != step:
+        raise ValueError("tavern_commit_run_step_mismatch")
+    if any(item not in participant_map for item in message.addressed_participant_ids):
+        raise ValueError("tavern_commit_addressed_participant_not_in_room")
+    if reply_anchor.id != message.reply_to_message_id:
+        raise ValueError("tavern_commit_reply_anchor_identity_mismatch")
+    if reply_anchor.room_id != message.room_id:
+        raise ValueError("tavern_commit_reply_anchor_room_mismatch")
+    if reply_anchor.sequence >= message.sequence:
+        raise ValueError("tavern_commit_reply_anchor_sequence_invalid")
+    expected_reply_anchor_id = (
+        run.anchor_message_id
+        if step.step_index == 0
+        else run.speaker_steps[step.step_index - 1].message_id
+    )
+    if message.reply_to_message_id != expected_reply_anchor_id:
+        raise ValueError("tavern_commit_reply_anchor_schedule_mismatch")
+
+    return TavernPersonaMessageCommittedProjectionV1(
+        operation_id=metadata.operation_id,
+        effect_batch_id=metadata.effect_batch_id,
+        room_id=message.room_id,
+        message_id=message.id,
+        sequence=message.sequence,
+        run_id=message.run_id,
+        step_index=step.step_index,
+        reply_to_message_id=message.reply_to_message_id,
+        author_kind="persona",
+        persona_id=message.persona_id,
+        persona_name=message.persona_name,
+        content=message.content,
+        emotion=message.emotion,
+        action=message.action,
+        speech_style=message.speech_style,
+        addressed_participant_ids=message.addressed_participant_ids,
+        client_request_id=message.client_request_id,
+        created_at=message.created_at,
+    )
 
 
 class CreateTavernRoomRequest(BaseModel):

@@ -7,7 +7,7 @@ import hashlib
 import json
 import re
 from types import MappingProxyType
-from typing import ClassVar, Generic, Literal, Mapping, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, Literal, Mapping, NamedTuple, TypeVar
 
 from pydantic import (
     AwareDatetime,
@@ -26,9 +26,30 @@ from app.core.harness_component_versions import (
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
     PLANNING_TOOLSET_CONTRACT_VERSION,
     TAVERN_ACTOR_PROMPT_CONTRACT_VERSION,
+    TAVERN_ACTOR_REPLY_COMMIT_CONTRACT_VERSION,
+    TAVERN_ACTOR_REPLY_CONTRACT_NAME,
+    TAVERN_ACTOR_REPLY_CONTRACT_VERSION,
+    TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_NAME,
+    TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_VERSION,
+    TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
+    TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
     TAVERN_PERSONA_COMPILER_CONTRACT_VERSION,
     TAVERN_SCHEDULER_CONTRACT_VERSION,
 )
+from app.models.tavern_commit import (
+    TavernPersonaMessageCommitBindingV1,
+    TavernPersonaMessageCommittedProjectionV1,
+    revalidate_tavern_message_commit_binding,
+    revalidate_tavern_message_committed_projection,
+)
+
+if TYPE_CHECKING:
+    from app.models.tavern import (
+        TavernMessageRecord,
+        TavernParticipantRecord,
+        TavernRunRecord,
+        TavernSpeakerStepRecord,
+    )
 
 
 class HarnessStatus(StrEnum):
@@ -222,6 +243,46 @@ class HarnessRollbackEvidencePolicy(StrEnum):
     READ_BACK = "read_back"
     COMPENSATION = "compensation"
     UNSUPPORTED = "unsupported"
+
+
+class HarnessOperationEvidenceScope(StrEnum):
+    """How much of a real transaction a registered policy proves."""
+
+    PRIMARY_OUTPUT_ONLY = "primary_output_only"
+
+
+class HarnessOperationCommitPolicyKey(NamedTuple):
+    workflow: HarnessWorkflow
+    stage: HarnessStage
+    trace_contract_name: str
+    trace_contract_version: str
+    payload_contract_name: str
+    payload_contract_version: str
+
+
+class HarnessOperationCommitStatusRule(NamedTuple):
+    trace_status: HarnessStatus
+    commit_status: HarnessCommitStatus
+
+
+class HarnessOperationCommitResourceRule(NamedTuple):
+    resource_type: HarnessResourceType
+    committed_attempted_count: int
+    committed_resource_count: int
+    not_committed_attempted_min: int
+    not_committed_attempted_max: int
+
+
+class HarnessOperationCommitPolicy(NamedTuple):
+    key: HarnessOperationCommitPolicyKey
+    projection_contract: HarnessRegisteredContract
+    binding_contract: HarnessRegisteredContract
+    digest_scope: HarnessDigestScope
+    evidence_scope: HarnessOperationEvidenceScope
+    subject_resource_type: HarnessResourceType
+    subject_resource_count: int
+    status_rules: tuple[HarnessOperationCommitStatusRule, ...]
+    resource_rules: tuple[HarnessOperationCommitResourceRule, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -921,6 +982,198 @@ validate_harness_resource_evidence_policy_registry(
 )
 
 
+_TAVERN_ACTOR_MESSAGE_COMMIT_POLICY_KEY = HarnessOperationCommitPolicyKey(
+    workflow=HarnessWorkflow.TAVERN,
+    stage=HarnessStage.TAVERN_ACTOR_REPLY,
+    trace_contract_name=TAVERN_ACTOR_REPLY_CONTRACT_NAME,
+    trace_contract_version=TAVERN_ACTOR_REPLY_COMMIT_CONTRACT_VERSION,
+    payload_contract_name=TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
+    payload_contract_version=TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
+)
+_TAVERN_ACTOR_MESSAGE_COMMIT_POLICY = HarnessOperationCommitPolicy(
+    key=_TAVERN_ACTOR_MESSAGE_COMMIT_POLICY_KEY,
+    projection_contract=HarnessRegisteredContract(
+        TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
+        TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
+    ),
+    binding_contract=HarnessRegisteredContract(
+        TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_NAME,
+        TAVERN_MESSAGE_COMMIT_BINDING_CONTRACT_VERSION,
+    ),
+    digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+    evidence_scope=HarnessOperationEvidenceScope.PRIMARY_OUTPUT_ONLY,
+    subject_resource_type=HarnessResourceType.TAVERN_ROOM,
+    subject_resource_count=1,
+    status_rules=(
+        HarnessOperationCommitStatusRule(
+            HarnessStatus.FAILED,
+            HarnessCommitStatus.NOT_COMMITTED,
+        ),
+        HarnessOperationCommitStatusRule(
+            HarnessStatus.PASSED,
+            HarnessCommitStatus.COMMITTED,
+        ),
+        HarnessOperationCommitStatusRule(
+            HarnessStatus.REPAIRED,
+            HarnessCommitStatus.COMMITTED,
+        ),
+    ),
+    resource_rules=(
+        HarnessOperationCommitResourceRule(
+            HarnessResourceType.TAVERN_MESSAGE,
+            1,
+            1,
+            1,
+            1,
+        ),
+    ),
+)
+
+
+HARNESS_OPERATION_COMMIT_POLICIES = MappingProxyType(
+    {
+        _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY_KEY: (
+            _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY
+        ),
+    }
+)
+
+
+def validate_harness_operation_commit_policy_registry(
+    registry: Mapping[object, object],
+) -> None:
+    """Fail closed when a commit policy drifts from its audited operation."""
+
+    if set(registry) != set(HARNESS_OPERATION_COMMIT_POLICIES):
+        raise ValueError("harness_operation_commit_policy_registry_incomplete")
+    for key, policy in registry.items():
+        if (
+            not isinstance(key, HarnessOperationCommitPolicyKey)
+            or not isinstance(policy, HarnessOperationCommitPolicy)
+            or policy.key != key
+        ):
+            raise ValueError("harness_operation_commit_policy_registry_invalid")
+        if (key.workflow, key.stage) not in HARNESS_OPERATION_STAGE_KEYS:
+            raise ValueError("harness_operation_commit_stage_unregistered")
+        for contract in (
+            HarnessContractRef(
+                name=key.trace_contract_name,
+                version=key.trace_contract_version,
+            ),
+            HarnessContractRef(
+                name=key.payload_contract_name,
+                version=key.payload_contract_version,
+            ),
+            policy.projection_contract.to_ref(),
+            policy.binding_contract.to_ref(),
+        ):
+            require_versioned_harness_contract(contract)
+        if (
+            policy.projection_contract.name != key.payload_contract_name
+            or policy.projection_contract.version != key.payload_contract_version
+        ):
+            raise ValueError("harness_operation_commit_projection_contract_mismatch")
+        if policy.digest_scope != HarnessDigestScope.COMMITTED_PROJECTION:
+            raise ValueError("harness_operation_commit_digest_scope_invalid")
+        if policy.evidence_scope != HarnessOperationEvidenceScope.PRIMARY_OUTPUT_ONLY:
+            raise ValueError("harness_operation_commit_evidence_scope_invalid")
+        if policy.subject_resource_count < 1:
+            raise ValueError("harness_operation_commit_subject_count_invalid")
+        status_keys = [item.trace_status for item in policy.status_rules]
+        if len(status_keys) != len(set(status_keys)):
+            raise ValueError("harness_operation_commit_status_rule_duplicate")
+        if status_keys != sorted(status_keys, key=lambda item: item.value):
+            raise ValueError("harness_operation_commit_status_rules_not_sorted")
+        resource_types = [item.resource_type for item in policy.resource_rules]
+        if not resource_types:
+            raise ValueError("harness_operation_commit_resource_rules_empty")
+        if len(resource_types) != len(set(resource_types)):
+            raise ValueError("harness_operation_commit_resource_rule_duplicate")
+        if resource_types != sorted(resource_types, key=lambda item: item.value):
+            raise ValueError("harness_operation_commit_resource_rules_not_sorted")
+        for rule in policy.resource_rules:
+            if (
+                rule.committed_attempted_count < 1
+                or rule.committed_resource_count < 1
+                or rule.not_committed_attempted_min < 0
+                or rule.not_committed_attempted_max
+                < rule.not_committed_attempted_min
+            ):
+                raise ValueError("harness_operation_commit_resource_count_invalid")
+            if (
+                HARNESS_RESOURCE_EVIDENCE_POLICIES[
+                    rule.resource_type
+                ].commit_evidence
+                == HarnessCommitEvidencePolicy.UNSUPPORTED
+            ):
+                raise ValueError("harness_operation_commit_resource_unsupported")
+        if policy != HARNESS_OPERATION_COMMIT_POLICIES[key]:
+            raise ValueError("harness_operation_commit_policy_definition_mismatch")
+
+
+def harness_operation_commit_policy_registry_snapshot() -> dict[str, object]:
+    """Return the canonical Python/TypeScript operation-policy projection."""
+
+    return {
+        "schema_name": "HarnessOperationCommitPolicyRegistry",
+        "schema_version": "harness-operation-commit-policies-v1",
+        "policies": [
+            {
+                "workflow": key.workflow.value,
+                "stage": key.stage.value,
+                "trace_contract": {
+                    "name": key.trace_contract_name,
+                    "version": key.trace_contract_version,
+                },
+                "payload_contract": {
+                    "name": key.payload_contract_name,
+                    "version": key.payload_contract_version,
+                },
+                "projection_contract": {
+                    "name": policy.projection_contract.name,
+                    "version": policy.projection_contract.version,
+                },
+                "binding_contract": {
+                    "name": policy.binding_contract.name,
+                    "version": policy.binding_contract.version,
+                },
+                "digest_scope": policy.digest_scope.value,
+                "evidence_scope": policy.evidence_scope.value,
+                "subject_resource_type": policy.subject_resource_type.value,
+                "subject_resource_count": policy.subject_resource_count,
+                "status_rules": [
+                    {
+                        "trace_status": item.trace_status.value,
+                        "commit_status": item.commit_status.value,
+                    }
+                    for item in policy.status_rules
+                ],
+                "resource_rules": [
+                    {
+                        "resource_type": item.resource_type.value,
+                        "committed_attempted_count": item.committed_attempted_count,
+                        "committed_resource_count": item.committed_resource_count,
+                        "not_committed_attempted_min": (
+                            item.not_committed_attempted_min
+                        ),
+                        "not_committed_attempted_max": (
+                            item.not_committed_attempted_max
+                        ),
+                    }
+                    for item in policy.resource_rules
+                ],
+            }
+            for key, policy in sorted(
+                HARNESS_OPERATION_COMMIT_POLICIES.items(),
+                key=lambda item: tuple(
+                    value.value if isinstance(value, StrEnum) else value
+                    for value in item[0]
+                ),
+            )
+        ],
+    }
+
+
 def validate_harness_context_resource_evidence(
     resource: "HarnessResourceRefV3",
 ) -> None:
@@ -1604,12 +1857,125 @@ class HarnessTraceV3(HarnessTraceV2):
     context: HarnessContextEnvelopeV3
     commit_evidence: HarnessCommitEvidenceV3
 
+    @model_validator(mode="before")
+    @classmethod
+    def revalidate_nested_v3_trace_evidence(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        context = value.get("context")
+        if isinstance(context, HarnessContextEnvelopeV3):
+            HarnessContextEnvelopeV3.model_validate(
+                context.model_dump(mode="json", exclude_none=False)
+            )
+        evidence = value.get("commit_evidence")
+        if isinstance(evidence, HarnessCommitEvidenceV3):
+            HarnessCommitEvidenceV3.model_validate(
+                evidence.model_dump(mode="json", exclude_none=False)
+            )
+        contract = value.get("contract")
+        if isinstance(contract, HarnessContractRef):
+            HarnessContractRef.model_validate(
+                contract.model_dump(mode="json", exclude_none=False)
+            )
+        return value
+
     @model_validator(mode="after")
     def bind_v3_context(self) -> "HarnessTraceV3":
         if self.context.stage != self.stage:
             raise ValueError("harness_context_stage_mismatch")
         require_versioned_harness_contract(self.contract)
+        self._validate_operation_commit_policy()
         return self
+
+    def _validate_operation_commit_policy(self) -> None:
+        evidence = HarnessCommitEvidenceV3.model_validate(
+            self.commit_evidence.model_dump(mode="json", exclude_none=False)
+        )
+        has_operation_claim = (
+            evidence.status
+            in {
+                HarnessCommitStatus.COMMITTED,
+                HarnessCommitStatus.ROLLED_BACK,
+            }
+            or evidence.payload_contract is not None
+            or bool(evidence.attempted_resource_refs)
+            or bool(evidence.committed_resources)
+        )
+        base_key = (
+            self.workflow,
+            self.stage,
+            self.contract.name,
+            self.contract.version,
+        )
+        candidates = [
+            policy
+            for key, policy in HARNESS_OPERATION_COMMIT_POLICIES.items()
+            if key[:4] == base_key
+        ]
+        if not candidates:
+            if has_operation_claim:
+                raise ValueError("harness_operation_commit_policy_unregistered")
+            return
+        if evidence.payload_contract is None:
+            raise ValueError("harness_operation_commit_payload_contract_required")
+        key = HarnessOperationCommitPolicyKey(
+            self.workflow,
+            self.stage,
+            self.contract.name,
+            self.contract.version,
+            evidence.payload_contract.name,
+            evidence.payload_contract.version,
+        )
+        policy = HARNESS_OPERATION_COMMIT_POLICIES.get(key)
+        if policy is None:
+            raise ValueError("harness_operation_commit_policy_unregistered")
+        expected_status = {
+            item.trace_status: item.commit_status for item in policy.status_rules
+        }.get(self.status)
+        if expected_status is None or evidence.status != expected_status:
+            raise ValueError("harness_operation_commit_status_mismatch")
+        if evidence.digest_scope != policy.digest_scope:
+            raise ValueError("harness_operation_commit_digest_scope_mismatch")
+        if evidence.status == HarnessCommitStatus.ROLLED_BACK:
+            raise ValueError("harness_operation_commit_rollback_forbidden")
+        subject_refs = [
+            item
+            for item in self.context.subject_refs
+            if item.resource_type == policy.subject_resource_type
+        ]
+        if len(subject_refs) != policy.subject_resource_count:
+            raise ValueError("harness_operation_commit_subject_set_mismatch")
+        allowed_resource_types = {item.resource_type for item in policy.resource_rules}
+        actual_resource_types = {
+            item.resource_type for item in evidence.attempted_resource_refs
+        } | {item.resource_type for item in evidence.committed_resources}
+        if not actual_resource_types <= allowed_resource_types:
+            raise ValueError("harness_operation_commit_resource_set_mismatch")
+        for rule in policy.resource_rules:
+            attempted_count = sum(
+                item.resource_type == rule.resource_type
+                for item in evidence.attempted_resource_refs
+            )
+            committed_count = sum(
+                item.resource_type == rule.resource_type
+                for item in evidence.committed_resources
+            )
+            if evidence.status == HarnessCommitStatus.COMMITTED:
+                if (
+                    attempted_count != rule.committed_attempted_count
+                    or committed_count != rule.committed_resource_count
+                ):
+                    raise ValueError("harness_operation_commit_resource_count_mismatch")
+            elif (
+                attempted_count < rule.not_committed_attempted_min
+                or attempted_count > rule.not_committed_attempted_max
+                or committed_count != 0
+            ):
+                raise ValueError("harness_operation_commit_resource_count_mismatch")
+        if evidence.status == HarnessCommitStatus.COMMITTED:
+            committed = evidence.committed_resources[0]
+            if evidence.payload_digest != committed.payload_digest:
+                raise ValueError("harness_operation_commit_payload_digest_mismatch")
 
 
 ProposalT = TypeVar("ProposalT", bound=HarnessV2Model)
@@ -1731,6 +2097,9 @@ validate_harness_operation_stage_registry(
     HARNESS_COMPONENT_REGISTRATIONS,
     HARNESS_OPERATION_STAGE_REGISTRATIONS,
 )
+validate_harness_operation_commit_policy_registry(
+    HARNESS_OPERATION_COMMIT_POLICIES,
+)
 
 
 def canonical_harness_commit_digest(
@@ -1757,3 +2126,125 @@ def canonical_harness_commit_digest(
             ],
         }
     )
+
+
+def build_tavern_persona_message_commit_binding(
+    projection: TavernPersonaMessageCommittedProjectionV1,
+) -> TavernPersonaMessageCommitBindingV1:
+    """Build trace-safe identity from a strictly revalidated protected projection."""
+
+    canonical = revalidate_tavern_message_committed_projection(projection)
+    return TavernPersonaMessageCommitBindingV1(
+        operation_id=canonical.operation_id,
+        effect_batch_id=canonical.effect_batch_id,
+        room_id=canonical.room_id,
+        message_id=canonical.message_id,
+        sequence=canonical.sequence,
+        run_id=canonical.run_id,
+        step_index=canonical.step_index,
+        reply_to_message_id=canonical.reply_to_message_id,
+        author_kind=canonical.author_kind,
+        persona_id=canonical.persona_id,
+        persona_name=canonical.persona_name,
+        client_request_id=canonical.client_request_id,
+        created_at=canonical.created_at,
+        projection_digest=canonical_harness_digest(canonical),
+    )
+
+
+def validate_harness_operation_commit(
+    trace: HarnessTraceV3,
+    binding: TavernPersonaMessageCommitBindingV1,
+    *,
+    message: "TavernMessageRecord",
+    run: "TavernRunRecord",
+    step: "TavernSpeakerStepRecord",
+    participants: list["TavernParticipantRecord"],
+    reply_anchor: "TavernMessageRecord",
+) -> TavernPersonaMessageCommittedProjectionV1:
+    """Validate one registered operation against protected committed read-back.
+
+    This sidecar validator deliberately leaves the registered v3 wire unchanged.
+    A trace alone proves lifecycle evidence; only this trace + repository
+    read-back records + trace-safe binding proves the registered primary output.
+    """
+
+    strict_trace = HarnessTraceV3.model_validate(
+        trace.model_dump(mode="json", exclude_none=False)
+    )
+    from app.models.tavern import (
+        build_tavern_persona_message_committed_projection,
+    )
+
+    strict_projection = build_tavern_persona_message_committed_projection(
+        message=message,
+        run=run,
+        step=step,
+        participants=participants,
+        reply_anchor=reply_anchor,
+    )
+    strict_binding = revalidate_tavern_message_commit_binding(binding)
+    evidence = strict_trace.commit_evidence
+    if (
+        evidence.status != HarnessCommitStatus.COMMITTED
+        or evidence.payload_contract is None
+    ):
+        raise ValueError("harness_operation_commit_success_required")
+    key = HarnessOperationCommitPolicyKey(
+        strict_trace.workflow,
+        strict_trace.stage,
+        strict_trace.contract.name,
+        strict_trace.contract.version,
+        evidence.payload_contract.name,
+        evidence.payload_contract.version,
+    )
+    policy = HARNESS_OPERATION_COMMIT_POLICIES.get(key)
+    if policy is None:
+        raise ValueError("harness_operation_commit_policy_unregistered")
+    if policy.evidence_scope != HarnessOperationEvidenceScope.PRIMARY_OUTPUT_ONLY:
+        raise ValueError("harness_operation_commit_evidence_scope_invalid")
+    expected_binding = build_tavern_persona_message_commit_binding(strict_projection)
+    if strict_binding != expected_binding:
+        raise ValueError("harness_operation_commit_binding_projection_mismatch")
+    room_refs = [
+        item
+        for item in strict_trace.context.subject_refs
+        if item.resource_type == policy.subject_resource_type
+    ]
+    if len(room_refs) != policy.subject_resource_count:
+        raise ValueError("harness_operation_commit_subject_set_mismatch")
+    attempted = evidence.attempted_resource_refs
+    committed = evidence.committed_resources
+    if len(attempted) != 1 or len(committed) != 1:
+        raise ValueError("harness_operation_commit_resource_count_mismatch")
+    attempted_message = attempted[0]
+    committed_message = committed[0]
+    if (
+        attempted_message.resource_type != HarnessResourceType.TAVERN_MESSAGE
+        or committed_message.resource_type != HarnessResourceType.TAVERN_MESSAGE
+    ):
+        raise ValueError("harness_operation_commit_resource_set_mismatch")
+    if strict_projection.operation_id != strict_trace.operation_id:
+        raise ValueError("harness_operation_commit_binding_operation_mismatch")
+    if strict_projection.effect_batch_id != evidence.effect_batch_id:
+        raise ValueError("harness_operation_commit_binding_effect_batch_mismatch")
+    if strict_projection.room_id != room_refs[0].resource_id:
+        raise ValueError("harness_operation_commit_binding_room_mismatch")
+    if (
+        strict_projection.message_id != attempted_message.resource_id
+        or strict_projection.message_id != committed_message.resource_id
+    ):
+        raise ValueError("harness_operation_commit_binding_message_mismatch")
+    if (
+        strict_projection.sequence != committed_message.first_sequence
+        or strict_projection.sequence != committed_message.last_sequence
+    ):
+        raise ValueError("harness_operation_commit_binding_sequence_mismatch")
+    projection_digest = canonical_harness_digest(strict_projection)
+    if (
+        projection_digest != strict_binding.projection_digest
+        or projection_digest != committed_message.payload_digest
+        or projection_digest != evidence.payload_digest
+    ):
+        raise ValueError("harness_operation_commit_binding_digest_mismatch")
+    return strict_projection

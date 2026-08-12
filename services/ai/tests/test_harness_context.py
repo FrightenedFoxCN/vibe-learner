@@ -20,6 +20,7 @@ from pydantic import (
 
 from app.models.harness import (
     HARNESS_COMPONENT_REGISTRATIONS,
+    HARNESS_OPERATION_COMMIT_POLICIES,
     HARNESS_OPERATION_STAGE_REGISTRATIONS,
     HARNESS_RESOURCE_EVIDENCE_POLICIES,
     HarnessArtifactType,
@@ -44,10 +45,12 @@ from app.models.harness import (
     HarnessWorkflow,
     canonical_harness_context_digest,
     canonical_harness_commit_digest,
+    harness_operation_commit_policy_registry_snapshot,
     harness_resource_evidence_policy_registry_snapshot,
     harness_operation_stage_registry_snapshot,
     registered_harness_stage_component_contracts,
     validate_harness_trace,
+    validate_harness_operation_commit_policy_registry,
     validate_harness_resource_evidence_policy_registry,
     validate_harness_operation_stage_registry,
 )
@@ -75,6 +78,14 @@ STAGE_FIXTURE = (
     / "fixtures"
     / "harness"
     / "operation-stage-registry-v1.json"
+)
+COMMIT_POLICY_FIXTURE = (
+    Path(__file__).parents[3]
+    / "packages"
+    / "shared"
+    / "fixtures"
+    / "harness"
+    / "operation-commit-policies-v1.json"
 )
 OPERATION_ID = "harness-operation-0123456789abcdef0123456789abcdef"
 
@@ -740,6 +751,33 @@ class HarnessContextV3Tests(unittest.TestCase):
             "harness_resource_evidence_policy_registry_inconsistent",
         ):
             validate_harness_resource_evidence_policy_registry(inconsistent)
+
+    def test_operation_commit_policy_registry_matches_shared_golden(self) -> None:
+        expected = json.loads(COMMIT_POLICY_FIXTURE.read_text(encoding="utf-8"))
+        self.assertEqual(
+            harness_operation_commit_policy_registry_snapshot(),
+            expected,
+        )
+        validate_harness_operation_commit_policy_registry(
+            HARNESS_OPERATION_COMMIT_POLICIES
+        )
+
+        missing = dict(HARNESS_OPERATION_COMMIT_POLICIES)
+        missing.pop(next(iter(missing)))
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_operation_commit_policy_registry_incomplete",
+        ):
+            validate_harness_operation_commit_policy_registry(missing)
+
+        invalid = dict(HARNESS_OPERATION_COMMIT_POLICIES)
+        key = next(iter(invalid))
+        invalid[key] = object()
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_operation_commit_policy_registry_invalid",
+        ):
+            validate_harness_operation_commit_policy_registry(invalid)
 
     def test_context_revision_evidence_follows_resource_policy(self) -> None:
         self.assertEqual(

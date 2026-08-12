@@ -332,6 +332,7 @@ export type HarnessCommitEvidencePolicy =
   | "revision"
   | "sequence"
   | "unsupported";
+export type HarnessOperationEvidenceScope = "primary_output_only";
 export type HarnessRollbackEvidencePolicy =
   | "read_back"
   | "compensation"
@@ -451,6 +452,148 @@ export function harnessResourceEvidencePolicyRegistrySnapshot(): HarnessResource
         rollback_evidence: policy.rollbackEvidence,
       })),
   };
+}
+
+export interface HarnessOperationCommitPolicy {
+  workflow: HarnessWorkflow;
+  stage: HarnessStage;
+  traceContract: HarnessContractRef;
+  payloadContract: HarnessContractRef;
+  projectionContract: HarnessContractRef;
+  bindingContract: HarnessContractRef;
+  digestScope: HarnessDigestScope;
+  evidenceScope: HarnessOperationEvidenceScope;
+  subjectResourceType: HarnessResourceType;
+  subjectResourceCount: number;
+  statusRules: Array<{
+    traceStatus: HarnessStatus;
+    commitStatus: HarnessCommitStatus;
+  }>;
+  resourceRules: Array<{
+    resourceType: HarnessResourceType;
+    committedAttemptedCount: number;
+    committedResourceCount: number;
+    notCommittedAttemptedMin: number;
+    notCommittedAttemptedMax: number;
+  }>;
+}
+
+export const HARNESS_OPERATION_COMMIT_POLICIES = deepFreeze({
+  "tavern:actor_reply:TavernActorReply:tavern-actor-reply-v2:TavernPersonaMessageCommittedProjection:tavern-persona-message-committed-projection-v1": {
+    workflow: "tavern",
+    stage: "actor_reply",
+    traceContract: {
+      name: "TavernActorReply",
+      version: "tavern-actor-reply-v2",
+    },
+    payloadContract: {
+      name: "TavernPersonaMessageCommittedProjection",
+      version: "tavern-persona-message-committed-projection-v1",
+    },
+    projectionContract: {
+      name: "TavernPersonaMessageCommittedProjection",
+      version: "tavern-persona-message-committed-projection-v1",
+    },
+    bindingContract: {
+      name: "TavernPersonaMessageCommitBinding",
+      version: "tavern-persona-message-commit-binding-v1",
+    },
+    digestScope: "committed_projection",
+    evidenceScope: "primary_output_only",
+    subjectResourceType: "tavern_room",
+    subjectResourceCount: 1,
+    statusRules: [
+      { traceStatus: "failed", commitStatus: "not_committed" },
+      { traceStatus: "passed", commitStatus: "committed" },
+      { traceStatus: "repaired", commitStatus: "committed" },
+    ],
+    resourceRules: [
+      {
+        resourceType: "tavern_message",
+        committedAttemptedCount: 1,
+        committedResourceCount: 1,
+        notCommittedAttemptedMin: 1,
+        notCommittedAttemptedMax: 1,
+      },
+    ],
+  },
+} as const satisfies Record<string, HarnessOperationCommitPolicy>);
+
+export interface HarnessOperationCommitPolicyRegistrySnapshot {
+  schema_name: "HarnessOperationCommitPolicyRegistry";
+  schema_version: "harness-operation-commit-policies-v1";
+  policies: Array<{
+    workflow: HarnessWorkflow;
+    stage: HarnessStage;
+    trace_contract: HarnessContractRef;
+    payload_contract: HarnessContractRef;
+    projection_contract: HarnessContractRef;
+    binding_contract: HarnessContractRef;
+    digest_scope: HarnessDigestScope;
+    evidence_scope: HarnessOperationEvidenceScope;
+    subject_resource_type: HarnessResourceType;
+    subject_resource_count: number;
+    status_rules: Array<{
+      trace_status: HarnessStatus;
+      commit_status: HarnessCommitStatus;
+    }>;
+    resource_rules: Array<{
+      resource_type: HarnessResourceType;
+      committed_attempted_count: number;
+      committed_resource_count: number;
+      not_committed_attempted_min: number;
+      not_committed_attempted_max: number;
+    }>;
+  }>;
+}
+
+export function harnessOperationCommitPolicyRegistrySnapshot(): HarnessOperationCommitPolicyRegistrySnapshot {
+  return {
+    schema_name: "HarnessOperationCommitPolicyRegistry",
+    schema_version: "harness-operation-commit-policies-v1",
+    policies: Object.values(HARNESS_OPERATION_COMMIT_POLICIES).map((policy) => ({
+      workflow: policy.workflow,
+      stage: policy.stage,
+      trace_contract: policy.traceContract,
+      payload_contract: policy.payloadContract,
+      projection_contract: policy.projectionContract,
+      binding_contract: policy.bindingContract,
+      digest_scope: policy.digestScope,
+      evidence_scope: policy.evidenceScope,
+      subject_resource_type: policy.subjectResourceType,
+      subject_resource_count: policy.subjectResourceCount,
+      status_rules: policy.statusRules.map((item) => ({
+        trace_status: item.traceStatus,
+        commit_status: item.commitStatus,
+      })),
+      resource_rules: policy.resourceRules.map((item) => ({
+        resource_type: item.resourceType,
+        committed_attempted_count: item.committedAttemptedCount,
+        committed_resource_count: item.committedResourceCount,
+        not_committed_attempted_min: item.notCommittedAttemptedMin,
+        not_committed_attempted_max: item.notCommittedAttemptedMax,
+      })),
+    })),
+  };
+}
+
+export interface TavernPersonaMessageCommitBindingV1 {
+  schemaName: "TavernPersonaMessageCommitBinding";
+  schemaVersion: "tavern-persona-message-commit-binding-v1";
+  operationId: string;
+  effectBatchId: string;
+  roomId: string;
+  messageId: string;
+  sequence: number;
+  runId: string;
+  stepIndex: number;
+  replyToMessageId: string;
+  authorKind: "persona";
+  personaId: string;
+  personaName: string;
+  clientRequestId: string;
+  createdAt: string;
+  projectionDigest: string;
 }
 
 export interface HarnessContractRef {
