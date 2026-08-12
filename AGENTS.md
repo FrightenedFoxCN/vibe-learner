@@ -23,6 +23,7 @@ This repository was rescanned from the root on 2026-08-12. The current workspace
 - Model/tool-call planner: `services/ai/app/services/model_provider.py`
 - Shared contracts: `packages/shared/src/`
 - Harness contracts: `services/ai/app/models/harness.py` and `packages/shared/src/harness.ts`
+- Harness schema ownership: `docs/harness-schema-ownership.md`
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 
 ## Current Runtime Layout
@@ -58,7 +59,7 @@ The frontend consumes structured chat replies with citations and `character_even
 
 Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`; messages are append-only and use a per-room sequence. Direct and facilitated runs are active. Facilitated targets are a set; the server schedules them by participant `display_order`, commits each validated actor separately, and records partial/failed/blocked steps for scoped child retry. Do not add Tavern fields to `StudySessionRecord`.
 
-Read `docs/tavern-architecture.md` and `docs/harness-engineering.md` before modifying Tavern or reliability behavior.
+Read `docs/harness-engineering.md` and `docs/harness-schema-ownership.md` before modifying any reliability or model-owned schema boundary. Also read `docs/tavern-architecture.md` for Tavern changes.
 
 ## Local Development Commands
 
@@ -125,7 +126,8 @@ uv run python -m unittest tests.test_tavern_api tests.test_tavern_facilitated
 
 - Keep the backend/frontend contract aligned through `packages/shared/src/` and the response normalizers in `apps/web/lib/api.ts`.
 - For new backend routes, update the appropriate bounded model module (for Tavern, `models/tavern.py`), `apps/web/lib/api.ts`, and `packages/shared/src/`.
-- New model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
+- All new workflows and migrated existing model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
+- Keep model/heuristic proposals separate from committed records and API responses. Read the ownership registry before allowing generated IDs, identity, ordering, revisions, timestamps, or state effects into a proposal schema.
 - Keep application-owned IDs, speaker identity, revision, sequence, and committed state effects out of model-owned schemas.
 - Preserve the split between:
   - learning UI
@@ -216,6 +218,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 - Architecture: `docs/architecture.md`
 - API reference: `docs/api-reference.md`
 - Harness engineering: `docs/harness-engineering.md`
+- Harness schema ownership: `docs/harness-schema-ownership.md`
 - Tavern architecture: `docs/tavern-architecture.md`
 - Active backlog: `TODO.md`
 

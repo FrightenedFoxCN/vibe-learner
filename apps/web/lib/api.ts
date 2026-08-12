@@ -390,21 +390,26 @@ function normalizePersona(persona: any): PersonaProfile {
   };
 }
 
-function normalizeHarnessTrace(raw: any): import("@vibe-learner/shared").HarnessTrace {
+function normalizeHarnessTrace(raw: any): import("@vibe-learner/shared").HarnessTraceV1 {
+  if (raw && Object.prototype.hasOwnProperty.call(raw, "trace_schema_version")) {
+    throw new Error(
+      `unsupported_harness_trace_schema_version:${String(raw.trace_schema_version)}`
+    );
+  }
   return {
     version: String(raw?.version ?? ""),
     workflow: String(raw?.workflow ?? ""),
     stage: String(raw?.stage ?? ""),
     status: raw?.status ?? "failed",
     schemaName: String(raw?.schema_name ?? ""),
-    inputDigest: raw?.input_digest ? String(raw.input_digest) : undefined,
-    contextDigest: raw?.context_digest ? String(raw.context_digest) : undefined,
+    inputDigest: String(raw?.input_digest ?? ""),
+    contextDigest: String(raw?.context_digest ?? ""),
     checks: Array.isArray(raw?.checks)
       ? raw.checks.map((item: any) => ({
           name: String(item?.name ?? ""),
           status: item?.status ?? "failed",
-          code: item?.code ? String(item.code) : undefined,
-          message: item?.message ? String(item.message) : undefined,
+          code: String(item?.code ?? ""),
+          message: String(item?.message ?? ""),
         }))
       : [],
     attempts: Number(raw?.attempts ?? 1),

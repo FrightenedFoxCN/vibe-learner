@@ -17,6 +17,7 @@
 - `scene-setup.md`: layered scene editor guide for `/scene-setup`
 - `tavern-architecture.md`: Tavern schema, transaction invariants, harness ownership, and performance boundaries
 - `harness-engineering.md`: repository-wide validate/repair/commit lifecycle, shared trace schema, adoption matrix, and release metrics
+- `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2 evidence compatibility
 
 ## Reading Order
 
@@ -29,11 +30,12 @@
 7. Read `learning-plan-prompt-contract.md` before changing plan prompt assembly, schema injection, or model payload serialization.
 8. Read `api-reference.md` before touching frontend/backend contracts.
 9. Read `harness-engineering.md` before adding or changing reliability, recovery, trace, or evaluation boundaries in any workflow.
-10. Read `tavern-architecture.md` before changing Tavern persistence or orchestration.
-11. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
-12. Read `desktop-distribution-plan.md` for the original architecture exploration context.
-13. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-14. Read `../TODO.md` for the active implementation backlog.
+10. Read `harness-schema-ownership.md` before changing model-output, persisted-record, effect, or API schema ownership.
+11. Read `tavern-architecture.md` before changing Tavern persistence or orchestration.
+12. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
+13. Read `desktop-distribution-plan.md` for the original architecture exploration context.
+14. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+15. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 

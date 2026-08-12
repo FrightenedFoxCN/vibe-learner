@@ -1,0 +1,76 @@
+{
+  "trace_schema_version": "harness-trace-v2",
+  "trace_id": "trace-document-cleanup-1",
+  "operation_id": "operation-document-process-1",
+  "parent_trace_id": null,
+  "workflow": "study_unit_cleanup",
+  "stage": "validate_units",
+  "status": "failed",
+  "contract": {
+    "name": "StudyUnitCleanupProposal",
+    "version": "study-unit-cleanup-proposal-v1"
+  },
+  "context": {
+    "schema_name": "StudyUnitCleanupContext",
+    "schema_version": "study-unit-cleanup-context-v1",
+    "workflow": "study_unit_cleanup",
+    "operation_id": "operation-document-process-1",
+    "subject_refs": [
+      {
+        "resource_type": "document",
+        "resource_id": "document-1",
+        "revision": null
+      }
+    ],
+    "component_versions": [
+      {
+        "name": "study_unit_cleaner",
+        "version": "study-unit-cleaner-v1"
+      }
+    ],
+    "snapshot_refs": [],
+    "digest_algorithm": "sha256",
+    "input_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "context_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "policy_version": "study-unit-cleanup-policy-v1",
+    "prompt_version": null
+  },
+  "output_digest": null,
+  "checks": [
+    {
+      "name": "page_bounds",
+      "status": "failed",
+      "code": "study_unit_page_range_invalid",
+      "message": "Study Unit 页码超出文档范围。"
+    }
+  ],
+  "attempt_records": [
+    {
+      "attempt_id": "attempt-validate-1",
+      "attempt_index": 1,
+      "phase": "validate",
+      "status": "failed",
+      "output_digest": null,
+      "error_code": "study_unit_page_range_invalid",
+      "duration_ms": 3
+    }
+  ],
+  "recovery_strategy": "none",
+  "error_code": "study_unit_page_range_invalid",
+  "duration_ms": 3,
+  "commit_evidence": {
+    "status": "not_committed",
+    "effect_batch_id": null,
+    "payload_contract": null,
+    "digest_algorithm": null,
+    "digest_scope": null,
+    "attempted_resource_refs": [],
+    "committed_resources": [],
+    "payload_digest": null,
+    "committed_at": null,
+    "rollback_reason_code": "",
+    "rolled_back_at": null
+  },
+  "started_at": "2026-08-12T08:05:00Z",
+  "completed_at": "2026-08-12T08:05:00Z"
+}

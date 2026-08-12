@@ -1,0 +1,20 @@
+{
+  "version": "tavern-harness-v1/tavern-actor-prompt-v1",
+  "workflow": "tavern",
+  "stage": "actor_reply",
+  "status": "passed",
+  "schema_name": "TavernActorReply",
+  "input_digest": "legacy-input-digest",
+  "context_digest": "legacy-context-digest",
+  "checks": [
+    {
+      "name": "speaker_identity",
+      "status": "passed",
+      "code": "",
+      "message": "说话者归属有效。"
+    }
+  ],
+  "attempts": 1,
+  "recovery_strategy": "none",
+  "duration_ms": 12
+}
