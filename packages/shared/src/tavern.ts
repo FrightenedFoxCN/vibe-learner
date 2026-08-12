@@ -5,7 +5,15 @@ import type { HarnessTrace } from "./harness";
 export type TavernRoomStatus = "active" | "archived";
 export type TavernAuthorKind = "user" | "persona" | "director" | "system";
 export type TavernInteractionMode = "direct" | "facilitated";
-export type TavernRunStatus = "pending" | "completed" | "failed" | "canceled";
+export type TavernRunStatus = "pending" | "completed" | "partial" | "failed" | "canceled";
+export type TavernRunTriggerKind = "user_message" | "continue" | "retry";
+export type TavernSpeakerStepStatus =
+  | "pending"
+  | "generating"
+  | "completed"
+  | "failed"
+  | "blocked"
+  | "canceled";
 
 export interface TavernHarnessPolicy {
   version: "tavern-harness-v1" | string;
@@ -26,6 +34,14 @@ export interface TavernRoom {
   revision: number;
   lastSequence: number;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface TavernRoomState {
+  id: string;
+  status: TavernRoomStatus;
+  revision: number;
+  lastSequence: number;
   updatedAt: string;
 }
 
@@ -52,6 +68,7 @@ export interface TavernMessage {
   action?: string;
   speechStyle?: string;
   addressedParticipantIds: string[];
+  replyToMessageId?: string;
   clientRequestId?: string;
   createdAt: string;
   harnessTrace?: HarnessTrace;
@@ -62,17 +79,37 @@ export interface TavernRun {
   roomId: string;
   idempotencyKey: string;
   requestDigest?: string;
+  contextDigest?: string;
   mode: TavernInteractionMode;
-  inputMessageId: string;
-  requestedParticipantIds: string[];
-  maxCharacterMessages: number;
+  triggerKind: TavernRunTriggerKind;
+  parentRunId?: string;
+  rootRunId?: string;
+  inputMessageId: string | null;
+  anchorMessageId?: string;
+  scheduledParticipantIds: string[];
+  speakerSteps: TavernSpeakerStep[];
   guidance: string;
   status: TavernRunStatus;
   expectedRoomRevision: number;
   generatedMessageIds: string[];
   harnessTrace: HarnessTrace[];
   errorCode?: string;
+  terminalSequence: number;
   createdAt: string;
+  completedAt?: string;
+}
+
+export interface TavernSpeakerStep {
+  runId: string;
+  stepIndex: number;
+  personaId: string;
+  participantPromptHash: string;
+  status: TavernSpeakerStepStatus;
+  messageId?: string;
+  replyToMessageId?: string;
+  errorCode?: string;
+  harnessTrace?: HarnessTrace;
+  startedAt?: string;
   completedAt?: string;
 }
 
@@ -81,7 +118,8 @@ export interface TavernRoomDetail {
   participants: TavernParticipant[];
   messages: TavernMessage[];
   messageCount: number;
-  nextAfterSequence?: number;
+  nextAfterSequence: number | null;
+  nextBeforeSequence: number | null;
 }
 
 export interface TavernRoomSummary {
@@ -105,20 +143,37 @@ export interface CreateTavernRoomInput {
   idempotencyKey: string;
 }
 
+export interface UpdateTavernRoomInput {
+  title?: string;
+  personaIds?: string[];
+  sceneProfile?: SceneProfile | null;
+  status?: TavernRoomStatus;
+  expectedRoomRevision: number;
+}
+
+export type TavernTurnTrigger =
+  | { kind: "user_message"; content: string }
+  | { kind: "continue"; anchorMessageId: string };
+
 export interface TavernTurnInput {
-  message: string;
+  input: TavernTurnTrigger;
   mode: TavernInteractionMode;
   targetPersonaIds: string[];
   guidance?: string;
-  maxCharacterMessages: number;
+  idempotencyKey: string;
+  expectedRoomRevision: number;
+}
+
+export interface RetryTavernRunInput {
   idempotencyKey: string;
   expectedRoomRevision: number;
 }
 
 export interface TavernTurnResult {
   run: TavernRun;
+  inputMessage: TavernMessage | null;
   generatedMessages: TavernMessage[];
-  room: TavernRoomDetail;
+  roomState: TavernRoomState;
 }
 
 export interface TavernRunListResult {

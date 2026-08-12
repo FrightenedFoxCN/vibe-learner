@@ -33,6 +33,7 @@ class TavernActorHarness:
         guidance: str,
         allowed_target_ids: list[str],
         policy: TavernHarnessPolicy,
+        required_target_id: str = "",
     ) -> tuple[TavernActorReply, HarnessTraceRecord]:
         started_at = time.perf_counter()
         input_digest = _digest({"user_message": user_message, "guidance": guidance})
@@ -95,16 +96,34 @@ class TavernActorHarness:
         if invalid_targets:
             repaired_targets = [item for item in repaired_targets if item in allowed]
             recovery_steps.append("filter_invalid_targets")
+        missing_required_target = bool(
+            required_target_id and required_target_id not in repaired_targets
+        )
+        if missing_required_target:
+            repaired_targets.append(required_target_id)
+            recovery_steps.append("restore_scheduled_reply_target")
         checks.append(
             HarnessCheckRecord(
                 name="addressed_participants",
                 status=(
                     HarnessCheckStatus.WARNING
-                    if invalid_targets
+                    if invalid_targets or missing_required_target
                     else HarnessCheckStatus.PASSED
                 ),
-                code=(f"invalid_target:{invalid_targets[0]}" if invalid_targets else ""),
-                message=("已移除不在房间中的回应目标。" if invalid_targets else "回应目标有效。"),
+                code=(
+                    f"invalid_target:{invalid_targets[0]}"
+                    if invalid_targets
+                    else "scheduled_reply_target_restored"
+                    if missing_required_target
+                    else ""
+                ),
+                message=(
+                    "已移除不在房间中的回应目标。"
+                    if invalid_targets
+                    else "已恢复服务端安排的上一位说话者目标。"
+                    if missing_required_target
+                    else "回应目标有效。"
+                ),
             )
         )
 
@@ -142,12 +161,33 @@ class TavernActorHarness:
             "",
         )
         leaked_prompt = bool(leaked_field)
+        normalized_guidance = guidance.strip()
+        leaked_guidance = bool(
+            len(normalized_guidance) >= 12
+            and any(normalized_guidance in value for value in visible_fields.values())
+        )
         checks.append(
             HarnessCheckRecord(
                 name="prompt_confidentiality",
-                status=(HarnessCheckStatus.FAILED if leaked_prompt else HarnessCheckStatus.PASSED),
-                code=f"prompt_material_leak:{leaked_field}" if leaked_prompt else "",
-                message="检测到可展示字段泄漏内部提示材料。" if leaked_prompt else "未检测到内部提示材料泄漏。",
+                status=(
+                    HarnessCheckStatus.FAILED
+                    if leaked_prompt or leaked_guidance
+                    else HarnessCheckStatus.PASSED
+                ),
+                code=(
+                    f"prompt_material_leak:{leaked_field}"
+                    if leaked_prompt
+                    else "stage_guidance_leak"
+                    if leaked_guidance
+                    else ""
+                ),
+                message=(
+                    "检测到可展示字段泄漏内部提示材料。"
+                    if leaked_prompt
+                    else "检测到角色逐字复述本轮舞台引导。"
+                    if leaked_guidance
+                    else "未检测到内部提示材料泄漏。"
+                ),
             )
         )
 
@@ -160,7 +200,7 @@ class TavernActorHarness:
                 message="修复后回复为空。" if empty_reply else "回复包含可展示内容。",
             )
         )
-        failed = leaked_prompt or empty_reply
+        failed = leaked_prompt or leaked_guidance or empty_reply
         trace = HarnessTraceRecord(
             version=f"{policy.version}/{TAVERN_ACTOR_PROMPT_VERSION}",
             workflow="tavern",

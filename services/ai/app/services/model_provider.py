@@ -491,6 +491,8 @@ class ModelProvider:
         user_message: str,
         guidance: str,
         allowed_target_ids: list[str],
+        turn_kind: str = "user_message",
+        required_target_id: str = "",
     ) -> TavernActorReply:
         raise NotImplementedError
 
@@ -684,6 +686,8 @@ class MockModelProvider(ModelProvider):
         user_message: str,
         guidance: str,
         allowed_target_ids: list[str],
+        turn_kind: str = "user_message",
+        required_target_id: str = "",
     ) -> TavernActorReply:
         relationship = persona.relationship.strip() or "同行者"
         scene_hint = (
@@ -691,10 +695,15 @@ class MockModelProvider(ModelProvider):
             if scene_profile is not None
             else ""
         )
-        guidance_hint = f"我会顺着“{guidance[:36]}”来回应。" if guidance.strip() else ""
+        guidance_hint = "我会顺着当前互动方向回应。" if guidance.strip() else ""
+        heard_text = (
+            f"我听见你说“{user_message.strip()}”。"
+            if user_message.strip()
+            else "我会接着刚才的对话往下说。"
+        )
         return TavernActorReply(
             text=(
-                f"{scene_hint}我听见你说“{user_message.strip()}”。"
+                f"{scene_hint}{heard_text}"
                 f"作为你的{relationship}，我想先接住这句话，再和你一起把它聊开。"
                 f"{guidance_hint}"
             ),
@@ -703,7 +712,7 @@ class MockModelProvider(ModelProvider):
             speech_style=persona.default_speech_style,
             delivery_cue="自然停顿后再回应，不抢替对方下结论。",
             state_commentary="保持当前角色身份并直接回应用户。",
-            addressed_participant_ids=[],
+            addressed_participant_ids=[required_target_id] if required_target_id else [],
         )
 
     def grade_submission(
@@ -1356,6 +1365,8 @@ class OpenAIModelProvider(MockModelProvider):
         user_message: str,
         guidance: str,
         allowed_target_ids: list[str],
+        turn_kind: str = "user_message",
+        required_target_id: str = "",
     ) -> TavernActorReply:
         actor_schema = TavernActorReply.transport_json_schema()
         actor_schema_text = json.dumps(actor_schema, ensure_ascii=False, sort_keys=True)
@@ -1368,6 +1379,8 @@ class OpenAIModelProvider(MockModelProvider):
             guidance=guidance,
             allowed_target_ids=allowed_target_ids,
             actor_reply_schema=actor_schema_text,
+            turn_kind=turn_kind,
+            required_target_id=required_target_id,
         )
         response_format: dict[str, Any] = {
             "type": "json_schema",

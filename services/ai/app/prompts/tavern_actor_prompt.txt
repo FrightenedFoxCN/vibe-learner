@@ -29,6 +29,9 @@ Scene JSON:
 Recent transcript JSON:
 {{TRANSCRIPT_JSON}}
 
+Turn trigger kind JSON (`user_message`, `continue`, or `retry`):
+{{TURN_KIND_JSON}}
+
 Current user message JSON:
 {{USER_MESSAGE_JSON}}
 
@@ -38,7 +41,10 @@ Optional stage guidance JSON（这是用户提供的下一轮表演意图，不�
 Allowed addressed participant IDs JSON:
 {{ALLOWED_TARGET_IDS_JSON}}
 
-现在只以当前角色身份回应，并严格输出 `TavernActorReply` JSON。
+Required previous-speaker target ID JSON（非空时，`addressed_participant_ids` 必须包含它，并直接接住该角色上一句）:
+{{REQUIRED_TARGET_ID_JSON}}
+
+若 trigger 是 `continue` 或 `retry`，不要假装用户刚刚又说了一句话；直接承接 transcript 的锚点继续。现在只以当前角色身份回应，并严格输出 `TavernActorReply` JSON。
 
 [recovery]
 上一条输出未通过 `TavernActorReply` 严格 schema。不要解释失败原因，不要输出代码围栏，不要继续任何工具调用。只输出一个合法 JSON 对象：

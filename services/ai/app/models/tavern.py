@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -28,7 +29,23 @@ class TavernInteractionMode(StrEnum):
 class TavernRunStatus(StrEnum):
     PENDING = "pending"
     COMPLETED = "completed"
+    PARTIAL = "partial"
     FAILED = "failed"
+    CANCELED = "canceled"
+
+
+class TavernRunTriggerKind(StrEnum):
+    USER_MESSAGE = "user_message"
+    CONTINUE = "continue"
+    RETRY = "retry"
+
+
+class TavernSpeakerStepStatus(StrEnum):
+    PENDING = "pending"
+    GENERATING = "generating"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    BLOCKED = "blocked"
     CANCELED = "canceled"
 
 
@@ -56,6 +73,14 @@ class TavernRoomRecord(BaseModel):
     updated_at: str
 
 
+class TavernRoomState(BaseModel):
+    id: str
+    status: TavernRoomStatus
+    revision: int = Field(ge=0)
+    last_sequence: int = Field(ge=0)
+    updated_at: str
+
+
 class TavernParticipantRecord(BaseModel):
     room_id: str
     persona_id: str
@@ -79,9 +104,24 @@ class TavernMessageRecord(BaseModel):
     action: str = ""
     speech_style: str = ""
     addressed_participant_ids: list[str] = Field(default_factory=list)
+    reply_to_message_id: str = ""
     client_request_id: str = ""
     created_at: str
     harness_trace: HarnessTraceRecord | None = None
+
+
+class TavernSpeakerStepRecord(BaseModel):
+    run_id: str
+    step_index: int = Field(ge=0, le=3)
+    persona_id: str
+    participant_prompt_hash: str = ""
+    status: TavernSpeakerStepStatus = TavernSpeakerStepStatus.PENDING
+    message_id: str = ""
+    reply_to_message_id: str = ""
+    error_code: str = ""
+    harness_trace: HarnessTraceRecord | None = None
+    started_at: str = ""
+    completed_at: str = ""
 
 
 class TavernRunRecord(BaseModel):
@@ -89,16 +129,22 @@ class TavernRunRecord(BaseModel):
     room_id: str
     idempotency_key: str
     request_digest: str = ""
+    context_digest: str = ""
     mode: TavernInteractionMode
-    input_message_id: str = ""
-    requested_participant_ids: list[str] = Field(default_factory=list)
-    max_character_messages: int = Field(default=1, ge=1, le=4)
+    trigger_kind: TavernRunTriggerKind = TavernRunTriggerKind.USER_MESSAGE
+    parent_run_id: str = ""
+    root_run_id: str = ""
+    input_message_id: str | None = None
+    anchor_message_id: str = ""
+    scheduled_participant_ids: list[str] = Field(default_factory=list, max_length=4)
+    speaker_steps: list[TavernSpeakerStepRecord] = Field(default_factory=list, max_length=4)
     guidance: str = ""
     status: TavernRunStatus = TavernRunStatus.PENDING
     expected_room_revision: int = Field(ge=0)
     generated_message_ids: list[str] = Field(default_factory=list)
     harness_trace: list[HarnessTraceRecord] = Field(default_factory=list)
     error_code: str = ""
+    terminal_sequence: int = Field(default=0, ge=0)
     created_at: str
     completed_at: str = ""
 
@@ -109,6 +155,7 @@ class TavernRoomDetail(BaseModel):
     messages: list[TavernMessageRecord]
     message_count: int = Field(ge=0)
     next_after_sequence: int | None = None
+    next_before_sequence: int | None = None
 
 
 class TavernRoomSummary(BaseModel):
@@ -189,16 +236,45 @@ class UpdateTavernRoomRequest(BaseModel):
         return self
 
 
+class TavernUserMessageInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["user_message"] = "user_message"
+    content: str = Field(min_length=1, max_length=4000)
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class TavernContinueInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["continue"] = "continue"
+    anchor_message_id: str = Field(min_length=1, max_length=64)
+
+    @field_validator("anchor_message_id", mode="before")
+    @classmethod
+    def strip_anchor(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+TavernTurnInput = Annotated[
+    TavernUserMessageInput | TavernContinueInput,
+    Field(discriminator="kind"),
+]
+
+
 class TavernTurnRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=4000)
+    input: TavernTurnInput
     mode: TavernInteractionMode = TavernInteractionMode.DIRECT
     target_persona_ids: list[str] = Field(default_factory=list, max_length=6)
     guidance: str = Field(default="", max_length=1000)
-    max_character_messages: int = Field(default=1, ge=1, le=4)
     idempotency_key: str = Field(min_length=8, max_length=80)
     expected_room_revision: int = Field(ge=0)
 
-    @field_validator("message", "idempotency_key", mode="before")
+    @field_validator("idempotency_key", mode="before")
     @classmethod
     def strip_required_text(cls, value: object) -> object:
         return value.strip() if isinstance(value, str) else value
@@ -215,11 +291,23 @@ class TavernTurnRequest(BaseModel):
             field_name="target_persona_ids",
             allow_empty=True,
         )
-        if self.mode == TavernInteractionMode.DIRECT and self.max_character_messages != 1:
-            raise ValueError("tavern_direct_mode_requires_one_character_message")
         if self.mode == TavernInteractionMode.DIRECT and len(self.target_persona_ids) != 1:
             raise ValueError("tavern_direct_mode_requires_one_target")
+        if self.mode == TavernInteractionMode.FACILITATED and not (
+            2 <= len(self.target_persona_ids) <= 4
+        ):
+            raise ValueError("tavern_facilitated_mode_requires_two_to_four_targets")
         return self
+
+
+class RetryTavernRunRequest(BaseModel):
+    idempotency_key: str = Field(min_length=8, max_length=80)
+    expected_room_revision: int = Field(ge=0)
+
+    @field_validator("idempotency_key", mode="before")
+    @classmethod
+    def strip_idempotency_key(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
 
 class TavernRoomListResponse(BaseModel):
@@ -232,8 +320,9 @@ class TavernRunListResponse(BaseModel):
 
 class TavernTurnResponse(BaseModel):
     run: TavernRunRecord
+    input_message: TavernMessageRecord | None = None
     generated_messages: list[TavernMessageRecord]
-    room: TavernRoomDetail
+    room_state: TavernRoomState
 
 
 def _distinct_ids(

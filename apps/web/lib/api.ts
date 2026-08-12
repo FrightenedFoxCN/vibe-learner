@@ -1,6 +1,7 @@
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
+  CreateTavernRoomInput,
   DocumentPlanningContext,
   DocumentPlanningTraceResponse,
   ModelToolConfig,
@@ -16,10 +17,23 @@ import type {
   RuntimeOpenAIProbeResult,
   RuntimeSettings,
   RuntimeSettingsPatch,
+  RetryTavernRunInput,
   StreamReport,
   StudyChatResponse,
   StudySessionRecord,
-  TokenUsageStats
+  TavernHarnessPolicy,
+  TavernMessage,
+  TavernParticipant,
+  TavernRoom,
+  TavernRoomDetail,
+  TavernRoomState,
+  TavernRoomSummary,
+  TavernRun,
+  TavernSpeakerStep,
+  TavernTurnInput,
+  TavernTurnResult,
+  TokenUsageStats,
+  UpdateTavernRoomInput
 } from "@vibe-learner/shared";
 
 import { compactPreviewString, compactPreviewValue } from "./preview";
@@ -373,6 +387,198 @@ function normalizePersona(persona: any): PersonaProfile {
     availableEmotions: persona.available_emotions,
     availableActions: persona.available_actions,
     defaultSpeechStyle: persona.default_speech_style
+  };
+}
+
+function normalizeHarnessTrace(raw: any): import("@vibe-learner/shared").HarnessTrace {
+  return {
+    version: String(raw?.version ?? ""),
+    workflow: String(raw?.workflow ?? ""),
+    stage: String(raw?.stage ?? ""),
+    status: raw?.status ?? "failed",
+    schemaName: String(raw?.schema_name ?? ""),
+    inputDigest: raw?.input_digest ? String(raw.input_digest) : undefined,
+    contextDigest: raw?.context_digest ? String(raw.context_digest) : undefined,
+    checks: Array.isArray(raw?.checks)
+      ? raw.checks.map((item: any) => ({
+          name: String(item?.name ?? ""),
+          status: item?.status ?? "failed",
+          code: item?.code ? String(item.code) : undefined,
+          message: item?.message ? String(item.message) : undefined,
+        }))
+      : [],
+    attempts: Number(raw?.attempts ?? 1),
+    recoveryStrategy: String(raw?.recovery_strategy ?? "none"),
+    durationMs: Number(raw?.duration_ms ?? 0),
+  };
+}
+
+function normalizeTavernHarnessPolicy(raw: any): TavernHarnessPolicy {
+  return {
+    version: String(raw?.version ?? "tavern-harness-v1"),
+    maxCharacterMessages: Number(raw?.max_character_messages ?? 4),
+    maxReplyCharacters: Number(raw?.max_reply_characters ?? 1200),
+    contextMessageLimit: Number(raw?.context_message_limit ?? 18),
+    preventSpeakerImpersonation: raw?.prevent_speaker_impersonation !== false,
+  };
+}
+
+function normalizeTavernRoom(raw: any): TavernRoom {
+  return {
+    id: String(raw?.id ?? ""),
+    creationKey: raw?.creation_key ? String(raw.creation_key) : undefined,
+    creationInputDigest: raw?.creation_input_digest
+      ? String(raw.creation_input_digest)
+      : undefined,
+    title: String(raw?.title ?? ""),
+    sceneProfile: normalizeSceneProfile(raw?.scene_profile),
+    harnessPolicy: normalizeTavernHarnessPolicy(raw?.harness_policy),
+    status: raw?.status === "archived" ? "archived" : "active",
+    revision: Number(raw?.revision ?? 0),
+    lastSequence: Number(raw?.last_sequence ?? 0),
+    createdAt: String(raw?.created_at ?? ""),
+    updatedAt: String(raw?.updated_at ?? ""),
+  };
+}
+
+function normalizeTavernRoomState(raw: any): TavernRoomState {
+  return {
+    id: String(raw?.id ?? ""),
+    status: raw?.status === "archived" ? "archived" : "active",
+    revision: Number(raw?.revision ?? 0),
+    lastSequence: Number(raw?.last_sequence ?? 0),
+    updatedAt: String(raw?.updated_at ?? ""),
+  };
+}
+
+function normalizeTavernParticipant(raw: any): TavernParticipant {
+  return {
+    roomId: String(raw?.room_id ?? ""),
+    personaId: String(raw?.persona_id ?? ""),
+    displayOrder: Number(raw?.display_order ?? 0),
+    displayName: String(raw?.display_name ?? ""),
+    personaSnapshot: normalizePersona(raw?.persona_snapshot ?? {}),
+    promptHash: String(raw?.prompt_hash ?? ""),
+    joinedAt: String(raw?.joined_at ?? ""),
+  };
+}
+
+function normalizeTavernMessage(raw: any): TavernMessage {
+  return {
+    id: String(raw?.id ?? ""),
+    roomId: String(raw?.room_id ?? ""),
+    sequence: Number(raw?.sequence ?? 0),
+    runId: raw?.run_id ? String(raw.run_id) : undefined,
+    authorKind: raw?.author_kind ?? "system",
+    personaId: raw?.persona_id ? String(raw.persona_id) : undefined,
+    personaName: raw?.persona_name ? String(raw.persona_name) : undefined,
+    content: String(raw?.content ?? ""),
+    emotion: String(raw?.emotion ?? "calm"),
+    action: raw?.action ? String(raw.action) : undefined,
+    speechStyle: raw?.speech_style ? String(raw.speech_style) : undefined,
+    addressedParticipantIds: Array.isArray(raw?.addressed_participant_ids)
+      ? raw.addressed_participant_ids.map((item: unknown) => String(item))
+      : [],
+    replyToMessageId: raw?.reply_to_message_id
+      ? String(raw.reply_to_message_id)
+      : undefined,
+    clientRequestId: raw?.client_request_id
+      ? String(raw.client_request_id)
+      : undefined,
+    createdAt: String(raw?.created_at ?? ""),
+    harnessTrace: raw?.harness_trace
+      ? normalizeHarnessTrace(raw.harness_trace)
+      : undefined,
+  };
+}
+
+function normalizeTavernSpeakerStep(raw: any): TavernSpeakerStep {
+  return {
+    runId: String(raw?.run_id ?? ""),
+    stepIndex: Number(raw?.step_index ?? 0),
+    personaId: String(raw?.persona_id ?? ""),
+    participantPromptHash: String(raw?.participant_prompt_hash ?? ""),
+    status: raw?.status ?? "failed",
+    messageId: raw?.message_id ? String(raw.message_id) : undefined,
+    replyToMessageId: raw?.reply_to_message_id
+      ? String(raw.reply_to_message_id)
+      : undefined,
+    errorCode: raw?.error_code ? String(raw.error_code) : undefined,
+    harnessTrace: raw?.harness_trace
+      ? normalizeHarnessTrace(raw.harness_trace)
+      : undefined,
+    startedAt: raw?.started_at ? String(raw.started_at) : undefined,
+    completedAt: raw?.completed_at ? String(raw.completed_at) : undefined,
+  };
+}
+
+function normalizeTavernRun(raw: any): TavernRun {
+  return {
+    id: String(raw?.id ?? ""),
+    roomId: String(raw?.room_id ?? ""),
+    idempotencyKey: String(raw?.idempotency_key ?? ""),
+    requestDigest: raw?.request_digest ? String(raw.request_digest) : undefined,
+    contextDigest: raw?.context_digest ? String(raw.context_digest) : undefined,
+    mode: raw?.mode === "facilitated" ? "facilitated" : "direct",
+    triggerKind: raw?.trigger_kind ?? "user_message",
+    parentRunId: raw?.parent_run_id ? String(raw.parent_run_id) : undefined,
+    rootRunId: raw?.root_run_id ? String(raw.root_run_id) : undefined,
+    inputMessageId:
+      raw?.input_message_id == null ? null : String(raw.input_message_id),
+    anchorMessageId: raw?.anchor_message_id ? String(raw.anchor_message_id) : undefined,
+    scheduledParticipantIds: Array.isArray(raw?.scheduled_participant_ids)
+      ? raw.scheduled_participant_ids.map((item: unknown) => String(item))
+      : [],
+    speakerSteps: Array.isArray(raw?.speaker_steps)
+      ? raw.speaker_steps.map(normalizeTavernSpeakerStep)
+      : [],
+    guidance: String(raw?.guidance ?? ""),
+    status: raw?.status ?? "failed",
+    expectedRoomRevision: Number(raw?.expected_room_revision ?? 0),
+    generatedMessageIds: Array.isArray(raw?.generated_message_ids)
+      ? raw.generated_message_ids.map((item: unknown) => String(item))
+      : [],
+    harnessTrace: Array.isArray(raw?.harness_trace)
+      ? raw.harness_trace.map(normalizeHarnessTrace)
+      : [],
+    errorCode: raw?.error_code ? String(raw.error_code) : undefined,
+    terminalSequence: Number(raw?.terminal_sequence ?? 0),
+    createdAt: String(raw?.created_at ?? ""),
+    completedAt: raw?.completed_at ? String(raw.completed_at) : undefined,
+  };
+}
+
+function normalizeTavernRoomDetail(raw: any): TavernRoomDetail {
+  return {
+    room: normalizeTavernRoom(raw?.room),
+    participants: Array.isArray(raw?.participants)
+      ? raw.participants.map(normalizeTavernParticipant)
+      : [],
+    messages: Array.isArray(raw?.messages)
+      ? raw.messages.map(normalizeTavernMessage)
+      : [],
+    messageCount: Number(raw?.message_count ?? 0),
+    nextAfterSequence:
+      raw?.next_after_sequence == null
+        ? null
+        : Number(raw.next_after_sequence),
+    nextBeforeSequence:
+      raw?.next_before_sequence == null
+        ? null
+        : Number(raw.next_before_sequence),
+  };
+}
+
+function normalizeTavernTurnResult(raw: any): TavernTurnResult {
+  return {
+    run: normalizeTavernRun(raw?.run),
+    inputMessage: raw?.input_message
+      ? normalizeTavernMessage(raw.input_message)
+      : null,
+    generatedMessages: Array.isArray(raw?.generated_messages)
+      ? raw.generated_messages.map(normalizeTavernMessage)
+      : [],
+    roomState: normalizeTavernRoomState(raw?.room_state),
   };
 }
 
@@ -1215,6 +1421,176 @@ export async function listPersonas(): Promise<PersonaProfile[]> {
     await request(`${AI_BASE_URL()}/personas`)
   );
   return payload.items.map(normalizePersona);
+}
+
+export async function listTavernRooms(): Promise<TavernRoomSummary[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL()}/tavern/rooms`)
+  );
+  return (payload.items ?? []).map((item: any) => ({
+    id: String(item?.id ?? ""),
+    title: String(item?.title ?? ""),
+    participantPersonaIds: Array.isArray(item?.participant_persona_ids)
+      ? item.participant_persona_ids.map((value: unknown) => String(value))
+      : [],
+    participantNames: Array.isArray(item?.participant_names)
+      ? item.participant_names.map((value: unknown) => String(value))
+      : [],
+    messageCount: Number(item?.message_count ?? 0),
+    revision: Number(item?.revision ?? 0),
+    status: item?.status === "archived" ? "archived" : "active",
+    createdAt: String(item?.created_at ?? ""),
+    updatedAt: String(item?.updated_at ?? ""),
+  }));
+}
+
+export async function createTavernRoom(
+  input: CreateTavernRoomInput
+): Promise<TavernRoomDetail> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/tavern/rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: input.title,
+        persona_ids: input.personaIds,
+        scene_profile: serializeSceneProfile(input.sceneProfile),
+        opening_prompt: input.openingPrompt ?? "",
+        harness_policy: input.harnessPolicy
+          ? {
+              version: input.harnessPolicy.version,
+              max_character_messages: input.harnessPolicy.maxCharacterMessages,
+              max_reply_characters: input.harnessPolicy.maxReplyCharacters,
+              context_message_limit: input.harnessPolicy.contextMessageLimit,
+              prevent_speaker_impersonation:
+                input.harnessPolicy.preventSpeakerImpersonation,
+            }
+          : undefined,
+        idempotency_key: input.idempotencyKey,
+      }),
+    })
+  );
+  return normalizeTavernRoomDetail(payload);
+}
+
+export async function getTavernRoom(input: {
+  roomId: string;
+  afterSequence?: number;
+  beforeSequence?: number;
+  tail?: boolean;
+  limit?: number;
+}): Promise<TavernRoomDetail> {
+  const query = new URLSearchParams();
+  if (input.afterSequence !== undefined) {
+    query.set("after_sequence", String(input.afterSequence));
+  }
+  if (input.beforeSequence !== undefined) {
+    query.set("before_sequence", String(input.beforeSequence));
+  }
+  if (input.tail) {
+    query.set("tail", "true");
+  }
+  if (input.limit !== undefined) {
+    query.set("limit", String(input.limit));
+  }
+  const suffix = query.toString();
+  const payload = await readJson<any>(
+    await request(
+      `${AI_BASE_URL()}/tavern/rooms/${input.roomId}${suffix ? `?${suffix}` : ""}`
+    )
+  );
+  return normalizeTavernRoomDetail(payload);
+}
+
+export async function updateTavernRoom(
+  roomId: string,
+  input: UpdateTavernRoomInput
+): Promise<TavernRoomDetail> {
+  const body: Record<string, unknown> = {
+    expected_revision: input.expectedRoomRevision,
+  };
+  if (input.title !== undefined) body.title = input.title;
+  if (input.personaIds !== undefined) body.persona_ids = input.personaIds;
+  if (Object.prototype.hasOwnProperty.call(input, "sceneProfile")) {
+    body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);
+  }
+  if (input.status !== undefined) body.status = input.status;
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+  );
+  return normalizeTavernRoomDetail(payload);
+}
+
+export async function deleteTavernRoom(
+  roomId: string,
+  expectedRoomRevision: number
+): Promise<void> {
+  await readJson<{ deleted_room_id: string }>(
+    await request(
+      `${AI_BASE_URL()}/tavern/rooms/${roomId}?expected_revision=${expectedRoomRevision}`,
+      { method: "DELETE" }
+    )
+  );
+}
+
+export async function listTavernRuns(
+  roomId: string,
+  limit = 50
+): Promise<TavernRun[]> {
+  const payload = await readJson<{ items: any[] }>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs?limit=${limit}`)
+  );
+  return (payload.items ?? []).map(normalizeTavernRun);
+}
+
+function serializeTavernTurnInput(input: TavernTurnInput) {
+  return {
+    input:
+      input.input.kind === "user_message"
+        ? { kind: "user_message", content: input.input.content }
+        : { kind: "continue", anchor_message_id: input.input.anchorMessageId },
+    mode: input.mode,
+    target_persona_ids: input.targetPersonaIds,
+    guidance: input.guidance ?? "",
+    idempotency_key: input.idempotencyKey,
+    expected_room_revision: input.expectedRoomRevision,
+  };
+}
+
+export async function runTavernTurn(
+  roomId: string,
+  input: TavernTurnInput
+): Promise<TavernTurnResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/turns`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(serializeTavernTurnInput(input)),
+    })
+  );
+  return normalizeTavernTurnResult(payload);
+}
+
+export async function retryTavernRun(
+  roomId: string,
+  runId: string,
+  input: RetryTavernRunInput
+): Promise<TavernTurnResult> {
+  const payload = await readJson<any>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/retry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        idempotency_key: input.idempotencyKey,
+        expected_room_revision: input.expectedRoomRevision,
+      }),
+    })
+  );
+  return normalizeTavernTurnResult(payload);
 }
 
 export async function createPersona(input: CreatePersonaInput): Promise<PersonaProfile> {

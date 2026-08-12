@@ -654,8 +654,12 @@ Returns lightweight summaries without loading transcripts or persona snapshots:
 
 Query parameters:
 
-- `after_sequence`: exclusive message cursor, default `0`;
+- `after_sequence`: exclusive forward cursor, default `0`;
+- `before_sequence`: exclusive backward cursor for loading older pages;
+- `tail=true`: return the latest page in ascending display order;
 - `limit`: page size from `1` to `200`, default `200`.
+
+`tail`, nonzero `after_sequence`, and `before_sequence` are mutually exclusive. Backward/tail pages expose `next_before_sequence`; forward pages expose `next_after_sequence`. Both directions return messages in ascending transcript order.
 
 ### `PATCH /tavern/rooms/{room_id}`
 
@@ -674,37 +678,85 @@ Returns up to `limit` recent runs (`1`–`100`, default `50`) in reverse creatio
 
 ### `POST /tavern/rooms/{room_id}/turns`
 
-The current usable slice supports `direct` mode only. `facilitated` is reserved by the strict schema and returns `501` until its independently tested implementation lands.
+Runs either one direct actor or a facilitated roster-ordered group. `input` is a discriminated trigger:
+
+- `user_message` appends the supplied visible user message;
+- `continue` anchors the latest existing message and appends no fake user/director message.
+
+Direct mode requires exactly one target and permits either trigger, so one persona can continue speaking without a fabricated user message. Facilitated mode requires two to four distinct room participants and also permits either trigger. The room's harness policy may impose a lower target ceiling.
 
 ```json
 {
-  "message": "今晚适合聊些什么？",
+  "input": {
+    "kind": "user_message",
+    "content": "今晚适合聊些什么？"
+  },
   "mode": "direct",
   "target_persona_ids": ["persona-a"],
   "guidance": "先接住情绪，不急着给建议",
-  "max_character_messages": 1,
   "idempotency_key": "turn-request-123456",
   "expected_room_revision": 0
 }
 ```
 
-The route first commits the user message and pending run, generates outside the transaction, validates strict `TavernActorReply`, then atomically appends the attributed persona message and completes the run. The model cannot set speaker, room, run, or sequence fields.
+Facilitated continuation example:
+
+```json
+{
+  "input": {
+    "kind": "continue",
+    "anchor_message_id": "tavern-message-latest"
+  },
+  "mode": "facilitated",
+  "target_persona_ids": ["persona-c", "persona-a", "persona-b"],
+  "guidance": "让角色互相回应，但保留各自立场",
+  "idempotency_key": "turn-request-facilitated-1",
+  "expected_room_revision": 4
+}
+```
+
+Targets are a set. The server filters the room roster and persists `scheduled_participant_ids` in `display_order`; caller array order does not control speech order. Every scheduled actor has one normalized `speaker_step`. Validated actors are committed one at a time, so a later failure does not erase prior messages.
 
 Response fields:
 
-- `run`: idempotency, status, generated message IDs, and Harness traces;
+- `run`: trigger, server schedule, normalized steps, lineage, context digest, terminal sequence, status, and Harness traces;
+- `input_message`: the canonical server-persisted user message for a `user_message` trigger, including assigned sequence/time; `null` for `continue` and `retry`;
 - `generated_messages`: messages appended by this run;
-- `room`: refreshed room detail.
+- `room_state`: compact `{id,status,revision,last_sequence,updated_at}` mutation state. Fetch transcript pages and full room configuration separately with `GET /tavern/rooms/{room_id}`.
 
 Reliability behavior:
 
-- duplicate idempotency keys replay a completed run without duplicate messages;
+- target-set permutations share one request digest and replay the same run;
+- duplicate idempotency keys replay a terminal run without duplicate messages or model calls;
 - reusing an idempotency key with a different normalized request returns `409` instead of silently replaying unrelated work;
 - stale revisions and another pending room run return `409`;
-- schema/provider failures keep the user message and a failed run but commit no persona message;
-- semantic Harness failures return `502` and preserve the failed trace for debug replay.
+- a stale `continue.anchor_message_id` returns `409 tavern_continue_anchor_stale`;
+- first-actor failure produces `failed`; later-actor failure produces `partial`, keeps prior actor messages, marks the current step `failed`, and marks remaining steps `blocked`;
+- schema/provider/Harness failures return `502` only after the terminal evidence is committed;
+- replaying that identical failed request returns `200` with the typed terminal recovery envelope. Clients must inspect `run.status`.
 
 Room revision claims are atomic at the database boundary. This applies to SQLite and PostgreSQL and does not depend on one Python process owning an in-memory lock.
+
+### `POST /tavern/rooms/{room_id}/runs/{run_id}/retry`
+
+Creates one child run for only the source run's `failed` and `blocked` actors:
+
+```json
+{
+  "idempotency_key": "retry-request-123456",
+  "expected_room_revision": 5
+}
+```
+
+The source must be `failed` or `partial`. Retry appends no user message, does not repeat completed actors, preserves the original guidance and root input, and keeps the source terminal. The first child actor replies to the last completed source actor when one exists; subsequent child actors form the normal reply chain.
+
+Retry returns `409` when:
+
+- the room is archived;
+- the source is not terminal/retryable or already has a direct child;
+- room revision or transcript sequence changed;
+- title, scene, harness policy, roster order, or participant prompt hash differs from the source context digest;
+- a required participant no longer exists.
 
 ### Tavern Harness transport
 

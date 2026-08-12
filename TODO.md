@@ -4,12 +4,18 @@
 
 - [x] `TAV-001` 建立独立 Tavern Room / Participant / Message / Run 规范化 schema；验收：Alembic 迁移存在，SQLite schema 测试通过，消息序号与 run 幂等键具备唯一约束。
 - [x] `TAV-002` 完成 Tavern CRUD 与 direct 单角色闭环；验收：创建、恢复、归档、直聊 API 集成测试通过。
-- [ ] `TAV-003` 完成 facilitated 多角色顺序互动；验收：每位目标至多发言一次、顺序可预览、部分失败可恢复。
-- [ ] `TAV-004` 增加 pending run 超时接管、停止与定向重试；验收：进程中断后不会永久锁房间，已完成消息不重放。
+- [x] `TAV-003` 完成 facilitated 多角色顺序互动与剩余角色 child retry；验收：服务器按 roster 固化顺序、每位目标至多发言一次、逐角色落盘、部分失败保留、重试不重复已完成角色。
+- [ ] `TAV-004` 增加 pending/generating run 超时接管、停止与取消；验收：进程中断后不会永久锁房间，已完成消息不重放，接管与原 worker 通过 CAS 竞争。
 - [x] `HRN-001` 实现 Tavern 专用 persona compiler 与 strict ActorReply；验收：任意闲聊不被拉回教材，模型不能决定 speaker/sequence。
 - [ ] `HRN-002` 建立身份、称呼、目标、跨角色冒充和 prompt injection 回归矩阵；验收：测试记录 schema-valid rate、repair rate 与身份一致率。
 - [ ] `HRN-TAV-PERF-001` 为 Tavern prompt 增加字符/token 总预算、场景快照尺寸和嵌套深度限制；验收：最坏 6 人长对话仍在配置预算内，截断/摘要写入 trace。
-- [ ] `UX-001` 新增 Tavern Workspace；验收：空状态、1–6 人选择、单聊、多人讨论、刷新恢复、IME Enter 和 390px 移动视口通过人工检查。
+- [ ] `SCH-TAV-001` 决定并实现 run/message/step 软引用策略；验收：`run_id`、`message_id`、`reply_to_message_id` 要么具备可迁移外键与插入顺序，要么由统一 invariant scanner 检测并阻断破损图。
+- [ ] `UX-001` 新增 Tavern Workspace（发布前置：`TAV-004`）；验收：空状态、1–6 人选择、单聊、多人讨论、tail 向上翻页、刷新恢复、IME Enter 和 390px 移动视口通过独立人工检查。
+- [ ] `UX-TAV-REC-001` 建立 Tavern run 派生恢复视图；验收：父 run 保持 immutable partial，但存在 completed child 时显示“已由重试恢复”，不再次暴露可重试操作。
+- [ ] `TAV-RECOVERY-CLIENT-001` 前端 API client 自动执行 Tavern `502` 同 key 终态恢复；验收：保留原 revision/key，按 `run.status` 归一化 completed/partial/failed，不把 HTTP 200 等同成功完成。
+- [ ] `TAV-RUN-VIEW-001` 增加可靠的 retry-chain 聚合读取；验收：单次读取不会因 run list 分页截断而遗漏 child，latest leaf 决定可恢复动作。
+- [ ] `TAV-ERROR-001` Tavern 冲突/执行失败改用结构化错误 envelope；验收：code、run/child ID、current revision 与 recovery action 可直接 decode，前端不解析冒号字符串。
+- [ ] `TAV-UX-COPY-001` 固化 pending/generating/completed/partial/failed/blocked/retry/stale/archived 中文文案；验收：blocked 不显示为角色失败，raw code 只进入 Reliability Details/debug。
 
 ## 审计与质量门
 
@@ -19,10 +25,12 @@
 - [ ] `HRN-STUDY-001` 将学习对话工具写操作改为 effect proposal；验收：最终回复失败时记忆、好感、follow-up、场景均不发生半提交。
 - [ ] `HRN-WEB-001` 建立前端 runtime decoder、超时/取消和 stale response harness；验收：缺字段、乱序和重复响应均有确定降级路径。
 - [ ] `HRN-EVAL-001` 建立跨工作流 fixture/eval 运行器与版本基线；验收：解析、计划、人格/场景、Study Chat、Tavern、前端解码分别报告通过率、修复率、失败率和 p95。
+- [ ] `HRN-CTX-001` 统一跨工作流 context envelope；验收：解析器版本、计划工具集、人格/场景快照、Study Session revision、Tavern roster/policy 与前端请求序列均生成可比较的版本化 digest。
 
 - [ ] `AUD-001` 修复 Study Session 并发追加丢消息；验收：两个并发 append 均保留且序号唯一。
 - [ ] `QG-001` 替换 Next 16 已失效的 `next lint`，统一 `check` 命令并接入发布工作流。
-- [ ] `QG-002` 为 Tavern 增加 HTTP 集成测试、共享 decoder 测试与关键前端交互测试。
+- [x] `QG-TAV-API-001` 为 Tavern direct/facilitated、continue、partial、retry、幂等与 SQLite 升级增加 HTTP/仓储集成测试。
+- [ ] `QG-002` 为 Tavern 增加共享 runtime decoder 测试与关键前端交互测试。
 - [ ] `SEC-001` 为聊天附件增加 session ID 校验、单文件/总字节上限和先鉴权后落盘顺序。
 
 ## 性能与文档

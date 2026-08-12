@@ -56,7 +56,7 @@ The frontend consumes structured chat replies with citations and `character_even
 
 ### 4. Tavern interaction (active implementation)
 
-Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, and `tavern_runs`; messages are append-only and use a per-room sequence. Do not add Tavern fields to `StudySessionRecord`.
+Tavern is a separate domain from Study Session. Its normalized schema uses `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`; messages are append-only and use a per-room sequence. Direct and facilitated runs are active. Facilitated targets are a set; the server schedules them by participant `display_order`, commits each validated actor separately, and records partial/failed/blocked steps for scoped child retry. Do not add Tavern fields to `StudySessionRecord`.
 
 Read `docs/tavern-architecture.md` and `docs/harness-engineering.md` before modifying Tavern or reliability behavior.
 
@@ -107,6 +107,13 @@ cd services/ai
 uv run python -m unittest tests.test_tavern_schema
 ```
 
+Targeted Tavern runtime tests:
+
+```bash
+cd services/ai
+uv run python -m unittest tests.test_tavern_api tests.test_tavern_facilitated
+```
+
 ## Configuration Notes
 
 - Python work in this repo is `uv`-first. Do not assume a globally activated virtualenv.
@@ -137,7 +144,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 - `/study` = `Study Dialog`
 - `/persona-spectrum` = `Persona Spectrum`
 - `/scene-setup` = `Scene Setup`
-- `/tavern` = `Tavern Workspace` (active implementation)
+- `/tavern` = `Tavern Workspace` (backend active; frontend page pending `UX-001`)
 - Debug is a global overlay, not a standalone page.
 
 ### `Tavern Workspace` Block Names
@@ -198,7 +205,8 @@ Use the following standard names when discussing frontend pages and page blocks.
 - `Tavern Room`: durable free-interaction container with an optional scene and persona snapshots.
 - `Tavern Participant`: room-scoped immutable persona snapshot plus prompt hash.
 - `Tavern Message`: append-only attributed message with a monotonic room sequence.
-- `Tavern Run`: idempotent, revision-checked generation attempt and Harness trace.
+- `Tavern Run`: idempotent, revision-checked generation attempt with a server-owned schedule, normalized speaker steps, context digest, and Harness traces.
+- `Tavern Speaker Step`: one scheduled persona attempt with pending/generating/completed/failed/blocked state and a reply anchor.
 - `Harness Trace`: workflow-neutral validate/repair evidence; it applies across parsing, planning, generation, study, Tavern, and frontend decoding.
 
 ## Documentation Map

@@ -4,6 +4,7 @@ import unittest
 
 from pydantic import ValidationError
 from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
 
 from app.models.domain import PersonaProfile
 from app.models.tavern import (
@@ -15,11 +16,14 @@ from app.models.tavern import (
     TavernMessageRecord,
     TavernParticipantRecord,
     TavernRoomRecord,
+    TavernRunRecord,
+    TavernSpeakerStepRecord,
     TavernTurnRequest,
     UpdateTavernRoomRequest,
 )
 from app.persistence.database import Database
-from app.persistence.tavern_repository import TavernRepository
+from app.persistence.models import TavernRoomRow, TavernRunRow
+from app.persistence.tavern_repository import TavernRepository, TavernStepClaimConflict
 
 
 NOW = "2026-08-12T00:00:00+00:00"
@@ -57,10 +61,38 @@ class TavernSchemaTests(unittest.TestCase):
     def test_schema_uses_normalized_tavern_tables(self) -> None:
         tables = set(inspect(self.database.engine).get_table_names())
         self.assertTrue(
-            {"tavern_rooms", "tavern_participants", "tavern_messages", "tavern_runs"}
+            {
+                "tavern_rooms",
+                "tavern_participants",
+                "tavern_messages",
+                "tavern_runs",
+                "tavern_run_steps",
+            }
             <= tables
         )
         self.assertNotIn("tavern_sessions", tables)
+
+    def test_facilitated_schema_has_run_lineage_steps_and_sqlite_foreign_keys(self) -> None:
+        inspector = inspect(self.database.engine)
+        run_columns = {item["name"] for item in inspector.get_columns("tavern_runs")}
+        self.assertIn("parent_run_id", run_columns)
+
+        step_primary_key = inspector.get_pk_constraint("tavern_run_steps")
+        self.assertEqual(
+            set(step_primary_key["constrained_columns"]),
+            {"run_id", "step_index"},
+        )
+        step_foreign_keys = inspector.get_foreign_keys("tavern_run_steps")
+        self.assertTrue(
+            any(
+                item["referred_table"] == "tavern_runs"
+                and item["constrained_columns"] == ["run_id"]
+                for item in step_foreign_keys
+            )
+        )
+        with self.database.engine.connect() as connection:
+            enabled = connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one()
+        self.assertEqual(enabled, 1)
 
     def test_sqlite_existing_tavern_room_table_adds_creation_key(self) -> None:
         legacy_path = Path(self.temp_dir.name) / "tavern-schema-v2.db"
@@ -89,6 +121,192 @@ class TavernSchemaTests(unittest.TestCase):
             }
             self.assertIn("creation_key", columns)
             self.assertIn("creation_input_digest", columns)
+        finally:
+            legacy_database.dispose()
+
+    def test_sqlite_existing_tavern_run_table_adds_retry_lineage_and_steps(self) -> None:
+        legacy_path = Path(self.temp_dir.name) / "tavern-schema-v3.db"
+        legacy_database = Database(f"sqlite:///{legacy_path}")
+        try:
+            with legacy_database.engine.begin() as connection:
+                connection.exec_driver_sql(
+                    """
+                    CREATE TABLE tavern_rooms (
+                        id VARCHAR(64) PRIMARY KEY,
+                        title TEXT NOT NULL DEFAULT '',
+                        status VARCHAR(32) NOT NULL DEFAULT 'active',
+                        scene_profile JSON,
+                        harness_policy JSON NOT NULL DEFAULT '{}',
+                        revision INTEGER NOT NULL DEFAULT 0,
+                        last_sequence INTEGER NOT NULL DEFAULT 0,
+                        created_at VARCHAR(64) NOT NULL DEFAULT '',
+                        updated_at VARCHAR(64) NOT NULL DEFAULT ''
+                    )
+                    """
+                )
+                connection.exec_driver_sql(
+                    """
+                    CREATE TABLE tavern_runs (
+                        id VARCHAR(64) PRIMARY KEY,
+                        room_id VARCHAR(64) NOT NULL,
+                        idempotency_key VARCHAR(80) NOT NULL,
+                        status VARCHAR(32) NOT NULL DEFAULT 'pending',
+                        mode VARCHAR(32) NOT NULL DEFAULT 'direct',
+                        input_message_id VARCHAR(64) NOT NULL DEFAULT '',
+                        expected_room_revision INTEGER NOT NULL DEFAULT 0,
+                        error_code VARCHAR(128) NOT NULL DEFAULT '',
+                        created_at VARCHAR(64) NOT NULL DEFAULT '',
+                        completed_at VARCHAR(64) NOT NULL DEFAULT '',
+                        payload JSON NOT NULL DEFAULT '{}'
+                    )
+                    """
+                )
+            legacy_database.create_schema()
+            inspector = inspect(legacy_database.engine)
+            run_columns = {
+                item["name"] for item in inspector.get_columns("tavern_runs")
+            }
+            self.assertIn("parent_run_id", run_columns)
+            self.assertIn("tavern_run_steps", inspector.get_table_names())
+            unique_column_sets = {
+                tuple(item["column_names"])
+                for item in inspector.get_unique_constraints("tavern_runs")
+            }
+            self.assertIn(("parent_run_id",), unique_column_sets)
+            foreign_keys = inspector.get_foreign_keys("tavern_runs")
+            self.assertTrue(
+                any(
+                    item["referred_table"] == "tavern_runs"
+                    and item["constrained_columns"] == ["parent_run_id"]
+                    for item in foreign_keys
+                )
+            )
+            with legacy_database.session() as session:
+                session.add(TavernRoomRow(id="legacy-room", title="Legacy Room"))
+            with self.assertRaises(IntegrityError):
+                with legacy_database.session() as session:
+                    session.add(
+                        TavernRunRow(
+                            id="invalid-child",
+                            room_id="legacy-room",
+                            idempotency_key="invalid-child-key",
+                            parent_run_id="missing-parent",
+                        )
+                    )
+        finally:
+            legacy_database.dispose()
+
+    def test_sqlite_partial_facilitated_upgrade_preserves_runs_and_steps(self) -> None:
+        legacy_path = Path(self.temp_dir.name) / "tavern-schema-partial-v4.db"
+        legacy_database = Database(f"sqlite:///{legacy_path}")
+        try:
+            BaseRoom = TavernRoomRow.__table__
+            with legacy_database.engine.begin() as connection:
+                BaseRoom.create(connection)
+                connection.exec_driver_sql(
+                    """
+                    CREATE TABLE tavern_runs (
+                        id VARCHAR(64) PRIMARY KEY,
+                        room_id VARCHAR(64) NOT NULL,
+                        idempotency_key VARCHAR(80) NOT NULL,
+                        parent_run_id VARCHAR(64),
+                        status VARCHAR(32) NOT NULL DEFAULT 'pending',
+                        mode VARCHAR(32) NOT NULL DEFAULT 'direct',
+                        input_message_id VARCHAR(64) NOT NULL DEFAULT '',
+                        expected_room_revision INTEGER NOT NULL DEFAULT 0,
+                        error_code VARCHAR(128) NOT NULL DEFAULT '',
+                        created_at VARCHAR(64) NOT NULL DEFAULT '',
+                        completed_at VARCHAR(64) NOT NULL DEFAULT '',
+                        payload JSON NOT NULL DEFAULT '{}',
+                        UNIQUE (room_id, idempotency_key),
+                        UNIQUE (parent_run_id)
+                    )
+                    """
+                )
+                connection.exec_driver_sql(
+                    """
+                    CREATE TABLE tavern_run_steps (
+                        run_id VARCHAR(64) NOT NULL,
+                        step_index INTEGER NOT NULL,
+                        persona_id VARCHAR(64) NOT NULL,
+                        participant_prompt_hash VARCHAR(64) NOT NULL DEFAULT '',
+                        status VARCHAR(32) NOT NULL DEFAULT 'pending',
+                        message_id VARCHAR(64),
+                        reply_to_message_id VARCHAR(64) NOT NULL DEFAULT '',
+                        error_code VARCHAR(128) NOT NULL DEFAULT '',
+                        started_at VARCHAR(64) NOT NULL DEFAULT '',
+                        completed_at VARCHAR(64) NOT NULL DEFAULT '',
+                        payload JSON NOT NULL DEFAULT '{}',
+                        PRIMARY KEY (run_id, step_index),
+                        UNIQUE (run_id, persona_id),
+                        UNIQUE (message_id)
+                    )
+                    """
+                )
+                connection.execute(
+                    BaseRoom.insert().values(id="partial-room", title="Partial Room")
+                )
+                run_payload = (
+                    '{"trigger_kind":"retry","root_run_id":"root-run",'
+                    '"anchor_message_id":"anchor-1",'
+                    '"scheduled_participant_ids":["persona-b"],'
+                    '"terminal_sequence":2}'
+                )
+                connection.exec_driver_sql(
+                    """
+                    INSERT INTO tavern_runs (
+                        id, room_id, idempotency_key, parent_run_id, status, mode,
+                        input_message_id, expected_room_revision, error_code,
+                        created_at, completed_at, payload
+                    ) VALUES (
+                        'root-run', 'partial-room', 'root-request', NULL, 'partial',
+                        'facilitated', 'input-1', 0, 'planned_failure',
+                        '2026-08-12T00:00:00+00:00', '2026-08-12T00:00:01+00:00', '{}'
+                    )
+                    """
+                )
+                connection.exec_driver_sql(
+                    """
+                    INSERT INTO tavern_runs (
+                        id, room_id, idempotency_key, parent_run_id, status, mode,
+                        input_message_id, expected_room_revision, error_code,
+                        created_at, completed_at, payload
+                    ) VALUES (
+                        'child-run', 'partial-room', 'child-request', 'root-run', 'completed',
+                        'facilitated', 'input-1', 1, '',
+                        '2026-08-12T00:00:02+00:00', '2026-08-12T00:00:03+00:00', ?
+                    )
+                    """,
+                    (run_payload,),
+                )
+                connection.exec_driver_sql(
+                    """
+                    INSERT INTO tavern_run_steps (
+                        run_id, step_index, persona_id, participant_prompt_hash,
+                        status, message_id, reply_to_message_id, error_code,
+                        started_at, completed_at, payload
+                    ) VALUES (
+                        'child-run', 0, 'persona-b', 'hash-b', 'completed',
+                        'message-b', 'anchor-1', '',
+                        '2026-08-12T00:00:02+00:00',
+                        '2026-08-12T00:00:03+00:00', '{}'
+                    )
+                    """
+                )
+
+            legacy_database.create_schema()
+            repository = TavernRepository(legacy_database)
+            child = repository.get_run("child-run")
+            self.assertIsNotNone(child)
+            assert child is not None
+            self.assertEqual(child.parent_run_id, "root-run")
+            self.assertEqual(child.speaker_steps[0].persona_id, "persona-b")
+            self.assertEqual(child.speaker_steps[0].message_id, "message-b")
+            with legacy_database.engine.connect() as connection:
+                self.assertEqual(
+                    connection.exec_driver_sql("PRAGMA foreign_key_check").all(),
+                    [],
+                )
         finally:
             legacy_database.dispose()
 
@@ -151,6 +369,78 @@ class TavernSchemaTests(unittest.TestCase):
         self.assertEqual(self.repository.list_rooms(), [])
         self.assertFalse(self.repository.delete_room(room.id, expected_revision=0))
 
+    def test_repository_refuses_to_finalize_before_all_speaker_steps_complete(self) -> None:
+        room = TavernRoomRecord(
+            id="tavern-early-finalize",
+            title="Invariant Room",
+            created_at=NOW,
+            updated_at=NOW,
+        )
+        self.repository.create_room(room=room, participants=[])
+        run = TavernRunRecord(
+            id="run-early-finalize",
+            room_id=room.id,
+            idempotency_key="early-finalize-key",
+            request_digest="early-finalize-digest",
+            mode=TavernInteractionMode.FACILITATED,
+            scheduled_participant_ids=["persona-a", "persona-b"],
+            speaker_steps=[
+                TavernSpeakerStepRecord(
+                    run_id="run-early-finalize",
+                    step_index=0,
+                    persona_id="persona-a",
+                ),
+                TavernSpeakerStepRecord(
+                    run_id="run-early-finalize",
+                    step_index=1,
+                    persona_id="persona-b",
+                ),
+            ],
+            expected_room_revision=0,
+            created_at=NOW,
+        )
+        user_message = TavernMessageRecord(
+            id="message-early-finalize-user",
+            room_id=room.id,
+            sequence=1,
+            author_kind=TavernAuthorKind.USER,
+            content="请依次回应。",
+            created_at=NOW,
+        )
+        self.repository.begin_run(run=run, user_message=user_message)
+        with self.assertRaises(TavernStepClaimConflict):
+            self.repository.claim_step(run_id=run.id, step_index=1, started_at=NOW)
+        self.repository.claim_step(run_id=run.id, step_index=0, started_at=NOW)
+        generated = TavernMessageRecord(
+            id="message-early-finalize-persona",
+            room_id=room.id,
+            sequence=1,
+            author_kind=TavernAuthorKind.PERSONA,
+            persona_id="persona-a",
+            content="第一位回应。",
+            created_at=NOW,
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "tavern_run_steps_incomplete"):
+            self.repository.complete_step(
+                run_id=run.id,
+                step_index=0,
+                message=generated,
+                completed_at=NOW,
+                finalize_run=True,
+            )
+
+        persisted = self.repository.require_room(room.id)
+        self.assertEqual(persisted.message_count, 1)
+        self.assertEqual(persisted.room.last_sequence, 1)
+        persisted_run = self.repository.get_run(run.id)
+        assert persisted_run is not None
+        self.assertEqual(persisted_run.status.value, "pending")
+        self.assertEqual(
+            [item.status.value for item in persisted_run.speaker_steps],
+            ["generating", "pending"],
+        )
+
     def test_tavern_model_owned_reply_is_strict(self) -> None:
         with self.assertRaises(ValidationError):
             TavernActorReply.model_validate(
@@ -174,21 +464,28 @@ class TavernSchemaTests(unittest.TestCase):
 
     def test_direct_turn_has_one_server_scheduled_character_message(self) -> None:
         request = TavernTurnRequest(
-            message="回应我。",
+            input={"kind": "user_message", "content": "回应我。"},
             mode=TavernInteractionMode.DIRECT,
             target_persona_ids=["persona-a"],
-            max_character_messages=1,
             idempotency_key="request-12345678",
             expected_room_revision=0,
         )
         self.assertEqual(request.mode, TavernInteractionMode.DIRECT)
 
+        continued = TavernTurnRequest(
+            input={"kind": "continue", "anchor_message_id": "message-latest"},
+            mode=TavernInteractionMode.DIRECT,
+            target_persona_ids=["persona-a"],
+            idempotency_key="request-continue",
+            expected_room_revision=1,
+        )
+        self.assertEqual(continued.input.kind, "continue")
+
         with self.assertRaises(ValidationError):
             TavernTurnRequest(
-                message="请两位一起回应。",
+                input={"kind": "user_message", "content": "请两位一起回应。"},
                 mode=TavernInteractionMode.DIRECT,
                 target_persona_ids=["persona-a", "persona-b"],
-                max_character_messages=2,
                 idempotency_key="request-abcdefgh",
                 expected_room_revision=0,
             )
@@ -204,20 +501,18 @@ class TavernSchemaTests(unittest.TestCase):
             UpdateTavernRoomRequest(title="\n\t", expected_revision=0)
         with self.assertRaises(ValidationError):
             TavernTurnRequest(
-                message="   ",
+                input={"kind": "user_message", "content": "   "},
                 mode=TavernInteractionMode.DIRECT,
                 target_persona_ids=["persona-a"],
-                max_character_messages=1,
                 idempotency_key="request-turn-key",
                 expected_room_revision=0,
             )
 
         with self.assertRaises(ValidationError):
             TavernTurnRequest(
-                message="没有指定角色。",
+                input={"kind": "user_message", "content": "没有指定角色。"},
                 mode=TavernInteractionMode.DIRECT,
                 target_persona_ids=[],
-                max_character_messages=1,
                 idempotency_key="request-no-target",
                 expected_room_revision=0,
             )

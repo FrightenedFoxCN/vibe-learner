@@ -99,12 +99,41 @@ class TavernRunRow(Base):
         index=True,
     )
     idempotency_key: Mapped[str] = mapped_column(String(80))
+    parent_run_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("tavern_runs.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=True,
+    )
     status: Mapped[str] = mapped_column(String(32), index=True, default="pending")
     mode: Mapped[str] = mapped_column(String(32), default="direct")
     input_message_id: Mapped[str] = mapped_column(String(64), default="")
     expected_room_revision: Mapped[int] = mapped_column(Integer, default=0)
     error_code: Mapped[str] = mapped_column(String(128), default="")
     created_at: Mapped[str] = mapped_column(String(64), default="")
+    completed_at: Mapped[str] = mapped_column(String(64), default="")
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
+
+
+class TavernRunStepRow(Base):
+    __tablename__ = "tavern_run_steps"
+    __table_args__ = (
+        UniqueConstraint("run_id", "persona_id", name="uq_tavern_run_step_persona"),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("tavern_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    step_index: Mapped[int] = mapped_column(Integer, primary_key=True)
+    persona_id: Mapped[str] = mapped_column(String(64), index=True)
+    participant_prompt_hash: Mapped[str] = mapped_column(String(64), default="")
+    status: Mapped[str] = mapped_column(String(32), index=True, default="pending")
+    message_id: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    reply_to_message_id: Mapped[str] = mapped_column(String(64), default="")
+    error_code: Mapped[str] = mapped_column(String(128), default="")
+    started_at: Mapped[str] = mapped_column(String(64), default="")
     completed_at: Mapped[str] = mapped_column(String(64), default="")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
 

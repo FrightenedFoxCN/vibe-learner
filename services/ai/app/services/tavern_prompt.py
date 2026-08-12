@@ -21,6 +21,8 @@ def build_tavern_actor_messages(
     guidance: str,
     allowed_target_ids: list[str],
     actor_reply_schema: str,
+    turn_kind: str = "user_message",
+    required_target_id: str = "",
 ) -> list[dict[str, str]]:
     template = load_prompt_template("tavern_actor_prompt.txt")
     system = template.require("system").replace("{{ACTOR_REPLY_SCHEMA}}", actor_reply_schema)
@@ -58,9 +60,11 @@ def build_tavern_actor_messages(
         .replace("{{CAST_JSON}}", _json(cast_payload))
         .replace("{{SCENE_JSON}}", _json(scene_payload))
         .replace("{{TRANSCRIPT_JSON}}", _json(transcript_payload))
+        .replace("{{TURN_KIND_JSON}}", _json(turn_kind))
         .replace("{{USER_MESSAGE_JSON}}", _json(user_message))
         .replace("{{GUIDANCE_JSON}}", _json(guidance))
         .replace("{{ALLOWED_TARGET_IDS_JSON}}", _json(allowed_target_ids))
+        .replace("{{REQUIRED_TARGET_ID_JSON}}", _json(required_target_id))
     )
     return [
         {"role": "system", "content": system},

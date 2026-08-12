@@ -1,0 +1,777 @@
+from __future__ import annotations
+
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+from fastapi import FastAPI, HTTPException
+from fastapi.testclient import TestClient
+
+from app.api import tavern_routes
+from app.models.api import CreatePersonaRequest
+from app.models.tavern import RetryTavernRunRequest, TavernActorReply
+from app.persistence.database import Database
+from app.persistence.models import TavernMessageRow, TavernRoomRow
+from app.persistence.storage import StorageManager
+from app.persistence.tavern_repository import TavernRepository
+from app.services.local_store import LocalJsonStore
+from app.services.model_provider import MockModelProvider, OpenAIModelProvider
+from app.services.persona import PersonaEngine
+from app.services.tavern import TavernService
+
+
+class SequencedTavernProvider(MockModelProvider):
+    def __init__(self, *, fail_calls: set[int] | None = None) -> None:
+        self.fail_calls = set(fail_calls or set())
+        self.calls: list[dict[str, object]] = []
+
+    def generate_tavern_actor_reply(self, **kwargs) -> TavernActorReply:
+        call_number = len(self.calls) + 1
+        self.calls.append(
+            {
+                "call_number": call_number,
+                "persona_id": kwargs["persona"].id,
+                "recent_message_ids": [item.id for item in kwargs["recent_messages"]],
+                "recent_persona_ids": [
+                    item.persona_id
+                    for item in kwargs["recent_messages"]
+                    if item.persona_id
+                ],
+                "user_message": kwargs["user_message"],
+                "turn_kind": kwargs["turn_kind"],
+                "required_target_id": kwargs["required_target_id"],
+            }
+        )
+        if call_number in self.fail_calls:
+            raise RuntimeError(f"planned_actor_failure:{call_number}")
+        return TavernActorReply(
+            text=f"{kwargs['persona'].name} 完成第 {call_number} 次回应。",
+            mood="calm",
+            action="微微颔首，望向上一位说话者",
+            speech_style="克制",
+            delivery_cue="停顿后自然接话",
+            state_commentary="按服务端安排推进多人互动",
+            addressed_participant_ids=[],
+        )
+
+
+class TavernFacilitatedApiTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_dir = TemporaryDirectory()
+        root = Path(self.temp_dir.name)
+        self.database = Database(f"sqlite:///{root / 'tavern-facilitated.db'}")
+        self.database.create_schema()
+        self.storage = StorageManager(root / "data")
+        self.store = LocalJsonStore(self.database, self.storage)
+        self.repository = TavernRepository(self.database)
+        self.persona_engine = PersonaEngine(
+            self.store,
+            tavern_reference_counter=self.repository.count_persona_references,
+        )
+        self.personas = [self._create_persona(name) for name in ("阿澜", "柏舟", "长风")]
+        self.provider = SequencedTavernProvider()
+        self.service = TavernService(
+            repository=self.repository,
+            persona_engine=self.persona_engine,
+            model_provider=self.provider,
+        )
+        self.container_patch = patch.object(
+            tavern_routes,
+            "container",
+            SimpleNamespace(tavern_service=self.service),
+        )
+        self.container_patch.start()
+        app = FastAPI()
+        app.include_router(tavern_routes.router)
+        self.client = TestClient(app)
+
+    def tearDown(self) -> None:
+        self.client.close()
+        self.container_patch.stop()
+        self.store.close()
+        self.temp_dir.cleanup()
+
+    def _create_persona(self, name: str):
+        return self.persona_engine.create_persona(
+            CreatePersonaRequest(
+                name=name,
+                summary=f"{name} 会认真倾听，并保持自己的立场。",
+                relationship="同行者",
+                learner_address="你",
+                system_prompt="保持身份稳定，不代替其他角色发言。",
+                slots=[],
+            )
+        )
+
+    def _create_room(self, *, opening_prompt: str = "") -> dict:
+        response = self.client.post(
+            "/tavern/rooms",
+            json={
+                "title": "群星酒馆",
+                "persona_ids": [item.id for item in self.personas],
+                "opening_prompt": opening_prompt,
+                "idempotency_key": f"facilitated-room-{len(opening_prompt)}",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def _facilitated_payload(
+        self,
+        *,
+        key: str,
+        revision: int,
+        target_ids: list[str] | None = None,
+        trigger: dict[str, str] | None = None,
+    ) -> dict:
+        return {
+            "input": trigger or {"kind": "user_message", "content": "请大家依次谈谈这个选择。"},
+            "mode": "facilitated",
+            "target_persona_ids": target_ids or [item.id for item in self.personas],
+            "guidance": "让角色互相回应，但保留各自立场",
+            "idempotency_key": key,
+            "expected_room_revision": revision,
+        }
+
+    def test_facilitated_schedule_is_roster_owned_and_order_insensitive_for_replay(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        roster_ids = [item.id for item in self.personas]
+        payload = self._facilitated_payload(
+            key="facilitated-order-1",
+            revision=0,
+            target_ids=list(reversed(roster_ids)),
+        )
+
+        response = self.client.post(f"/tavern/rooms/{room_id}/turns", json=payload)
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result["run"]["scheduled_participant_ids"], roster_ids)
+        self.assertEqual(
+            [item["persona_id"] for item in result["generated_messages"]],
+            roster_ids,
+        )
+        self.assertEqual(
+            [item["sequence"] for item in result["generated_messages"]],
+            [2, 3, 4],
+        )
+        self.assertEqual([item["persona_id"] for item in self.provider.calls], roster_ids)
+
+        replay = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={**payload, "target_persona_ids": roster_ids[1:] + roster_ids[:1]},
+        )
+        self.assertEqual(replay.status_code, 200, replay.text)
+        self.assertEqual(replay.json()["run"]["id"], result["run"]["id"])
+        self.assertEqual(len(self.provider.calls), 3)
+
+    def test_each_actor_sees_prior_commits_and_reply_chain_is_persisted(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="facilitated-context-1", revision=0),
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        messages = result["generated_messages"]
+
+        self.assertEqual(self.provider.calls[0]["recent_persona_ids"], [])
+        self.assertEqual(
+            self.provider.calls[1]["recent_persona_ids"],
+            [self.personas[0].id],
+        )
+        self.assertEqual(
+            self.provider.calls[2]["recent_persona_ids"],
+            [self.personas[0].id, self.personas[1].id],
+        )
+        room = self.client.get(f"/tavern/rooms/{room_id}").json()
+        user_message = room["messages"][0]
+        self.assertEqual(messages[0]["reply_to_message_id"], user_message["id"])
+        self.assertEqual(messages[1]["reply_to_message_id"], messages[0]["id"])
+        self.assertEqual(messages[2]["reply_to_message_id"], messages[1]["id"])
+        self.assertEqual(messages[1]["addressed_participant_ids"], [self.personas[0].id])
+        self.assertEqual(messages[2]["addressed_participant_ids"], [self.personas[1].id])
+        self.assertEqual(messages[1]["harness_trace"]["status"], "repaired")
+        self.assertIn(
+            "restore_scheduled_reply_target",
+            messages[1]["harness_trace"]["recovery_strategy"],
+        )
+
+    def test_continue_uses_latest_anchor_without_fabricating_a_user_message(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        direct = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "user_message", "content": "先从阿澜开始。"},
+                "mode": "direct",
+                "target_persona_ids": [self.personas[0].id],
+                "idempotency_key": "continue-direct-1",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(direct.status_code, 200, direct.text)
+        anchor = direct.json()["generated_messages"][0]
+        before = self.client.get(f"/tavern/rooms/{room_id}").json()
+
+        continued = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(
+                key="continue-facilitated-1",
+                revision=1,
+                target_ids=[self.personas[0].id, self.personas[1].id],
+                trigger={"kind": "continue", "anchor_message_id": anchor["id"]},
+            ),
+        )
+        self.assertEqual(continued.status_code, 200, continued.text)
+        result = continued.json()
+        self.assertEqual(result["run"]["trigger_kind"], "continue")
+        self.assertIsNone(result["run"]["input_message_id"])
+        self.assertIsNone(result["input_message"])
+        self.assertEqual(result["generated_messages"][0]["reply_to_message_id"], anchor["id"])
+        after = self.client.get(f"/tavern/rooms/{room_id}").json()
+        self.assertEqual(after["message_count"], before["message_count"] + 2)
+        self.assertEqual(
+            [item["author_kind"] for item in after["messages"]],
+            ["user", "persona", "persona", "persona"],
+        )
+
+        stale = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(
+                key="continue-stale-anchor",
+                revision=2,
+                target_ids=[self.personas[0].id, self.personas[1].id],
+                trigger={"kind": "continue", "anchor_message_id": anchor["id"]},
+            ),
+        )
+        self.assertEqual(stale.status_code, 409)
+        self.assertIn("tavern_continue_anchor_stale", stale.text)
+
+    def test_direct_continue_allows_one_persona_to_keep_speaking(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        initial = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "user_message", "content": "请先说说你的看法。"},
+                "mode": "direct",
+                "target_persona_ids": [self.personas[0].id],
+                "idempotency_key": "direct-continue-initial",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(initial.status_code, 200, initial.text)
+        anchor = initial.json()["generated_messages"][0]
+        continued = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "continue", "anchor_message_id": anchor["id"]},
+                "mode": "direct",
+                "target_persona_ids": [self.personas[0].id],
+                "idempotency_key": "direct-continue-next",
+                "expected_room_revision": 1,
+            },
+        )
+        self.assertEqual(continued.status_code, 200, continued.text)
+        self.assertIsNone(continued.json()["input_message"])
+        self.assertEqual(len(continued.json()["generated_messages"]), 1)
+        self.assertEqual(
+            continued.json()["generated_messages"][0]["reply_to_message_id"],
+            anchor["id"],
+        )
+        self.assertEqual(
+            continued.json()["generated_messages"][0]["addressed_participant_ids"],
+            [],
+        )
+
+    def test_middle_failure_persists_partial_run_and_retry_only_runs_remaining_actors(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        self.provider.fail_calls = {2}
+        source_payload = self._facilitated_payload(
+            key="facilitated-partial-1",
+            revision=0,
+        )
+        failed = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=source_payload,
+        )
+        self.assertEqual(failed.status_code, 502, failed.text)
+        source = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="facilitated-partial-1",
+        )
+        assert source is not None
+        self.assertEqual(source.status.value, "partial")
+        self.assertEqual(
+            [item.status.value for item in source.speaker_steps],
+            ["completed", "failed", "blocked"],
+        )
+        self.assertEqual(source.terminal_sequence, 2)
+        room_after_failure = self.client.get(f"/tavern/rooms/{room_id}").json()
+        self.assertEqual(room_after_failure["message_count"], 2)
+        self.assertEqual(len(self.provider.calls), 2)
+
+        source_replay = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=source_payload,
+        )
+        self.assertEqual(source_replay.status_code, 200, source_replay.text)
+        self.assertEqual(source_replay.json()["run"]["status"], "partial")
+        self.assertEqual(
+            [item["persona_id"] for item in source_replay.json()["generated_messages"]],
+            [self.personas[0].id],
+        )
+        self.assertEqual(len(self.provider.calls), 2)
+
+        self.provider.fail_calls.clear()
+        retried = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{source.id}/retry",
+            json={
+                "idempotency_key": "facilitated-retry-1",
+                "expected_room_revision": 1,
+            },
+        )
+        self.assertEqual(retried.status_code, 200, retried.text)
+        child = retried.json()["run"]
+        self.assertEqual(child["status"], "completed")
+        self.assertIsNone(retried.json()["input_message"])
+        self.assertEqual(child["parent_run_id"], source.id)
+        self.assertEqual(child["root_run_id"], source.id)
+        self.assertEqual(
+            child["scheduled_participant_ids"],
+            [self.personas[1].id, self.personas[2].id],
+        )
+        self.assertEqual([item["persona_id"] for item in self.provider.calls], [
+            self.personas[0].id,
+            self.personas[1].id,
+            self.personas[1].id,
+            self.personas[2].id,
+        ])
+        generated = retried.json()["generated_messages"]
+        self.assertEqual([item["sequence"] for item in generated], [3, 4])
+        self.assertEqual(
+            generated[0]["reply_to_message_id"],
+            source.speaker_steps[0].message_id,
+        )
+        final_room = self.client.get(f"/tavern/rooms/{room_id}").json()
+        self.assertEqual(final_room["message_count"], 4)
+        self.assertEqual(
+            [item["persona_id"] for item in final_room["messages"] if item["persona_id"]],
+            [item.id for item in self.personas],
+        )
+        persisted_source = self.repository.get_run(source.id)
+        assert persisted_source is not None
+        self.assertEqual(persisted_source.status.value, "partial")
+
+        replay = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{source.id}/retry",
+            json={
+                "idempotency_key": "facilitated-retry-1",
+                "expected_room_revision": 1,
+            },
+        )
+        self.assertEqual(replay.status_code, 200, replay.text)
+        self.assertEqual(replay.json()["run"]["id"], child["id"])
+        self.assertEqual(len(self.provider.calls), 4)
+
+        second_child = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{source.id}/retry",
+            json={
+                "idempotency_key": "facilitated-retry-2",
+                "expected_room_revision": 2,
+            },
+        )
+        self.assertEqual(second_child.status_code, 409)
+        self.assertIn("tavern_retry_already_created", second_child.text)
+
+    def test_first_actor_failure_blocks_later_steps_without_calling_them(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        self.provider.fail_calls = {1}
+        payload = self._facilitated_payload(key="facilitated-first-fail", revision=0)
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=payload,
+        )
+        self.assertEqual(response.status_code, 502, response.text)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="facilitated-first-fail",
+        )
+        assert run is not None
+        self.assertEqual(run.status.value, "failed")
+        self.assertEqual(
+            [item.status.value for item in run.speaker_steps],
+            ["failed", "blocked", "blocked"],
+        )
+        self.assertEqual(len(self.provider.calls), 1)
+        room = self.client.get(f"/tavern/rooms/{room_id}").json()
+        self.assertEqual(room["message_count"], 1)
+        self.assertEqual(room["messages"][0]["author_kind"], "user")
+
+        replay = self.client.post(f"/tavern/rooms/{room_id}/turns", json=payload)
+        self.assertEqual(replay.status_code, 200, replay.text)
+        self.assertEqual(replay.json()["run"]["id"], run.id)
+        self.assertEqual(replay.json()["run"]["status"], "failed")
+        self.assertEqual(replay.json()["generated_messages"], [])
+        self.assertEqual(len(self.provider.calls), 1)
+
+    def test_retry_rejects_archived_room_and_changed_context(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        self.provider.fail_calls = {2}
+        failed = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="retry-archive-source", revision=0),
+        )
+        self.assertEqual(failed.status_code, 502, failed.text)
+        source = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="retry-archive-source",
+        )
+        assert source is not None
+
+        archived = self.client.patch(
+            f"/tavern/rooms/{room_id}",
+            json={"status": "archived", "expected_revision": 1},
+        )
+        self.assertEqual(archived.status_code, 200, archived.text)
+        rejected = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{source.id}/retry",
+            json={
+                "idempotency_key": "retry-archived-room",
+                "expected_room_revision": 2,
+            },
+        )
+        self.assertEqual(rejected.status_code, 409)
+        self.assertIn("tavern_room_not_active", rejected.text)
+
+        restored = self.client.patch(
+            f"/tavern/rooms/{room_id}",
+            json={"status": "active", "expected_revision": 2},
+        )
+        self.assertEqual(restored.status_code, 200, restored.text)
+        changed = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{source.id}/retry",
+            json={
+                "idempotency_key": "retry-changed-context",
+                "expected_room_revision": 3,
+            },
+        )
+        self.assertEqual(changed.status_code, 409)
+        self.assertIn("tavern_retry_context_changed", changed.text)
+
+    def test_context_failure_after_step_claim_is_terminal_not_stuck_pending(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        with patch.object(
+            self.repository,
+            "list_recent_messages",
+            side_effect=RuntimeError("planned_context_read_failure"),
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json=self._facilitated_payload(
+                    key="facilitated-context-failure",
+                    revision=0,
+                ),
+            )
+        self.assertEqual(response.status_code, 502, response.text)
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="facilitated-context-failure",
+        )
+        assert run is not None
+        self.assertEqual(run.status.value, "failed")
+        self.assertEqual(
+            [item.status.value for item in run.speaker_steps],
+            ["failed", "blocked", "blocked"],
+        )
+        self.assertEqual(run.speaker_steps[0].harness_trace.stage, "context_load")
+
+    def test_retry_context_digest_detects_prompt_hash_tampering_without_revision_change(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        self.provider.fail_calls = {2}
+        failed = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="retry-digest-source", revision=0),
+        )
+        self.assertEqual(failed.status_code, 502, failed.text)
+        source = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="retry-digest-source",
+        )
+        assert source is not None
+        with self.database.engine.begin() as connection:
+            connection.exec_driver_sql(
+                "UPDATE tavern_participants SET prompt_hash = ? "
+                "WHERE room_id = ? AND persona_id = ?",
+                ("tampered-prompt-hash", room_id, self.personas[1].id),
+            )
+
+        rejected = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{source.id}/retry",
+            json={
+                "idempotency_key": "retry-digest-rejected",
+                "expected_room_revision": 1,
+            },
+        )
+        self.assertEqual(rejected.status_code, 409)
+        self.assertIn("tavern_retry_context_changed", rejected.text)
+
+    def test_tail_and_before_cursors_restore_latest_transcript_page(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="facilitated-tail-page", revision=0),
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+
+        tail = self.client.get(
+            f"/tavern/rooms/{room_id}",
+            params={"tail": True, "limit": 2},
+        )
+        self.assertEqual(tail.status_code, 200, tail.text)
+        self.assertEqual(
+            [item["sequence"] for item in tail.json()["messages"]],
+            [3, 4],
+        )
+        self.assertEqual(tail.json()["next_before_sequence"], 3)
+        self.assertIsNone(tail.json()["next_after_sequence"])
+
+        previous = self.client.get(
+            f"/tavern/rooms/{room_id}",
+            params={"before_sequence": 3, "limit": 2},
+        )
+        self.assertEqual(previous.status_code, 200, previous.text)
+        self.assertEqual(
+            [item["sequence"] for item in previous.json()["messages"]],
+            [1, 2],
+        )
+        self.assertIsNone(previous.json()["next_before_sequence"])
+
+        conflict = self.client.get(
+            f"/tavern/rooms/{room_id}",
+            params={"tail": True, "after_sequence": 1},
+        )
+        self.assertEqual(conflict.status_code, 400)
+        self.assertIn("tavern_message_cursor_conflict", conflict.text)
+
+    def test_cursors_cover_transcripts_larger_than_the_page_limit(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        with self.database.session() as session:
+            session.add_all(
+                TavernMessageRow(
+                    id=f"long-transcript-{sequence}",
+                    room_id=room_id,
+                    sequence=sequence,
+                    author_kind="system",
+                    content=f"历史消息 {sequence}",
+                    created_at="2026-08-12T00:00:00+00:00",
+                    payload={},
+                )
+                for sequence in range(1, 206)
+            )
+            room = session.get(TavernRoomRow, room_id)
+            assert room is not None
+            room.last_sequence = 205
+
+        first = self.client.get(f"/tavern/rooms/{room_id}")
+        self.assertEqual(first.status_code, 200, first.text)
+        self.assertEqual(first.json()["message_count"], 205)
+        self.assertEqual(
+            [item["sequence"] for item in first.json()["messages"]],
+            list(range(1, 201)),
+        )
+        self.assertEqual(first.json()["next_after_sequence"], 200)
+
+        forward_tail = self.client.get(
+            f"/tavern/rooms/{room_id}",
+            params={"after_sequence": 200},
+        )
+        self.assertEqual(forward_tail.status_code, 200, forward_tail.text)
+        self.assertEqual(
+            [item["sequence"] for item in forward_tail.json()["messages"]],
+            list(range(201, 206)),
+        )
+        self.assertIsNone(forward_tail.json()["next_after_sequence"])
+
+        latest = self.client.get(
+            f"/tavern/rooms/{room_id}",
+            params={"tail": True},
+        )
+        self.assertEqual(latest.status_code, 200, latest.text)
+        self.assertEqual(
+            [item["sequence"] for item in latest.json()["messages"]],
+            list(range(6, 206)),
+        )
+        self.assertEqual(latest.json()["next_before_sequence"], 6)
+
+        oldest = self.client.get(
+            f"/tavern/rooms/{room_id}",
+            params={"before_sequence": 6},
+        )
+        self.assertEqual(oldest.status_code, 200, oldest.text)
+        self.assertEqual(
+            [item["sequence"] for item in oldest.json()["messages"]],
+            list(range(1, 6)),
+        )
+        self.assertIsNone(oldest.json()["next_before_sequence"])
+
+    def test_concurrent_retry_creates_exactly_one_child_run(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        self.provider.fail_calls = {2}
+        failed = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(key="concurrent-retry-source", revision=0),
+        )
+        self.assertEqual(failed.status_code, 502, failed.text)
+        source = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key="concurrent-retry-source",
+        )
+        assert source is not None
+        self.provider.fail_calls.clear()
+        barrier = Barrier(2)
+
+        def retry(index: int):
+            barrier.wait()
+            return self.service.retry_run(
+                room_id=room_id,
+                source_run_id=source.id,
+                payload=RetryTavernRunRequest(
+                    idempotency_key=f"concurrent-retry-{index}",
+                    expected_room_revision=1,
+                ),
+            )
+
+        outcomes = []
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(retry, index) for index in range(2)]
+            for future in futures:
+                try:
+                    outcomes.append(("ok", future.result()))
+                except HTTPException as exc:
+                    outcomes.append(("conflict", exc))
+
+        self.assertEqual([item[0] for item in outcomes].count("ok"), 1)
+        self.assertEqual([item[0] for item in outcomes].count("conflict"), 1)
+        children = [
+            item
+            for item in self.repository.list_runs(room_id)
+            if item.parent_run_id == source.id
+        ]
+        self.assertEqual(len(children), 1)
+        self.assertEqual(children[0].status.value, "completed")
+
+    def test_model_recovery_state_is_isolated_between_facilitated_actors(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://example.invalid/v1",
+            plan_model="test-model",
+            chat_model="test-model",
+        )
+        self.service.model_provider = provider
+        invalid_payload = {
+            "choices": [
+                {"finish_reason": "stop", "message": {"content": '{"text":"缺字段"}'}}
+            ]
+        }
+
+        def valid_payload(text: str, target_ids: list[str]) -> dict:
+            targets = ",".join(f'"{item}"' for item in target_ids)
+            return {
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "content": (
+                                f'{{"text":"{text}","mood":"calm","action":"点头",'
+                                '"speech_style":"warm","delivery_cue":"自然回应",'
+                                '"state_commentary":"保持身份",'
+                                f'"addressed_participant_ids":[{targets}]}}'
+                            )
+                        },
+                    }
+                ]
+            }
+
+        with patch.object(
+            provider,
+            "_request_openai_chat_completion",
+            side_effect=[
+                (invalid_payload, 1),
+                (valid_payload("第一位修复后回应。", []), 1),
+                (valid_payload("第二位直接回应。", [self.personas[0].id]), 1),
+            ],
+        ):
+            response = self.client.post(
+                f"/tavern/rooms/{room_id}/turns",
+                json=self._facilitated_payload(
+                    key="facilitated-recovery-isolation",
+                    revision=0,
+                    target_ids=[self.personas[0].id, self.personas[1].id],
+                ),
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        traces = [
+            item["harness_trace"] for item in response.json()["generated_messages"]
+        ]
+        self.assertEqual(traces[0]["status"], "repaired")
+        self.assertIn("retry_strict_actor_reply", traces[0]["recovery_strategy"])
+        self.assertEqual(traces[1]["status"], "passed")
+        self.assertEqual(traces[1]["recovery_strategy"], "none")
+
+    def test_trigger_and_target_shape_validation_is_explicit(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        direct_continue = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "continue", "anchor_message_id": "missing-message"},
+                "mode": "direct",
+                "target_persona_ids": [self.personas[0].id],
+                "idempotency_key": "invalid-direct-continue",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(direct_continue.status_code, 409)
+        self.assertIn("tavern_continue_anchor_stale", direct_continue.text)
+
+        one_target = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(
+                key="invalid-one-target",
+                revision=0,
+                target_ids=[self.personas[0].id],
+            ),
+        )
+        self.assertEqual(one_target.status_code, 422)
+
+        duplicate_target = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json=self._facilitated_payload(
+                key="invalid-duplicate-target",
+                revision=0,
+                target_ids=[self.personas[0].id, self.personas[0].id],
+            ),
+        )
+        self.assertEqual(duplicate_target.status_code, 422)
+
+
+if __name__ == "__main__":
+    unittest.main()

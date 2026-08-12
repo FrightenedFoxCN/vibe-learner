@@ -6,6 +6,7 @@ from app.core.bootstrap import container
 from app.core.logging import get_logger
 from app.models.tavern import (
     CreateTavernRoomRequest,
+    RetryTavernRunRequest,
     TavernRoomDetail,
     TavernRoomListResponse,
     TavernRunListResponse,
@@ -33,11 +34,19 @@ def list_tavern_rooms() -> TavernRoomListResponse:
 def get_tavern_room(
     room_id: str,
     after_sequence: int = Query(default=0, ge=0),
+    before_sequence: int | None = Query(default=None, ge=1),
+    tail: bool = Query(default=False),
     limit: int = Query(default=200, ge=1, le=200),
 ) -> TavernRoomDetail:
+    if tail and (before_sequence is not None or after_sequence != 0):
+        raise HTTPException(status_code=400, detail="tavern_message_cursor_conflict")
+    if before_sequence is not None and after_sequence != 0:
+        raise HTTPException(status_code=400, detail="tavern_message_cursor_conflict")
     return container.tavern_service.require_room(
         room_id,
         after_sequence=after_sequence,
+        before_sequence=before_sequence,
+        tail=tail,
         limit=limit,
     )
 
@@ -80,4 +89,26 @@ def run_tavern_turn(room_id: str, payload: TavernTurnRequest) -> TavernTurnRespo
         raise
     except RuntimeError as exc:
         logger.exception("tavern.turn_failed room_id=%s error=%s", room_id, str(exc))
+        raise HTTPException(status_code=502, detail="tavern_model_upstream_error") from exc
+
+
+@router.post(
+    "/rooms/{room_id}/runs/{run_id}/retry",
+    response_model=TavernTurnResponse,
+)
+def retry_tavern_run(
+    room_id: str,
+    run_id: str,
+    payload: RetryTavernRunRequest,
+) -> TavernTurnResponse:
+    try:
+        return container.tavern_service.retry_run(
+            room_id=room_id,
+            source_run_id=run_id,
+            payload=payload,
+        )
+    except HTTPException:
+        raise
+    except RuntimeError as exc:
+        logger.exception("tavern.retry_failed room_id=%s run_id=%s", room_id, run_id)
         raise HTTPException(status_code=502, detail="tavern_model_upstream_error") from exc
