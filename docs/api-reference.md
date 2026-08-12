@@ -647,6 +647,8 @@ Notes:
 - admission is persisted before provider execution; a duplicate committed request returns the same terminal receipt without invoking the model again
 - after timeout, disconnect, `admitted`, `running`, or `uncertain`, query the original operation; do not automatically repeat this POST or mint a new key
 - request-schema and stale-revision failures are rejected before admission with 4xx; attachment validation after durable admission but before execution returns a `not_committed` receipt; an invalid scheduled follow-up is detected after claim because current Study runtime validation is not yet staged, so it conservatively becomes `uncertain`
+- the browser preserves HTTP status plus typed error code for pre-admission failures: explicit Session/request/revision/active-slot conflicts and request validation offer “refresh Session state” instead of querying an operation that was never created; the learner draft remains editable, while sending waits for refresh and then uses a new request identity
+- transport loss, response decode failure, provider failure, and timeout are not pre-admission proof and therefore remain query-only; an explicit `404 study_chat_operation_not_found` from the operation GET ends the query loop and also requires a Session refresh
 - after execution starts, invalid/empty model output, provider/network failure, and provider timeout persist as an `uncertain` receipt with HTTP 200; the internal failure is retained in `error_code` so the client can decode and query the operation instead of interpreting a transient HTTP error as permission to replay
 - frontend surfaces terminal/uncertain state explicitly; a new POST is allowed only when the receipt is `not_committed` and `safe_to_retry=true`
 

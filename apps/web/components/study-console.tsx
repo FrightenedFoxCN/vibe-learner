@@ -51,8 +51,10 @@ interface StudyConsoleProps {
   chatErrorMessage?: string;
   canQueryLastAsk?: boolean;
   canResendLastAsk?: boolean;
+  canRefreshSessionAfterAsk?: boolean;
   onQueryLastAsk?: () => unknown | Promise<unknown>;
   onRetryLastAsk?: () => unknown | Promise<unknown>;
+  onRefreshSessionAfterAsk?: () => unknown | Promise<unknown>;
   selectedScheduleId: string;
   scheduleOptions: Array<{ id: string; title: string }>;
   turns: StudySessionRecord["turns"];
@@ -98,8 +100,10 @@ export function StudyConsole({
   chatErrorMessage,
   canQueryLastAsk,
   canResendLastAsk,
+  canRefreshSessionAfterAsk,
   onQueryLastAsk,
   onRetryLastAsk,
+  onRefreshSessionAfterAsk,
   selectedScheduleId,
   scheduleOptions,
   turns,
@@ -120,6 +124,7 @@ export function StudyConsole({
   onCachedStateChange,
 }: StudyConsoleProps) {
   const recoveryLocked = Boolean(chatErrorMessage && canQueryLastAsk);
+  const refreshRequired = Boolean(chatErrorMessage && canRefreshSessionAfterAsk);
   const [message, setMessage] = useState(
     () => cachedState?.message ?? "请解释这一章的核心概念，并给我一个复述练习。"
   );
@@ -340,6 +345,19 @@ export function StudyConsole({
                   {isPending ? "发送中…" : "重新发送（新请求）"}
                 </button>
               ) : null}
+              {canRefreshSessionAfterAsk ? (
+                <button
+                  type="button"
+                  style={{
+                    ...styles.retryBtn,
+                    ...(isPending || disabled || !onRefreshSessionAfterAsk ? styles.btnDisabled : {})
+                  }}
+                  disabled={isPending || disabled || !onRefreshSessionAfterAsk}
+                  onClick={() => { if (onRefreshSessionAfterAsk) void onRefreshSessionAfterAsk(); }}
+                >
+                  {isPending ? "刷新中…" : "刷新会话状态"}
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -455,9 +473,9 @@ export function StudyConsole({
                 <button
                   style={{
                     ...styles.iconSendButton,
-                    ...(isPending || disabled || recoveryLocked ? styles.btnDisabled : {})
+                    ...(isPending || disabled || recoveryLocked || refreshRequired ? styles.btnDisabled : {})
                   }}
-                  disabled={isPending || disabled || recoveryLocked}
+                  disabled={isPending || disabled || recoveryLocked || refreshRequired}
                   onClick={async () => {
                     const didSend = await onAsk(message, attachments);
                     if (!didSend) {
@@ -466,8 +484,8 @@ export function StudyConsole({
                     setMessage("");
                     setAttachments([]);
                   }}
-                  aria-label={recoveryLocked ? "请先查询本次请求结果" : isPending ? "发送中" : "发送"}
-                  title={recoveryLocked ? "请先查询本次请求结果" : isPending ? "发送中" : "发送"}
+                  aria-label={recoveryLocked ? "请先查询本次请求结果" : refreshRequired ? "请先刷新会话状态" : isPending ? "发送中" : "发送"}
+                  title={recoveryLocked ? "请先查询本次请求结果" : refreshRequired ? "请先刷新会话状态" : isPending ? "发送中" : "发送"}
                 >
                   <MaterialIcon name="send" size={16} />
                 </button>

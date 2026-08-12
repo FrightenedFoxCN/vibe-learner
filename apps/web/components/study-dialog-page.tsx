@@ -52,6 +52,7 @@ export function StudyDialogPage() {
     chatFailure,
     queryStudyChatOperation,
     retryFailedAsk,
+    refreshStudySessionAfterRejectedAdmission,
     handleSwitchSection,
     handleSubmitQuestionAttempt,
     handleResolvePlanConfirmation,
@@ -480,8 +481,10 @@ export function StudyDialogPage() {
             chatErrorMessage={chatFailure?.detail ?? ""}
             canQueryLastAsk={Boolean(chatFailure?.canQuery)}
             canResendLastAsk={Boolean(chatFailure?.canResend)}
+            canRefreshSessionAfterAsk={Boolean(chatFailure?.canRefreshSession)}
             onQueryLastAsk={queryStudyChatOperation}
             onRetryLastAsk={retryFailedAsk}
+            onRefreshSessionAfterAsk={refreshStudySessionAfterRejectedAdmission}
             selectedScheduleId={currentScheduleId}
             scheduleOptions={scheduleOptions.map((item) => ({ id: item.id, title: item.title }))}
             turns={studySession?.turns ?? []}

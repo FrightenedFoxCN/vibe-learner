@@ -75,10 +75,7 @@ import {
   SESSION_CREATED_NOTICE,
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
-import {
-  resolveStudyChatFailurePresentation,
-  resolveStudySessionErrorNotice,
-} from "../lib/study-session-decode";
+import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
 import {
   logWorkspaceError,
   logWorkspaceInfo
@@ -87,6 +84,11 @@ import { compactPreviewValue } from "../lib/preview";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
 import { useRuntimeSettings } from "../components/runtime-settings-provider";
 import type { StudyChatOperationStatus } from "../lib/study-chat-operation-decode";
+import {
+  isDefiniteStudyChatPreAdmissionError,
+  isMissingStudyChatOperationError,
+  studyChatPreAdmissionNotice,
+} from "../lib/http-error";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
@@ -113,9 +115,13 @@ type ChatFailureState = {
   operationStatus: StudyChatOperationStatus | "unresolved";
   canQuery: boolean;
   canResend: boolean;
+  canRefreshSession: boolean;
 };
 
-type StudyChatDraft = Omit<ChatFailureState, "detail" | "operationStatus" | "canQuery" | "canResend">;
+type StudyChatDraft = Omit<
+  ChatFailureState,
+  "detail" | "operationStatus" | "canQuery" | "canResend" | "canRefreshSession"
+>;
 
 type PendingStudyOperationIdentity = Pick<
   StudyChatDraft,
@@ -890,6 +896,7 @@ export function useLearningWorkspaceController({
           operationStatus: "committed",
           canQuery: false,
           canResend: false,
+          canRefreshSession: false,
         });
         if (learnerOperation) {
           clearPendingStudyOperation(receipt);
@@ -920,6 +927,7 @@ export function useLearningWorkspaceController({
       operationStatus: receipt.status,
       canQuery: presentation.canQuery,
       canResend,
+      canRefreshSession: false,
     });
     if (learnerOperation) {
       if (receipt.status === "not_committed") {
@@ -947,11 +955,27 @@ export function useLearningWorkspaceController({
       }
       return applied;
     } catch (error) {
+      if (isMissingStudyChatOperationError(error)) {
+        clearPendingStudyOperation(chatFailure);
+        setChatFailure((current) => current ? {
+          ...current,
+          detail: "服务器确认没有找到这次请求。请刷新会话状态后重新发送。",
+          canQuery: false,
+          canResend: false,
+          canRefreshSession: true,
+        } : current);
+        dispatch({
+          type: "notice_set",
+          notice: "没有找到这次请求；请先刷新会话状态。",
+        });
+        return false;
+      }
       setChatFailure((current) => current ? {
         ...current,
         detail: "暂时无法确认本次请求结果。请稍后继续查询，不要重新发送。",
         canQuery: true,
         canResend: false,
+        canRefreshSession: false,
       } : current);
       dispatch({
         type: "notice_set",
@@ -989,17 +1013,30 @@ export function useLearningWorkspaceController({
       operationStatus: "unresolved",
       canQuery: true,
       canResend: false,
+      canRefreshSession: false,
     });
     void (async () => {
       try {
         const receipt = await getStudyChatOperation(pending);
         applyStudyChatOperation(receipt, restoredDraft);
       } catch (error) {
+        if (isMissingStudyChatOperationError(error)) {
+          clearPendingStudyOperation(pending);
+          setChatFailure((current) => current ? {
+            ...current,
+            detail: "服务器没有找到刷新前的请求。请刷新会话状态后重新发送。",
+            canQuery: false,
+            canResend: false,
+            canRefreshSession: true,
+          } : current);
+          return;
+        }
         setChatFailure((current) => current ? {
           ...current,
           detail: "尚未确认刷新前请求的结果。请点击“查询本次请求结果”，不要重新发送。",
           canQuery: true,
           canResend: false,
+          canRefreshSession: false,
         } : current);
         logWorkspaceError("workflow:study_chat:operation_restore_error", error);
       }
@@ -1042,12 +1079,29 @@ export function useLearningWorkspaceController({
             followUpId: input.followUpId,
           });
     } catch (error) {
+      if (isDefiniteStudyChatPreAdmissionError(error)) {
+        clearPendingStudyOperation(draft);
+        forgetAutomaticStudyRequestId(
+          automaticRequestIdsRef.current,
+          input.operationKey,
+        );
+        setChatFailure({
+          ...draft,
+          detail: studyChatPreAdmissionNotice(error),
+          operationStatus: "unresolved",
+          canQuery: false,
+          canResend: false,
+          canRefreshSession: true,
+        });
+        throw error;
+      }
       setChatFailure({
         ...draft,
         detail: "未能确认这次自动消息的结果。请查询本次请求，不要重复执行。",
         operationStatus: "unresolved",
         canQuery: true,
         canResend: false,
+        canRefreshSession: false,
       });
       throw error;
     }
@@ -1225,15 +1279,30 @@ export function useLearningWorkspaceController({
       });
       return true;
     } catch (error) {
-      const failurePresentation = resolveStudyChatFailurePresentation(error);
+      if (isDefiniteStudyChatPreAdmissionError(error)) {
+        clearPendingStudyOperation(draft);
+        setChatFailure({
+          ...draft,
+          detail: studyChatPreAdmissionNotice(error),
+          operationStatus: "unresolved",
+          canQuery: false,
+          canResend: false,
+          canRefreshSession: true,
+        });
+        dispatch({
+          type: "notice_set",
+          notice: "消息尚未被服务端接收；请先刷新会话状态。",
+        });
+        logWorkspaceError("workflow:study_chat:pre_admission_rejected", error);
+        return false;
+      }
       setChatFailure({
         ...draft,
-        detail: failurePresentation?.detail
-          ? "未能确认本次请求结果。请查询本次请求，不要重新发送。"
-          : "回复校验失败。请查询本次请求，不要重新发送。",
+        detail: "未能确认本次请求结果。请查询本次请求，不要重新发送。",
         operationStatus: "unresolved",
         canQuery: true,
         canResend: false,
+        canRefreshSession: false,
       });
       persistPendingStudyOperation(draft);
       dispatch({
@@ -1795,6 +1864,63 @@ export function useLearningWorkspaceController({
     await handleAskForSection(chatFailure.message, chatFailure.studyUnitId, chatFailure.attachments);
   };
 
+  const refreshStudySessionAfterRejectedAdmission = async () => {
+    const failure = chatFailure;
+    const currentSession = studySessionRef.current;
+    if (!failure?.canRefreshSession || !currentSession) {
+      return false;
+    }
+    try {
+      dispatch({ type: "busy_started" });
+      const sessions = await listStudySessions({
+        documentId: currentSession.planId ? undefined : currentSession.documentId,
+        planId: currentSession.planId ?? undefined,
+        personaId: currentSession.personaId,
+        studyUnitId: currentSession.studyUnitId,
+      });
+      const refreshed = sessions.find((item) => item.id === currentSession.id) ?? null;
+      clearPendingStudyOperation(failure);
+      setChatFailure(null);
+      if (!refreshed) {
+        studySessionRef.current = null;
+        dispatch({
+          type: "study_session_set",
+          studySession: null,
+          clearResponse: true,
+        });
+        dispatch({
+          type: "notice_set",
+          notice: "原学习会话已不存在。请先创建或选择会话，再重新发送保留的草稿。",
+        });
+        return false;
+      }
+      studySessionRef.current = refreshed;
+      dispatch({
+        type: "study_session_set",
+        studySession: refreshed,
+        clearResponse: false,
+      });
+      dispatch({
+        type: "notice_set",
+        notice: "会话状态已刷新。请确认草稿后重新发送；新发送会使用新的请求身份。",
+      });
+      return true;
+    } catch (error) {
+      setChatFailure((current) => current ? {
+        ...current,
+        detail: "刷新会话状态失败，草稿仍保留。请稍后重试刷新。",
+        canQuery: false,
+        canResend: false,
+        canRefreshSession: true,
+      } : current);
+      dispatch({ type: "notice_set", notice: "刷新会话状态失败，草稿仍保留。" });
+      logWorkspaceError("workflow:study_chat:refresh_after_rejection_error", error);
+      return false;
+    } finally {
+      dispatch({ type: "busy_finished" });
+    }
+  };
+
   return {
     personas: state.personas,
     selectedPersona,
@@ -1845,6 +1971,7 @@ export function useLearningWorkspaceController({
     chatFailure,
     queryStudyChatOperation,
     retryFailedAsk,
+    refreshStudySessionAfterRejectedAdmission,
     handleSubmitQuestionAttempt,
     handleResolvePlanConfirmation,
     interruptDialogue,

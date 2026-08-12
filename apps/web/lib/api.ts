@@ -32,6 +32,7 @@ import type {
 
 import { compactPreviewString, compactPreviewValue } from "./preview";
 import { getAiBaseUrl, getDesktopRuntimeConfig } from "./runtime-config";
+import { ApiHttpError, extractApiErrorCode } from "./http-error";
 import { decodeStudySessionCommittedIdentity } from "./study-session-decode";
 import {
   decodeStudyChatOperationReceipt,
@@ -297,6 +298,9 @@ function extractErrorMessage(payload: unknown, fallbackMessage: string) {
     const trimmed = detail.trim();
     return trimmed || fallbackMessage;
   }
+  if (detail && typeof detail === "object") {
+    return extractErrorMessage(detail, fallbackMessage);
+  }
   if (detail !== undefined && detail !== null) {
     const text = String(detail).trim();
     if (text) {
@@ -346,13 +350,19 @@ async function readJson<T>(response: Response): Promise<T> {
     const text = await response.text();
     const fallbackMessage = text.trim() || `HTTP ${response.status}`;
     let message = fallbackMessage;
+    let payload: unknown = text;
     try {
-      const parsed = JSON.parse(text) as unknown;
-      message = extractErrorMessage(parsed, fallbackMessage);
+      payload = JSON.parse(text) as unknown;
+      message = extractErrorMessage(payload, fallbackMessage);
     } catch {
       // Keep the raw body when it is not JSON.
     }
-    throw new Error(message);
+    throw new ApiHttpError({
+      status: response.status,
+      code: extractApiErrorCode(payload),
+      message,
+      payload,
+    });
   }
   return (await response.json()) as T;
 }
