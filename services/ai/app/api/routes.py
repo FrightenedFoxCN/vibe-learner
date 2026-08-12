@@ -1216,6 +1216,7 @@ def _run_study_chat(
             active_plan = container.plan_service.require_plan(session.plan_id)
         except HTTPException:
             active_plan = None
+    bound_session_plan = active_plan
     memory_sessions = (
         container.study_session_service.list_sessions(
             plan_id=session.plan_id,
@@ -1250,14 +1251,25 @@ def _run_study_chat(
         if active_plan is not None
         else None
     )
+    from app.services.study_chat_effects import StudyChatEffectCollector
+
+    effect_collector = StudyChatEffectCollector(
+        operation_id=operation_id,
+        session_id=session_id,
+        plan_id=bound_session_plan.id if bound_session_plan is not None else None,
+        allowed_schedule_ids={
+            item.id for item in bound_session_plan.schedule
+        } if bound_session_plan is not None else set(),
+    )
     session_tool_runtime = StudySessionChatToolRuntime(
         session_service=container.study_session_service,
         plan_service=container.plan_service,
         session_id=session_id,
-        plan_id=active_plan.id if active_plan is not None else session.plan_id,
+        plan_id=bound_session_plan.id if bound_session_plan is not None else None,
         transient_attachments=learner_attachments or [],
         multimodal_enabled=container.model_provider.supports_chat_page_image_tools(),
         model_provider=container.model_provider,
+        effect_collector=effect_collector,
     )
     session_state_context = _resolve_session_state_context(
         session_tool_runtime=session_tool_runtime,
@@ -1332,6 +1344,7 @@ def _run_study_chat(
         ),
         completed_follow_up_id=normalized_follow_up_id,
         cancel_pending_follow_ups=normalized_message_kind == "learner",
+        prepared_effect_batch=effect_collector.prepared_batch(),
         build_response_payload=build_exchange_payload,
     )
     return response_payload

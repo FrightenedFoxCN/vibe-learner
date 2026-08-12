@@ -70,6 +70,7 @@ from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning
 from app.services.prompt_loader import load_prompt_template
 from app.services.study_arrangement import StudyArrangementService
 from app.services.study_chat_attachments import prepare_study_chat_attachments
+from app.services.study_chat_effects import StudyChatEffectCollector
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_session_prompt import build_study_session_system_prompt
 from app.services.stream_interrupts import StreamInterruptedError
@@ -4428,6 +4429,12 @@ class PersonaPipelineTests(unittest.TestCase):
             plan_service=self.plan_service,
             session_id=session.id,
             plan_id=plan.id,
+            effect_collector=StudyChatEffectCollector(
+                operation_id="study-chat-op-test-plan-confirmation",
+                session_id=session.id,
+                plan_id=plan.id,
+                allowed_schedule_ids={item.id for item in plan.schedule},
+            ),
         )
 
         payload = runtime.execute_tool(
@@ -4440,8 +4447,9 @@ class PersonaPipelineTests(unittest.TestCase):
         )
 
         self.assertTrue(payload["requires_confirmation"])
+        self.assertEqual(payload["prepared_effect"]["slot"], 0)
         refreshed_session = self.study_session_service.require_session(session.id)
-        self.assertEqual(refreshed_session.plan_confirmations[-1].action_type, "update_plan_progress")
+        self.assertEqual(refreshed_session.plan_confirmations, [])
         refreshed_plan = self.plan_service.require_plan(plan.id)
         self.assertEqual(refreshed_plan.schedule[0].status, "planned")
 

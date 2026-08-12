@@ -10,6 +10,10 @@ import {
   harnessOperationStageRegistrySnapshot,
   harnessResourceEvidencePolicyRegistrySnapshot,
 } from "../dist-test/harness.js";
+import {
+  HARNESS_EFFECT_ADAPTER_POLICIES,
+  harnessEffectAdapterPolicyRegistrySnapshot,
+} from "../dist-test/harness-effect.js";
 
 const fixtureUrl = new URL(
   "../fixtures/harness/resource-evidence-policies-v1.json",
@@ -34,6 +38,18 @@ const commitFixtureUrl = new URL(
 const expectedCommitPolicies = JSON.parse(await readFile(commitFixtureUrl, "utf8"));
 
 assert.deepEqual(harnessOperationCommitPolicyRegistrySnapshot(), expectedCommitPolicies);
+
+const effectFixtureUrl = new URL(
+  "../fixtures/harness/effect-adapter-policies-v1.json",
+  import.meta.url,
+);
+const expectedEffectPolicies = JSON.parse(await readFile(effectFixtureUrl, "utf8"));
+assert.deepEqual(harnessEffectAdapterPolicyRegistrySnapshot(), expectedEffectPolicies);
+assert.equal(Object.isFrozen(HARNESS_EFFECT_ADAPTER_POLICIES), true);
+assert.equal(
+  Object.isFrozen(HARNESS_EFFECT_ADAPTER_POLICIES.study_plan_confirmation_create),
+  true,
+);
 
 assert.equal(Object.isFrozen(HARNESS_COMPONENT_REGISTRATIONS), true);
 assert.equal(

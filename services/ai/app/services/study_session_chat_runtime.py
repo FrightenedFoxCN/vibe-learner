@@ -11,14 +11,18 @@ from app.models.domain import (
     LearnerAttachmentRecord,
     PdfRectRecord,
     ProjectedPdfOverlayRecord,
-    SessionPlanConfirmationRecord,
     SessionProjectedPdfRecord,
+)
+from app.models.study_chat_effect import (
+    StudyPlanConfirmationEffectAction,
+    StudyPlanConfirmationEffectProposalV1,
 )
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.plans import LearningPlanService
 from app.services.plan_prompt import read_page_range_images
 from app.services.study_chat_attachments import extract_pdf_page_range_text, search_pdf_text_rects
 from app.services.study_sessions import StudySessionService
+from app.services.study_chat_effects import StudyChatEffectCollector
 
 
 SESSION_CHAT_TOOL_NAMES = (
@@ -55,6 +59,7 @@ class StudySessionChatToolRuntime:
         transient_attachments: list[LearnerAttachmentRecord] | None = None,
         multimodal_enabled: bool = False,
         model_provider: Any | None = None,
+        effect_collector: StudyChatEffectCollector | None = None,
     ) -> None:
         self._session_service = session_service
         self._plan_service = plan_service
@@ -63,6 +68,7 @@ class StudySessionChatToolRuntime:
         self._transient_attachments = list(transient_attachments or [])
         self._multimodal_enabled = multimodal_enabled
         self._model_provider = model_provider
+        self._effect_collector = effect_collector
         self._response_citations: list[Citation] = []
 
     def has_tool(self, tool_name: str) -> bool:
@@ -1047,32 +1053,28 @@ class StudySessionChatToolRuntime:
             if not course_title:
                 raise HTTPException(status_code=422, detail="plan_update_empty")
             plan = self._plan_service.require_plan(self.plan_id)
-            preview_lines: list[str] = []
-            if course_title:
-                preview_lines.append(f"课程标题：{plan.course_title} -> {course_title}")
-            confirmation = SessionPlanConfirmationRecord(
-                id=f"plan-confirm-{uuid4().hex[:10]}",
-                tool_name=tool_name,
-                action_type="update_plan",
-                plan_id=self.plan_id,
-                title="待确认的计划修改",
-                summary=note or "模型建议调整当前学习计划结构。",
-                preview_lines=preview_lines,
-                payload={
-                    "course_title": course_title,
-                    "note": note,
-                },
-                created_at=datetime.now().astimezone().isoformat(),
-            )
-            self._session_service.create_plan_confirmation(
-                session_id=self.session_id,
-                confirmation=confirmation,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            effect = self._effect_collector.prepare_plan_confirmation(
+                StudyPlanConfirmationEffectProposalV1(
+                    action=StudyPlanConfirmationEffectAction.UPDATE_PLAN,
+                    course_title=course_title,
+                    note=note,
+                )
             )
             return {
                 "ok": True,
                 "tool_name": tool_name,
                 "requires_confirmation": True,
-                "confirmation": confirmation.model_dump(mode="json"),
+                "prepared_effect": {
+                    "effect_id": effect.effect_id,
+                    "slot": effect.slot,
+                    "action_type": effect.proposal.action.value,
+                    "plan_id": self.plan_id,
+                    "preview_lines": [
+                        f"课程标题：{plan.course_title} -> {course_title}"
+                    ],
+                },
             }
 
         if tool_name == "update_learning_plan_progress":
@@ -1087,35 +1089,31 @@ class StudySessionChatToolRuntime:
             if status not in {"planned", "in_progress", "completed", "blocked", "skipped"}:
                 raise HTTPException(status_code=422, detail="invalid_schedule_status")
             schedule_map = {item.id: item for item in plan.schedule}
-            preview_lines = [
-                f"{schedule_id} | {schedule_map[schedule_id].title} -> {status}"
-                for schedule_id in schedule_ids
-                if schedule_id in schedule_map
-            ]
-            confirmation = SessionPlanConfirmationRecord(
-                id=f"plan-confirm-{uuid4().hex[:10]}",
-                tool_name=tool_name,
-                action_type="update_plan_progress",
-                plan_id=self.plan_id,
-                title="待确认的完成度更新",
-                summary=note or "模型建议更新当前计划的完成状态。",
-                preview_lines=preview_lines,
-                payload={
-                    "schedule_ids": schedule_ids,
-                    "status": status,
-                    "note": note,
-                },
-                created_at=datetime.now().astimezone().isoformat(),
-            )
-            self._session_service.create_plan_confirmation(
-                session_id=self.session_id,
-                confirmation=confirmation,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            effect = self._effect_collector.prepare_plan_confirmation(
+                StudyPlanConfirmationEffectProposalV1(
+                    action=StudyPlanConfirmationEffectAction.UPDATE_PLAN_PROGRESS,
+                    schedule_ids=schedule_ids,
+                    schedule_status=status,
+                    note=note,
+                )
             )
             return {
                 "ok": True,
                 "tool_name": tool_name,
                 "requires_confirmation": True,
-                "confirmation": confirmation.model_dump(mode="json"),
+                "prepared_effect": {
+                    "effect_id": effect.effect_id,
+                    "slot": effect.slot,
+                    "action_type": effect.proposal.action.value,
+                    "plan_id": self.plan_id,
+                    "preview_lines": [
+                        f"{schedule_id} | {schedule_map[schedule_id].title} -> {status}"
+                        for schedule_id in schedule_ids
+                        if schedule_id in schedule_map
+                    ],
+                },
             }
 
         raise HTTPException(status_code=400, detail="session_tool_unknown")

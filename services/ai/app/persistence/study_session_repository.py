@@ -19,8 +19,10 @@ from app.models.study_chat_operation import (
     StudyChatOperationStatus,
     study_chat_response_digest,
 )
+from app.models.study_chat_effect import StudyPlanConfirmationPreparedEffectBatchV1
 from app.persistence.database import Database
 from app.persistence.models import StudyChatOperationRow, StudySessionRow
+from app.services.study_chat_effects import commit_study_plan_confirmation_effects
 
 
 class StudySessionRepository:
@@ -170,6 +172,7 @@ class StudySessionRepository:
         prepared_study_unit_id: str | None,
         completed_follow_up_id: str,
         cancel_pending_follow_ups: bool,
+        prepared_effect_batch: StudyPlanConfirmationPreparedEffectBatchV1 | None = None,
         build_response_payload: Callable[[StudySessionRecord], dict[str, object]],
     ) -> tuple[StudySessionRecord, dict[str, object]]:
         """Append one Turn and publish its durable receipt in one transaction."""
@@ -226,6 +229,12 @@ class StudySessionRepository:
                     if follow_up.status == "pending":
                         follow_up.status = "canceled"
                         follow_up.canceled_at = committed_at
+            commit_study_plan_confirmation_effects(
+                record=record,
+                batch=prepared_effect_batch,
+                expected_operation_id=operation_id,
+                committed_at=committed_at,
+            )
             record.updated_at = committed_at
             record.revision = expected_revision + 1
             record = StudySessionRecord.model_validate(record.model_dump(mode="json"))

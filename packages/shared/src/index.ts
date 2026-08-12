@@ -4,3 +4,4 @@ export * from "./character";
 export * from "./desktop";
 export * from "./tavern";
 export * from "./harness";
+export * from "./harness-effect";

@@ -148,6 +148,7 @@ class StudyChatOperationTests(unittest.TestCase):
             prepared_study_unit_id=None,
             completed_follow_up_id="",
             cancel_pending_follow_ups=True,
+            prepared_effect_batch=None,
             build_response_payload=response_payload,
         )
         committed = self.operations.require(

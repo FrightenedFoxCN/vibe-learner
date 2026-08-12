@@ -1,0 +1,15 @@
+{
+  "schema_name": "HarnessEffectAdapterPolicyRegistry",
+  "schema_version": "harness-effect-adapter-policy-registry-v1",
+  "adapters": [
+    {
+      "name": "study_plan_confirmation_create",
+      "version": "study-plan-confirmation-create-v1",
+      "boundary_kind": "database_write",
+      "prepare_policy": "validate_and_assign_identity",
+      "commit_policy": "database_transaction",
+      "compensation_policy": "not_applicable",
+      "read_back_policy": "exact_projection"
+    }
+  ]
+}
