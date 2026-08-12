@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from types import MappingProxyType
-from typing import get_args
+from enum import Enum
+import math
+from types import UnionType
+from typing import Annotated, Literal, Union, get_args, get_origin
 from uuid import uuid4
 
 from pydantic import BaseModel
@@ -10,6 +12,7 @@ from pydantic import BaseModel
 from app.models.harness import (
     HARNESS_CONTEXT_CONTRACT_V3,
     HARNESS_CONTEXT_DIGEST_CONTRACT_V1,
+    HARNESS_COMPONENT_CONTRACTS,
     HarnessArtifactType,
     HarnessComponentName,
     HarnessContextEnvelopeV3,
@@ -23,67 +26,6 @@ from app.models.harness import (
     canonical_harness_context_digest,
     canonical_harness_digest,
     require_versioned_harness_contract,
-)
-
-
-# A registry entry records a known code surface, not Harness adoption. Placeholder
-# versions remain deliberately unusable until the owning workflow assigns a
-# truthful version and completes its own migration task.
-_COMPONENT_REGISTRY = MappingProxyType(
-    {
-        HarnessComponentName.DOCUMENT_PARSER: HarnessContractRef(
-            name="document_parser",
-            version="pending-document-parser-version-v1",
-        ),
-        HarnessComponentName.OCR_ENGINE: HarnessContractRef(
-            name="ocr_engine",
-            version="pending-ocr-engine-version-v1",
-        ),
-        HarnessComponentName.STUDY_UNIT_CLEANER: HarnessContractRef(
-            name="study_unit_cleaner",
-            version="pending-study-unit-cleaner-version-v1",
-        ),
-        HarnessComponentName.PLANNING_PROMPT: HarnessContractRef(
-            name="planning_prompt",
-            version="pending-planning-prompt-version-v1",
-        ),
-        HarnessComponentName.PLANNING_TOOLSET: HarnessContractRef(
-            name="planning_toolset",
-            version="pending-planning-toolset-version-v1",
-        ),
-        HarnessComponentName.PERSONA_COMPILER: HarnessContractRef(
-            name="persona_compiler",
-            version="pending-persona-compiler-version-v1",
-        ),
-        HarnessComponentName.SCENE_COMPILER: HarnessContractRef(
-            name="scene_compiler",
-            version="pending-scene-compiler-version-v1",
-        ),
-        HarnessComponentName.STUDY_CHAT_PROMPT: HarnessContractRef(
-            name="study_chat_prompt",
-            version="pending-study-chat-prompt-version-v1",
-        ),
-        HarnessComponentName.STUDY_CHAT_TOOLSET: HarnessContractRef(
-            name="study_chat_toolset",
-            version="pending-study-chat-toolset-version-v1",
-        ),
-        HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessContractRef(
-            name="tavern_persona_compiler",
-            version="tavern-persona-compiler-v1",
-        ),
-        HarnessComponentName.TAVERN_ACTOR_PROMPT: HarnessContractRef(
-            name="tavern_actor_prompt",
-            version="tavern-actor-v1",
-        ),
-        HarnessComponentName.TAVERN_SCHEDULER: HarnessContractRef(
-            name="tavern_scheduler",
-            version="tavern-schedule-v1",
-        ),
-        HarnessComponentName.FRONTEND_DECODER: HarnessContractRef(
-            name="frontend_decoder",
-            version="pending-frontend-decoder-version-v1",
-        ),
-    }
 )
 
 
@@ -138,7 +80,7 @@ def build_harness_context(
     if component_keys is None:
         raise ValueError("harness_stage_not_registered")
     component_versions = sorted(
-        (_COMPONENT_REGISTRY[item].model_copy(deep=True) for item in component_keys),
+        (HARNESS_COMPONENT_CONTRACTS[item].model_copy(deep=True) for item in component_keys),
         key=lambda item: item.name,
     )
     for contract in (
@@ -204,7 +146,10 @@ def component_registry_snapshot() -> tuple[tuple[str, str, str], ...]:
 
     return tuple(
         (key.value, contract.name, contract.version)
-        for key, contract in sorted(_COMPONENT_REGISTRY.items(), key=lambda item: item[0].value)
+        for key, contract in sorted(
+            HARNESS_COMPONENT_CONTRACTS.items(),
+            key=lambda item: item[0].value,
+        )
     )
 
 
@@ -227,19 +172,107 @@ def _validate_safe_manifest(payload: HarnessSafeManifest) -> None:
     actual = frozenset(type(payload).model_fields)
     if not declared or declared != actual:
         raise ValueError("harness_safe_manifest_allowlist_mismatch")
+    _reject_aliases_or_custom_serializers(type(payload))
     _validate_nested_manifest_allowlists(type(payload))
     _reject_permissive_json_objects(type(payload).model_json_schema())
+    _validate_safe_field_types(type(payload))
+    _reject_non_finite_numbers(
+        payload.model_dump(mode="json", exclude_none=False),
+    )
+
+
+def _reject_aliases_or_custom_serializers(model_type: type[BaseModel]) -> None:
+    for field in model_type.model_fields.values():
+        if any(
+            value is not None
+            for value in (field.alias, field.validation_alias, field.serialization_alias)
+        ):
+            raise ValueError("harness_safe_manifest_alias_forbidden")
+    decorators = model_type.__pydantic_decorators__
+    if (
+        decorators.field_serializers
+        or decorators.model_serializers
+        or decorators.computed_fields
+    ):
+        raise ValueError("harness_safe_manifest_custom_serialization_forbidden")
 
 
 def _validate_nested_manifest_allowlists(model_type: type[BaseModel]) -> None:
     for field in model_type.model_fields.values():
         for candidate in _model_types(field.annotation):
-            if issubclass(candidate, HarnessSafeManifest):
-                declared = candidate.trace_safe_fields
-                actual = frozenset(candidate.model_fields)
-                if not declared or declared != actual:
-                    raise ValueError("harness_safe_manifest_allowlist_mismatch")
-                _validate_nested_manifest_allowlists(candidate)
+            if not issubclass(candidate, HarnessSafeManifest):
+                raise ValueError("harness_safe_manifest_nested_type_required")
+            declared = candidate.trace_safe_fields
+            actual = frozenset(candidate.model_fields)
+            if not declared or declared != actual:
+                raise ValueError("harness_safe_manifest_allowlist_mismatch")
+            _reject_aliases_or_custom_serializers(candidate)
+            _validate_nested_manifest_allowlists(candidate)
+
+
+def _validate_safe_field_types(model_type: type[BaseModel]) -> None:
+    for field in model_type.model_fields.values():
+        if field.metadata:
+            raise ValueError("harness_safe_manifest_annotated_type_forbidden")
+        _validate_safe_annotation(field.annotation)
+
+
+def _validate_safe_annotation(annotation: object) -> None:
+    if annotation in {str, int, float, bool, type(None)}:
+        return
+    if isinstance(annotation, type) and issubclass(annotation, HarnessSafeManifest):
+        _validate_safe_field_types(annotation)
+        return
+    if isinstance(annotation, type) and issubclass(annotation, Enum):
+        for member in annotation:
+            if member.value is not None and type(member.value) not in {
+                str,
+                int,
+                float,
+                bool,
+            }:
+                raise ValueError("harness_safe_manifest_enum_value_forbidden")
+            if type(member.value) is float and not math.isfinite(member.value):
+                raise ValueError("harness_safe_manifest_non_finite_number_forbidden")
+        return
+
+    origin = get_origin(annotation)
+    arguments = get_args(annotation)
+    if origin is Annotated:
+        raise ValueError("harness_safe_manifest_annotated_type_forbidden")
+    if origin is list:
+        if len(arguments) != 1:
+            raise ValueError("harness_safe_manifest_field_type_forbidden")
+        _validate_safe_annotation(arguments[0])
+        return
+    if origin is tuple:
+        for argument in arguments:
+            if argument is not Ellipsis:
+                _validate_safe_annotation(argument)
+        return
+    if origin in {Union, UnionType}:
+        for argument in arguments:
+            _validate_safe_annotation(argument)
+        return
+    if origin is Literal:
+        if not all(
+            value is None or type(value) in {str, int, float, bool}
+            for value in arguments
+        ):
+            raise ValueError("harness_safe_manifest_field_type_forbidden")
+        return
+    raise ValueError("harness_safe_manifest_field_type_forbidden")
+
+
+def _reject_non_finite_numbers(value: object) -> None:
+    if type(value) is float and not math.isfinite(value):
+        raise ValueError("harness_safe_manifest_non_finite_number_forbidden")
+    if isinstance(value, dict):
+        for item in value.values():
+            _reject_non_finite_numbers(item)
+    elif isinstance(value, list):
+        for item in value:
+            _reject_non_finite_numbers(item)
 
 
 def _model_types(annotation: object) -> tuple[type[BaseModel], ...]:

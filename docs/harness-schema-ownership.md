@@ -4,7 +4,7 @@
 
 This document is the cross-workflow ownership registry for Harness adoption. It prevents one broad domain record from serving simultaneously as model output, application state, persistence payload, and public API response.
 
-The repository now has a versioned v2 evidence contract, but the business workflows in this table are not automatically harnessed. A workflow is complete only after its own typed proposal, strict decode, invariants, bounded recovery, commit boundary, trace, fixtures, and release metrics are implemented.
+The repository has registered v1, v2, and v3 evidence contracts, but the business workflows in this table are not automatically harnessed. V3 adds a hardened context foundation; a workflow is complete only after its own typed proposal, strict decode, invariants, bounded recovery, protected artifact resolver, commit boundary, trace, fixtures, and release metrics are implemented.
 
 ## Four schema roles
 
@@ -56,7 +56,7 @@ Known ownership violations are migration work, not precedent. In particular, the
 
 ### v2
 
-`HarnessTraceV2` is the contract for new workflow adoption. It separates:
+`HarnessTraceV2` is the first strict evidence contract and remains frozen for compatibility. It separates:
 
 - `trace_schema_version` from output contract, context, policy, and prompt versions;
 - `trace_id`, `operation_id`, and optional `parent_trace_id`;
@@ -70,19 +70,26 @@ The context stores sorted resource/snapshot references, named component versions
 
 `HarnessCommitEvidence` distinguishes a single committed projection from a canonically ordered committed batch. A `committed_projection` contains exactly one attempted/committed resource and its envelope digest equals that resource's projection digest. A `committed_batch` digest is recomputed from the payload contract plus the sorted committed-resource manifest; each manifest entry binds its own final projection digest, revision, and sequence evidence. Attempted revisions must match the corresponding committed resource's expected revisions. These digests cover final app-owned committed projections, not model output or an API response. A successful trace's last output attempt must be a passed validation carrying the terminal output digest; a repaired trace must validate again after repair. A committed trace ends with a successful commit attempt whose digest matches the commit evidence. A rolled-back trace contains no successful commit and ends with an adjacent failed commit followed by a successful rollback, with no claimed committed resources.
 
+### v3
+
+`HarnessTraceV3` retains the v2 lifecycle and commit semantics while replacing the context field with `HarnessContextEnvelopeV3`. V3 closes workflow/stage/resource/artifact vocabularies, requires a server-owned operation identity, binds input/context/digest contracts, fills the exact component set from a central `(workflow, stage)` registry, and recomputes the context digest from trace-visible evidence. The operation ID is validated and bound by the trace, but intentionally excluded from context identity so identical context can be compared across separate operations.
+
+`HarnessSafeManifest` is an explicit review marker, not a generic serialization escape hatch. Each concrete manifest uses `extra="forbid"` and declares an exact allowlist equal to its fields. Trace-visible manifests reject open objects, `Any`, unordered collections, formatted/path-like types and sensitive field names. Protected user/document/prompt/transcript content must be retained behind the future artifact resolver; a snapshot digest alone is an integrity reference and never a replay-complete claim.
+
 ## Wire compatibility
 
 - Missing `trace_schema_version` decodes as legacy v1.
 - Exact `trace_schema_version = harness-trace-v2` decodes strictly as v2.
+- Exact `trace_schema_version = harness-trace-v3` decodes strictly as v3.
 - Unknown explicit versions are rejected; they are never downgraded to v1.
-- New workflow integrations emit v2. Existing v1 records are not automatically upgraded.
+- New workflow integrations emit v3. Existing v1/v2 records are not automatically upgraded.
 - A migration may preserve old payloads or add migration evidence, but it must not invent a historical trace ID, timestamp, attempt chain, or successful commit.
 
-Python exposes snake_case persistence/wire models. Shared TypeScript exposes the matching camelCase frontend projection with the same required/null semantics. `apps/web/lib/api.ts` still needs a true `unknown -> decoded value | typed error` boundary under `HRN-WEB-001`; a type declaration or permissive normalizer is not validation. Until that decoder lands, the existing Tavern v1 normalizer explicitly rejects every payload carrying `trace_schema_version` instead of silently degrading v2 into a fake v1 record.
+Python exposes snake_case persistence/wire models and is the canonical digest authority. Shared TypeScript exposes the matching camelCase frontend projection with the same required/null semantics but does not generate digests. `apps/web/lib/api.ts` still needs a true `unknown -> decoded value | typed error` boundary under `HRN-WEB-001`; a type declaration or permissive normalizer is not validation. Until that decoder lands, the existing Tavern v1 normalizer rejects explicit trace-schema payloads instead of silently degrading v2/v3 into a fake v1 record.
 
 `HarnessProposalEnvelope` must be parameterized with a domain model derived from `HarnessV2Model`; the unparameterized/`Any` form and permissive domain models are rejected. It includes operation identity and output contract reference, but this runtime guard does not replace each workflow's semantic ownership invariants.
 
-`HarnessWorkflow` is intentionally a closed registry. Adding a workflow requires the same atomic change to the Python enum, TypeScript union, frontend decoder routing, ownership table, and eval registry.
+`HarnessWorkflow`, `HarnessStage`, `HarnessResourceType`, and `HarnessArtifactType` are intentionally closed for v3. Adding a value requires the same atomic change to Python, TypeScript, the stage/component registry, frontend decoder routing, ownership table, and eval registry. V2's open string reference fields remain frozen for persisted compatibility.
 
 ## Persistence migration rule
 
@@ -96,4 +103,4 @@ Most legacy aggregate JSON payloads lack `schema_name`, `schema_version`, and mi
 
 ## Adoption gate
 
-A workflow may be labeled harnessed only when evidence covers malformed output, semantic boundary failure, recovery exhaustion, duplicate requests, relevant concurrency, commit failure, and replay. A v2 schema by itself satisfies none of those business-flow gates.
+A workflow may be labeled harnessed only when evidence covers malformed output, semantic boundary failure, recovery exhaustion, duplicate requests, relevant concurrency, commit failure, and protected artifact replay. A v2/v3 schema or context builder by itself satisfies none of those business-flow gates.

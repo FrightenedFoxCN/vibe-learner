@@ -5,6 +5,7 @@ from enum import StrEnum
 import hashlib
 import json
 import re
+from types import MappingProxyType
 from typing import ClassVar, Generic, Literal, TypeVar
 
 from pydantic import (
@@ -229,6 +230,64 @@ class HarnessContractRef(HarnessV2Model):
     version: str = Field(min_length=1, max_length=160)
 
 
+HARNESS_COMPONENT_CONTRACTS = MappingProxyType(
+    {
+        HarnessComponentName.DOCUMENT_PARSER: HarnessContractRef(
+            name="document_parser",
+            version="pending-document-parser-version-v1",
+        ),
+        HarnessComponentName.OCR_ENGINE: HarnessContractRef(
+            name="ocr_engine",
+            version="pending-ocr-engine-version-v1",
+        ),
+        HarnessComponentName.STUDY_UNIT_CLEANER: HarnessContractRef(
+            name="study_unit_cleaner",
+            version="pending-study-unit-cleaner-version-v1",
+        ),
+        HarnessComponentName.PLANNING_PROMPT: HarnessContractRef(
+            name="planning_prompt",
+            version="pending-planning-prompt-version-v1",
+        ),
+        HarnessComponentName.PLANNING_TOOLSET: HarnessContractRef(
+            name="planning_toolset",
+            version="pending-planning-toolset-version-v1",
+        ),
+        HarnessComponentName.PERSONA_COMPILER: HarnessContractRef(
+            name="persona_compiler",
+            version="pending-persona-compiler-version-v1",
+        ),
+        HarnessComponentName.SCENE_COMPILER: HarnessContractRef(
+            name="scene_compiler",
+            version="pending-scene-compiler-version-v1",
+        ),
+        HarnessComponentName.STUDY_CHAT_PROMPT: HarnessContractRef(
+            name="study_chat_prompt",
+            version="pending-study-chat-prompt-version-v1",
+        ),
+        HarnessComponentName.STUDY_CHAT_TOOLSET: HarnessContractRef(
+            name="study_chat_toolset",
+            version="pending-study-chat-toolset-version-v1",
+        ),
+        HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessContractRef(
+            name="tavern_persona_compiler",
+            version="tavern-persona-compiler-v1",
+        ),
+        HarnessComponentName.TAVERN_ACTOR_PROMPT: HarnessContractRef(
+            name="tavern_actor_prompt",
+            version="tavern-actor-v1",
+        ),
+        HarnessComponentName.TAVERN_SCHEDULER: HarnessContractRef(
+            name="tavern_scheduler",
+            version="tavern-schedule-v1",
+        ),
+        HarnessComponentName.FRONTEND_DECODER: HarnessContractRef(
+            name="frontend_decoder",
+            version="pending-frontend-decoder-version-v1",
+        ),
+    }
+)
+
+
 class HarnessResourceRef(HarnessV2Model):
     """The registered v2 wire shape; keep open strings for persisted compatibility."""
 
@@ -396,6 +455,12 @@ class HarnessContextEnvelopeV3(HarnessV2Model):
             raise ValueError("harness_context_stage_not_registered")
         if component_names != sorted(item.value for item in required_components):
             raise ValueError("harness_context_component_set_mismatch")
+        expected_component_versions = sorted(
+            (HARNESS_COMPONENT_CONTRACTS[item] for item in required_components),
+            key=lambda item: item.name,
+        )
+        if self.component_versions != expected_component_versions:
+            raise ValueError("harness_context_component_version_mismatch")
 
         snapshot_identities = [
             (item.artifact_type, item.artifact_id) for item in self.snapshot_refs
@@ -465,6 +530,18 @@ class HarnessCommittedResourceRef(HarnessV2Model):
 class HarnessCommittedResourceRefV3(HarnessCommittedResourceRef):
     resource_type: HarnessResourceType
     resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
+
+    @model_validator(mode="after")
+    def require_mutable_committed_revision(self) -> "HarnessCommittedResourceRefV3":
+        if (
+            self.resource_type in HARNESS_MUTABLE_RESOURCE_TYPES
+            and (
+                self.expected_revision is None
+                or self.committed_revision is None
+            )
+        ):
+            raise ValueError("harness_mutable_commit_revision_required")
+        return self
 
 
 class HarnessCommitEvidence(HarnessV2Model):
@@ -612,6 +689,12 @@ class HarnessCommitEvidenceV3(HarnessCommitEvidence):
         default_factory=list,
         max_length=64,
     )
+
+    @model_validator(mode="after")
+    def validate_v3_contract(self) -> "HarnessCommitEvidenceV3":
+        if self.payload_contract is not None:
+            require_versioned_harness_contract(self.payload_contract)
+        return self
 
 
 class HarnessTraceV2(HarnessV2Model):
@@ -816,6 +899,7 @@ class HarnessTraceV3(HarnessTraceV2):
     def bind_v3_context(self) -> "HarnessTraceV3":
         if self.context.stage != self.stage:
             raise ValueError("harness_context_stage_mismatch")
+        require_versioned_harness_contract(self.contract)
         return self
 
 

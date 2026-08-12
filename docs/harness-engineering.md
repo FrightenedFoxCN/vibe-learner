@@ -46,16 +46,19 @@ Python: `services/ai/app/models/harness.py`
 
 TypeScript: `packages/shared/src/harness.ts`
 
-The wire contract has two deliberate versions:
+The wire contract has three deliberate versions:
 
 - `HarnessTraceV1` is the legacy Tavern validation summary. Its historical `version` combines policy and prompt information, and it has no trace identity or commit evidence. It remains readable but must not be described as replay-complete.
-- `HarnessTraceV2` is the strict evidence envelope for new workflow adoption. It has trace/operation/parent identity, independent output-contract and named context-component/policy/prompt versions, snapshot references, ordered attempt records, output digest, terminal error, explicit commit/rollback evidence, and an RFC 3339 UTC start/completion interval.
+- `HarnessTraceV2` is the first strict evidence envelope and remains frozen for compatibility. It has trace/operation/parent identity, independent output-contract and named context-component/policy/prompt versions, snapshot references, ordered attempt records, output digest, terminal error, explicit commit/rollback evidence, and an RFC 3339 UTC start/completion interval.
+- `HarnessTraceV3` preserves the v2 lifecycle fields while requiring `HarnessContextEnvelopeV3`: a closed workflow/stage pair, registered component set, typed subject/snapshot references, service-owned operation ID, named input/context/digest contracts, and a trace-visible context digest that validators recompute. V3 is the target for future workflow adoption; it does not rewrite historical v2 evidence.
 
-Unknown explicit trace-schema versions are rejected. Missing `trace_schema_version` means legacy v1; old records are not assigned invented v2 identities, timestamps, attempts, or commit claims. New workflow integrations should emit v2, while the existing Tavern production path remains v1 until a separate runtime migration is tested.
+Unknown explicit trace-schema versions are rejected. Missing `trace_schema_version` means legacy v1; old records are not assigned invented v2/v3 identities, timestamps, attempts, or commit claims. New workflow integrations should emit v3, while the existing Tavern production path remains v1 until a separate runtime migration is tested.
 
-`HarnessContextEnvelope` records sorted subject/snapshot references, named component versions, and canonical SHA-256 input/context digests. It must not persist full hidden prompts, textbook contents, credentials, or private stage guidance. `HarnessProposalEnvelope` is metadata only: each workflow still requires its own strict proposal DTO.
+`HarnessContextEnvelope` is the already-registered v2 wire shape and remains unchanged. `HarnessContextEnvelopeV3` adds the stronger context foundation. Its input and snapshot digests are computed only over explicit `HarnessSafeManifest` DTOs whose exact fields have been reviewed; `Any`, open maps/objects, unordered sets, formatted/path-like values, and secret-bearing field names are rejected. Full hidden prompts, textbook/OCR source text, user guidance, transcripts, credentials, file paths, filenames, and attachments belong in protected artifacts, never in trace-visible manifests. `HarnessProposalEnvelope` is metadata only: each workflow still requires its own strict proposal DTO.
 
-`app.services.harness_context.build_harness_context` is the workflow-neutral construction boundary. It accepts a strict Pydantic input plus ephemeral snapshot material, canonicalizes references and component versions, and returns only the evidence envelope; snapshot payloads are discarded after hashing. The envelope proves that named context inputs match. It does not make a workflow replay-complete unless that workflow also retains protected source artifacts and records truthful parser/model/tool/prompt/policy versions, failure evidence, and commit evidence. Workflows must not emit v2 using placeholder versions.
+`app.services.harness_context.build_harness_context` is the v3 workflow-neutral construction boundary. It selects a closed `(workflow, stage)` registry, fills required component versions, canonicalizes references, and returns only a trace-safe evidence envelope. Placeholder component versions intentionally block Document/OCR/Study Unit/Planning/Persona/Scene/Study Chat/frontend adoption until their owning modules publish truthful versions. Tavern has registered names for fixture validation, but its production path still emits v1 and is not thereby migrated.
+
+The builder establishes integrity identity, not replay availability. `HarnessSnapshotRefV3` is only an integrity reference until `HRN-CTX-ARTIFACT-001` provides an authorized, immutable, retention-aware resolver with typed missing/expired/forbidden/digest-mismatch outcomes. SHA-256 detects changes; it does not provide confidentiality, and low-entropy secrets must not be hashed into public evidence. Python backend code is currently the sole canonical digest authority. TypeScript consumes wire evidence but does not generate canonical digests; browser support would require an explicit shared canonical-bytes specification and cross-language vectors.
 
 Workflow-specific policies remain in their domain schema. For example, Tavern limits participant messages and checks cross-speaker impersonation, while document parsing checks page coverage, extraction density, OCR availability, and Study Unit bounds.
 
@@ -93,8 +96,8 @@ Each workflow must add fixtures for malformed schemas, boundary violations, retr
 - p50/p95 stage duration;
 - workflow-specific accuracy, grounding, or identity-consistency metrics.
 
-No workflow should be described as harnessed until its failure path and replay/evaluation path are tested, not merely its happy-path prompt.
+No workflow should be described as harnessed until its failure path and protected artifact replay/evaluation path are tested, not merely its happy-path prompt or its ability to instantiate a v3 context fixture.
 
-The matrix records incremental adoption, not a Tavern-only rollout. A completed Tavern slice or the existence of the v2 evidence schema does not change the status of parsing, planning, persona/scene generation, Study Chat, or frontend decoding; each remains open until its own effect, failure, and replay boundaries pass the same rubric.
+The matrix records incremental adoption, not a Tavern-only rollout. A completed Tavern slice or the existence of the v2/v3 evidence schemas does not change the status of parsing, planning, persona/scene generation, Study Chat, or frontend decoding; each remains open until its own effect, failure, and replay boundaries pass the same rubric.
 
 Tavern's `context_digest` is one domain-specific implementation of the snapshot step: it covers room title, scene, harness policy, roster order, and participant prompt hashes, while `terminal_sequence` and room revision cover transcript and mutation drift. Other workflows must define their own versioned context envelope rather than reusing Tavern fields or treating one digest function as a universal answer.

@@ -1,15 +1,26 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
+from enum import Enum
 import json
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Annotated, Any, ClassVar
 import unittest
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PlainSerializer,
+    ValidationError,
+    WithJsonSchema,
+    field_serializer,
+)
 
 from app.models.harness import (
     HarnessArtifactType,
+    HarnessCommitEvidenceV3,
     HarnessContextEnvelope,
     HarnessContextEnvelopeV3,
     HarnessContractRef,
@@ -96,6 +107,70 @@ class _AnyManifest(HarnessSafeManifest):
     trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"value"})
 
     value: Any
+
+
+class _AliasManifest(HarnessSafeManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"system_prompt"})
+
+    system_prompt: str = Field(alias="mode")
+
+
+class _SerializerManifest(HarnessSafeManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"value"})
+
+    value: str
+
+    @field_serializer("value")
+    def serialize_value(self, value: str) -> object:
+        return {"system_prompt": value}
+
+
+class _PlainNestedModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    value: str
+
+
+class _PlainNestedManifest(HarnessSafeManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"nested"})
+
+    nested: _PlainNestedModel
+
+
+class _DecimalManifest(HarnessSafeManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"value"})
+
+    value: Decimal
+
+
+_AnnotatedSecret = Annotated[
+    str,
+    PlainSerializer(
+        lambda value: {"system_prompt": value},
+        return_type=dict[str, str],
+    ),
+    WithJsonSchema({"type": "string"}),
+]
+
+
+class _AnnotatedSerializerManifest(HarnessSafeManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"value"})
+
+    value: _AnnotatedSecret
+
+
+class _PathEnum(Enum):
+    SECRET = Path("/tmp/secret")
+
+
+class _DecimalEnum(Enum):
+    VALUE = Decimal("1.25")
+
+
+class _UnsafeEnumManifest(HarnessSafeManifest):
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset({"value"})
+
+    value: _PathEnum | _DecimalEnum
 
 
 class _LooseInput(BaseModel):
@@ -260,6 +335,15 @@ class HarnessContextV3Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "harness_context_component_set_mismatch"):
             HarnessContextEnvelopeV3.model_validate(context)
 
+        context = _build().model_dump(mode="json", exclude_none=False)
+        context["component_versions"][0]["version"] = "forged-component-v999"
+        context["context_digest"] = canonical_harness_context_digest(context)
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_context_component_version_mismatch",
+        ):
+            HarnessContextEnvelopeV3.model_validate(context)
+
         with self.assertRaisesRegex(ValueError, "harness_stage_not_registered"):
             build_harness_context(
                 workflow=HarnessWorkflow.TAVERN,
@@ -336,6 +420,13 @@ class HarnessContextV3Tests(unittest.TestCase):
             (_UnorderedManifest(values={"b", "a"}), "harness_safe_manifest_unordered_collection_forbidden"),
             (_FormattedManifest(created_at=datetime.now(timezone.utc)), "harness_safe_manifest_formatted_scalar_forbidden"),
             (_AnyManifest(value="anything"), "harness_safe_manifest_any_forbidden"),
+            (_AliasManifest(mode="secret"), "harness_safe_manifest_alias_forbidden"),
+            (_SerializerManifest(value="secret"), "harness_safe_manifest_custom_serialization_forbidden"),
+            (_PlainNestedManifest(nested=_PlainNestedModel(value="unsafe")), "harness_safe_manifest_nested_type_required"),
+            (_DecimalManifest(value=Decimal("1.25")), "harness_safe_manifest_field_type_forbidden"),
+            (_AnnotatedSerializerManifest(value="secret"), "harness_safe_manifest_annotated_type_forbidden"),
+            (_UnsafeEnumManifest(value=_PathEnum.SECRET), "harness_safe_manifest_enum_value_forbidden"),
+            (_UnsafeEnumManifest(value=_DecimalEnum.VALUE), "harness_safe_manifest_enum_value_forbidden"),
         ):
             with self.subTest(error=error):
                 with self.assertRaisesRegex(ValueError, error):
@@ -387,6 +478,99 @@ class HarnessContextV3Tests(unittest.TestCase):
             changed[field] = value
             with self.assertRaisesRegex(ValidationError, error):
                 HarnessTraceV3.model_validate(changed)
+
+        changed = json.loads(json.dumps(payload))
+        changed["contract"]["version"] = "unknown"
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_contract_version_not_adopted",
+        ):
+            HarnessTraceV3.model_validate(changed)
+
+    def test_v3_committed_mutable_resource_requires_revision_evidence(self) -> None:
+        payload = {
+            "status": "committed",
+            "effect_batch_id": "effect-room-update-1",
+            "payload_contract": {
+                "name": "TavernRoomCommit",
+                "version": "tavern-room-commit-v1",
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+                {
+                    "resource_type": "tavern_room",
+                    "resource_id": "room-1",
+                    "revision": 4,
+                }
+            ],
+            "committed_resources": [
+                {
+                    "resource_type": "tavern_room",
+                    "resource_id": "room-1",
+                    "expected_revision": 4,
+                    "committed_revision": None,
+                    "first_sequence": None,
+                    "last_sequence": None,
+                    "payload_digest": "a" * 64,
+                }
+            ],
+            "payload_digest": "a" * 64,
+            "committed_at": "2026-08-12T10:00:00Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": None,
+        }
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_mutable_commit_revision_required",
+        ):
+            HarnessCommitEvidenceV3.model_validate(payload)
+
+    def test_v3_commit_contract_rejects_placeholder_version(self) -> None:
+        changed = json.loads(
+            (FIXTURE_ROOT / "passed_not_applicable_v3.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        changed["commit_evidence"] = {
+            "status": "not_committed",
+            "effect_batch_id": "effect-1",
+            "payload_contract": {"name": "CommitBatch", "version": "unknown"},
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+                {
+                    "resource_type": "tavern_message",
+                    "resource_id": "message-10",
+                    "revision": None,
+                }
+            ],
+            "committed_resources": [],
+            "payload_digest": None,
+            "committed_at": None,
+            "rollback_reason_code": "",
+            "rolled_back_at": None,
+        }
+        changed["attempt_records"].append(
+            {
+                "attempt_id": "attempt-commit-1",
+                "attempt_index": 3,
+                "phase": "commit",
+                "status": "failed",
+                "output_digest": None,
+                "error_code": "commit_failed",
+                "duration_ms": 1,
+            }
+        )
+        changed["status"] = "failed"
+        changed["output_digest"] = None
+        changed["error_code"] = "commit_failed"
+        changed["duration_ms"] = 9
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_contract_version_not_adopted",
+        ):
+            HarnessTraceV3.model_validate(changed)
 
 
 if __name__ == "__main__":

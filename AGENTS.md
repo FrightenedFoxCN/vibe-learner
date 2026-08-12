@@ -22,7 +22,7 @@ This repository was rescanned from the root on 2026-08-12. The current workspace
 - Plan prompting and tool context: `services/ai/app/services/plan_prompt.py`
 - Model/tool-call planner: `services/ai/app/services/model_provider.py`
 - Shared contracts: `packages/shared/src/`
-- Harness contracts: `services/ai/app/models/harness.py` and `packages/shared/src/harness.ts`
+- Harness contracts: `services/ai/app/models/harness.py` and `packages/shared/src/harness.ts`; v1/v2 are compatibility contracts, while v3 is the hardened context target for future workflow adoption.
 - Harness schema ownership: `docs/harness-schema-ownership.md`
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 
@@ -127,6 +127,8 @@ uv run python -m unittest tests.test_tavern_api tests.test_tavern_facilitated
 - Keep the backend/frontend contract aligned through `packages/shared/src/` and the response normalizers in `apps/web/lib/api.ts`.
 - For new backend routes, update the appropriate bounded model module (for Tavern, `models/tavern.py`), `apps/web/lib/api.ts`, and `packages/shared/src/`.
 - All new workflows and migrated existing model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
+- Treat Harness as a repository-wide lifecycle, not a Tavern feature. `build_harness_context` and v3 fixtures are foundation only; do not mark Document/OCR/Study Unit/Planning/Persona/Scene/Study Chat/Tavern/Frontend Decode adopted until their own TODO gates pass.
+- Only digest explicitly reviewed `HarnessSafeManifest` DTOs. User/document/prompt/transcript content belongs behind an authorized artifact resolver; SHA-256 is integrity evidence, not confidentiality or replay availability. Python is the canonical digest authority until a cross-language canonical-bytes contract is added.
 - Keep model/heuristic proposals separate from committed records and API responses. Read the ownership registry before allowing generated IDs, identity, ordering, revisions, timestamps, or state effects into a proposal schema.
 - Keep application-owned IDs, speaker identity, revision, sequence, and committed state effects out of model-owned schemas.
 - Preserve the split between:

@@ -17,7 +17,7 @@
 - `scene-setup.md`: layered scene editor guide for `/scene-setup`
 - `tavern-architecture.md`: Tavern schema, transaction invariants, harness ownership, and performance boundaries
 - `harness-engineering.md`: repository-wide validate/repair/commit lifecycle, shared trace schema, adoption matrix, and release metrics
-- `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2 evidence compatibility
+- `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2/v3 evidence compatibility
 
 ## Reading Order
 
