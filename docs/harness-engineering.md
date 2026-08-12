@@ -90,6 +90,16 @@ Workflow-specific policies remain in their domain schema. For example, Tavern li
 
 See `harness-schema-ownership.md` for the workflow ownership registry, nullability rules, proposal boundaries, and compatibility policy.
 
+## Study Chat durable admission boundary
+
+`STUDY-OP-ADMIT-001` is the first Study Chat retry-safety slice. The browser owns a stable `client_request_id` for one user intent and sends the Session CAS watermark as `expected_session_revision`. Before any provider execution, the server canonicalizes the request (including attachment manifests where present), binds its versioned fingerprint to `(session_id, client_request_id)`, and durably admits a server-owned operation. Reusing the key with a different payload or expected revision fails closed.
+
+Both `/study-sessions/{session_id}/chat` transports return an operation receipt, and `GET /study-sessions/{session_id}/chat-operations/{client_request_id}` reads the same operation without starting work. The closed public states are `admitted`, `running`, `committed`, `not_committed`, and `uncertain`. Only `committed` contains the existing Study Chat exchange under `result`; its Session revision, Turn ID, Turn sequence, and response digest are read back against the committed projection. `admitted`, `running`, and `uncertain` are never safe POST-retry signals. A `not_committed` receipt may set `safe_to_retry=true` only when durable evidence proves the operation was never claimed or executed. After a timeout, disconnect, or ambiguous response, clients query the original key rather than minting a new one or blindly repeating the POST.
+
+Request-schema and stale-revision failures discovered before admission remain 4xx and leave no new operation. Attachment validation after durable admission but before claim becomes `not_committed`. The current scheduled-follow-up validity check still occurs after claim and therefore conservatively becomes `uncertain`; moving that validation into the admission snapshot is tracked as hardening. After execution starts, invalid/empty model output and provider/network/timeout failures become a durable `uncertain` receipt returned with HTTP 200. The provider detail is stored as an operation `error_code`, while the public transport remains receipt-shaped so ordinary HTTP retry logic cannot reinterpret ambiguity as permission to run the model again.
+
+The operation journal is not a general effect runtime. Current model tool calls can mutate Session memory, affinity, follow-ups, projections/overlays, plan confirmations, and the bound Scene before final reply validation; attachment files and generated/provider artifacts also cross other durability boundaries. Admission can prove which request was accepted and whether the final Turn/result was committed, but it cannot make those already-issued effects exactly once. `SCH-HRN-EFFECT-001`, `STUDY-EFFECT-COMMIT-001`, `HRN-STUDY-001`, and the full `HRN-WEB-STUDY-DEC-001` gate remain open.
+
 ## Adoption matrix
 
 | Workflow | Existing reliability pieces | Missing harness boundary |
@@ -97,9 +107,9 @@ See `harness-schema-ownership.md` for the workflow ownership registry, nullabili
 | Document parsing | OCR fallback, warnings, debug record | versioned checks, stage traces, replay fixtures, performance budgets |
 | Planning | strict-ish JSON, model recovery records, tool trace | true JSON schema validation, effect boundary, unified trace, eval matrix |
 | Persona/scene generation | Pydantic normalization, retry | prompt/version digest, semantic invariants, regression fixtures |
-| Study chat | reply recovery, tool trace, citations, Study Session revision CAS and sequenced turn append | durable request admission/idempotency, transactional tool-effect proposals, strict decoder, v3 evidence |
+| Study chat | reply recovery, tool trace, citations, Study Session revision CAS/sequenced Turn append, durable request admission, terminal result read-back, strict operation-receipt decode | typed/transactional tool-effect proposals, file/provider uncertainty adapters, complete nested response decoder, protected replay and v3 evidence |
 | Tavern | normalized room/run/step schema, low-trust persona compiler, strict actor decode, server-owned scheduler, semantic checks, bounded recovery trace, per-actor commit, partial state, scoped child retry, leased resume/cancel fencing, strict browser v1 decode | v3 runtime/artifact migration, total prompt budget, authoritative retry-chain view, eval matrix |
-| Frontend API | Tavern fail-closed decoder, request/room fencing, monotonic terminal reconciliation | repository-wide runtime decoders, timeout/cancel semantics, trace forwarding |
+| Frontend API | Tavern fail-closed decoder, request/room fencing, monotonic terminal reconciliation, Study operation receipt/identity/committed-Turn decode | complete per-domain runtime decoders, nested Study effect/citation/event decode, stream state machines, trace forwarding |
 
 ## User-facing transparency
 

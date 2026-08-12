@@ -50,6 +50,7 @@ export function StudyDialogPage() {
     updatePlanProgress,
     triggerSessionPrelude,
     chatFailure,
+    queryStudyChatOperation,
     retryFailedAsk,
     handleSwitchSection,
     handleSubmitQuestionAttempt,
@@ -477,6 +478,9 @@ export function StudyDialogPage() {
             onCompleteCurrentSchedule={() => { void handleCompleteCurrentSchedule(); }}
             canCompleteCurrentSchedule={Boolean(currentScheduleId && currentSchedule?.status !== "completed")}
             chatErrorMessage={chatFailure?.detail ?? ""}
+            canQueryLastAsk={Boolean(chatFailure?.canQuery)}
+            canResendLastAsk={Boolean(chatFailure?.canResend)}
+            onQueryLastAsk={queryStudyChatOperation}
             onRetryLastAsk={retryFailedAsk}
             selectedScheduleId={currentScheduleId}
             scheduleOptions={scheduleOptions.map((item) => ({ id: item.id, title: item.title }))}

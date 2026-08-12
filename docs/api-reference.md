@@ -631,7 +631,9 @@ Request body:
 
 ```json
 {
-  "message": "Explain this section again"
+  "message": "Explain this section again",
+  "client_request_id": "study-chat-019ff5f5f4c14ec3",
+  "expected_session_revision": 7
 }
 ```
 
@@ -640,10 +642,64 @@ Notes:
 - chat generation now includes recent dialogue turns as model context
 - citations are grounded from the document debug artifacts (study-unit/section/chunk page ranges)
 - returned `character_events[].scene_hint` carries chapter/page render context for character-layer drawing
-- the final visible turn appends through bounded revision CAS, preserving concurrent session mutations and assigning a unique contiguous turn sequence
-- the endpoint does not yet accept a stable client request ID; retries may still replay model/tool/file effects and are tracked by `STUDY-OP-ADMIT-001`
-- when model payload is invalid or empty, backend returns `502` with `detail=chat_model_invalid_payload`
-- frontend is expected to surface this as an explicit error and provide manual retry action
+- `client_request_id` identifies one browser intent and must remain stable across transport retry, reconnect, and terminal read-back; reusing it with a different payload or revision is rejected
+- `expected_session_revision` fences admission against a stale Session; the final visible Turn still commits through bounded revision CAS with an application-owned ID and contiguous sequence
+- admission is persisted before provider execution; a duplicate committed request returns the same terminal receipt without invoking the model again
+- after timeout, disconnect, `admitted`, `running`, or `uncertain`, query the original operation; do not automatically repeat this POST or mint a new key
+- request-schema and stale-revision failures are rejected before admission with 4xx; attachment validation after durable admission but before execution returns a `not_committed` receipt; an invalid scheduled follow-up is detected after claim because current Study runtime validation is not yet staged, so it conservatively becomes `uncertain`
+- after execution starts, invalid/empty model output, provider/network failure, and provider timeout persist as an `uncertain` receipt with HTTP 200; the internal failure is retained in `error_code` so the client can decode and query the operation instead of interpreting a transient HTTP error as permission to replay
+- frontend surfaces terminal/uncertain state explicitly; a new POST is allowed only when the receipt is `not_committed` and `safe_to_retry=true`
+
+Response shape (abridged; `result` is the complete existing `StudyChatExchangeResponse` wire and is non-null only for `committed`):
+
+```json
+{
+  "operation_id": "study-chat-op-019ff5f5f552",
+  "session_id": "session-123",
+  "client_request_id": "study-chat-019ff5f5f4c14ec3",
+  "status": "committed",
+  "safe_to_retry": false,
+  "admitted_session_revision": 7,
+  "committed_session_revision": 8,
+  "committed_turn_id": "turn-123",
+  "committed_turn_sequence": 4,
+  "result": {
+    "reply": "...",
+    "citations": [],
+    "character_events": [],
+    "session": {
+      "id": "session-123",
+      "revision": 8,
+      "last_turn_sequence": 4,
+      "turns": [{ "id": "turn-123", "sequence": 4 }]
+    }
+  },
+  "error_code": "",
+  "created_at": "2026-08-12T14:00:00Z",
+  "updated_at": "2026-08-12T14:00:02Z",
+  "completed_at": "2026-08-12T14:00:02Z"
+}
+```
+
+All receipt fields are present. Nullable commit/result fields and `completed_at` are explicit `null` outside the states where they apply; they are not omitted or encoded as empty strings.
+
+### `POST /study-sessions/{session_id}/chat-with-attachments`
+
+Runs the same admitted Study Chat operation as the JSON endpoint with multipart attachments. The form includes `client_request_id` and `expected_session_revision` in addition to the existing message/follow-up fields and files. File name, media type, size, and SHA-256 manifest participate in the canonical request identity. It returns the same `StudyChatOperationReceipt`; retry and query rules are identical. Prepared files do not gain exactly-once or compensation semantics from the operation journal and remain tracked by `STUDY-EFFECT-COMMIT-001`.
+
+### `GET /study-sessions/{session_id}/chat-operations/{client_request_id}`
+
+Reads the durable receipt for the original Study Chat request without claiming, executing, or replaying it. Use this route after a timeout, disconnect, refresh, or any `admitted` / `running` / `uncertain` response. Session and request identity must match the URL; unknown or mismatched operations fail closed.
+
+Operation status semantics:
+
+- `admitted`: durable but not yet claimed; query only
+- `running`: claimed/executing; query only
+- `committed`: terminal; `result` and committed Turn evidence are present
+- `not_committed`: terminal; retry is allowed only when `safe_to_retry=true`
+- `uncertain`: terminal ambiguity after execution may have started; never automatically replay
+
+This receipt proves admission identity and final Study Turn/result read-back. It does not prove memory, affinity, follow-up, Scene, projection/overlay, plan-confirmation, attachment/file, generated-image, or upstream provider effects are exactly once, and it is not a v3 Harness trace.
 
 ### `POST /study-sessions/{session_id}/attempt`
 

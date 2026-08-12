@@ -1,14 +1,26 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime, timezone
 from typing import Literal
+from uuid import uuid4
 
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from app.models.domain import DialogueTurnRecord, StudySessionRecord
+from app.models.domain import (
+    DialogueTurnRecord,
+    LearnerAttachmentRecord,
+    StudyChatResult,
+    StudySessionRecord,
+)
+from app.models.study_chat_operation import (
+    STUDY_CHAT_RESPONSE_SCHEMA_VERSION,
+    StudyChatOperationStatus,
+    study_chat_response_digest,
+)
 from app.persistence.database import Database
-from app.persistence.models import StudySessionRow
+from app.persistence.models import StudyChatOperationRow, StudySessionRow
 
 
 class StudySessionRepository:
@@ -146,6 +158,117 @@ class StudySessionRepository:
                     raise
         raise StudySessionRevisionConflict(session_id)
 
+    def commit_chat_operation_turn(
+        self,
+        *,
+        operation_id: str,
+        execution_token: str,
+        learner_message: str,
+        learner_message_kind: str,
+        learner_attachments: list[LearnerAttachmentRecord],
+        result: StudyChatResult,
+        prepared_study_unit_id: str | None,
+        completed_follow_up_id: str,
+        cancel_pending_follow_ups: bool,
+        build_response_payload: Callable[[StudySessionRecord], dict[str, object]],
+    ) -> tuple[StudySessionRecord, dict[str, object]]:
+        """Append one Turn and publish its durable receipt in one transaction."""
+        committed_at = datetime.now(timezone.utc).isoformat()
+        turn_id = f"turn-{uuid4().hex[:16]}"
+        with self.database.session() as session:
+            operation = session.get(StudyChatOperationRow, operation_id)
+            if (
+                operation is None
+                or operation.status != StudyChatOperationStatus.RUNNING.value
+                or operation.execution_token != execution_token
+            ):
+                raise StudySessionOperationFenced(operation_id)
+            row = session.get(StudySessionRow, operation.session_id)
+            if row is None:
+                raise StudySessionNotFound(operation.session_id)
+            record = _from_row(row)
+            expected_revision = record.revision
+            next_sequence = record.last_turn_sequence + 1
+            record.turns.append(
+                DialogueTurnRecord(
+                    id=turn_id,
+                    sequence=next_sequence,
+                    learner_message=learner_message,
+                    learner_message_kind=learner_message_kind,
+                    learner_attachments=learner_attachments,
+                    assistant_reply=result.reply,
+                    citations=result.citations,
+                    character_events=result.character_events,
+                    rich_blocks=result.rich_blocks,
+                    interactive_question=result.interactive_question,
+                    persona_slot_trace=result.persona_slot_trace,
+                    memory_trace=result.memory_trace,
+                    tool_calls=result.tool_calls,
+                    scene_profile=result.scene_profile,
+                    model_recoveries=result.model_recoveries,
+                    created_at=committed_at,
+                )
+            )
+            record.last_turn_sequence = next_sequence
+            normalized_prepared = (prepared_study_unit_id or "").strip()
+            if normalized_prepared and normalized_prepared not in record.prepared_study_unit_ids:
+                record.prepared_study_unit_ids.append(normalized_prepared)
+            if result.scene_profile is not None:
+                record.scene_profile = result.scene_profile
+            if completed_follow_up_id:
+                for follow_up in record.pending_follow_ups:
+                    if follow_up.id == completed_follow_up_id and follow_up.status == "pending":
+                        follow_up.status = "completed"
+                        follow_up.completed_at = committed_at
+                        break
+            if cancel_pending_follow_ups:
+                for follow_up in record.pending_follow_ups:
+                    if follow_up.status == "pending":
+                        follow_up.status = "canceled"
+                        follow_up.canceled_at = committed_at
+            record.updated_at = committed_at
+            record.revision = expected_revision + 1
+            record = StudySessionRecord.model_validate(record.model_dump(mode="json"))
+            response_payload = build_response_payload(record)
+            response_digest = study_chat_response_digest(response_payload)
+            claimed_session = session.execute(
+                update(StudySessionRow)
+                .where(
+                    StudySessionRow.id == operation.session_id,
+                    StudySessionRow.revision == expected_revision,
+                )
+                .values(
+                    payload=record.model_dump(mode="json"),
+                    **_mutable_metadata(record),
+                )
+            )
+            if claimed_session.rowcount != 1:
+                raise StudySessionRevisionConflict(operation.session_id)
+            claimed_operation = session.execute(
+                update(StudyChatOperationRow)
+                .where(
+                    StudyChatOperationRow.operation_id == operation_id,
+                    StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
+                    StudyChatOperationRow.execution_token == execution_token,
+                )
+                .values(
+                    status=StudyChatOperationStatus.COMMITTED.value,
+                    active_slot=None,
+                    committed_session_revision=record.revision,
+                    committed_turn_id=turn_id,
+                    committed_turn_sequence=next_sequence,
+                    response_schema_version=STUDY_CHAT_RESPONSE_SCHEMA_VERSION,
+                    response_payload=response_payload,
+                    response_digest=response_digest,
+                    error_code="",
+                    completed_at=committed_at,
+                    updated_at=committed_at,
+                )
+            )
+            if claimed_operation.rowcount != 1:
+                raise StudySessionOperationFenced(operation_id)
+            return record, response_payload
+
 
 class StudySessionRepositoryError(RuntimeError):
     pass
@@ -174,6 +297,11 @@ class StudySessionLegacyImportConflict(StudySessionRepositoryError):
 class StudySessionLegacyImportRace(StudySessionRepositoryError):
     def __init__(self) -> None:
         super().__init__("study_session_legacy_import_race")
+
+
+class StudySessionOperationFenced(StudySessionRepositoryError):
+    def __init__(self, operation_id: str) -> None:
+        super().__init__(f"study_session_operation_fenced:{operation_id}")
 
 
 def _to_row(record: StudySessionRecord, payload: dict[str, object]) -> StudySessionRow:

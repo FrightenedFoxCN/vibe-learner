@@ -49,7 +49,10 @@ interface StudyConsoleProps {
   onCompleteCurrentSchedule?: () => void | Promise<void>;
   canCompleteCurrentSchedule?: boolean;
   chatErrorMessage?: string;
-  onRetryLastAsk?: () => void | Promise<void>;
+  canQueryLastAsk?: boolean;
+  canResendLastAsk?: boolean;
+  onQueryLastAsk?: () => unknown | Promise<unknown>;
+  onRetryLastAsk?: () => unknown | Promise<unknown>;
   selectedScheduleId: string;
   scheduleOptions: Array<{ id: string; title: string }>;
   turns: StudySessionRecord["turns"];
@@ -93,6 +96,9 @@ export function StudyConsole({
   onCompleteCurrentSchedule,
   canCompleteCurrentSchedule,
   chatErrorMessage,
+  canQueryLastAsk,
+  canResendLastAsk,
+  onQueryLastAsk,
   onRetryLastAsk,
   selectedScheduleId,
   scheduleOptions,
@@ -113,6 +119,7 @@ export function StudyConsole({
   cachedState,
   onCachedStateChange,
 }: StudyConsoleProps) {
+  const recoveryLocked = Boolean(chatErrorMessage && canQueryLastAsk);
   const [message, setMessage] = useState(
     () => cachedState?.message ?? "请解释这一章的核心概念，并给我一个复述练习。"
   );
@@ -304,20 +311,35 @@ export function StudyConsole({
           </div>
 
           {chatErrorMessage ? (
-            <div style={styles.errorBox}>
-              <span style={styles.errorTitle}>对话请求失败</span>
+            <div style={styles.errorBox} role="status" aria-live="polite">
+              <span style={styles.errorTitle}>本次对话需要确认</span>
               <span style={styles.errorText}>{chatErrorMessage}</span>
-              <button
-                type="button"
-                style={{
-                  ...styles.retryBtn,
-                  ...(isPending || disabled || !onRetryLastAsk ? styles.btnDisabled : {})
-                }}
-                disabled={isPending || disabled || !onRetryLastAsk}
-                onClick={() => { if (onRetryLastAsk) void onRetryLastAsk(); }}
-              >
-                {isPending ? "重试中…" : "重试"}
-              </button>
+              {canQueryLastAsk ? (
+                <button
+                  type="button"
+                  style={{
+                    ...styles.retryBtn,
+                    ...(isPending || disabled || !onQueryLastAsk ? styles.btnDisabled : {})
+                  }}
+                  disabled={isPending || disabled || !onQueryLastAsk}
+                  onClick={() => { if (onQueryLastAsk) void onQueryLastAsk(); }}
+                >
+                  {isPending ? "查询中…" : "查询本次请求结果"}
+                </button>
+              ) : null}
+              {canResendLastAsk ? (
+                <button
+                  type="button"
+                  style={{
+                    ...styles.retryBtn,
+                    ...(isPending || disabled || !onRetryLastAsk ? styles.btnDisabled : {})
+                  }}
+                  disabled={isPending || disabled || !onRetryLastAsk}
+                  onClick={() => { if (onRetryLastAsk) void onRetryLastAsk(); }}
+                >
+                  {isPending ? "发送中…" : "重新发送（新请求）"}
+                </button>
+              ) : null}
             </div>
           ) : null}
 
@@ -375,6 +397,7 @@ export function StudyConsole({
                 style={styles.textarea}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
+                disabled={disabled || isPending || recoveryLocked}
               />
               <div style={styles.attachmentToolbar}>
                 <input
@@ -405,9 +428,9 @@ export function StudyConsole({
                   type="button"
                   style={{
                     ...styles.iconToolButton,
-                    ...(disabled || isPending ? styles.btnDisabled : {})
+                    ...(disabled || isPending || recoveryLocked ? styles.btnDisabled : {})
                   }}
-                  disabled={disabled || isPending}
+                  disabled={disabled || isPending || recoveryLocked}
                   onClick={() => attachmentInputRef.current?.click()}
                   aria-label="添加附件"
                   title="添加附件"
@@ -432,9 +455,9 @@ export function StudyConsole({
                 <button
                   style={{
                     ...styles.iconSendButton,
-                    ...(isPending || disabled ? styles.btnDisabled : {})
+                    ...(isPending || disabled || recoveryLocked ? styles.btnDisabled : {})
                   }}
-                  disabled={isPending || disabled}
+                  disabled={isPending || disabled || recoveryLocked}
                   onClick={async () => {
                     const didSend = await onAsk(message, attachments);
                     if (!didSend) {
@@ -443,8 +466,8 @@ export function StudyConsole({
                     setMessage("");
                     setAttachments([]);
                   }}
-                  aria-label={isPending ? "发送中" : "发送"}
-                  title={isPending ? "发送中" : "发送"}
+                  aria-label={recoveryLocked ? "请先查询本次请求结果" : isPending ? "发送中" : "发送"}
+                  title={recoveryLocked ? "请先查询本次请求结果" : isPending ? "发送中" : "发送"}
                 >
                   <MaterialIcon name="send" size={16} />
                 </button>

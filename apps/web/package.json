@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:tavern": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts",
-    "test:reliability": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-session-decode.test.ts"
+    "test:reliability": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

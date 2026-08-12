@@ -1,6 +1,7 @@
 export {
   cancelStudySessionFollowUps,
   createStudySession,
+  getStudyChatOperation,
   listStudySessions,
   resolveStudyPlanConfirmation,
   sendStudyMessage,
@@ -10,5 +11,6 @@ export {
 
 export type {
   StudyChatExchangeResponse,
+  StudyChatOperationResponse,
   StudyPlanConfirmationDecisionResponse,
 } from "../api";

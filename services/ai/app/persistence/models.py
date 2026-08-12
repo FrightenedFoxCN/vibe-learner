@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 JSON_PAYLOAD = JSON().with_variant(JSONB, "postgresql")
+NULLABLE_JSON_PAYLOAD = JSON(none_as_null=True).with_variant(
+    JSONB(none_as_null=True),
+    "postgresql",
+)
 
 
 class Base(DeclarativeBase):
@@ -55,6 +59,91 @@ class StudySessionRow(Base):
     created_at: Mapped[str] = mapped_column(String(64), default="")
     updated_at: Mapped[str] = mapped_column(String(64), default="")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
+
+
+class StudyChatOperationRow(Base):
+    __tablename__ = "study_chat_operations"
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id",
+            "client_request_id",
+            name="uq_study_chat_operation_request",
+        ),
+        UniqueConstraint(
+            "session_id",
+            "active_slot",
+            name="uq_study_chat_operation_active_slot",
+        ),
+        UniqueConstraint("committed_turn_id", name="uq_study_chat_operation_turn"),
+        CheckConstraint("claim_count IN (0, 1)", name="ck_study_chat_operation_claim_count"),
+        CheckConstraint(
+            "(status IN ('admitted', 'running') AND active_slot = 1) OR "
+            "(status IN ('committed', 'not_committed', 'uncertain') AND active_slot IS NULL)",
+            name="ck_study_chat_operation_active_status",
+        ),
+        CheckConstraint(
+            "(status IN ('admitted', 'not_committed') AND claim_count = 0 "
+            "AND execution_token = '' AND execution_started_at = '' "
+            "AND provider_started_at = '' AND execution_deadline_at = '' AND heartbeat_at = '') OR "
+            "(status IN ('running', 'committed', 'uncertain') AND claim_count = 1 "
+            "AND execution_token <> '' AND execution_started_at <> '' AND execution_deadline_at <> '')",
+            name="ck_study_chat_operation_execution_evidence",
+        ),
+        CheckConstraint(
+            "(status = 'committed' AND committed_session_revision IS NOT NULL "
+            "AND committed_turn_id IS NOT NULL AND committed_turn_sequence IS NOT NULL "
+            "AND response_schema_version <> '' AND response_payload IS NOT NULL "
+            "AND response_digest <> '' AND error_code = '' AND completed_at <> '') OR "
+            "(status <> 'committed' AND committed_session_revision IS NULL "
+            "AND committed_turn_id IS NULL AND committed_turn_sequence IS NULL "
+            "AND response_schema_version = '' AND response_payload IS NULL AND response_digest = '')",
+            name="ck_study_chat_operation_result_evidence",
+        ),
+        CheckConstraint(
+            "(status IN ('committed', 'not_committed', 'uncertain') AND completed_at <> '') OR "
+            "(status IN ('admitted', 'running') AND completed_at = '')",
+            name="ck_study_chat_operation_terminal_time",
+        ),
+        CheckConstraint(
+            "(status IN ('not_committed', 'uncertain') AND error_code <> '') OR "
+            "(status IN ('admitted', 'running', 'committed') AND error_code = '')",
+            name="ck_study_chat_operation_error_evidence",
+        ),
+    )
+
+    operation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("study_sessions.id", ondelete="RESTRICT"),
+        index=True,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(80))
+    request_schema_version: Mapped[str] = mapped_column(String(64))
+    fingerprint_contract_version: Mapped[str] = mapped_column(String(64))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    request_payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    active_slot: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    admitted_session_revision: Mapped[int] = mapped_column(Integer)
+    execution_token: Mapped[str] = mapped_column(String(64), default="")
+    claim_count: Mapped[int] = mapped_column(Integer, default=0)
+    execution_started_at: Mapped[str] = mapped_column(String(64), default="")
+    provider_started_at: Mapped[str] = mapped_column(String(64), default="")
+    execution_deadline_at: Mapped[str] = mapped_column(String(64), default="")
+    heartbeat_at: Mapped[str] = mapped_column(String(64), default="")
+    committed_session_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    committed_turn_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    committed_turn_sequence: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    response_schema_version: Mapped[str] = mapped_column(String(64), default="")
+    response_payload: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD,
+        nullable=True,
+    )
+    response_digest: Mapped[str] = mapped_column(String(64), default="")
+    error_code: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[str] = mapped_column(String(64))
+    updated_at: Mapped[str] = mapped_column(String(64), index=True)
+    completed_at: Mapped[str] = mapped_column(String(64), default="")
 
 
 class TavernRoomRow(Base):

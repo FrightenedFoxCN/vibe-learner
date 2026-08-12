@@ -573,6 +573,8 @@ class StudySessionListResponse(BaseModel):
 
 
 class StudyChatRequest(BaseModel):
+    client_request_id: str = Field(min_length=8, max_length=80)
+    expected_session_revision: int = Field(ge=0)
     message: str
     message_kind: str = "learner"
     follow_up_id: str = ""
@@ -594,6 +596,23 @@ class StudyChatResponse(BaseModel):
 
 class StudyChatExchangeResponse(StudyChatResponse):
     session: StudySessionResponse
+
+
+class StudyChatOperationReceiptResponse(BaseModel):
+    operation_id: str
+    session_id: str
+    client_request_id: str
+    status: str
+    safe_to_retry: bool
+    created_at: str
+    updated_at: str
+    completed_at: str | None
+    admitted_session_revision: int
+    committed_session_revision: int | None
+    committed_turn_id: str | None
+    committed_turn_sequence: int | None
+    error_code: str
+    result: StudyChatExchangeResponse | None
 
 
 class StudySessionPlanConfirmationDecisionRequest(BaseModel):

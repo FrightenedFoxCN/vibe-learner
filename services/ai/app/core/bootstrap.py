@@ -6,6 +6,7 @@ from app.core.settings import Settings
 from app.persistence.database import Database
 from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
+from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
 from app.persistence.tavern_repository import TavernRepository
 from app.persistence.migrate_local_data import migrate_from_legacy_store
 from app.services.model_provider import MockModelProvider, OpenAIModelProvider
@@ -82,6 +83,7 @@ class Container:
             self.model_provider,
         )
         self.study_session_repository = StudySessionRepository(self.database)
+        self.study_chat_operation_repository = StudyChatOperationRepository(self.database)
         self.study_session_service = StudySessionService(
             self.store,
             repository=self.study_session_repository,

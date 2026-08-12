@@ -33,6 +33,11 @@ import type {
 import { compactPreviewString, compactPreviewValue } from "./preview";
 import { getAiBaseUrl, getDesktopRuntimeConfig } from "./runtime-config";
 import { decodeStudySessionCommittedIdentity } from "./study-session-decode";
+import {
+  decodeStudyChatOperationReceipt,
+  type StudyChatCommittedResultEvidence,
+  type StudyChatOperationReceipt,
+} from "./study-chat-operation-decode";
 
 export {
   normalizeTavernRoomDetail,
@@ -40,6 +45,10 @@ export {
   TavernDecodeError,
 } from "./tavern-decode";
 export { StudySessionDecodeError } from "./study-session-decode";
+export type {
+  StudyChatOperationReceipt,
+  StudyChatOperationStatus,
+} from "./study-chat-operation-decode";
 import {
   normalizeTavernRoomDetail,
   normalizeTavernRoomList,
@@ -50,6 +59,8 @@ import {
 export interface StudyChatExchangeResponse extends StudyChatResponse {
   session: StudySessionRecord;
 }
+
+export type StudyChatOperationResponse = StudyChatOperationReceipt<StudyChatExchangeResponse>;
 
 export interface StudyPlanConfirmationDecisionResponse {
   session: StudySessionRecord;
@@ -2417,12 +2428,14 @@ export async function cancelStudySessionFollowUps(input: {
 
 export async function sendStudyMessage(input: {
   sessionId: string;
+  clientRequestId: string;
+  expectedSessionRevision: number;
   message: string;
   messageKind?: string;
   followUpId?: string;
   hiddenMessagePrefix?: string;
   attachments?: File[];
-}): Promise<StudyChatExchangeResponse> {
+}): Promise<StudyChatOperationResponse> {
   const hasAttachments = Boolean(input.attachments?.length);
   const response = hasAttachments
     ? await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat-with-attachments`, {
@@ -2430,6 +2443,8 @@ export async function sendStudyMessage(input: {
         body: (() => {
           const form = new FormData();
           form.set("message", input.message);
+          form.set("client_request_id", input.clientRequestId);
+          form.set("expected_session_revision", String(input.expectedSessionRevision));
           form.set("message_kind", input.messageKind ?? "learner");
           form.set("follow_up_id", input.followUpId ?? "");
           form.set("hidden_message_prefix", input.hiddenMessagePrefix ?? "");
@@ -2445,6 +2460,8 @@ export async function sendStudyMessage(input: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          client_request_id: input.clientRequestId,
+          expected_session_revision: input.expectedSessionRevision,
           message: input.message,
           message_kind: input.messageKind ?? "learner",
           follow_up_id: input.followUpId ?? "",
@@ -2452,6 +2469,42 @@ export async function sendStudyMessage(input: {
         })
       });
   const payload = await readJson<any>(response);
+  return decodeStudyChatOperationResponse(payload, {
+    sessionId: input.sessionId,
+    clientRequestId: input.clientRequestId,
+  });
+}
+
+export async function getStudyChatOperation(input: {
+  sessionId: string;
+  clientRequestId: string;
+}): Promise<StudyChatOperationResponse> {
+  const payload = await readJson<unknown>(
+    await request(
+      `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
+    ),
+  );
+  return decodeStudyChatOperationResponse(payload, input);
+}
+
+function decodeStudyChatOperationResponse(
+  payload: unknown,
+  expected: { sessionId: string; clientRequestId: string },
+): StudyChatOperationResponse {
+  return decodeStudyChatOperationReceipt(payload, {
+    path: "study_chat_operation",
+    expectedSessionId: expected.sessionId,
+    expectedClientRequestId: expected.clientRequestId,
+    decodeResult: (raw, path, evidence) => normalizeStudyChatExchange(raw, path, evidence),
+  });
+}
+
+function normalizeStudyChatExchange(
+  rawPayload: Record<string, unknown>,
+  _path = "study_chat_exchange",
+  _evidence?: StudyChatCommittedResultEvidence,
+): StudyChatExchangeResponse {
+  const payload: any = rawPayload;
   const repaired = repairLegacyRichReply(
     String(payload.reply ?? ""),
     normalizeRichBlocks(payload.rich_blocks)

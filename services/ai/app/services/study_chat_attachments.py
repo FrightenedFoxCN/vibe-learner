@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import io
 import re
 from dataclasses import dataclass
@@ -36,21 +37,20 @@ class PreparedStudyChatAttachments:
     multimodal_parts: list[dict[str, Any]]
 
 
-def prepare_study_chat_attachments(
-    *,
-    store: LocalJsonStore,
-    session_id: str,
+@dataclass
+class StudyChatAttachmentInput:
+    filename: str
+    mime_type: str
+    raw_bytes: bytes
+
+
+def read_study_chat_attachment_inputs(
     files: list[UploadFile],
-    allow_image_input: bool,
-) -> PreparedStudyChatAttachments:
+) -> list[StudyChatAttachmentInput]:
     normalized_files = [file for file in files if file.filename]
     if len(normalized_files) > _MAX_ATTACHMENT_COUNT:
         raise HTTPException(status_code=422, detail="chat_attachment_count_exceeded")
-
-    records: list[LearnerAttachmentRecord] = []
-    context_blocks: list[str] = []
-    multimodal_parts: list[dict[str, Any]] = []
-
+    result: list[StudyChatAttachmentInput] = []
     for file in normalized_files:
         raw_bytes = file.file.read()
         file.file.seek(0)
@@ -58,6 +58,73 @@ def prepare_study_chat_attachments(
             continue
         filename = (file.filename or "attachment").strip() or "attachment"
         mime_type = (file.content_type or _guess_mime_type(filename)).strip() or "application/octet-stream"
+        result.append(
+            StudyChatAttachmentInput(
+                filename=filename,
+                mime_type=mime_type,
+                raw_bytes=raw_bytes,
+            )
+        )
+    return result
+
+
+def study_chat_attachment_manifest(
+    inputs: list[StudyChatAttachmentInput],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "sha256": hashlib.sha256(item.raw_bytes).hexdigest(),
+            "size_bytes": len(item.raw_bytes),
+            "mime_type": item.mime_type,
+            "normalized_name": _sanitize_filename(item.filename),
+        }
+        for item in inputs
+    ]
+
+
+def validate_study_chat_attachment_inputs(
+    inputs: list[StudyChatAttachmentInput],
+    *,
+    allow_image_input: bool,
+) -> None:
+    """Validate bounded attachment content without publishing business files."""
+    for item in inputs:
+        filename = item.filename
+        mime_type = item.mime_type
+        if mime_type.startswith("image/"):
+            if not allow_image_input:
+                raise HTTPException(status_code=400, detail="chat_image_upload_requires_multimodal")
+            continue
+        if mime_type == "application/pdf" or filename.lower().endswith(".pdf"):
+            excerpt, _ = _extract_pdf_excerpt(item.raw_bytes)
+            if not excerpt.strip():
+                raise HTTPException(status_code=400, detail="chat_pdf_attachment_empty")
+            continue
+        if _is_textual_file(mime_type, filename):
+            if not _extract_text_excerpt(item.raw_bytes).strip():
+                raise HTTPException(status_code=400, detail="chat_text_attachment_empty")
+            continue
+        raise HTTPException(status_code=400, detail="chat_attachment_unsupported_media_type")
+
+
+def prepare_study_chat_attachments(
+    *,
+    store: LocalJsonStore,
+    session_id: str,
+    files: list[UploadFile],
+    allow_image_input: bool,
+    inputs: list[StudyChatAttachmentInput] | None = None,
+) -> PreparedStudyChatAttachments:
+    attachment_inputs = inputs if inputs is not None else read_study_chat_attachment_inputs(files)
+
+    records: list[LearnerAttachmentRecord] = []
+    context_blocks: list[str] = []
+    multimodal_parts: list[dict[str, Any]] = []
+
+    for attachment_input in attachment_inputs:
+        raw_bytes = attachment_input.raw_bytes
+        filename = attachment_input.filename
+        mime_type = attachment_input.mime_type
         size_bytes = len(raw_bytes)
 
         if mime_type.startswith("image/"):

@@ -66,6 +66,7 @@ from app.models.api import (
     StudyChatRequest,
     StudyChatResponse,
     StudyChatExchangeResponse,
+    StudyChatOperationReceiptResponse,
     StudySessionPlanConfirmationDecisionRequest,
     StudySessionPlanConfirmationDecisionResponse,
     StudyQuestionAttemptRequest,
@@ -83,9 +84,26 @@ from app.models.api import (
     TokenUsageDailyBucket,
 )
 from app.models.domain import Citation, PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
+from app.models.study_chat_operation import (
+    StudyChatAttachmentManifestEntry,
+    StudyChatOperationRequestPayload,
+    StudyChatOperationStatus,
+)
+from app.persistence.study_chat_operation_repository import (
+    StudyChatOperationAlreadyActive,
+    StudyChatOperationNotFound,
+    StudyChatOperationRequestMismatch,
+    StudyChatOperationRevisionConflict,
+    StudyChatOperationSessionNotFound,
+)
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
-from app.services.study_chat_attachments import prepare_study_chat_attachments
+from app.services.study_chat_attachments import (
+    prepare_study_chat_attachments,
+    read_study_chat_attachment_inputs,
+    study_chat_attachment_manifest,
+    validate_study_chat_attachment_inputs,
+)
 from app.services.study_chat_attachments import render_pdf_page_png_bytes
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.stream_interrupts import StreamInterruptedError
@@ -980,10 +998,12 @@ def get_study_session_attachment_page_image(
     return Response(content=image_bytes, media_type="image/png")
 
 
-@router.post("/study-sessions/{session_id}/chat", response_model=StudyChatExchangeResponse)
-def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeResponse:
-    return _run_study_chat(
+@router.post("/study-sessions/{session_id}/chat", response_model=StudyChatOperationReceiptResponse)
+def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatOperationReceiptResponse:
+    return _admit_and_run_study_chat(
         session_id=session_id,
+        client_request_id=payload.client_request_id,
+        expected_session_revision=payload.expected_session_revision,
         message=payload.message,
         message_kind=payload.message_kind,
         follow_up_id=payload.follow_up_id,
@@ -991,31 +1011,166 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatExchangeR
     )
 
 
-@router.post("/study-sessions/{session_id}/chat-with-attachments", response_model=StudyChatExchangeResponse)
+@router.post("/study-sessions/{session_id}/chat-with-attachments", response_model=StudyChatOperationReceiptResponse)
 def study_chat_with_attachments(
     session_id: str,
+    client_request_id: str = Form(...),
+    expected_session_revision: int = Form(...),
     message: str = Form(...),
     message_kind: str = Form("learner"),
     follow_up_id: str = Form(""),
     hidden_message_prefix: str = Form(""),
     files: list[UploadFile] | None = File(default=None),
-) -> StudyChatExchangeResponse:
-    prepared = prepare_study_chat_attachments(
-        store=container.store,
+) -> StudyChatOperationReceiptResponse:
+    attachment_inputs = read_study_chat_attachment_inputs(files or [])
+    return _admit_and_run_study_chat(
         session_id=session_id,
-        files=files or [],
-        allow_image_input=container.model_provider.supports_chat_page_image_tools(),
-    )
-    return _run_study_chat(
-        session_id=session_id,
+        client_request_id=client_request_id,
+        expected_session_revision=expected_session_revision,
         message=message,
         message_kind=message_kind,
         follow_up_id=follow_up_id,
         hidden_message_prefix=hidden_message_prefix,
-        learner_attachments=prepared.records,
-        attachment_context=prepared.attachment_context,
-        learner_multimodal_parts=prepared.multimodal_parts,
+        attachment_inputs=attachment_inputs,
     )
+
+
+@router.get(
+    "/study-sessions/{session_id}/chat-operations/{client_request_id}",
+    response_model=StudyChatOperationReceiptResponse,
+)
+def get_study_chat_operation(
+    session_id: str,
+    client_request_id: str,
+) -> StudyChatOperationReceiptResponse:
+    try:
+        operation = container.study_chat_operation_repository.require(
+            session_id=session_id,
+            client_request_id=client_request_id,
+        )
+    except StudyChatOperationNotFound as exc:
+        raise HTTPException(status_code=404, detail="study_chat_operation_not_found") from exc
+    return _study_chat_operation_response(operation)
+
+
+def _admit_and_run_study_chat(
+    *,
+    session_id: str,
+    client_request_id: str,
+    expected_session_revision: int,
+    message: str,
+    message_kind: str,
+    follow_up_id: str,
+    hidden_message_prefix: str,
+    attachment_inputs=None,
+) -> StudyChatOperationReceiptResponse:
+    request_payload = StudyChatOperationRequestPayload(
+        message=message,
+        message_kind=(message_kind or "learner").strip() or "learner",
+        follow_up_id=follow_up_id,
+        hidden_message_prefix=hidden_message_prefix,
+        expected_session_revision=expected_session_revision,
+        attachments=[
+            StudyChatAttachmentManifestEntry.model_validate(item)
+            for item in study_chat_attachment_manifest(attachment_inputs or [])
+        ],
+    )
+    try:
+        operation = container.study_chat_operation_repository.admit(
+            session_id=session_id,
+            client_request_id=client_request_id,
+            request_payload=request_payload,
+        )
+    except StudyChatOperationSessionNotFound as exc:
+        raise HTTPException(status_code=404, detail="session_not_found") from exc
+    except StudyChatOperationRevisionConflict as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "study_chat_session_revision_conflict",
+                "actual_revision": exc.actual_revision,
+            },
+        ) from exc
+    except StudyChatOperationRequestMismatch as exc:
+        raise HTTPException(status_code=409, detail="study_chat_request_id_reused") from exc
+    except StudyChatOperationAlreadyActive as exc:
+        raise HTTPException(status_code=409, detail="study_chat_operation_already_active") from exc
+
+    if operation.status != StudyChatOperationStatus.ADMITTED:
+        return _study_chat_operation_response(operation)
+    try:
+        validate_study_chat_attachment_inputs(
+            attachment_inputs or [],
+            allow_image_input=container.model_provider.supports_chat_page_image_tools(),
+        )
+    except HTTPException as exc:
+        not_committed = container.study_chat_operation_repository.mark_not_committed(
+            operation_id=operation.operation_id,
+            error_code=f"study_chat_not_committed_{str(exc.detail)}"[:128],
+        )
+        return _study_chat_operation_response(not_committed)
+
+    runtime_settings = container.runtime_settings_service.effective_settings()
+    operation, claimed = container.study_chat_operation_repository.claim(
+        operation_id=operation.operation_id,
+        timeout_seconds=runtime_settings.openai_timeout_seconds
+        * (runtime_settings.openai_chat_tool_max_rounds + 2),
+    )
+    if not claimed:
+        return _study_chat_operation_response(operation)
+    try:
+        prepared = prepare_study_chat_attachments(
+            store=container.store,
+            session_id=session_id,
+            files=[],
+            allow_image_input=container.model_provider.supports_chat_page_image_tools(),
+            inputs=attachment_inputs or [],
+        )
+        response_payload = _run_study_chat(
+            session_id=session_id,
+            message=message,
+            message_kind=message_kind,
+            follow_up_id=follow_up_id,
+            hidden_message_prefix=hidden_message_prefix,
+            learner_attachments=prepared.records,
+            attachment_context=prepared.attachment_context,
+            learner_multimodal_parts=prepared.multimodal_parts,
+            operation_id=operation.operation_id,
+            execution_token=operation.execution_token,
+        )
+        committed = container.study_chat_operation_repository.require(
+            session_id=session_id,
+            client_request_id=client_request_id,
+        )
+        if committed.response_payload != response_payload:
+            raise RuntimeError("study_chat_committed_response_mismatch")
+        return _study_chat_operation_response(committed)
+    except Exception as exc:
+        error_code = _study_chat_uncertain_error_code(exc)
+        uncertain = container.study_chat_operation_repository.mark_uncertain(
+            operation_id=operation.operation_id,
+            execution_token=operation.execution_token,
+            error_code=error_code,
+        )
+        logger.exception(
+            "study_chat.operation_uncertain session_id=%s operation_id=%s error_code=%s",
+            session_id,
+            operation.operation_id,
+            error_code,
+        )
+        return _study_chat_operation_response(uncertain)
+
+
+def _study_chat_operation_response(operation) -> StudyChatOperationReceiptResponse:
+    receipt = container.study_chat_operation_repository.receipt(operation)
+    return StudyChatOperationReceiptResponse.model_validate(receipt.model_dump(mode="json"))
+
+
+def _study_chat_uncertain_error_code(exc: Exception) -> str:
+    if isinstance(exc, HTTPException):
+        detail = exc.detail if isinstance(exc.detail, str) else "http_error"
+        return f"study_chat_uncertain_{detail}"[:128]
+    return "study_chat_execution_uncertain"
 
 
 @router.post("/study-sessions/{session_id}/follow-ups/cancel", response_model=StudySessionResponse)
@@ -1034,9 +1189,13 @@ def _run_study_chat(
     learner_attachments=None,
     attachment_context: str = "",
     learner_multimodal_parts=None,
-) -> StudyChatExchangeResponse:
+    operation_id: str,
+    execution_token: str,
+) -> dict[str, object]:
     reset_model_recovery_state()
-    session = _ensure_session_scene_binding(container.study_session_service.require_session(session_id))
+    session = container.study_session_service.require_session(session_id)
+    if session.scene_profile is not None and not session.scene_instance_id:
+        raise HTTPException(status_code=409, detail="session_scene_binding_required")
     normalized_message_kind = (message_kind or "learner").strip() or "learner"
     normalized_follow_up_id = follow_up_id.strip()
     if normalized_message_kind == "scheduled_follow_up" and normalized_follow_up_id:
@@ -1050,8 +1209,6 @@ def _run_study_chat(
         )
         if target_follow_up is None:
             raise HTTPException(status_code=409, detail="follow_up_not_pending")
-    if normalized_message_kind == "learner":
-        session = container.study_session_service.cancel_pending_follow_ups(session_id=session_id)
     persona = container.persona_engine.require_persona(session.persona_id)
     active_plan = None
     if session.plan_id:
@@ -1115,6 +1272,10 @@ def _run_study_chat(
         hidden_message_prefix=hidden_message_prefix,
     )
     try:
+        container.study_chat_operation_repository.mark_provider_started(
+            operation_id=operation_id,
+            execution_token=execution_token,
+        )
         response = container.pedagogy_orchestrator.generate_chat_reply(
             session_id=session_id,
             persona=persona,
@@ -1153,8 +1314,15 @@ def _run_study_chat(
         session_tool_runtime.response_citations(),
     )
     response.model_recoveries = consume_model_recovery_state()
-    session = container.study_session_service.append_turn(
-        session_id=session_id,
+    def build_exchange_payload(committed_session):
+        return StudyChatExchangeResponse(
+            **response.model_dump(mode="json"),
+            session=_into_response(StudySessionResponse, committed_session),
+        ).model_dump(mode="json")
+
+    session, response_payload = container.study_session_repository.commit_chat_operation_turn(
+        operation_id=operation_id,
+        execution_token=execution_token,
         learner_message=message,
         learner_message_kind=normalized_message_kind,
         learner_attachments=learner_attachments or [],
@@ -1162,21 +1330,11 @@ def _run_study_chat(
         prepared_study_unit_id=(
             session.study_unit_id if normalized_message_kind == "session_prelude" else None
         ),
+        completed_follow_up_id=normalized_follow_up_id,
+        cancel_pending_follow_ups=normalized_message_kind == "learner",
+        build_response_payload=build_exchange_payload,
     )
-    if normalized_follow_up_id:
-        try:
-            session = container.study_session_service.complete_follow_up(
-                session_id=session_id,
-                follow_up_id=normalized_follow_up_id,
-            )
-        except HTTPException as exc:
-            if exc.status_code != 404:
-                raise
-            session = container.study_session_service.require_session(session_id)
-    return StudyChatExchangeResponse(
-        **response.model_dump(mode="json"),
-        session=_into_response(StudySessionResponse, session),
-    )
+    return response_payload
 
 
 def _compose_hidden_prefixed_message(*, message: str, hidden_message_prefix: str) -> str:

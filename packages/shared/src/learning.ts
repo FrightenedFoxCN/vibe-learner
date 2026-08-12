@@ -489,6 +489,8 @@ export interface StreamReport {
 }
 
 export interface StudyChatRequest {
+  clientRequestId: string;
+  expectedSessionRevision: number;
   message: string;
   messageKind?: string;
   followUpId?: string;
@@ -518,6 +520,32 @@ export interface StudyChatResponse {
   toolCalls?: ChatToolCallTrace[];
   sceneProfile?: SceneProfile;
   modelRecoveries?: ModelRecovery[];
+}
+
+export type StudyChatOperationStatus =
+  | "admitted"
+  | "running"
+  | "committed"
+  | "not_committed"
+  | "uncertain";
+
+/** Public recovery receipt. Application-owned operation evidence wraps the
+ * existing chat exchange instead of entering the model-owned reply schema. */
+export interface StudyChatOperationReceipt<TResult = StudyChatResponse & { session: StudySessionRecord }> {
+  operationId: string;
+  sessionId: string;
+  clientRequestId: string;
+  status: StudyChatOperationStatus;
+  safeToRetry: boolean;
+  admittedSessionRevision: number;
+  committedSessionRevision: number | null;
+  committedTurnId: string | null;
+  committedTurnSequence: number | null;
+  result: TResult | null;
+  errorCode: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
 }
 
 export interface InteractiveQuestionOption {
