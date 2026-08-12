@@ -579,13 +579,31 @@ class TavernRepository:
             )
             return canonical_expiry if renewed.rowcount == 1 else None
 
-    def is_run_pending(self, run_id: str) -> bool:
+    def has_active_step_lease(
+        self,
+        *,
+        run_id: str,
+        step_index: int,
+        lease_owner: str,
+        claim_count: int,
+    ) -> bool:
         with self.database.session() as session:
+            canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
+            run_pending = select(TavernRunRow.id).where(
+                TavernRunRow.id == run_id,
+                TavernRunRow.status == TavernRunStatus.PENDING.value,
+            ).exists()
             return bool(
                 session.scalar(
-                    select(TavernRunRow.id).where(
-                        TavernRunRow.id == run_id,
-                        TavernRunRow.status == TavernRunStatus.PENDING.value,
+                    select(TavernRunStepRow.run_id).where(
+                        TavernRunStepRow.run_id == run_id,
+                        TavernRunStepRow.step_index == step_index,
+                        TavernRunStepRow.status
+                        == TavernSpeakerStepStatus.GENERATING.value,
+                        TavernRunStepRow.lease_owner == lease_owner,
+                        TavernRunStepRow.claim_count == claim_count,
+                        TavernRunStepRow.lease_expires_at > canonical_now,
+                        run_pending,
                     )
                 )
             )
@@ -1362,6 +1380,8 @@ def _database_utc_now(session) -> datetime:
         value = session.scalar(
             select(func.strftime("%Y-%m-%dT%H:%M:%f", "now"))
         )
+    elif session.bind is not None and session.bind.dialect.name == "postgresql":
+        value = session.scalar(select(func.clock_timestamp()))
     else:
         value = session.scalar(select(func.current_timestamp()))
     if isinstance(value, str):

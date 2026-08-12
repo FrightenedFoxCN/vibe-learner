@@ -942,11 +942,18 @@ class _StepLeaseHeartbeat:
                 return
 
     def should_continue(self) -> bool:
-        return (
-            not self._lost.is_set()
-            and not self._stop.is_set()
-            and self.repository.is_run_pending(self.run_id)
-        )
+        if self._lost.is_set() or self._stop.is_set():
+            return False
+        try:
+            return self.repository.has_active_step_lease(
+                run_id=self.run_id,
+                step_index=self.step_index,
+                lease_owner=self.lease_owner,
+                claim_count=self.claim_count,
+            )
+        except Exception:
+            self._lost.set()
+            return False
 
     def ensure_active(self) -> None:
         if not self.should_continue():

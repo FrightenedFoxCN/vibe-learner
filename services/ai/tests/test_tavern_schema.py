@@ -464,6 +464,22 @@ class TavernSchemaTests(unittest.TestCase):
             max_claims=3,
             exhaustion_trace=self._lease_failure_trace(),
         )
+        self.assertTrue(
+            self.repository.has_active_step_lease(
+                run_id=run.id,
+                step_index=0,
+                lease_owner="test-worker",
+                claim_count=first_claim.claim_count,
+            )
+        )
+        self.assertFalse(
+            self.repository.has_active_step_lease(
+                run_id=run.id,
+                step_index=0,
+                lease_owner="wrong-worker",
+                claim_count=first_claim.claim_count,
+            )
+        )
         generated = TavernMessageRecord(
             id="message-early-finalize-persona",
             room_id=room.id,
@@ -512,6 +528,14 @@ class TavernSchemaTests(unittest.TestCase):
             exhaustion_trace=self._lease_failure_trace(),
         )
         self.assertEqual(takeover.status.value, "generating")
+        self.assertFalse(
+            self.repository.has_active_step_lease(
+                run_id=run.id,
+                step_index=0,
+                lease_owner="test-worker",
+                claim_count=first_claim.claim_count,
+            )
+        )
         with self.assertRaisesRegex(TavernStepClaimConflict, "lease_lost"):
             self.repository.complete_step(
                 run_id=run.id,
