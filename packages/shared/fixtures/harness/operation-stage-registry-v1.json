@@ -17,7 +17,7 @@
     {"component_name":"study_chat_toolset","owner_module":"app.services.study_session_chat_runtime","contract":null},
     {"component_name":"study_unit_cleaner","owner_module":"app.services.study_arrangement","contract":null},
     {"component_name":"tavern_actor_prompt","owner_module":"app.services.tavern_prompt","contract":{"name":"tavern_actor_prompt","version":"tavern-actor-v1"}},
-    {"component_name":"tavern_persona_compiler","owner_module":"app.services.tavern_harness","contract":{"name":"tavern_persona_compiler","version":"tavern-persona-compiler-v1"}},
+    {"component_name":"tavern_persona_compiler","owner_module":"app.services.persona_runtime","contract":{"name":"tavern_persona_compiler","version":"tavern-persona-compiler-v1"}},
     {"component_name":"tavern_scheduler","owner_module":"app.services.tavern","contract":{"name":"tavern_scheduler","version":"tavern-schedule-v1"}}
   ],
   "stages": [

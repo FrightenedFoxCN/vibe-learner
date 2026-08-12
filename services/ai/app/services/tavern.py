@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
+from app.core.harness_component_versions import TAVERN_SCHEDULER_CONTRACT_VERSION
 from app.models.harness import HarnessTraceRecord
 from app.models.tavern import (
     CreateTavernRoomRequest,

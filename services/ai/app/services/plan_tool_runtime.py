@@ -6,6 +6,10 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
 
+from app.core.harness_component_versions import (
+    PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
+    PLANNING_TOOLSET_CONTRACT_VERSION,
+)
 from app.models.domain import DocumentDebugRecord, PlanningQuestionRecord, StudyUnitRecord
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.plan_prompt import (

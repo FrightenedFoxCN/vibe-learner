@@ -9,6 +9,11 @@ from typing import Callable, Iterable
 
 import fitz
 
+from app.core.harness_component_versions import (
+    DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION,
+    DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION,
+    DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION,
+)
 from app.core.logging import get_logger
 from app.models.domain import (
     DocumentChunkRecord,

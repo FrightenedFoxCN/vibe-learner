@@ -77,6 +77,16 @@ export interface HarnessOperationStageRegistration {
   evalRoute: string;
 }
 
+function deepFreeze<T>(value: T): Readonly<T> {
+  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value as Record<string, unknown>)) {
+      deepFreeze(child);
+    }
+    Object.freeze(value);
+  }
+  return value;
+}
+
 export type HarnessOperationStageKey =
   | "document_parse:document_parse"
   | "document_parse:page_extraction"
@@ -92,7 +102,23 @@ export type HarnessOperationStageKey =
   | "tavern:actor_reply"
   | "frontend_decode:response_decode";
 
-export const HARNESS_COMPONENT_REGISTRATIONS = {
+export const HARNESS_STAGE_WORKFLOWS = deepFreeze({
+  document_parse: "document_parse",
+  page_extraction: "document_parse",
+  section_detection: "document_parse",
+  chunk_building: "document_parse",
+  ocr_page: "ocr",
+  study_unit_cleanup: "study_unit_cleanup",
+  plan_generation: "planning",
+  planning_tool_execution: "planning",
+  persona_generation: "persona",
+  scene_generation: "scene",
+  study_chat_reply: "study_chat",
+  actor_reply: "tavern",
+  response_decode: "frontend_decode",
+} as const satisfies Record<HarnessStage, HarnessWorkflow>);
+
+export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   document_parser: { ownerModule: "app.services.document_parser", contract: null },
   document_page_extractor: {
     ownerModule: "app.services.document_parser",
@@ -125,7 +151,7 @@ export const HARNESS_COMPONENT_REGISTRATIONS = {
     contract: null,
   },
   tavern_persona_compiler: {
-    ownerModule: "app.services.tavern_harness",
+    ownerModule: "app.services.persona_runtime",
     contract: { name: "tavern_persona_compiler", version: "tavern-persona-compiler-v1" },
   },
   tavern_actor_prompt: {
@@ -137,9 +163,9 @@ export const HARNESS_COMPONENT_REGISTRATIONS = {
     contract: { name: "tavern_scheduler", version: "tavern-schedule-v1" },
   },
   frontend_decoder: { ownerModule: "apps.web.lib.api", contract: null },
-} as const satisfies Record<HarnessComponentName, HarnessComponentRegistration>;
+} as const satisfies Record<HarnessComponentName, HarnessComponentRegistration>);
 
-export const HARNESS_OPERATION_STAGE_REGISTRATIONS = {
+export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
   "document_parse:document_parse": {
     ownerModule: "app.services.document_parser",
     componentNames: ["document_parser"],
@@ -205,7 +231,7 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = {
     componentNames: ["frontend_decoder"],
     evalRoute: "frontend.response_decode",
   },
-} as const satisfies Record<HarnessOperationStageKey, HarnessOperationStageRegistration>;
+} as const satisfies Record<HarnessOperationStageKey, HarnessOperationStageRegistration>);
 
 export interface HarnessOperationStageRegistrySnapshot {
   schema_name: "HarnessOperationStageRegistry";

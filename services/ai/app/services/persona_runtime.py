@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.core.harness_component_versions import TAVERN_PERSONA_COMPILER_CONTRACT_VERSION
 from app.models.domain import PersonaProfile, PersonaSlot, persona_sorted_slots
 
 

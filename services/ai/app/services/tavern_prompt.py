@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 
+from app.core.harness_component_versions import TAVERN_ACTOR_PROMPT_CONTRACT_VERSION
 from app.models.domain import PersonaProfile, SceneProfileRecord
 from app.models.tavern import TavernMessageRecord, TavernParticipantRecord
 from app.services.persona_runtime import render_tavern_persona_instruction
 from app.services.prompt_loader import load_prompt_template
 
 
-TAVERN_ACTOR_PROMPT_VERSION = "tavern-actor-v1"
+TAVERN_ACTOR_PROMPT_VERSION = TAVERN_ACTOR_PROMPT_CONTRACT_VERSION
 
 
 def build_tavern_actor_messages(

@@ -7,7 +7,7 @@ import hashlib
 import json
 import re
 from types import MappingProxyType
-from typing import ClassVar, Generic, Literal, Mapping, TypeVar
+from typing import ClassVar, Generic, Literal, Mapping, NamedTuple, TypeVar
 
 from pydantic import (
     AwareDatetime,
@@ -17,6 +17,17 @@ from pydantic import (
     TypeAdapter,
     field_validator,
     model_validator,
+)
+
+from app.core.harness_component_versions import (
+    DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION,
+    DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION,
+    DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION,
+    PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
+    PLANNING_TOOLSET_CONTRACT_VERSION,
+    TAVERN_ACTOR_PROMPT_CONTRACT_VERSION,
+    TAVERN_PERSONA_COMPILER_CONTRACT_VERSION,
+    TAVERN_SCHEDULER_CONTRACT_VERSION,
 )
 
 
@@ -236,15 +247,21 @@ class HarnessContractRef(HarnessV2Model):
     version: str = Field(min_length=1, max_length=160)
 
 
-@dataclass(frozen=True, slots=True)
-class HarnessComponentRegistration:
+class HarnessRegisteredContract(NamedTuple):
+    name: str
+    version: str
+
+    def to_ref(self) -> HarnessContractRef:
+        return HarnessContractRef(name=self.name, version=self.version)
+
+
+class HarnessComponentRegistration(NamedTuple):
     component_name: HarnessComponentName
     owner_module: str
-    contract: HarnessContractRef | None
+    contract: HarnessRegisteredContract | None
 
 
-@dataclass(frozen=True, slots=True)
-class HarnessOperationStageRegistration:
+class HarnessOperationStageRegistration(NamedTuple):
     workflow: HarnessWorkflow
     stage: HarnessStage
     owner_module: str
@@ -262,25 +279,25 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR: HarnessComponentRegistration(
             HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR,
             "app.services.document_parser",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="document_page_extractor",
-                version="document-page-extractor-v1",
+                version=DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.DOCUMENT_SECTION_DETECTOR: HarnessComponentRegistration(
             HarnessComponentName.DOCUMENT_SECTION_DETECTOR,
             "app.services.document_parser",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="document_section_detector",
-                version="document-section-detector-v1",
+                version=DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.DOCUMENT_CHUNK_BUILDER: HarnessComponentRegistration(
             HarnessComponentName.DOCUMENT_CHUNK_BUILDER,
             "app.services.document_parser",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="document_chunk_builder",
-                version="document-chunk-builder-v1",
+                version=DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.OCR_ENGINE: HarnessComponentRegistration(
@@ -301,17 +318,17 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.PLANNING_TOOLSET: HarnessComponentRegistration(
             HarnessComponentName.PLANNING_TOOLSET,
             "app.services.plan_tool_runtime",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="planning_toolset",
-                version="planning-toolset-v1",
+                version=PLANNING_TOOLSET_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.PLANNING_TOOL_RUNTIME: HarnessComponentRegistration(
             HarnessComponentName.PLANNING_TOOL_RUNTIME,
             "app.services.plan_tool_runtime",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="planning_tool_runtime",
-                version="planning-tool-runtime-v1",
+                version=PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.PERSONA_COMPILER: HarnessComponentRegistration(
@@ -336,26 +353,26 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         ),
         HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessComponentRegistration(
             HarnessComponentName.TAVERN_PERSONA_COMPILER,
-            "app.services.tavern_harness",
-            HarnessContractRef(
+            "app.services.persona_runtime",
+            HarnessRegisteredContract(
                 name="tavern_persona_compiler",
-                version="tavern-persona-compiler-v1",
+                version=TAVERN_PERSONA_COMPILER_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.TAVERN_ACTOR_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.TAVERN_ACTOR_PROMPT,
             "app.services.tavern_prompt",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="tavern_actor_prompt",
-                version="tavern-actor-v1",
+                version=TAVERN_ACTOR_PROMPT_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.TAVERN_SCHEDULER: HarnessComponentRegistration(
             HarnessComponentName.TAVERN_SCHEDULER,
             "app.services.tavern",
-            HarnessContractRef(
+            HarnessRegisteredContract(
                 name="tavern_scheduler",
-                version="tavern-schedule-v1",
+                version=TAVERN_SCHEDULER_CONTRACT_VERSION,
             ),
         ),
         HarnessComponentName.FRONTEND_DECODER: HarnessComponentRegistration(
@@ -363,6 +380,28 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
             "apps.web.lib.api",
             None,
         ),
+    }
+)
+
+HARNESS_COMPONENT_OWNERS = MappingProxyType(
+    {
+        HarnessComponentName.DOCUMENT_PARSER: "app.services.document_parser",
+        HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR: "app.services.document_parser",
+        HarnessComponentName.DOCUMENT_SECTION_DETECTOR: "app.services.document_parser",
+        HarnessComponentName.DOCUMENT_CHUNK_BUILDER: "app.services.document_parser",
+        HarnessComponentName.OCR_ENGINE: "app.services.ocr_engine",
+        HarnessComponentName.STUDY_UNIT_CLEANER: "app.services.study_arrangement",
+        HarnessComponentName.PLANNING_PROMPT: "app.services.plan_prompt",
+        HarnessComponentName.PLANNING_TOOLSET: "app.services.plan_tool_runtime",
+        HarnessComponentName.PLANNING_TOOL_RUNTIME: "app.services.plan_tool_runtime",
+        HarnessComponentName.PERSONA_COMPILER: "app.services.persona_cards",
+        HarnessComponentName.SCENE_COMPILER: "app.services.scene_setup",
+        HarnessComponentName.STUDY_CHAT_PROMPT: "app.services.study_session_prompt",
+        HarnessComponentName.STUDY_CHAT_TOOLSET: "app.services.study_session_chat_runtime",
+        HarnessComponentName.TAVERN_PERSONA_COMPILER: "app.services.persona_runtime",
+        HarnessComponentName.TAVERN_ACTOR_PROMPT: "app.services.tavern_prompt",
+        HarnessComponentName.TAVERN_SCHEDULER: "app.services.tavern",
+        HarnessComponentName.FRONTEND_DECODER: "apps.web.lib.api",
     }
 )
 
@@ -476,20 +515,51 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
     }
 )
 
+HARNESS_OPERATION_STAGE_OWNERS = MappingProxyType(
+    {
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.DOCUMENT_PARSE): "app.services.document_parser",
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.PAGE_EXTRACTION): "app.services.document_parser",
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.SECTION_DETECTION): "app.services.document_parser",
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.CHUNK_BUILDING): "app.services.document_parser",
+        (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE): "app.services.ocr_engine",
+        (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP): "app.services.study_arrangement",
+        (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION): "app.services.model_provider",
+        (HarnessWorkflow.PLANNING, HarnessStage.PLANNING_TOOL_EXECUTION): "app.services.plan_tool_runtime",
+        (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION): "app.services.persona_cards",
+        (HarnessWorkflow.SCENE, HarnessStage.SCENE_GENERATION): "app.services.scene_setup",
+        (HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY): "app.services.study_sessions",
+        (HarnessWorkflow.TAVERN, HarnessStage.TAVERN_ACTOR_REPLY): "app.services.tavern",
+        (HarnessWorkflow.FRONTEND_DECODE, HarnessStage.FRONTEND_RESPONSE_DECODE): "apps.web.lib.api",
+    }
+)
+
+HARNESS_STAGE_WORKFLOWS = MappingProxyType(
+    {
+        HarnessStage.DOCUMENT_PARSE: HarnessWorkflow.DOCUMENT_PARSE,
+        HarnessStage.PAGE_EXTRACTION: HarnessWorkflow.DOCUMENT_PARSE,
+        HarnessStage.SECTION_DETECTION: HarnessWorkflow.DOCUMENT_PARSE,
+        HarnessStage.CHUNK_BUILDING: HarnessWorkflow.DOCUMENT_PARSE,
+        HarnessStage.OCR_PAGE: HarnessWorkflow.OCR,
+        HarnessStage.STUDY_UNIT_CLEANUP: HarnessWorkflow.STUDY_UNIT_CLEANUP,
+        HarnessStage.PLAN_GENERATION: HarnessWorkflow.PLANNING,
+        HarnessStage.PLANNING_TOOL_EXECUTION: HarnessWorkflow.PLANNING,
+        HarnessStage.PERSONA_GENERATION: HarnessWorkflow.PERSONA,
+        HarnessStage.SCENE_GENERATION: HarnessWorkflow.SCENE,
+        HarnessStage.STUDY_CHAT_REPLY: HarnessWorkflow.STUDY_CHAT,
+        HarnessStage.TAVERN_ACTOR_REPLY: HarnessWorkflow.TAVERN,
+        HarnessStage.FRONTEND_RESPONSE_DECODE: HarnessWorkflow.FRONTEND_DECODE,
+    }
+)
+
+HARNESS_OPERATION_STAGE_KEYS = frozenset(
+    (workflow, stage) for stage, workflow in HARNESS_STAGE_WORKFLOWS.items()
+)
+
 
 HARNESS_STAGE_COMPONENT_NAMES = MappingProxyType(
     {
         key: registration.component_names
         for key, registration in HARNESS_OPERATION_STAGE_REGISTRATIONS.items()
-    }
-)
-
-
-HARNESS_COMPONENT_CONTRACTS = MappingProxyType(
-    {
-        name: registration.contract
-        for name, registration in HARNESS_COMPONENT_REGISTRATIONS.items()
-        if registration.contract is not None
     }
 )
 
@@ -508,7 +578,7 @@ def registered_harness_stage_component_contracts(
             raise ValueError("harness_stage_component_not_registered")
         if component.contract is None:
             raise ValueError("harness_stage_component_version_unregistered")
-        contracts.append(component.contract.model_copy(deep=True))
+        contracts.append(component.contract.to_ref())
     return tuple(sorted(contracts, key=lambda item: item.name))
 
 
@@ -516,6 +586,12 @@ def validate_harness_operation_stage_registry(
     component_registry: Mapping[object, object],
     stage_registry: Mapping[object, object],
 ) -> None:
+    if set(HARNESS_STAGE_WORKFLOWS) != set(HarnessStage):
+        raise ValueError("harness_stage_workflow_registry_incomplete")
+    if set(HARNESS_COMPONENT_OWNERS) != set(HarnessComponentName):
+        raise ValueError("harness_component_owner_registry_incomplete")
+    if set(HARNESS_OPERATION_STAGE_OWNERS) != HARNESS_OPERATION_STAGE_KEYS:
+        raise ValueError("harness_stage_owner_registry_incomplete")
     if set(component_registry) != set(HarnessComponentName):
         raise ValueError("harness_component_registry_incomplete")
     for key, registration in component_registry.items():
@@ -525,14 +601,16 @@ def validate_harness_operation_stage_registry(
             raise ValueError("harness_component_registry_invalid")
         if registration.component_name != key:
             raise ValueError("harness_component_registry_key_mismatch")
+        if registration.owner_module != HARNESS_COMPONENT_OWNERS[key]:
+            raise ValueError("harness_component_owner_module_mismatch")
         if not re.fullmatch(r"[A-Za-z0-9_.]+", registration.owner_module):
             raise ValueError("harness_component_owner_module_invalid")
         if registration.contract is not None:
-            require_versioned_harness_contract(registration.contract)
+            require_versioned_harness_contract(registration.contract.to_ref())
             if registration.contract.name != key.value:
                 raise ValueError("harness_component_contract_name_mismatch")
 
-    if len(stage_registry) != len(HarnessStage):
+    if set(stage_registry) != HARNESS_OPERATION_STAGE_KEYS:
         raise ValueError("harness_stage_registry_incomplete")
     stages: set[HarnessStage] = set()
     workflows: set[HarnessWorkflow] = set()
@@ -547,6 +625,8 @@ def validate_harness_operation_stage_registry(
             raise ValueError("harness_stage_registry_invalid")
         if registration.stage in stages:
             raise ValueError("harness_stage_registry_stage_duplicate")
+        if registration.owner_module != HARNESS_OPERATION_STAGE_OWNERS[key]:
+            raise ValueError("harness_stage_owner_module_mismatch")
         stages.add(registration.stage)
         workflows.add(registration.workflow)
         component_names = tuple(item.value for item in registration.component_names)
@@ -588,7 +668,10 @@ def harness_operation_stage_registry_snapshot() -> dict[str, object]:
                 "component_name": name.value,
                 "owner_module": registration.owner_module,
                 "contract": (
-                    registration.contract.model_dump(mode="json", exclude_none=False)
+                    {
+                        "name": registration.contract.name,
+                        "version": registration.contract.version,
+                    }
                     if registration.contract is not None
                     else None
                 ),

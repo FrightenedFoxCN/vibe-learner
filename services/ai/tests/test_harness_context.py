@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from dataclasses import replace
 from decimal import Decimal
 from enum import Enum
 import json
@@ -26,11 +25,13 @@ from app.models.harness import (
     HarnessArtifactType,
     HarnessCommitEvidencePolicy,
     HarnessCommitEvidenceV3,
+    HarnessComponentName,
     HarnessCommittedResourceRefV3,
     HarnessContextEvidencePolicy,
     HarnessContextEnvelope,
     HarnessContextEnvelopeV3,
     HarnessContractRef,
+    HarnessRegisteredContract,
     HarnessResourceRefV3,
     HarnessResourceEvidencePolicy,
     HarnessResourceSemantics,
@@ -45,6 +46,7 @@ from app.models.harness import (
     canonical_harness_commit_digest,
     harness_resource_evidence_policy_registry_snapshot,
     harness_operation_stage_registry_snapshot,
+    registered_harness_stage_component_contracts,
     validate_harness_trace,
     validate_harness_resource_evidence_policy_registry,
     validate_harness_operation_stage_registry,
@@ -537,8 +539,7 @@ class HarnessContextV3Tests(unittest.TestCase):
             HarnessWorkflow.PLANNING,
             HarnessStage.PLANNING_TOOL_EXECUTION,
         )
-        unsorted_stage[planning_key] = replace(
-            unsorted_stage[planning_key],
+        unsorted_stage[planning_key] = unsorted_stage[planning_key]._replace(
             component_names=tuple(
                 reversed(unsorted_stage[planning_key].component_names)
             ),
@@ -551,8 +552,7 @@ class HarnessContextV3Tests(unittest.TestCase):
 
         duplicate_eval = dict(HARNESS_OPERATION_STAGE_REGISTRATIONS)
         first_key, second_key = list(duplicate_eval)[:2]
-        duplicate_eval[second_key] = replace(
-            duplicate_eval[second_key],
+        duplicate_eval[second_key] = duplicate_eval[second_key]._replace(
             eval_route=duplicate_eval[first_key].eval_route,
         )
         with self.assertRaisesRegex(ValueError, "harness_stage_eval_route_duplicate"):
@@ -560,6 +560,80 @@ class HarnessContextV3Tests(unittest.TestCase):
                 HARNESS_COMPONENT_REGISTRATIONS,
                 duplicate_eval,
             )
+
+        swapped_workflow = dict(HARNESS_OPERATION_STAGE_REGISTRATIONS)
+        document_key = (
+            HarnessWorkflow.DOCUMENT_PARSE,
+            HarnessStage.DOCUMENT_PARSE,
+        )
+        ocr_key = (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE)
+        document_registration = swapped_workflow.pop(document_key)
+        ocr_registration = swapped_workflow.pop(ocr_key)
+        swapped_workflow[(HarnessWorkflow.OCR, HarnessStage.DOCUMENT_PARSE)] = document_registration._replace(
+            workflow=HarnessWorkflow.OCR,
+        )
+        swapped_workflow[
+            (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.OCR_PAGE)
+        ] = ocr_registration._replace(
+            workflow=HarnessWorkflow.DOCUMENT_PARSE,
+        )
+        with self.assertRaisesRegex(ValueError, "harness_stage_registry_incomplete"):
+            validate_harness_operation_stage_registry(
+                HARNESS_COMPONENT_REGISTRATIONS,
+                swapped_workflow,
+            )
+
+        forged_component_owner = dict(HARNESS_COMPONENT_REGISTRATIONS)
+        prompt_component = HarnessComponentName.TAVERN_ACTOR_PROMPT
+        forged_component_owner[prompt_component] = forged_component_owner[
+            prompt_component
+        ]._replace(owner_module="app.services.document_parser")
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_component_owner_module_mismatch",
+        ):
+            validate_harness_operation_stage_registry(
+                forged_component_owner,
+                HARNESS_OPERATION_STAGE_REGISTRATIONS,
+            )
+
+        forged_stage_owner = dict(HARNESS_OPERATION_STAGE_REGISTRATIONS)
+        tavern_key = (HarnessWorkflow.TAVERN, HarnessStage.TAVERN_ACTOR_REPLY)
+        forged_stage_owner[tavern_key] = forged_stage_owner[tavern_key]._replace(
+            owner_module="app.services.document_parser"
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_stage_owner_module_mismatch",
+        ):
+            validate_harness_operation_stage_registry(
+                HARNESS_COMPONENT_REGISTRATIONS,
+                forged_stage_owner,
+            )
+
+    def test_component_registry_contracts_are_deeply_immutable(self) -> None:
+        registration = HARNESS_COMPONENT_REGISTRATIONS[
+            HarnessComponentName.TAVERN_ACTOR_PROMPT
+        ]
+        self.assertIsInstance(registration.contract, HarnessRegisteredContract)
+        assert registration.contract is not None
+        with self.assertRaises((AttributeError, TypeError)):
+            registration.contract.version = "forged-valid-v999"  # type: ignore[misc]
+        with self.assertRaises((AttributeError, TypeError)):
+            object.__setattr__(registration.contract, "version", "forged-valid-v999")
+        contracts = registered_harness_stage_component_contracts(
+            HarnessWorkflow.TAVERN,
+            HarnessStage.TAVERN_ACTOR_REPLY,
+        )
+        contracts[0].version = "caller-local-v999"
+        fresh_contracts = registered_harness_stage_component_contracts(
+            HarnessWorkflow.TAVERN,
+            HarnessStage.TAVERN_ACTOR_REPLY,
+        )
+        self.assertNotIn(
+            "caller-local-v999",
+            {contract.version for contract in fresh_contracts},
+        )
 
     def test_v3_trace_fixture_binds_context_identity(self) -> None:
         payload = json.loads(
