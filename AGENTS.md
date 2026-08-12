@@ -2,7 +2,7 @@
 
 ## Repo Scan Snapshot
 
-This repository was rescanned from the root on 2026-08-12. The current workspace contains roughly 244 tracked and in-flight project files. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
+This repository was last materially updated and handed off on 2026-08-13. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
 
 - `apps/web`: Next.js 16 app-router frontend for upload, global debug, planning, study, persona/scene editing, and Tavern interaction.
 - `services/ai`: FastAPI backend for document ingestion, OCR parsing, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and Harness evidence.
@@ -29,6 +29,9 @@ This repository was rescanned from the root on 2026-08-12. The current workspace
 - Versioned performance gates: `docs/performance-budgets-v1.md`
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 - Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
+- Study Chat operation contracts: `services/ai/app/models/study_chat_operation.py`, `services/ai/app/persistence/study_chat_operation_repository.py`, and `apps/web/lib/study-chat-operation-decode.ts`.
+- Typed effect contracts: `services/ai/app/models/harness_effect.py`, `services/ai/app/models/study_chat_effect.py`, `services/ai/app/services/study_chat_effects.py`, and `packages/shared/src/harness-effect.ts`.
+- Current handoff: `docs/handoff-2026-08-13.md`.
 
 ## Current Runtime Layout
 
@@ -58,7 +61,7 @@ The planner receives cleaned study units plus finer outline/detail context. When
 
 `POST /study-sessions` -> `POST /study-sessions/{id}/chat`
 
-The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing.
+The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing. Chat requests use durable operation admission and query-only recovery for ambiguous outcomes. The two plan-confirmation tools are the first typed prepared database-effect slice; other Study effects remain outside that boundary. Interactive-question UX waits for persisted Session read-back, while its backend Turn/grading schema remains open in `SCH-STUDY-QUESTION-001` and `SCH-STUDY-ATTEMPT-001`.
 
 ### 4. Tavern interaction (active implementation)
 
@@ -161,6 +164,7 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - Treat Harness as a repository-wide lifecycle, not a Tavern feature. `build_harness_context` and v3 fixtures are foundation only; do not mark Document/OCR/Study Unit/Planning/Persona/Scene/Study Chat/Tavern/Frontend Decode adopted until their own TODO gates pass.
 - Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document and Planning repair their current multi-write boundary before adding v3 lifecycle evidence; Scene separates model proposal, user-authored save, committed projection, and API DTO before Harness adoption.
 - Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; CAS completion closes `AUD-001` only and is not durable request admission or successful Harness commit evidence.
+- Interactive Question grading material must not remain in the pre-submit public projection. The next migration separates model proposal, server-only grading spec, prompt projection, result projection, and Turn-bound attempt input; do not extend the current prompt-matching/client-verdict contract.
 - UX/reliability findings require independent revalidation before closure; developer-authored happy-path tests alone do not close `docs/independent-product-audit-2026-08-12.md` findings.
 - Treat `HarnessStage`, `HarnessAttemptPhase`, and stream event types as separate vocabularies. Stages are domain operations such as page extraction or one planning tool execution; generate/decode/validate/repair/commit/rollback are phases inside a stage; progress names such as `page_parsed` are stream events. Keep the Python/TypeScript operation-stage registry and its shared golden fixture atomic.
 - An application component contract versions reviewed algorithm behavior; it is not a dependency/model version. An unaudited component uses a null registration and blocks context construction—never invent `pending-*`, `latest`, `unknown`, or a package version as adoption evidence.

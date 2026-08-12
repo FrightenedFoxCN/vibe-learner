@@ -76,6 +76,7 @@ import {
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
+import { validateStudyQuestionAttemptReadBack } from "../lib/study-question-attempt";
 import {
   logWorkspaceError,
   logWorkspaceInfo
@@ -1486,6 +1487,7 @@ export function useLearningWorkspaceController({
   };
 
   const handleSubmitQuestionAttempt = async (input: {
+    turnId: string;
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
     topic: string;
@@ -1498,20 +1500,31 @@ export function useLearningWorkspaceController({
     isCorrect: boolean;
     explanation: string;
   }) => {
-    if (!state.studySession) {
-      return;
+    const currentSession = studySessionRef.current;
+    if (!currentSession) {
+      return false;
     }
     try {
       const nextSession = await submitStudyQuestionAttempt({
-        sessionId: state.studySession.id,
+        sessionId: currentSession.id,
         ...input
       });
+      if (!validateStudyQuestionAttemptReadBack({
+        before: currentSession,
+        after: nextSession,
+        turnId: input.turnId,
+        submittedAnswer: input.submittedAnswer,
+      })) {
+        throw new Error("study_question_attempt_read_back_mismatch");
+      }
+      studySessionRef.current = nextSession;
       dispatch({
         type: "study_session_set",
         studySession: nextSession,
         clearResponse: false
       });
-      await triggerInteractiveQuestionCallback(nextSession, input);
+      void triggerInteractiveQuestionCallback(nextSession, input);
+      return true;
     } catch (error) {
       dispatch({
         type: "notice_set",
@@ -1522,6 +1535,7 @@ export function useLearningWorkspaceController({
         )
       });
       logWorkspaceError("workflow:study_attempt:error", error);
+      return false;
     }
   };
 

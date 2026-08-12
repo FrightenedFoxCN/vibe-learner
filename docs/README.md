@@ -20,6 +20,7 @@
 - `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2/v3 evidence compatibility
 - `independent-product-audit-2026-08-12.md`: evidence-backed independent UX/reliability audit, reproductions, priorities, and acceptance gates
 - `performance-budgets-v1.md`: versioned fixture, query/payload, server P95, and React render gates for focused performance work
+- `handoff-2026-08-13.md`: current stop point, verified commits, unresolved risks, Git state, and ordered instructions for the next agent
 
 ## Reading Order
 
@@ -45,7 +46,7 @@
 
 These docs describe the repository as it exists now, not the aspirational long-term platform. When implementation changes, update the docs in the same change if the API, runtime flow, or data layout moved.
 
-## Current implementation notes (2026-08-12)
+## Current implementation notes (2026-08-13)
 
 - Debug is a global overlay; the old standalone `/debug` route no longer exists.
 - Structured persistence defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`; uploads, attachments, cache, and compatibility debug files remain local.
@@ -53,4 +54,6 @@ These docs describe the repository as it exists now, not the aspirational long-t
 - The Tavern browser boundary strictly decodes the current legacy-v1 wire and fences stale room/operation results. This does not complete `HRN-WEB-001` for Document, Plan, Persona, Scene, or Study responses.
 - Harness Engineering is repository-wide. V2/v3 contracts and the v3 context builder are schema foundations; no production workflow currently calls `build_harness_context`, and Tavern production evidence remains legacy v1 until `HRN-TAV-V3-001` is complete.
 - Snapshot digests are integrity references only. Protected replay needs the authorized artifact resolver, resource evidence policies, retention, and read-back verification tracked in `TODO.md`.
-- The highest current reliability risk is Study Chat: its Session aggregate now has revision CAS, contiguous turn identity, and strict browser ordering, but model tools/files/provider calls can still mutate or escape before the final reply is validated and lack durable request admission/effect receipts. Planning and Document processing also have multi-write commit boundaries that require staged or transactional migration.
+- Study Chat now has Session CAS, durable request admission/read-back, strict browser operation recovery, and the first typed transactional plan-confirmation effect. Other memory/affinity/follow-up/Scene/file/provider effects remain outside the final transaction and still lack a durable effect journal.
+- Interactive-question UX waits for persisted Session read-back before showing a verdict. Its backend schema still leaks grading material, locates questions by prompt, and trusts client verdict fields; `SCH-STUDY-QUESTION-001` and `SCH-STUDY-ATTEMPT-001` are the recommended next slices.
+- Planning and Document processing retain multi-write commit boundaries that require staged or transactional migration.

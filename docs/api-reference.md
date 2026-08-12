@@ -726,6 +726,8 @@ Request body:
 
 Returns updated `StudySessionRecord`.
 
+The browser treats this returned Session as the current read-back authority: it does not display a verdict before the response advances the same Session and contains the submitted answer, verdict, and feedback on the originating Turn. The current request contract still includes client grading material and the backend still locates the question by prompt; `SCH-STUDY-ATTEMPT-001` tracks migration to Turn identity, revision fencing, stable attempt identity, and server-owned grading.
+
 ### `PATCH /study-sessions/{session_id}`
 
 Updates an existing study session. Supports study-unit switch and/or scene profile refresh.

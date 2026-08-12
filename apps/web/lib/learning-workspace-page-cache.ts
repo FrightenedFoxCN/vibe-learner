@@ -51,7 +51,6 @@ export interface StudyConsolePageCache {
   attachments: File[];
   selectedChoices: Record<string, string>;
   blankAnswers: Record<string, string>;
-  questionFeedback: Record<string, { ok: boolean; text: string }>;
   expandedExplanation: Record<string, boolean>;
 }
 
@@ -110,7 +109,6 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
             attachments: [],
             selectedChoices: normalizeStringRecord(parsed.studyConsole.selectedChoices),
             blankAnswers: normalizeStringRecord(parsed.studyConsole.blankAnswers),
-            questionFeedback: normalizeQuestionFeedback(parsed.studyConsole.questionFeedback),
             expandedExplanation: normalizeBooleanRecord(parsed.studyConsole.expandedExplanation),
           }
         : undefined,
@@ -147,7 +145,6 @@ export function persistLearningWorkspacePageCache(
       message: cache.studyConsole.message,
       selectedChoices: cache.studyConsole.selectedChoices,
       blankAnswers: cache.studyConsole.blankAnswers,
-      questionFeedback: cache.studyConsole.questionFeedback,
       expandedExplanation: cache.studyConsole.expandedExplanation,
     };
   }
@@ -217,25 +214,5 @@ function normalizeBooleanRecord(value: unknown): Record<string, boolean> {
   }
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, entry]) => [key, Boolean(entry)])
-  );
-}
-
-function normalizeQuestionFeedback(
-  value: unknown
-): Record<string, { ok: boolean; text: string }> {
-  if (!value || typeof value !== "object") {
-    return {};
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
-      const raw = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
-      return [
-        key,
-        {
-          ok: Boolean(raw.ok),
-          text: String(raw.text ?? ""),
-        },
-      ];
-    })
   );
 }

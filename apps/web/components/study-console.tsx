@@ -30,6 +30,7 @@ interface StudyConsoleProps {
   showCreateSession?: boolean;
   onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
+    turnId: string;
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
     topic: string;
@@ -41,7 +42,7 @@ interface StudyConsoleProps {
     submittedAnswer: string;
     isCorrect: boolean;
     explanation: string;
-  }) => void | Promise<void>;
+  }) => boolean | Promise<boolean>;
   onChangeSchedule: (scheduleId: string) => void;
   onOpenCitation?: (citation: Citation) => void;
   onJumpToScheduleStart?: () => void;
@@ -135,9 +136,10 @@ export function StudyConsole({
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>(
     () => cachedState?.blankAnswers ?? {}
   );
-  const [questionFeedback, setQuestionFeedback] = useState<Record<string, { ok: boolean; text: string }>>(
-    () => cachedState?.questionFeedback ?? {}
-  );
+  const [questionAttemptStates, setQuestionAttemptStates] = useState<
+    Record<string, "submitting" | "failed">
+  >({});
+  const questionAttemptInFlightRef = useRef(new Set<string>());
   const [expandedExplanation, setExpandedExplanation] = useState<Record<string, boolean>>(
     () => cachedState?.expandedExplanation ?? {}
   );
@@ -173,7 +175,6 @@ export function StudyConsole({
       attachments,
       selectedChoices,
       blankAnswers,
-      questionFeedback,
       expandedExplanation,
     });
   }, [
@@ -182,7 +183,6 @@ export function StudyConsole({
     expandedExplanation,
     message,
     onCachedStateChange,
-    questionFeedback,
     selectedChoices,
   ]);
 
@@ -242,10 +242,18 @@ export function StudyConsole({
                               turnKey: turn.id,
                               selectedChoices,
                               blankAnswers,
-                              questionFeedback,
                               setSelectedChoices,
                               setBlankAnswers,
-                              setQuestionFeedback,
+                              attemptState: questionAttemptStates[turn.id],
+                              onAttemptStateChange: (state) => {
+                                setQuestionAttemptStates((current) => {
+                                  if (state) return { ...current, [turn.id]: state };
+                                  const next = { ...current };
+                                  delete next[turn.id];
+                                  return next;
+                                });
+                              },
+                              attemptInFlight: questionAttemptInFlightRef.current,
                               expandedExplanation,
                               setExpandedExplanation,
                               onAsk,
@@ -1259,6 +1267,11 @@ const styles: Record<string, CSSProperties> = {
     color: "var(--negative)",
     fontWeight: 500,
   },
+  questionPending: {
+    fontSize: 12,
+    color: "var(--accent)",
+    fontWeight: 500,
+  },
   answerInline: {
     margin: 0,
     fontSize: 12,
@@ -1330,14 +1343,16 @@ function renderInteractiveQuestion(input: {
   turnKey: string;
   selectedChoices: Record<string, string>;
   blankAnswers: Record<string, string>;
-  questionFeedback: Record<string, { ok: boolean; text: string }>;
   setSelectedChoices: Dispatch<SetStateAction<Record<string, string>>>;
   setBlankAnswers: Dispatch<SetStateAction<Record<string, string>>>;
-  setQuestionFeedback: Dispatch<SetStateAction<Record<string, { ok: boolean; text: string }>>>;
+  attemptState?: "submitting" | "failed";
+  onAttemptStateChange: (state?: "submitting" | "failed") => void;
+  attemptInFlight: Set<string>;
   expandedExplanation: Record<string, boolean>;
   setExpandedExplanation: Dispatch<SetStateAction<Record<string, boolean>>>;
   onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
+    turnId: string;
     questionType: "multiple_choice" | "fill_blank";
     prompt: string;
     topic: string;
@@ -1349,7 +1364,7 @@ function renderInteractiveQuestion(input: {
     submittedAnswer: string;
     isCorrect: boolean;
     explanation: string;
-  }) => void | Promise<void>;
+  }) => boolean | Promise<boolean>;
   disabled: boolean;
 }) {
   const {
@@ -1357,23 +1372,37 @@ function renderInteractiveQuestion(input: {
     turnKey,
     selectedChoices,
     blankAnswers,
-    questionFeedback,
     setSelectedChoices,
     setBlankAnswers,
-    setQuestionFeedback,
+    attemptState,
+    onAttemptStateChange,
+    attemptInFlight,
     expandedExplanation,
     setExpandedExplanation,
     onAsk,
     onSubmitQuestionAttempt,
     disabled
   } = input;
-  const feedback = questionFeedback[turnKey];
   const explanationVisible = Boolean(expandedExplanation[turnKey]);
   const persistedFeedback = question.feedbackText
     ? { ok: Boolean(question.isCorrect), text: question.feedbackText }
     : undefined;
-  const effectiveFeedback = feedback ?? persistedFeedback;
   const isLocked = Boolean(question.submittedAnswer);
+  const isSubmitting = attemptState === "submitting";
+
+  const submitAttempt = async (input: Parameters<typeof onSubmitQuestionAttempt>[0]) => {
+    if (isLocked || attemptInFlight.has(turnKey)) return;
+    attemptInFlight.add(turnKey);
+    onAttemptStateChange("submitting");
+    try {
+      const committed = await onSubmitQuestionAttempt(input);
+      onAttemptStateChange(committed ? undefined : "failed");
+    } catch {
+      onAttemptStateChange("failed");
+    } finally {
+      attemptInFlight.delete(turnKey);
+    }
+  };
 
   if (question.questionType === "multiple_choice") {
     const selected = selectedChoices[turnKey] ?? question.submittedAnswer ?? "";
@@ -1392,7 +1421,7 @@ function renderInteractiveQuestion(input: {
                 ...(selected === option.key ? styles.choiceButtonActive : {}),
                 ...(isLocked ? styles.choiceButtonLocked : {})
               }}
-              disabled={isLocked}
+              disabled={isLocked || isSubmitting}
               onClick={() => setSelectedChoices((current) => ({ ...current, [turnKey]: option.key }))}
             >
               <RichTextMessage
@@ -1407,12 +1436,11 @@ function renderInteractiveQuestion(input: {
           <button
             type="button"
             style={styles.checkButton}
-            disabled={!selected || disabled || isLocked}
+            disabled={!selected || disabled || isLocked || isSubmitting}
             onClick={() => {
               const correct = selected.trim().toUpperCase() === (question.answerKey ?? "").trim().toUpperCase();
-              const feedbackText = correct ? "回答正确" : `回答不正确，正确答案是 ${question.answerKey ?? "未提供"}`;
-              setQuestionFeedback((current) => ({ ...current, [turnKey]: { ok: correct, text: feedbackText } }));
-              void onSubmitQuestionAttempt({
+              void submitAttempt({
+                turnId: turnKey,
                 questionType: question.questionType,
                 prompt: question.prompt,
                 topic: question.topic,
@@ -1427,7 +1455,7 @@ function renderInteractiveQuestion(input: {
               });
             }}
           >
-            提交答案
+            {isSubmitting ? "正在记录答案…" : attemptState === "failed" ? "重新提交答案" : "提交答案"}
           </button>
           {isLocked ? (
             <button
@@ -1441,13 +1469,17 @@ function renderInteractiveQuestion(input: {
           <button
             type="button"
             style={styles.inlineGhostBtn}
-            disabled={disabled}
+            disabled={disabled || isSubmitting}
             onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度选择题。`, []); }}
           >
             再来一题
           </button>
-          {effectiveFeedback ? (
-            <span style={effectiveFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{effectiveFeedback.text}</span>
+          {persistedFeedback ? (
+            <span style={persistedFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{persistedFeedback.text} · 已记录</span>
+          ) : attemptState === "failed" ? (
+            <span style={styles.feedbackBad}>答案未记录，请检查后重新提交。</span>
+          ) : isSubmitting ? (
+            <span style={styles.questionPending}>正在保存到学习记录…</span>
           ) : null}
         </div>
         {selected ? (
@@ -1478,23 +1510,20 @@ function renderInteractiveQuestion(input: {
           const next = event.target.value;
           setBlankAnswers((current) => ({ ...current, [turnKey]: next }));
         }}
-        readOnly={isLocked}
+        readOnly={isLocked || isSubmitting}
         placeholder="输入你的答案"
       />
       <div style={styles.questionActions}>
         <button
           type="button"
           style={styles.checkButton}
-          disabled={!value.trim() || disabled || isLocked}
+          disabled={!value.trim() || disabled || isLocked || isSubmitting}
           onClick={() => {
             const normalized = normalizeAnswer(value);
             const accepted = question.acceptedAnswers.map(normalizeAnswer);
             const correct = accepted.includes(normalized);
-            const feedbackText = correct
-              ? "回答正确"
-              : `回答不正确，参考答案：${question.acceptedAnswers.join(" / ") || "未提供"}`;
-            setQuestionFeedback((current) => ({ ...current, [turnKey]: { ok: correct, text: feedbackText } }));
-            void onSubmitQuestionAttempt({
+            void submitAttempt({
+              turnId: turnKey,
               questionType: question.questionType,
               prompt: question.prompt,
               topic: question.topic,
@@ -1509,7 +1538,7 @@ function renderInteractiveQuestion(input: {
             });
           }}
         >
-          提交答案
+          {isSubmitting ? "正在记录答案…" : attemptState === "failed" ? "重新提交答案" : "提交答案"}
         </button>
         {isLocked ? (
           <button
@@ -1523,13 +1552,17 @@ function renderInteractiveQuestion(input: {
         <button
           type="button"
           style={styles.inlineGhostBtn}
-          disabled={disabled}
+          disabled={disabled || isSubmitting}
           onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度填空题。`, []); }}
           >
             再来一题
           </button>
-        {effectiveFeedback ? (
-          <span style={effectiveFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{effectiveFeedback.text}</span>
+        {persistedFeedback ? (
+          <span style={persistedFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{persistedFeedback.text} · 已记录</span>
+        ) : attemptState === "failed" ? (
+          <span style={styles.feedbackBad}>答案未记录，请检查后重新提交。</span>
+        ) : isSubmitting ? (
+          <span style={styles.questionPending}>正在保存到学习记录…</span>
         ) : null}
       </div>
       {value.trim() ? (
