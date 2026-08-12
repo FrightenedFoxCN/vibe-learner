@@ -12,11 +12,11 @@
 - [ ] `HRN-TAV-002` 建立身份、称呼、目标、跨角色冒充和 prompt injection 回归矩阵；验收：测试记录 schema-valid rate、repair rate 与身份一致率。
 - [ ] `HRN-TAV-PERF-001` 为 Tavern prompt 增加字符/token 总预算、场景快照尺寸和嵌套深度限制；验收：最坏 6 人长对话仍在配置预算内，截断/摘要写入 trace。
 - [ ] `SCH-TAV-001` 决定并实现 run/message/step 软引用策略；验收：`run_id`、`message_id`、`reply_to_message_id` 要么具备可迁移外键与插入顺序，要么由统一 invariant scanner 检测并阻断破损图。
-- [ ] `UX-001` 完成 Tavern Workspace 发布体验（发布前置：`TAV-004`）；已实现 1–6 人设置、单聊/多人互动、tail 翻页、刷新恢复、IME 事件 fencing、strict decode 与 390px 无横向溢出。剩余验收：移动端空房/已有房首要操作无需越过 430px+ 对话区，新建动作聚焦 Setup，多人 roster 只把实际 claimed step 标为 generating，terminal replay 的 partial/failed 在主界面提供明确恢复动作，并完成独立真实 IME/viewport 复验。
-- [ ] `UX-TAV-REC-001` 建立 Tavern run 派生恢复视图；验收：父 run 保持 immutable partial，但存在 completed child 时显示“已由重试恢复”，不再次暴露可重试操作。
+- [ ] `UX-001` Tavern Workspace 发布体验 tracking epic（依赖 `TAV-004`、`UX-TAV-REC-001`、`UX-TAV-MOBILE-001`、`UX-TAV-STATE-001`、`UX-TAV-DRAFT-001`、`UX-EMPTY-001`、`TAV-UX-COPY-001`）；已实现 1–6 人设置、单聊/多人互动、tail 翻页、刷新恢复、IME 事件 fencing、strict decode 与 390px 无横向溢出。仅在全部子项通过且非实现智能体完成无 Persona/无 Room/已有 Room、390×844、真实 IME、键盘/触控、焦点顺序和无横向溢出复验后关闭；本项不重复承载子项实现。
+- [ ] `UX-TAV-REC-001` 建立 Tavern run 派生恢复视图（依赖 `TAV-RUN-VIEW-001`、`TAV-ERROR-001`、`TAV-RECOVERY-CLIENT-001`）；验收：父 run 保持 immutable partial，但存在 completed child 时显示“已由重试恢复”，主界面在 Header/Composer 附近说明已保存消息、未完成角色和恢复动作，不再次暴露已完成链的可重试操作。
 - [ ] `UX-TAV-MOBILE-001` 重排 Tavern 移动端首要任务；验收：空房先显示 Setup/Session，已有房的 Interaction Composer 在首屏或固定可达，“新建酒馆”滚动并聚焦标题，390×844 键盘/触控路径不依赖“左侧”空间描述。
 - [ ] `UX-TAV-STATE-001` 对齐 Participant Roster 与真实 speaker step；验收：当前 claimed actor 显示 generating，尚未轮到者显示 pending，completed/failed/blocked/canceled 不被前端 optimistic state 覆盖，direct/facilitated/partial/resume fixtures 通过。
-- [ ] `TAV-RECOVERY-CLIENT-001` 前端 API client 自动执行 Tavern `502` 同 key 终态恢复；验收：保留原 revision/key，按 `run.status` 归一化 completed/partial/failed，不把 HTTP 200 等同成功完成。
+- [ ] `TAV-RECOVERY-CLIENT-001` 前端 API client 自动执行 Tavern `502` 同 key 终态恢复（依赖 `TAV-ERROR-001`）；验收：保留原 revision/key，按结构化 recovery action 和 `run.status` 归一化 completed/partial/failed，不把 HTTP 200 等同成功完成。
 - [ ] `TAV-RUN-VIEW-001` 增加可靠的 retry-chain 聚合读取；验收：单次读取不会因 run list 分页截断而遗漏 child，latest leaf 决定可恢复动作。
 - [ ] `TAV-ERROR-001` Tavern 冲突/执行失败改用结构化错误 envelope；验收：code、run/child ID、current revision 与 recovery action 可直接 decode，前端不解析冒号字符串。
 - [ ] `TAV-CANCEL-TRANSPORT-001` 将 Tavern provider 改为真正可取消的传输；验收：Cancel 能中断已发出的上游请求而不只 fencing 结果，释放连接/worker 并停止 token 消耗；在此之前 UI 文案必须称“取消接收结果”，不能承诺已停止模型计算。
@@ -29,28 +29,44 @@
 - [x] `HRN-CTX-BASE-001` 建立 v3 workflow-neutral context foundation；验收：v2 wire/fixtures 原样可读，v3 具备闭集 workflow/stage/resource/artifact、服务端 operation ID、`(workflow, stage)` 组件注册表、严格 trace-safe manifest allowlist、契约绑定 digest、自校验 context digest 和 Python/TypeScript golden fixtures。该项只证明 context identity 与 integrity reference，不代表任一业务工作流已接入或可重放。
 - [x] `SCH-HRN-REV-001` 建立 machine-readable resource evidence policy；验收：每个 `HarnessResourceType` 分别声明 resource semantics、context、commit 与 rollback evidence 能力；`not_committed` 可诚实记录尚未迁移资源的 attempted identity，而 unsupported committed/rolled-back proof fail closed；room revision 与单条 message sequence 的正负例通过，Python/TypeScript 由同一 golden registry 做运行时对齐。不得以常量 `revision=0` 伪造 freshness，也不得把父聚合 revision 冒充嵌入资源自身 revision。
 - [x] `SCH-HRN-STAGE-001` 补齐真实 operation stage/component vocabulary；验收：已注册 `page_extraction`、`section_detection`、`chunk_building`、`planning_tool_execution` 及其真实版本组件，未以 `AttemptPhase` 已表达的 generate/decode/validate/commit 再造 `plan_projection` stage；Python/TypeScript/ownership/eval routing 由共享 golden fixture 原子校验。未审定组件显式登记 null 并阻断 context build；stage/eval route 存在不代表对应业务工作流或 eval runner 已完成采用。
-- [ ] `SCH-HRN-EFFECT-001` 设计跨工作流 typed effect proposal 与 durable batch schema；验收：Study Chat 等工作流的状态效果与模型文本分离，应用分配 effect identity，严格校验后通过 CAS/事务批量提交，commit/rollback evidence 能覆盖部分写入与重复请求；在实现前不注册虚假的 effect execution stage。
+- [ ] `SCH-HRN-EFFECT-001` 设计跨工作流 typed effect proposal 与 durable batch schema（依赖 `STUDY-OP-ADMIT-001`）；验收：明确区分纯读取、数据库写、文件/outbox 写与外部/provider effect，模型文本与 effect proposal 分离，应用按 operation + slot 分配 identity；每类 effect 声明 prepare/commit/compensate/read-back 和 `not_committed/committed/uncertain` 语义，DB 事务不得冒充外部 effect 的 exactly-once 证明；附件、生成图片/文件及 follow-up 取消等生成前写入也有 adapter、清理/补偿和故障 fixture；在实现前不注册虚假的 effect execution stage。
 - [x] `SCH-HRN-OP-COMMIT-001` 将 v3 commit evidence 绑定到 operation policy 与 versioned committed-projection DTO；已建立 workflow/stage/output/payload 全键 registry、Python/TypeScript golden、原子写入且不进入 API/OpenAPI 的 operation/effect receipt、严格 Tavern persona Message projection、单 DB snapshot graph read-back 与 sidecar。当前唯一成功 policy 为 `actor_reply` 的单 Message `primary_output_only` 证据；不能声明 Room revision/Run/Step 完整事务，Room create/delete、begin-run、failure finalize/cancel 继续 fail closed。生产 Tavern trace 仍为 legacy v1，等待 `HRN-TAV-V3-001` 接入 v2 output contract、protected artifact 与 operation runtime。
 - [ ] `HRN-CTX-ARTIFACT-001` 建立受保护 artifact resolver；验收：不可变 opaque ID、artifact/type/contract 注册、先鉴权后读取、留存与过期规则、read-back digest，返回 `resolved/not_found/expired/forbidden/digest_mismatch/schema_unsupported` 等 typed result，并覆盖删除、篡改、跨主体访问和批量解析预算。现有 `document_debug` / `planning_trace` 可清理缓存不得冒充永久 replay artifact。
 - [ ] `HRN-CTX-RUNTIME-001` 建立跨业务可复用的 Harness operation runtime；验收：统一 operation/attempt/check/commit/rollback/terminal-failure 组装，调用方只能通过注册的 context/artifact/effect boundary 进入，幂等与失败持久化有 adapter 接口和故障 fixture。各分域采用项依赖该 primitive；`HRN-CTX-001` 是汇总 epic，不作为所有分域开始实施的循环前置。
 - [ ] `HRN-CTX-PERF-001` 为 context build/digest/resolve 建立预算；验收：限制 manifest canonical bytes、单/总 snapshot bytes、引用数量和 resolver I/O，最坏 fixture 记录 p50/p95，超限在模型/worker 执行前失败。
 - [ ] `HRN-CTX-001` 将 v3 context/trace lifecycle 接入全部工作流（tracking epic；依赖 `HRN-CTX-BASE-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`，仅在全部分域采用项完成后关闭）；验收：真实版本化 parser/heuristic/toolset/compiler/decoder，受保护 snapshot refs 可解析并校验，敏感原文不入 trace，失败与 commit evidence 完整。
 - [ ] `HRN-RECOVERY-MIG-001` 统一旧 `ModelRecoveryRecord`、Planning round recovery 与 v3 attempt/check 的映射（依赖 `HRN-CTX-RUNTIME-001`；各分域在触及旧 recovery 时按需采用）；验收：同一 operation 可关联，旧 API 保持兼容，新指标不重复计数，并有明确弃用路径。
-- [ ] `AUD-001` 修复 Study Session 并发追加丢消息（`HRN-STUDY-001` 发布前置）；验收：两个并发 append 均保留且序号唯一。
-- [ ] `HRN-DOC-001` 将 extraction/OCR/Section/Chunk/Study Unit cleanup 接入 v3（依赖 `SCH-HRN-REV-001`、`SCH-HRN-STAGE-001`、`HRN-CTX-RUNTIME-001`）；验收：各 stage 记录 parser/heuristic 版本、页覆盖/边界/排序/source-ID/密度预算 invariant，任意阶段失败都写终态 evidence，document 与 debug 原子提交或可恢复且 forced-OCR fixture 可回放。
-- [ ] `HRN-PLAN-001` 将计划 proposal、工具调用和跨聚合持久化接入 validate/repair/commit（依赖 `SCH-HRN-REV-001`、`SCH-HRN-STAGE-001`、`HRN-CTX-RUNTIME-001`）；验收：工具参数与 plan proposal 严格解码，ID 由应用分配，document/debug/plan/trace 原子提交或 staging 可恢复，具备 idempotency/revision 与 commit-failure fixtures。
+- [ ] `AUD-001` 修复 Study Session 并发追加丢消息（`STUDY-OP-ADMIT-001` 前置）；验收：两个并发 append 均保留且序号唯一，追加冲突有 CAS/重试上限，不再走会覆盖另一轮的 aggregate read-modify-write。
+- [ ] `STUDY-OP-ADMIT-001` 交付 Study Chat 安全重试第一切片（依赖 `AUD-001`）；验收：浏览器跨 retry/reconnect 沿用稳定 client request ID，服务端在生成前以 session + request ID/fingerprint durable admission 并写 operation receipt，异 payload 重用 key fail closed；duplicate 终态回读原结果且不再调用模型，非终态/断连返回 `uncertain` 并禁止自动盲重放。该切片不声称尚未迁移的工具 effect 已 exactly once。
+- [ ] `P0-STUDY-IDEM-001` Study Chat 安全重试 tracking/release gate（最高优先级；依赖 `STUDY-OP-ADMIT-001`、`SCH-HRN-EFFECT-001`、`STUDY-EFFECT-COMMIT-001`、`HRN-STUDY-001`）；验收：断连、timeout、invalid final、duplicate、concurrent 与逐 effect/commit failure fixture 证明 DB effect 至多一次；外部 effect 无 provider idempotency/read-back 时只能报告 `uncertain`，不得伪称 exactly once。
+- [ ] `AUD-DOC-COMMIT-001` 修复 Document cleanup/多写当前缺陷（`HRN-DOC-001` 前置）；验收：独立 operation journal/staging 是终态真源，Study Unit cleanup、debug first-write、document second-write 任一失败都不能把 Document 卡在 `processing` 或留下无法判定的半提交，原子写或 staging/read-back 可恢复；cleanup、两次写入、interrupt 与 forced-OCR 故障注入通过。
+- [ ] `HRN-DOC-001` 将 extraction/OCR/Section/Chunk/Study Unit cleanup 接入 v3（依赖 `AUD-DOC-COMMIT-001`、`SCH-HRN-REV-001`、`SCH-HRN-STAGE-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`）；验收：在已修复提交边界上为各 stage 记录 parser/heuristic/context 版本、页覆盖/边界/排序/source-ID/密度预算 invariant，并补齐 v3 terminal trace、protected artifact replay/eval；本项不重复定义 Document 原子提交修复。
+- [ ] `SCH-PLAN-OWN-001` 分离 Planning tool argument / tool result / plan proposal / committed projection schema（`HRN-PLAN-001` 前置）；验收：每次 tool execution 与最终 plan proposal 从 `unknown` 严格解码，malformed JSON 不降级成 `{}`、非法 schedule chapter 不静默丢弃，typed error 保留字段路径；模型不拥有 plan/chapter ID、revision、时间或 committed state，修复次数有界且有攻击 fixture。
+- [ ] `AUD-PLAN-COMMIT-001` 修复 Planning 多聚合提交当前缺陷（`HRN-PLAN-001` 前置）；验收：独立 operation journal/staging 绑定 request identity/revision，document/debug/trace/plan 原子提交或可 read-back 恢复，duplicate、stale revision、interrupt 与逐写入失败 fixture 通过；本项不把 schema 校验或 v3 trace 混作提交证明。
+- [ ] `HRN-PLAN-001` 将 Planning 接入 validate/repair/commit 生命周期（依赖 `SCH-PLAN-OWN-001`、`AUD-PLAN-COMMIT-001`、`SCH-HRN-REV-001`、`SCH-HRN-STAGE-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`）；验收：在严格 schema 与可恢复提交边界上集成版本化 toolset/prompt/context、attempt/check、terminal trace、protected artifact replay 和 grounding/tool-correctness eval。
 - [ ] `HRN-PERSONA-001` 建立 Persona 生成 Harness（依赖 `SCH-HRN-REV-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`）；验收：严格 proposal 不含应用 ID/source/time，slot/身份/称呼 invariant、版本化 prompt/context、失败零持久化和 fixture replay 通过。
-- [ ] `HRN-SCENE-001` 建立 Scene 生成 Harness（依赖 `SCH-HRN-REV-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`）；验收：model proposal 不含 layer/object/reuse ID，递归深度/节点数/唯一 ID/selected path invariant、失败零持久化和 fixture replay 通过。
-- [ ] `HRN-STUDY-001` 将学习对话写操作改为 typed effect proposal（依赖 `AUD-001`、`SCH-HRN-REV-001`、`SCH-HRN-EFFECT-001`、`HRN-CTX-RUNTIME-001`）；验收：memory、affinity、follow-up 创建/取消、scene、projected PDF/overlay、plan confirmation 与 turn append 在严格最终回复校验后以单事务/CAS提交，失败、重复请求或并发请求均无半提交。
+- [ ] `SCH-SCENE-OWN-001` 分离 Scene model proposal / committed / user-authored save / API schema（`HRN-SCENE-001` 前置）；验收：proposal 不得铸造 layer/object ID、任意 reuse identity 或时间；可选 `reusable_node_ref` 只能引用应用随 context 提供的 allow-list，应用在校验后解析引用并投影 committed ID。递归深度、总节点、对象数、唯一 ID、selected path 与文本预算 fail closed；用户手工保存 DTO 不与 model proposal 共用入口，保存使用 committed DTO + revision/CAS。
+- [ ] `HRN-SCENE-001` 建立 Scene 生成 Harness（依赖 `SCH-SCENE-OWN-001`、`SCH-HRN-REV-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`）；验收：版本化 proposal/context、allow-list reuse 引用、递归结构 invariant、失败零持久化和 fixture replay/eval 通过。
+- [ ] `STUDY-EFFECT-COMMIT-001` 将 Study 写边界迁移到 typed effect batch（依赖 `STUDY-OP-ADMIT-001`、`SCH-HRN-EFFECT-001`）；验收：memory、affinity、follow-up 创建/取消、scene、projection/overlay、plan confirmation、附件与 turn append 依 effect 分类走事务、staging/outbox 或 compensation；最终 reply 校验失败不提交待提交 effect，已 prepare 的文件可回收，外部 effect 无法确认时 operation 进入 `uncertain` 且不自动重放。
+- [ ] `HRN-STUDY-001` 将 Study Chat 接入 v3 Harness（依赖 `STUDY-EFFECT-COMMIT-001`、`SCH-HRN-REV-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`）；验收：在稳定请求与 typed effect 提交边界上记录版本化 prompt/context、strict reply、attempt/check、commit/rollback/uncertain evidence、protected artifact replay 与 citation/effect correctness eval。
 - [ ] `HRN-TAV-V3-001` 将 Tavern 生产证据从 legacy v1 切换到 v3（依赖 `SCH-HRN-REV-001`、`HRN-CTX-ARTIFACT-001`、`HRN-CTX-RUNTIME-001`、`HRN-RECOVERY-MIG-001`）；验收：旧 v1/v2 可读，run/step/message 产生 v3，actor parent lineage、partial/failed/not-committed、per-step commit 与 child retry trace 可聚合，前端 v1/v2/v3 fixtures 通过。
-- [ ] `HRN-WEB-001` 建立前端 `unknown -> value | typed DecodeError` runtime decoder、结构化错误、超时/取消和 stale response harness；验收：Document/Plan/Persona/Scene/Study/Tavern 的缺字段、非法 enum/null、NaN、乱序、重复与 same-key 恢复均有确定路径并转发 v1/v2/v3 trace。Python 后端仍是 canonical digest authority，浏览器不得用 `JSON.stringify` 伪装同构 digest。
+- [ ] `HRN-WEB-001` 前端 decode/recovery Harness tracking epic；仅在 `HRN-WEB-DOC-DEC-001`、`HRN-WEB-PLAN-DEC-001`、`HRN-WEB-PERSONA-SCENE-DEC-001`、`HRN-WEB-STUDY-DEC-001`、`SCH-WEB-STREAM-001`、`HRN-WEB-STREAM-001`、`UX-ASYNC-FENCE-001`、`QG-002` 分别关闭后关闭。本项不重复实现 decoder、stream 或 stale fence；Python 后端仍是 canonical digest authority，浏览器不得用 `JSON.stringify` 伪装同构 digest。
+- [ ] `HRN-WEB-DOC-DEC-001` 为 Document/Debug HTTP payload 建立 `unknown -> value | typed DecodeError`；验收：identity、status enum、页/Section/Chunk/Study Unit 顺序、范围、引用、finite number 与 nullability 攻击 fixture fail closed。
+- [ ] `HRN-WEB-PLAN-DEC-001` 为 Planning HTTP payload 建立 strict decoder；验收：document/plan identity、schedule/Study Unit 引用、恢复记录版本、重复 ID、非法 enum/range/number 攻击 fixture fail closed。
+- [ ] `HRN-WEB-PERSONA-SCENE-DEC-001` 为 Persona/Scene HTTP payload 建立 strict decoder；验收：schema ownership、slot/称呼、Scene recursion/identity/selected path 与 revision 攻击 fixture fail closed。
+- [ ] `HRN-WEB-STUDY-DEC-001` 为 Study Session/Chat/effect receipt 建立 strict decoder；验收：session/plan/document identity、citation/character event/effect terminal state、重复或破损引用与 same-key recovery fixture fail closed。
+- [ ] `SCH-WEB-STREAM-001` 为 Document/Planning stream 增加后端 versioned contract（`HRN-WEB-STREAM-001` 前置）；验收：每个 event 带 contract version、operation ID、subject type/ID、单调 event sequence 或 resume token、payload contract/digest，terminal event 带 committed projection/evidence；跨 operation/subject 事件和重连 fixture 可判定。
+- [ ] `HRN-WEB-STREAM-001` 建立 Document/Planning stream 终态状态机（依赖 `SCH-WEB-STREAM-001`、`HRN-WEB-DOC-DEC-001`、`HRN-WEB-PLAN-DEC-001`）；验收：只接受注册 event/transition，URL、operation 与 payload subject identity 一致，未知/非法转移 fail closed；相同 event ID + digest 的重复帧幂等忽略，ID 相同而 digest 不同或 terminal 后新增状态帧拒绝；仅在见到匹配 committed terminal 后成功，EOF 只在尚未见到该 terminal 时失败。
+- [ ] `UX-ASYNC-FENCE-001` 为 Study/Persona/Scene 异步生成增加 subject/draft revision/field target fence；验收：切换 plan/session/persona/field 或请求期间继续编辑后，迟到结果只能丢弃或作为候选，不得覆盖当前状态；攻击 fixture 覆盖交叉身份与 stale operation。
 - [ ] `HRN-EVAL-001` 建立跨工作流 fixture/eval 运行器与版本基线；验收：覆盖 malformed、boundary、retry exhaustion、duplicate、concurrency、commit failure，报告 schema-valid/repair/failure/commit-consistency/p95，并由各 workflow 注册最低 accuracy 指标（OCR 文本/覆盖、Section/Study Unit 边界、plan grounding/tool correctness、Persona/Tavern identity、Scene 结构、Study citation/effect correctness、frontend decode），用版本化基线和回退阈值使 CI 失败。
 - [ ] `QG-001` 替换 Next 16 已失效的 `next lint`，统一 `check` 命令并接入发布工作流。
 - [x] `QG-TAV-API-001` 为 Tavern direct/facilitated、continue、partial、retry、幂等与 SQLite 升级增加 HTTP/仓储集成测试。
-- [ ] `QG-002` 为跨 Document/Plan/Persona/Scene/Study/Tavern 响应增加共享 runtime decoder fixtures，并为 Tavern 增加关键前端交互测试。
+- [ ] `QG-002` 维护跨 Document/Plan/Persona/Scene/Study/Tavern 的共享 adversarial payload/stream fixtures 与运行入口；本项只提供攻击语料和 golden，不替代各域 decoder、stale fence 或 stream 状态机的实现/关闭。
 - [ ] `SEC-001` 为聊天附件增加 session ID 校验、单文件/总字节上限和先鉴权后落盘顺序。
 - [ ] `UX-NAV-001` 重构顶级导航信息架构与 390px 行为；验收：学习、角色与世界、系统分组清晰，加入 Tavern 后标签不压缩或横向溢出，键盘/触控目标可达。
-- [ ] `UX-A11Y-001` 为跨页面异步状态补齐 `aria-live` / `role=alert`、焦点恢复和最小 44px 交互目标。
+- [ ] `UX-A11Y-001` 为跨页面异步状态补齐 `aria-live` / `role=alert`、焦点恢复和最小 44px 交互目标；Scene 删除层级 dialog 另需 Escape、打开初始聚焦、focus trap、背景 inert 与关闭后焦点恢复，不能因已有 `role="dialog"` / `aria-modal` 提前关闭。
+- [ ] `UX-PROVIDER-001` 在 Plan/Study/Persona/Scene/Tavern 显示真实 provider 状态；验收：mock 模式明确“本地模拟，不调用真实模型”，切换后及时同步，并说明 schema/commit 可靠性不等于内容或事实质量。
+- [ ] `UX-DEBUG-DIALOG-001` 修复 Debug Overlay 模态语义；已验证 Escape 可关闭。剩余验收：`role="dialog"`、`aria-modal`、打开初始聚焦、焦点圈定、背景 inert 与关闭后触发点焦点恢复通过键盘/VoiceOver 基本路径。
 - [ ] `UX-TAV-DRAFT-001` 清理 Tavern 创建草稿中的幽灵人格；验收：载入草稿时只保留当前人格库中仍存在的 ID，计数/提交/可见选择一致，人格删除后的刷新 fixture 通过。
 - [ ] `UX-EMPTY-001` 统一空状态的下一步动作；验收：Tavern 无房间/无 persona 时不出现不可操作的禁用 composer 死端。
 
@@ -58,27 +74,24 @@
 
 - [ ] `PERF-001` 将完整 Learning Workspace Provider 从无关页面下沉；验收：404/设置页不再加载学习工作台数据，首屏 gzip 不回退超过 5%。
 - [ ] `PERF-002` 延迟导入 LiteLLM/OCR 重依赖；验收：mock 模式 `/health` 冷启动小于 2 秒。
+- [ ] `PERF-TAV-ROOMS-001` 为 Tavern Room 历史增加 cursor/limit；验收：使用 `(updated_at DESC, id DESC)` 稳定 cursor，默认 30、最大 50，当前页批量聚合与 UI load-more；选中的 Room 跨页保持可见，retry-chain authoritative view 继续独立于 Room 分页。1,000 Room fixture 必须满足 `docs/performance-budgets-v1.md` 的 query、payload、server P95 与 React P95 门槛。
+- [ ] `DOC-AUDIT-001` 对齐用户手册与真实 Home 副标题、Tavern 已保存 Scene Library 快照来源、Plan recovery 展示位置；验收：逐项与当前 DOM/API 交叉检查，无主界面未实现承诺。当前 Plan UI 未解析/显示 recovery count/details；要么实现并验证该展示，要么从用户手册删除承诺。
 - [x] `DOC-001` 对齐 78 个业务 HTTP operation（主 router 68 + Tavern router 10）、六个注册 planner tools、SQLite/PostgreSQL 默认说明、依赖清单和当前 8 个首页入口。
 - [x] `DOC-003` 修正 `docs/architecture.md` 的旧 `/debug` 页面、PostgreSQL-only/no-database 矛盾，并补齐 Tavern/Harness/Persona/Scene 当前边界；验收：与代码和根 `AGENTS.md` 一致。
 - [x] `DOC-002` 更新根 `AGENTS.md` 的仓库快照、Tavern 术语、测试命令与已知风险。
 
-## 计划创建模块
+## 规划与工具演进
 
-- [ ] 允许模型逐步修改计划，而非一次性完成生成；
-- [ ] 压缩计划生成的轮次，鼓励模型进行并行的工具调用；
+- [ ] `PLAN-ITER-001` 支持计划 proposal 的逐步修订而非仅一次性生成（依赖 `SCH-PLAN-OWN-001`、`AUD-PLAN-COMMIT-001`）；验收：每轮基于明确 base revision 产生 patch proposal，冲突/回滚/恢复可判定，最终 committed plan 仍由应用分配 ID。
+- [ ] `PLAN-TOOLS-PERF-001` 在 provider 支持时并行执行互不依赖的只读 Planning tools；验收：依赖图阻止写工具或有序工具误并行，同批结果稳定排序，调用轮次下降且 grounding/tool-correctness 基线不回退。
+- [ ] `TOOL-CATALOG-001` 整理 Planning/Study tool ownership、输入 schema、读写/外部 effect 分类与 Prompt 契约；验收：重复/废弃工具有迁移路径，实际调用率和无效调用由 `HRN-EVAL-001` 报告，不以 prompt 鼓励代替证据。
+- [ ] `SKILL-DISTILL-001` 评估可复用的项目工作流记忆是否应沉淀为仓库 skill；验收：仅抽取稳定、可验证、无密钥/用户数据的流程，版本、适用范围和退役方式明确；根 `AGENTS.md` 仍是当前仓库事实真源。
+- [ ] `DOC-USER-001` 完善使用文档和功能介绍（依赖 `DOC-AUDIT-001`、`UX-001`）；验收：覆盖 mock/real provider、Document/Plan/Study/Persona/Scene/Tavern 主任务、恢复语义、数据位置与限制，并由首次使用者独立走查。
 
-## 预期优化
+Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面；其可访问性改进由 `UX-DEBUG-DIALOG-001` 跟踪。启动性能由 `PERF-002` 跟踪。
 
-- [x] UI：重组一些比较混乱的页面的 UI；
-- [ ] debug：调试页面重接；
-- [ ] 工具清理和 Prompt 优化：整理一下现有的工具，结构有点混乱；
-- [ ] 审计并鼓励真正的工具调用；
-- [ ] 启动速度优化；
-- [ ] 蒸馏有用的 skills.md 并搭载；
-- [ ] 写一个完善的使用文档和功能介绍；
+## 研究候选（未排期）
 
-## 未来优化
-
-- [ ] Rust 重写：见新分支；
-- [ ] 根据人格和场景设置进行 ui 的动态调整，更多 ui 主题；
-- [ ] Live2D 支持和 TTS：这个很麻烦，以后再说；
+- [ ] `RND-RUST-001` 评估以 Rust 重写性能敏感组件；验收标准在 profiling 证明 Python/TypeScript 热点后另立，不以“见新分支”作为实施依据。
+- [ ] `RND-THEME-001` 研究按 Persona/Scene 动态调整 UI 主题；前置是可访问性对比度、用户关闭开关和稳定 design token contract。
+- [ ] `RND-MEDIA-001` 研究 Live2D/TTS；前置是授权/隐私、资源预算、可取消传输、字幕与无动画降级方案。

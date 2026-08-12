@@ -18,6 +18,8 @@
 - `tavern-architecture.md`: Tavern schema, transaction invariants, harness ownership, and performance boundaries
 - `harness-engineering.md`: repository-wide validate/repair/commit lifecycle, shared trace schema, adoption matrix, and release metrics
 - `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2/v3 evidence compatibility
+- `independent-product-audit-2026-08-12.md`: evidence-backed independent UX/reliability audit, reproductions, priorities, and acceptance gates
+- `performance-budgets-v1.md`: versioned fixture, query/payload, server P95, and React render gates for focused performance work
 
 ## Reading Order
 
@@ -32,10 +34,12 @@
 9. Read `harness-engineering.md` before adding or changing reliability, recovery, trace, or evaluation boundaries in any workflow.
 10. Read `harness-schema-ownership.md` before changing model-output, persisted-record, effect, or API schema ownership.
 11. Read `tavern-architecture.md` before changing Tavern persistence or orchestration.
-12. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
-13. Read `desktop-distribution-plan.md` for the original architecture exploration context.
-14. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-15. Read `../TODO.md` for the active implementation backlog.
+12. Read `independent-product-audit-2026-08-12.md` before closing UX, reliability, recovery, or cross-workflow adoption items.
+13. Read `performance-budgets-v1.md` before changing a registered performance-critical query or UI list.
+14. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
+15. Read `desktop-distribution-plan.md` for the original architecture exploration context.
+16. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+17. Read `../TODO.md` for the active implementation backlog.
 
 ## Scope
 
