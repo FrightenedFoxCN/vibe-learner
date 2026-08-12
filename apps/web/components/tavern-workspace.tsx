@@ -38,6 +38,7 @@ import { AppLink } from "../lib/app-navigation";
 import {
   hasActiveTavernRun,
   isTavernRoomStateAtLeast,
+  latestFacilitatedRecovery,
   latestTavernMessage,
   listRetryableRuns,
   makeTavernRequestKey,
@@ -123,6 +124,7 @@ export function TavernWorkspace() {
   const runPending = hasActiveTavernRun(runs);
   const latestMessage = latestTavernMessage(messages);
   const retryableRuns = useMemo(() => listRetryableRuns(runs), [runs]);
+  const facilitatedRecovery = useMemo(() => latestFacilitatedRecovery(runs), [runs]);
   const participantStates = useMemo(
     () => projectParticipantStates(detail?.participants ?? [], runs),
     [detail?.participants, runs]
@@ -961,11 +963,15 @@ export function TavernWorkspace() {
             participants={detail?.participants ?? []}
             selectedIds={targetPersonaIds}
             latestMessage={latestMessage}
+            recovery={facilitatedRecovery}
             busy={busyAction === "turn" || busyAction === "retry" || busyAction === "cancel" || runPending || loadingOlder}
+            recoveryBusy={mutationBusy || runPending || loadingOlder}
+            retrying={busyAction === "retry"}
             canCancel={runPending}
             canceling={busyAction === "cancel"}
             onTurn={handleTurn}
             onCancel={handleCancelRun}
+            onRetry={(run) => void handleRetry(run)}
           />
           <ParticipantRoster
             states={participantStates}
@@ -1446,11 +1452,15 @@ function InteractionComposer({
   participants,
   selectedIds,
   latestMessage,
+  recovery,
   busy,
+  recoveryBusy,
+  retrying,
   canCancel,
   canceling,
   onTurn,
   onCancel,
+  onRetry,
 }: {
   roomId: string;
   roomAvailable: boolean;
@@ -1458,7 +1468,10 @@ function InteractionComposer({
   participants: TavernParticipant[];
   selectedIds: string[];
   latestMessage: TavernMessage | null;
+  recovery: ReturnType<typeof latestFacilitatedRecovery>;
   busy: boolean;
+  recoveryBusy: boolean;
+  retrying: boolean;
   canCancel: boolean;
   canceling: boolean;
   onTurn: (
@@ -1466,6 +1479,7 @@ function InteractionComposer({
     guidance: string
   ) => Promise<boolean>;
   onCancel: () => Promise<boolean>;
+  onRetry: (run: TavernRun) => void;
 }) {
   const initialDraft = readTavernRoomDraft(roomId);
   const [message, setMessage] = useState(initialDraft.message);
@@ -1484,6 +1498,9 @@ function InteractionComposer({
     .filter((participant) => selectedIds.includes(participant.personaId))
     .map((participant) => namesById.get(participant.personaId))
     .filter(Boolean);
+  const unfinishedNames = recovery?.unfinishedPersonaIds
+    .map((personaId) => namesById.get(personaId) || "房间角色") ?? [];
+  const showRecovery = Boolean(roomActive && recovery && (!canCancel || retrying));
   const canRun = roomActive && selectedIds.length >= 1 && selectedIds.length <= 4 && !busy;
 
   useEffect(() => {
@@ -1545,6 +1562,25 @@ function InteractionComposer({
       <p className="tavern-recipient-preview">
         {recipientNames.length ? `本轮回应：${recipientNames.join(" → ")}` : "请先选择至少一位角色"}
       </p>
+      {showRecovery && recovery ? (
+        <div className="tavern-recovery-callout" role="status" aria-live="polite">
+          <div>
+            <strong>上次多人互动还有角色未回应</strong>
+            <p>
+              {recovery.completedCount}/{recovery.totalCount} 位已回应；
+              {unfinishedNames.join("、")} 尚未完成。已保存的回应不会重复生成。
+            </p>
+          </div>
+          <button
+            type="button"
+            className="tavern-button secondary full"
+            onClick={() => onRetry(recovery.run)}
+            disabled={recoveryBusy || !roomActive}
+          >
+            {retrying ? "正在重试未完成角色…" : "仅重试未完成角色"}
+          </button>
+        </div>
+      ) : null}
       <label className="tavern-composer-label">
         <span>你的消息</span>
         <textarea

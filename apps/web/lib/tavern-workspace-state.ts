@@ -32,6 +32,13 @@ export interface TavernCreationDraft {
   openingPrompt: string;
 }
 
+export interface TavernFacilitatedRecovery {
+  run: TavernRun;
+  completedCount: number;
+  totalCount: number;
+  unfinishedPersonaIds: string[];
+}
+
 export function readActiveTavernRoomId(): string {
   try {
     return window.localStorage.getItem(TAVERN_ACTIVE_ROOM_STORAGE_KEY) ?? "";
@@ -239,6 +246,27 @@ export function listRetryableRuns(runs: TavernRun[]): TavernRun[] {
         !runsWithChildren.has(run.id)
     )
     .sort(compareRunsNewestFirst);
+}
+
+export function latestFacilitatedRecovery(
+  runs: TavernRun[]
+): TavernFacilitatedRecovery | null {
+  const run = listRetryableRuns(runs).find(
+    (candidate) =>
+      candidate.mode === "facilitated" &&
+      candidate.speakerSteps.some(
+        (step) => step.status === "failed" || step.status === "blocked"
+      )
+  );
+  if (!run) return null;
+  return {
+    run,
+    completedCount: run.speakerSteps.filter((step) => step.status === "completed").length,
+    totalCount: run.speakerSteps.length,
+    unfinishedPersonaIds: run.speakerSteps
+      .filter((step) => step.status === "failed" || step.status === "blocked")
+      .map((step) => step.personaId),
+  };
 }
 
 export function latestTavernMessage(messages: TavernMessage[]): TavernMessage | null {

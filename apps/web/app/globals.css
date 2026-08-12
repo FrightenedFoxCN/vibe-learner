@@ -759,6 +759,27 @@ textarea {
   line-height: 1.45;
 }
 
+.tavern-recovery-callout {
+  margin: 12px 13px 0;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 58%, var(--bg));
+  display: grid;
+  gap: 9px;
+}
+
+.tavern-recovery-callout strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.tavern-recovery-callout p {
+  margin: 3px 0 0;
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
 .tavern-composer-label {
   margin: 12px 13px 0;
 }

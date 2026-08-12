@@ -74,7 +74,7 @@ Room update, turn start, and destructive deletion compete through the same datab
 
 `continue` must anchor the current latest message and does not fabricate a visible user/director message. Each persona still speaks at most once per run. The first reply points to the user/continue anchor; every later reply points to the preceding committed persona message.
 
-The UI derives the mode from recipient selection. Internal scheduling details and raw harness codes remain folded under `Reliability Details` instead of becoming primary controls.
+The UI derives the mode from recipient selection. Internal scheduling details and raw harness codes remain folded under `Reliability Details`. The latest recoverable facilitated run in the loaded history is a primary action: `Interaction Composer` names the unfinished roles, explains that committed replies will not be regenerated, and starts the existing scoped child retry without using the current recipient selection.
 
 ## Browser Tavern Workspace
 
@@ -85,7 +85,7 @@ The UI derives the mode from recipient selection. Internal scheduling details an
 - `Tavern Setup Panel`: title, optional scene, 1–6 persona multi-select, and idempotent creation;
 - `Tavern Conversation Panel`: ordered user/director/persona/system transcript and backward paging;
 - `Participant Roster`: cast, target selection, and per-persona generation state;
-- `Interaction Composer`: visible message, hidden next-round guidance, recipient preview, send/continue, and cancel-receipt controls;
+- `Interaction Composer`: visible message, hidden next-round guidance, recipient preview, send/continue, cancel-receipt controls, and a visible scoped-recovery callout for the latest eligible facilitated run;
 - `Reliability Details`: collapsed run/step/check evidence; raw provider/debug material belongs in the global Debug Overlay.
 
 One selected target starts a direct run; two to four targets start a facilitated run in server-owned display order. Guidance is carried as hidden orchestration context and is never appended as a visible director message. Continue anchors the latest visible message without fabricating a user turn.

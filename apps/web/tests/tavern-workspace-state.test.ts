@@ -10,6 +10,7 @@ import type {
 
 import {
   isTavernRoomStateAtLeast,
+  latestFacilitatedRecovery,
   listRetryableRuns,
   mergeTavernMessages,
   reconcileTavernRuns,
@@ -111,6 +112,56 @@ test("a child retry suppresses retry on its parent", () => {
     ["child"]
   );
 });
+
+test("latest facilitated recovery exposes only unfinished actors", () => {
+  const recovery = latestFacilitatedRecovery([
+    {
+      ...run("facilitated", "partial"),
+      mode: "facilitated",
+      scheduledParticipantIds: ["persona-1", "persona-2", "persona-3"],
+      speakerSteps: [
+        speakerStep("facilitated", 0, "persona-1", "completed"),
+        speakerStep("facilitated", 1, "persona-2", "failed"),
+        speakerStep("facilitated", 2, "persona-3", "blocked"),
+      ],
+    },
+  ]);
+  assert.equal(recovery?.run.id, "facilitated");
+  assert.equal(recovery?.completedCount, 1);
+  assert.equal(recovery?.totalCount, 3);
+  assert.deepEqual(recovery?.unfinishedPersonaIds, ["persona-2", "persona-3"]);
+});
+
+test("facilitated recovery hides ineligible and already retried runs", () => {
+  const parent = {
+    ...run("parent", "partial"),
+    mode: "facilitated" as const,
+    speakerSteps: [speakerStep("parent", 0, "persona-1", "failed")],
+  };
+  assert.equal(latestFacilitatedRecovery([run("direct", "failed")]), null);
+  assert.equal(latestFacilitatedRecovery([{ ...parent, status: "completed" }]), null);
+  assert.equal(latestFacilitatedRecovery([{ ...parent, status: "pending" }]), null);
+  assert.equal(
+    latestFacilitatedRecovery([parent, run("child", "completed", "parent")]),
+    null
+  );
+});
+
+function speakerStep(
+  runId: string,
+  stepIndex: number,
+  personaId: string,
+  status: TavernRun["speakerSteps"][number]["status"]
+): TavernRun["speakerSteps"][number] {
+  return {
+    runId,
+    stepIndex,
+    personaId,
+    participantPromptHash: `hash-${personaId}`,
+    status,
+    claimCount: status === "blocked" ? 0 : 1,
+  };
+}
 
 test("stale room results cannot move revision or sequence backwards", () => {
   const current = roomState(4, 12);

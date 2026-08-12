@@ -14,6 +14,8 @@
 - [ ] `SCH-TAV-001` 决定并实现 run/message/step 软引用策略；验收：`run_id`、`message_id`、`reply_to_message_id` 要么具备可迁移外键与插入顺序，要么由统一 invariant scanner 检测并阻断破损图。
 - [ ] `UX-001` Tavern Workspace 发布体验 tracking epic（依赖 `TAV-004`、`UX-TAV-REC-001`、`UX-TAV-MOBILE-001`、`UX-TAV-STATE-001`、`UX-TAV-DRAFT-001`、`UX-EMPTY-001`、`TAV-UX-COPY-001`）；已实现 1–6 人设置、单聊/多人互动、tail 翻页、刷新恢复、IME 事件 fencing、strict decode 与 390px 无横向溢出。仅在全部子项通过且非实现智能体完成无 Persona/无 Room/已有 Room、390×844、真实 IME、键盘/触控、焦点顺序和无横向溢出复验后关闭；本项不重复承载子项实现。
 - [ ] `UX-TAV-REC-001` 建立 Tavern run 派生恢复视图（依赖 `TAV-RUN-VIEW-001`、`TAV-ERROR-001`、`TAV-RECOVERY-CLIENT-001`）；验收：父 run 保持 immutable partial，但存在 completed child 时显示“已由重试恢复”，主界面在 Header/Composer 附近说明已保存消息、未完成角色和恢复动作，不再次暴露已完成链的可重试操作。
+- [x] `UX-TAV-REC-COMPOSER-001` 将当前历史窗口内最新可恢复的 facilitated run 提升到 Interaction Composer 常显；横幅列出已完成数和 failed/blocked 角色，明确已保存回应不会重复生成，复用 scoped child retry，重试期间禁用新互动且不清空消息/引导草稿或改变当前目标选择。完整跨分页 retry-chain 权威视图和结构化 `502` recovery 仍由 `UX-TAV-REC-001` 的依赖项完成。
+- [ ] `UX-TAV-REC-BADGE-001` 让 Reliability Details 同时显示“待恢复项”而不只显示总 run 数；验收：badge 与当前可恢复 leaf 数一致，已创建 child 或已完成链不继续计数。
 - [ ] `UX-TAV-MOBILE-001` 重排 Tavern 移动端首要任务；验收：空房先显示 Setup/Session，已有房的 Interaction Composer 在首屏或固定可达，“新建酒馆”滚动并聚焦标题，390×844 键盘/触控路径不依赖“左侧”空间描述。
 - [ ] `UX-TAV-STATE-001` 对齐 Participant Roster 与真实 speaker step；验收：当前 claimed actor 显示 generating，尚未轮到者显示 pending，completed/failed/blocked/canceled 不被前端 optimistic state 覆盖，direct/facilitated/partial/resume fixtures 通过。
 - [ ] `TAV-RECOVERY-CLIENT-001` 前端 API client 自动执行 Tavern `502` 同 key 终态恢复（依赖 `TAV-ERROR-001`）；验收：保留原 revision/key，按结构化 recovery action 和 `run.status` 归一化 completed/partial/failed，不把 HTTP 200 等同成功完成。
