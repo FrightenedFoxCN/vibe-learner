@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": false,
+    "outDir": "./dist-test",
+    "rootDir": "./src"
+  },
+  "include": ["src/harness.ts"],
+  "exclude": ["tests/**/*.ts"]
+}

@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from app.models.harness import (
     HARNESS_CONTEXT_CONTRACT_V3,
     HARNESS_CONTEXT_DIGEST_CONTRACT_V1,
-    HARNESS_COMPONENT_CONTRACTS,
+    HARNESS_COMPONENT_REGISTRATIONS,
     HarnessArtifactType,
     HarnessComponentName,
     HarnessContextEnvelopeV3,
@@ -22,9 +22,9 @@ from app.models.harness import (
     HarnessSnapshotRefV3,
     HarnessStage,
     HarnessWorkflow,
-    HARNESS_STAGE_COMPONENT_NAMES,
     canonical_harness_context_digest,
     canonical_harness_digest,
+    registered_harness_stage_component_contracts,
     require_versioned_harness_contract,
 )
 
@@ -76,12 +76,8 @@ def build_harness_context(
 ) -> HarnessContextEnvelopeV3:
     """Build a trace-safe context from registered stage components."""
 
-    component_keys = HARNESS_STAGE_COMPONENT_NAMES.get((workflow, stage))
-    if component_keys is None:
-        raise ValueError("harness_stage_not_registered")
-    component_versions = sorted(
-        (HARNESS_COMPONENT_CONTRACTS[item].model_copy(deep=True) for item in component_keys),
-        key=lambda item: item.name,
+    component_versions = list(
+        registered_harness_stage_component_contracts(workflow, stage)
     )
     for contract in (
         input_contract,
@@ -141,13 +137,17 @@ def build_harness_context(
     return HarnessContextEnvelopeV3.model_validate(draft)
 
 
-def component_registry_snapshot() -> tuple[tuple[str, str, str], ...]:
+def component_registry_snapshot() -> tuple[tuple[str, str, str | None], ...]:
     """Expose immutable version evidence for golden tests and audits."""
 
     return tuple(
-        (key.value, contract.name, contract.version)
-        for key, contract in sorted(
-            HARNESS_COMPONENT_CONTRACTS.items(),
+        (
+            key.value,
+            registration.contract.name if registration.contract else key.value,
+            registration.contract.version if registration.contract else None,
+        )
+        for key, registration in sorted(
+            HARNESS_COMPONENT_REGISTRATIONS.items(),
             key=lambda item: item[0].value,
         )
     )

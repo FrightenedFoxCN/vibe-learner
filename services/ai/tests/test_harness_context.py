@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from dataclasses import replace
 from decimal import Decimal
 from enum import Enum
 import json
@@ -19,6 +20,8 @@ from pydantic import (
 )
 
 from app.models.harness import (
+    HARNESS_COMPONENT_REGISTRATIONS,
+    HARNESS_OPERATION_STAGE_REGISTRATIONS,
     HARNESS_RESOURCE_EVIDENCE_POLICIES,
     HarnessArtifactType,
     HarnessCommitEvidencePolicy,
@@ -41,8 +44,10 @@ from app.models.harness import (
     canonical_harness_context_digest,
     canonical_harness_commit_digest,
     harness_resource_evidence_policy_registry_snapshot,
+    harness_operation_stage_registry_snapshot,
     validate_harness_trace,
     validate_harness_resource_evidence_policy_registry,
+    validate_harness_operation_stage_registry,
 )
 from app.services.harness_context import (
     build_harness_context,
@@ -60,6 +65,14 @@ POLICY_FIXTURE = (
     / "fixtures"
     / "harness"
     / "resource-evidence-policies-v1.json"
+)
+STAGE_FIXTURE = (
+    Path(__file__).parents[3]
+    / "packages"
+    / "shared"
+    / "fixtures"
+    / "harness"
+    / "operation-stage-registry-v1.json"
 )
 OPERATION_ID = "harness-operation-0123456789abcdef0123456789abcdef"
 
@@ -408,7 +421,10 @@ class HarnessContextV3Tests(unittest.TestCase):
                     participant_ids=[], last_sequence=0, prompt_hashes=[]
                 ),
             )
-        with self.assertRaisesRegex(ValueError, "harness_contract_version_not_adopted"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_contract_version_not_adopted",
+        ):
             build_snapshot_ref(
                 artifact_type=HarnessArtifactType.TAVERN_ROOM_SNAPSHOT,
                 artifact_id="snapshot-1",
@@ -458,7 +474,10 @@ class HarnessContextV3Tests(unittest.TestCase):
         self.assertRegex(new_harness_operation_id(), r"^harness-operation-[0-9a-f]{32}$")
 
     def test_pending_component_registry_blocks_unadopted_workflow(self) -> None:
-        with self.assertRaisesRegex(ValueError, "harness_contract_version_not_adopted"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_stage_component_version_unregistered",
+        ):
             build_harness_context(
                 workflow=HarnessWorkflow.PLANNING,
                 stage=HarnessStage.PLAN_GENERATION,
@@ -469,6 +488,77 @@ class HarnessContextV3Tests(unittest.TestCase):
                 ),
                 input_manifest=_input_manifest(),
                 subject_refs=[],
+            )
+
+    def test_operation_stage_registry_matches_shared_golden(self) -> None:
+        expected = json.loads(STAGE_FIXTURE.read_text(encoding="utf-8"))
+        self.assertEqual(harness_operation_stage_registry_snapshot(), expected)
+        self.assertEqual(
+            set(HARNESS_OPERATION_STAGE_REGISTRATIONS),
+            {
+                (registration.workflow, registration.stage)
+                for registration in HARNESS_OPERATION_STAGE_REGISTRATIONS.values()
+            },
+        )
+        self.assertTrue(
+            {
+                HarnessStage.PAGE_EXTRACTION,
+                HarnessStage.SECTION_DETECTION,
+                HarnessStage.CHUNK_BUILDING,
+                HarnessStage.PLANNING_TOOL_EXECUTION,
+            }.issubset(
+                {
+                    registration.stage
+                    for registration in HARNESS_OPERATION_STAGE_REGISTRATIONS.values()
+                }
+            )
+        )
+        self.assertNotIn("plan_projection", {item.value for item in HarnessStage})
+
+    def test_operation_stage_registry_fails_closed_on_drift(self) -> None:
+        missing_component = dict(HARNESS_COMPONENT_REGISTRATIONS)
+        missing_component.pop(next(iter(missing_component)))
+        with self.assertRaisesRegex(ValueError, "harness_component_registry_incomplete"):
+            validate_harness_operation_stage_registry(
+                missing_component,
+                HARNESS_OPERATION_STAGE_REGISTRATIONS,
+            )
+
+        missing_stage = dict(HARNESS_OPERATION_STAGE_REGISTRATIONS)
+        missing_stage.pop(next(iter(missing_stage)))
+        with self.assertRaisesRegex(ValueError, "harness_stage_registry_incomplete"):
+            validate_harness_operation_stage_registry(
+                HARNESS_COMPONENT_REGISTRATIONS,
+                missing_stage,
+            )
+
+        unsorted_stage = dict(HARNESS_OPERATION_STAGE_REGISTRATIONS)
+        planning_key = (
+            HarnessWorkflow.PLANNING,
+            HarnessStage.PLANNING_TOOL_EXECUTION,
+        )
+        unsorted_stage[planning_key] = replace(
+            unsorted_stage[planning_key],
+            component_names=tuple(
+                reversed(unsorted_stage[planning_key].component_names)
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "harness_stage_components_not_sorted"):
+            validate_harness_operation_stage_registry(
+                HARNESS_COMPONENT_REGISTRATIONS,
+                unsorted_stage,
+            )
+
+        duplicate_eval = dict(HARNESS_OPERATION_STAGE_REGISTRATIONS)
+        first_key, second_key = list(duplicate_eval)[:2]
+        duplicate_eval[second_key] = replace(
+            duplicate_eval[second_key],
+            eval_route=duplicate_eval[first_key].eval_route,
+        )
+        with self.assertRaisesRegex(ValueError, "harness_stage_eval_route_duplicate"):
+            validate_harness_operation_stage_registry(
+                HARNESS_COMPONENT_REGISTRATIONS,
+                duplicate_eval,
             )
 
     def test_v3_trace_fixture_binds_context_identity(self) -> None:

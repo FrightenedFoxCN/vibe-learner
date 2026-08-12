@@ -25,5 +25,6 @@ services/ai/data/*.json
 apps/desktop/src-tauri/gen
 apps/desktop/src-tauri/binaries
 apps/desktop/.bundle-resources
+packages/shared/dist-test
 services/ai/build
 **/log

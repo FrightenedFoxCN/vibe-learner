@@ -95,6 +95,25 @@ Python exposes snake_case persistence/wire models and is the canonical digest au
 
 `HarnessWorkflow`, `HarnessStage`, `HarnessResourceType`, and `HarnessArtifactType` are intentionally closed for v3. Adding a value requires the same atomic change to Python, TypeScript, the stage/component registry, frontend decoder routing, ownership table, and eval registry. V2's open string reference fields remain frozen for persisted compatibility.
 
+## Operation-stage ownership
+
+The shared operation-stage registry distinguishes business execution from lifecycle attempts and UI progress. Its `eval_route` is only a stable routing key until `HRN-EVAL-001` provides a runner.
+
+| Workflow / stage | Real boundary | Registered producer components | Adoption status |
+|---|---|---|---|
+| Document / `document_parse` | parent orchestration over extraction, OCR fallback, Section detection and chunks | `document_parser` | version deliberately unregistered; parent flow is not v3-adopted |
+| Document / `page_extraction` | whole-document page extraction and cleanup; OCR is a fallback/child workflow | `document_page_extractor` | algorithm contract registered; no production trace yet |
+| OCR / `ocr_page` | one page OCR attempt | `ocr_engine` | version deliberately unregistered |
+| Document / `section_detection` | TOC-first and heading-heuristic Section construction | `document_section_detector` | algorithm contract registered; no production trace yet |
+| Document / `chunk_building` | validated Sections plus page content to Chunk candidates | `document_chunk_builder` | algorithm contract registered; no production trace yet |
+| Study Unit / `study_unit_cleanup` | Sections/Chunks to ordered Study Unit proposal | `study_unit_cleaner` | version deliberately unregistered |
+| Planning / `plan_generation` | bounded context to Learning Plan proposal | `planning_prompt`, `planning_toolset` | prompt version deliberately unregistered |
+| Planning / `planning_tool_execution` | one allowed tool call to one typed result boundary | `planning_tool_runtime`, `planning_toolset` | boundary registered; strict argument decode still open |
+| Persona, Scene, Study Chat, Frontend Decode | existing broad generation/reply/decode boundaries | domain components | component versions deliberately unregistered |
+| Tavern / `actor_reply` | one scheduled persona proposal and its validation | prompt, persona compiler, scheduler | component versions registered; production trace remains legacy v1 |
+
+Do not add `plan_projection`, `actor_decode`, `atomic_commit`, or similar stages: those are attempt phases or commit evidence. Likewise stream event names are not Harness stages. A component algorithm contract is not the installed dependency/model version and does not by itself prove Harness adoption.
+
 ## Persistence migration rule
 
 Most legacy aggregate JSON payloads lack `schema_name`, `schema_version`, and migration provenance, and many Pydantic domain records currently ignore extra fields. Do not turn on `extra="forbid"` across all legacy records at once. Migrate one aggregate at a time:

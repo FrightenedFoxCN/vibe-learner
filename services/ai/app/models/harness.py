@@ -91,9 +91,13 @@ class HarnessWorkflow(StrEnum):
 
 class HarnessStage(StrEnum):
     DOCUMENT_PARSE = "document_parse"
+    PAGE_EXTRACTION = "page_extraction"
+    SECTION_DETECTION = "section_detection"
+    CHUNK_BUILDING = "chunk_building"
     OCR_PAGE = "ocr_page"
     STUDY_UNIT_CLEANUP = "study_unit_cleanup"
     PLAN_GENERATION = "plan_generation"
+    PLANNING_TOOL_EXECUTION = "planning_tool_execution"
     PERSONA_GENERATION = "persona_generation"
     SCENE_GENERATION = "scene_generation"
     STUDY_CHAT_REPLY = "study_chat_reply"
@@ -103,10 +107,14 @@ class HarnessStage(StrEnum):
 
 class HarnessComponentName(StrEnum):
     DOCUMENT_PARSER = "document_parser"
+    DOCUMENT_PAGE_EXTRACTOR = "document_page_extractor"
+    DOCUMENT_SECTION_DETECTOR = "document_section_detector"
+    DOCUMENT_CHUNK_BUILDER = "document_chunk_builder"
     OCR_ENGINE = "ocr_engine"
     STUDY_UNIT_CLEANER = "study_unit_cleaner"
     PLANNING_PROMPT = "planning_prompt"
     PLANNING_TOOLSET = "planning_toolset"
+    PLANNING_TOOL_RUNTIME = "planning_tool_runtime"
     PERSONA_COMPILER = "persona_compiler"
     SCENE_COMPILER = "scene_compiler"
     STUDY_CHAT_PROMPT = "study_chat_prompt"
@@ -115,44 +123,6 @@ class HarnessComponentName(StrEnum):
     TAVERN_ACTOR_PROMPT = "tavern_actor_prompt"
     TAVERN_SCHEDULER = "tavern_scheduler"
     FRONTEND_DECODER = "frontend_decoder"
-
-
-HARNESS_STAGE_COMPONENT_NAMES: dict[
-    tuple[HarnessWorkflow, HarnessStage],
-    tuple[HarnessComponentName, ...],
-] = {
-    (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.DOCUMENT_PARSE): (
-        HarnessComponentName.DOCUMENT_PARSER,
-    ),
-    (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE): (
-        HarnessComponentName.OCR_ENGINE,
-    ),
-    (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP): (
-        HarnessComponentName.STUDY_UNIT_CLEANER,
-    ),
-    (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION): (
-        HarnessComponentName.PLANNING_PROMPT,
-        HarnessComponentName.PLANNING_TOOLSET,
-    ),
-    (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION): (
-        HarnessComponentName.PERSONA_COMPILER,
-    ),
-    (HarnessWorkflow.SCENE, HarnessStage.SCENE_GENERATION): (
-        HarnessComponentName.SCENE_COMPILER,
-    ),
-    (HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY): (
-        HarnessComponentName.STUDY_CHAT_PROMPT,
-        HarnessComponentName.STUDY_CHAT_TOOLSET,
-    ),
-    (HarnessWorkflow.TAVERN, HarnessStage.TAVERN_ACTOR_REPLY): (
-        HarnessComponentName.TAVERN_ACTOR_PROMPT,
-        HarnessComponentName.TAVERN_PERSONA_COMPILER,
-        HarnessComponentName.TAVERN_SCHEDULER,
-    ),
-    (HarnessWorkflow.FRONTEND_DECODE, HarnessStage.FRONTEND_RESPONSE_DECODE): (
-        HarnessComponentName.FRONTEND_DECODER,
-    ),
-}
 
 
 class HarnessDigestAlgorithm(StrEnum):
@@ -266,62 +236,382 @@ class HarnessContractRef(HarnessV2Model):
     version: str = Field(min_length=1, max_length=160)
 
 
-HARNESS_COMPONENT_CONTRACTS = MappingProxyType(
+@dataclass(frozen=True, slots=True)
+class HarnessComponentRegistration:
+    component_name: HarnessComponentName
+    owner_module: str
+    contract: HarnessContractRef | None
+
+
+@dataclass(frozen=True, slots=True)
+class HarnessOperationStageRegistration:
+    workflow: HarnessWorkflow
+    stage: HarnessStage
+    owner_module: str
+    component_names: tuple[HarnessComponentName, ...]
+    eval_route: str
+
+
+HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
     {
-        HarnessComponentName.DOCUMENT_PARSER: HarnessContractRef(
-            name="document_parser",
-            version="pending-document-parser-version-v1",
+        HarnessComponentName.DOCUMENT_PARSER: HarnessComponentRegistration(
+            HarnessComponentName.DOCUMENT_PARSER,
+            "app.services.document_parser",
+            None,
         ),
-        HarnessComponentName.OCR_ENGINE: HarnessContractRef(
-            name="ocr_engine",
-            version="pending-ocr-engine-version-v1",
+        HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR: HarnessComponentRegistration(
+            HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR,
+            "app.services.document_parser",
+            HarnessContractRef(
+                name="document_page_extractor",
+                version="document-page-extractor-v1",
+            ),
         ),
-        HarnessComponentName.STUDY_UNIT_CLEANER: HarnessContractRef(
-            name="study_unit_cleaner",
-            version="pending-study-unit-cleaner-version-v1",
+        HarnessComponentName.DOCUMENT_SECTION_DETECTOR: HarnessComponentRegistration(
+            HarnessComponentName.DOCUMENT_SECTION_DETECTOR,
+            "app.services.document_parser",
+            HarnessContractRef(
+                name="document_section_detector",
+                version="document-section-detector-v1",
+            ),
         ),
-        HarnessComponentName.PLANNING_PROMPT: HarnessContractRef(
-            name="planning_prompt",
-            version="pending-planning-prompt-version-v1",
+        HarnessComponentName.DOCUMENT_CHUNK_BUILDER: HarnessComponentRegistration(
+            HarnessComponentName.DOCUMENT_CHUNK_BUILDER,
+            "app.services.document_parser",
+            HarnessContractRef(
+                name="document_chunk_builder",
+                version="document-chunk-builder-v1",
+            ),
         ),
-        HarnessComponentName.PLANNING_TOOLSET: HarnessContractRef(
-            name="planning_toolset",
-            version="pending-planning-toolset-version-v1",
+        HarnessComponentName.OCR_ENGINE: HarnessComponentRegistration(
+            HarnessComponentName.OCR_ENGINE,
+            "app.services.ocr_engine",
+            None,
         ),
-        HarnessComponentName.PERSONA_COMPILER: HarnessContractRef(
-            name="persona_compiler",
-            version="pending-persona-compiler-version-v1",
+        HarnessComponentName.STUDY_UNIT_CLEANER: HarnessComponentRegistration(
+            HarnessComponentName.STUDY_UNIT_CLEANER,
+            "app.services.study_arrangement",
+            None,
         ),
-        HarnessComponentName.SCENE_COMPILER: HarnessContractRef(
-            name="scene_compiler",
-            version="pending-scene-compiler-version-v1",
+        HarnessComponentName.PLANNING_PROMPT: HarnessComponentRegistration(
+            HarnessComponentName.PLANNING_PROMPT,
+            "app.services.plan_prompt",
+            None,
         ),
-        HarnessComponentName.STUDY_CHAT_PROMPT: HarnessContractRef(
-            name="study_chat_prompt",
-            version="pending-study-chat-prompt-version-v1",
+        HarnessComponentName.PLANNING_TOOLSET: HarnessComponentRegistration(
+            HarnessComponentName.PLANNING_TOOLSET,
+            "app.services.plan_tool_runtime",
+            HarnessContractRef(
+                name="planning_toolset",
+                version="planning-toolset-v1",
+            ),
         ),
-        HarnessComponentName.STUDY_CHAT_TOOLSET: HarnessContractRef(
-            name="study_chat_toolset",
-            version="pending-study-chat-toolset-version-v1",
+        HarnessComponentName.PLANNING_TOOL_RUNTIME: HarnessComponentRegistration(
+            HarnessComponentName.PLANNING_TOOL_RUNTIME,
+            "app.services.plan_tool_runtime",
+            HarnessContractRef(
+                name="planning_tool_runtime",
+                version="planning-tool-runtime-v1",
+            ),
         ),
-        HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessContractRef(
-            name="tavern_persona_compiler",
-            version="tavern-persona-compiler-v1",
+        HarnessComponentName.PERSONA_COMPILER: HarnessComponentRegistration(
+            HarnessComponentName.PERSONA_COMPILER,
+            "app.services.persona_cards",
+            None,
         ),
-        HarnessComponentName.TAVERN_ACTOR_PROMPT: HarnessContractRef(
-            name="tavern_actor_prompt",
-            version="tavern-actor-v1",
+        HarnessComponentName.SCENE_COMPILER: HarnessComponentRegistration(
+            HarnessComponentName.SCENE_COMPILER,
+            "app.services.scene_setup",
+            None,
         ),
-        HarnessComponentName.TAVERN_SCHEDULER: HarnessContractRef(
-            name="tavern_scheduler",
-            version="tavern-schedule-v1",
+        HarnessComponentName.STUDY_CHAT_PROMPT: HarnessComponentRegistration(
+            HarnessComponentName.STUDY_CHAT_PROMPT,
+            "app.services.study_session_prompt",
+            None,
         ),
-        HarnessComponentName.FRONTEND_DECODER: HarnessContractRef(
-            name="frontend_decoder",
-            version="pending-frontend-decoder-version-v1",
+        HarnessComponentName.STUDY_CHAT_TOOLSET: HarnessComponentRegistration(
+            HarnessComponentName.STUDY_CHAT_TOOLSET,
+            "app.services.study_session_chat_runtime",
+            None,
+        ),
+        HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessComponentRegistration(
+            HarnessComponentName.TAVERN_PERSONA_COMPILER,
+            "app.services.tavern_harness",
+            HarnessContractRef(
+                name="tavern_persona_compiler",
+                version="tavern-persona-compiler-v1",
+            ),
+        ),
+        HarnessComponentName.TAVERN_ACTOR_PROMPT: HarnessComponentRegistration(
+            HarnessComponentName.TAVERN_ACTOR_PROMPT,
+            "app.services.tavern_prompt",
+            HarnessContractRef(
+                name="tavern_actor_prompt",
+                version="tavern-actor-v1",
+            ),
+        ),
+        HarnessComponentName.TAVERN_SCHEDULER: HarnessComponentRegistration(
+            HarnessComponentName.TAVERN_SCHEDULER,
+            "app.services.tavern",
+            HarnessContractRef(
+                name="tavern_scheduler",
+                version="tavern-schedule-v1",
+            ),
+        ),
+        HarnessComponentName.FRONTEND_DECODER: HarnessComponentRegistration(
+            HarnessComponentName.FRONTEND_DECODER,
+            "apps.web.lib.api",
+            None,
         ),
     }
 )
+
+
+HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
+    {
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.DOCUMENT_PARSE): HarnessOperationStageRegistration(
+            HarnessWorkflow.DOCUMENT_PARSE,
+            HarnessStage.DOCUMENT_PARSE,
+            "app.services.document_parser",
+            (HarnessComponentName.DOCUMENT_PARSER,),
+            "document.parse",
+        ),
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.PAGE_EXTRACTION): HarnessOperationStageRegistration(
+            HarnessWorkflow.DOCUMENT_PARSE,
+            HarnessStage.PAGE_EXTRACTION,
+            "app.services.document_parser",
+            (HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR,),
+            "document.page_extraction",
+        ),
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.SECTION_DETECTION): HarnessOperationStageRegistration(
+            HarnessWorkflow.DOCUMENT_PARSE,
+            HarnessStage.SECTION_DETECTION,
+            "app.services.document_parser",
+            (HarnessComponentName.DOCUMENT_SECTION_DETECTOR,),
+            "document.section_detection",
+        ),
+        (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.CHUNK_BUILDING): HarnessOperationStageRegistration(
+            HarnessWorkflow.DOCUMENT_PARSE,
+            HarnessStage.CHUNK_BUILDING,
+            "app.services.document_parser",
+            (HarnessComponentName.DOCUMENT_CHUNK_BUILDER,),
+            "document.chunk_building",
+        ),
+        (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE): HarnessOperationStageRegistration(
+            HarnessWorkflow.OCR,
+            HarnessStage.OCR_PAGE,
+            "app.services.ocr_engine",
+            (HarnessComponentName.OCR_ENGINE,),
+            "document.ocr_page",
+        ),
+        (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP): HarnessOperationStageRegistration(
+            HarnessWorkflow.STUDY_UNIT_CLEANUP,
+            HarnessStage.STUDY_UNIT_CLEANUP,
+            "app.services.study_arrangement",
+            (HarnessComponentName.STUDY_UNIT_CLEANER,),
+            "document.study_unit_cleanup",
+        ),
+        (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION): HarnessOperationStageRegistration(
+            HarnessWorkflow.PLANNING,
+            HarnessStage.PLAN_GENERATION,
+            "app.services.model_provider",
+            (
+                HarnessComponentName.PLANNING_PROMPT,
+                HarnessComponentName.PLANNING_TOOLSET,
+            ),
+            "planning.plan_generation",
+        ),
+        (HarnessWorkflow.PLANNING, HarnessStage.PLANNING_TOOL_EXECUTION): HarnessOperationStageRegistration(
+            HarnessWorkflow.PLANNING,
+            HarnessStage.PLANNING_TOOL_EXECUTION,
+            "app.services.plan_tool_runtime",
+            (
+                HarnessComponentName.PLANNING_TOOL_RUNTIME,
+                HarnessComponentName.PLANNING_TOOLSET,
+            ),
+            "planning.tool_execution",
+        ),
+        (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION): HarnessOperationStageRegistration(
+            HarnessWorkflow.PERSONA,
+            HarnessStage.PERSONA_GENERATION,
+            "app.services.persona_cards",
+            (HarnessComponentName.PERSONA_COMPILER,),
+            "persona.generation",
+        ),
+        (HarnessWorkflow.SCENE, HarnessStage.SCENE_GENERATION): HarnessOperationStageRegistration(
+            HarnessWorkflow.SCENE,
+            HarnessStage.SCENE_GENERATION,
+            "app.services.scene_setup",
+            (HarnessComponentName.SCENE_COMPILER,),
+            "scene.generation",
+        ),
+        (HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY): HarnessOperationStageRegistration(
+            HarnessWorkflow.STUDY_CHAT,
+            HarnessStage.STUDY_CHAT_REPLY,
+            "app.services.study_sessions",
+            (
+                HarnessComponentName.STUDY_CHAT_PROMPT,
+                HarnessComponentName.STUDY_CHAT_TOOLSET,
+            ),
+            "study_chat.reply",
+        ),
+        (HarnessWorkflow.TAVERN, HarnessStage.TAVERN_ACTOR_REPLY): HarnessOperationStageRegistration(
+            HarnessWorkflow.TAVERN,
+            HarnessStage.TAVERN_ACTOR_REPLY,
+            "app.services.tavern",
+            (
+                HarnessComponentName.TAVERN_ACTOR_PROMPT,
+                HarnessComponentName.TAVERN_PERSONA_COMPILER,
+                HarnessComponentName.TAVERN_SCHEDULER,
+            ),
+            "tavern.actor_reply",
+        ),
+        (HarnessWorkflow.FRONTEND_DECODE, HarnessStage.FRONTEND_RESPONSE_DECODE): HarnessOperationStageRegistration(
+            HarnessWorkflow.FRONTEND_DECODE,
+            HarnessStage.FRONTEND_RESPONSE_DECODE,
+            "apps.web.lib.api",
+            (HarnessComponentName.FRONTEND_DECODER,),
+            "frontend.response_decode",
+        ),
+    }
+)
+
+
+HARNESS_STAGE_COMPONENT_NAMES = MappingProxyType(
+    {
+        key: registration.component_names
+        for key, registration in HARNESS_OPERATION_STAGE_REGISTRATIONS.items()
+    }
+)
+
+
+HARNESS_COMPONENT_CONTRACTS = MappingProxyType(
+    {
+        name: registration.contract
+        for name, registration in HARNESS_COMPONENT_REGISTRATIONS.items()
+        if registration.contract is not None
+    }
+)
+
+
+def registered_harness_stage_component_contracts(
+    workflow: HarnessWorkflow,
+    stage: HarnessStage,
+) -> tuple[HarnessContractRef, ...]:
+    registration = HARNESS_OPERATION_STAGE_REGISTRATIONS.get((workflow, stage))
+    if registration is None:
+        raise ValueError("harness_stage_not_registered")
+    contracts: list[HarnessContractRef] = []
+    for component_name in registration.component_names:
+        component = HARNESS_COMPONENT_REGISTRATIONS.get(component_name)
+        if component is None:
+            raise ValueError("harness_stage_component_not_registered")
+        if component.contract is None:
+            raise ValueError("harness_stage_component_version_unregistered")
+        contracts.append(component.contract.model_copy(deep=True))
+    return tuple(sorted(contracts, key=lambda item: item.name))
+
+
+def validate_harness_operation_stage_registry(
+    component_registry: Mapping[object, object],
+    stage_registry: Mapping[object, object],
+) -> None:
+    if set(component_registry) != set(HarnessComponentName):
+        raise ValueError("harness_component_registry_incomplete")
+    for key, registration in component_registry.items():
+        if not isinstance(key, HarnessComponentName) or not isinstance(
+            registration, HarnessComponentRegistration
+        ):
+            raise ValueError("harness_component_registry_invalid")
+        if registration.component_name != key:
+            raise ValueError("harness_component_registry_key_mismatch")
+        if not re.fullmatch(r"[A-Za-z0-9_.]+", registration.owner_module):
+            raise ValueError("harness_component_owner_module_invalid")
+        if registration.contract is not None:
+            require_versioned_harness_contract(registration.contract)
+            if registration.contract.name != key.value:
+                raise ValueError("harness_component_contract_name_mismatch")
+
+    if len(stage_registry) != len(HarnessStage):
+        raise ValueError("harness_stage_registry_incomplete")
+    stages: set[HarnessStage] = set()
+    workflows: set[HarnessWorkflow] = set()
+    eval_routes: set[str] = set()
+    for key, registration in stage_registry.items():
+        if (
+            not isinstance(key, tuple)
+            or len(key) != 2
+            or not isinstance(registration, HarnessOperationStageRegistration)
+            or key != (registration.workflow, registration.stage)
+        ):
+            raise ValueError("harness_stage_registry_invalid")
+        if registration.stage in stages:
+            raise ValueError("harness_stage_registry_stage_duplicate")
+        stages.add(registration.stage)
+        workflows.add(registration.workflow)
+        component_names = tuple(item.value for item in registration.component_names)
+        if not component_names:
+            raise ValueError("harness_stage_component_set_empty")
+        if len(component_names) != len(set(component_names)):
+            raise ValueError("harness_stage_component_duplicate")
+        if component_names != tuple(sorted(component_names)):
+            raise ValueError("harness_stage_components_not_sorted")
+        if any(item not in component_registry for item in registration.component_names):
+            raise ValueError("harness_stage_component_not_registered")
+        if not re.fullmatch(r"[A-Za-z0-9_.]+", registration.owner_module):
+            raise ValueError("harness_stage_owner_module_invalid")
+        if not re.fullmatch(
+            r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+",
+            registration.eval_route,
+        ):
+            raise ValueError("harness_stage_eval_route_invalid")
+        if registration.eval_route in eval_routes:
+            raise ValueError("harness_stage_eval_route_duplicate")
+        eval_routes.add(registration.eval_route)
+
+    if stages != set(HarnessStage):
+        raise ValueError("harness_stage_registry_incomplete")
+    if workflows != set(HarnessWorkflow):
+        raise ValueError("harness_stage_workflow_unrepresented")
+    if {item.value for item in HarnessStage} & {
+        item.value for item in HarnessAttemptPhase
+    }:
+        raise ValueError("harness_stage_attempt_phase_overlap")
+
+
+def harness_operation_stage_registry_snapshot() -> dict[str, object]:
+    return {
+        "schema_name": "HarnessOperationStageRegistry",
+        "schema_version": "harness-operation-stage-registry-v1",
+        "components": [
+            {
+                "component_name": name.value,
+                "owner_module": registration.owner_module,
+                "contract": (
+                    registration.contract.model_dump(mode="json", exclude_none=False)
+                    if registration.contract is not None
+                    else None
+                ),
+            }
+            for name, registration in sorted(
+                HARNESS_COMPONENT_REGISTRATIONS.items(),
+                key=lambda item: item[0].value,
+            )
+        ],
+        "stages": [
+            {
+                "workflow": registration.workflow.value,
+                "stage": registration.stage.value,
+                "owner_module": registration.owner_module,
+                "component_names": [item.value for item in registration.component_names],
+                "eval_route": registration.eval_route,
+            }
+            for _, registration in sorted(
+                HARNESS_OPERATION_STAGE_REGISTRATIONS.items(),
+                key=lambda item: (item[0][0].value, item[0][1].value),
+            )
+        ],
+    }
 
 
 class HarnessResourceRef(HarnessV2Model):
@@ -731,10 +1021,15 @@ class HarnessContextEnvelopeV3(HarnessV2Model):
             raise ValueError("harness_context_stage_not_registered")
         if component_names != sorted(item.value for item in required_components):
             raise ValueError("harness_context_component_set_mismatch")
-        expected_component_versions = sorted(
-            (HARNESS_COMPONENT_CONTRACTS[item] for item in required_components),
-            key=lambda item: item.name,
-        )
+        try:
+            expected_component_versions = list(
+                registered_harness_stage_component_contracts(
+                    self.workflow,
+                    self.stage,
+                )
+            )
+        except ValueError as error:
+            raise ValueError(str(error)) from error
         if self.component_versions != expected_component_versions:
             raise ValueError("harness_context_component_version_mismatch")
 
@@ -1347,6 +1642,12 @@ def require_versioned_harness_contract(contract: HarnessContractRef) -> None:
         raise ValueError("harness_contract_token_invalid")
     if _is_placeholder_version(contract.version):
         raise ValueError("harness_contract_version_not_adopted")
+
+
+validate_harness_operation_stage_registry(
+    HARNESS_COMPONENT_REGISTRATIONS,
+    HARNESS_OPERATION_STAGE_REGISTRATIONS,
+)
 
 
 def canonical_harness_commit_digest(

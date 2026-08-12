@@ -1,0 +1,38 @@
+{
+  "schema_name": "HarnessOperationStageRegistry",
+  "schema_version": "harness-operation-stage-registry-v1",
+  "components": [
+    {"component_name":"document_chunk_builder","owner_module":"app.services.document_parser","contract":{"name":"document_chunk_builder","version":"document-chunk-builder-v1"}},
+    {"component_name":"document_page_extractor","owner_module":"app.services.document_parser","contract":{"name":"document_page_extractor","version":"document-page-extractor-v1"}},
+    {"component_name":"document_parser","owner_module":"app.services.document_parser","contract":null},
+    {"component_name":"document_section_detector","owner_module":"app.services.document_parser","contract":{"name":"document_section_detector","version":"document-section-detector-v1"}},
+    {"component_name":"frontend_decoder","owner_module":"apps.web.lib.api","contract":null},
+    {"component_name":"ocr_engine","owner_module":"app.services.ocr_engine","contract":null},
+    {"component_name":"persona_compiler","owner_module":"app.services.persona_cards","contract":null},
+    {"component_name":"planning_prompt","owner_module":"app.services.plan_prompt","contract":null},
+    {"component_name":"planning_tool_runtime","owner_module":"app.services.plan_tool_runtime","contract":{"name":"planning_tool_runtime","version":"planning-tool-runtime-v1"}},
+    {"component_name":"planning_toolset","owner_module":"app.services.plan_tool_runtime","contract":{"name":"planning_toolset","version":"planning-toolset-v1"}},
+    {"component_name":"scene_compiler","owner_module":"app.services.scene_setup","contract":null},
+    {"component_name":"study_chat_prompt","owner_module":"app.services.study_session_prompt","contract":null},
+    {"component_name":"study_chat_toolset","owner_module":"app.services.study_session_chat_runtime","contract":null},
+    {"component_name":"study_unit_cleaner","owner_module":"app.services.study_arrangement","contract":null},
+    {"component_name":"tavern_actor_prompt","owner_module":"app.services.tavern_prompt","contract":{"name":"tavern_actor_prompt","version":"tavern-actor-v1"}},
+    {"component_name":"tavern_persona_compiler","owner_module":"app.services.tavern_harness","contract":{"name":"tavern_persona_compiler","version":"tavern-persona-compiler-v1"}},
+    {"component_name":"tavern_scheduler","owner_module":"app.services.tavern","contract":{"name":"tavern_scheduler","version":"tavern-schedule-v1"}}
+  ],
+  "stages": [
+    {"workflow":"document_parse","stage":"chunk_building","owner_module":"app.services.document_parser","component_names":["document_chunk_builder"],"eval_route":"document.chunk_building"},
+    {"workflow":"document_parse","stage":"document_parse","owner_module":"app.services.document_parser","component_names":["document_parser"],"eval_route":"document.parse"},
+    {"workflow":"document_parse","stage":"page_extraction","owner_module":"app.services.document_parser","component_names":["document_page_extractor"],"eval_route":"document.page_extraction"},
+    {"workflow":"document_parse","stage":"section_detection","owner_module":"app.services.document_parser","component_names":["document_section_detector"],"eval_route":"document.section_detection"},
+    {"workflow":"frontend_decode","stage":"response_decode","owner_module":"apps.web.lib.api","component_names":["frontend_decoder"],"eval_route":"frontend.response_decode"},
+    {"workflow":"ocr","stage":"ocr_page","owner_module":"app.services.ocr_engine","component_names":["ocr_engine"],"eval_route":"document.ocr_page"},
+    {"workflow":"persona","stage":"persona_generation","owner_module":"app.services.persona_cards","component_names":["persona_compiler"],"eval_route":"persona.generation"},
+    {"workflow":"planning","stage":"plan_generation","owner_module":"app.services.model_provider","component_names":["planning_prompt","planning_toolset"],"eval_route":"planning.plan_generation"},
+    {"workflow":"planning","stage":"planning_tool_execution","owner_module":"app.services.plan_tool_runtime","component_names":["planning_tool_runtime","planning_toolset"],"eval_route":"planning.tool_execution"},
+    {"workflow":"scene","stage":"scene_generation","owner_module":"app.services.scene_setup","component_names":["scene_compiler"],"eval_route":"scene.generation"},
+    {"workflow":"study_chat","stage":"study_chat_reply","owner_module":"app.services.study_sessions","component_names":["study_chat_prompt","study_chat_toolset"],"eval_route":"study_chat.reply"},
+    {"workflow":"study_unit_cleanup","stage":"study_unit_cleanup","owner_module":"app.services.study_arrangement","component_names":["study_unit_cleaner"],"eval_route":"document.study_unit_cleanup"},
+    {"workflow":"tavern","stage":"actor_reply","owner_module":"app.services.tavern","component_names":["tavern_actor_prompt","tavern_persona_compiler","tavern_scheduler"],"eval_route":"tavern.actor_reply"}
+  ]
+}
