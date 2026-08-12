@@ -41,15 +41,12 @@
 
 These docs describe the repository as it exists now, not the aspirational long-term platform. When implementation changes, update the docs in the same change if the API, runtime flow, or data layout moved.
 
-## Recent Sync Notes (2026-04-10)
+## Current implementation notes (2026-08-12)
 
-- Study chat now uses per-section session routing and historical session re-entry in the frontend controller.
-- Study transcript is rendered in reverse chronological order (latest first).
-- Chat failures now surface as explicit UI errors with manual retry action instead of silent fallback assistant text.
-- Study chat model now supports page-range text/image reading tools and has dedicated chat tool config variables.
-- OpenAI-compatible provider truncation mitigation is documented via `OPENAI_CHAT_MAX_TOKENS` tuning.
-- Scene Setup and Scene Library contracts are documented in `scene-setup.md` and summarized in `api-reference.md`.
-- Scene-related 422 triage now centers on empty `scene_name` / `scene_summary` and missing required `scene_layers[].scope_label`.
-- `/plan` and `/study` now preserve page-local draft state across route changes, with serializable state restored from `sessionStorage` after same-tab refresh.
-- OpenAI-compatible model calls now retry transient transport failures inside `OpenAIModelProvider`, while keeping final public error categories stable and exposing retry count in plan stream errors.
-- Successful model recoveries are now carried as debug-only data (`model_recoveries` / plan trace recoveries) for plan, chat, persona, and scene generation flows; ordinary page UI still only surfaces unrecovered failures.
+- Debug is a global overlay; the old standalone `/debug` route no longer exists.
+- Structured persistence defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`; uploads, attachments, cache, and compatibility debug files remain local.
+- `/tavern` is active in both frontend and backend. It supports durable 1–6 persona rooms, direct and facilitated turns, append-only transcript paging, partial failure, scoped child retry, resume, and cancel fencing.
+- The Tavern browser boundary strictly decodes the current legacy-v1 wire and fences stale room/operation results. This does not complete `HRN-WEB-001` for Document, Plan, Persona, Scene, or Study responses.
+- Harness Engineering is repository-wide. V2/v3 contracts and the v3 context builder are schema foundations; no production workflow currently calls `build_harness_context`, and Tavern production evidence remains legacy v1 until `HRN-TAV-V3-001` is complete.
+- Snapshot digests are integrity references only. Protected replay needs the authorized artifact resolver, resource evidence policies, retention, and read-back verification tracked in `TODO.md`.
+- The highest current reliability risk is Study Chat: model tools can mutate session state before the final reply is strictly validated, and aggregate writes lack revision/CAS. Planning and Document processing also have multi-write commit boundaries that require staged or transactional migration.

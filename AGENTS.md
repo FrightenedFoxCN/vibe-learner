@@ -4,9 +4,9 @@
 
 This repository was rescanned from the root on 2026-08-12. The current workspace contains roughly 244 tracked and in-flight project files. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
 
-- `apps/web`: Next.js 16 app-router frontend for upload, debug, plan generation, plan history, and persona-aware study UI.
-- `services/ai`: FastAPI backend for document ingestion, OCR parsing, study-unit cleanup, planning, persona APIs, and debug traces.
-- `packages/shared`: shared TypeScript contracts used by the frontend.
+- `apps/web`: Next.js 16 app-router frontend for upload, global debug, planning, study, persona/scene editing, and Tavern interaction.
+- `services/ai`: FastAPI backend for document ingestion, OCR parsing, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and Harness evidence.
+- `packages/shared`: shared TypeScript contracts used by the frontend, including Tavern and Harness projections.
 - `apps/desktop`: Tauri 2 desktop shell, bundle scripts, icons, and Rust sidecar integration.
 - `docs`: project docs. Keep architecture and API reference here.
 
@@ -115,6 +115,18 @@ cd services/ai
 uv run python -m unittest tests.test_tavern_api tests.test_tavern_facilitated
 ```
 
+Tavern frontend state and strict-decoder tests:
+
+```bash
+npm run test:web:tavern
+```
+
+Run the optional live-backend decoder acceptance against a populated local service. The database must already contain a Tavern room with messages and at least one terminal run; without `TAVERN_TEST_API_URL` this case is intentionally skipped:
+
+```bash
+TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
+```
+
 ## Configuration Notes
 
 - Python work in this repo is `uv`-first. Do not assume a globally activated virtualenv.
@@ -148,13 +160,13 @@ Use the following standard names when discussing frontend pages and page blocks.
 - `/study` = `Study Dialog`
 - `/persona-spectrum` = `Persona Spectrum`
 - `/scene-setup` = `Scene Setup`
-- `/tavern` = `Tavern Workspace` (backend active; frontend page pending `UX-001`)
+- `/tavern` = `Tavern Workspace` (frontend and backend active)
 - Debug is a global overlay, not a standalone page.
 
 ### `Tavern Workspace` Block Names
 
 - `Tavern Header`: page title, active room title, create action, and status.
-- `Tavern Session Panel`: recent rooms, resume, archive, and room management.
+- `Tavern Session Panel`: recent rooms and room switching. Archive/restore is currently in `Tavern Header`; broader room management remains backlog work.
 - `Tavern Setup Panel`: persona multi-select, optional scene, title, and room creation.
 - `Tavern Conversation Panel`: ordered user/director/persona/system transcript.
 - `Participant Roster`: cast, target selection, and per-persona generation state.
@@ -193,7 +205,7 @@ Use the following standard names when discussing frontend pages and page blocks.
 
 - Use `Panel` for standalone content cards inside a page.
 - Use `Header` for the top banner area of a page.
-- Use `Sidebar` only for the left document list in `/debug`.
+- Use `Sidebar` only for the document picker inside the global `Document Debug Console` overlay.
 - Use `Shell` only for the persona/character container, not for ordinary study cards.
 - Use `Study Unit` for cleaned planning units, not `section`, unless referring to raw parser-detected `sections`.
 - Use `Section` for raw parse structure or cited textbook structure.
@@ -230,4 +242,6 @@ Use the following standard names when discussing frontend pages and page blocks.
 - Tool-enabled planning increases latency and timeout pressure on upstream model providers.
 - The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
 - Existing Study Session writes use aggregate read-modify-write and can lose concurrent turns; do not reuse that path for Tavern.
+- Most production workflows still predate the v3 Harness runtime. Do not infer repository-wide adoption from the Tavern v1 path or the v2/v3 schema fixtures.
+- Harness resource references need evidence policies; never pass a constant `revision=0` for a resource that has no authoritative revision.
 - `npm run lint:web` is currently invalid under Next.js 16 and is tracked as `QG-001`.

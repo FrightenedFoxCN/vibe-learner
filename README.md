@@ -25,6 +25,11 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 	- 发起 Study Session 并进行章节学习对话。
 	- 返回结构化 Character Event，驱动前端角色表现层。
 	- 支持引用信息与过程化反馈。
+- 酒馆互动（Tavern）
+	- 创建 1–6 位已保存人格参与的独立房间，可选择场景快照。
+	- 支持与单一角色自由对话，也可选择 2–4 位角色并用隐藏引导触发顺序互动。
+	- 对话消息追加写入并支持历史翻页；失败角色可定向重试，中断 run 可恢复或取消接收结果。
+	- 服务端决定角色顺序与消息身份，浏览器严格解码响应并在 Reliability Details 展示恢复摘要。
 - 人格色谱（Persona Spectrum）
 	- 通过人格插槽（世界观、经历、思维方式、教学法、鼓励与纠错策略等）构建教学人格。
 	- 支持关键词生成与长文本提取人格卡片，并可筛选后回填到当前人格草稿。
@@ -46,9 +51,10 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 
 ```text
 .
-├─ apps/web          # Next.js 16 前端：学习工作台、调试控制台、角色交互页面
-├─ services/ai       # FastAPI 后端：解析、规划、会话、角色事件与调试 API
-├─ packages/shared   # 前后端共享 TypeScript 协议与类型
+├─ apps/web          # Next.js 16 前端：学习、人格/场景、Tavern 与全局调试 Overlay
+├─ services/ai       # FastAPI 后端：解析、规划、会话、Tavern、Harness 与调试 API
+├─ packages/shared   # 前端共享 TypeScript 协议与类型
+├─ apps/desktop      # Tauri 2 桌面壳、sidecar 与打包配置
 └─ docs              # 架构、API、数据流、页面设计等文档
 ```
 
@@ -64,6 +70,8 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 	- 人格插槽编辑、人格卡片生成与回填、配置导入导出。
 - 场景搭建（`/scene-setup`）
 	- 分层场景树编辑、复用节点库、场景库管理、JSON 导入导出。
+- 酒馆（`/tavern`）
+	- 创建/恢复/归档人格房间，与单一角色自由互动，或引导 2–4 位角色按名单顺序互相回应。
 - 感官工具（`/sensory-tools`）
 	- 按阶段与分类治理模型工具开关。
 - 统一设置（`/settings`）
@@ -97,11 +105,15 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 前端应用（`apps/web/package.json`）运行时依赖：
 
 - @vibe-learner/shared: 0.1.0
+- @tauri-apps/api: ^2.8.0
+- @tauri-apps/plugin-stronghold: ^2.3.1
 - mermaid: ^11.14.0
 - next: 16.2.3
+- pdfjs-dist: ^5.4.296
 - react: 19.2.0
 - react-dom: 19.2.0
 - react-markdown: ^10.1.0
+- react-pdf: ^10.4.1
 - rehype-mathjax: ^7.1.0
 - remark-gfm: ^4.0.1
 - remark-math: ^6.0.0
@@ -114,6 +126,11 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 - tailwindcss: 4.1.13
 - typescript: ^6.0.2
 
+桌面应用（`apps/desktop/package.json`）开发依赖：
+
+- @tauri-apps/cli: ^2.0.0
+- @tauri-apps/plugin-stronghold: ^2.0.0
+
 共享包（`packages/shared/package.json`）说明：
 
 - 当前无额外 third-party 依赖，仅导出本地 TypeScript 合同类型。
@@ -122,10 +139,15 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 
 后端（`services/ai/pyproject.toml`）依赖：
 
+- alembic>=1.16.0
 - fastapi>=0.116.0
+- litellm>=1.82.1
+- onnxtr[cpu-headless]>=0.8.1
 - PyMuPDF>=1.26.0
 - pydantic>=2.11.0
+- psycopg[binary]>=3.2.0
 - python-multipart>=0.0.20
+- SQLAlchemy>=2.0.41
 - uvicorn>=0.35.0
 
 ## 快速开始
@@ -215,8 +237,8 @@ OPENAI_CHAT_MODEL_MULTIMODAL=false
 它们的关系与优先级如下：
 
 1. 启动时，后端先读取环境变量作为基线配置。
-2. 若 `services/ai/data/runtime_settings/default.json` 已存在，则优先加载这个运行时配置记录。
-3. 前端设置页的修改会通过 `PATCH /runtime-settings` 自动保存到该 JSON 文件，并立即触发后端重建模型提供器。
+2. 若数据库中已经存在 `runtime_settings/default` 记录，则优先加载该运行时配置。
+3. 前端设置页的修改会通过 `PATCH /runtime-settings` 自动保存到数据库记录，并立即触发后端重建模型提供器；当前兼容层同时维护旧 JSON 镜像。
 4. 因此在日常开发中，“设置页保存后的值”通常会覆盖 `.env` 的同名值。
 5. `.env` 更适合作为首次启动基线或兜底值，不是设置页的实时镜像。
 
@@ -226,10 +248,7 @@ OPENAI_CHAT_MODEL_MULTIMODAL=false
 - 分场景 Base URL 如果留空，会在模型提供器层回退到全局 `openai_base_url`。
 - 设置页的“拉取模型与能力”仅用于探测；真正持久化要依赖设置字段写回（例如选择模型、回填能力开关）。
 
-如果希望重新以 `.env` 为准：
-
-- 停掉后端后删除 `services/ai/data/runtime_settings/default.json`，再重启后端。
-- 重启后会用当前环境变量重新生成 runtime settings 基线。
+如果希望重新以 `.env` 为准，不能只删除旧 JSON 镜像，因为数据库记录仍是权威来源。请通过设置页/API 覆盖；需要清理数据库记录时先备份，并按架构文档执行受控迁移。
 
 ## 常用脚本
 
@@ -241,7 +260,11 @@ npm run build:web    # 构建前端
 npm run build:desktop # 为当前操作系统构建桌面预览安装包
 npm run lint:web     # 前端 lint
 npm run test:ai      # 运行后端测试（unittest）
+npm run test:contracts # 校验共享 TypeScript 合同
+npm run test:web:tavern # Tavern 前端状态与 strict decoder 测试
 ```
+
+注意：Next.js 16 下当前 `npm run lint:web` 已失效，替代检查命令正在 `QG-001` 中跟踪。
 
 ## 桌面预览封包
 
@@ -285,17 +308,25 @@ VIBE_LEARNER_ONNXTR_MODEL_SOURCE=/absolute/path/to/onnxtr-models npm run build:d
 2. 在章节上下文中发起提问。
 3. 使用返回的结构化信息与 Character Event 进行学习交互。
 
+### 流程 4：进入酒馆互动
+
+1. 选择 1–6 位已保存人格和可选场景创建 Tavern Room。
+2. 选择一位角色自由对话，或选择 2–4 位角色并填写隐藏引导触发顺序互动。
+3. 通过 Reliability Details 查看 partial/failed、恢复、定向重试与取消接收结果状态。
+
 ## 数据与调试产物
 
-后端本地数据主要位于 `services/ai/data/`：
+结构化业务记录以 SQLAlchemy 数据库为权威来源：默认是 `services/ai/data/vibe_learner.db` SQLite，可通过 `DATABASE_URL` 使用 PostgreSQL。`LocalJsonStore` 兼容层仍会维护部分旧 JSON 镜像，但它们不是主数据，也不适合新的 append-heavy domain。
 
-- `documents.json`：文档元信息
-- `plans.json`：学习计划记录
-- `sessions.json`：学习会话记录
+后端文件与调试产物主要位于 `services/ai/data/`：
+
+- `uploads/`：上传教材文件
+- `chat_attachments/`：Study Chat 附件
 - `document_debug/`：解析调试产物
 - `document_process_stream/`：文档处理流式日志
 - `learning_plan_stream/`：计划生成流式日志
 - `planning_trace/`：计划模型 trace
+- `_tmp/`、`cache/`：临时和缓存材料
 
 ## 文档导航
 
@@ -303,6 +334,9 @@ VIBE_LEARNER_ONNXTR_MODEL_SOURCE=/absolute/path/to/onnxtr-models npm run build:d
 - `docs/user_manual.md`：完整功能使用手册（逐页逐部件）
 - `docs/architecture.md`：架构说明
 - `docs/api-reference.md`：API 参考
+- `docs/harness-engineering.md`：仓库级 Harness 生命周期与采用门
+- `docs/harness-schema-ownership.md`：跨工作流 schema/ownership 注册表
+- `docs/tavern-architecture.md`：Tavern schema、可靠性、浏览器边界与性能约束
 - `docs/parsing-and-planning-data-flow.md`：解析与规划数据链路
 - `docs/frontend-learning-workspace.md`：前端学习工作台职责拆分
 - `AGENTS.md`：仓库扫描快照、入口与开发约定

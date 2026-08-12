@@ -9,7 +9,7 @@
 1. Git >= 2.40
 2. Node.js >= 20
 3. npm >= 10
-4. Python >= 3.9
+4. Python >= 3.12
 5. uv（建议最新稳定版）
 
 安装完依赖后再执行：
@@ -24,17 +24,16 @@
 JavaScript / TypeScript：
 
 - 根工作区依赖：rehype-katex
-- 前端运行时依赖：next、react、react-dom、mermaid、react-markdown、rehype-mathjax、remark-gfm、remark-math、@vibe-learner/shared
+- 前端运行时依赖：next、react、react-dom、mermaid、react-markdown、react-pdf、pdfjs-dist、rehype-mathjax、remark-gfm、remark-math、Tauri API/Stronghold、@vibe-learner/shared
 - 前端开发依赖：typescript、tailwindcss、@types/node、@types/react、@types/react-dom
 
 Python：
 
-- fastapi
+- alembic、SQLAlchemy、psycopg
+- fastapi、uvicorn
 - litellm
-- PyMuPDF
-- pydantic
-- python-multipart
-- uvicorn
+- OnnxTR、PyMuPDF
+- pydantic、python-multipart
 
 更完整版本号请以根目录 README 的“项目现有依赖项（按清单文件整理）”为准。
 
@@ -48,18 +47,16 @@ Python：
 ### B. 实际生效优先级
 
 1. 后端启动时先读取环境变量，形成 base settings。
-2. Runtime Settings 服务会尝试读取本地运行时配置文件。
-3. 若已存在运行时配置文件，则以它为主；若不存在，则用环境变量初始化并落盘。
+2. Runtime Settings 服务会尝试读取数据库中的 `default` 运行时配置记录。
+3. 若已存在该记录，则以它为主；若不存在，则用环境变量初始化并落盘。
 
-对应本地文件：
-
-- services/ai/data/runtime_settings/default.json
+对应持久化记录：数据库 `runtime_settings` 表中的 `default` 配置。当前兼容层同时维护 `services/ai/data/runtime_settings/default.json` 镜像，但它不是权威来源。
 
 ### C. 设置页是如何写入并生效的
 
 1. 统一设置页加载时调用 GET /runtime-settings。
 2. 用户修改字段后，前端自动保存触发 PATCH /runtime-settings。
-3. 后端写入 services/ai/data/runtime_settings/default.json。
+3. 后端写入数据库中的 runtime settings 记录。
 4. 后端容器立即调用 update_runtime_settings，重建 model_provider。
 5. 计划生成、人格辅助、章节对话等后续请求立刻使用新配置。
 
@@ -87,11 +84,7 @@ Python：
 
 ### G. 如何强制重新以 .env 为准
 
-1. 停掉后端服务。
-2. 删除 services/ai/data/runtime_settings/default.json。
-3. 重启后端。
-
-重启后会再次用当前环境变量初始化运行时配置。
+不能只删除旧 JSON 镜像来恢复 `.env`，因为数据库记录仍是权威来源。请通过设置页/API 覆盖配置；若需要清空数据库记录，应先备份并按 `docs/architecture.md` 的当前存储说明执行受控迁移。
 
 ## 2. 全局导航与通用交互
 
@@ -105,6 +98,7 @@ Python：
   - 章节对话
   - 人格色谱
   - 场景搭建
+  - 酒馆
   - 感官工具
   - 统一设置
   - 用量审计
@@ -131,7 +125,7 @@ Python：
   - 分割线：强化视觉分区。
 - 功能入口卡片网格
   - 每张卡包含编号、名称、描述、跳转箭头。
-  - 目前包含 6 个主入口：计划生成、章节对话、人格色谱、场景搭建、感官工具、统一设置。
+- 当前包含 8 个入口：计划生成、章节对话、人格色谱、场景搭建、酒馆、感官工具、统一设置、用量审计。
 
 建议操作：首次进入先读卡片描述，按 计划生成 -> 章节对话 的顺序使用。
 
@@ -477,15 +471,51 @@ D. 层级节点复用
   - 删除
   - 查看节点统计与快照信息
 
-## 3.6 感官工具（/sensory-tools）
+## 3.6 酒馆（/tavern）
+
+页面定位：与已保存人格自由互动，或通过引导让多位角色按服务端顺序互相回应；它不绑定教材、Study Unit 或引用要求。
+
+### 3.6.1 Tavern Header 与 Tavern Session Panel
+
+- 新建房间：返回设置区重新选择人格与可选场景。
+- 最近房间：打开或切换已有房间；刷新后可从持久化记录继续。归档/恢复按钮位于 Tavern Header。
+- 状态提示：区分生成中、部分完成、失败、取消接收结果等结果，不把 HTTP 成功等同于角色生成完成。
+
+### 3.6.2 Tavern Setup Panel
+
+- 输入房间标题并选择 1–6 个已保存人格。
+- 可附带当前场景快照；源人格或场景后续修改不会悄悄改写既有房间快照。
+- 若没有可选人格，先前往人格色谱创建人格。
+
+### 3.6.3 Tavern Conversation Panel 与 Participant Roster
+
+- 对话按服务端分配的消息序号显示，可向上加载更早记录。
+- 勾选 1 位角色时是 direct 单角色互动；勾选 2–4 位时是 facilitated 多角色互动。
+- 多角色输入顺序不决定发言顺序；服务端按照房间角色名单顺序调度。
+
+### 3.6.4 Interaction Composer
+
+- “可见消息”会作为用户消息进入对话。
+- “下一轮引导”只作为隐藏编排上下文，不显示成伪造的导演消息。
+- “继续”让角色接续最新消息，不制造一个空用户回合。
+- 中文输入法组合期间 Enter 不发送；Shift+Enter 插入换行。
+- “取消接收结果”会立即阻止结果写入，但当前同步模型请求可能继续运行到上游超时。
+
+### 3.6.5 Reliability Details
+
+- 展示 run、角色步骤和校验/恢复摘要。
+- 部分完成会保留已成功角色消息，只重试失败或被阻塞的角色。
+- 原始 prompt、模型材料和完整调试 trace 不作为普通对话内容展示。
+
+## 3.7 感官工具（/sensory-tools）
 
 页面定位：按阶段统一管理模型工具可用性。
 
-### 3.6.1 页面头部
+### 3.7.1 页面头部
 
 - 标题与说明。
 
-### 3.6.2 阶段卡列表
+### 3.7.2 阶段卡列表
 
 每个阶段卡包含：
 
@@ -494,7 +524,7 @@ D. 层级节点复用
   - 阶段可用
   - 阶段关闭（可带原因）
 
-### 3.6.3 分类工具卡
+### 3.7.3 分类工具卡
 
 每个分类卡包含：
 
@@ -506,22 +536,22 @@ D. 层级节点复用
   - 可用性说明（不可用时给原因）
   - 开关复选框
 
-## 3.7 统一设置（/settings）
+## 3.8 统一设置（/settings）
 
 页面定位：运行参数可视化管理与自动保存中心。
 
-### 3.7.1 页面头部（SettingsHeader）
+### 3.8.1 页面头部（SettingsHeader）
 
 - 标题：统一设置
 - 说明：自动保存、能力拉取回填、减少配置与事实不一致。
 
-### 3.7.2 运行提供器卡（ProviderCard）
+### 3.8.2 运行提供器卡（ProviderCard）
 
 - 模型接口协议选择
   - 本地模拟
   - LiteLLM SDK
 
-### 3.7.3 连接与模型分配卡（ConnectionModelsCard）
+### 3.8.3 连接与模型分配卡（ConnectionModelsCard）
 
 A. 默认连接
 
@@ -546,7 +576,7 @@ C. 全局超时
 
 - 请求超时时间（秒）
 
-### 3.7.4 能力对照与回填卡（CapabilityAuditCard）
+### 3.8.4 能力对照与回填卡（CapabilityAuditCard）
 
 按场景显示：
 
@@ -558,7 +588,7 @@ C. 全局超时
 - 刷新能力信息
 - 一键按检测结果回填
 
-### 3.7.5 高级运行参数卡（AdvancedSettingsCard）
+### 3.8.5 高级运行参数卡（AdvancedSettingsCard）
 
 可折叠高级区，常见字段包括：
 
@@ -572,46 +602,46 @@ C. 全局超时
 - 计划失败降级模型
 - 降级模型禁用工具链开关
 
-### 3.7.6 调试信息显示卡（DebugVisibilityCard）
+### 3.8.6 调试信息显示卡（DebugVisibilityCard）
 
-- 控制计划页和章节对话页调试悬浮信息显示。
+- 控制全局 Debug Overlay 的可见性；各页面可向同一个 Overlay 提供自己的调试快照。
 
-### 3.7.7 自动保存状态条（AutoSaveStatusBar）
+### 3.8.7 自动保存状态条（AutoSaveStatusBar）
 
 - 保存阶段徽章
   - 未开始、待保存、保存中、已保存、失败
 - 最近保存时间
 - 失败时重试按钮
 
-### 3.7.8 与环境变量的联动说明
+### 3.8.8 与环境变量的联动说明
 
 - 本页保存不会回写 services/ai/.env。
-- 本页保存会回写 services/ai/data/runtime_settings/default.json。
-- 后端重启后默认继续使用该 runtime settings 文件，而不是直接回退到 .env。
+- 本页保存会写入数据库中的 `runtime_settings/default` 记录；当前兼容层同时维护旧 JSON 镜像。
+- 后端重启后默认继续使用该数据库记录，而不是直接回退到 .env。
 - 若你修改了 .env 但页面数据没变化，通常是因为 runtime settings 已覆盖同名项。
 
-## 3.8 用量审计（/model-usage）
+## 3.9 用量审计（/model-usage）
 
 页面定位：查看模型调用 Token 消耗与分布。
 
-### 3.8.1 页面头部
+### 3.9.1 页面头部
 
 - 标题与说明。
 
-### 3.8.2 总览卡行
+### 3.9.2 总览卡行
 
 - 总 Token
 - 输入 Token
 - 输出 Token
 - 调用次数
 
-### 3.8.3 按日期堆积柱状图
+### 3.9.3 按日期堆积柱状图
 
 - 按日展示总量。
 - 按功能着色堆叠（计划、对话、设定、嵌入等）。
 - 支持悬停查看当日分段信息。
 
-### 3.8.4 汇总表格区
+### 3.9.4 汇总表格区
 
 - 按功能汇总表
 - 按 功能 x 模型 汇总表
@@ -624,8 +654,9 @@ C. 全局超时
 3. 进入 人格色谱，配置或生成一个可用人格并保存。
 4. 进入 计划生成，选择人格与场景，上传教材并生成计划。
 5. 进入 章节对话，创建会话并按章节学习。
-6. 进入 感官工具，按阶段调节工具开关。
-7. 进入 用量审计，复盘模型成本与调用分布。
+6. 若希望自由互动，进入 酒馆，选择一个或多个已保存人格并创建房间。
+7. 进入 感官工具，按阶段调节工具开关。
+8. 进入 用量审计，复盘模型成本与调用分布。
 
 ## 5. 常见问题
 
@@ -652,6 +683,12 @@ C. 全局超时
 - 在统一设置页查看状态条错误信息。
 - 修正连接参数后点击重试保存。
 
+### 5.5 酒馆生成中断或部分失败
+
+- 不要重复创建可见消息；先使用当前 run 的恢复、定向重试或取消接收结果动作。
+- `partial` 表示已有角色回复已可靠保留，后续角色失败或被阻塞，不等于整轮丢失。
+- 若刷新后状态不一致，重新打开该房间并查看 Reliability Details；不要根据 HTTP 200 推断 run 已完成。
+
 ## 6. 术语对照
 
 - Persona：人格设定，决定教师风格与行为边界。
@@ -659,4 +696,7 @@ C. 全局超时
 - Study Unit：从教材结构清洗后的学习单元。
 - Scene：场景设定，支持层级与复用节点。
 - Character Event：结构化角色表现事件，用于驱动前端角色层。
+- Tavern Room：独立于学习会话的持久化人格互动房间。
+- Tavern Run：一次幂等、revision-checked 的角色生成尝试，包含服务端调度步骤与可靠性证据。
+- Harness Trace：跨工作流的验证、恢复与提交证据；不是酒馆专属，也不等同于“内容一定正确”。
 - Plan Provider：学习计划生成提供器（mock 或 litellm）。

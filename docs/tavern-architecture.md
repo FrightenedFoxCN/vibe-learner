@@ -4,7 +4,7 @@
 
 The Tavern is a separate interaction domain for conversations with saved personas and for user-directed interaction between personas. It reuses persona and scene snapshots, but it does not inherit the textbook, plan, citation, or Study Unit requirements of a Study Session. Its validation uses the repository-wide harness trace contract defined in `harness-engineering.md`; the harness is not Tavern-only.
 
-The schema landed before the runtime/API so the persistence and harness boundaries could be reviewed independently. Tavern CRUD, direct single-persona turns, facilitated multi-persona turns, explicit continuation, partial failure evidence, scoped child retry, stale-run takeover, bounded claims, resume, and cancel are now implemented. The browser workspace, truly cancelable provider transport, prompt budgets, and eval matrix remain separate iterations.
+Tavern CRUD, direct single-persona turns, facilitated multi-persona turns, explicit continuation, partial failure evidence, scoped child retry, database-clock leases, heartbeat and owner/claim fencing, bounded takeover claims, resume, cancel, and the browser Tavern Workspace are implemented. Truly cancelable provider transport, total prompt budgets, an authoritative retry-chain view, v3 trace migration/protected replay, and the eval matrix remain separate iterations.
 
 ## Canonical vocabulary
 
@@ -41,7 +41,7 @@ Tavern messages intentionally do not use the legacy aggregate `LocalJsonStore.sa
 
 ## Contract boundaries
 
-Python contracts live in `services/ai/app/models/tavern.py`. Shared frontend contracts live in `packages/shared/src/tavern.ts`.
+Python contracts live in `services/ai/app/models/tavern.py`. Shared frontend contracts live in `packages/shared/src/tavern.ts`. Browser wire validation lives in `apps/web/lib/tavern-decode.ts`, and monotonic message/run reconciliation lives in `apps/web/lib/tavern-workspace-state.ts`.
 
 The model-owned `TavernActorReply` is deliberately smaller than a persisted message. The model may propose text, performance state, and addressed participants. It never owns:
 
@@ -74,7 +74,27 @@ Room update, turn start, and destructive deletion compete through the same datab
 
 `continue` must anchor the current latest message and does not fabricate a visible user/director message. Each persona still speaks at most once per run. The first reply points to the user/continue anchor; every later reply points to the preceding committed persona message.
 
-The UI derives the mode from recipient selection. Internal scheduling details and raw harness codes remain folded under Reliability Details instead of becoming primary controls.
+The UI derives the mode from recipient selection. Internal scheduling details and raw harness codes remain folded under `Reliability Details` instead of becoming primary controls.
+
+## Browser Tavern Workspace
+
+`/tavern` exposes the seven standard blocks used by product and test discussions:
+
+- `Tavern Header`: page identity, active room title, create action, and current status;
+- `Tavern Session Panel`: recent rooms and room switching; archive/restore currently belongs to `Tavern Header`, while broader room management is not implemented;
+- `Tavern Setup Panel`: title, optional scene, 1–6 persona multi-select, and idempotent creation;
+- `Tavern Conversation Panel`: ordered user/director/persona/system transcript and backward paging;
+- `Participant Roster`: cast, target selection, and per-persona generation state;
+- `Interaction Composer`: visible message, hidden next-round guidance, recipient preview, send/continue, and cancel-receipt controls;
+- `Reliability Details`: collapsed run/step/check evidence; raw provider/debug material belongs in the global Debug Overlay.
+
+One selected target starts a direct run; two to four targets start a facilitated run in server-owned display order. Guidance is carried as hidden orchestration context and is never appended as a visible director message. Continue anchors the latest visible message without fabricating a user turn.
+
+The client requests a 40-message tail and uses `next_before_sequence` to prepend older pages. It binds async work to the active room/mutation operation, merges messages by sequence and identity, prevents terminal runs from regressing to pending, preserves idempotency drafts across uncertain failures, and rejects malformed Tavern aggregates through a typed `TavernDecodeError`.
+
+Keyboard handling suppresses Enter while a composition is active (including key code 229 and the composition-end trailing event); Shift+Enter inserts a newline. The responsive DOM order follows the primary mobile reading/focus flow, with explicit desktop grid placement.
+
+Static/state tests, a populated real-backend wire acceptance, keyboard composition fencing, and a 390px no-overflow inspection have passed. The independent UX release audit keeps `UX-001` open because the small-screen primary-action order, real per-step roster state, terminal replay recovery prominence, and a reproducible device-level IME/viewport pass are still incomplete. The optional `TAVERN_TEST_API_URL` decoder fixture is skipped unless a populated backend with messages and a terminal run is explicitly supplied.
 
 ## Performance boundaries
 
@@ -82,7 +102,7 @@ The UI derives the mode from recipient selection. Internal scheduling details an
 - At most 4 generated persona messages per run.
 - Message reads support forward, backward, and latest-page cursors and are capped at 200 rows per request; every returned page stays in ascending transcript order.
 - Room history lists use batched participant and message-count queries rather than loading transcripts.
-- Long-context summary/embedding work is deferred; raw history must remain bounded by a prompt budget before it is enabled.
+- Context message count and individual reply/guidance sizes are bounded, but there is not yet a total prompt/token/scene-depth budget or trace-visible truncation record. This is tracked by `HRN-TAV-PERF-001`.
 
 ## Runtime and recovery implementation
 
@@ -90,7 +110,7 @@ The UI derives the mode from recipient selection. Internal scheduling details an
 
 The Tavern-specific persona compiler is separate from the teaching compiler. It keeps persona anchors, relationship, address, slots, and relevant additional setting, while explicitly removing the requirement to force conversation back to textbooks or learning tasks. Persona fields are user-editable, so compiled persona material is passed as delimited low-trust data; only invariant platform rules and the strict output schema occupy the system layer.
 
-Actor generation requests strict `TavernActorReply` JSON in which every declared property is required and exposes only model-owned text/performance/target proposals. The semantic harness then checks speaker attribution, target membership, the required prior-speaker target, length, prompt-material leakage across every persisted display field, and non-empty output. Transport/schema recovery is merged into the persisted trace; exhausted decode and provider failures also produce failed traces. Failed output is not stored as a persona message, and recent-run history makes the evidence recoverable after refresh.
+Actor generation requests strict `TavernActorReply` JSON in which every declared property is required and exposes only model-owned text/performance/target proposals. The semantic harness then checks speaker attribution, target membership, the required prior-speaker target, length, prompt-material leakage across every persisted display field, and non-empty output. Transport/schema recovery is merged into the persisted trace; exhausted decode and provider failures also produce failed traces. Failed output is not stored as a persona message. Recent-run history provides a bounded recovery/debug window (default 50), not an authoritative retry-chain view; a durable aggregate view is tracked by `TAV-RUN-VIEW-001`.
 
 `POST /tavern/rooms/{room_id}/runs/{run_id}/retry` accepts only terminal `failed` or `partial` sources. It creates a child run for failed/blocked actors, never appends another user message, never repeats completed actors, and permits at most one direct child. Retry is rejected when the room is archived or when revision, terminal sequence, versioned context digest, participant set, or participant prompt hash has changed. The source run remains immutable and terminal.
 

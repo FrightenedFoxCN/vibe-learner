@@ -60,6 +60,18 @@ Unknown explicit trace-schema versions are rejected. Missing `trace_schema_versi
 
 The builder establishes integrity identity, not replay availability. `HarnessSnapshotRefV3` is only an integrity reference until `HRN-CTX-ARTIFACT-001` provides an authorized, immutable, retention-aware resolver with typed missing/expired/forbidden/digest-mismatch outcomes. SHA-256 detects changes; it does not provide confidentiality, and low-entropy secrets must not be hashed into public evidence. Python backend code is currently the sole canonical digest authority. TypeScript consumes wire evidence but does not generate canonical digests; browser support would require an explicit shared canonical-bytes specification and cross-language vectors.
 
+Resource identity is not evidence by itself. Each closed `HarnessResourceType` needs a machine-readable policy that separately states whether context freshness requires an authoritative resource revision and whether commit evidence is revision-based, append-sequence-based, or unsupported until migration. A missing revision must not be replaced by a constant `0`; a parent aggregate revision must not be attached to an embedded `Study Unit` or page as though it were that resource's own revision. Until `SCH-HRN-REV-001` lands, v3 business-flow adoption is blocked on this ambiguity even though fixtures can instantiate the context schema.
+
+Protected artifact policy is similarly explicit:
+
+- an artifact ID is opaque, immutable, scoped to an authorized subject, and bound to a versioned contract and digest;
+- authorization is checked before content is read, and retention/expiry is part of the resolver result;
+- read-back recomputes the digest and returns typed `resolved`, `not_found`, `expired`, `forbidden`, `digest_mismatch`, or `schema_unsupported` evidence;
+- trace-visible refs never contain source text, prompts, transcript content, file paths, credentials, or other secrets;
+- `document_debug` and `planning_trace` are inspectable, removable caches, not durable replay artifacts.
+
+The implementation route is `resource evidence registry -> operation/stage vocabulary -> protected artifact resolver -> workflow-neutral operation runtime -> per-domain adoption`. `HRN-CTX-001` tracks completion of that whole rollout; it is not a circular prerequisite that prevents individual domains from using the runtime primitives as they become available.
+
 Workflow-specific policies remain in their domain schema. For example, Tavern limits participant messages and checks cross-speaker impersonation, while document parsing checks page coverage, extraction density, OCR availability, and Study Unit bounds.
 
 See `harness-schema-ownership.md` for the workflow ownership registry, nullability rules, proposal boundaries, and compatibility policy.
@@ -72,8 +84,8 @@ See `harness-schema-ownership.md` for the workflow ownership registry, nullabili
 | Planning | strict-ish JSON, model recovery records, tool trace | true JSON schema validation, effect boundary, unified trace, eval matrix |
 | Persona/scene generation | Pydantic normalization, retry | prompt/version digest, semantic invariants, regression fixtures |
 | Study chat | reply recovery, tool trace, citations | transactional tool-effect proposals, request revision/idempotency, strict decoder |
-| Tavern | normalized room/run/step schema, low-trust persona compiler, strict actor decode, server-owned scheduler, semantic checks, bounded recovery trace, per-actor commit, partial state, scoped child retry | stale-run takeover/cancel, prompt budget, eval matrix |
-| Frontend API | response normalizers | runtime decoder, timeout/cancel, stale-response rejection, trace forwarding |
+| Tavern | normalized room/run/step schema, low-trust persona compiler, strict actor decode, server-owned scheduler, semantic checks, bounded recovery trace, per-actor commit, partial state, scoped child retry, leased resume/cancel fencing, strict browser v1 decode | v3 runtime/artifact migration, total prompt budget, authoritative retry-chain view, eval matrix |
+| Frontend API | Tavern fail-closed decoder, request/room fencing, monotonic terminal reconciliation | repository-wide runtime decoders, timeout/cancel semantics, trace forwarding |
 
 ## User-facing transparency
 
@@ -101,3 +113,5 @@ No workflow should be described as harnessed until its failure path and protecte
 The matrix records incremental adoption, not a Tavern-only rollout. A completed Tavern slice or the existence of the v2/v3 evidence schemas does not change the status of parsing, planning, persona/scene generation, Study Chat, or frontend decoding; each remains open until its own effect, failure, and replay boundaries pass the same rubric.
 
 Tavern's `context_digest` is one domain-specific implementation of the snapshot step: it covers room title, scene, harness policy, roster order, and participant prompt hashes, while `terminal_sequence` and room revision cover transcript and mutation drift. Other workflows must define their own versioned context envelope rather than reusing Tavern fields or treating one digest function as a universal answer.
+
+The current production Tavern records still carry legacy v1 traces. Lease recovery, cancel fencing, strict frontend decode, or a field named `context_digest` do not change that version statement. V3 adoption closes only when protected snapshots, resource evidence, v3 attempt/commit traces, compatibility decoding, and eval fixtures are emitted by the real Tavern path.

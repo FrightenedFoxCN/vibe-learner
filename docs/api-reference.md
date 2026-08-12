@@ -23,7 +23,124 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
 - Standard endpoints return JSON.
 - Streaming endpoints return `application/x-ndjson`.
 - Error payloads from FastAPI follow `{"detail": ...}`.
-- Frontend normalization is implemented in `apps/web/lib/api.ts`.
+- Frontend normalization is implemented in `apps/web/lib/api.ts`. Tavern payloads additionally pass through the fail-closed decoder in `apps/web/lib/tavern-decode.ts`; other domains remain under the repository-wide decoder migration tracked by `HRN-WEB-001`.
+
+## Complete operation index
+
+This reference covers **78 business HTTP operations across 59 unique paths**: 68 operations in the main router and 10 under the mounted `/tavern` router. The count is based on explicit `(method, full path)` pairs in `services/ai/app/api/routes.py` and `services/ai/app/api/tavern_routes.py`; generated `/docs`, `/redoc`, `/openapi.json`, implicit `HEAD`, and `OPTIONS` are excluded. FastAPI OpenAPI remains the field-level source for operations that are summarized rather than expanded below.
+
+### Service, storage, model tools, and runtime settings (11)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Service liveness. |
+| `GET` | `/storage/summary` | Inspect persistent/cache/temp category sizes and counts. |
+| `POST` | `/storage/cleanup` | Clear requested cache/temp-compatible categories. |
+| `GET` | `/model-tools/config` | Read stage/category tool availability and user overrides. |
+| `PATCH` | `/model-tools/config` | Update tool overrides. |
+| `GET` | `/runtime-settings` | Read effective persisted runtime configuration with secrets redacted. |
+| `PATCH` | `/runtime-settings` | Persist runtime changes and rebuild the model provider. |
+| `PUT` | `/runtime-settings/session-secrets` | Apply in-memory session secrets without persisting them. |
+| `DELETE` | `/runtime-settings/session-secrets` | Remove in-memory session secrets. |
+| `POST` | `/runtime-settings/check-openai-models` | Probe an OpenAI-compatible `/models` connection. |
+| `GET` | `/model-usage/stats` | Return token/call usage aggregates and recent records. |
+
+### Scene and reusable nodes (11)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/scene-setup` | Load the current draft scene tree. |
+| `PUT` | `/scene-setup` | Save the current draft scene tree. |
+| `POST` | `/scene-setup/generate` | Generate or extract a scene-tree proposal. |
+| `GET` | `/scene-library` | List saved scene snapshots. |
+| `GET` | `/scene-library/{scene_id}` | Read one saved scene. |
+| `POST` | `/scene-library` | Create a saved scene. |
+| `PUT` | `/scene-library/{scene_id}` | Replace a saved scene. |
+| `DELETE` | `/scene-library/{scene_id}` | Delete a saved scene. |
+| `GET` | `/reusable-scene-nodes` | List reusable layer/object nodes. |
+| `POST` | `/reusable-scene-nodes` | Store a reusable node. |
+| `DELETE` | `/reusable-scene-nodes/{node_id}` | Delete a reusable node. |
+
+### Documents and parse/plan evidence (13)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/documents` | List documents. |
+| `POST` | `/documents` | Upload a document. |
+| `POST` | `/documents/{document_id}/process` | Process a document synchronously. |
+| `POST` | `/documents/{document_id}/process/stream` | Process through NDJSON events. |
+| `PATCH` | `/documents/{document_id}/study-units/{study_unit_id}` | Update one Study Unit title. |
+| `GET` | `/documents/{document_id}/status` | Read current document status. |
+| `GET` | `/documents/{document_id}/file` | Stream the original PDF inline. |
+| `GET` | `/documents/{document_id}/pages/{page_number}/image` | Render/serve one PDF page image. |
+| `GET` | `/documents/{document_id}/debug` | Read the persisted parse artifact used by the global Debug Overlay. |
+| `GET` | `/documents/{document_id}/process-events` | Read persisted processing stream events. |
+| `GET` | `/documents/{document_id}/planning-context` | Read cleaned Study Units, detail map, and planner tools. |
+| `GET` | `/documents/{document_id}/planning-trace` | Read the persisted model/tool planning trace. |
+| `GET` | `/documents/{document_id}/plan-events` | Read persisted plan stream events. |
+
+### Personas and persona cards (12)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/personas` | List builtin and user personas. |
+| `POST` | `/personas` | Create a user persona. |
+| `PATCH` | `/personas/{persona_id}` | Update a user persona. |
+| `DELETE` | `/personas/{persona_id}` | Delete a user persona when it is not protected/referenced. |
+| `GET` | `/personas/{persona_id}/assets` | Read the placeholder character asset manifest. |
+| `POST` | `/personas/assist-setting` | Generate setting-field assistance. |
+| `POST` | `/personas/assist-slot` | Rewrite one persona slot. |
+| `GET` | `/persona-cards` | List reusable persona cards. |
+| `POST` | `/persona-cards` | Create one card. |
+| `POST` | `/persona-cards/batch` | Create a card batch. |
+| `DELETE` | `/persona-cards/{card_id}` | Delete one card. |
+| `POST` | `/persona-cards/generate` | Generate/extract persona card proposals. |
+
+### Study Sessions and attachments (10)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/study-sessions` | List/filter Study Sessions. |
+| `POST` | `/study-sessions` | Create a Study Session. |
+| `PATCH` | `/study-sessions/{session_id}` | Change its Study Unit and/or scene snapshot. |
+| `POST` | `/study-sessions/{session_id}/chat` | Generate and append one structured study reply. |
+| `POST` | `/study-sessions/{session_id}/chat-with-attachments` | Upload attachments and generate a structured study reply. |
+| `POST` | `/study-sessions/{session_id}/attempt` | Append a learner exercise attempt and verdict. |
+| `POST` | `/study-sessions/{session_id}/follow-ups/cancel` | Cancel a pending follow-up in session state. |
+| `POST` | `/study-sessions/{session_id}/plan-confirmations/{confirmation_id}` | Confirm or reject a pending plan change. |
+| `GET` | `/study-sessions/{session_id}/attachments/{attachment_id}/file` | Read a stored attachment. |
+| `GET` | `/study-sessions/{session_id}/attachments/{attachment_id}/pages/{page_number}/image` | Render/serve one attachment PDF page image. |
+
+### Learning Plans, streams, exercises, and grading (11)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/learning-plans` | List plans. |
+| `POST` | `/learning-plans` | Generate and persist a plan synchronously. |
+| `POST` | `/learning-plans/stream` | Generate through NDJSON events. |
+| `GET` | `/learning-plans/{plan_id}` | Read one plan. |
+| `PATCH` | `/learning-plans/{plan_id}` | Update editable plan fields. |
+| `PATCH` | `/learning-plans/{plan_id}/progress` | Update Study Unit progress. |
+| `PATCH` | `/learning-plans/{plan_id}/planning-questions/{question_id}` | Answer/update a planning question. |
+| `DELETE` | `/learning-plans/{plan_id}` | Delete one plan. |
+| `POST` | `/stream-runs/{stream_id}/cancel` | Mark a processing/planning stream as canceled. |
+| `POST` | `/exercises/generate` | Generate a structured exercise. |
+| `POST` | `/submissions/grade` | Grade one structured submission. |
+
+### Tavern (10)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/tavern/rooms` | Idempotently create a room with persona snapshots. |
+| `GET` | `/tavern/rooms` | List room summaries. |
+| `GET` | `/tavern/rooms/{room_id}` | Read room detail with bounded message paging. |
+| `PATCH` | `/tavern/rooms/{room_id}` | Revision-check room metadata, cast, scene, or archive state. |
+| `DELETE` | `/tavern/rooms/{room_id}` | Revision-check permanent deletion. |
+| `GET` | `/tavern/rooms/{room_id}/runs` | Read a bounded recent run list. |
+| `POST` | `/tavern/rooms/{room_id}/turns` | Start an idempotent direct/facilitated run. |
+| `POST` | `/tavern/rooms/{room_id}/runs/{run_id}/retry` | Start a scoped child retry. |
+| `POST` | `/tavern/rooms/{room_id}/runs/{run_id}/cancel` | Fence result commits and future recovery. |
+| `POST` | `/tavern/rooms/{room_id}/runs/{run_id}/resume` | Resume/take over pending work subject to its lease and claim budget. |
 
 ## Health
 
@@ -125,8 +242,6 @@ Response fields:
 - `renderer`
 - `asset_manifest`
 
-## Documents
-
 ## Scene Setup and Scene Library
 
 ### `GET /scene-setup`
@@ -226,6 +341,8 @@ Common 422 causes in this surface:
 - missing required layer fields in `scene_layers[]` (especially `scope_label`)
 - camelCase layer payload sent directly to backend without snake_case serialization
 
+## Documents
+
 ### `GET /documents`
 
 Lists uploaded documents.
@@ -316,7 +433,7 @@ Returns the current `DocumentRecord`.
 
 ### `GET /documents/{document_id}/debug`
 
-Returns the persisted parse/debug artifact used by the `/debug` page.
+Returns the persisted parse/debug artifact used by the global Debug Overlay.
 
 Response fields:
 
@@ -332,7 +449,7 @@ Returns the debug-facing planning context after cleanup.
 Response fields:
 
 - `document_id`
-- `course_outline[]`: coarse level-1 sections plus level-2 children, kept for `/debug` inspection
+- `course_outline[]`: coarse level-1 sections plus level-2 children, kept for Debug Overlay inspection
 - `study_units[]`: plan-facing unit list with summaries and subsection titles
 - `detail_map`: detailed per-unit structure and chunk excerpts
 - `available_tools[]`: tools the model planner may call
@@ -579,33 +696,6 @@ Usage:
 - Frontend can jump to pages via PDF fragment URLs, e.g. `/documents/{document_id}/file#page=12`.
 - The response is served with inline content-disposition so browsers render in embedded PDF viewers instead of forcing download.
 
-Response body:
-
-```json
-{
-  "reply": "string",
-  "citations": [
-    {
-      "section_id": "string",
-      "title": "string",
-      "page_start": 1,
-      "page_end": 2
-    }
-  ],
-  "character_events": [
-    {
-      "emotion": "calm",
-      "action": "explain",
-      "intensity": 0.6,
-      "speech_style": "warm",
-      "scene_hint": "desk",
-      "line_segment_id": "seg-1",
-      "timing_hint": "after_text"
-    }
-  ]
-}
-```
-
 ## Tavern Rooms
 
 Tavern is independent from Study Sessions. It supports free interaction with a room-scoped persona snapshot and uses normalized, append-only messages.
@@ -626,7 +716,7 @@ Reusing the same key with a different normalized payload returns `409` with
 }
 ```
 
-Returns `TavernRoomDetail` with `room`, ordered `participants`, paged `messages`, `message_count`, and `next_after_sequence`.
+Returns `TavernRoomDetail` with `room`, ordered `participants`, paged `messages`, `message_count`, `next_after_sequence`, and `next_before_sequence`.
 
 ### `GET /tavern/rooms`
 
@@ -661,6 +751,8 @@ Query parameters:
 
 `tail`, nonzero `after_sequence`, and `before_sequence` are mutually exclusive. Backward/tail pages expose `next_before_sequence`; forward pages expose `next_after_sequence`. Both directions return messages in ascending transcript order.
 
+Tavern clients must decode every aggregate from `unknown` and bind it to the requested `room_id`; a TypeScript assertion or default-filled normalizer is insufficient. A malformed enum, identity, ownership link, schedule/step projection, sequence, nullable field, or generated-message projection is a typed decode failure rather than a partial record.
+
 ### `PATCH /tavern/rooms/{room_id}`
 
 Updates title, cast, scene snapshot, or `active`/`archived` status. `expected_revision` is mandatory; stale writers receive `409` with `tavern_revision_conflict:{current_revision}`.
@@ -674,7 +766,7 @@ A room with a pending run returns `409`; its user message and failure/recovery e
 
 ### `GET /tavern/rooms/{room_id}/runs`
 
-Returns up to `limit` recent runs (`1`–`100`, default `50`) in reverse creation order. This is the recovery/debug boundary after a turn returns `502`: the client can restore the failed status, stable error code, attempts, recovery strategy, and Harness checks without parsing logs.
+Returns up to `limit` recent runs (`1`–`100`, default `50`) in reverse creation order. This bounded list supports local recovery/debug after a turn returns `502`: the client can inspect failed status, stable error code, attempts, recovery strategy, and Harness checks without parsing logs. It is not an authoritative retry-chain aggregate; a child outside the window may be omitted, which is tracked by `TAV-RUN-VIEW-001`.
 
 ### `POST /tavern/rooms/{room_id}/turns`
 
@@ -734,6 +826,8 @@ Reliability behavior:
 - first-actor failure produces `failed`; later-actor failure produces `partial`, keeps prior actor messages, marks the current step `failed`, and marks remaining steps `blocked`;
 - schema/provider/Harness failures return `502` only after the terminal evidence is committed;
 - replaying that identical failed request returns `200` with the typed terminal recovery envelope. Clients must inspect `run.status`.
+
+Client reconciliation must bind the response to the active room and operation token, discard stale cross-room results, merge messages monotonically, and never allow a terminal run to regress to `pending`. HTTP success describes transport/recovery delivery only; `completed`, `partial`, `failed`, and `canceled` remain distinct domain outcomes.
 
 Room revision claims are atomic at the database boundary. This applies to SQLite and PostgreSQL and does not depend on one Python process owning an in-memory lock.
 
@@ -821,12 +915,16 @@ Returns:
 
 ## Planner Tool Surface
 
-The planner currently exposes two tool names to the upstream model:
+The planner registers six backend-only tools:
 
 - `get_study_unit_detail`
+- `ask_planning_question`
+- `estimate_plan_completion`
+- `revise_study_units`
 - `read_page_range_content`
+- `read_page_range_images`
 
-These tools are backend-only. The frontend never calls them directly. Their outputs are captured in `/documents/{document_id}/planning-trace` and surfaced on `/debug`.
+The actual set offered to one model call is filtered by Model Tool Config and runtime context: detail/debug data is required by the relevant readers and rewriter, while page images additionally require a document path and multimodal planning. The frontend never calls these tools directly. Their outputs are captured in `/documents/{document_id}/planning-trace` and surfaced in the global Debug Overlay.
 
 ## Source Of Truth
 

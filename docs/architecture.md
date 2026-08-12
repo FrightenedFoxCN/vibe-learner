@@ -1,222 +1,220 @@
 # Architecture
 
-## Monorepo Structure
+## Monorepo structure
 
-- `apps/web`: Next.js 16 frontend. Contains the learner workspace, character shell, `/debug` inspection page, and plan history UI.
-- `services/ai`: FastAPI backend. Owns document upload, PDF parsing, OCR fallback, study-unit cleanup, persona APIs, plan generation, and debug trace persistence.
-- `packages/shared`: shared TypeScript contracts consumed by the web app.
-- `docs`: architecture and API docs for the current implementation.
+- `apps/web`: Next.js 16 App Router frontend for navigation, plan generation, study dialog, persona/scene editing, Tavern interaction, settings, usage audit, and the global Debug Overlay.
+- `services/ai`: FastAPI backend for persistence, document ingestion, OCR, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and debug evidence.
+- `packages/shared`: TypeScript contracts consumed by the web application, including Tavern and Harness evidence projections.
+- `apps/desktop`: Tauri 2 desktop shell, Rust sidecar integration, bundle scripts, icons, and platform packaging configuration.
+- `docs`: implementation-facing architecture, contract, workflow, and user documentation.
 
-## Runtime Shape
+## Runtime shape
 
-The current system runs as a local-first split application:
+The product is local-first and has four cooperating runtime boundaries:
 
-- frontend: `apps/web`
-- backend: `services/ai`
-- storage: PostgreSQL for structured records plus local file storage under `services/ai/data`
-- model planning: mock by default, OpenAI-compatible provider when configured
+```mermaid
+flowchart LR
+    W["Next.js web UI"] --> A["FastAPI service"]
+    D["Tauri desktop shell"] --> W
+    D --> A
+    A --> DB["SQLAlchemy: SQLite by default / PostgreSQL via DATABASE_URL"]
+    A --> FS["Local uploads, attachments, debug and temp files"]
+    A --> M["Mock or LiteLLM-compatible model provider"]
+```
 
-There is still no queue, Live2D runtime, or TTS service in the current repository. The backend now uses a PostgreSQL-backed ORM persistence layer for business records while keeping uploaded binaries and runtime temp files on local disk.
+- The web frontend and FastAPI backend run separately during development.
+- The desktop build packages the exported web surface and Python backend sidecar through Tauri.
+- Structured records are database-authoritative. The default database is local SQLite; setting `DATABASE_URL` selects PostgreSQL.
+- Uploaded binaries, chat attachments, debug artifacts, and runtime temporary material remain under `services/ai/data/` unless a storage root is configured.
+- Planning is deterministic under the mock provider and uses the configured LiteLLM/OpenAI-compatible connection for real model work.
 
-## Core Boundaries
+There is no background queue, authentication layer, Live2D runtime, or TTS service in the current repository.
+
+## Core boundaries
 
 ### Web
 
-The frontend is responsible for:
+The frontend owns presentation and client-side workflow coordination:
 
-- upload and process flows
-- displaying cleaned study units and generated plans
-- rendering persona and character shell state
-- showing `/debug` parsing and planner traces
-- normalizing backend snake_case payloads into frontend camelCase contracts
+- upload/process/plan/study flows;
+- Persona Spectrum and Scene Setup editors;
+- Tavern room setup, ordered transcript, target selection, direct/facilitated turns, recovery controls, and bounded history paging;
+- snake_case wire-to-camelCase projections;
+- request identity, stale-response fencing, and strict response decoding where adopted;
+- a global `DebugOverlay` mounted by `apps/web/app/layout.tsx`.
 
-The web client should treat the backend as the only source of truth for document processing, plan history, and character events.
+Debug is not a standalone `/debug` route. The overlay reads the current page/debug context and exposes document parsing, plan traces, and related diagnostics without changing routes.
 
-Within the `Learning Workspace`, frontend responsibilities are further split into explicit layers:
+The Learning Workspace is split into:
 
-- page composition in `apps/web/components/learning-workspace.tsx`
-- async workflow orchestration in `apps/web/hooks/use-learning-workspace-controller.ts`
-- reducer-driven state transitions in `apps/web/lib/learning-workspace-reducer.ts`
-- pure state helpers in `apps/web/lib/learning-workspace-state.ts`
-- provider-level page-cache persistence in `apps/web/lib/learning-workspace-page-cache.ts`
-- plan-view mapping helpers in `apps/web/lib/plan-panel-data.ts`
-- repeated notices and telemetry helpers in `apps/web/lib/learning-workspace-copy.ts` and `apps/web/lib/learning-workspace-telemetry.ts`
+- page composition in `apps/web/components/learning-workspace.tsx`;
+- async orchestration in `apps/web/hooks/use-learning-workspace-controller.ts`;
+- reducer transitions in `apps/web/lib/learning-workspace-reducer.ts`;
+- pure state helpers in `apps/web/lib/learning-workspace-state.ts`;
+- provider-level page-cache persistence in `apps/web/lib/learning-workspace-page-cache.ts`;
+- plan-view mapping in `apps/web/lib/plan-panel-data.ts`.
 
-See `docs/frontend-learning-workspace.md` before reshaping this boundary.
+The root layout still mounts `LearningWorkspaceProvider` on every route. Moving that provider down to only its consumers is tracked by `PERF-001`.
 
-### AI Service
+Tavern uses a separate client boundary:
 
-The backend is responsible for:
+- `apps/web/components/tavern-workspace.tsx`: page orchestration and the seven standard Workspace blocks;
+- `apps/web/lib/tavern-decode.ts`: fail-closed legacy-v1 Tavern wire decoder;
+- `apps/web/lib/tavern-workspace-state.ts`: message/run reconciliation and monotonic state helpers.
 
-- storing uploaded files and PostgreSQL-backed structured records
-- extracting textbook text from PDF or OCR fallback
-- cleaning noisy OCR structure into plannable study units
-- generating planning context and planner tool-call traces
-- serving persona definitions and character event payloads
-- persisting study sessions and learning plans
+This Tavern decoder does not complete repository-wide frontend Harness adoption: other domains still use permissive response normalizers, and Tavern v2/v3 trace forwarding remains open under `HRN-WEB-001`.
 
-### Shared Contracts
+### AI service
 
-`packages/shared` holds the frontend-facing contract types for:
+FastAPI owns application identities, persistence, model orchestration, and authoritative state effects:
 
-- learning records
-- persona profiles
-- character events
+- storing document, plan, session, persona, scene, settings, usage, and Tavern records;
+- extracting PDF text and invoking OCR fallback;
+- cleaning raw Sections into plan-facing Study Units;
+- generating planning context and recording model/tool traces;
+- compiling teaching and Tavern persona prompts through separate boundaries;
+- returning structured citations and Character Events for Study Chat;
+- assigning Tavern speakers, schedule order, run lineage, message sequence, and revisions;
+- validating and committing Tavern actor output one scheduled speaker at a time.
 
-Backend response models still live in Python and must stay aligned with these shared types.
+Model-owned schemas may propose content and bounded effects only. Application IDs, speaker identity, revision, sequence, timestamps, and committed state belong to the service.
 
-Learning-plan text fields also follow a fixed cross-layer contract:
+### Shared contracts and Harness
 
-- `course_title`: generated textbook-grounded plan header title
-- `objective`: learner-authored goal shown as supporting metadata
-- `overview`: summary paragraph
-- `today_tasks`: actionable learner tasks
-- `schedule[].title`: primary executable plan directory
-- `schedule[].schedule_chapters[].title`: nested learning chapter directory inside each schedule item
+`packages/shared` holds frontend-facing contracts for learning records, personas/scenes, Character Events, Tavern aggregates, and Harness evidence. Python Pydantic models remain the backend wire authority.
 
-See `docs/plan-text-contract.md` before renaming fields or changing which text is rendered as a title versus summary.
+Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 
-## End-To-End Flow
+1. prepare typed, bounded input;
+2. snapshot and digest versioned context;
+3. execute an unreliable worker/model;
+4. strictly decode a domain proposal;
+5. validate invariants;
+6. perform bounded recovery;
+7. atomically commit validated effects or persist terminal failure evidence;
+8. emit trace/eval evidence.
 
-### 1. Document ingestion
+V2/v3 evidence schemas and the v3 context builder are foundations only. No production workflow currently calls `build_harness_context`; non-Tavern component versions intentionally remain placeholders, and Tavern production evidence remains legacy v1 pending a separately tested migration. See `harness-engineering.md` and `harness-schema-ownership.md`.
+
+Learning-plan text uses a stable cross-layer contract:
+
+- `course_title`: textbook-grounded plan header;
+- `objective`: learner-authored goal;
+- `overview`: summary paragraph;
+- `today_tasks`: actionable tasks;
+- `schedule[].title`: primary executable directory;
+- `schedule[].schedule_chapters[].title`: nested learning chapter directory.
+
+See `plan-text-contract.md` before changing these meanings.
+
+## Main flows
+
+### 1. Document ingestion and cleanup
 
 `POST /documents` stores the upload and creates a document shell.
 
-### 2. Parsing and cleanup
+`POST /documents/{id}/process` or `/process/stream` then runs:
 
-`POST /documents/{id}/process` or `/process/stream` runs:
+1. PDF text extraction;
+2. OCR fallback when extraction is insufficient or forced;
+3. raw Section detection and Chunk generation;
+4. heuristic cleanup into ordered Study Units;
+5. document/debug persistence and stream evidence.
 
-1. text extraction
-2. OCR fallback when needed
-3. section detection
-4. chunk generation
-5. study-unit cleanup through `StudyArrangementService`
+Document and debug writes are still separate operations rather than one atomic Harness commit. This is tracked by `HRN-DOC-001`.
 
-The backend writes:
+### 2. Plan generation
 
-- a `DocumentRecord`
-- a `DocumentDebugRecord`
-- derived study units used later for planning
-
-### 3. Plan generation
+`GET /documents/{id}/planning-context` exposes cleaned Study Units, detail context, and available planner tools.
 
 `POST /learning-plans` or `/learning-plans/stream` runs:
 
-1. heuristic first-pass plan construction
-2. model planning pass
-3. optional tool calls for finer unit detail or page-range reads
-4. filtered schedule application back onto known study units
-5. trace persistence under `planning_trace`
+1. deterministic first-pass construction;
+2. model planning when enabled;
+3. optional use of the six registered planning tools for detail reads, clarification, completion estimates, Study Unit revision, page text, and multimodal page images; the effective set is filtered by configuration and runtime context;
+4. schedule normalization against known Study Units;
+5. plan and planning-trace persistence.
 
-### 4. Tutor interaction
+The planning proposal/tool boundary and document/debug/trace/plan commit are not yet one v3 Harness transaction. This is tracked by `HRN-PLAN-001`.
 
-`POST /study-sessions` creates a session shell.
+### 3. Study interaction
 
-`POST /study-sessions/{id}/chat` returns:
+`POST /study-sessions` creates or restores one document/persona/Study Unit scope. `POST /study-sessions/{id}/chat` returns a structured reply, citations, Character Events, and the refreshed session.
 
-- `reply`
-- `citations`
-- `character_events`
+The frontend never parses performance instructions out of roleplay text. Character performance remains structured so a future renderer can consume it independently.
 
-The frontend should never parse roleplay instructions out of plain text. Character performance stays structured.
+Study Session storage still uses aggregate read-modify-write. Tool-driven state effects can also occur before final reply validation, and turn/follow-up writes are not one transaction. Concurrent append and typed effect commit work remains under `AUD-001` and `HRN-STUDY-001`.
 
-Current behavior additions:
+### 4. Tavern interaction
 
-- frontend routes dialogue by active plan section and reuses historical sessions per plan-section key when available
-- chat failures are surfaced explicitly for user retry, rather than hidden by synthetic fallback assistant text
-- transcript view is reverse chronological for faster review of recent turns
-- `/plan` and `/study` page-local draft state now survives route changes; serializable subsets also recover after same-tab refresh through `sessionStorage`
+Tavern is independent from Study Session and has no textbook/citation requirement.
 
-## Character Layer
+1. `POST /tavern/rooms` snapshots 1–6 personas and an optional scene into a durable room.
+2. `POST /tavern/rooms/{id}/turns` starts a direct or facilitated idempotent run under an expected room revision.
+3. The server derives the speaker schedule from participant `display_order`.
+4. Each actor reply is strictly decoded and semantically checked before a message is appended.
+5. Partial/failed/blocked steps remain durable and can receive a scoped child retry.
+6. Lease heartbeat, owner/claim fencing, bounded takeover, resume, and cancel prevent stale workers from committing.
 
-The repository already reserves a stable character-event protocol for future richer rendering:
+Cancel fences the result and future recovery calls, but the current synchronous provider request may continue until provider timeout. A recent run listing is bounded (default 50) and is not an authoritative retry-chain aggregate.
 
-- `emotion`
-- `action`
-- `intensity`
-- `speech_style`
-- `scene_hint`
-- `line_segment_id`
-- `timing_hint`
+The browser `Tavern Workspace` implements:
 
-The frontend currently renders a placeholder character adapter. This preserves the separation needed to later swap in Live2D or TTS without rewriting the study UI.
+- `Tavern Header`;
+- `Tavern Session Panel`;
+- `Tavern Setup Panel`;
+- `Tavern Conversation Panel`;
+- `Participant Roster`;
+- `Interaction Composer`;
+- `Reliability Details`.
 
-## Planning Context And Tooling
+Tavern functional/state checks cover create/direct/facilitated/recovery paths, a populated real-backend wire, composition-event fencing, and a 390px no-overflow inspection. The independent UX release gate remains open for mobile primary-action order, real per-step roster state, terminal replay recovery prominence, and a reproducible device-level IME/viewport pass under `UX-001`.
 
-The planner no longer receives only flat chapter titles. Its model-visible core input is:
+## Character layer
 
-- cleaned `study_units`
-- a per-unit `detail_map`
-- tool access for deeper reads
+The structured Character Event protocol reserves:
 
-The `/debug` planning context still exposes `course_outline` for inspection, but the model prompt itself is intentionally centered on cleaned `study_units`.
+- `emotion`;
+- `action`;
+- `intensity`;
+- `speech_style`;
+- `scene_hint`;
+- `line_segment_id`;
+- `timing_hint`.
 
-Current model tools:
+The current frontend renderer is a placeholder adapter. This keeps Study UI, character shell, and debug evidence separable for future Live2D/TTS work.
 
-- `get_study_unit_detail`
-- `read_page_range_content`
+## Persistence layout
 
-Study chat model tools now include:
+`Database` and SQLAlchemy are authoritative for structured records. Important tables include:
 
-- `ask_multiple_choice_question`
-- `ask_fill_blank_question`
-- `read_page_range_content`
-- `read_page_range_images` (when chat multimodal mode is enabled and document path is available)
+- documents, learning plans, study sessions, personas, persona cards;
+- scene setup/library/reusable nodes and session-scene state;
+- document debug, planning traces, stream reports, runtime settings, model-tool config, and token usage;
+- normalized `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`.
 
-Chat model runtime behavior is configurable through environment variables, including:
+`LocalJsonStore` is a compatibility/database wrapper. It reads and writes database rows but still mirrors several legacy aggregates to JSON through its legacy adapter. New append-heavy domains must not use aggregate `save_list`; Tavern uses its normalized repository instead.
 
-- `OPENAI_CHAT_MAX_TOKENS`
-- `OPENAI_CHAT_HISTORY_MESSAGES`
-- `OPENAI_CHAT_TOOL_MAX_ROUNDS`
-- `OPENAI_CHAT_MODEL_MULTIMODAL`
+Local files under `services/ai/data/` include:
 
-Per-tool enablement is managed by `ModelToolConfig` rather than runtime environment toggles.
+- `uploads/`: uploaded textbook files;
+- `chat_attachments/`: Study Chat attachments;
+- `document_debug/`: compatibility/debug artifacts;
+- `planning_trace/`: planning traces;
+- stream/debug compatibility mirrors;
+- `_tmp/`: OCR and runtime temporary files;
+- `cache/`: inspectable cache material.
 
-OpenAI-compatible requests now also include a transport-level transient retry layer inside `OpenAIModelProvider`:
+Runtime settings in the configured database are authoritative. A legacy JSON mirror may exist, but deleting only that file does not reset the database record.
 
-- retries are limited to network errors, timeouts, and transient upstream HTTP statuses (`408`, `409`, `425`, `500`, `502`, `503`, `504`)
-- rate-limit and payload/schema failures are still surfaced directly
-- final public error mapping stays unchanged, while stream payloads can expose `retry_attempts` for debug visibility
+## Current constraints and risks
 
-Additional semantic recovery paths now exist across plan/chat/setting generation:
-
-- content-filter, empty-response, and invalid-structured-output cases may trigger one constrained retry path
-- successful recoveries are recorded as typed debug data (`model_recoveries`) and are intended for debug panels only
-- unsuccessful recoveries still surface through the ordinary page-level error path
-
-This is the main mechanism used to keep plans grounded in OCR-cleaned textbook structure while still allowing a model to inspect details before scheduling.
-
-## Storage Layout
-
-Structured data now lives in PostgreSQL tables managed through SQLAlchemy and Alembic. Main buckets include:
-
-- `documents`
-- `learning_plans`
-- `study_sessions`
-- `personas`
-- `document_debug_records`
-- `planning_traces`
-- `stream_reports`
-- `runtime_settings`
-- `model_tool_configs`
-
-Local filesystem storage under `services/ai/data/` is now limited to file-like assets and temp material:
-
-- `uploads/`: uploaded textbook binaries
-- `chat_attachments/`: learner chat attachments
-- `_tmp/`: OCR/runtime temporary files
-- `cache/`: reserved local cache directory
-
-The backend also exposes `/storage/summary` and `/storage/cleanup` so cache and temp layers can be inspected and cleared without touching persistent domain records.
-
-## Current Constraints
-
-- single-user only
-- web-first only
-- no auth
-- no database
-- no background queue
-- no Live2D SDK
-- no TTS runtime
-
-The code is already shaped to support richer persona and character rendering later, but the current priority remains a reliable textbook-to-plan workflow.
+- single-user and no authentication;
+- frontend and backend remain separate processes in web development;
+- no background queue, Live2D, or TTS runtime;
+- OCR cleanup remains heuristic-heavy;
+- tool-enabled model calls increase provider latency and timeout pressure;
+- legacy Study Session aggregate writes can lose concurrent turns;
+- production Harness v3 adoption is incomplete outside schema/context foundations;
+- Tavern prompt/token/scene-depth budgets and eval metrics remain open;
+- `npm run lint:web` invokes removed Next.js 16 behavior and is tracked by `QG-001`.
