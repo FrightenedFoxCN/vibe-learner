@@ -1,0 +1,119 @@
+{
+  "trace_schema_version": "harness-trace-v3",
+  "trace_id": "trace-tavern-context-foundation-1",
+  "operation_id": "harness-operation-11111111111111111111111111111111",
+  "parent_trace_id": null,
+  "workflow": "tavern",
+  "stage": "actor_reply",
+  "status": "passed",
+  "contract": {
+    "name": "TavernActorReply",
+    "version": "tavern-actor-reply-v1"
+  },
+  "context": {
+    "context_contract": {
+      "name": "HarnessContextEnvelopeV3",
+      "version": "harness-context-v3"
+    },
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "operation_id": "harness-operation-11111111111111111111111111111111",
+    "input_contract": {
+      "name": "TavernActorInputManifest",
+      "version": "tavern-actor-input-manifest-v1"
+    },
+    "subject_refs": [
+      {
+        "resource_type": "tavern_message",
+        "resource_id": "message-9",
+        "revision": null
+      },
+      {
+        "resource_type": "tavern_room",
+        "resource_id": "room-1",
+        "revision": 4
+      }
+    ],
+    "component_versions": [
+      {
+        "name": "tavern_actor_prompt",
+        "version": "tavern-actor-v1"
+      },
+      {
+        "name": "tavern_persona_compiler",
+        "version": "tavern-persona-compiler-v1"
+      },
+      {
+        "name": "tavern_scheduler",
+        "version": "tavern-schedule-v1"
+      }
+    ],
+    "snapshot_refs": [
+      {
+        "artifact_type": "tavern_room_snapshot",
+        "artifact_id": "room-1-revision-4",
+        "contract": {
+          "name": "TavernRoomSnapshot",
+          "version": "tavern-room-snapshot-v1"
+        },
+        "digest_algorithm": "sha256",
+        "payload_digest": "e0955dcdef34e9576fd16b612da581be5a799fd2459beb1d50836d28e9e7f83a"
+      }
+    ],
+    "digest_algorithm": "sha256",
+    "digest_contract": {
+      "name": "HarnessContextManifestDigest",
+      "version": "harness-context-manifest-digest-v1"
+    },
+    "input_digest": "6456b3b79ccb6aa5b3734eae226734a55f8e40eefc904fd45aeae3dd97f7f7d2",
+    "context_digest": "8d4abdb8fcbb581ee72946e19845781ce62df25ac22e493b2e5ad070f6b48cfc",
+    "policy_contract": {
+      "name": "TavernHarnessPolicy",
+      "version": "tavern-harness-policy-v1"
+    },
+    "prompt_contract": {
+      "name": "TavernActorPrompt",
+      "version": "tavern-actor-v1"
+    }
+  },
+  "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+  "checks": [],
+  "attempt_records": [
+    {
+      "attempt_id": "attempt-generate-1",
+      "attempt_index": 1,
+      "phase": "generate",
+      "status": "passed",
+      "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "error_code": "",
+      "duration_ms": 7
+    },
+    {
+      "attempt_id": "attempt-validate-1",
+      "attempt_index": 2,
+      "phase": "validate",
+      "status": "passed",
+      "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "error_code": "",
+      "duration_ms": 1
+    }
+  ],
+  "recovery_strategy": "none",
+  "error_code": "",
+  "duration_ms": 8,
+  "commit_evidence": {
+    "status": "not_applicable",
+    "effect_batch_id": null,
+    "payload_contract": null,
+    "digest_algorithm": null,
+    "digest_scope": null,
+    "attempted_resource_refs": [],
+    "committed_resources": [],
+    "payload_digest": null,
+    "committed_at": null,
+    "rollback_reason_code": "",
+    "rolled_back_at": null
+  },
+  "started_at": "2026-08-12T10:00:00Z",
+  "completed_at": "2026-08-12T10:00:00.008Z"
+}

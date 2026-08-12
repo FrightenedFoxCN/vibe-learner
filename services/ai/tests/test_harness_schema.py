@@ -13,6 +13,7 @@ from app.models.harness import (
     HarnessProposalEnvelope,
     HarnessTraceRecord,
     HarnessTraceV2,
+    HarnessTraceV3,
     HarnessV2Model,
     canonical_harness_commit_digest,
     canonical_harness_digest,
@@ -75,15 +76,33 @@ class HarnessSchemaTests(unittest.TestCase):
         self.assertIsNone(evidence["payload_digest"])
         self.assertIsNone(evidence["committed_at"])
 
+    def test_v3_fixture_round_trips_without_reinterpreting_v2(self) -> None:
+        trace = validate_harness_trace(_fixture("passed_not_applicable_v3.json"))
+
+        self.assertIsInstance(trace, HarnessTraceV3)
+        assert isinstance(trace, HarnessTraceV3)
+        self.assertEqual(trace.context.stage, trace.stage)
+        self.assertEqual(trace.context.operation_id, trace.operation_id)
+        self.assertEqual(trace.commit_evidence.status, HarnessCommitStatus.NOT_APPLICABLE)
+        self.assertEqual(
+            HarnessTraceV3.model_validate(trace.model_dump(mode="json")),
+            trace,
+        )
+
+        legacy_v2 = _fixture("repaired_committed_v2.json")
+        assert isinstance(legacy_v2["context"], dict)
+        legacy_v2["context"]["subject_refs"][0]["resource_type"] = "legacy_custom_type"
+        self.assertIsInstance(validate_harness_trace(legacy_v2), HarnessTraceV2)
+
     def test_unknown_trace_schema_version_is_rejected_instead_of_downgraded(self) -> None:
         payload = _fixture("repaired_committed_v2.json")
-        payload["trace_schema_version"] = "harness-trace-v3"
+        payload["trace_schema_version"] = "harness-trace-v4"
 
         with self.assertRaises(ValidationError):
             validate_harness_trace(payload)
 
         disguised_legacy = _fixture("legacy_v1.json")
-        disguised_legacy["version"] = "harness-trace-v3"
+        disguised_legacy["version"] = "harness-trace-v4"
         with self.assertRaisesRegex(
             ValidationError,
             "harness_trace_schema_version_discriminator_required",

@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 import hashlib
 import json
-from typing import Generic, Literal, TypeVar
+import re
+from typing import ClassVar, Generic, Literal, TypeVar
 
 from pydantic import (
     AwareDatetime,
@@ -71,6 +72,7 @@ HarnessTraceV1 = HarnessTraceRecord
 
 
 HARNESS_TRACE_SCHEMA_V2 = "harness-trace-v2"
+HARNESS_TRACE_SCHEMA_V3 = "harness-trace-v3"
 
 
 class HarnessWorkflow(StrEnum):
@@ -83,6 +85,72 @@ class HarnessWorkflow(StrEnum):
     STUDY_CHAT = "study_chat"
     TAVERN = "tavern"
     FRONTEND_DECODE = "frontend_decode"
+
+
+class HarnessStage(StrEnum):
+    DOCUMENT_PARSE = "document_parse"
+    OCR_PAGE = "ocr_page"
+    STUDY_UNIT_CLEANUP = "study_unit_cleanup"
+    PLAN_GENERATION = "plan_generation"
+    PERSONA_GENERATION = "persona_generation"
+    SCENE_GENERATION = "scene_generation"
+    STUDY_CHAT_REPLY = "study_chat_reply"
+    TAVERN_ACTOR_REPLY = "actor_reply"
+    FRONTEND_RESPONSE_DECODE = "response_decode"
+
+
+class HarnessComponentName(StrEnum):
+    DOCUMENT_PARSER = "document_parser"
+    OCR_ENGINE = "ocr_engine"
+    STUDY_UNIT_CLEANER = "study_unit_cleaner"
+    PLANNING_PROMPT = "planning_prompt"
+    PLANNING_TOOLSET = "planning_toolset"
+    PERSONA_COMPILER = "persona_compiler"
+    SCENE_COMPILER = "scene_compiler"
+    STUDY_CHAT_PROMPT = "study_chat_prompt"
+    STUDY_CHAT_TOOLSET = "study_chat_toolset"
+    TAVERN_PERSONA_COMPILER = "tavern_persona_compiler"
+    TAVERN_ACTOR_PROMPT = "tavern_actor_prompt"
+    TAVERN_SCHEDULER = "tavern_scheduler"
+    FRONTEND_DECODER = "frontend_decoder"
+
+
+HARNESS_STAGE_COMPONENT_NAMES: dict[
+    tuple[HarnessWorkflow, HarnessStage],
+    tuple[HarnessComponentName, ...],
+] = {
+    (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.DOCUMENT_PARSE): (
+        HarnessComponentName.DOCUMENT_PARSER,
+    ),
+    (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE): (
+        HarnessComponentName.OCR_ENGINE,
+    ),
+    (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP): (
+        HarnessComponentName.STUDY_UNIT_CLEANER,
+    ),
+    (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION): (
+        HarnessComponentName.PLANNING_PROMPT,
+        HarnessComponentName.PLANNING_TOOLSET,
+    ),
+    (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION): (
+        HarnessComponentName.PERSONA_COMPILER,
+    ),
+    (HarnessWorkflow.SCENE, HarnessStage.SCENE_GENERATION): (
+        HarnessComponentName.SCENE_COMPILER,
+    ),
+    (HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY): (
+        HarnessComponentName.STUDY_CHAT_PROMPT,
+        HarnessComponentName.STUDY_CHAT_TOOLSET,
+    ),
+    (HarnessWorkflow.TAVERN, HarnessStage.TAVERN_ACTOR_REPLY): (
+        HarnessComponentName.TAVERN_ACTOR_PROMPT,
+        HarnessComponentName.TAVERN_PERSONA_COMPILER,
+        HarnessComponentName.TAVERN_SCHEDULER,
+    ),
+    (HarnessWorkflow.FRONTEND_DECODE, HarnessStage.FRONTEND_RESPONSE_DECODE): (
+        HarnessComponentName.FRONTEND_DECODER,
+    ),
+}
 
 
 class HarnessDigestAlgorithm(StrEnum):
@@ -116,8 +184,44 @@ class HarnessDigestScope(StrEnum):
     COMMITTED_BATCH = "committed_batch"
 
 
+class HarnessArtifactType(StrEnum):
+    DOCUMENT_UPLOAD = "document_upload"
+    DOCUMENT_DEBUG = "document_debug"
+    OCR_PAGE = "ocr_page"
+    STUDY_UNIT_INPUT = "study_unit_input"
+    PLANNING_CONTEXT = "planning_context"
+    PERSONA_SNAPSHOT = "persona_snapshot"
+    SCENE_SNAPSHOT = "scene_snapshot"
+    STUDY_SESSION_SNAPSHOT = "study_session_snapshot"
+    TAVERN_ROOM_SNAPSHOT = "tavern_room_snapshot"
+    TAVERN_TRANSCRIPT = "tavern_transcript"
+    FRONTEND_RESPONSE_FIXTURE = "frontend_response_fixture"
+
+
+class HarnessResourceType(StrEnum):
+    DOCUMENT = "document"
+    DOCUMENT_PAGE = "document_page"
+    DOCUMENT_DEBUG = "document_debug"
+    STUDY_UNIT = "study_unit"
+    LEARNING_PLAN = "learning_plan"
+    PLANNING_TRACE = "planning_trace"
+    PERSONA = "persona"
+    SCENE = "scene"
+    STUDY_SESSION = "study_session"
+    TAVERN_ROOM = "tavern_room"
+    TAVERN_RUN = "tavern_run"
+    TAVERN_MESSAGE = "tavern_message"
+    FRONTEND_REQUEST = "frontend_request"
+
+
 class HarnessV2Model(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+class HarnessSafeManifest(HarnessV2Model):
+    """Marker base for explicitly reviewed, non-secret digest manifests."""
+
+    trace_safe_fields: ClassVar[frozenset[str]] = frozenset()
 
 
 class HarnessContractRef(HarnessV2Model):
@@ -126,12 +230,16 @@ class HarnessContractRef(HarnessV2Model):
 
 
 class HarnessResourceRef(HarnessV2Model):
+    """The registered v2 wire shape; keep open strings for persisted compatibility."""
+
     resource_type: str = Field(min_length=1, max_length=96)
     resource_id: str = Field(min_length=1, max_length=160)
     revision: int | None = Field(default=None, ge=0)
 
 
 class HarnessSnapshotRef(HarnessV2Model):
+    """The registered v2 wire shape; v3 adds typed artifacts and contracts."""
+
     artifact_type: str = Field(min_length=1, max_length=96)
     artifact_id: str = Field(min_length=1, max_length=160)
     schema_version: str = Field(min_length=1, max_length=160)
@@ -140,6 +248,8 @@ class HarnessSnapshotRef(HarnessV2Model):
 
 
 class HarnessContextEnvelope(HarnessV2Model):
+    """The immutable v2 context wire contract."""
+
     schema_name: str = Field(min_length=1, max_length=160)
     schema_version: str = Field(min_length=1, max_length=160)
     workflow: HarnessWorkflow
@@ -171,6 +281,121 @@ class HarnessContextEnvelope(HarnessV2Model):
             raise ValueError("harness_context_component_version_duplicate")
         if component_names != sorted(component_names):
             raise ValueError("harness_context_component_versions_not_sorted")
+        snapshot_identities = [
+            (item.artifact_type, item.artifact_id) for item in self.snapshot_refs
+        ]
+        if len(snapshot_identities) != len(set(snapshot_identities)):
+            raise ValueError("harness_context_snapshot_ref_duplicate")
+        if snapshot_identities != sorted(snapshot_identities):
+            raise ValueError("harness_context_snapshot_refs_not_sorted")
+        return self
+
+
+HARNESS_CONTEXT_CONTRACT_V3 = HarnessContractRef(
+    name="HarnessContextEnvelopeV3",
+    version="harness-context-v3",
+)
+HARNESS_CONTEXT_DIGEST_CONTRACT_V1 = HarnessContractRef(
+    name="HarnessContextManifestDigest",
+    version="harness-context-manifest-digest-v1",
+)
+
+
+HARNESS_MUTABLE_RESOURCE_TYPES = frozenset(
+    {
+        HarnessResourceType.DOCUMENT,
+        HarnessResourceType.DOCUMENT_DEBUG,
+        HarnessResourceType.LEARNING_PLAN,
+        HarnessResourceType.PLANNING_TRACE,
+        HarnessResourceType.PERSONA,
+        HarnessResourceType.SCENE,
+        HarnessResourceType.STUDY_SESSION,
+        HarnessResourceType.TAVERN_ROOM,
+        HarnessResourceType.TAVERN_RUN,
+        HarnessResourceType.FRONTEND_REQUEST,
+    }
+)
+
+
+class HarnessResourceRefV3(HarnessV2Model):
+    resource_type: HarnessResourceType
+    resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
+    revision: int | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def require_mutable_revision(self) -> "HarnessResourceRefV3":
+        if self.resource_type in HARNESS_MUTABLE_RESOURCE_TYPES and self.revision is None:
+            raise ValueError("harness_context_mutable_subject_revision_required")
+        return self
+
+
+class HarnessSnapshotRefV3(HarnessV2Model):
+    artifact_type: HarnessArtifactType
+    artifact_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$")
+    contract: HarnessContractRef
+    digest_algorithm: Literal[HarnessDigestAlgorithm.SHA256] = HarnessDigestAlgorithm.SHA256
+    payload_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_contract(self) -> "HarnessSnapshotRefV3":
+        require_versioned_harness_contract(self.contract)
+        return self
+
+
+class HarnessContextEnvelopeV3(HarnessV2Model):
+    """Trace-safe, self-validating context identity for future workflow adoption."""
+
+    context_contract: HarnessContractRef
+    workflow: HarnessWorkflow
+    stage: HarnessStage
+    operation_id: str = Field(pattern=r"^harness-operation-[0-9a-f]{32}$")
+    input_contract: HarnessContractRef
+    subject_refs: list[HarnessResourceRefV3] = Field(default_factory=list, max_length=64)
+    component_versions: list[HarnessContractRef] = Field(
+        default_factory=list,
+        max_length=64,
+    )
+    snapshot_refs: list[HarnessSnapshotRefV3] = Field(default_factory=list, max_length=64)
+    digest_algorithm: Literal[HarnessDigestAlgorithm.SHA256] = HarnessDigestAlgorithm.SHA256
+    digest_contract: HarnessContractRef
+    input_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    context_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    policy_contract: HarnessContractRef | None = None
+    prompt_contract: HarnessContractRef | None = None
+
+    @model_validator(mode="after")
+    def validate_canonical_context(self) -> "HarnessContextEnvelopeV3":
+        if self.context_contract != HARNESS_CONTEXT_CONTRACT_V3:
+            raise ValueError("harness_context_contract_mismatch")
+        if self.digest_contract != HARNESS_CONTEXT_DIGEST_CONTRACT_V1:
+            raise ValueError("harness_context_digest_contract_mismatch")
+        for contract in (
+            self.input_contract,
+            self.policy_contract,
+            self.prompt_contract,
+            *self.component_versions,
+        ):
+            if contract is not None:
+                require_versioned_harness_contract(contract)
+
+        subject_identities = [
+            (item.resource_type, item.resource_id) for item in self.subject_refs
+        ]
+        if len(subject_identities) != len(set(subject_identities)):
+            raise ValueError("harness_context_subject_ref_duplicate")
+        if subject_identities != sorted(subject_identities):
+            raise ValueError("harness_context_subject_refs_not_sorted")
+
+        component_names = [item.name for item in self.component_versions]
+        if len(component_names) != len(set(component_names)):
+            raise ValueError("harness_context_component_version_duplicate")
+        if component_names != sorted(component_names):
+            raise ValueError("harness_context_component_versions_not_sorted")
+        required_components = HARNESS_STAGE_COMPONENT_NAMES.get((self.workflow, self.stage))
+        if required_components is None:
+            raise ValueError("harness_context_stage_not_registered")
+        if component_names != sorted(item.value for item in required_components):
+            raise ValueError("harness_context_component_set_mismatch")
 
         snapshot_identities = [
             (item.artifact_type, item.artifact_id) for item in self.snapshot_refs
@@ -179,6 +404,8 @@ class HarnessContextEnvelope(HarnessV2Model):
             raise ValueError("harness_context_snapshot_ref_duplicate")
         if snapshot_identities != sorted(snapshot_identities):
             raise ValueError("harness_context_snapshot_refs_not_sorted")
+        if self.context_digest != canonical_harness_context_digest(self):
+            raise ValueError("harness_context_digest_mismatch")
         return self
 
 
@@ -233,6 +460,11 @@ class HarnessCommittedResourceRef(HarnessV2Model):
         ):
             raise ValueError("harness_commit_revision_regressed")
         return self
+
+
+class HarnessCommittedResourceRefV3(HarnessCommittedResourceRef):
+    resource_type: HarnessResourceType
+    resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
 
 
 class HarnessCommitEvidence(HarnessV2Model):
@@ -371,6 +603,17 @@ class HarnessCommitEvidence(HarnessV2Model):
         return self
 
 
+class HarnessCommitEvidenceV3(HarnessCommitEvidence):
+    attempted_resource_refs: list[HarnessResourceRefV3] = Field(
+        default_factory=list,
+        max_length=64,
+    )
+    committed_resources: list[HarnessCommittedResourceRefV3] = Field(
+        default_factory=list,
+        max_length=64,
+    )
+
+
 class HarnessTraceV2(HarnessV2Model):
     trace_schema_version: Literal["harness-trace-v2"]
     trace_id: str = Field(min_length=1, max_length=160)
@@ -406,7 +649,6 @@ class HarnessTraceV2(HarnessV2Model):
             raise ValueError("harness_context_operation_mismatch")
         if self.context.workflow != self.workflow:
             raise ValueError("harness_context_workflow_mismatch")
-
         attempt_ids = [item.attempt_id for item in self.attempt_records]
         if len(attempt_ids) != len(set(attempt_ids)):
             raise ValueError("harness_attempt_id_duplicate")
@@ -561,6 +803,22 @@ class HarnessTraceV2(HarnessV2Model):
         return self
 
 
+class HarnessTraceV3(HarnessTraceV2):
+    """V2 lifecycle evidence paired with the stricter v3 context contract."""
+
+    trace_schema_version: Literal["harness-trace-v3"]
+    operation_id: str = Field(pattern=r"^harness-operation-[0-9a-f]{32}$")
+    stage: HarnessStage
+    context: HarnessContextEnvelopeV3
+    commit_evidence: HarnessCommitEvidenceV3
+
+    @model_validator(mode="after")
+    def bind_v3_context(self) -> "HarnessTraceV3":
+        if self.context.stage != self.stage:
+            raise ValueError("harness_context_stage_mismatch")
+        return self
+
+
 ProposalT = TypeVar("ProposalT", bound=HarnessV2Model)
 
 
@@ -591,14 +849,25 @@ class HarnessProposalEnvelope(HarnessV2Model, Generic[ProposalT]):
         return self
 
 
-HarnessTraceWire = HarnessTraceRecord | HarnessTraceV2
-_HARNESS_TRACE_WIRE_ADAPTER = TypeAdapter(HarnessTraceWire)
+HarnessTraceWire = HarnessTraceRecord | HarnessTraceV2 | HarnessTraceV3
+_HARNESS_V1_ADAPTER = TypeAdapter(HarnessTraceRecord)
+_HARNESS_V2_ADAPTER = TypeAdapter(HarnessTraceV2)
+_HARNESS_V3_ADAPTER = TypeAdapter(HarnessTraceV3)
 
 
 def validate_harness_trace(payload: object) -> HarnessTraceWire:
-    """Strictly decode legacy v1 or known v2; unknown v2 versions are rejected."""
+    """Strictly decode legacy v1 or registered v2/v3 wire evidence."""
 
-    return _HARNESS_TRACE_WIRE_ADAPTER.validate_python(payload)
+    discriminator = payload.get("trace_schema_version") if isinstance(payload, dict) else None
+    if discriminator == HARNESS_TRACE_SCHEMA_V2:
+        return _HARNESS_V2_ADAPTER.validate_python(payload)
+    if discriminator == HARNESS_TRACE_SCHEMA_V3:
+        return _HARNESS_V3_ADAPTER.validate_python(payload)
+    if discriminator is not None:
+        # Use the strictest registered adapter so callers consistently receive a
+        # Pydantic ValidationError without permitting an unknown-version fallback.
+        return _HARNESS_V3_ADAPTER.validate_python(payload)
+    return _HARNESS_V1_ADAPTER.validate_python(payload)
 
 
 def canonical_harness_digest(payload: object) -> str:
@@ -614,6 +883,55 @@ def canonical_harness_digest(payload: object) -> str:
         allow_nan=False,
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def canonical_harness_context_digest(
+    context: HarnessContextEnvelopeV3 | dict[str, object],
+) -> str:
+    """Recompute a v3 context-manifest digest from trace-visible evidence."""
+
+    if isinstance(context, HarnessContextEnvelopeV3):
+        manifest = context.model_dump(
+            mode="json",
+            exclude={"operation_id", "context_digest"},
+            exclude_none=False,
+        )
+    else:
+        manifest = dict(context)
+        manifest.pop("operation_id", None)
+        manifest.pop("context_digest", None)
+    digest_contract = HarnessContractRef.model_validate(manifest["digest_contract"])
+    return canonical_harness_digest(
+        {
+            "contract": digest_contract.model_dump(
+                mode="json",
+                exclude_none=False,
+            ),
+            "payload": manifest,
+        }
+    )
+
+
+def _is_placeholder_version(value: str) -> bool:
+    normalized = value.strip().lower()
+    return normalized.startswith("pending-") or normalized in {
+        "latest",
+        "unknown",
+        "none",
+    }
+
+
+def require_versioned_harness_contract(contract: HarnessContractRef) -> None:
+    """Reject ambiguous or placeholder contract identities used by V3 evidence."""
+
+    token_pattern = r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$"
+    if not re.fullmatch(token_pattern, contract.name) or not re.fullmatch(
+        token_pattern,
+        contract.version,
+    ):
+        raise ValueError("harness_contract_token_invalid")
+    if _is_placeholder_version(contract.version):
+        raise ValueError("harness_contract_version_not_adopted")
 
 
 def canonical_harness_commit_digest(

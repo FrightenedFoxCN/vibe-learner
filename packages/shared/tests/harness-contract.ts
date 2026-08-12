@@ -2,6 +2,7 @@ import type {
   HarnessProposalEnvelope,
   HarnessTraceV1,
   HarnessTraceV2,
+  HarnessTraceV3,
   HarnessTraceWire,
 } from "../src/harness";
 
@@ -166,6 +167,112 @@ const repairedCommittedV2 = {
   completedAt: "2026-08-12T08:00:00Z",
 } satisfies HarnessTraceV2;
 
+const passedNotApplicableV3 = {
+  traceSchemaVersion: "harness-trace-v3",
+  traceId: "trace-tavern-context-foundation-1",
+  operationId: "harness-operation-11111111111111111111111111111111",
+  parentTraceId: null,
+  workflow: "tavern",
+  stage: "actor_reply",
+  status: "passed",
+  contract: {
+    name: "TavernActorReply",
+    version: "tavern-actor-reply-v1",
+  },
+  context: {
+    contextContract: {
+      name: "HarnessContextEnvelopeV3",
+      version: "harness-context-v3",
+    },
+    workflow: "tavern",
+    stage: "actor_reply",
+    operationId: "harness-operation-11111111111111111111111111111111",
+    inputContract: {
+      name: "TavernActorInputManifest",
+      version: "tavern-actor-input-manifest-v1",
+    },
+    subjectRefs: [
+      { resourceType: "tavern_message", resourceId: "message-9", revision: null },
+      { resourceType: "tavern_room", resourceId: "room-1", revision: 4 },
+    ],
+    componentVersions: [
+      { name: "tavern_actor_prompt", version: "tavern-actor-v1" },
+      {
+        name: "tavern_persona_compiler",
+        version: "tavern-persona-compiler-v1",
+      },
+      { name: "tavern_scheduler", version: "tavern-schedule-v1" },
+    ],
+    snapshotRefs: [
+      {
+        artifactType: "tavern_room_snapshot",
+        artifactId: "room-1-revision-4",
+        contract: {
+          name: "TavernRoomSnapshotManifest",
+          version: "tavern-room-snapshot-manifest-v1",
+        },
+        digestAlgorithm: "sha256",
+        payloadDigest: "99f70d42b90d248f2cb4b62a95cb8b9d848acb6ec12eb8dcf8d2a472bbe23c89",
+      },
+    ],
+    digestAlgorithm: "sha256",
+    digestContract: {
+      name: "HarnessContextManifestDigest",
+      version: "harness-context-manifest-digest-v1",
+    },
+    inputDigest: "509472be9c67dc5a7fa2e124e15b2749a806ab6c689275db349441746878b78c",
+    contextDigest: "4f5bc4a6a4384434121f5eecbd92f58fa879a4cbb1788515a87737fa81cbfbb7",
+    policyContract: {
+      name: "TavernHarnessPolicy",
+      version: "tavern-harness-v1",
+    },
+    promptContract: {
+      name: "TavernActorPrompt",
+      version: "tavern-actor-v1",
+    },
+  },
+  outputDigest: "3".repeat(64),
+  checks: [],
+  attemptRecords: [
+    {
+      attemptId: "attempt-generate-1",
+      attemptIndex: 1,
+      phase: "generate",
+      status: "passed",
+      outputDigest: "3".repeat(64),
+      errorCode: "",
+      durationMs: 7,
+    },
+    {
+      attemptId: "attempt-validate-1",
+      attemptIndex: 2,
+      phase: "validate",
+      status: "passed",
+      outputDigest: "3".repeat(64),
+      errorCode: "",
+      durationMs: 1,
+    },
+  ],
+  recoveryStrategy: "none",
+  errorCode: "",
+  durationMs: 8,
+  commitEvidence: {
+    status: "not_applicable",
+    effectBatchId: null,
+    payloadContract: null,
+    digestAlgorithm: null,
+    digestScope: null,
+    attemptedResourceRefs: [],
+    committedResources: [],
+    payloadDigest: null,
+    committedAt: null,
+    rollbackReasonCode: "",
+    rolledBackAt: null,
+  },
+  startedAt: "2026-08-12T10:00:00Z",
+  completedAt: "2026-08-12T10:00:00.008Z",
+} satisfies HarnessTraceV3;
+
 const proposalEnvelope = {
   operationId: "operation-example-1",
   contract: { name: "ExampleProposal", version: "example-proposal-v1" },
@@ -174,7 +281,11 @@ const proposalEnvelope = {
   proposal: { text: "validated content" },
 } satisfies HarnessProposalEnvelope<{ text: string }>;
 
-const wireFixtures: HarnessTraceWire[] = [legacyV1, repairedCommittedV2];
+const wireFixtures: HarnessTraceWire[] = [
+  legacyV1,
+  repairedCommittedV2,
+  passedNotApplicableV3,
+];
 
 void proposalEnvelope;
 void wireFixtures;
