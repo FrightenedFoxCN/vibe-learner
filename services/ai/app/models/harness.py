@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 import hashlib
 import json
 import re
 from types import MappingProxyType
-from typing import ClassVar, Generic, Literal, TypeVar
+from typing import ClassVar, Generic, Literal, Mapping, TypeVar
 
 from pydantic import (
     AwareDatetime,
@@ -215,6 +216,41 @@ class HarnessResourceType(StrEnum):
     FRONTEND_REQUEST = "frontend_request"
 
 
+class HarnessResourceSemantics(StrEnum):
+    REVISIONED_CONTROL_AGGREGATE = "revisioned_control_aggregate"
+    APPEND_ONLY = "append_only"
+    IMMUTABLE = "immutable"
+    PARENT_BOUND = "parent_bound"
+    UNVERSIONED_MUTABLE = "unversioned_mutable"
+    OPERATION_IDENTITY = "operation_identity"
+
+
+class HarnessContextEvidencePolicy(StrEnum):
+    AUTHORITATIVE_REVISION = "authoritative_revision"
+    PROTECTED_SNAPSHOT = "protected_snapshot"
+    UNSUPPORTED = "unsupported"
+
+
+class HarnessCommitEvidencePolicy(StrEnum):
+    REVISION = "revision"
+    SEQUENCE = "sequence"
+    UNSUPPORTED = "unsupported"
+
+
+class HarnessRollbackEvidencePolicy(StrEnum):
+    READ_BACK = "read_back"
+    COMPENSATION = "compensation"
+    UNSUPPORTED = "unsupported"
+
+
+@dataclass(frozen=True, slots=True)
+class HarnessResourceEvidencePolicy:
+    semantics: HarnessResourceSemantics
+    context_evidence: HarnessContextEvidencePolicy
+    commit_evidence: HarnessCommitEvidencePolicy
+    rollback_evidence: HarnessRollbackEvidencePolicy
+
+
 class HarnessV2Model(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -360,32 +396,254 @@ HARNESS_CONTEXT_DIGEST_CONTRACT_V1 = HarnessContractRef(
 )
 
 
-HARNESS_MUTABLE_RESOURCE_TYPES = frozenset(
+HARNESS_RESOURCE_EVIDENCE_POLICIES = MappingProxyType(
     {
-        HarnessResourceType.DOCUMENT,
-        HarnessResourceType.DOCUMENT_DEBUG,
-        HarnessResourceType.LEARNING_PLAN,
-        HarnessResourceType.PLANNING_TRACE,
-        HarnessResourceType.PERSONA,
-        HarnessResourceType.SCENE,
-        HarnessResourceType.STUDY_SESSION,
-        HarnessResourceType.TAVERN_ROOM,
-        HarnessResourceType.TAVERN_RUN,
-        HarnessResourceType.FRONTEND_REQUEST,
+        HarnessResourceType.DOCUMENT: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.DOCUMENT_PAGE: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.PARENT_BOUND,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.DOCUMENT_DEBUG: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.STUDY_UNIT: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.PARENT_BOUND,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.LEARNING_PLAN: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.PLANNING_TRACE: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.PERSONA: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.SCENE: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.STUDY_SESSION: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.TAVERN_ROOM: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.REVISIONED_CONTROL_AGGREGATE,
+            context_evidence=HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION,
+            commit_evidence=HarnessCommitEvidencePolicy.REVISION,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.TAVERN_RUN: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.TAVERN_MESSAGE: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.APPEND_ONLY,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.SEQUENCE,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
+        HarnessResourceType.FRONTEND_REQUEST: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.OPERATION_IDENTITY,
+            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
     }
 )
+
+
+def validate_harness_resource_evidence_policy_registry(
+    registry: Mapping[object, object],
+) -> None:
+    if set(registry) != set(HarnessResourceType):
+        raise ValueError("harness_resource_evidence_policy_registry_incomplete")
+    for resource_type in HarnessResourceType:
+        policy = registry[resource_type]
+        if (
+            not isinstance(policy, HarnessResourceEvidencePolicy)
+            or not isinstance(policy.semantics, HarnessResourceSemantics)
+            or not isinstance(policy.context_evidence, HarnessContextEvidencePolicy)
+            or not isinstance(policy.commit_evidence, HarnessCommitEvidencePolicy)
+            or not isinstance(policy.rollback_evidence, HarnessRollbackEvidencePolicy)
+        ):
+            raise ValueError("harness_resource_evidence_policy_registry_invalid")
+        shape = (
+            policy.semantics,
+            policy.context_evidence,
+            policy.commit_evidence,
+            policy.rollback_evidence,
+        )
+        allowed_shapes = {
+            (
+                HarnessResourceSemantics.REVISIONED_CONTROL_AGGREGATE,
+                HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION,
+                HarnessCommitEvidencePolicy.REVISION,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
+                HarnessResourceSemantics.APPEND_ONLY,
+                HarnessContextEvidencePolicy.UNSUPPORTED,
+                HarnessCommitEvidencePolicy.SEQUENCE,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
+                HarnessResourceSemantics.IMMUTABLE,
+                HarnessContextEvidencePolicy.PROTECTED_SNAPSHOT,
+                HarnessCommitEvidencePolicy.UNSUPPORTED,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
+                HarnessResourceSemantics.PARENT_BOUND,
+                HarnessContextEvidencePolicy.UNSUPPORTED,
+                HarnessCommitEvidencePolicy.UNSUPPORTED,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
+                HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+                HarnessContextEvidencePolicy.UNSUPPORTED,
+                HarnessCommitEvidencePolicy.UNSUPPORTED,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
+                HarnessResourceSemantics.OPERATION_IDENTITY,
+                HarnessContextEvidencePolicy.UNSUPPORTED,
+                HarnessCommitEvidencePolicy.UNSUPPORTED,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+        }
+        if shape not in allowed_shapes:
+            raise ValueError("harness_resource_evidence_policy_registry_inconsistent")
+
+
+validate_harness_resource_evidence_policy_registry(
+    HARNESS_RESOURCE_EVIDENCE_POLICIES
+)
+
+
+def validate_harness_context_resource_evidence(
+    resource: "HarnessResourceRefV3",
+) -> None:
+    policy = HARNESS_RESOURCE_EVIDENCE_POLICIES[resource.resource_type]
+    if (
+        policy.context_evidence
+        == HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION
+        and resource.revision is None
+    ):
+        raise ValueError("harness_context_resource_revision_required")
+    if policy.context_evidence == HarnessContextEvidencePolicy.PROTECTED_SNAPSHOT:
+        raise ValueError("harness_context_resource_snapshot_binding_required")
+    if policy.context_evidence == HarnessContextEvidencePolicy.UNSUPPORTED:
+        raise ValueError("harness_context_resource_policy_unsupported")
+
+
+def validate_harness_attempted_resource_shape(
+    resource: "HarnessResourceRefV3",
+    *,
+    require_commit_proof: bool = False,
+) -> None:
+    policy = HARNESS_RESOURCE_EVIDENCE_POLICIES[resource.resource_type]
+    if (
+        require_commit_proof
+        and policy.commit_evidence == HarnessCommitEvidencePolicy.REVISION
+        and resource.revision is None
+    ):
+        raise ValueError("harness_revision_commit_attempt_revision_required")
+    if (
+        policy.commit_evidence == HarnessCommitEvidencePolicy.SEQUENCE
+        and resource.revision is not None
+    ):
+        raise ValueError("harness_sequence_commit_attempt_revision_forbidden")
+    if (
+        policy.commit_evidence == HarnessCommitEvidencePolicy.UNSUPPORTED
+        and resource.revision is not None
+    ):
+        raise ValueError("harness_unsupported_commit_attempt_revision_forbidden")
+
+
+def validate_harness_committed_resource_commit_evidence(
+    resource: "HarnessCommittedResourceRefV3",
+) -> None:
+    policy = HARNESS_RESOURCE_EVIDENCE_POLICIES[resource.resource_type]
+    if policy.commit_evidence == HarnessCommitEvidencePolicy.UNSUPPORTED:
+        raise ValueError("harness_commit_resource_policy_unsupported")
+    if policy.commit_evidence == HarnessCommitEvidencePolicy.REVISION:
+        if resource.expected_revision is None or resource.committed_revision is None:
+            raise ValueError("harness_revision_commit_evidence_required")
+        if resource.first_sequence is not None or resource.last_sequence is not None:
+            raise ValueError("harness_revision_commit_sequence_forbidden")
+        if resource.committed_revision != resource.expected_revision + 1:
+            raise ValueError("harness_revision_commit_increment_invalid")
+    elif policy.commit_evidence == HarnessCommitEvidencePolicy.SEQUENCE:
+        if resource.expected_revision is not None or resource.committed_revision is not None:
+            raise ValueError("harness_sequence_commit_revision_forbidden")
+        if resource.first_sequence is None or resource.last_sequence is None:
+            raise ValueError("harness_sequence_commit_evidence_required")
+        if resource.first_sequence != resource.last_sequence:
+            raise ValueError("harness_message_commit_sequence_must_be_single")
+
+
+def validate_harness_rollback_resource_evidence(
+    resource: "HarnessResourceRefV3",
+) -> None:
+    policy = HARNESS_RESOURCE_EVIDENCE_POLICIES[resource.resource_type]
+    if policy.rollback_evidence == HarnessRollbackEvidencePolicy.UNSUPPORTED:
+        raise ValueError("harness_rollback_resource_policy_unsupported")
+
+
+def harness_resource_evidence_policy_registry_snapshot() -> dict[str, object]:
+    """Return the canonical cross-language registry fixture projection."""
+
+    return {
+        "schema_name": "HarnessResourceEvidencePolicyRegistry",
+        "schema_version": "harness-resource-evidence-policies-v1",
+        "resources": [
+            {
+                "resource_type": resource_type.value,
+                "semantics": policy.semantics.value,
+                "context_evidence": policy.context_evidence.value,
+                "commit_evidence": policy.commit_evidence.value,
+                "rollback_evidence": policy.rollback_evidence.value,
+            }
+            for resource_type, policy in sorted(
+                HARNESS_RESOURCE_EVIDENCE_POLICIES.items(),
+                key=lambda item: item[0].value,
+            )
+        ],
+    }
 
 
 class HarnessResourceRefV3(HarnessV2Model):
     resource_type: HarnessResourceType
     resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
     revision: int | None = Field(default=None, ge=0)
-
-    @model_validator(mode="after")
-    def require_mutable_revision(self) -> "HarnessResourceRefV3":
-        if self.resource_type in HARNESS_MUTABLE_RESOURCE_TYPES and self.revision is None:
-            raise ValueError("harness_context_mutable_subject_revision_required")
-        return self
 
 
 class HarnessSnapshotRefV3(HarnessV2Model):
@@ -422,6 +680,21 @@ class HarnessContextEnvelopeV3(HarnessV2Model):
     policy_contract: HarnessContractRef | None = None
     prompt_contract: HarnessContractRef | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def revalidate_nested_context_instances(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        subjects = value.get("subject_refs")
+        if isinstance(subjects, list):
+            for raw in subjects:
+                revalidate_harness_resource_ref_v3(raw)
+        snapshots = value.get("snapshot_refs")
+        if isinstance(snapshots, list):
+            for raw in snapshots:
+                revalidate_harness_snapshot_ref_v3(raw)
+        return value
+
     @model_validator(mode="after")
     def validate_canonical_context(self) -> "HarnessContextEnvelopeV3":
         if self.context_contract != HARNESS_CONTEXT_CONTRACT_V3:
@@ -440,6 +713,9 @@ class HarnessContextEnvelopeV3(HarnessV2Model):
         subject_identities = [
             (item.resource_type, item.resource_id) for item in self.subject_refs
         ]
+        for item in self.subject_refs:
+            revalidate_harness_resource_ref_v3(item)
+            validate_harness_context_resource_evidence(item)
         if len(subject_identities) != len(set(subject_identities)):
             raise ValueError("harness_context_subject_ref_duplicate")
         if subject_identities != sorted(subject_identities):
@@ -465,6 +741,8 @@ class HarnessContextEnvelopeV3(HarnessV2Model):
         snapshot_identities = [
             (item.artifact_type, item.artifact_id) for item in self.snapshot_refs
         ]
+        for item in self.snapshot_refs:
+            revalidate_harness_snapshot_ref_v3(item)
         if len(snapshot_identities) != len(set(snapshot_identities)):
             raise ValueError("harness_context_snapshot_ref_duplicate")
         if snapshot_identities != sorted(snapshot_identities):
@@ -531,17 +809,38 @@ class HarnessCommittedResourceRefV3(HarnessCommittedResourceRef):
     resource_type: HarnessResourceType
     resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
 
-    @model_validator(mode="after")
-    def require_mutable_committed_revision(self) -> "HarnessCommittedResourceRefV3":
-        if (
-            self.resource_type in HARNESS_MUTABLE_RESOURCE_TYPES
-            and (
-                self.expected_revision is None
-                or self.committed_revision is None
-            )
-        ):
-            raise ValueError("harness_mutable_commit_revision_required")
-        return self
+
+def revalidate_harness_snapshot_ref_v3(
+    snapshot: object,
+) -> HarnessSnapshotRefV3:
+    payload = (
+        snapshot.model_dump(mode="json", exclude_none=False)
+        if isinstance(snapshot, HarnessSnapshotRefV3)
+        else snapshot
+    )
+    return HarnessSnapshotRefV3.model_validate(payload)
+
+
+def revalidate_harness_resource_ref_v3(
+    resource: object,
+) -> HarnessResourceRefV3:
+    payload = (
+        resource.model_dump(mode="json", exclude_none=False)
+        if isinstance(resource, HarnessResourceRefV3)
+        else resource
+    )
+    return HarnessResourceRefV3.model_validate(payload)
+
+
+def revalidate_harness_committed_resource_ref_v3(
+    resource: object,
+) -> HarnessCommittedResourceRefV3:
+    payload = (
+        resource.model_dump(mode="json", exclude_none=False)
+        if isinstance(resource, HarnessCommittedResourceRefV3)
+        else resource
+    )
+    return HarnessCommittedResourceRefV3.model_validate(payload)
 
 
 class HarnessCommitEvidence(HarnessV2Model):
@@ -690,10 +989,42 @@ class HarnessCommitEvidenceV3(HarnessCommitEvidence):
         max_length=64,
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_v3_resource_policy_shape(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        attempted = value.get("attempted_resource_refs")
+        require_commit_proof = value.get("status") == HarnessCommitStatus.COMMITTED.value
+        if isinstance(attempted, list):
+            for raw in attempted:
+                resource = revalidate_harness_resource_ref_v3(raw)
+                validate_harness_attempted_resource_shape(
+                    resource,
+                    require_commit_proof=require_commit_proof,
+                )
+        committed = value.get("committed_resources")
+        if isinstance(committed, list):
+            for raw in committed:
+                resource = revalidate_harness_committed_resource_ref_v3(raw)
+                validate_harness_committed_resource_commit_evidence(resource)
+        return value
+
     @model_validator(mode="after")
     def validate_v3_contract(self) -> "HarnessCommitEvidenceV3":
         if self.payload_contract is not None:
             require_versioned_harness_contract(self.payload_contract)
+        for resource in self.attempted_resource_refs:
+            revalidate_harness_resource_ref_v3(resource)
+            validate_harness_attempted_resource_shape(
+                resource,
+                require_commit_proof=self.status == HarnessCommitStatus.COMMITTED,
+            )
+            if self.status == HarnessCommitStatus.ROLLED_BACK:
+                validate_harness_rollback_resource_evidence(resource)
+        for resource in self.committed_resources:
+            revalidate_harness_committed_resource_ref_v3(resource)
+            validate_harness_committed_resource_commit_evidence(resource)
         return self
 
 

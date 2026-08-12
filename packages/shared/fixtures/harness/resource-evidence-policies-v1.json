@@ -1,0 +1,97 @@
+{
+  "schema_name": "HarnessResourceEvidencePolicyRegistry",
+  "schema_version": "harness-resource-evidence-policies-v1",
+  "resources": [
+    {
+      "resource_type": "document",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "document_debug",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "document_page",
+      "semantics": "parent_bound",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "frontend_request",
+      "semantics": "operation_identity",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "learning_plan",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "persona",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "planning_trace",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "scene",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "study_session",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "study_unit",
+      "semantics": "parent_bound",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "tavern_message",
+      "semantics": "append_only",
+      "context_evidence": "unsupported",
+      "commit_evidence": "sequence",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "tavern_room",
+      "semantics": "revisioned_control_aggregate",
+      "context_evidence": "authoritative_revision",
+      "commit_evidence": "revision",
+      "rollback_evidence": "unsupported"
+    },
+    {
+      "resource_type": "tavern_run",
+      "semantics": "unversioned_mutable",
+      "context_evidence": "unsupported",
+      "commit_evidence": "unsupported",
+      "rollback_evidence": "unsupported"
+    }
+  ]
+}

@@ -12,11 +12,6 @@
   },
   "subject_refs": [
     {
-      "resource_type": "tavern_message",
-      "resource_id": "message-9",
-      "revision": null
-    },
-    {
       "resource_type": "tavern_room",
       "resource_id": "room-1",
       "revision": 4
@@ -54,7 +49,7 @@
     "version": "harness-context-manifest-digest-v1"
   },
   "input_digest": "509472be9c67dc5a7fa2e124e15b2749a806ab6c689275db349441746878b78c",
-  "context_digest": "4f5bc4a6a4384434121f5eecbd92f58fa879a4cbb1788515a87737fa81cbfbb7",
+  "context_digest": "8bb341080c4f850c7fbc483910785e2b5b97a23155050e3fedd3638978b16f0b",
   "policy_contract": {
     "name": "TavernHarnessPolicy",
     "version": "tavern-harness-v1"

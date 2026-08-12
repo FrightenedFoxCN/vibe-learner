@@ -19,19 +19,30 @@ from pydantic import (
 )
 
 from app.models.harness import (
+    HARNESS_RESOURCE_EVIDENCE_POLICIES,
     HarnessArtifactType,
+    HarnessCommitEvidencePolicy,
     HarnessCommitEvidenceV3,
+    HarnessCommittedResourceRefV3,
+    HarnessContextEvidencePolicy,
     HarnessContextEnvelope,
     HarnessContextEnvelopeV3,
     HarnessContractRef,
     HarnessResourceRefV3,
+    HarnessResourceEvidencePolicy,
+    HarnessResourceSemantics,
     HarnessResourceType,
+    HarnessRollbackEvidencePolicy,
     HarnessSafeManifest,
+    HarnessSnapshotRefV3,
     HarnessStage,
     HarnessTraceV3,
     HarnessWorkflow,
     canonical_harness_context_digest,
+    canonical_harness_commit_digest,
+    harness_resource_evidence_policy_registry_snapshot,
     validate_harness_trace,
+    validate_harness_resource_evidence_policy_registry,
 )
 from app.services.harness_context import (
     build_harness_context,
@@ -42,6 +53,14 @@ from app.services.harness_context import (
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "harness"
+POLICY_FIXTURE = (
+    Path(__file__).parents[3]
+    / "packages"
+    / "shared"
+    / "fixtures"
+    / "harness"
+    / "resource-evidence-policies-v1.json"
+)
 OPERATION_ID = "harness-operation-0123456789abcdef0123456789abcdef"
 
 
@@ -230,11 +249,6 @@ def _build(
                 resource_id="room-1",
                 revision=4,
             ),
-            HarnessResourceRefV3(
-                resource_type=HarnessResourceType.TAVERN_MESSAGE,
-                resource_id="message-9",
-                revision=None,
-            ),
         ],
         snapshot_refs=snapshot_refs if snapshot_refs is not None else [_snapshot()],
         policy_contract=HarnessContractRef(
@@ -361,15 +375,16 @@ class HarnessContextV3Tests(unittest.TestCase):
         )
 
     def test_typed_refs_contract_versions_and_duplicates_are_enforced(self) -> None:
+        unversioned_room = HarnessResourceRefV3(
+            resource_type=HarnessResourceType.TAVERN_ROOM,
+            resource_id="room-1",
+            revision=None,
+        )
         with self.assertRaisesRegex(
-            ValidationError,
-            "harness_context_mutable_subject_revision_required",
+            (ValidationError, ValueError),
+            "harness_context_resource_revision_required",
         ):
-            HarnessResourceRefV3(
-                resource_type=HarnessResourceType.TAVERN_ROOM,
-                resource_id="room-1",
-                revision=None,
-            )
+            _build(subject_refs=[unversioned_room])
 
         with self.assertRaises(ValidationError):
             HarnessResourceRefV3(
@@ -487,7 +502,110 @@ class HarnessContextV3Tests(unittest.TestCase):
         ):
             HarnessTraceV3.model_validate(changed)
 
-    def test_v3_committed_mutable_resource_requires_revision_evidence(self) -> None:
+    def test_resource_evidence_policy_registry_is_exhaustive(self) -> None:
+        expected = json.loads(POLICY_FIXTURE.read_text(encoding="utf-8"))
+        self.assertEqual(
+            set(HARNESS_RESOURCE_EVIDENCE_POLICIES),
+            set(HarnessResourceType),
+        )
+        self.assertEqual(
+            harness_resource_evidence_policy_registry_snapshot(),
+            expected,
+        )
+        self.assertEqual(
+            HARNESS_RESOURCE_EVIDENCE_POLICIES[HarnessResourceType.TAVERN_ROOM],
+            HarnessResourceEvidencePolicy(
+                semantics=HarnessResourceSemantics.REVISIONED_CONTROL_AGGREGATE,
+                context_evidence=HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION,
+                commit_evidence=HarnessCommitEvidencePolicy.REVISION,
+                rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+        )
+        self.assertEqual(
+            HARNESS_RESOURCE_EVIDENCE_POLICIES[
+                HarnessResourceType.TAVERN_MESSAGE
+            ].commit_evidence,
+            HarnessCommitEvidencePolicy.SEQUENCE,
+        )
+        self.assertEqual(
+            HARNESS_RESOURCE_EVIDENCE_POLICIES[
+                HarnessResourceType.TAVERN_MESSAGE
+            ].context_evidence,
+            HarnessContextEvidencePolicy.UNSUPPORTED,
+        )
+        self.assertEqual(
+            HARNESS_RESOURCE_EVIDENCE_POLICIES[
+                HarnessResourceType.STUDY_UNIT
+            ].semantics,
+            HarnessResourceSemantics.PARENT_BOUND,
+        )
+
+        missing = dict(HARNESS_RESOURCE_EVIDENCE_POLICIES)
+        missing.pop(HarnessResourceType.DOCUMENT)
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_resource_evidence_policy_registry_incomplete",
+        ):
+            validate_harness_resource_evidence_policy_registry(missing)
+
+        extra = dict(HARNESS_RESOURCE_EVIDENCE_POLICIES)
+        extra["unknown"] = next(iter(extra.values()))
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_resource_evidence_policy_registry_incomplete",
+        ):
+            validate_harness_resource_evidence_policy_registry(extra)
+
+        invalid = dict(HARNESS_RESOURCE_EVIDENCE_POLICIES)
+        invalid[HarnessResourceType.DOCUMENT] = object()
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_resource_evidence_policy_registry_invalid",
+        ):
+            validate_harness_resource_evidence_policy_registry(invalid)
+
+        inconsistent = dict(HARNESS_RESOURCE_EVIDENCE_POLICIES)
+        inconsistent[HarnessResourceType.DOCUMENT] = HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION,
+            commit_evidence=HarnessCommitEvidencePolicy.REVISION,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_resource_evidence_policy_registry_inconsistent",
+        ):
+            validate_harness_resource_evidence_policy_registry(inconsistent)
+
+    def test_context_revision_evidence_follows_resource_policy(self) -> None:
+        self.assertEqual(
+            HarnessResourceRefV3(
+                resource_type=HarnessResourceType.TAVERN_ROOM,
+                resource_id="room-1",
+                revision=4,
+            ).revision,
+            4,
+        )
+        for resource_type in (
+            HarnessResourceType.DOCUMENT,
+            HarnessResourceType.STUDY_UNIT,
+            HarnessResourceType.TAVERN_RUN,
+            HarnessResourceType.TAVERN_MESSAGE,
+            HarnessResourceType.FRONTEND_REQUEST,
+        ):
+            for revision in (None, 0):
+                resource = HarnessResourceRefV3(
+                    resource_type=resource_type,
+                    resource_id=f"{resource_type.value}-1",
+                    revision=revision,
+                )
+                with self.assertRaisesRegex(
+                    (ValidationError, ValueError),
+                    "harness_context_resource_policy_unsupported",
+                ):
+                    _build(subject_refs=[resource])
+
+    def test_v3_revision_commit_requires_complete_revision_evidence(self) -> None:
         payload = {
             "status": "committed",
             "effect_batch_id": "effect-room-update-1",
@@ -522,9 +640,454 @@ class HarnessContextV3Tests(unittest.TestCase):
         }
         with self.assertRaisesRegex(
             ValidationError,
-            "harness_mutable_commit_revision_required",
+            "harness_revision_commit_evidence_required",
         ):
             HarnessCommitEvidenceV3.model_validate(payload)
+
+        committed = payload["committed_resources"][0]
+        committed["committed_revision"] = 5
+        committed["first_sequence"] = 1
+        committed["last_sequence"] = 1
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_revision_commit_sequence_forbidden",
+        ):
+            HarnessCommitEvidenceV3.model_validate(payload)
+
+        committed["first_sequence"] = None
+        committed["last_sequence"] = None
+        self.assertEqual(
+            HarnessCommitEvidenceV3.model_validate(payload)
+            .committed_resources[0]
+            .committed_revision,
+            5,
+        )
+
+        committed["committed_revision"] = 6
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_revision_commit_increment_invalid",
+        ):
+            HarnessCommitEvidenceV3.model_validate(payload)
+        committed["committed_revision"] = 5
+
+        missing_attempt_revision = {**payload}
+        missing_attempt_revision["attempted_resource_refs"] = [
+            {
+                "resource_type": "tavern_room",
+                "resource_id": "room-1",
+                "revision": None,
+            }
+        ]
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_revision_commit_attempt_revision_required",
+        ):
+            HarnessCommitEvidenceV3.model_validate(missing_attempt_revision)
+
+    def test_v3_sequence_commit_requires_sequence_only_evidence(self) -> None:
+        base = {
+            "resource_type": "tavern_message",
+            "resource_id": "message-10",
+            "expected_revision": None,
+            "committed_revision": None,
+            "first_sequence": 10,
+            "last_sequence": 10,
+            "payload_digest": "b" * 64,
+        }
+        def evidence(committed: dict[str, object]) -> dict[str, object]:
+            return {
+                "status": "committed",
+                "effect_batch_id": "effect-message-1",
+                "payload_contract": {
+                    "name": "TavernMessageCommit",
+                    "version": "tavern-message-commit-v1",
+                },
+                "digest_algorithm": "sha256",
+                "digest_scope": "committed_projection",
+                "attempted_resource_refs": [
+                    {
+                        "resource_type": "tavern_message",
+                        "resource_id": "message-10",
+                        "revision": None,
+                    }
+                ],
+                "committed_resources": [committed],
+                "payload_digest": "b" * 64,
+                "committed_at": "2026-08-12T10:00:00Z",
+                "rollback_reason_code": "",
+                "rolled_back_at": None,
+            }
+
+        self.assertEqual(
+            HarnessCommitEvidenceV3.model_validate(evidence(base))
+            .committed_resources[0]
+            .first_sequence,
+            10,
+        )
+
+        missing_sequence = {**base, "first_sequence": None, "last_sequence": None}
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_sequence_commit_evidence_required",
+        ):
+            HarnessCommitEvidenceV3.model_validate(evidence(missing_sequence))
+
+        fake_revision = {**base, "expected_revision": 0, "committed_revision": 1}
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_sequence_commit_revision_forbidden",
+        ):
+            HarnessCommitEvidenceV3.model_validate(evidence(fake_revision))
+
+        fake_attempt = evidence(base)
+        fake_attempt["attempted_resource_refs"][0]["revision"] = 0
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_sequence_commit_attempt_revision_forbidden",
+        ):
+            HarnessCommitEvidenceV3.model_validate(fake_attempt)
+
+        sequence_range = {**base, "first_sequence": 9, "last_sequence": 10}
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_message_commit_sequence_must_be_single",
+        ):
+            HarnessCommitEvidenceV3.model_validate(evidence(sequence_range))
+
+    def test_v3_unsupported_resources_can_record_attempt_but_not_commit_or_rollback(
+        self,
+    ) -> None:
+        for resource_type in (
+            HarnessResourceType.DOCUMENT,
+            HarnessResourceType.DOCUMENT_PAGE,
+            HarnessResourceType.STUDY_UNIT,
+            HarnessResourceType.TAVERN_RUN,
+            HarnessResourceType.FRONTEND_REQUEST,
+        ):
+            payload = {
+                "status": "not_committed",
+                "effect_batch_id": "effect-unsupported-1",
+                "payload_contract": {
+                    "name": "UnsupportedCommit",
+                    "version": "unsupported-commit-v1",
+                },
+                "digest_algorithm": "sha256",
+                "digest_scope": "committed_projection",
+                "attempted_resource_refs": [
+                    {
+                        "resource_type": resource_type.value,
+                        "resource_id": f"{resource_type.value}-1",
+                        "revision": None,
+                    }
+                ],
+                "committed_resources": [],
+                "payload_digest": None,
+                "committed_at": None,
+                "rollback_reason_code": "",
+                "rolled_back_at": None,
+            }
+            self.assertEqual(
+                HarnessCommitEvidenceV3.model_validate(payload).status.value,
+                "not_committed",
+            )
+
+            rolled_back = {
+                **payload,
+                "status": "rolled_back",
+                "rollback_reason_code": "commit_failed",
+                "rolled_back_at": "2026-08-12T10:00:00Z",
+            }
+            with self.assertRaisesRegex(
+                ValidationError,
+                "harness_rollback_resource_policy_unsupported",
+            ):
+                HarnessCommitEvidenceV3.model_validate(rolled_back)
+
+        unsupported_committed = HarnessCommittedResourceRefV3(
+            resource_type=HarnessResourceType.DOCUMENT,
+            resource_id="document-1",
+            expected_revision=None,
+            committed_revision=None,
+            first_sequence=None,
+            last_sequence=None,
+            payload_digest="d" * 64,
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_commit_resource_policy_unsupported",
+        ):
+            HarnessCommitEvidenceV3.model_construct(
+                status="committed",
+                effect_batch_id="effect-unsupported-committed-1",
+                payload_contract=HarnessContractRef(
+                    name="UnsupportedCommit",
+                    version="unsupported-commit-v1",
+                ),
+                digest_algorithm="sha256",
+                digest_scope="committed_projection",
+                attempted_resource_refs=[],
+                committed_resources=[unsupported_committed],
+                payload_digest="d" * 64,
+                committed_at=datetime.now(timezone.utc),
+                rollback_reason_code="",
+                rolled_back_at=None,
+            ).validate_v3_contract()
+
+        raw_committed = {
+            **payload,
+            "status": "committed",
+            "committed_resources": [
+                {
+                    "resource_type": HarnessResourceType.DOCUMENT.value,
+                    "resource_id": "document-1",
+                    "expected_revision": None,
+                    "committed_revision": None,
+                    "first_sequence": None,
+                    "last_sequence": None,
+                    "payload_digest": "d" * 64,
+                }
+            ],
+            "payload_digest": "d" * 64,
+            "committed_at": "2026-08-12T10:00:00Z",
+        }
+        with self.assertRaisesRegex(
+            ValidationError,
+            "harness_commit_resource_policy_unsupported",
+        ):
+            HarnessCommitEvidenceV3.model_validate(raw_committed)
+
+    def test_v3_policy_cannot_be_bypassed_with_model_instances(self) -> None:
+        unsupported_with_fake_revision = HarnessResourceRefV3(
+            resource_type=HarnessResourceType.DOCUMENT,
+            resource_id="document-1",
+            revision=0,
+        )
+        message_with_fake_revision = HarnessResourceRefV3(
+            resource_type=HarnessResourceType.TAVERN_MESSAGE,
+            resource_id="message-10",
+            revision=0,
+        )
+        for attempted, error in (
+            (
+                unsupported_with_fake_revision,
+                "harness_unsupported_commit_attempt_revision_forbidden",
+            ),
+            (
+                message_with_fake_revision,
+                "harness_sequence_commit_attempt_revision_forbidden",
+            ),
+        ):
+            with self.assertRaisesRegex(ValidationError, error):
+                HarnessCommitEvidenceV3.model_validate(
+                    {
+                        "status": "not_committed",
+                        "effect_batch_id": "effect-model-ref-1",
+                        "payload_contract": {
+                            "name": "ModelRefCommit",
+                            "version": "model-ref-commit-v1",
+                        },
+                        "digest_algorithm": "sha256",
+                        "digest_scope": "committed_projection",
+                        "attempted_resource_refs": [attempted],
+                        "committed_resources": [],
+                        "payload_digest": None,
+                        "committed_at": None,
+                        "rollback_reason_code": "",
+                        "rolled_back_at": None,
+                    }
+                )
+
+        malformed_attempts = (
+            HarnessResourceRefV3.model_construct(
+                resource_type=HarnessResourceType.DOCUMENT,
+                resource_id="/bad",
+                revision=None,
+            ),
+            HarnessResourceRefV3.model_construct(
+                resource_type=HarnessResourceType.DOCUMENT,
+                resource_id="document-1",
+                revision=-1,
+            ),
+        )
+        for attempted in malformed_attempts:
+            with self.assertRaises(ValidationError):
+                HarnessCommitEvidenceV3.model_validate(
+                    {
+                        "status": "not_committed",
+                        "effect_batch_id": "effect-malformed-model-ref-1",
+                        "payload_contract": {
+                            "name": "ModelRefCommit",
+                            "version": "model-ref-commit-v1",
+                        },
+                        "digest_algorithm": "sha256",
+                        "digest_scope": "committed_projection",
+                        "attempted_resource_refs": [attempted],
+                        "committed_resources": [],
+                        "payload_digest": None,
+                        "committed_at": None,
+                        "rollback_reason_code": "",
+                        "rolled_back_at": None,
+                    }
+                )
+
+        for committed in (
+            HarnessCommittedResourceRefV3.model_construct(
+                resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                resource_id="/bad",
+                expected_revision=None,
+                committed_revision=None,
+                first_sequence=10,
+                last_sequence=10,
+                payload_digest="d" * 64,
+            ),
+            HarnessCommittedResourceRefV3.model_construct(
+                resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                resource_id="message-10",
+                expected_revision=None,
+                committed_revision=None,
+                first_sequence=-1,
+                last_sequence=-1,
+                payload_digest="d" * 64,
+            ),
+            HarnessCommittedResourceRefV3.model_construct(
+                resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                resource_id="message-10",
+                expected_revision=None,
+                committed_revision=None,
+                first_sequence=10,
+                last_sequence=10,
+                payload_digest="not-a-digest",
+            ),
+        ):
+            with self.assertRaises(ValidationError):
+                HarnessCommitEvidenceV3.model_validate(
+                    {
+                        "status": "committed",
+                        "effect_batch_id": "effect-malformed-committed-ref-1",
+                        "payload_contract": {
+                            "name": "TavernMessageCommit",
+                            "version": "tavern-message-commit-v1",
+                        },
+                        "digest_algorithm": "sha256",
+                        "digest_scope": "committed_projection",
+                        "attempted_resource_refs": [
+                            HarnessResourceRefV3(
+                                resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                                resource_id="message-10",
+                                revision=None,
+                            )
+                        ],
+                        "committed_resources": [committed],
+                        "payload_digest": "d" * 64,
+                        "committed_at": "2026-08-12T10:00:00Z",
+                        "rollback_reason_code": "",
+                        "rolled_back_at": None,
+                    }
+                )
+
+        invalid_context_subject = HarnessResourceRefV3.model_construct(
+            resource_type=HarnessResourceType.TAVERN_ROOM,
+            resource_id="/bad",
+            revision=4,
+        )
+        context = _build().model_dump(mode="json", exclude_none=False)
+        context["subject_refs"] = [
+            invalid_context_subject.model_dump(mode="json", exclude_none=False)
+        ]
+        context["context_digest"] = canonical_harness_context_digest(context)
+        context["subject_refs"] = [invalid_context_subject]
+        with self.assertRaises(ValidationError):
+            HarnessContextEnvelopeV3.model_validate(context)
+
+        for invalid_snapshot in (
+            HarnessSnapshotRefV3.model_construct(
+                artifact_type=HarnessArtifactType.TAVERN_ROOM_SNAPSHOT,
+                artifact_id="/bad",
+                contract=HarnessContractRef(
+                    name="TavernRoomSnapshotManifest",
+                    version="tavern-room-snapshot-manifest-v1",
+                ),
+                digest_algorithm="sha256",
+                payload_digest="a" * 64,
+            ),
+            HarnessSnapshotRefV3.model_construct(
+                artifact_type=HarnessArtifactType.TAVERN_ROOM_SNAPSHOT,
+                artifact_id="snapshot-1",
+                contract=HarnessContractRef(
+                    name="TavernRoomSnapshotManifest",
+                    version="tavern-room-snapshot-manifest-v1",
+                ),
+                digest_algorithm="sha256",
+                payload_digest="not-a-digest",
+            ),
+        ):
+            context = _build().model_dump(mode="json", exclude_none=False)
+            context["snapshot_refs"] = [
+                invalid_snapshot.model_dump(mode="json", exclude_none=False)
+            ]
+            context["context_digest"] = canonical_harness_context_digest(context)
+            context["snapshot_refs"] = [invalid_snapshot]
+            with self.assertRaises(ValidationError):
+                HarnessContextEnvelopeV3.model_validate(context)
+
+    def test_v3_room_and_message_commit_manifest_digest_is_canonical(self) -> None:
+        contract = HarnessContractRef(
+            name="ExampleRoomAndMessageCommitManifest",
+            version="example-room-message-commit-manifest-v1",
+        )
+        committed = [
+            HarnessCommittedResourceRefV3(
+                resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                resource_id="message-10",
+                expected_revision=None,
+                committed_revision=None,
+                first_sequence=10,
+                last_sequence=10,
+                payload_digest="a" * 64,
+            ),
+            HarnessCommittedResourceRefV3(
+                resource_type=HarnessResourceType.TAVERN_ROOM,
+                resource_id="room-1",
+                expected_revision=4,
+                committed_revision=5,
+                first_sequence=None,
+                last_sequence=None,
+                payload_digest="b" * 64,
+            ),
+        ]
+        digest = canonical_harness_commit_digest(
+            payload_contract=contract,
+            committed_resources=committed,
+            digest_scope="committed_batch",
+        )
+        evidence = HarnessCommitEvidenceV3.model_validate(
+            {
+                "status": "committed",
+                "effect_batch_id": "effect-tavern-batch-1",
+                "payload_contract": contract,
+                "digest_algorithm": "sha256",
+                "digest_scope": "committed_batch",
+                "attempted_resource_refs": [
+                    HarnessResourceRefV3(
+                        resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                        resource_id="message-10",
+                        revision=None,
+                    ),
+                    HarnessResourceRefV3(
+                        resource_type=HarnessResourceType.TAVERN_ROOM,
+                        resource_id="room-1",
+                        revision=4,
+                    ),
+                ],
+                "committed_resources": committed,
+                "payload_digest": digest,
+                "committed_at": "2026-08-12T10:00:00Z",
+                "rollback_reason_code": "",
+                "rolled_back_at": None,
+            }
+        )
+        self.assertEqual(evidence.payload_digest, digest)
 
     def test_v3_commit_contract_rejects_placeholder_version(self) -> None:
         changed = json.loads(

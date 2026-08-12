@@ -84,6 +84,141 @@ export type HarnessResourceType =
   | "tavern_run"
   | "tavern_message"
   | "frontend_request";
+export type HarnessResourceSemantics =
+  | "revisioned_control_aggregate"
+  | "append_only"
+  | "immutable"
+  | "parent_bound"
+  | "unversioned_mutable"
+  | "operation_identity";
+export type HarnessContextEvidencePolicy =
+  | "authoritative_revision"
+  | "protected_snapshot"
+  | "unsupported";
+export type HarnessCommitEvidencePolicy =
+  | "revision"
+  | "sequence"
+  | "unsupported";
+export type HarnessRollbackEvidencePolicy =
+  | "read_back"
+  | "compensation"
+  | "unsupported";
+
+export interface HarnessResourceEvidencePolicy {
+  semantics: HarnessResourceSemantics;
+  contextEvidence: HarnessContextEvidencePolicy;
+  commitEvidence: HarnessCommitEvidencePolicy;
+  rollbackEvidence: HarnessRollbackEvidencePolicy;
+}
+
+export const HARNESS_RESOURCE_EVIDENCE_POLICIES = {
+  document: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  document_page: {
+    semantics: "parent_bound",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  document_debug: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  study_unit: {
+    semantics: "parent_bound",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  learning_plan: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  planning_trace: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  persona: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  scene: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  study_session: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  tavern_room: {
+    semantics: "revisioned_control_aggregate",
+    contextEvidence: "authoritative_revision",
+    commitEvidence: "revision",
+    rollbackEvidence: "unsupported",
+  },
+  tavern_run: {
+    semantics: "unversioned_mutable",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+  tavern_message: {
+    semantics: "append_only",
+    contextEvidence: "unsupported",
+    commitEvidence: "sequence",
+    rollbackEvidence: "unsupported",
+  },
+  frontend_request: {
+    semantics: "operation_identity",
+    contextEvidence: "unsupported",
+    commitEvidence: "unsupported",
+    rollbackEvidence: "unsupported",
+  },
+} as const satisfies Record<HarnessResourceType, HarnessResourceEvidencePolicy>;
+
+export interface HarnessResourceEvidencePolicyRegistrySnapshot {
+  schema_name: "HarnessResourceEvidencePolicyRegistry";
+  schema_version: "harness-resource-evidence-policies-v1";
+  resources: Array<{
+    resource_type: HarnessResourceType;
+    semantics: HarnessResourceSemantics;
+    context_evidence: HarnessContextEvidencePolicy;
+    commit_evidence: HarnessCommitEvidencePolicy;
+    rollback_evidence: HarnessRollbackEvidencePolicy;
+  }>;
+}
+
+export function harnessResourceEvidencePolicyRegistrySnapshot(): HarnessResourceEvidencePolicyRegistrySnapshot {
+  return {
+    schema_name: "HarnessResourceEvidencePolicyRegistry",
+    schema_version: "harness-resource-evidence-policies-v1",
+    resources: Object.entries(HARNESS_RESOURCE_EVIDENCE_POLICIES)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([resourceType, policy]) => ({
+        resource_type: resourceType as HarnessResourceType,
+        semantics: policy.semantics,
+        context_evidence: policy.contextEvidence,
+        commit_evidence: policy.commitEvidence,
+        rollback_evidence: policy.rollbackEvidence,
+      })),
+  };
+}
 
 export interface HarnessContractRef {
   name: string;

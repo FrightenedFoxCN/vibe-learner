@@ -192,7 +192,6 @@ const passedNotApplicableV3 = {
       version: "tavern-actor-input-manifest-v1",
     },
     subjectRefs: [
-      { resourceType: "tavern_message", resourceId: "message-9", revision: null },
       { resourceType: "tavern_room", resourceId: "room-1", revision: 4 },
     ],
     componentVersions: [
@@ -221,7 +220,7 @@ const passedNotApplicableV3 = {
       version: "harness-context-manifest-digest-v1",
     },
     inputDigest: "509472be9c67dc5a7fa2e124e15b2749a806ab6c689275db349441746878b78c",
-    contextDigest: "4f5bc4a6a4384434121f5eecbd92f58fa879a4cbb1788515a87737fa81cbfbb7",
+    contextDigest: "8bb341080c4f850c7fbc483910785e2b5b97a23155050e3fedd3638978b16f0b",
     policyContract: {
       name: "TavernHarnessPolicy",
       version: "tavern-harness-v1",
