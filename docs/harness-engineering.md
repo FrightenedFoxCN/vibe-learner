@@ -55,6 +55,8 @@ Unknown explicit trace-schema versions are rejected. Missing `trace_schema_versi
 
 `HarnessContextEnvelope` records sorted subject/snapshot references, named component versions, and canonical SHA-256 input/context digests. It must not persist full hidden prompts, textbook contents, credentials, or private stage guidance. `HarnessProposalEnvelope` is metadata only: each workflow still requires its own strict proposal DTO.
 
+`app.services.harness_context.build_harness_context` is the workflow-neutral construction boundary. It accepts a strict Pydantic input plus ephemeral snapshot material, canonicalizes references and component versions, and returns only the evidence envelope; snapshot payloads are discarded after hashing. The envelope proves that named context inputs match. It does not make a workflow replay-complete unless that workflow also retains protected source artifacts and records truthful parser/model/tool/prompt/policy versions, failure evidence, and commit evidence. Workflows must not emit v2 using placeholder versions.
+
 Workflow-specific policies remain in their domain schema. For example, Tavern limits participant messages and checks cross-speaker impersonation, while document parsing checks page coverage, extraction density, OCR availability, and Study Unit bounds.
 
 See `harness-schema-ownership.md` for the workflow ownership registry, nullability rules, proposal boundaries, and compatibility policy.

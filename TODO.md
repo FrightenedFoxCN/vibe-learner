@@ -23,6 +23,7 @@
 
 - [x] `HRN-CORE-001` 建立跨工作流 HarnessTrace 契约与生命周期文档；验收：Python/TypeScript schema 对齐，Tavern 只持有领域 policy、不私有化通用 trace。
 - [x] `SCH-HRN-001` 建立跨工作流 schema/所有权基础与 v2 证据契约；验收：input/proposal/committed/API 角色有目录，v1 保持可读且不伪造证据，v2 具备 operation/trace identity、独立版本、attempt、SHA-256 digest、commit/rollback evidence，Python/TypeScript nullability 对齐并有 fixtures。
+- [x] `HRN-CTX-FOUNDATION-001` 建立 workflow-neutral context builder；验收：严格 typed input、排序/去重引用、命名组件版本、ephemeral snapshot hashing、canonical SHA-256 golden fixture 与原文不入 envelope 测试通过。该基础仅证明 context identity，不代表任一工作流已完成 replay 接入。
 - [ ] `HRN-CTX-001` 将 v2 context/digest utility 接入全部工作流（依赖 `SCH-HRN-001`，其他 HRN 流程依赖本项）；验收：使用 canonical JSON + SHA-256，记录 parser/heuristic/toolset/compiler/decoder 等命名组件版本及 subject/snapshot 引用，敏感原文不入 trace，fixture reference 可定位重放输入。
 - [ ] `HRN-RECOVERY-MIG-001` 统一旧 `ModelRecoveryRecord`、Planning round recovery 与 v2 attempt/check 的映射（依赖 `HRN-CTX-001`，Plan/Persona/Scene/Study/Tavern v2 接入依赖本项）；验收：同一 operation 可关联，旧 API 保持兼容，新指标不重复计数，并有明确弃用路径。
 - [ ] `AUD-001` 修复 Study Session 并发追加丢消息（`HRN-STUDY-001` 发布前置）；验收：两个并发 append 均保留且序号唯一。

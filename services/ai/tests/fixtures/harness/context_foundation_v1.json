@@ -1,0 +1,49 @@
+{
+  "schema_name": "HarnessContextEnvelope",
+  "schema_version": "harness-context-v1",
+  "workflow": "planning",
+  "operation_id": "operation-ctx-1",
+  "subject_refs": [
+    {
+      "resource_type": "document",
+      "resource_id": "document-1",
+      "revision": null
+    },
+    {
+      "resource_type": "persona",
+      "resource_id": "persona-2",
+      "revision": 3
+    }
+  ],
+  "component_versions": [
+    {
+      "name": "decoder",
+      "version": "plan-decoder-v1"
+    },
+    {
+      "name": "toolset",
+      "version": "planning-tools-v2"
+    }
+  ],
+  "snapshot_refs": [
+    {
+      "artifact_type": "outline",
+      "artifact_id": "outline-1",
+      "schema_version": "outline-v2",
+      "digest_algorithm": "sha256",
+      "payload_digest": "b286b2241b894fe72833c1b08a405a1b39ae84bf9dbdad9fec7831ecc60967a6"
+    },
+    {
+      "artifact_type": "persona",
+      "artifact_id": "persona-2",
+      "schema_version": "persona-runtime-v1",
+      "digest_algorithm": "sha256",
+      "payload_digest": "b1548bffe2073fee168cdc4fceb85e0fa1968e035f0fab964a4f5af3be6ef0b1"
+    }
+  ],
+  "digest_algorithm": "sha256",
+  "input_digest": "09760744d31e3b0094b6a661913e9dc6149e2537f621127f79ec32a77d45c8cb",
+  "context_digest": "b589088267ef873ad8468f4e94304b7dba5decbee236bb36df51bf4022f28387",
+  "policy_version": "planning-policy-v2",
+  "prompt_version": "planning-prompt-v3"
+}
