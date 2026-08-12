@@ -15,6 +15,7 @@
     "build:desktop": "npm --workspace @vibe-learner/desktop run build",
     "lint:web": "npm --workspace @vibe-learner/web run lint",
     "test:contracts": "tsc -p packages/shared/tsconfig.json",
+    "test:web:tavern": "npm --workspace @vibe-learner/web run test:tavern",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai"
   },

@@ -10,6 +10,7 @@ export type AppRoutePath =
   | "/"
   | "/plan"
   | "/study"
+  | "/tavern"
   | "/persona-spectrum"
   | "/scene-setup"
   | "/sensory-tools"

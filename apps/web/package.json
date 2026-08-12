@@ -7,7 +7,8 @@
     "build": "next build",
     "build:desktop": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:tavern": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

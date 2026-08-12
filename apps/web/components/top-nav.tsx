@@ -25,6 +25,7 @@ const NAV_ITEMS: Array<{
   { href: "/", label: "导航首页", icon: "home" },
   { href: "/plan", label: "计划生成", icon: "event_note" },
   { href: "/study", label: "章节对话", icon: "forum" },
+  { href: "/tavern", label: "角色酒馆", icon: "chat" },
   { href: "/persona-spectrum", label: "人格色谱", icon: "psychology_alt" },
   { href: "/scene-setup", label: "场景搭建", icon: "account_tree" },
   { href: "/sensory-tools", label: "感官工具", icon: "tune" },
