@@ -6,11 +6,20 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
 
+from pydantic import ValidationError
+
 from app.core.harness_component_versions import (
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
     PLANNING_TOOLSET_CONTRACT_VERSION,
 )
 from app.models.domain import DocumentDebugRecord, PlanningQuestionRecord, StudyUnitRecord
+from app.models.planning import (
+    PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION,
+    PLANNING_TOOL_ARGUMENT_MODELS,
+    PLANNING_TOOL_RESULT_CONTRACT_VERSION,
+    PLANNING_TOOL_RESULT_MODELS,
+    PlanningToolErrorResultV1,
+)
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.plan_prompt import (
     build_study_unit_detail_map,
@@ -54,6 +63,8 @@ class PlanToolExecution:
     result: dict[str, object]
     trace_summary: str
     follow_up_messages: list[dict[str, Any]]
+    argument_contract_version: str = PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION
+    result_contract_version: str = PLANNING_TOOL_RESULT_CONTRACT_VERSION
 
 
 class PlanToolRuntime:
@@ -98,33 +109,101 @@ class PlanToolRuntime:
         ]
 
     def execute_tool_call(self, tool_call: dict[str, Any]) -> PlanToolExecution:
-        function_payload = tool_call.get("function") or {}
-        tool_name = str(function_payload.get("name") or "")
-        raw_arguments = str(function_payload.get("arguments") or "{}")
+        tool_call_id = tool_call.get("id") if isinstance(tool_call.get("id"), str) else ""
+        function_payload = tool_call.get("function")
+        if not isinstance(function_payload, dict):
+            return _tool_argument_error_execution(
+                tool_call_id=tool_call_id,
+                tool_name="",
+                raw_arguments="",
+                error="invalid_tool_call",
+                path=["function"],
+                detail="tool function payload must be an object",
+            )
+        raw_name = function_payload.get("name")
+        tool_name = raw_name if isinstance(raw_name, str) else ""
+        raw_arguments_value = function_payload.get("arguments")
+        raw_arguments = raw_arguments_value if isinstance(raw_arguments_value, str) else ""
         definition = self._definitions.get(tool_name)
         if definition is None:
+            error = PlanningToolErrorResultV1(
+                tool_name=tool_name,
+                error="unknown_tool",
+                path=["function", "name"],
+                detail="tool is not registered or available in this planning context",
+            )
             return PlanToolExecution(
-                tool_call_id=str(tool_call.get("id") or ""),
+                tool_call_id=tool_call_id,
                 tool_name=tool_name,
                 arguments_json=raw_arguments,
-                result={
-                    "ok": False,
-                    "error": "unknown_tool",
-                    "tool_name": tool_name,
-                },
+                result=error.model_dump(mode="json"),
                 trace_summary=f"{tool_name}: 未知工具",
                 follow_up_messages=[],
             )
+        if not isinstance(raw_arguments_value, str):
+            return _tool_argument_error_execution(
+                tool_call_id=tool_call_id,
+                tool_name=tool_name,
+                raw_arguments=raw_arguments,
+                error="tool_argument_decode_failed",
+                path=["function", "arguments"],
+                detail="tool arguments must be a JSON string",
+            )
         try:
             arguments = json.loads(raw_arguments)
-        except json.JSONDecodeError:
-            arguments = {}
-        result = definition.execute(arguments, self.context)
+        except json.JSONDecodeError as exc:
+            return _tool_argument_error_execution(
+                tool_call_id=tool_call_id,
+                tool_name=tool_name,
+                raw_arguments=raw_arguments,
+                error="tool_argument_invalid_json",
+                path=["function", "arguments", exc.pos],
+                detail=exc.msg,
+            )
+        argument_model = PLANNING_TOOL_ARGUMENT_MODELS[tool_name]
+        try:
+            decoded_arguments = argument_model.model_validate(arguments)
+        except ValidationError as exc:
+            first_error = exc.errors(include_url=False)[0]
+            return _tool_argument_error_execution(
+                tool_call_id=tool_call_id,
+                tool_name=tool_name,
+                raw_arguments=raw_arguments,
+                error="tool_argument_schema_invalid",
+                path=[*first_error.get("loc", ())],
+                detail=str(first_error.get("type") or "validation_error"),
+            )
+        result = definition.execute(decoded_arguments.model_dump(mode="python"), self.context)
+        result_model = PLANNING_TOOL_RESULT_MODELS[tool_name]
+        result_payload = {
+            "schema_name": "planning-tool-result",
+            "schema_version": PLANNING_TOOL_RESULT_CONTRACT_VERSION,
+            **result.payload,
+        }
+        if result_payload.get("ok") is False:
+            validated_result = PlanningToolErrorResultV1.model_validate(
+                {
+                    "tool_name": tool_name,
+                    "path": [],
+                    "detail": "",
+                    "study_unit_id": "",
+                    **result_payload,
+                }
+            )
+        else:
+            try:
+                validated_result = result_model.model_validate(result_payload)
+            except ValidationError as exc:
+                first_error = exc.errors(include_url=False)[0]
+                path = ".".join(str(item) for item in first_error.get("loc", ()))
+                raise RuntimeError(
+                    f"planning_tool_result_contract_violation:{tool_name}:{path}"
+                ) from exc
         return PlanToolExecution(
-            tool_call_id=str(tool_call.get("id") or ""),
+            tool_call_id=tool_call_id,
             tool_name=tool_name,
             arguments_json=raw_arguments,
-            result=result.payload,
+            result=validated_result.model_dump(mode="json"),
             trace_summary=result.trace_summary,
             follow_up_messages=result.follow_up_messages,
         )
@@ -778,3 +857,29 @@ def _emit_progress(
     if callback is None:
         return
     callback(stage, payload)
+
+
+def _tool_argument_error_execution(
+    *,
+    tool_call_id: str,
+    tool_name: str,
+    raw_arguments: str,
+    error: str,
+    path: list[str | int],
+    detail: str,
+) -> PlanToolExecution:
+    result = PlanningToolErrorResultV1(
+        tool_name=tool_name,
+        error=error,
+        path=path,
+        detail=detail,
+    )
+    rendered_path = ".".join(str(item) for item in path) or "$"
+    return PlanToolExecution(
+        tool_call_id=tool_call_id,
+        tool_name=tool_name,
+        arguments_json=raw_arguments,
+        result=result.model_dump(mode="json"),
+        trace_summary=f"{tool_name or 'tool'}: 参数拒绝（{rendered_path}）",
+        follow_up_messages=[],
+    )

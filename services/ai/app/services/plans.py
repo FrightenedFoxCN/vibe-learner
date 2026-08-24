@@ -22,6 +22,7 @@ from app.models.domain import (
     StudyUnitProgressRecord,
     StudyUnitRecord,
 )
+from app.models.planning import PlanScheduleChapterProposalV1
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import ModelProvider
 from app.services.study_arrangement import StudyArrangementService
@@ -136,16 +137,23 @@ class LearningPlanService:
                     debug_report.study_units = model_plan.revised_study_units
                     self.store.save_item("document_debug", document.id, debug_report)
                 self._persist_document(document)
-        valid_unit_ids = {unit.id for unit in plan.study_units}
-        filtered_schedule = [
-            self._build_schedule_record(
-                index=index,
-                item=item,
-                unit=unit,
+        unit_by_id = {unit.id: unit for unit in plan.study_units}
+        filtered_schedule: list[StudyScheduleRecord] = []
+        seen_unit_ids: set[str] = set()
+        for index, item in enumerate(model_plan.schedule):
+            if item.unit_id in seen_unit_ids:
+                raise RuntimeError(
+                    f"plan_proposal_invariant_failed:schedule.{index}.unit_id:duplicate_ref"
+                )
+            seen_unit_ids.add(item.unit_id)
+            unit = unit_by_id.get(item.unit_id)
+            if unit is None:
+                raise RuntimeError(
+                    f"plan_proposal_invariant_failed:schedule.{index}.unit_id:unknown_ref"
+                )
+            filtered_schedule.append(
+                self._build_schedule_record(index=index, item=item, unit=unit)
             )
-            for index, item in enumerate(model_plan.schedule)
-            if (unit := next((entry for entry in plan.study_units if entry.id == item.unit_id), None)) is not None
-        ]
         if model_plan.course_title:
             plan.course_title = model_plan.course_title
         if model_plan.overview:
@@ -740,20 +748,37 @@ class LearningPlanService:
     def _normalize_schedule_chapters(
         self,
         *,
-        raw_schedule_chapters: list[ScheduleChapterRecord] | list[dict[str, object]] | None,
+        raw_schedule_chapters: (
+            list[ScheduleChapterRecord]
+            | list[PlanScheduleChapterProposalV1]
+            | list[dict[str, object]]
+            | None
+        ),
         unit: StudyUnitRecord,
     ) -> list[ScheduleChapterRecord]:
         chapters = list(raw_schedule_chapters or [])
         normalized: list[ScheduleChapterRecord] = []
+        previous_anchor_start = 0
         for index, raw_chapter in enumerate(chapters, start=1):
-            chapter = (
-                raw_chapter
-                if isinstance(raw_chapter, ScheduleChapterRecord)
-                else ScheduleChapterRecord.model_validate(raw_chapter)
+            raw_payload = (
+                raw_chapter.model_dump(mode="python")
+                if hasattr(raw_chapter, "model_dump")
+                else raw_chapter
             )
-            validated_chapter = self._validate_schedule_chapter(chapter=chapter, unit=unit, index=index)
-            if validated_chapter is not None:
-                normalized.append(validated_chapter)
+            if not isinstance(raw_payload, dict):
+                raise RuntimeError(
+                    f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}:not_object"
+                )
+            raw_payload = {key: value for key, value in raw_payload.items() if key != "id"}
+            chapter = PlanScheduleChapterProposalV1.model_validate(raw_payload)
+            validated_chapter = self._validate_schedule_chapter(
+                chapter=chapter,
+                unit=unit,
+                index=index,
+                previous_anchor_start=previous_anchor_start,
+            )
+            previous_anchor_start = validated_chapter.anchor_page_start
+            normalized.append(validated_chapter)
         if normalized:
             return normalized
         normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
@@ -777,32 +802,60 @@ class LearningPlanService:
     def _validate_schedule_chapter(
         self,
         *,
-        chapter: ScheduleChapterRecord,
+        chapter: PlanScheduleChapterProposalV1,
         unit: StudyUnitRecord,
         index: int,
-    ) -> ScheduleChapterRecord | None:
+        previous_anchor_start: int,
+    ) -> ScheduleChapterRecord:
         if chapter.anchor_page_start < unit.page_start or chapter.anchor_page_end > unit.page_end:
-            return None
+            raise RuntimeError(
+                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.anchor_page_start:outside_unit"
+            )
+        if chapter.anchor_page_start < previous_anchor_start:
+            raise RuntimeError(
+                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.anchor_page_start:not_ordered"
+            )
+        allowed_sources = set(unit.source_section_ids)
+        if any(source_id not in allowed_sources for source_id in chapter.source_section_ids):
+            raise RuntimeError(
+                f"plan_proposal_invariant_failed:schedule_chapters.{index - 1}.source_section_ids:unknown_ref"
+            )
         next_slices: list[ScheduleChapterContentSliceRecord] = []
-        for raw_slice in chapter.content_slices:
-            if raw_slice.page_start < unit.page_start or raw_slice.page_end > unit.page_end:
-                continue
-            next_slices.append(raw_slice)
-        if not next_slices:
-            next_slices = [
-                ScheduleChapterContentSliceRecord(
-                    page_start=chapter.anchor_page_start,
-                    page_end=chapter.anchor_page_end,
-                    source_section_ids=list(chapter.source_section_ids),
+        previous_slice_start = 0
+        for slice_index, raw_slice in enumerate(chapter.content_slices):
+            if (
+                raw_slice.page_start < chapter.anchor_page_start
+                or raw_slice.page_end > chapter.anchor_page_end
+            ):
+                raise RuntimeError(
+                    "plan_proposal_invariant_failed:"
+                    f"schedule_chapters.{index - 1}.content_slices.{slice_index}:outside_chapter"
                 )
-            ]
-        return chapter.model_copy(
-            update={
-                "id": chapter.id or f"{unit.id}:schedule-chapter:{index}",
-                "title": chapter.title.strip() or unit.title,
-                "source_section_ids": [str(item).strip() for item in chapter.source_section_ids if str(item).strip()],
-                "content_slices": next_slices,
-            }
+            if raw_slice.page_start < previous_slice_start:
+                raise RuntimeError(
+                    "plan_proposal_invariant_failed:"
+                    f"schedule_chapters.{index - 1}.content_slices.{slice_index}:not_ordered"
+                )
+            if any(source_id not in allowed_sources for source_id in raw_slice.source_section_ids):
+                raise RuntimeError(
+                    "plan_proposal_invariant_failed:"
+                    f"schedule_chapters.{index - 1}.content_slices.{slice_index}.source_section_ids:unknown_ref"
+                )
+            previous_slice_start = raw_slice.page_start
+            next_slices.append(
+                ScheduleChapterContentSliceRecord(
+                    page_start=raw_slice.page_start,
+                    page_end=raw_slice.page_end,
+                    source_section_ids=list(raw_slice.source_section_ids),
+                )
+            )
+        return ScheduleChapterRecord(
+            id=f"{unit.id}:schedule-chapter:{index}",
+            title=chapter.title,
+            anchor_page_start=chapter.anchor_page_start,
+            anchor_page_end=chapter.anchor_page_end,
+            source_section_ids=list(chapter.source_section_ids),
+            content_slices=next_slices,
         )
 
 

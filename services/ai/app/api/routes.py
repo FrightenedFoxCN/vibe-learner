@@ -188,6 +188,12 @@ def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="plan_model_invalid_json")
     if detail == "plan_model_invalid_payload":
         return HTTPException(status_code=502, detail="plan_model_invalid_payload")
+    if detail.startswith("plan_proposal_schema_invalid:"):
+        return HTTPException(status_code=502, detail="plan_model_invalid_payload")
+    if detail.startswith("plan_proposal_invariant_failed:"):
+        return HTTPException(status_code=502, detail="plan_model_invalid_payload")
+    if detail == "plan_proposal_repair_empty_response":
+        return HTTPException(status_code=502, detail="plan_model_empty_response")
     if detail == "plan_model_empty_response":
         return HTTPException(status_code=502, detail="plan_model_empty_response")
     if detail == "plan_model_tool_loop_exhausted":

@@ -606,6 +606,8 @@ class PlanToolCallTraceRecord(BaseModel):
     tool_call_id: str
     tool_name: str
     arguments_json: str
+    argument_contract_version: str = ""
+    result_contract_version: str = ""
     result_summary: str = ""
     result_json: str
 

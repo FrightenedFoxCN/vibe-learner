@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Any
 
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.core.logging import get_logger
 from app.models.domain import (
@@ -20,8 +21,6 @@ from app.models.domain import (
     PersonaProfile,
     PersonaSlot,
     RichTextBlockRecord,
-    ScheduleChapterContentSliceRecord,
-    ScheduleChapterRecord,
     SceneLayerStateRecord,
     SceneObjectStateRecord,
     SceneProfileRecord,
@@ -30,6 +29,11 @@ from app.models.domain import (
     persona_narrative_mode_label,
     persona_slot_content,
     persona_sorted_slots,
+)
+from app.models.planning import (
+    LearningPlanProposalV1,
+    PlanContentSliceProposalV1,
+    PlanScheduleChapterProposalV1,
 )
 from app.models.tavern import (
     TavernActorReply,
@@ -547,7 +551,7 @@ class PlanScheduleItem:
     title: str
     focus: str
     activity_type: str
-    schedule_chapters: list[ScheduleChapterRecord]
+    schedule_chapters: list[PlanScheduleChapterProposalV1]
 
 
 @dataclass
@@ -2235,6 +2239,7 @@ class OpenAIModelProvider(MockModelProvider):
             progress_callback=progress_callback,
         )
         active_tool_runtime = tool_runtime
+        active_model = self.plan_model
         run_result = self._run_plan_model(
             model=self.plan_model,
             document_id=goal.document_id,
@@ -2284,6 +2289,7 @@ class OpenAIModelProvider(MockModelProvider):
             )
             if run_result is not None:
                 active_tool_runtime = fallback_runtime
+                active_model = self.fallback_plan_model
                 _emit_progress(
                     progress_callback,
                     "model_fallback_succeeded",
@@ -2294,33 +2300,82 @@ class OpenAIModelProvider(MockModelProvider):
         if run_result is None:
             raise RuntimeError("plan_model_empty_response")
         _call_interrupt(interrupt_check)
-        parsed = _extract_json_payload(run_result.content)
+        final_trace = run_result.trace
+        try:
+            proposal = _decode_learning_plan_proposal(run_result.content)
+        except PlanningProposalDecodeError as first_error:
+            recovery = record_model_recovery(
+                category="schema_retry",
+                reason="plan_proposal_schema_invalid",
+                strategy="strict_contract_repair",
+                attempts=2,
+                note=first_error.path,
+            )
+            _emit_progress(
+                progress_callback,
+                "model_recovery_attempt",
+                {
+                    "attempt": 1,
+                    "reason": "plan_proposal_schema_invalid",
+                    "strategy": "strict_contract_repair",
+                    "path": first_error.path,
+                },
+            )
+            repair_messages = [
+                *messages,
+                {"role": "assistant", "content": run_result.content},
+                {
+                    "role": "user",
+                    "content": (
+                        "上一次最终计划未通过 learning-plan-proposal-v1 严格校验，"
+                        f"首个错误路径为 {first_error.path or '$'}。请只重新输出完整 JSON；"
+                        "不得输出 plan/schedule/chapter ID、revision、状态或时间，不得遗漏或丢弃章节。"
+                    ),
+                },
+            ]
+            repaired_result = self._run_plan_model(
+                model=active_model,
+                document_id=goal.document_id,
+                messages=repair_messages,
+                tool_runtime=active_tool_runtime,
+                progress_callback=progress_callback,
+                interrupt_check=interrupt_check,
+                allow_fallback=False,
+            )
+            if repaired_result is None:
+                raise RuntimeError("plan_proposal_repair_empty_response") from first_error
+            try:
+                proposal = _decode_learning_plan_proposal(repaired_result.content)
+            except PlanningProposalDecodeError as repair_error:
+                raise RuntimeError(
+                    f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
+                ) from repair_error
+            if repaired_result.trace.rounds:
+                repaired_result.trace.rounds[0].recoveries.insert(0, recovery)
+            final_trace = _merge_plan_generation_traces(
+                first=run_result.trace,
+                second=repaired_result.trace,
+            )
         schedule_items = [
             PlanScheduleItem(
-                unit_id=str(item["unit_id"]),
-                title=str(item["title"]),
-                focus=str(item["focus"]),
-                activity_type=str(item["activity_type"]),
-                schedule_chapters=_parse_plan_schedule_chapters(item),
+                unit_id=item.unit_id,
+                title=item.title,
+                focus=item.focus,
+                activity_type=item.activity_type,
+                schedule_chapters=list(item.schedule_chapters),
             )
-            for item in parsed.get("schedule", [])
+            for item in proposal.schedule
         ]
         active_study_units = active_tool_runtime.current_study_units()
         planning_questions = active_tool_runtime.current_planning_questions()
         return PlanModelReply(
-            course_title=str(
-                parsed.get("course_title")
-                or _build_course_title(
-                    document_title=document_title,
-                    plannable_units=study_units,
-                )
-            ),
-            overview=str(parsed["overview"]),
-            today_tasks=[str(item) for item in parsed.get("today_tasks", [])],
+            course_title=proposal.course_title,
+            overview=proposal.overview,
+            today_tasks=list(proposal.today_tasks),
             schedule=schedule_items,
             revised_study_units=active_study_units if _study_units_changed(study_units, active_study_units) else None,
             planning_questions=planning_questions,
-            debug_trace=run_result.trace,
+            debug_trace=final_trace,
         )
 
     def _build_plan_tool_runtime(
@@ -3296,6 +3351,40 @@ def _extract_json_payload(
     return payload
 
 
+class PlanningProposalDecodeError(RuntimeError):
+    def __init__(self, *, path: str, reason: str) -> None:
+        super().__init__(f"plan_proposal_schema_invalid:{path or '$'}:{reason}")
+        self.path = path
+        self.reason = reason
+
+
+def _decode_learning_plan_proposal(content: str) -> LearningPlanProposalV1:
+    try:
+        payload = _extract_json_payload(content)
+    except RuntimeError as exc:
+        raise PlanningProposalDecodeError(path="$", reason=str(exc)) from exc
+    try:
+        return LearningPlanProposalV1.model_validate(payload)
+    except ValidationError as exc:
+        first_error = exc.errors(include_url=False)[0]
+        path = ".".join(str(item) for item in first_error.get("loc", ())) or "$"
+        reason = str(first_error.get("type") or "validation_error")
+        raise PlanningProposalDecodeError(path=path, reason=reason) from exc
+
+
+def _merge_plan_generation_traces(
+    *,
+    first: PlanGenerationTraceRecord,
+    second: PlanGenerationTraceRecord,
+) -> PlanGenerationTraceRecord:
+    offset = len(first.rounds)
+    repaired_rounds = [
+        item.model_copy(update={"round_index": offset + index})
+        for index, item in enumerate(second.rounds)
+    ]
+    return first.model_copy(update={"rounds": [*first.rounds, *repaired_rounds]})
+
+
 def _extract_response_output_text(payload: dict[str, Any]) -> str:
     direct = payload.get("output_text")
     if isinstance(direct, str) and direct.strip():
@@ -3822,17 +3911,18 @@ def _build_course_title(
     return document_title.strip()
 
 
-def _fallback_schedule_chapters_for_unit(unit: StudyUnitRecord) -> list[ScheduleChapterRecord]:
+def _fallback_schedule_chapters_for_unit(
+    unit: StudyUnitRecord,
+) -> list[PlanScheduleChapterProposalV1]:
     normalized_sources = [str(item).strip() for item in unit.source_section_ids if str(item).strip()]
     return [
-        ScheduleChapterRecord(
-            id=f"{unit.id}:schedule-chapter:1",
+        PlanScheduleChapterProposalV1(
             title=unit.title,
             anchor_page_start=unit.page_start,
             anchor_page_end=unit.page_end,
             source_section_ids=normalized_sources,
             content_slices=[
-                ScheduleChapterContentSliceRecord(
+                PlanContentSliceProposalV1(
                     page_start=unit.page_start,
                     page_end=unit.page_end,
                     source_section_ids=normalized_sources,
@@ -3840,21 +3930,6 @@ def _fallback_schedule_chapters_for_unit(unit: StudyUnitRecord) -> list[Schedule
             ],
         )
     ]
-
-
-def _parse_plan_schedule_chapters(item: dict[str, Any]) -> list[ScheduleChapterRecord]:
-    raw_schedule_chapters = item.get("schedule_chapters")
-    if not isinstance(raw_schedule_chapters, list):
-        return []
-    normalized: list[ScheduleChapterRecord] = []
-    for raw_chapter in raw_schedule_chapters:
-        if not isinstance(raw_chapter, dict):
-            continue
-        try:
-            normalized.append(ScheduleChapterRecord.model_validate(raw_chapter))
-        except Exception:
-            continue
-    return normalized
 
 
 def _study_units_changed(

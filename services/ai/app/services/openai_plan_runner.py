@@ -131,6 +131,8 @@ class OpenAIPlanRunner:
                             tool_call_id=execution.tool_call_id,
                             tool_name=execution.tool_name,
                             arguments_json=execution.arguments_json,
+                            argument_contract_version=execution.argument_contract_version,
+                            result_contract_version=execution.result_contract_version,
                             result_summary=execution.trace_summary,
                             result_json=json.dumps(execution.result, ensure_ascii=False),
                         )

@@ -158,6 +158,17 @@ not the defect repair.
 
 ## P1 — Planning silently weakens malformed tool/proposal data and multi-writes
 
+### Schema implementation status (2026-08-24)
+
+All six Planning tools now use strict versioned argument/result DTOs; malformed
+JSON, extra fields, and wrong types return a typed field path without tool
+execution. Final model output is a strict `LearningPlanProposalV1`, permits one
+bounded repair, and cannot provide plan/schedule/chapter IDs, state, revision,
+or timestamps. Unknown/duplicate Study Unit refs and illegal chapter/slice
+ranges, ordering, or Section refs fail closed instead of disappearing. The
+finding remains open for the independent operation journal and atomic
+Document/Debug/Trace/Plan commit boundary plus independent revalidation.
+
 ### Evidence
 
 - `services/ai/app/services/plan_tool_runtime.py` can turn malformed arguments

@@ -20,6 +20,8 @@ from app.services.prompt_loader import load_prompt_template
 
 PLAN_JSON_SCHEMA = (
     "{"
+    '"schema_name": "learning-plan-proposal", '
+    '"schema_version": "learning-plan-proposal-v1", '
     '"course_title": string, '
     '"overview": string, '
     '"today_tasks": string[], '
@@ -31,15 +33,14 @@ PLAN_JSON_SCHEMA = (
     '"activity_type": "learn" | "review", '
     '"schedule_chapters": ['
     "{"
-    '"id": string, '
     '"title": string, '
-    '"anchor_page_start": number, '
-    '"anchor_page_end": number, '
+    '"anchor_page_start": integer, '
+    '"anchor_page_end": integer, '
     '"source_section_ids": string[], '
     '"content_slices": ['
     "{"
-    '"page_start": number, '
-    '"page_end": number, '
+    '"page_start": integer, '
+    '"page_end": integer, '
     '"source_section_ids": string[]'
     "}"
     "]"

@@ -145,7 +145,17 @@ protected replay, and eval remain tracked by `HRN-DOC-001`.
 4. schedule normalization against known Study Units;
 5. plan and planning-trace persistence.
 
-The planning proposal/tool boundary and document/debug/trace/plan commit are not yet one v3 Harness transaction. This is tracked by `HRN-PLAN-001`.
+Each of the six Planning tools now decodes a strict v1 argument contract and
+projects a strict v1 result. Malformed JSON, extra fields, and wrong primitive
+types return a typed field path without executing the tool. Final model output
+decodes as `LearningPlanProposalV1`; it contains only content and allowed Study
+Unit/Section references, never plan/schedule/chapter IDs, revision, state, or
+timestamps. One bounded repair is allowed. The application assigns committed
+schedule/chapter IDs and rejects unknown/duplicate Study Unit references,
+out-of-range chapters/slices, unordered anchors, and unknown Section refs
+instead of silently dropping them. The remaining document/debug/trace/plan
+atomic commit and operation read-back boundary is tracked by
+`AUD-PLAN-COMMIT-001`; v3 context/trace/replay/eval remains `HRN-PLAN-001`.
 
 ### 3. Study interaction
 

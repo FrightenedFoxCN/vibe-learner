@@ -125,6 +125,24 @@ def _schedule_chapter_record(
     )
 
 
+def _plan_proposal_schedule_chapter(
+    *,
+    title: str,
+    page_start: int,
+    page_end: int,
+    source_section_ids: list[str] | None = None,
+) -> dict[str, object]:
+    payload = _schedule_chapter_record(
+        chapter_id="application-will-assign",
+        title=title,
+        page_start=page_start,
+        page_end=page_end,
+        source_section_ids=source_section_ids,
+    ).model_dump(mode="json")
+    payload.pop("id")
+    return payload
+
+
 class PersonaPipelineTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
@@ -2901,6 +2919,8 @@ class PersonaPipelineTests(unittest.TestCase):
                             "message": {
                                 "content": json.dumps(
                                     {
+                                        "schema_name": "learning-plan-proposal",
+                                        "schema_version": "learning-plan-proposal-v1",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "LLM plan overview",
                                         "today_tasks": ["Read Chapter 1 carefully."],
@@ -2911,12 +2931,11 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "focus": "理解定义与例题。",
                                                 "activity_type": "learn",
                                                 "schedule_chapters": [
-                                                    _schedule_chapter_record(
-                                                        chapter_id="unit-1:chapter-1",
+                                                    _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
                                                         page_start=1,
                                                         page_end=18,
-                                                    ).model_dump(mode="json")
+                                                    )
                                                 ],
                                             }
                                         ],
@@ -3061,6 +3080,8 @@ class PersonaPipelineTests(unittest.TestCase):
                                 "reasoning_content": "I now have enough evidence to write the plan.",
                                 "content": json.dumps(
                                     {
+                                        "schema_name": "learning-plan-proposal",
+                                        "schema_version": "learning-plan-proposal-v1",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Tool-assisted plan overview",
                                         "today_tasks": ["Read sets and extensionality."],
@@ -3071,13 +3092,12 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
                                                 "schedule_chapters": [
-                                                    _schedule_chapter_record(
-                                                        chapter_id="unit-1:chapter-1",
+                                                    _plan_proposal_schedule_chapter(
                                                         title="1.1 Sets",
                                                         page_start=1,
                                                         page_end=8,
                                                         source_section_ids=["raw-1-1"],
-                                                    ).model_dump(mode="json")
+                                                    )
                                                 ],
                                             }
                                         ],
@@ -3238,6 +3258,8 @@ class PersonaPipelineTests(unittest.TestCase):
                             "message": {
                                 "content": json.dumps(
                                     {
+                                        "schema_name": "learning-plan-proposal",
+                                        "schema_version": "learning-plan-proposal-v1",
                                         "course_title": "Discrete Mathematics / Chapter 1 Foundations",
                                         "overview": "Recovered after transparent regeneration.",
                                         "today_tasks": ["Read sets and extensionality."],
@@ -3248,13 +3270,12 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "focus": "Cover sets, subsets, and extensionality.",
                                                 "activity_type": "learn",
                                                 "schedule_chapters": [
-                                                    _schedule_chapter_record(
-                                                        chapter_id="unit-1:chapter-1",
+                                                    _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
                                                         page_start=1,
                                                         page_end=18,
                                                         source_section_ids=["raw-1"],
-                                                    ).model_dump(mode="json")
+                                                    )
                                                 ],
                                             }
                                         ],
@@ -3396,6 +3417,8 @@ class PersonaPipelineTests(unittest.TestCase):
                             "message": {
                                 "content": json.dumps(
                                     {
+                                        "schema_name": "learning-plan-proposal",
+                                        "schema_version": "learning-plan-proposal-v1",
                                         "course_title": "Discrete Mathematics / Revised",
                                         "overview": "Use the revised segmentation.",
                                         "today_tasks": ["Start with the corrected first chapter."],
@@ -3406,12 +3429,11 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "focus": "Study the corrected first chapter.",
                                                 "activity_type": "learn",
                                                 "schedule_chapters": [
-                                                    _schedule_chapter_record(
-                                                        chapter_id="doc-1:study-unit:llm:1:chapter-1",
+                                                    _plan_proposal_schedule_chapter(
                                                         title="Chapter 1 Foundations",
                                                         page_start=1,
                                                         page_end=10,
-                                                    ).model_dump(mode="json")
+                                                    )
                                                 ],
                                             }
                                         ],
@@ -3500,6 +3522,8 @@ class PersonaPipelineTests(unittest.TestCase):
                             "message": {
                                 "content": json.dumps(
                                     {
+                                        "schema_name": "learning-plan-proposal",
+                                        "schema_version": "learning-plan-proposal-v1",
                                         "course_title": "Physics / Chapter 2 Graphs",
                                         "overview": "Use the page image to understand the diagram-heavy unit.",
                                         "today_tasks": ["Inspect the textbook figure and summarize it."],
@@ -3510,12 +3534,11 @@ class PersonaPipelineTests(unittest.TestCase):
                                                 "focus": "Interpret the chart and connect it with the surrounding explanation.",
                                                 "activity_type": "learn",
                                                 "schedule_chapters": [
-                                                    _schedule_chapter_record(
-                                                        chapter_id="unit-graph:chapter-1",
+                                                    _plan_proposal_schedule_chapter(
                                                         title="Chapter 2 Graphs",
                                                         page_start=2,
                                                         page_end=4,
-                                                    ).model_dump(mode="json")
+                                                    )
                                                 ],
                                             }
                                         ],
