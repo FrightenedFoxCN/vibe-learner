@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.domain import (
@@ -36,6 +38,7 @@ from app.models.study_question import (
     StudyQuestionAttemptResponseV1,
     StudyQuestionPromptResponseV1,
 )
+from app.models.scene import SceneCommittedSaveV1
 
 
 class CreatePersonaRequest(BaseModel):
@@ -144,12 +147,15 @@ class PersonaCardGenerateResponse(BaseModel):
 
 
 class SceneTreeGenerateRequest(BaseModel):
-    mode: str
-    input_text: str
-    layer_count: int | None = Field(default=None, ge=1)
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    mode: Literal["keywords", "long_text"]
+    input_text: str = Field(min_length=1, max_length=12000)
+    layer_count: int | None = Field(default=None, ge=1, le=8)
 
 
 class SceneTreeGenerateResponse(BaseModel):
+    contract_version: str = "scene-tree-generate-response-v1"
     mode: str
     used_model: str
     used_web_search: bool
@@ -561,22 +567,12 @@ class SessionSceneResponse(SessionSceneRecord):
     pass
 
 
-class UpdateSceneSetupRequest(BaseModel):
-    scene_name: str = Field(min_length=1)
-    scene_summary: str = Field(min_length=1)
-    scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
-    selected_layer_id: str = ""
-    collapsed_layer_ids: list[str] = Field(default_factory=list)
-    scene_profile: SceneProfileRecord | None = None
+class UpdateSceneSetupRequest(SceneCommittedSaveV1):
+    pass
 
 
-class UpsertSceneLibraryRequest(BaseModel):
-    scene_name: str = Field(min_length=1)
-    scene_summary: str = Field(min_length=1)
-    scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
-    selected_layer_id: str = ""
-    collapsed_layer_ids: list[str] = Field(default_factory=list)
-    scene_profile: SceneProfileRecord | None = None
+class UpsertSceneLibraryRequest(SceneCommittedSaveV1):
+    pass
 
 
 class CreateStudySessionRequest(BaseModel):

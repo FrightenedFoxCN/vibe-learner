@@ -771,17 +771,25 @@ export default function SceneSetupPage() {
         setSceneIoMessage("请先填写场景名和 summary。");
         return;
       }
-      const sceneProfile = deriveSceneProfile(sceneLayers, selectedLayerId, trimmedSceneName, trimmedSceneSummary);
       const payload = {
         sceneName: trimmedSceneName,
         sceneSummary: trimmedSceneSummary,
         sceneLayers,
         selectedLayerId,
         collapsedLayerIds,
-        sceneProfile: sceneProfile ?? null,
       };
       if (mode === "upsert" && selectedSavedSceneId) {
-        const updated = await updateSceneLibraryItem(selectedSavedSceneId, payload);
+        const selectedSavedScene = savedScenes.find(
+          (item) => item.sceneId === selectedSavedSceneId
+        );
+        if (!selectedSavedScene) {
+          setSceneIoMessage("当前保存版本已不存在，请刷新场景库后重试。");
+          return;
+        }
+        const updated = await updateSceneLibraryItem(selectedSavedSceneId, {
+          ...payload,
+          expectedRevision: selectedSavedScene.revision,
+        });
         setSavedScenes((current) => current.map((item) => (item.sceneId === updated.sceneId ? updated : item)));
         setSceneIoMessage(`已更新已保存场景“${updated.sceneName}”。`);
         return;

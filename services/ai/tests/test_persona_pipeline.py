@@ -3702,6 +3702,14 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(error.status_code, 502)
         self.assertEqual(error.detail, "setting_model_upstream_error:401:invalid_api_key")
 
+    def test_route_maps_invalid_scene_proposal_to_bad_gateway(self) -> None:
+        error = _map_setting_generation_error(
+            RuntimeError("setting_scene_proposal_invalid:scene_layers.0.id:extra_forbidden")
+        )
+
+        self.assertEqual(error.status_code, 502)
+        self.assertEqual(error.detail, "setting_model_invalid_payload")
+
     def test_plan_service_uses_model_provider_output_for_plan(self) -> None:
         arrangement_service = StudyArrangementService()
         store = LocalJsonStore(Path(self.temp_dir.name) / "plan-provider-case")

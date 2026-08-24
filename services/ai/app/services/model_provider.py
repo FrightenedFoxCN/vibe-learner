@@ -35,6 +35,10 @@ from app.models.planning import (
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
+from app.models.scene import (
+    decode_scene_tree_proposal,
+    project_scene_tree_proposal,
+)
 from app.models.tavern import (
     TavernActorReply,
     TavernMessageRecord,
@@ -168,13 +172,15 @@ PERSONA_CARD_GENERATION_JSON_SCHEMA: dict[str, object] = {
 
 SCENE_TREE_GENERATION_SCHEMA = (
     "{"
+    '"schema_name": "scene-tree-proposal", '
+    '"schema_version": "scene-tree-proposal-v1", '
     '"scene_name": string, '
     '"scene_summary": string, '
-    '"selected_layer_id": string, '
-    '"scene_layers": [{"id"?: string, "title": string, "scope_label": string, "summary": string, '
-    '"atmosphere": string, "rules": string, "entrance": string, "tags"?: string, "reuse_id"?: string, '
-    '"reuse_hint"?: string, "objects"?: [{"id"?: string, "name": string, "description": string, '
-    '"interaction": string, "tags"?: string, "reuse_id"?: string, "reuse_hint"?: string}], '
+    '"selected_path": [integer, ...], '
+    '"scene_layers": [{"title": string, "scope_label": string, "summary": string, '
+    '"atmosphere": string, "rules": string, "entrance": string, "tags"?: [string], '
+    '"reuse_hint"?: string, "objects"?: [{"name": string, "description": string, '
+    '"interaction": string, "tags"?: [string], "reuse_hint"?: string}], '
     '"children"?: [SceneLayer]}]'
     "}"
 )
@@ -1106,15 +1112,18 @@ class MockModelProvider(ModelProvider):
                 f"关键词驱动：{theme}。",
             ],
         )
-        selected_layer_id = _select_deepest_layer_id(layers)
-        return {
-            "scene_name": f"{seed_name} 场景树" if seed_name else "关键词场景树",
-            "scene_summary": f"根据关键词 {theme} 生成的分层场景草稿，适合继续补充教学动线、规则与交互节点。",
-            "selected_layer_id": selected_layer_id,
-            "scene_layers": [layer.model_dump(mode="json") for layer in layers],
-            "used_model": "mock",
-            "used_web_search": False,
-        }
+        return _normalize_generated_scene_result(
+            _scene_proposal_payload_from_layers(
+                scene_name=f"{seed_name} 场景树" if seed_name else "关键词场景树",
+                scene_summary=(
+                    f"根据关键词 {theme} 生成的分层场景草稿，适合继续补充教学动线、"
+                    "规则与交互节点。"
+                ),
+                layers=layers,
+            ),
+            used_model="mock",
+            used_web_search=False,
+        )
 
     def generate_scene_tree_from_text(
         self,
@@ -1135,16 +1144,19 @@ class MockModelProvider(ModelProvider):
             anchors=anchors,
             fragments=fragments,
         )
-        selected_layer_id = _select_deepest_layer_id(layers)
         scene_name_seed = fragments[0][:18].strip("：:- ")
-        return {
-            "scene_name": f"{scene_name_seed or '长文本'} 场景树",
-            "scene_summary": f"从长文本中抽取出的分层场景结构，共 {len(layers)} 层，可继续作为教学或角色互动场景复用。",
-            "selected_layer_id": selected_layer_id,
-            "scene_layers": [layer.model_dump(mode="json") for layer in layers],
-            "used_model": "mock",
-            "used_web_search": False,
-        }
+        return _normalize_generated_scene_result(
+            _scene_proposal_payload_from_layers(
+                scene_name=f"{scene_name_seed or '长文本'} 场景树",
+                scene_summary=(
+                    f"从长文本中抽取出的分层场景结构，共 {len(layers)} 层，"
+                    "可继续作为教学或角色互动场景复用。"
+                ),
+                layers=layers,
+            ),
+            used_model="mock",
+            used_web_search=False,
+        )
 
 
 class OpenAIModelProvider(MockModelProvider):
@@ -2016,7 +2028,7 @@ class OpenAIModelProvider(MockModelProvider):
         }
         return self._request_setting_json_chat(
             payload,
-            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 scene_name、scene_summary、selected_layer_id、scene_layers 字段完整。",
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 schema_name、schema_version、scene_name、scene_summary、selected_path、scene_layers 字段完整。",
         )
 
     def _request_setting_json_chat(
@@ -2192,7 +2204,7 @@ class OpenAIModelProvider(MockModelProvider):
         }
         parsed = self._request_setting_json_chat(
             payload,
-            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 scene_name、scene_summary、selected_layer_id、scene_layers 字段完整。",
+            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 schema_name、schema_version、scene_name、scene_summary、selected_path、scene_layers 字段完整。",
         )
         return _normalize_generated_scene_result(
             parsed,
@@ -3500,139 +3512,91 @@ def _stable_scene_token(seed: str, prefix: str) -> str:
     return f"{prefix}-{value:08x}"
 
 
-def _normalize_generated_scene_object(
-    raw_object: object,
-    *,
-    parent_title: str,
-    index: int,
-) -> SceneObjectStateRecord | None:
-    if not isinstance(raw_object, dict):
-        return None
-    name = str(raw_object.get("name") or "").strip()
-    description = str(raw_object.get("description") or "").strip()
-    interaction = str(raw_object.get("interaction") or "").strip()
-    if not name or not description or not interaction:
-        return None
-    seed = f"{parent_title}:{name}:{index}"
-    return SceneObjectStateRecord(
-        id=str(raw_object.get("id") or _stable_scene_token(seed, "scene-object")),
-        name=name,
-        description=description,
-        interaction=interaction,
-        tags=str(raw_object.get("tags") or "").strip(),
-        reuse_id=str(raw_object.get("reuse_id") or _stable_scene_token(seed, "scene-object-reuse")),
-        reuse_hint=str(raw_object.get("reuse_hint") or f"可复用为“{name}”这一类交互物体。").strip(),
-    )
-
-
-def _normalize_generated_scene_layer(
-    raw_layer: object,
-    *,
-    trail: tuple[str, ...],
-    index: int,
-) -> SceneLayerStateRecord | None:
-    if not isinstance(raw_layer, dict):
-        return None
-    title = str(raw_layer.get("title") or "").strip()
-    scope_label = str(raw_layer.get("scope_label") or raw_layer.get("scopeLabel") or "").strip()
-    summary = str(raw_layer.get("summary") or "").strip()
-    atmosphere = str(raw_layer.get("atmosphere") or "").strip()
-    rules = str(raw_layer.get("rules") or "").strip()
-    entrance = str(raw_layer.get("entrance") or "").strip()
-    if not title or not scope_label or not summary or not atmosphere or not rules or not entrance:
-        return None
-    current_trail = (*trail, title)
-    seed = "/".join(current_trail) + f":{scope_label}:{index}"
-    raw_objects = raw_layer.get("objects")
-    raw_children = raw_layer.get("children")
-    objects = [
-        item
-        for object_index, raw_object in enumerate(raw_objects if isinstance(raw_objects, list) else [])
-        if (item := _normalize_generated_scene_object(raw_object, parent_title=title, index=object_index)) is not None
-    ]
-    children = [
-        item
-        for child_index, raw_child in enumerate(raw_children if isinstance(raw_children, list) else [])
-        if (item := _normalize_generated_scene_layer(raw_child, trail=current_trail, index=child_index)) is not None
-    ]
-    return SceneLayerStateRecord(
-        id=str(raw_layer.get("id") or _stable_scene_token(seed, "scene-layer")),
-        title=title,
-        scope_label=scope_label,
-        summary=summary,
-        atmosphere=atmosphere,
-        rules=rules,
-        entrance=entrance,
-        tags=str(raw_layer.get("tags") or "").strip(),
-        reuse_id=str(raw_layer.get("reuse_id") or _stable_scene_token(seed, "scene-layer-reuse")),
-        reuse_hint=str(
-            raw_layer.get("reuse_hint")
-            or f"可复用为“{title}”这一层场景模板，保留其规则、氛围和进入方式。"
-        ).strip(),
-        objects=objects,
-        children=children,
-    )
-
-
-def _select_deepest_layer_id(layers: list[SceneLayerStateRecord]) -> str:
-    deepest_id = ""
-    deepest_depth = -1
-    for root in layers:
-        for layer, depth in _iter_scene_layers_with_depth(root):
-            if depth > deepest_depth:
-                deepest_id = layer.id
-                deepest_depth = depth
-    return deepest_id
-
-
 def _normalize_generated_scene_result(
     parsed: dict[str, object],
     *,
     used_model: str,
     used_web_search: bool,
 ) -> dict[str, object]:
-    raw_layers = parsed.get("scene_layers")
-    if not isinstance(raw_layers, list):
-        raise RuntimeError("setting_model_invalid_payload")
-    scene_layers = [
-        item
-        for index, raw_layer in enumerate(raw_layers)
-        if (item := _normalize_generated_scene_layer(raw_layer, trail=(), index=index)) is not None
-    ]
-    if not scene_layers:
-        raise RuntimeError("setting_model_invalid_payload")
-    selected_layer_id = str(parsed.get("selected_layer_id") or "").strip()
-    valid_ids = {
-        layer.id
-        for layer in scene_layers
-        for layer in _iter_scene_layers(layer)
-    }
-    if selected_layer_id not in valid_ids:
-        selected_layer_id = _select_deepest_layer_id(scene_layers)
-    scene_name = str(parsed.get("scene_name") or "").strip() or "生成场景树"
-    scene_summary = str(parsed.get("scene_summary") or "").strip()
-    if not scene_summary:
-        scene_summary = f"围绕 {scene_name} 生成的可复用场景树。"
+    proposal = decode_scene_tree_proposal(parsed)
+    try:
+        projection = project_scene_tree_proposal(proposal)
+    except ValueError as exc:
+        reason = str(exc).strip().replace(" ", "_") or "projection_invalid"
+        raise RuntimeError(
+            f"setting_scene_proposal_invalid:$:{reason}"
+        ) from exc
     return {
-        "scene_name": scene_name,
-        "scene_summary": scene_summary,
-        "selected_layer_id": selected_layer_id,
-        "scene_layers": [layer.model_dump(mode="json") for layer in scene_layers],
+        "scene_name": projection.scene_name,
+        "scene_summary": projection.scene_summary,
+        "selected_layer_id": projection.selected_layer_id,
+        "scene_layers": [
+            layer.model_dump(mode="json") for layer in projection.scene_layers
+        ],
         "used_model": used_model,
         "used_web_search": used_web_search,
     }
 
 
-def _iter_scene_layers(layer: SceneLayerStateRecord):
-    yield layer
-    for child in layer.children:
-        yield from _iter_scene_layers(child)
+def _scene_proposal_payload_from_layers(
+    *,
+    scene_name: str,
+    scene_summary: str,
+    layers: list[SceneLayerStateRecord],
+) -> dict[str, object]:
+    def split_tags(value: str) -> list[str]:
+        return [
+            item.strip()
+            for item in value.replace("，", ",").split(",")
+            if item.strip()
+        ]
+
+    def object_payload(item: SceneObjectStateRecord) -> dict[str, object]:
+        return {
+            "name": item.name,
+            "description": item.description,
+            "interaction": item.interaction,
+            "tags": split_tags(item.tags),
+            "reuse_hint": item.reuse_hint,
+        }
+
+    def layer_payload(item: SceneLayerStateRecord) -> dict[str, object]:
+        return {
+            "title": item.title,
+            "scope_label": item.scope_label,
+            "summary": item.summary,
+            "atmosphere": item.atmosphere,
+            "rules": item.rules,
+            "entrance": item.entrance,
+            "tags": split_tags(item.tags),
+            "reuse_hint": item.reuse_hint,
+            "objects": [object_payload(obj) for obj in item.objects],
+            "children": [layer_payload(child) for child in item.children],
+        }
+
+    return {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": scene_name,
+        "scene_summary": scene_summary,
+        "selected_path": _deepest_scene_layer_path(layers),
+        "scene_layers": [layer_payload(layer) for layer in layers],
+    }
 
 
-def _iter_scene_layers_with_depth(layer: SceneLayerStateRecord, depth: int = 0):
-    yield layer, depth
-    for child in layer.children:
-        yield from _iter_scene_layers_with_depth(child, depth + 1)
+def _deepest_scene_layer_path(layers: list[SceneLayerStateRecord]) -> list[int]:
+    deepest_path: list[int] = []
+
+    def visit(layer: SceneLayerStateRecord, path: list[int]) -> None:
+        nonlocal deepest_path
+        if len(path) > len(deepest_path):
+            deepest_path = path
+        for index, child in enumerate(layer.children):
+            visit(child, [*path, index])
+
+    for index, layer in enumerate(layers):
+        visit(layer, [index])
+    return deepest_path
 
 
 def _render_persona_card_count_hint(count: int | None) -> str:

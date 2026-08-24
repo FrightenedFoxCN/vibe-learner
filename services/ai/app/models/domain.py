@@ -314,7 +314,7 @@ class SceneLayerStateRecord(BaseModel):
     children: list["SceneLayerStateRecord"] = Field(default_factory=list)
 
 
-class SceneSetupStateRecord(BaseModel):
+class SceneTreeStateRecord(BaseModel):
     config_id: str = "default"
     updated_at: str
     scene_name: str = ""
@@ -325,8 +325,13 @@ class SceneSetupStateRecord(BaseModel):
     scene_profile: SceneProfileRecord | None = None
 
 
-class SceneLibraryRecord(SceneSetupStateRecord):
+class SceneSetupStateRecord(SceneTreeStateRecord):
+    revision: int = 0
+
+
+class SceneLibraryRecord(SceneTreeStateRecord):
     scene_id: str
+    revision: int = 0
     created_at: str
 
 
@@ -346,7 +351,7 @@ class ReusableSceneNodeRecord(BaseModel):
     updated_at: str
 
 
-class SessionSceneRecord(SceneSetupStateRecord):
+class SessionSceneRecord(SceneTreeStateRecord):
     scene_instance_id: str
     session_id: str
     document_id: str

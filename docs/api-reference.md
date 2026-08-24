@@ -252,6 +252,7 @@ Loads the current draft scene setup state.
 
 Returns a `SceneSetupStateRecord` payload with snake_case fields:
 
+- `revision`
 - `updated_at`
 - `scene_name`
 - `scene_summary`
@@ -268,20 +269,33 @@ Request body:
 
 ```json
 {
+  "contract_version": "scene-committed-save-v1",
+  "expected_revision": 3,
   "scene_name": "高一物理-力学基础",
   "scene_summary": "从世界整体出发...",
-  "scene_layers": [],
+  "scene_layers": [{"id": "scene-layer-123", "reuse_id": "scene-layer-reuse-123", "...": "..."}],
   "selected_layer_id": "scene-classroom",
-  "collapsed_layer_ids": [],
-  "scene_profile": null
+  "collapsed_layer_ids": []
 }
 ```
 
 Validation notes:
 
-- `scene_name` requires `min_length=1`
-- `scene_summary` requires `min_length=1`
-- `scene_layers[]` items must match `SceneLayerStateRecord`
+- the contract is strict and rejects extra fields, including caller-authored `scene_profile`
+- every layer/object requires an application ID and reuse ID
+- all IDs are globally unique; selected/collapsed layer IDs must exist
+- depth, layer/object counts, child counts, primitive types, and text size are bounded
+- `expected_revision` must match the latest GET; stale writes return `409 scene_revision_conflict`
+
+### `POST /scene-setup/generate`
+
+Generates an unpersisted Scene candidate from `keywords` or `long_text` input.
+The model-facing `scene-tree-proposal-v1` contains no application IDs. It uses
+`selected_path` (zero-based indexes from the root array), strict bounded tree
+content, and optional reusable-node references that must resolve through the
+application allow-list. The response is the application-projected tree with
+server-assigned layer/object/reuse IDs; invalid proposals return
+`502 setting_model_invalid_payload` and persist nothing.
 
 ### `GET /scene-library`
 
@@ -294,6 +308,7 @@ Returns:
   "items": [
     {
       "scene_id": "scene-abc123",
+      "revision": 2,
       "created_at": "...",
       "updated_at": "...",
       "scene_name": "...",
@@ -315,13 +330,15 @@ Returns one saved scene item.
 
 Creates a new saved scene item.
 
-Request body is the same shape as `PUT /scene-setup`.
+Request body is the same strict committed shape as `PUT /scene-setup`, with
+`expected_revision: 0`.
 
 ### `PUT /scene-library/{scene_id}`
 
 Updates an existing saved scene item.
 
-Request body is the same shape as `PUT /scene-setup`.
+Request body is the same strict committed shape as `PUT /scene-setup`, with the
+latest Scene Library item revision.
 
 ### `DELETE /scene-library/{scene_id}`
 
@@ -340,7 +357,11 @@ Returns:
 Common 422 causes in this surface:
 
 - `scene_name` or `scene_summary` sent as empty string
-- missing required layer fields in `scene_layers[]` (especially `scope_label`)
+- missing required layer/object ID or reuse identity
+- stale or missing `expected_revision`
+- duplicate IDs, invalid selected/collapsed references, or an oversized/deep tree
+- model proposal fields (`selected_path`, `reusable_node_ref`) sent to a committed-save endpoint
+- committed fields (`id`, `reuse_id`, `scene_profile`) sent as model proposal output
 - camelCase layer payload sent directly to backend without snake_case serialization
 
 ## Documents

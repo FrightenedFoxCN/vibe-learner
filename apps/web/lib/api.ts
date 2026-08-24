@@ -139,6 +139,7 @@ export interface PersonaSlotAssistOutput {
 }
 
 export interface SceneSetupStatePayload {
+  revision: number;
   updatedAt: string;
   sceneName: string;
   sceneSummary: string;
@@ -150,6 +151,7 @@ export interface SceneSetupStatePayload {
 
 export interface SceneLibraryItemPayload {
   sceneId: string;
+  revision: number;
   createdAt: string;
   updatedAt: string;
   sceneName: string;
@@ -926,6 +928,7 @@ function normalizePlan(plan: any): LearningPlan {
 
 function normalizeSceneSetupState(payload: any): SceneSetupStatePayload {
   return {
+    revision: Number(payload.revision ?? 0),
     updatedAt: String(payload.updated_at ?? ""),
     sceneName: String(payload.scene_name ?? ""),
     sceneSummary: String(payload.scene_summary ?? ""),
@@ -949,6 +952,7 @@ function normalizeSceneLibraryItem(payload: any): SceneLibraryItemPayload {
   );
   return {
     sceneId: String(payload.scene_id ?? ""),
+    revision: Number(payload.revision ?? 0),
     createdAt: String(payload.created_at ?? ""),
     updatedAt: String(payload.updated_at ?? ""),
     sceneName: String(payload.scene_name ?? payload.sceneName ?? ""),
@@ -1787,12 +1791,12 @@ export async function getSceneSetupState(): Promise<SceneSetupStatePayload> {
 }
 
 export async function updateSceneSetupState(input: {
+  expectedRevision: number;
   sceneLayers: unknown[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
   sceneName?: string;
   sceneSummary?: string;
-  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<SceneSetupStatePayload> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/scene-setup`, {
@@ -1801,12 +1805,13 @@ export async function updateSceneSetupState(input: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        scene_name: input.sceneName ?? input.sceneProfile?.sceneName ?? "",
-        scene_summary: input.sceneSummary ?? input.sceneProfile?.summary ?? "",
+        contract_version: "scene-committed-save-v1",
+        expected_revision: input.expectedRevision,
+        scene_name: input.sceneName ?? "",
+        scene_summary: input.sceneSummary ?? "",
         scene_layers: serializeSceneTree(input.sceneLayers as import("@vibe-learner/shared").SceneTreeNode[]),
         selected_layer_id: input.selectedLayerId,
-        collapsed_layer_ids: input.collapsedLayerIds,
-        scene_profile: serializeSceneProfile(input.sceneProfile)
+        collapsed_layer_ids: input.collapsedLayerIds
       })
     })
   );
@@ -1833,7 +1838,6 @@ export async function createSceneLibraryItem(input: {
   sceneLayers: unknown[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
-  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<SceneLibraryItemPayload> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/scene-library`, {
@@ -1842,12 +1846,13 @@ export async function createSceneLibraryItem(input: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        contract_version: "scene-committed-save-v1",
+        expected_revision: 0,
         scene_name: input.sceneName,
         scene_summary: input.sceneSummary,
         scene_layers: serializeSceneTree(input.sceneLayers as import("@vibe-learner/shared").SceneTreeNode[]),
         selected_layer_id: input.selectedLayerId,
-        collapsed_layer_ids: input.collapsedLayerIds,
-        scene_profile: serializeSceneProfile(input.sceneProfile)
+        collapsed_layer_ids: input.collapsedLayerIds
       })
     })
   );
@@ -1855,12 +1860,12 @@ export async function createSceneLibraryItem(input: {
 }
 
 export async function updateSceneLibraryItem(sceneId: string, input: {
+  expectedRevision: number;
   sceneName: string;
   sceneSummary: string;
   sceneLayers: unknown[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
-  sceneProfile?: import("@vibe-learner/shared").SceneProfile | null;
 }): Promise<SceneLibraryItemPayload> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
@@ -1869,12 +1874,13 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        contract_version: "scene-committed-save-v1",
+        expected_revision: input.expectedRevision,
         scene_name: input.sceneName,
         scene_summary: input.sceneSummary,
         scene_layers: serializeSceneTree(input.sceneLayers as import("@vibe-learner/shared").SceneTreeNode[]),
         selected_layer_id: input.selectedLayerId,
-        collapsed_layer_ids: input.collapsedLayerIds,
-        scene_profile: serializeSceneProfile(input.sceneProfile)
+        collapsed_layer_ids: input.collapsedLayerIds
       })
     })
   );

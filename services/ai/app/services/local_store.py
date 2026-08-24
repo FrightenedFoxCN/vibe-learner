@@ -31,6 +31,14 @@ from app.persistence.storage import StorageManager
 T = TypeVar("T", bound=BaseModel)
 
 
+class LocalStoreRevisionConflict(RuntimeError):
+    def __init__(self, item_id: str, *, expected: int, actual: int) -> None:
+        super().__init__(f"local_store_revision_conflict:{item_id}:{expected}:{actual}")
+        self.item_id = item_id
+        self.expected = expected
+        self.actual = actual
+
+
 @dataclass(frozen=True)
 class _RepoSpec:
     entity: type[Any]
@@ -115,6 +123,7 @@ def _model_tool_config_metadata(payload: dict[str, Any]) -> dict[str, Any]:
 def _scene_setup_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "config_id": str(payload.get("config_id") or "default"),
+        "revision": int(payload.get("revision") or 0),
         "updated_at": str(payload.get("updated_at") or ""),
     }
 
@@ -122,6 +131,7 @@ def _scene_setup_metadata(payload: dict[str, Any]) -> dict[str, Any]:
 def _scene_library_metadata(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "scene_id": str(payload.get("scene_id") or ""),
+        "revision": int(payload.get("revision") or 0),
         "scene_name": str(payload.get("scene_name") or ""),
         "created_at": str(payload.get("created_at") or ""),
         "updated_at": str(payload.get("updated_at") or ""),
@@ -428,6 +438,43 @@ class LocalJsonStore:
             self._apply_payload(row, payload, spec)
             session.add(row)
         self._legacy.save_item(category, item_id, item)
+
+    def save_item_cas(
+        self,
+        category: str,
+        item_id: str,
+        item: T,
+        *,
+        expected_revision: int,
+        model: type[T],
+    ) -> T:
+        if category not in {"scene_setup", "scene_library"}:
+            raise ValueError("revisioned_category_unsupported")
+        spec = CATEGORY_SPECS[category]
+        with self._db.session() as session:
+            row = session.get(spec.entity, item_id)
+            actual_revision = int(getattr(row, "revision", 0) or 0)
+            if actual_revision != expected_revision:
+                raise LocalStoreRevisionConflict(
+                    item_id,
+                    expected=expected_revision,
+                    actual=actual_revision,
+                )
+            payload = item.model_dump(mode="json")
+            payload["revision"] = actual_revision + 1
+            committed = model.model_validate(payload)
+            target = row or spec.entity()
+            self._apply_payload(
+                target,
+                committed.model_dump(mode="json"),
+                spec,
+            )
+            session.add(target)
+        try:
+            self._legacy.save_item(category, item_id, committed)
+        except OSError:
+            pass
+        return committed
 
     def load_category_items(self, category: str, model: type[T]) -> list[T]:
         if category in STREAM_CATEGORIES:

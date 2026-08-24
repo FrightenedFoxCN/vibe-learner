@@ -94,50 +94,46 @@ class SceneGenerationTests(unittest.TestCase):
         self.assertEqual(len(flattened), 1)
         self.assertEqual(payload.selected_layer_id, payload.scene_layers[0].id)
 
-    def test_parallel_roots_fall_back_to_deepest_valid_leaf(self) -> None:
+    def test_parallel_roots_project_selected_path_to_application_id(self) -> None:
         result = _normalize_generated_scene_result(
             {
+                "schema_name": "scene-tree-proposal",
+                "schema_version": "scene-tree-proposal-v1",
                 "scene_name": "并行场景",
                 "scene_summary": "测试并行根节点回退逻辑。",
-                "selected_layer_id": "",
+                "selected_path": [1, 0],
                 "scene_layers": [
                     {
-                        "id": "root-a",
                         "title": "入口广场",
                         "scope_label": "外部入口",
                         "summary": "用于分流访客的入口区域。",
                         "atmosphere": "开阔明亮",
                         "rules": "所有人都可通行",
                         "entrance": "从主干道直接进入",
-                        "tags": "入口,广场",
-                        "reuse_id": "reuse-root-a",
+                        "tags": ["入口", "广场"],
                         "reuse_hint": "可复用于大型园区入口。",
                         "objects": [],
                         "children": [],
                     },
                     {
-                        "id": "root-b",
                         "title": "实验楼",
                         "scope_label": "建筑层",
                         "summary": "用于组织多间实验空间的建筑。",
                         "atmosphere": "安静克制",
                         "rules": "需凭权限进入",
                         "entrance": "穿过门禁大厅进入",
-                        "tags": "实验楼,门禁",
-                        "reuse_id": "reuse-root-b",
+                        "tags": ["实验楼", "门禁"],
                         "reuse_hint": "可复用于教学建筑。",
                         "objects": [],
                         "children": [
                             {
-                                "id": "leaf-b1",
                                 "title": "显微观察室",
                                 "scope_label": "房间层",
                                 "summary": "用于单人或双人观察的封闭房间。",
                                 "atmosphere": "低噪、聚焦",
                                 "rules": "进入前需更换实验服",
                                 "entrance": "沿走廊进入隔音门后抵达",
-                                "tags": "观察室,隔音",
-                                "reuse_id": "reuse-leaf-b1",
+                                "tags": ["观察室", "隔音"],
                                 "reuse_hint": "可复用于精密观察空间。",
                                 "objects": [],
                                 "children": [],
@@ -150,7 +146,10 @@ class SceneGenerationTests(unittest.TestCase):
             used_web_search=False,
         )
 
-        self.assertEqual(result["selected_layer_id"], "leaf-b1")
+        self.assertEqual(
+            result["selected_layer_id"],
+            result["scene_layers"][1]["children"][0]["id"],
+        )
 
     def test_scene_prompt_mentions_parallel_layers_and_soft_layer_count(self) -> None:
         template = load_prompt_template("openai_setting_prompt.txt")
@@ -162,6 +161,8 @@ class SceneGenerationTests(unittest.TestCase):
         self.assertIn("允许生成平行兄弟层级", keywords_system)
         self.assertIn("layer_count_hint", keywords_user)
         self.assertIn("平行兄弟层级", keywords_user)
+        self.assertIn("selected_path", keywords_user)
+        self.assertIn("不得输出 layer/object `id`", keywords_system)
         self.assertIn("不要求整棵树必须是单链结构", long_text_system)
 
 

@@ -109,6 +109,16 @@ class Database:
                         "base_debug_digest VARCHAR(64) NOT NULL DEFAULT ''"
                     )
 
+            for scene_table in ("scene_setup_states", "scene_library_entries"):
+                if scene_table not in table_names:
+                    continue
+                scene_columns = self._sqlite_column_names(connection, scene_table)
+                if "revision" not in scene_columns:
+                    connection.exec_driver_sql(
+                        f"ALTER TABLE {scene_table} ADD COLUMN "
+                        "revision INTEGER NOT NULL DEFAULT 0"
+                    )
+
             # Recover partially applied migrations that left a duplicate legacy table behind.
             if "study_sessions_legacy" in table_names and "study_sessions" not in table_names:
                 connection.exec_driver_sql("ALTER TABLE study_sessions_legacy RENAME TO study_sessions")

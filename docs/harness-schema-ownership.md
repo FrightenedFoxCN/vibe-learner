@@ -46,7 +46,11 @@ An upstream provider's `tool_call_id` is a transport correlation reference, not 
 | Tavern | room revision, trigger, roster snapshots, bounded transcript and policy | `TavernActorReply` display/performance/target proposal | speaker, room/run/step/message IDs, schedule, reply anchor, sequence, lineage, revision and terminal state | Tavern room/run/message responses | `HRN-TAV-001`, `HRN-TAV-002` |
 | Frontend decode | request identity/sequence, expected response contract/version | decoded candidate or typed decode error; never a default-filled fake domain record | accepted response order, stale/cancel state and recovery action | view-model projection plus debug evidence | `HRN-WEB-001` |
 
-Known ownership violations are migration work, not precedent. Scene generation still accepts layer/object/reuse IDs and must replace that shape before it is described as harnessed. Planning has removed schedule-chapter IDs from its strict model proposal, but its committed operation projection and v3 evidence remain open.
+Known ownership violations are migration work, not precedent. Scene generation
+now rejects layer/object/reuse IDs in `SceneTreeProposalV1`, and Planning has
+removed schedule/chapter IDs from its strict model proposal. Their ownership
+and commit slices do not make either workflow Harness-adopted: protected
+artifacts, v3 attempt/terminal evidence, and eval remain open.
 
 ## Evidence contract versions
 
@@ -96,8 +100,22 @@ timestamps; it carries only bounded content and allowed Study Unit/Section
 references. One schema-repair attempt is allowed, after which the operation
 fails closed. The application assigns schedule/chapter identity and revalidates
 all parent ranges, ordering, and references. This closes the model proposal
-side of `SCH-PLAN-OWN-001`, not the committed-projection or v3 operation
-evidence side; those remain under `AUD-PLAN-COMMIT-001` and `HRN-PLAN-001`.
+side of `SCH-PLAN-OWN-001`. The separate `learning_plan_operations` journal now
+owns stable request identity, Document/Debug base digests, provider-start state,
+and the atomic Document/Debug/Trace/Plan committed snapshot. That implements
+`AUD-PLAN-COMMIT-001` pending independent revalidation; v3 operation evidence
+remains under `HRN-PLAN-001`.
+
+Scene generation uses `SceneTreeProposalV1`, a strict content-only tree with a
+zero-based selected path and optional `reusable_node_ref`. It forbids committed
+IDs, reuse identity, revisions, timestamps, and state. The projector resolves a
+reuse reference only from an application-provided allow-list, assigns all
+layer/object/reuse IDs, and enforces depth, node/object/child, selected-path,
+primitive, and text budgets. User-authored saves use the distinct strict
+`SceneCommittedSaveV1` contract with committed IDs and expected aggregate
+revision; Scene Setup and Scene Library persist through row CAS and rebuild the
+Scene Profile server-side. This is the `SCH-SCENE-OWN-001` implementation slice,
+not protected context/replay, v3 trace, or eval adoption under `HRN-SCENE-001`.
 
 `StudyChatEffectProposalV1` is the discriminated union for the current Study database slice: memory upsert, affinity delta, follow-up mutation, projected-state mutation, bound-Scene replacement, or plan confirmation. These contracts own only normalized/bounded effect content; application code derives follow-up/overlay/generated-source and Scene layer/object identities plus timestamps, while `HarnessPreparedEffectV1` adds operation, batch, effect, global slot, adapter/contract, and exact Session/Scene/Plan targets. The in-process collector and Scene runtime provide base-plus-prepared overlays for dependent reads, but they are not a durable prepare journal. Final commit revalidates Plan schedule, attachment-source membership, Scene binding/before digest/immutable identity/tree projection, applies all slots, and uses the same database transaction for the Scene row CAS, Turn, Session revision, and operation receipt. `StudyChatCommittedEffectBatchV1` stays inside the server-only operation payload for strict read-back; Scene projections carry their exact committed snapshot and digest so an older operation remains verifiable after a later legitimate Scene mutation. The public API projection drops the whole batch, and this internal committed receipt is not a registered v3 operation claim.
 

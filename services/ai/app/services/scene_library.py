@@ -6,7 +6,8 @@ from uuid import uuid4
 from fastapi import HTTPException
 
 from app.models.domain import SceneLibraryRecord
-from app.services.local_store import LocalJsonStore
+from app.models.scene import build_scene_profile, validate_committed_scene_tree
+from app.services.local_store import LocalJsonStore, LocalStoreRevisionConflict
 
 
 class SceneLibraryService:
@@ -33,21 +34,31 @@ class SceneLibraryService:
         scene_layers,
         selected_layer_id: str,
         collapsed_layer_ids: list[str],
-        scene_profile,
+        expected_revision: int,
     ) -> SceneLibraryRecord:
         target_scene_id = scene_id or f"scene-{uuid4().hex[:10]}"
         existing = self._store.load_item("scene_library", target_scene_id, SceneLibraryRecord)
-        normalized_profile = None
-        if scene_profile is not None:
-            normalized_profile = scene_profile.model_copy(
-                update={
-                    "scene_name": scene_name,
-                    "summary": scene_summary,
-                }
-            )
+        if scene_id is not None and existing is None:
+            raise HTTPException(status_code=404, detail="scene_not_found")
+        if scene_id is None and expected_revision != 0:
+            raise HTTPException(status_code=409, detail="scene_revision_conflict")
+        validate_committed_scene_tree(
+            scene_name=scene_name,
+            scene_summary=scene_summary,
+            scene_layers=scene_layers,
+            selected_layer_id=selected_layer_id,
+            collapsed_layer_ids=collapsed_layer_ids,
+        )
+        profile = build_scene_profile(
+            scene_name=scene_name,
+            scene_summary=scene_summary,
+            scene_layers=scene_layers,
+            selected_layer_id=selected_layer_id,
+        )
         record = SceneLibraryRecord(
             scene_id=target_scene_id,
             config_id=target_scene_id,
+            revision=expected_revision + 1,
             created_at=existing.created_at if existing is not None else _now_iso(),
             updated_at=_now_iso(),
             scene_name=scene_name,
@@ -55,10 +66,18 @@ class SceneLibraryService:
             scene_layers=scene_layers,
             selected_layer_id=selected_layer_id,
             collapsed_layer_ids=collapsed_layer_ids,
-            scene_profile=normalized_profile,
+            scene_profile=profile,
         )
-        self._store.save_item("scene_library", target_scene_id, record)
-        return record
+        try:
+            return self._store.save_item_cas(
+                "scene_library",
+                target_scene_id,
+                record,
+                expected_revision=expected_revision,
+                model=SceneLibraryRecord,
+            )
+        except LocalStoreRevisionConflict as exc:
+            raise HTTPException(status_code=409, detail="scene_revision_conflict") from exc
 
     def delete_scene(self, scene_id: str) -> None:
         if self._store.load_item("scene_library", scene_id, SceneLibraryRecord) is None:

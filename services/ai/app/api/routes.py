@@ -243,6 +243,8 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="setting_model_invalid_json")
     if detail == "setting_model_invalid_payload":
         return HTTPException(status_code=502, detail="setting_model_invalid_payload")
+    if detail.startswith("setting_scene_proposal_invalid:"):
+        return HTTPException(status_code=502, detail="setting_model_invalid_payload")
     return HTTPException(status_code=500, detail="setting_generation_failed")
 
 
@@ -385,10 +387,10 @@ def update_scene_setup(payload: UpdateSceneSetupRequest) -> SceneSetupResponse:
     record = container.scene_setup_service.upsert_state(
         scene_name=payload.scene_name,
         scene_summary=payload.scene_summary,
-        scene_layers=payload.scene_layers,
+        scene_layers=payload.to_domain_layers(),
         selected_layer_id=payload.selected_layer_id,
         collapsed_layer_ids=payload.collapsed_layer_ids,
-        scene_profile=payload.scene_profile,
+        expected_revision=payload.expected_revision,
     )
     return _into_response(SceneSetupResponse, record)
 
@@ -411,10 +413,10 @@ def create_scene_library_item(payload: UpsertSceneLibraryRequest) -> SceneLibrar
         scene_id=None,
         scene_name=payload.scene_name,
         scene_summary=payload.scene_summary,
-        scene_layers=payload.scene_layers,
+        scene_layers=payload.to_domain_layers(),
         selected_layer_id=payload.selected_layer_id,
         collapsed_layer_ids=payload.collapsed_layer_ids,
-        scene_profile=payload.scene_profile,
+        expected_revision=payload.expected_revision,
     )
     return _into_response(SceneLibraryResponse, record)
 
@@ -425,10 +427,10 @@ def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest)
         scene_id=scene_id,
         scene_name=payload.scene_name,
         scene_summary=payload.scene_summary,
-        scene_layers=payload.scene_layers,
+        scene_layers=payload.to_domain_layers(),
         selected_layer_id=payload.selected_layer_id,
         collapsed_layer_ids=payload.collapsed_layer_ids,
-        scene_profile=payload.scene_profile,
+        expected_revision=payload.expected_revision,
     )
     return _into_response(SceneLibraryResponse, record)
 

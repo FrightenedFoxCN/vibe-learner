@@ -170,7 +170,28 @@ This implements the `AUD-PLAN-COMMIT-001` boundary; independent revalidation is
 still required before closing that audit item, and v3 context/trace/replay/eval
 remains `HRN-PLAN-001`.
 
-### 3. Study interaction
+### 3. Scene generation and saves
+
+`POST /scene-setup/generate` decodes model output only as strict
+`scene-tree-proposal-v1`. The proposal contains bounded content, tags, a
+zero-based selected path, and optional allow-listed reusable-node references;
+it cannot contain layer/object/reuse IDs, revisions, timestamps, or persistence
+state. Depth, layer/object counts, per-node children, selected path, primitive
+types, extra fields, and total text budget fail closed. After validation the
+application resolves authorized reusable references and assigns every committed
+layer, object, and reuse identity.
+
+User-authored `PUT /scene-setup` and Scene Library create/update requests use a
+separate strict `scene-committed-save-v1` DTO. It requires application IDs plus
+an `expected_revision`, validates global ID uniqueness and selected/collapsed
+references, and never accepts a caller-authored Scene Profile. The service
+rebuilds that profile from the validated tree and commits through row CAS;
+stale editors receive `409 scene_revision_conflict`. Legacy records decode with
+revision `0`, and migration `20260824_0011` adds authoritative revision columns.
+This implements the ownership/CAS slice of `SCH-SCENE-OWN-001`; protected
+context/replay, v3 traces, and eval remain `HRN-SCENE-001`.
+
+### 4. Study interaction
 
 `POST /study-sessions` creates or restores one document/persona/Study Unit scope. `POST /study-sessions/{id}/chat` returns a structured reply, citations, Character Events, and the refreshed session.
 
@@ -188,7 +209,7 @@ The typed database-effect slice now covers memory, affinity, follow-up create/co
 
 Before commit the server revalidates the complete batch identity, slots, adapter/contract versions, Session/Plan targets, schedule membership, and attachment projection source membership. It then applies every slot with the final validated Turn, Session revision, operation receipt, and a server-only committed-effect projection in one database transaction; any adapter, validation, CAS, or response-build failure rolls the whole batch back. Replayed committed operations read the original receipt rather than applying effects again. The prepared batch remains in-process, not a durable prepare journal or public effect receipt. Scene, attachment files, and provider-generated artifacts retain separate file/external failure boundaries, and a generated-image tool result is explicitly `completed_uncommitted` until the final Session commit. `SCH-HRN-EFFECT-001`, `STUDY-EFFECT-COMMIT-001`, `HRN-STUDY-001`, and the complete `HRN-WEB-STUDY-DEC-001` remain open; neither Session CAS, operation admission, nor this database slice is v3 Harness adoption.
 
-### 4. Tavern interaction
+### 5. Tavern interaction
 
 Tavern is independent from Study Session and has no textbook/citation requirement.
 

@@ -112,7 +112,7 @@ Attachment request v2 persists a bounded manifest before writing files, derives 
 |---|---|---|
 | Document parsing | OCR fallback, warnings, debug record | versioned checks, stage traces, replay fixtures, performance budgets |
 | Planning | strict-ish JSON, model recovery records, tool trace | true JSON schema validation, effect boundary, unified trace, eval matrix |
-| Persona/scene generation | Pydantic normalization, retry | prompt/version digest, semantic invariants, regression fixtures |
+| Persona/scene generation | Persona normalization; strict Scene proposal/committed-save split, tree budgets, app-owned IDs, Scene save CAS | prompt/context version digest, protected replay, v3 terminal trace, eval matrix |
 | Study chat | reply recovery, tool trace, citations, Session/Scene CAS commit, durable request admission, operation-owned attachment staging/read-back, truthful provider uncertainty, strict operation-receipt decode, mixed typed database effects | complete nested response decoder, protected replay, v3 context/attempt/commit evidence, eval matrix |
 | Tavern | normalized room/run/step schema, low-trust persona compiler, strict actor decode, server-owned scheduler, semantic checks, bounded recovery trace, per-actor commit, partial state, scoped child retry, leased resume/cancel fencing, strict browser v1 decode | v3 runtime/artifact migration, total prompt budget, authoritative retry-chain view, eval matrix |
 | Frontend API | Tavern fail-closed decoder, request/room fencing, monotonic terminal reconciliation, Study operation receipt/identity/committed-Turn decode | complete per-domain runtime decoders, nested Study effect/citation/event decode, stream state machines, trace forwarding |
