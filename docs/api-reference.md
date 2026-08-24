@@ -705,7 +705,7 @@ This receipt proves admission identity and final Study Turn/result read-back. It
 
 ### `POST /study-sessions/{session_id}/attempt`
 
-Appends one learner attempt turn and assistant verdict into the same session transcript.
+Patches the answer state of an existing interactive question Turn and advances the Session revision. It does not append a new Turn, so `last_turn_sequence` remains unchanged unless another concurrent operation legitimately appends a Turn first.
 
 Request body:
 
@@ -726,7 +726,7 @@ Request body:
 
 Returns updated `StudySessionRecord`.
 
-The browser treats this returned Session as the current read-back authority: it does not display a verdict before the response advances the same Session and contains the submitted answer, verdict, and feedback on the originating Turn. The current request contract still includes client grading material and the backend still locates the question by prompt; `SCH-STUDY-ATTEMPT-001` tracks migration to Turn identity, revision fencing, stable attempt identity, and server-owned grading.
+The browser validates this returned Session as a candidate read-back authority: it does not display a verdict before the response advances the same Session and contains the submitted answer, verdict, and feedback on the originating Turn. A late lower-revision candidate cannot replace a newer active snapshot, and a valid concurrent append-only Turn suffix is accepted. The current request contract still includes client grading material and the backend still locates the question by prompt; `SCH-STUDY-QUESTION-001` and `SCH-STUDY-ATTEMPT-001` track migration to private server grading, Turn identity, revision fencing, and stable attempt identity.
 
 ### `PATCH /study-sessions/{session_id}`
 

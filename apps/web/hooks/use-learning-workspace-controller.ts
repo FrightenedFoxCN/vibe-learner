@@ -76,7 +76,7 @@ import {
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
-import { validateStudyQuestionAttemptReadBack } from "../lib/study-question-attempt";
+import { decideStudyQuestionAttemptApply } from "../lib/study-question-attempt";
 import {
   logWorkspaceError,
   logWorkspaceInfo
@@ -1430,24 +1430,33 @@ export function useLearningWorkspaceController({
 
   const triggerInteractiveQuestionCallback = async (
     session: StudySessionRecord,
-    input: {
-      questionType: "multiple_choice" | "fill_blank";
-      prompt: string;
-      topic: string;
-      difficulty: "easy" | "medium" | "hard";
-      options: Array<{ key: string; text: string }>;
-      callBack?: boolean;
-      answerKey?: string;
-      acceptedAnswers: string[];
-      submittedAnswer: string;
-      isCorrect: boolean;
-      explanation: string;
-    }
+    input: { turnId: string }
   ) => {
-    if (!input.callBack) {
+    const committedQuestion = session.turns.find(
+      (turn) => turn.id === input.turnId
+    )?.interactiveQuestion;
+    if (!committedQuestion?.callBack) {
       return;
     }
-    const callbackMessage = buildInteractiveCallbackMessage(input);
+    if (
+      !committedQuestion?.submittedAnswer ||
+      typeof committedQuestion.isCorrect !== "boolean" ||
+      !committedQuestion.feedbackText?.trim()
+    ) {
+      logWorkspaceError(
+        "workflow:study_attempt:callback_read_back_missing",
+        new Error("study_question_attempt_callback_read_back_missing"),
+      );
+      return;
+    }
+    const callbackMessage = buildInteractiveCallbackMessage({
+      questionType: committedQuestion.questionType,
+      prompt: committedQuestion.prompt,
+      topic: committedQuestion.topic,
+      submittedAnswer: committedQuestion.submittedAnswer,
+      isCorrect: committedQuestion.isCorrect,
+      explanation: committedQuestion.explanation,
+    });
     if (isDialogueInterruptedForSession(session.id)) {
       queueDeferredInteractiveCallback(session.id, callbackMessage);
       dispatch({
@@ -1458,7 +1467,7 @@ export function useLearningWorkspaceController({
     }
     try {
       dispatch({ type: "busy_started" });
-      const operationKey = `callback:${session.id}:${session.revision}`;
+      const operationKey = `callback:${session.id}:${input.turnId}:${session.revision}`;
       const operationIdentity = getOrCreateAutomaticRequestId(
         automaticRequestIdsRef.current,
         operationKey,
@@ -1509,21 +1518,35 @@ export function useLearningWorkspaceController({
         sessionId: currentSession.id,
         ...input
       });
-      if (!validateStudyQuestionAttemptReadBack({
+      const latestSession = studySessionRef.current;
+      const applyDecision = decideStudyQuestionAttemptApply({
         before: currentSession,
         after: nextSession,
+        current: latestSession,
         turnId: input.turnId,
         submittedAnswer: input.submittedAnswer,
-      })) {
+      });
+      if (applyDecision === "reject") {
         throw new Error("study_question_attempt_read_back_mismatch");
       }
-      studySessionRef.current = nextSession;
-      dispatch({
-        type: "study_session_set",
-        studySession: nextSession,
-        clearResponse: false
-      });
-      void triggerInteractiveQuestionCallback(nextSession, input);
+      if (applyDecision === "apply_returned") {
+        studySessionRef.current = nextSession;
+        dispatch({
+          type: "study_session_set",
+          studySession: nextSession,
+          clearResponse: false
+        });
+      }
+      const authoritativeSession = applyDecision === "apply_returned"
+        ? nextSession
+        : applyDecision === "keep_current"
+          ? latestSession
+          : null;
+      if (authoritativeSession) {
+        void triggerInteractiveQuestionCallback(authoritativeSession, {
+          turnId: input.turnId,
+        });
+      }
       return true;
     } catch (error) {
       dispatch({
