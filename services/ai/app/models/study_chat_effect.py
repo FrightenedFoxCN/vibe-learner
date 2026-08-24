@@ -12,6 +12,7 @@ from app.models.harness_effect import (
     HarnessPreparedEffectBatchV1,
     HarnessPreparedEffectV1,
 )
+from app.models.domain import SessionSceneRecord
 
 
 STUDY_PLAN_CONFIRMATION_EFFECT_CONTRACT_NAME = "StudyPlanConfirmationEffectProposalV1"
@@ -30,6 +31,9 @@ STUDY_FOLLOW_UP_ADAPTER_NAME = "study_follow_up_mutation"
 STUDY_PROJECTION_EFFECT_CONTRACT_NAME = "StudyProjectionEffectProposalV1"
 STUDY_PROJECTION_EFFECT_CONTRACT_VERSION = "study-projection-effect-v1"
 STUDY_PROJECTION_ADAPTER_NAME = "study_projection_mutation"
+STUDY_SCENE_REPLACE_EFFECT_CONTRACT_NAME = "StudySceneReplaceEffectProposalV1"
+STUDY_SCENE_REPLACE_EFFECT_CONTRACT_VERSION = "study-scene-replace-effect-v1"
+STUDY_SCENE_REPLACE_ADAPTER_NAME = "study_scene_replace"
 STUDY_CHAT_COMMITTED_EFFECT_BATCH_SCHEMA_VERSION = (
     "study-chat-committed-effect-batch-v1"
 )
@@ -275,12 +279,40 @@ class StudyProjectionEffectProposalV1(HarnessEffectModel):
         )
 
 
+class StudySceneReplaceEffectProposalV1(HarnessEffectModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_name: Literal[STUDY_SCENE_REPLACE_EFFECT_CONTRACT_NAME] = (
+        STUDY_SCENE_REPLACE_EFFECT_CONTRACT_NAME
+    )
+    schema_version: Literal[STUDY_SCENE_REPLACE_EFFECT_CONTRACT_VERSION] = (
+        STUDY_SCENE_REPLACE_EFFECT_CONTRACT_VERSION
+    )
+    effect_kind: Literal["scene_replace"] = "scene_replace"
+    tool_name: Literal[
+        "add_scene",
+        "move_to_scene",
+        "add_object",
+        "update_object_description",
+        "delete_object",
+    ]
+    before_state_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    proposed_record: SessionSceneRecord
+
+    @model_validator(mode="after")
+    def validate_proposed_record(self) -> "StudySceneReplaceEffectProposalV1":
+        if self.proposed_record.updated_at:
+            raise ValueError("study_scene_proposal_timestamp_forbidden")
+        return self
+
+
 StudyChatEffectProposalV1: TypeAlias = Annotated[
     StudyMemoryUpsertEffectProposalV1
     | StudyAffinityDeltaEffectProposalV1
     | StudyFollowUpEffectProposalV1
     | StudyPlanConfirmationEffectProposalV1
-    | StudyProjectionEffectProposalV1,
+    | StudyProjectionEffectProposalV1
+    | StudySceneReplaceEffectProposalV1,
     Field(discriminator="effect_kind"),
 ]
 
@@ -299,6 +331,9 @@ STUDY_FOLLOW_UP_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
 ]
 STUDY_PROJECTION_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
     STUDY_PROJECTION_ADAPTER_NAME
+]
+STUDY_SCENE_REPLACE_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
+    STUDY_SCENE_REPLACE_ADAPTER_NAME
 ]
 
 STUDY_PLAN_CONFIRMATION_PROPOSAL_CONTRACT = HarnessContractRef(
@@ -320,6 +355,10 @@ STUDY_FOLLOW_UP_PROPOSAL_CONTRACT = HarnessContractRef(
 STUDY_PROJECTION_PROPOSAL_CONTRACT = HarnessContractRef(
     name=STUDY_PROJECTION_EFFECT_CONTRACT_NAME,
     version=STUDY_PROJECTION_EFFECT_CONTRACT_VERSION,
+)
+STUDY_SCENE_REPLACE_PROPOSAL_CONTRACT = HarnessContractRef(
+    name=STUDY_SCENE_REPLACE_EFFECT_CONTRACT_NAME,
+    version=STUDY_SCENE_REPLACE_EFFECT_CONTRACT_VERSION,
 )
 
 StudyChatPreparedEffectV1 = HarnessPreparedEffectV1[StudyChatEffectProposalV1]
@@ -454,12 +493,43 @@ class StudyProjectionCommittedProjectionV1(HarnessEffectModel):
     projected_state: StudyProjectedStateV1
 
 
+class StudySceneReplaceCommittedProjectionV1(HarnessEffectModel):
+    schema_name: Literal["StudySceneReplaceCommittedProjectionV1"] = (
+        "StudySceneReplaceCommittedProjectionV1"
+    )
+    schema_version: Literal["study-scene-replace-committed-projection-v1"] = (
+        "study-scene-replace-committed-projection-v1"
+    )
+    effect_kind: Literal["scene_replace"] = "scene_replace"
+    operation_id: str
+    effect_batch_id: str
+    effect_id: str
+    slot: int = Field(ge=0, le=127)
+    session_id: str
+    scene_instance_id: str
+    tool_name: str
+    scene_state_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    updated_at: str
+    committed_record: SessionSceneRecord
+
+    @model_validator(mode="after")
+    def validate_committed_record(self) -> "StudySceneReplaceCommittedProjectionV1":
+        if (
+            self.committed_record.scene_instance_id != self.scene_instance_id
+            or self.committed_record.session_id != self.session_id
+            or self.committed_record.updated_at != self.updated_at
+        ):
+            raise ValueError("study_scene_committed_projection_binding_mismatch")
+        return self
+
+
 StudyChatCommittedEffectProjectionV1: TypeAlias = Annotated[
     StudyMemoryUpsertCommittedProjectionV1
     | StudyAffinityDeltaCommittedProjectionV1
     | StudyFollowUpCommittedProjectionV1
     | StudyPlanConfirmationCommittedProjectionV1
-    | StudyProjectionCommittedProjectionV1,
+    | StudyProjectionCommittedProjectionV1
+    | StudySceneReplaceCommittedProjectionV1,
     Field(discriminator="effect_kind"),
 ]
 

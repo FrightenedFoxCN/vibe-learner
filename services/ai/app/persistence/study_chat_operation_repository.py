@@ -17,10 +17,17 @@ from app.models.study_chat_operation import (
     study_chat_request_fingerprint,
     study_chat_response_digest,
 )
-from app.models.study_chat_effect import StudyChatCommittedEffectBatchV1
+from app.models.study_chat_effect import (
+    StudyChatCommittedEffectBatchV1,
+    StudySceneReplaceCommittedProjectionV1,
+)
 from app.persistence.database import Database
-from app.models.domain import StudySessionRecord
-from app.persistence.models import StudyChatOperationRow, StudySessionRow
+from app.models.domain import SessionSceneRecord, StudySessionRecord
+from app.persistence.models import (
+    SessionSceneRow,
+    StudyChatOperationRow,
+    StudySessionRow,
+)
 from app.services.study_chat_effects import (
     validate_study_chat_committed_effect_read_back,
 )
@@ -58,6 +65,10 @@ class StudyChatOperationRepository:
                         _validate_committed_read_back(
                             record,
                             session_row=session.get(StudySessionRow, session_id),
+                            scene_records=_load_operation_scene_records(
+                                session,
+                                record,
+                            ),
                         )
                     return record
                 session_row = session.get(StudySessionRow, session_id)
@@ -132,7 +143,11 @@ class StudyChatOperationRepository:
             )
             record = _from_row(row)
             if record.status == StudyChatOperationStatus.COMMITTED:
-                _validate_committed_read_back(record, session_row=session_row)
+                _validate_committed_read_back(
+                    record,
+                    session_row=session_row,
+                    scene_records=_load_operation_scene_records(session, record),
+                )
         if (
             record.status == StudyChatOperationStatus.RUNNING
             and _timestamp_expired(record.execution_deadline_at)
@@ -380,6 +395,7 @@ def _validate_committed_read_back(
     record: StudyChatOperationRecord,
     *,
     session_row: StudySessionRow | None,
+    scene_records: dict[str, SessionSceneRecord],
 ) -> None:
     if session_row is None or record.response_payload is None:
         raise ValueError("study_chat_operation_committed_session_missing")
@@ -411,6 +427,7 @@ def _validate_committed_read_back(
         validate_study_chat_committed_effect_read_back(
             batch=effect_batch,
             record=response_session,
+            scene_records=scene_records,
         )
     current_payload = dict(session_row.payload or {})
     current_payload["revision"] = session_row.revision
@@ -430,6 +447,44 @@ def _validate_committed_read_back(
     ]
     if len(matching_current_turns) != 1 or matching_current_turns[0] != matching_response_turns[0]:
         raise ValueError("study_chat_operation_committed_turn_read_back_mismatch")
+
+
+def _load_operation_scene_records(
+    session,
+    record: StudyChatOperationRecord,
+) -> dict[str, SessionSceneRecord]:
+    if record.response_payload is None:
+        return {}
+    raw_effect_batch = record.response_payload.get("_committed_effect_batch")
+    if raw_effect_batch is None:
+        return {}
+    effect_batch = StudyChatCommittedEffectBatchV1.model_validate(raw_effect_batch)
+    scene_ids = {
+        projection.scene_instance_id
+        for projection in effect_batch.effects
+        if isinstance(projection, StudySceneReplaceCommittedProjectionV1)
+    }
+    result: dict[str, SessionSceneRecord] = {}
+    for scene_id in scene_ids:
+        row = session.get(SessionSceneRow, scene_id)
+        if row is None:
+            raise ValueError("study_chat_operation_committed_scene_missing")
+        scene_record = SessionSceneRecord.model_validate(row.payload or {})
+        expected = {
+            "scene_instance_id": row.scene_instance_id,
+            "session_id": row.session_id,
+            "document_id": row.document_id,
+            "persona_id": row.persona_id,
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+        }
+        for field_name, expected_value in expected.items():
+            if getattr(scene_record, field_name) != expected_value:
+                raise ValueError(
+                    f"study_chat_operation_scene_projection_mismatch:{field_name}"
+                )
+        result[scene_id] = scene_record
+    return result
 
 
 def _timestamp_expired(value: str) -> bool:

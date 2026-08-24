@@ -102,6 +102,15 @@ HARNESS_EFFECT_ADAPTER_POLICIES = MappingProxyType(
             compensation_policy=HarnessEffectCompensationPolicy.NOT_APPLICABLE,
             read_back_policy=HarnessEffectReadBackPolicy.EXACT_PROJECTION,
         ),
+        "study_scene_replace": HarnessEffectAdapterRefV1(
+            name="study_scene_replace",
+            version="study-scene-replace-v1",
+            boundary_kind=HarnessEffectBoundaryKind.DATABASE_WRITE,
+            prepare_policy=HarnessEffectPreparePolicy.VALIDATE_AND_ASSIGN_IDENTITY,
+            commit_policy=HarnessEffectCommitPolicy.DATABASE_TRANSACTION,
+            compensation_policy=HarnessEffectCompensationPolicy.NOT_APPLICABLE,
+            read_back_policy=HarnessEffectReadBackPolicy.EXACT_PROJECTION,
+        ),
         "study_plan_confirmation_create": HarnessEffectAdapterRefV1(
             name="study_plan_confirmation_create",
             version="study-plan-confirmation-create-v1",

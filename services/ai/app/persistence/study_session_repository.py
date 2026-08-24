@@ -12,6 +12,7 @@ from app.models.domain import (
     DialogueTurnRecord,
     LearnerAttachmentRecord,
     LearningPlanRecord,
+    SessionSceneRecord,
     StudyChatResult,
     StudySessionRecord,
 )
@@ -23,6 +24,7 @@ from app.models.study_chat_operation import (
 from app.models.study_chat_effect import (
     StudyChatPreparedEffectBatchV1,
     StudyPlanConfirmationEffectProposalV1,
+    StudySceneReplaceEffectProposalV1,
 )
 from app.models.study_question import (
     STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION,
@@ -39,6 +41,7 @@ from app.models.study_question import (
 from app.persistence.database import Database
 from app.persistence.models import (
     LearningPlanRow,
+    SessionSceneRow,
     StudyChatOperationRow,
     StudyQuestionAttemptRow,
     StudySessionRow,
@@ -484,6 +487,22 @@ class StudySessionRepository:
                 if plan.id != record.plan_id:
                     raise ValueError("study_chat_effect_plan_target_mismatch")
                 allowed_schedule_ids = {item.id for item in plan.schedule}
+            scene_ids = {
+                effect.proposal.proposed_record.scene_instance_id
+                for effect in (prepared_effect_batch.effects if prepared_effect_batch else [])
+                if isinstance(effect.proposal, StudySceneReplaceEffectProposalV1)
+            }
+            scene_records: dict[str, SessionSceneRecord] = {}
+            scene_original_updated_at: dict[str, str] = {}
+            for scene_id in scene_ids:
+                scene_row = session.get(SessionSceneRow, scene_id)
+                if scene_row is None:
+                    raise ValueError("study_chat_effect_scene_target_missing")
+                scene_record = _session_scene_from_row(scene_row)
+                if scene_record.session_id != operation.session_id:
+                    raise ValueError("study_chat_effect_scene_session_mismatch")
+                scene_records[scene_id] = scene_record
+                scene_original_updated_at[scene_id] = scene_record.updated_at
             committed_effect_batch = commit_study_chat_effects(
                 record=record,
                 batch=prepared_effect_batch,
@@ -495,6 +514,7 @@ class StudySessionRepository:
                     for attachment in turn.learner_attachments
                     if attachment.kind in {"pdf", "image"}
                 },
+                scene_records=scene_records,
                 committed_at=committed_at,
             )
             record.updated_at = committed_at
@@ -506,6 +526,22 @@ class StudySessionRepository:
                     committed_effect_batch.model_dump(mode="json")
                 )
             response_digest = study_chat_response_digest(response_payload)
+            for scene_id, scene_record in scene_records.items():
+                claimed_scene = session.execute(
+                    update(SessionSceneRow)
+                    .where(
+                        SessionSceneRow.scene_instance_id == scene_id,
+                        SessionSceneRow.session_id == operation.session_id,
+                        SessionSceneRow.updated_at
+                        == scene_original_updated_at[scene_id],
+                    )
+                    .values(
+                        payload=scene_record.model_dump(mode="json"),
+                        updated_at=scene_record.updated_at,
+                    )
+                )
+                if claimed_scene.rowcount != 1:
+                    raise StudySessionSceneRevisionConflict(scene_id)
             claimed_session = session.execute(
                 update(StudySessionRow)
                 .where(
@@ -552,6 +588,11 @@ class StudySessionRepositoryError(RuntimeError):
 class StudySessionNotFound(StudySessionRepositoryError):
     def __init__(self, session_id: str) -> None:
         super().__init__(f"study_session_not_found:{session_id}")
+
+
+class StudySessionSceneRevisionConflict(StudySessionRepositoryError):
+    def __init__(self, scene_instance_id: str) -> None:
+        super().__init__(f"study_session_scene_revision_conflict:{scene_instance_id}")
 
 
 class StudySessionAlreadyExists(StudySessionRepositoryError):
@@ -762,6 +803,22 @@ def _read_question_attempt(
     ):
         raise ValueError("study_question_attempt_turn_read_back_mismatch")
     return response
+
+
+def _session_scene_from_row(row: SessionSceneRow) -> SessionSceneRecord:
+    record = SessionSceneRecord.model_validate(row.payload or {})
+    expected = {
+        "scene_instance_id": row.scene_instance_id,
+        "session_id": row.session_id,
+        "document_id": row.document_id,
+        "persona_id": row.persona_id,
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+    }
+    for field_name, expected_value in expected.items():
+        if getattr(record, field_name) != expected_value:
+            raise ValueError(f"study_scene_row_projection_mismatch:{field_name}")
+    return record
 
 
 def _from_row(row: StudySessionRow) -> StudySessionRecord:

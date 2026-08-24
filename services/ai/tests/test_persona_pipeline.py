@@ -74,7 +74,11 @@ from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.plan_tool_runtime import build_plan_tool_runtime, get_learning_plan_tool_specs
 from app.services.prompt_loader import load_prompt_template
 from app.services.study_arrangement import StudyArrangementService
-from app.services.study_chat_attachments import prepare_study_chat_attachments
+from app.services.study_chat_attachments import (
+    StudyChatAttachmentInput,
+    cleanup_prepared_study_chat_attachments,
+    prepare_study_chat_attachments,
+)
 from app.services.study_chat_effects import StudyChatEffectCollector
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_session_prompt import build_study_session_system_prompt
@@ -1385,6 +1389,55 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertIn("矩阵乘法", prepared.records[1].text_excerpt)
         self.assertEqual(prepared.multimodal_parts[0]["type"], "image_url")
         self.assertIn("学习者本轮附带了这些材料", prepared.attachment_context)
+
+    def test_prepared_attachment_cleanup_is_scoped_and_partial_failure_safe(self) -> None:
+        session_id = "session-attachment-cleanup"
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id=session_id,
+            files=[],
+            allow_image_input=True,
+            inputs=[
+                StudyChatAttachmentInput(
+                    filename="diagram.png",
+                    mime_type="image/png",
+                    raw_bytes=b"image-bytes",
+                )
+            ],
+        )
+        stored_path = Path(prepared.records[0].stored_path)
+        self.assertTrue(stored_path.exists())
+        self.assertEqual(
+            cleanup_prepared_study_chat_attachments(
+                store=self.store,
+                session_id=session_id,
+                records=prepared.records,
+            ),
+            1,
+        )
+        self.assertFalse(stored_path.exists())
+
+        with self.assertRaises(HTTPException):
+            prepare_study_chat_attachments(
+                store=self.store,
+                session_id=session_id,
+                files=[],
+                allow_image_input=True,
+                inputs=[
+                    StudyChatAttachmentInput(
+                        filename="first.png",
+                        mime_type="image/png",
+                        raw_bytes=b"first-image",
+                    ),
+                    StudyChatAttachmentInput(
+                        filename="malware.bin",
+                        mime_type="application/octet-stream",
+                        raw_bytes=b"unsupported",
+                    ),
+                ],
+            )
+        attachment_dir = self.store.chat_attachment_root / session_id
+        self.assertEqual(list(attachment_dir.glob("*")), [])
 
     def test_prepare_study_chat_attachments_extracts_pdf_excerpt(self) -> None:
         from fastapi import UploadFile

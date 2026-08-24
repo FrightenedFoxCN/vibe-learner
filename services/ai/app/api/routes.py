@@ -100,6 +100,7 @@ from app.persistence.study_chat_operation_repository import (
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
 from app.services.study_chat_attachments import (
+    cleanup_prepared_study_chat_attachments,
     prepare_study_chat_attachments,
     read_study_chat_attachment_inputs,
     study_chat_attachment_manifest,
@@ -1119,6 +1120,7 @@ def _admit_and_run_study_chat(
     )
     if not claimed:
         return _study_chat_operation_response(operation)
+    prepared = None
     try:
         prepared = prepare_study_chat_attachments(
             store=container.store,
@@ -1148,18 +1150,34 @@ def _admit_and_run_study_chat(
         return _study_chat_operation_response(committed)
     except Exception as exc:
         error_code = _study_chat_uncertain_error_code(exc)
-        uncertain = container.study_chat_operation_repository.mark_uncertain(
+        terminal = container.study_chat_operation_repository.mark_uncertain(
             operation_id=operation.operation_id,
             execution_token=operation.execution_token,
             error_code=error_code,
         )
+        if (
+            prepared is not None
+            and terminal.status != StudyChatOperationStatus.COMMITTED
+        ):
+            try:
+                cleanup_prepared_study_chat_attachments(
+                    store=container.store,
+                    session_id=session_id,
+                    records=prepared.records,
+                )
+            except Exception:
+                logger.exception(
+                    "study_chat.attachment_cleanup_failed session_id=%s operation_id=%s",
+                    session_id,
+                    operation.operation_id,
+                )
         logger.exception(
             "study_chat.operation_uncertain session_id=%s operation_id=%s error_code=%s",
             session_id,
             operation.operation_id,
             error_code,
         )
-        return _study_chat_operation_response(uncertain)
+        return _study_chat_operation_response(terminal)
 
 
 def _study_chat_operation_response(operation) -> StudyChatOperationReceiptResponse:
@@ -1242,11 +1260,6 @@ def _run_study_chat(
         except HTTPException:
             debug_report = None
 
-    scene_tool_runtime = (
-        container.session_scene_service.build_tool_runtime(session.scene_instance_id)
-        if session.scene_instance_id
-        else None
-    )
     if active_plan is None:
         active_plan = container.plan_service.find_latest_plan(
             document_id=session.document_id,
@@ -1270,6 +1283,14 @@ def _run_study_chat(
         allowed_schedule_ids={
             item.id for item in bound_session_plan.schedule
         } if bound_session_plan is not None else set(),
+    )
+    scene_tool_runtime = (
+        container.session_scene_service.build_tool_runtime(
+            session.scene_instance_id,
+            effect_collector=effect_collector,
+        )
+        if session.scene_instance_id
+        else None
     )
     if normalized_follow_up_id:
         effect_collector.prepare_follow_up(

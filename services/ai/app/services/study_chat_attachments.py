@@ -121,92 +121,100 @@ def prepare_study_chat_attachments(
     context_blocks: list[str] = []
     multimodal_parts: list[dict[str, Any]] = []
 
-    for attachment_input in attachment_inputs:
-        raw_bytes = attachment_input.raw_bytes
-        filename = attachment_input.filename
-        mime_type = attachment_input.mime_type
-        size_bytes = len(raw_bytes)
+    try:
+        for attachment_input in attachment_inputs:
+            raw_bytes = attachment_input.raw_bytes
+            filename = attachment_input.filename
+            mime_type = attachment_input.mime_type
+            size_bytes = len(raw_bytes)
 
-        if mime_type.startswith("image/"):
-            attachment_id = f"attach-{uuid4().hex[:10]}"
-            if not allow_image_input:
-                raise HTTPException(status_code=400, detail="chat_image_upload_requires_multimodal")
-            image_url = _build_data_url(mime_type, raw_bytes)
-            stored_path = _store_session_attachment_file(
-                store=store,
-                session_id=session_id,
-                attachment_id=attachment_id,
-                filename=filename,
-                raw_bytes=raw_bytes,
-            )
-            records.append(
-                LearnerAttachmentRecord(
+            if mime_type.startswith("image/"):
+                attachment_id = f"attach-{uuid4().hex[:10]}"
+                if not allow_image_input:
+                    raise HTTPException(status_code=400, detail="chat_image_upload_requires_multimodal")
+                image_url = _build_data_url(mime_type, raw_bytes)
+                stored_path = _store_session_attachment_file(
+                    store=store,
+                    session_id=session_id,
                     attachment_id=attachment_id,
-                    name=filename,
-                    mime_type=mime_type,
-                    kind="image",
-                    size_bytes=size_bytes,
-                    image_url=image_url,
-                    stored_path=str(stored_path),
-                    page_count=1,
-                    previewable=True,
+                    filename=filename,
+                    raw_bytes=raw_bytes,
                 )
-            )
-            multimodal_parts.append(
-                {
-                    "type": "image_url",
-                    "image_url": {"url": image_url},
-                }
-            )
-            context_blocks.append(f"- 图片附件：{filename}（{mime_type}，{size_bytes} bytes）")
-            continue
+                records.append(
+                    LearnerAttachmentRecord(
+                        attachment_id=attachment_id,
+                        name=filename,
+                        mime_type=mime_type,
+                        kind="image",
+                        size_bytes=size_bytes,
+                        image_url=image_url,
+                        stored_path=str(stored_path),
+                        page_count=1,
+                        previewable=True,
+                    )
+                )
+                multimodal_parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url},
+                    }
+                )
+                context_blocks.append(f"- 图片附件：{filename}（{mime_type}，{size_bytes} bytes）")
+                continue
 
-        if mime_type == "application/pdf" or filename.lower().endswith(".pdf"):
-            attachment_id = f"attach-{uuid4().hex[:10]}"
-            excerpt, page_count = _extract_pdf_excerpt(raw_bytes)
-            if not excerpt.strip():
-                raise HTTPException(status_code=400, detail="chat_pdf_attachment_empty")
-            stored_path = _store_session_attachment_pdf(
-                store=store,
-                session_id=session_id,
-                attachment_id=attachment_id,
-                filename=filename,
-                raw_bytes=raw_bytes,
-            )
-            records.append(
-                LearnerAttachmentRecord(
+            if mime_type == "application/pdf" or filename.lower().endswith(".pdf"):
+                attachment_id = f"attach-{uuid4().hex[:10]}"
+                excerpt, page_count = _extract_pdf_excerpt(raw_bytes)
+                if not excerpt.strip():
+                    raise HTTPException(status_code=400, detail="chat_pdf_attachment_empty")
+                stored_path = _store_session_attachment_pdf(
+                    store=store,
+                    session_id=session_id,
                     attachment_id=attachment_id,
-                    name=filename,
-                    mime_type="application/pdf",
-                    kind="pdf",
-                    size_bytes=size_bytes,
-                    text_excerpt=excerpt,
-                    stored_path=str(stored_path),
-                    page_count=page_count,
-                    previewable=True,
+                    filename=filename,
+                    raw_bytes=raw_bytes,
                 )
-            )
-            context_blocks.append(_render_text_attachment_block(filename, "PDF 摘录", excerpt))
-            continue
-
-        if _is_textual_file(mime_type, filename):
-            excerpt = _extract_text_excerpt(raw_bytes)
-            if not excerpt.strip():
-                raise HTTPException(status_code=400, detail="chat_text_attachment_empty")
-            records.append(
-                LearnerAttachmentRecord(
-                    attachment_id=f"attach-{uuid4().hex[:10]}",
-                    name=filename,
-                    mime_type=mime_type,
-                    kind="text",
-                    size_bytes=size_bytes,
-                    text_excerpt=excerpt,
+                records.append(
+                    LearnerAttachmentRecord(
+                        attachment_id=attachment_id,
+                        name=filename,
+                        mime_type="application/pdf",
+                        kind="pdf",
+                        size_bytes=size_bytes,
+                        text_excerpt=excerpt,
+                        stored_path=str(stored_path),
+                        page_count=page_count,
+                        previewable=True,
+                    )
                 )
-            )
-            context_blocks.append(_render_text_attachment_block(filename, "文本摘录", excerpt))
-            continue
+                context_blocks.append(_render_text_attachment_block(filename, "PDF 摘录", excerpt))
+                continue
 
-        raise HTTPException(status_code=400, detail="chat_attachment_unsupported_media_type")
+            if _is_textual_file(mime_type, filename):
+                excerpt = _extract_text_excerpt(raw_bytes)
+                if not excerpt.strip():
+                    raise HTTPException(status_code=400, detail="chat_text_attachment_empty")
+                records.append(
+                    LearnerAttachmentRecord(
+                        attachment_id=f"attach-{uuid4().hex[:10]}",
+                        name=filename,
+                        mime_type=mime_type,
+                        kind="text",
+                        size_bytes=size_bytes,
+                        text_excerpt=excerpt,
+                    )
+                )
+                context_blocks.append(_render_text_attachment_block(filename, "文本摘录", excerpt))
+                continue
+
+            raise HTTPException(status_code=400, detail="chat_attachment_unsupported_media_type")
+    except Exception:
+        cleanup_prepared_study_chat_attachments(
+            store=store,
+            session_id=session_id,
+            records=records,
+        )
+        raise
 
     attachment_context = ""
     if context_blocks:
@@ -216,6 +224,31 @@ def prepare_study_chat_attachments(
         attachment_context=attachment_context,
         multimodal_parts=multimodal_parts,
     )
+
+
+def cleanup_prepared_study_chat_attachments(
+    *,
+    store: LocalJsonStore,
+    session_id: str,
+    records: list[LearnerAttachmentRecord],
+) -> int:
+    """Remove only files created for this Session/attachment identity set."""
+    session_root = (store.chat_attachment_root / session_id).resolve()
+    removed = 0
+    for record in records:
+        if not record.stored_path:
+            continue
+        path = Path(record.stored_path).resolve()
+        try:
+            path.relative_to(session_root)
+        except ValueError as exc:
+            raise ValueError("study_chat_attachment_cleanup_scope_mismatch") from exc
+        if not path.name.startswith(f"{record.attachment_id}-"):
+            raise ValueError("study_chat_attachment_cleanup_identity_mismatch")
+        if path.is_file():
+            path.unlink()
+            removed += 1
+    return removed
 
 
 def _render_text_attachment_block(filename: str, label: str, excerpt: str) -> str:

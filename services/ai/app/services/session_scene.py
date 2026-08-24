@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -13,8 +14,13 @@ from app.models.domain import (
     SceneProfileRecord,
     SessionSceneRecord,
 )
+from app.models.study_chat_effect import StudySceneReplaceEffectProposalV1
 from app.services.local_store import LocalJsonStore
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+from app.services.study_chat_effects import scene_state_digest
+
+if TYPE_CHECKING:
+    from app.services.study_chat_effects import StudyChatEffectCollector
 
 
 SCENE_TOOL_NAMES = (
@@ -28,12 +34,28 @@ SCENE_TOOL_NAMES = (
 
 
 class SessionSceneToolRuntime:
-    def __init__(self, service: "SessionSceneService", scene_instance_id: str) -> None:
+    def __init__(
+        self,
+        service: "SessionSceneService",
+        scene_instance_id: str,
+        *,
+        effect_collector: "StudyChatEffectCollector | None" = None,
+    ) -> None:
         self._service = service
         self.scene_instance_id = scene_instance_id
+        self._effect_collector = effect_collector
+        self._prepared_record = service.require_scene(
+            scene_instance_id,
+            persist_profile_sync=effect_collector is None,
+        ).model_copy(deep=True)
+        if (
+            effect_collector is not None
+            and self._prepared_record.session_id != effect_collector.session_id
+        ):
+            raise ValueError("study_scene_runtime_session_mismatch")
 
     def scene_context(self) -> str:
-        record = self._service.require_scene(self.scene_instance_id)
+        record = self._current_record()
         selected = _find_layer(record.scene_layers, record.selected_layer_id)
         selected_layer = selected[0] if selected else None
         selected_path = selected[1] if selected else []
@@ -157,8 +179,12 @@ class SessionSceneToolRuntime:
 
     def execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         if tool_name == "read_scene_overview":
+            if self._effect_collector is not None:
+                return _scene_overview_payload(self._current_record())
             return self._service.read_scene_overview(self.scene_instance_id)
         if tool_name == "add_scene":
+            if self._effect_collector is not None:
+                return self._prepare_add_scene(arguments)
             return self._service.add_scene(
                 self.scene_instance_id,
                 parent_scene_id=str(arguments.get("parent_scene_id") or "").strip(),
@@ -170,11 +196,15 @@ class SessionSceneToolRuntime:
                 entrance=str(arguments.get("entrance") or "").strip(),
             )
         if tool_name == "move_to_scene":
+            if self._effect_collector is not None:
+                return self._prepare_move_to_scene(arguments)
             return self._service.move_to_scene(
                 self.scene_instance_id,
                 scene_id=str(arguments.get("scene_id") or "").strip(),
             )
         if tool_name == "add_object":
+            if self._effect_collector is not None:
+                return self._prepare_add_object(arguments)
             return self._service.add_object(
                 self.scene_instance_id,
                 scene_id=str(arguments.get("scene_id") or "").strip(),
@@ -184,26 +214,249 @@ class SessionSceneToolRuntime:
                 tags=str(arguments.get("tags") or "").strip(),
             )
         if tool_name == "update_object_description":
+            if self._effect_collector is not None:
+                return self._prepare_update_object_description(arguments)
             return self._service.update_object_description(
                 self.scene_instance_id,
                 object_id=str(arguments.get("object_id") or "").strip(),
                 description=str(arguments.get("description") or "").strip(),
             )
         if tool_name == "delete_object":
+            if self._effect_collector is not None:
+                return self._prepare_delete_object(arguments)
             return self._service.delete_object(
                 self.scene_instance_id,
                 object_id=str(arguments.get("object_id") or "").strip(),
             )
         raise HTTPException(status_code=400, detail="scene_tool_unknown")
 
+    def _current_record(self) -> SessionSceneRecord:
+        if self._effect_collector is not None:
+            return self._prepared_record
+        return self._service.require_scene(self.scene_instance_id)
+
+    def _prepare_add_scene(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        title = str(arguments.get("title") or "").strip()
+        scope_label = str(arguments.get("scope_label") or "").strip()
+        if not title:
+            raise HTTPException(status_code=400, detail="scene_title_required")
+        if not scope_label:
+            raise HTTPException(status_code=400, detail="scene_scope_label_required")
+        record = self._current_record()
+        target_parent_id = (
+            str(arguments.get("parent_scene_id") or "").strip()
+            or record.selected_layer_id
+        )
+        effect_id = self._require_effect_collector().next_effect_id()
+        new_layer = SceneLayerStateRecord(
+            id=_stable_scene_member_id("scene-layer", effect_id),
+            title=title,
+            scope_label=scope_label,
+            summary=str(arguments.get("summary") or "").strip(),
+            atmosphere=str(arguments.get("atmosphere") or "").strip(),
+            rules=str(arguments.get("rules") or "").strip(),
+            entrance=str(arguments.get("entrance") or "").strip(),
+            objects=[],
+            children=[],
+        )
+        next_layers = [node.model_copy(deep=True) for node in record.scene_layers]
+        if target_parent_id:
+            if not _append_child_scene(next_layers, target_parent_id, new_layer):
+                raise HTTPException(status_code=404, detail="scene_parent_not_found")
+        else:
+            next_layers.append(new_layer)
+        proposed, prepared_effect_id = self._prepare_record_replace(
+            tool_name="add_scene",
+            scene_layers=next_layers,
+            selected_layer_id=new_layer.id,
+        )
+        path = proposed.scene_profile.selected_path if proposed.scene_profile else [title]
+        return _prepared_scene_result(
+            tool_name="add_scene",
+            record=proposed,
+            prepared_effect_id=prepared_effect_id,
+            added_scene_id=new_layer.id,
+            selected_scene_id=proposed.selected_layer_id,
+            selected_scene_path=path,
+            summary=f"已准备新增场景“{title}”，提交回复后生效。",
+        )
+
+    def _prepare_move_to_scene(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        scene_id = str(arguments.get("scene_id") or "").strip()
+        if not scene_id:
+            raise HTTPException(status_code=400, detail="scene_id_required")
+        record = self._current_record()
+        selected = _find_layer(record.scene_layers, scene_id)
+        if selected is None:
+            raise HTTPException(status_code=404, detail="scene_not_found_in_session")
+        proposed, prepared_effect_id = self._prepare_record_replace(
+            tool_name="move_to_scene",
+            selected_layer_id=scene_id,
+        )
+        path = proposed.scene_profile.selected_path if proposed.scene_profile else selected[1]
+        return _prepared_scene_result(
+            tool_name="move_to_scene",
+            record=proposed,
+            prepared_effect_id=prepared_effect_id,
+            selected_scene_id=scene_id,
+            selected_scene_path=path,
+            summary=f"已准备切换到场景 {' / '.join(path) or scene_id}，提交回复后生效。",
+        )
+
+    def _prepare_add_object(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        name = str(arguments.get("name") or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="scene_object_name_required")
+        record = self._current_record()
+        target_scene_id = (
+            str(arguments.get("scene_id") or "").strip()
+            or record.selected_layer_id
+        )
+        if not target_scene_id:
+            raise HTTPException(status_code=400, detail="scene_target_required")
+        effect_id = self._require_effect_collector().next_effect_id()
+        added_object = SceneObjectStateRecord(
+            id=_stable_scene_member_id("scene-object", effect_id),
+            name=name,
+            description=str(arguments.get("description") or "").strip(),
+            interaction=str(arguments.get("interaction") or "").strip(),
+            tags=str(arguments.get("tags") or "").strip(),
+        )
+        next_layers = [node.model_copy(deep=True) for node in record.scene_layers]
+        if not _append_object(next_layers, target_scene_id, added_object):
+            raise HTTPException(status_code=404, detail="scene_not_found_in_session")
+        proposed, prepared_effect_id = self._prepare_record_replace(
+            tool_name="add_object",
+            scene_layers=next_layers,
+            selected_layer_id=target_scene_id,
+        )
+        path = proposed.scene_profile.selected_path if proposed.scene_profile else []
+        return _prepared_scene_result(
+            tool_name="add_object",
+            record=proposed,
+            prepared_effect_id=prepared_effect_id,
+            object_id=added_object.id,
+            selected_scene_id=target_scene_id,
+            selected_scene_path=path,
+            summary=f"已准备加入物体“{name}”，提交回复后生效。",
+        )
+
+    def _prepare_update_object_description(
+        self,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        object_id = str(arguments.get("object_id") or "").strip()
+        if not object_id:
+            raise HTTPException(status_code=400, detail="scene_object_id_required")
+        next_layers = [
+            node.model_copy(deep=True) for node in self._current_record().scene_layers
+        ]
+        updated_object = _update_object_description(
+            next_layers,
+            object_id,
+            str(arguments.get("description") or "").strip(),
+        )
+        if updated_object is None:
+            raise HTTPException(status_code=404, detail="scene_object_not_found")
+        proposed, prepared_effect_id = self._prepare_record_replace(
+            tool_name="update_object_description",
+            scene_layers=next_layers,
+        )
+        return _prepared_scene_result(
+            tool_name="update_object_description",
+            record=proposed,
+            prepared_effect_id=prepared_effect_id,
+            object_id=updated_object.id,
+            object_name=updated_object.name,
+            summary=f"已准备更新物体“{updated_object.name}”的描述，提交回复后生效。",
+        )
+
+    def _prepare_delete_object(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        object_id = str(arguments.get("object_id") or "").strip()
+        if not object_id:
+            raise HTTPException(status_code=400, detail="scene_object_id_required")
+        next_layers = [
+            node.model_copy(deep=True) for node in self._current_record().scene_layers
+        ]
+        deleted_name = _delete_object(next_layers, object_id)
+        if not deleted_name:
+            raise HTTPException(status_code=404, detail="scene_object_not_found")
+        proposed, prepared_effect_id = self._prepare_record_replace(
+            tool_name="delete_object",
+            scene_layers=next_layers,
+        )
+        return _prepared_scene_result(
+            tool_name="delete_object",
+            record=proposed,
+            prepared_effect_id=prepared_effect_id,
+            object_id=object_id,
+            summary=f"已准备删除物体“{deleted_name}”，提交回复后生效。",
+        )
+
+    def _prepare_record_replace(
+        self,
+        *,
+        tool_name: str,
+        scene_layers: list[SceneLayerStateRecord] | None = None,
+        selected_layer_id: str | None = None,
+    ) -> tuple[SessionSceneRecord, str]:
+        collector = self._require_effect_collector()
+        current = self._current_record()
+        next_layers = (
+            scene_layers
+            if scene_layers is not None
+            else [node.model_copy(deep=True) for node in current.scene_layers]
+        )
+        next_selected_id = (
+            selected_layer_id
+            if selected_layer_id is not None
+            else current.selected_layer_id
+        )
+        proposed = current.model_copy(
+            update={
+                "updated_at": "",
+                "scene_layers": next_layers,
+                "selected_layer_id": next_selected_id,
+                "scene_profile": _build_scene_profile(
+                    scene_name=current.scene_name,
+                    scene_summary=current.scene_summary,
+                    scene_layers=next_layers,
+                    selected_layer_id=next_selected_id,
+                ),
+            },
+            deep=True,
+        )
+        effect = collector.prepare_scene_replace(
+            StudySceneReplaceEffectProposalV1(
+                tool_name=tool_name,
+                before_state_digest=scene_state_digest(current),
+                proposed_record=proposed,
+            )
+        )
+        self._prepared_record = proposed
+        return proposed, effect.effect_id
+
+    def _require_effect_collector(self) -> "StudyChatEffectCollector":
+        if self._effect_collector is None:
+            raise RuntimeError("study_scene_effect_collector_required")
+        return self._effect_collector
+
 
 class SessionSceneService:
     def __init__(self, store: LocalJsonStore) -> None:
         self._store = store
 
-    def build_tool_runtime(self, scene_instance_id: str) -> SessionSceneToolRuntime:
-        self.require_scene(scene_instance_id)
-        return SessionSceneToolRuntime(self, scene_instance_id)
+    def build_tool_runtime(
+        self,
+        scene_instance_id: str,
+        *,
+        effect_collector: "StudyChatEffectCollector | None" = None,
+    ) -> SessionSceneToolRuntime:
+        return SessionSceneToolRuntime(
+            self,
+            scene_instance_id,
+            effect_collector=effect_collector,
+        )
 
     def clone_scene_for_session(
         self,
@@ -244,34 +497,34 @@ class SessionSceneService:
         self._save(record)
         return record
 
-    def require_scene(self, scene_instance_id: str) -> SessionSceneRecord:
+    def require_scene(
+        self,
+        scene_instance_id: str,
+        *,
+        persist_profile_sync: bool = True,
+    ) -> SessionSceneRecord:
         record = self._store.load_item("session_scenes", scene_instance_id, SessionSceneRecord)
         if record is None:
             raise HTTPException(status_code=404, detail="session_scene_not_found")
         if record.scene_profile is None:
-            record = self._sync_scene_profile(record)
+            if persist_profile_sync:
+                record = self._sync_scene_profile(record)
+            else:
+                record = record.model_copy(
+                    update={
+                        "scene_profile": _build_scene_profile(
+                            scene_name=record.scene_name,
+                            scene_summary=record.scene_summary,
+                            scene_layers=record.scene_layers,
+                            selected_layer_id=record.selected_layer_id,
+                        )
+                    },
+                    deep=True,
+                )
         return record
 
     def read_scene_overview(self, scene_instance_id: str) -> dict[str, Any]:
-        record = self.require_scene(scene_instance_id)
-        selected = _find_layer(record.scene_layers, record.selected_layer_id)
-        selected_layer = selected[0] if selected else None
-        selected_path = selected[1] if selected else []
-        total_object_count = _count_objects(record.scene_layers)
-        return {
-            "ok": True,
-            "tool_name": "read_scene_overview",
-            "scene_instance_id": record.scene_instance_id,
-            "scene_name": record.scene_name,
-            "scene_summary": record.scene_summary,
-            "selected_scene_id": record.selected_layer_id,
-            "selected_scene_path": selected_path,
-            "selected_scene_title": selected_layer.title if selected_layer else "",
-            "object_count": total_object_count,
-            "scene_tree": [node.model_dump(mode="json") for node in record.scene_layers],
-            "scene_profile": record.scene_profile.model_dump(mode="json") if record.scene_profile else None,
-            "summary": f"已读取场景“{record.scene_profile.title if record.scene_profile else record.scene_name}”，当前路径为 {' / '.join(selected_path) or '未选定'}。",
-        }
+        return _scene_overview_payload(self.require_scene(scene_instance_id))
 
     def add_scene(
         self,
@@ -467,6 +720,64 @@ class SessionSceneService:
         )
         self._save(next_record)
         return next_record
+
+
+def _scene_overview_payload(record: SessionSceneRecord) -> dict[str, Any]:
+    selected = _find_layer(record.scene_layers, record.selected_layer_id)
+    selected_layer = selected[0] if selected else None
+    selected_path = selected[1] if selected else []
+    total_object_count = _count_objects(record.scene_layers)
+    return {
+        "ok": True,
+        "tool_name": "read_scene_overview",
+        "scene_instance_id": record.scene_instance_id,
+        "scene_name": record.scene_name,
+        "scene_summary": record.scene_summary,
+        "selected_scene_id": record.selected_layer_id,
+        "selected_scene_path": selected_path,
+        "selected_scene_title": selected_layer.title if selected_layer else "",
+        "object_count": total_object_count,
+        "scene_tree": [node.model_dump(mode="json") for node in record.scene_layers],
+        "scene_profile": (
+            record.scene_profile.model_dump(mode="json")
+            if record.scene_profile
+            else None
+        ),
+        "summary": (
+            f"已读取场景“{record.scene_profile.title if record.scene_profile else record.scene_name}”，"
+            f"当前路径为 {' / '.join(selected_path) or '未选定'}。"
+        ),
+    }
+
+
+def _prepared_scene_result(
+    *,
+    tool_name: str,
+    record: SessionSceneRecord,
+    prepared_effect_id: str,
+    summary: str,
+    **fields: Any,
+) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "tool_name": tool_name,
+        "scene_instance_id": record.scene_instance_id,
+        "effect_state": "prepared",
+        "committed": False,
+        "prepared_effect_id": prepared_effect_id,
+        "scene_profile": (
+            record.scene_profile.model_dump(mode="json")
+            if record.scene_profile
+            else None
+        ),
+        "summary": summary,
+        **fields,
+    }
+
+
+def _stable_scene_member_id(prefix: str, effect_id: str) -> str:
+    digest = hashlib.sha256(effect_id.encode("utf-8")).hexdigest()[:20]
+    return f"{prefix}-{digest}"
 
 
 def summarize_chat_tool_result(result: dict[str, Any]) -> str:

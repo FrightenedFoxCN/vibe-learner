@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import datetime, timedelta
 
 from app.models.domain import (
@@ -12,6 +13,7 @@ from app.models.domain import (
     SessionPlanConfirmationRecord,
     SessionFollowUpRecord,
     SessionProjectedPdfRecord,
+    SessionSceneRecord,
     StudySessionRecord,
 )
 from app.models.harness import HarnessResourceType
@@ -27,6 +29,8 @@ from app.models.study_chat_effect import (
     STUDY_PLAN_CONFIRMATION_PROPOSAL_CONTRACT,
     STUDY_PROJECTION_ADAPTER,
     STUDY_PROJECTION_PROPOSAL_CONTRACT,
+    STUDY_SCENE_REPLACE_ADAPTER,
+    STUDY_SCENE_REPLACE_PROPOSAL_CONTRACT,
     StudyAffinityDeltaCommittedProjectionV1,
     StudyAffinityDeltaEffectProposalV1,
     StudyChatCommittedEffectBatchV1,
@@ -46,6 +50,8 @@ from app.models.study_chat_effect import (
     StudyProjectionCommittedProjectionV1,
     StudyProjectionEffectAction,
     StudyProjectionEffectProposalV1,
+    StudySceneReplaceCommittedProjectionV1,
+    StudySceneReplaceEffectProposalV1,
 )
 
 
@@ -112,6 +118,31 @@ class StudyChatEffectCollector:
             adapter=STUDY_PROJECTION_ADAPTER,
             proposal_contract=STUDY_PROJECTION_PROPOSAL_CONTRACT,
             target_refs=[self._session_target()],
+        )
+
+    def next_effect_id(self) -> str:
+        if len(self._effects) >= MAX_STUDY_CHAT_EFFECTS_PER_OPERATION:
+            raise ValueError("study_chat_effect_limit_exceeded")
+        return _stable_id(
+            "study-effect",
+            f"{self.operation_id}:{len(self._effects)}",
+        )
+
+    def prepare_scene_replace(
+        self,
+        proposal: StudySceneReplaceEffectProposalV1,
+    ) -> StudyChatPreparedEffectV1:
+        return self._prepare_effect(
+            proposal=proposal,
+            adapter=STUDY_SCENE_REPLACE_ADAPTER,
+            proposal_contract=STUDY_SCENE_REPLACE_PROPOSAL_CONTRACT,
+            target_refs=[
+                self._session_target(),
+                HarnessEffectTargetRefV1(
+                    resource_type=HarnessResourceType.SCENE,
+                    resource_id=proposal.proposed_record.scene_instance_id,
+                ),
+            ],
         )
 
     def prepare_plan_confirmation(
@@ -326,6 +357,7 @@ def commit_study_chat_effects(
     expected_operation_id: str,
     allowed_schedule_ids: set[str] | frozenset[str],
     allowed_projection_sources: set[tuple[str, str]] | frozenset[tuple[str, str]],
+    scene_records: dict[str, SessionSceneRecord],
     committed_at: str,
 ) -> StudyChatCommittedEffectBatchV1 | None:
     if batch is None:
@@ -338,10 +370,14 @@ def commit_study_chat_effects(
         allowed_projection_sources=allowed_projection_sources,
     )
     validation_record = record.model_copy(deep=True)
+    validation_scenes = {
+        key: value.model_copy(deep=True) for key, value in scene_records.items()
+    }
     for effect in batch.effects:
         _apply_prepared_effect(
             record=validation_record,
             effect=effect,
+            scene_records=validation_scenes,
             committed_at=committed_at,
         )
     projections: list[StudyChatCommittedEffectProjectionV1] = []
@@ -350,6 +386,7 @@ def commit_study_chat_effects(
             _apply_prepared_effect(
                 record=record,
                 effect=effect,
+                scene_records=scene_records,
                 committed_at=committed_at,
             )
         )
@@ -358,7 +395,11 @@ def commit_study_chat_effects(
         effect_batch_id=batch.effect_batch_id,
         effects=projections,
     )
-    validate_study_chat_committed_effect_read_back(batch=committed, record=record)
+    validate_study_chat_committed_effect_read_back(
+        batch=committed,
+        record=record,
+        scene_records=scene_records,
+    )
     return committed
 
 
@@ -366,12 +407,14 @@ def validate_study_chat_committed_effect_read_back(
     *,
     batch: StudyChatCommittedEffectBatchV1,
     record: StudySessionRecord,
+    scene_records: dict[str, SessionSceneRecord] | None = None,
 ) -> None:
     if batch.effect_batch_id != _stable_id("study-effect-batch", batch.operation_id):
         raise ValueError("study_chat_committed_effect_batch_identity_mismatch")
     last_memory_by_key: dict[str, StudyMemoryUpsertCommittedProjectionV1] = {}
     affinity_projections: list[StudyAffinityDeltaCommittedProjectionV1] = []
     last_projection: StudyProjectionCommittedProjectionV1 | None = None
+    last_scene_by_id: dict[str, StudySceneReplaceCommittedProjectionV1] = {}
     for projection in batch.effects:
         if projection.session_id != record.id:
             raise ValueError("study_chat_committed_effect_session_mismatch")
@@ -421,6 +464,8 @@ def validate_study_chat_committed_effect_read_back(
                     raise ValueError("study_follow_up_cancel_read_back_mismatch")
         elif isinstance(projection, StudyProjectionCommittedProjectionV1):
             last_projection = projection
+        elif isinstance(projection, StudySceneReplaceCommittedProjectionV1):
+            last_scene_by_id[projection.scene_instance_id] = projection
         elif isinstance(projection, StudyPlanConfirmationCommittedProjectionV1):
             matches = [
                 item
@@ -479,6 +524,34 @@ def validate_study_chat_committed_effect_read_back(
             != last_projection.projected_state
         ):
             raise ValueError("study_projection_read_back_mismatch")
+    for scene_id, projection in last_scene_by_id.items():
+        committed_scene = projection.committed_record
+        _validate_scene_record(committed_scene)
+        if (
+            committed_scene.session_id != record.id
+            or committed_scene.updated_at != projection.updated_at
+            or scene_state_digest(committed_scene) != projection.scene_state_digest
+        ):
+            raise ValueError("study_scene_committed_projection_read_back_mismatch")
+        if (
+            record.scene_instance_id == scene_id
+            and record.scene_profile != committed_scene.scene_profile
+        ):
+            raise ValueError("study_scene_session_projection_read_back_mismatch")
+        if scene_records is None:
+            continue
+        scene = scene_records.get(scene_id)
+        if scene is None:
+            raise ValueError("study_scene_read_back_missing")
+        _validate_scene_record(scene)
+        _validate_scene_immutable_projection(scene, expected=committed_scene)
+        if scene.updated_at == projection.updated_at:
+            if scene_state_digest(scene) != projection.scene_state_digest:
+                raise ValueError("study_scene_read_back_mismatch")
+        elif _parse_scene_timestamp(scene.updated_at) < _parse_scene_timestamp(
+            projection.updated_at
+        ):
+            raise ValueError("study_scene_read_back_watermark_regressed")
 
 
 def _validate_prepared_batch(
@@ -533,6 +606,19 @@ def _validate_prepared_batch(
                 not in allowed_projection_sources
             ):
                 raise ValueError("study_projection_source_target_unknown")
+        elif isinstance(proposal, StudySceneReplaceEffectProposalV1):
+            expected_adapter = STUDY_SCENE_REPLACE_ADAPTER
+            expected_contract = STUDY_SCENE_REPLACE_PROPOSAL_CONTRACT
+            if proposal.proposed_record.session_id != record.id:
+                raise ValueError("study_scene_session_target_mismatch")
+            if proposal.proposed_record.scene_instance_id != record.scene_instance_id:
+                raise ValueError("study_scene_binding_target_mismatch")
+            expected_targets.add(
+                (
+                    HarnessResourceType.SCENE,
+                    proposal.proposed_record.scene_instance_id,
+                )
+            )
         elif isinstance(proposal, StudyPlanConfirmationEffectProposalV1):
             expected_adapter = STUDY_PLAN_CONFIRMATION_ADAPTER
             expected_contract = STUDY_PLAN_CONFIRMATION_PROPOSAL_CONTRACT
@@ -564,6 +650,7 @@ def _apply_prepared_effect(
     *,
     record: StudySessionRecord,
     effect: StudyChatPreparedEffectV1,
+    scene_records: dict[str, SessionSceneRecord],
     committed_at: str,
 ) -> StudyChatCommittedEffectProjectionV1:
     proposal = effect.proposal
@@ -706,6 +793,40 @@ def _apply_prepared_effect(
                 record.projected_pdf.model_dump(mode="json")
             ),
         )
+    if isinstance(proposal, StudySceneReplaceEffectProposalV1):
+        scene_id = proposal.proposed_record.scene_instance_id
+        current_scene = scene_records.get(scene_id)
+        if current_scene is None:
+            raise ValueError("study_scene_target_missing")
+        if scene_state_digest(current_scene) != proposal.before_state_digest:
+            raise ValueError("study_scene_before_digest_mismatch")
+        proposed = proposal.proposed_record.model_copy(deep=True)
+        if (
+            proposed.scene_instance_id != current_scene.scene_instance_id
+            or proposed.session_id != current_scene.session_id
+            or proposed.document_id != current_scene.document_id
+            or proposed.persona_id != current_scene.persona_id
+            or proposed.source_scene_id != current_scene.source_scene_id
+            or proposed.source_scene_name != current_scene.source_scene_name
+            or proposed.config_id != current_scene.config_id
+            or proposed.created_at != current_scene.created_at
+        ):
+            raise ValueError("study_scene_immutable_projection_mismatch")
+        _validate_scene_record(proposed)
+        proposed.updated_at = committed_at
+        scene_records[scene_id] = proposed
+        return StudySceneReplaceCommittedProjectionV1(
+            operation_id=effect.operation_id,
+            effect_batch_id=effect.effect_batch_id,
+            effect_id=effect.effect_id,
+            slot=effect.slot,
+            session_id=record.id,
+            scene_instance_id=scene_id,
+            tool_name=proposal.tool_name,
+            scene_state_digest=scene_state_digest(proposed),
+            updated_at=committed_at,
+            committed_record=proposed.model_copy(deep=True),
+        )
     confirmation_id = _stable_id("plan-confirm", effect.effect_id)
     if any(item.id == confirmation_id for item in record.plan_confirmations):
         raise ValueError("study_plan_confirmation_identity_duplicate")
@@ -834,6 +955,74 @@ def _apply_projection_proposal(
 
 def _clamp_affinity(score: int) -> int:
     return max(-100, min(100, int(score)))
+
+
+def scene_state_digest(record: SessionSceneRecord) -> str:
+    payload = record.model_dump(mode="json")
+    payload["updated_at"] = ""
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _validate_scene_record(record: SessionSceneRecord) -> None:
+    layer_ids: list[str] = []
+    object_ids: list[str] = []
+
+    def visit(layers) -> None:
+        for layer in layers:
+            layer_ids.append(layer.id)
+            object_ids.extend(item.id for item in layer.objects)
+            visit(layer.children)
+
+    visit(record.scene_layers)
+    if (
+        len(layer_ids) != len(set(layer_ids))
+        or len(object_ids) != len(set(object_ids))
+    ):
+        raise ValueError("study_scene_identity_duplicate")
+    if record.selected_layer_id and record.selected_layer_id not in set(layer_ids):
+        raise ValueError("study_scene_selected_layer_missing")
+    if record.scene_profile is None:
+        raise ValueError("study_scene_profile_missing")
+    if (
+        record.scene_profile.scene_id != record.selected_layer_id
+        or record.scene_profile.scene_tree != record.scene_layers
+    ):
+        raise ValueError("study_scene_profile_projection_mismatch")
+
+
+def _validate_scene_immutable_projection(
+    record: SessionSceneRecord,
+    *,
+    expected: SessionSceneRecord,
+) -> None:
+    for field_name in (
+        "scene_instance_id",
+        "session_id",
+        "document_id",
+        "persona_id",
+        "source_scene_id",
+        "source_scene_name",
+        "config_id",
+        "created_at",
+    ):
+        if getattr(record, field_name) != getattr(expected, field_name):
+            raise ValueError(f"study_scene_immutable_read_back_mismatch:{field_name}")
+
+
+def _parse_scene_timestamp(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("study_scene_updated_at_invalid") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("study_scene_updated_at_timezone_required")
+    return parsed
 
 
 def _affinity_level(score: int) -> str:

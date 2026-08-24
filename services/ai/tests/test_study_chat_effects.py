@@ -9,7 +9,10 @@ from unittest.mock import patch
 from app.models.domain import (
     LearnerAttachmentRecord,
     LearningPlanRecord,
+    SceneLayerStateRecord,
+    SceneProfileRecord,
     SessionFollowUpRecord,
+    SessionSceneRecord,
     StudyChatResult,
     StudySessionRecord,
 )
@@ -31,12 +34,19 @@ from app.models.study_chat_operation import StudyChatOperationRequestPayload
 from app.models.study_chat_operation import study_chat_response_digest
 from app.persistence.database import Database
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
-from app.persistence.models import LearningPlanRow, StudyChatOperationRow
+from app.persistence.models import (
+    LearningPlanRow,
+    SessionSceneRow,
+    StudyChatOperationRow,
+)
 from app.persistence.study_session_repository import StudySessionRepository
 from app.services.study_chat_effects import (
     StudyChatEffectCollector,
     commit_study_chat_effects,
 )
+from app.services.local_store import LocalJsonStore
+from app.services.session_scene import SessionSceneService
+from app.persistence.storage import StorageManager
 
 
 class StudyChatEffectsTests(unittest.TestCase):
@@ -46,6 +56,9 @@ class StudyChatEffectsTests(unittest.TestCase):
         self.database.create_schema()
         self.sessions = StudySessionRepository(self.database)
         self.operations = StudyChatOperationRepository(self.database)
+        self.storage = StorageManager(Path(self.temp.name) / "data")
+        self.store = LocalJsonStore(self.database, self.storage)
+        self.scene_service = SessionSceneService(self.store)
         plan = LearningPlanRecord(
             id="plan-effect",
             document_id="doc",
@@ -65,6 +78,44 @@ class StudyChatEffectsTests(unittest.TestCase):
             ],
             created_at="2026-08-12T00:00:00+00:00",
         )
+        scene_layer = SceneLayerStateRecord(
+            id="scene-root",
+            title="Root",
+            scope_label="room",
+            summary="Root scene",
+            atmosphere="quiet",
+            rules="",
+            entrance="door",
+            objects=[],
+            children=[],
+        )
+        scene_profile = SceneProfileRecord(
+            scene_name="Test Scene",
+            scene_id=scene_layer.id,
+            title=scene_layer.title,
+            summary=scene_layer.summary,
+            tags=[],
+            selected_path=[scene_layer.title],
+            focus_object_names=[],
+            scene_tree=[scene_layer.model_copy(deep=True)],
+        )
+        self.scene_record = SessionSceneRecord(
+            scene_instance_id="scene-instance-effect",
+            session_id="session-effect",
+            document_id="doc",
+            persona_id="persona",
+            source_scene_id="source-scene",
+            source_scene_name="Source Scene",
+            config_id="session-effect",
+            created_at="2026-08-12T00:00:00+00:00",
+            updated_at="2026-08-12T00:00:00+00:00",
+            scene_name="Test Scene",
+            scene_summary="Root scene",
+            scene_layers=[scene_layer],
+            selected_layer_id=scene_layer.id,
+            collapsed_layer_ids=[],
+            scene_profile=scene_profile,
+        )
         with self.database.session() as db_session:
             db_session.add(
                 LearningPlanRow(
@@ -77,6 +128,17 @@ class StudyChatEffectsTests(unittest.TestCase):
                     payload=plan.model_dump(mode="json"),
                 )
             )
+            db_session.add(
+                SessionSceneRow(
+                    scene_instance_id=self.scene_record.scene_instance_id,
+                    session_id=self.scene_record.session_id,
+                    document_id=self.scene_record.document_id,
+                    persona_id=self.scene_record.persona_id,
+                    created_at=self.scene_record.created_at,
+                    updated_at=self.scene_record.updated_at,
+                    payload=self.scene_record.model_dump(mode="json"),
+                )
+            )
         self.sessions.create(
             StudySessionRecord(
                 id="session-effect",
@@ -84,6 +146,8 @@ class StudyChatEffectsTests(unittest.TestCase):
                 persona_id="persona",
                 plan_id="plan-effect",
                 study_unit_id="unit",
+                scene_instance_id=self.scene_record.scene_instance_id,
+                scene_profile=scene_profile,
                 status="active",
                 turns=[],
                 pending_follow_ups=[
@@ -422,6 +486,7 @@ class StudyChatEffectsTests(unittest.TestCase):
                 expected_operation_id=operation_id,
                 allowed_schedule_ids=set(),
                 allowed_projection_sources=set(),
+                scene_records={},
                 committed_at="2026-08-24T00:00:00+00:00",
             )
 
@@ -485,6 +550,198 @@ class StudyChatEffectsTests(unittest.TestCase):
             self.operations.require(
                 session_id="session-effect",
                 client_request_id="request-effect-mixed-0004",
+            )
+
+    def test_scene_tools_use_overlay_and_commit_with_turn_and_receipt(self) -> None:
+        running = self._running_operation("request-effect-scene-0001")
+        collector = StudyChatEffectCollector(
+            operation_id=running.operation_id,
+            session_id="session-effect",
+            plan_id="plan-effect",
+            allowed_schedule_ids=set(),
+        )
+        runtime = self.scene_service.build_tool_runtime(
+            self.scene_record.scene_instance_id,
+            effect_collector=collector,
+        )
+        add_scene = runtime.execute_tool(
+            "add_scene",
+            {
+                "parent_scene_id": "scene-root",
+                "title": "Laboratory",
+                "scope_label": "zone",
+                "summary": "A prepared child scene",
+            },
+        )
+        add_object = runtime.execute_tool(
+            "add_object",
+            {
+                "name": "Microscope",
+                "description": "Prepared object",
+            },
+        )
+        persisted_before = self.scene_service.require_scene(
+            self.scene_record.scene_instance_id
+        )
+        self.assertEqual(persisted_before.selected_layer_id, "scene-root")
+        self.assertEqual(persisted_before.scene_layers[0].children, [])
+        self.assertEqual(add_scene["effect_state"], "prepared")
+        self.assertFalse(add_scene["committed"])
+        self.assertEqual(add_object["selected_scene_id"], add_scene["added_scene_id"])
+        self.assertEqual(
+            runtime.execute_tool("read_scene_overview", {})["object_count"],
+            1,
+        )
+        result = StudyChatResult(
+            reply="scene ready",
+            citations=[],
+            character_events=[],
+            scene_profile=SceneProfileRecord.model_validate(
+                add_object["scene_profile"]
+            ),
+        )
+        committed, payload = self.sessions.commit_chat_operation_turn(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            learner_message="prepare the lab",
+            learner_message_kind="learner",
+            learner_attachments=[],
+            result=result,
+            prepared_study_unit_id=None,
+            completed_follow_up_id="",
+            cancel_pending_follow_ups=False,
+            prepared_effect_batch=collector.prepared_batch(),
+            build_response_payload=lambda session: {
+                **result.model_dump(mode="json"),
+                "session": session.model_dump(mode="json"),
+            },
+        )
+        persisted_after = self.scene_service.require_scene(
+            self.scene_record.scene_instance_id
+        )
+        child = persisted_after.scene_layers[0].children[0]
+        self.assertEqual(child.id, add_scene["added_scene_id"])
+        self.assertEqual(child.objects[0].id, add_object["object_id"])
+        self.assertEqual(committed.scene_profile, persisted_after.scene_profile)
+        self.assertEqual(
+            [item["effect_kind"] for item in payload["_committed_effect_batch"]["effects"]],
+            ["scene_replace", "scene_replace"],
+        )
+        replayed = self.operations.require(
+            session_id="session-effect",
+            client_request_id="request-effect-scene-0001",
+        )
+        self.assertEqual(replayed.status.value, "committed")
+
+    def test_scene_effect_rolls_back_and_receipt_tamper_fails_read_back(self) -> None:
+        running = self._running_operation("request-effect-scene-0002")
+        collector = StudyChatEffectCollector(
+            operation_id=running.operation_id,
+            session_id="session-effect",
+            plan_id="plan-effect",
+            allowed_schedule_ids=set(),
+        )
+        runtime = self.scene_service.build_tool_runtime(
+            self.scene_record.scene_instance_id,
+            effect_collector=collector,
+        )
+        prepared = runtime.execute_tool(
+            "add_object",
+            {"name": "Uncommitted", "description": "must roll back"},
+        )
+        result = StudyChatResult(
+            reply="invalid final",
+            citations=[],
+            character_events=[],
+            scene_profile=SceneProfileRecord.model_validate(
+                prepared["scene_profile"]
+            ),
+        )
+        with self.assertRaisesRegex(RuntimeError, "invalid_final"):
+            self.sessions.commit_chat_operation_turn(
+                operation_id=running.operation_id,
+                execution_token=running.execution_token,
+                learner_message="prepare",
+                learner_message_kind="learner",
+                learner_attachments=[],
+                result=result,
+                prepared_study_unit_id=None,
+                completed_follow_up_id="",
+                cancel_pending_follow_ups=False,
+                prepared_effect_batch=collector.prepared_batch(),
+                build_response_payload=lambda _session: (_ for _ in ()).throw(
+                    RuntimeError("invalid_final")
+                ),
+            )
+        rolled_back = self.scene_service.require_scene(
+            self.scene_record.scene_instance_id
+        )
+        self.assertEqual(rolled_back.scene_layers[0].objects, [])
+        self.assertEqual(self.sessions.require("session-effect").turns, [])
+        self.operations.mark_uncertain(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            error_code="forced_invalid_final",
+        )
+
+        committed_running = self._running_operation("request-effect-scene-0003")
+        committed_collector = StudyChatEffectCollector(
+            operation_id=committed_running.operation_id,
+            session_id="session-effect",
+            plan_id="plan-effect",
+            allowed_schedule_ids=set(),
+        )
+        committed_runtime = self.scene_service.build_tool_runtime(
+            self.scene_record.scene_instance_id,
+            effect_collector=committed_collector,
+        )
+        committed_prepared = committed_runtime.execute_tool(
+            "add_object",
+            {"name": "Committed", "description": "saved"},
+        )
+        committed_result = StudyChatResult(
+            reply="saved",
+            citations=[],
+            character_events=[],
+            scene_profile=SceneProfileRecord.model_validate(
+                committed_prepared["scene_profile"]
+            ),
+        )
+        self.sessions.commit_chat_operation_turn(
+            operation_id=committed_running.operation_id,
+            execution_token=committed_running.execution_token,
+            learner_message="save",
+            learner_message_kind="learner",
+            learner_attachments=[],
+            result=committed_result,
+            prepared_study_unit_id=None,
+            completed_follow_up_id="",
+            cancel_pending_follow_ups=False,
+            prepared_effect_batch=committed_collector.prepared_batch(),
+            build_response_payload=lambda session: {
+                **committed_result.model_dump(mode="json"),
+                "session": session.model_dump(mode="json"),
+            },
+        )
+        with self.database.session() as db_session:
+            row = db_session.get(
+                StudyChatOperationRow,
+                committed_running.operation_id,
+            )
+            assert row is not None and row.response_payload is not None
+            payload = deepcopy(row.response_payload)
+            payload["_committed_effect_batch"]["effects"][0]["committed_record"][
+                "scene_name"
+            ] = "forged"
+            row.response_payload = payload
+            row.response_digest = study_chat_response_digest(payload)
+        with self.assertRaisesRegex(
+            ValueError,
+            "scene_committed_projection_read_back_mismatch",
+        ):
+            self.operations.require(
+                session_id="session-effect",
+                client_request_id="request-effect-scene-0003",
             )
 
     def test_final_commit_rejects_effects_from_another_operation(self) -> None:
@@ -611,6 +868,7 @@ class StudyChatEffectsTests(unittest.TestCase):
                         expected_operation_id=operation_id,
                         allowed_schedule_ids=set(),
                         allowed_projection_sources=set(),
+                        scene_records={},
                         committed_at="2026-08-24T00:00:00+00:00",
                     )
 

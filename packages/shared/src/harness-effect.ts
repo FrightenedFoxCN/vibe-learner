@@ -139,11 +139,80 @@ export interface StudyProjectionEffectProposalV1 {
   color: string;
 }
 
+export interface StudySceneObjectStateV1 {
+  id: string;
+  name: string;
+  description: string;
+  interaction: string;
+  tags: string;
+  reuse_id: string;
+  reuse_hint: string;
+}
+
+export interface StudySceneLayerStateV1 {
+  id: string;
+  title: string;
+  scope_label: string;
+  summary: string;
+  atmosphere: string;
+  rules: string;
+  entrance: string;
+  tags: string;
+  reuse_id: string;
+  reuse_hint: string;
+  objects: StudySceneObjectStateV1[];
+  children: StudySceneLayerStateV1[];
+}
+
+export interface StudySceneProfileStateV1 {
+  scene_name: string;
+  scene_id: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  selected_path: string[];
+  focus_object_names: string[];
+  scene_tree: StudySceneLayerStateV1[];
+}
+
+export interface StudySessionSceneStateV1 {
+  config_id: string;
+  updated_at: string;
+  scene_name: string;
+  scene_summary: string;
+  scene_layers: StudySceneLayerStateV1[];
+  selected_layer_id: string;
+  collapsed_layer_ids: string[];
+  scene_profile: StudySceneProfileStateV1 | null;
+  scene_instance_id: string;
+  session_id: string;
+  document_id: string;
+  persona_id: string;
+  source_scene_id: string;
+  source_scene_name: string;
+  created_at: string;
+}
+
+export interface StudySceneReplaceEffectProposalV1 {
+  schema_name: "StudySceneReplaceEffectProposalV1";
+  schema_version: "study-scene-replace-effect-v1";
+  effect_kind: "scene_replace";
+  tool_name:
+    | "add_scene"
+    | "move_to_scene"
+    | "add_object"
+    | "update_object_description"
+    | "delete_object";
+  before_state_digest: string;
+  proposed_record: StudySessionSceneStateV1;
+}
+
 export type StudyChatEffectProposalV1 =
   | StudyMemoryUpsertEffectProposalV1
   | StudyAffinityDeltaEffectProposalV1
   | StudyFollowUpEffectProposalV1
   | StudyProjectionEffectProposalV1
+  | StudySceneReplaceEffectProposalV1
   | StudyPlanConfirmationEffectProposalV1;
 
 export interface StudyPlanConfirmationCommittedProjectionV1 {
@@ -249,11 +318,28 @@ export interface StudyProjectionCommittedProjectionV1 {
   projected_state: StudyProjectedStateV1;
 }
 
+export interface StudySceneReplaceCommittedProjectionV1 {
+  schema_name: "StudySceneReplaceCommittedProjectionV1";
+  schema_version: "study-scene-replace-committed-projection-v1";
+  effect_kind: "scene_replace";
+  operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  session_id: string;
+  scene_instance_id: string;
+  tool_name: StudySceneReplaceEffectProposalV1["tool_name"];
+  scene_state_digest: string;
+  updated_at: string;
+  committed_record: StudySessionSceneStateV1;
+}
+
 export type StudyChatCommittedEffectProjectionV1 =
   | StudyMemoryUpsertCommittedProjectionV1
   | StudyAffinityDeltaCommittedProjectionV1
   | StudyFollowUpCommittedProjectionV1
   | StudyProjectionCommittedProjectionV1
+  | StudySceneReplaceCommittedProjectionV1
   | StudyPlanConfirmationCommittedProjectionV1;
 
 export interface StudyChatCommittedEffectBatchV1 {
@@ -305,6 +391,15 @@ export const HARNESS_EFFECT_ADAPTER_POLICIES = deepFreeze({
   study_projection_mutation: {
     name: "study_projection_mutation",
     version: "study-projection-mutation-v1",
+    boundary_kind: "database_write",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "database_transaction",
+    compensation_policy: "not_applicable",
+    read_back_policy: "exact_projection",
+  },
+  study_scene_replace: {
+    name: "study_scene_replace",
+    version: "study-scene-replace-v1",
     boundary_kind: "database_write",
     prepare_policy: "validate_and_assign_identity",
     commit_policy: "database_transaction",

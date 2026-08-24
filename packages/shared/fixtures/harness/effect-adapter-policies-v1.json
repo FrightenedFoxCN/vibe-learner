@@ -46,6 +46,15 @@
       "commit_policy": "database_transaction",
       "compensation_policy": "not_applicable",
       "read_back_policy": "exact_projection"
+    },
+    {
+      "name": "study_scene_replace",
+      "version": "study-scene-replace-v1",
+      "boundary_kind": "database_write",
+      "prepare_policy": "validate_and_assign_identity",
+      "commit_policy": "database_transaction",
+      "compensation_policy": "not_applicable",
+      "read_back_policy": "exact_projection"
     }
   ]
 }
