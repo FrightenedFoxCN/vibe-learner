@@ -16,7 +16,7 @@ Tool enablement is now managed by `ModelToolConfig` (`GET/PATCH /model-tools/con
 
 If embeddings are unavailable, the backend falls back to local hashed-vector retrieval.
 
-`POST /runtime-settings/check-openai-models` still probes an OpenAI-compatible `/models` endpoint. LiteLLM SDK direct connections can be used for real inference even when this probe cannot enumerate models.
+`POST /runtime-settings/check-openai-models` probes an OpenAI-compatible `/models` endpoint. With optional `model` and `features` (`plan`, `study`, `persona`, `scene`, `tavern`), it also sends minimal representative requests through the same LiteLLM path and returns per-feature `ready`, `unsupported`, or `failed` readiness, typed reason codes, notes, and explicit parameter adjustments. Listing a model, passing authentication, and proving a feature request callable remain separate results. LiteLLM SDK direct connections can still be used for real inference when a provider cannot enumerate models.
 
 ## Response Conventions
 
@@ -42,7 +42,7 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `PATCH` | `/runtime-settings` | Persist runtime changes and rebuild the model provider. |
 | `PUT` | `/runtime-settings/session-secrets` | Apply in-memory session secrets without persisting them. |
 | `DELETE` | `/runtime-settings/session-secrets` | Remove in-memory session secrets. |
-| `POST` | `/runtime-settings/check-openai-models` | Probe an OpenAI-compatible `/models` connection. |
+| `POST` | `/runtime-settings/check-openai-models` | Probe `/models` and optional model + feature representative requests without persisting credentials. |
 | `GET` | `/model-usage/stats` | Return token/call usage aggregates and recent records. |
 
 ### Scene and reusable nodes (11)

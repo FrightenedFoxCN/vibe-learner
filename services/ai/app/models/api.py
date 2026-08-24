@@ -349,6 +349,20 @@ class RuntimeSessionSecretsRequest(BaseModel):
 class RuntimeSettingsProbeRequest(BaseModel):
     api_key: str
     base_url: str
+    model: str = Field(default="", max_length=160)
+    features: list[str] = Field(default_factory=list, max_length=5)
+
+    @model_validator(mode="after")
+    def validate_features(self) -> "RuntimeSettingsProbeRequest":
+        allowed = {"plan", "study", "persona", "scene", "tavern"}
+        normalized = [item.strip() for item in self.features if item.strip()]
+        if len(normalized) != len(set(normalized)) or any(item not in allowed for item in normalized):
+            raise ValueError("invalid_runtime_probe_features")
+        if normalized and not self.model.strip():
+            raise ValueError("runtime_probe_model_required")
+        self.model = self.model.strip()
+        self.features = normalized
+        return self
 
 
 class RuntimeCapabilitySignalResponse(BaseModel):
@@ -365,10 +379,19 @@ class RuntimeModelCapabilityResponse(BaseModel):
     web_search: RuntimeCapabilitySignalResponse = Field(default_factory=RuntimeCapabilitySignalResponse)
 
 
+class RuntimeFeatureReadinessResponse(BaseModel):
+    model: str
+    status: str
+    code: str = ""
+    note: str = ""
+    parameter_adjustments: list[str] = Field(default_factory=list)
+
+
 class RuntimeSettingsProbeResponse(BaseModel):
     available: bool
     models: list[str]
     capabilities: dict[str, RuntimeModelCapabilityResponse] = Field(default_factory=dict)
+    feature_readiness: dict[str, RuntimeFeatureReadinessResponse] = Field(default_factory=dict)
     error: str = ""
 
 

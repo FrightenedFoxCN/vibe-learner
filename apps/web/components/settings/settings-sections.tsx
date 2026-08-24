@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 
-import type { RuntimeSettings } from "@vibe-learner/shared";
+import type { RuntimeFeatureProbeName, RuntimeSettings } from "@vibe-learner/shared";
 import { settingsStyles as styles } from "./settings-styles";
 import {
   CAPABILITY_AUDIT_CONFIGS,
@@ -570,7 +570,20 @@ function ScopeModelCard({
   settings: RuntimeSettings;
 }) {
   const probe = controller.probeState[config.scope];
-  const models = uniqueWithCurrent(probe.models, String(settings[config.modelKey] || ""));
+  const currentModel = String(settings[config.modelKey] || "");
+  const models = uniqueWithCurrent(probe.models, currentModel);
+  const featureLabels: Array<[RuntimeFeatureProbeName, string]> =
+    config.scope === "plan"
+      ? [["plan", "计划工具请求"]]
+      : config.scope === "setting"
+        ? [["persona", "人格生成"], ["scene", "场景生成"]]
+        : [["study", "学习对话"], ["tavern", "酒馆严格输出"]];
+  const modelListed = probe.models.includes(currentModel);
+  const currentFeatureReadiness = featureLabels
+    .map(([feature]) => probe.featureReadiness[feature])
+    .filter((readiness) => readiness?.model === currentModel);
+  const authenticationPassed =
+    probe.available || currentFeatureReadiness.some((readiness) => readiness?.status === "ready");
   const desktopManagedSecrets =
     controller.desktopSecurity.enabled && controller.desktopSecurity.vaultState !== "unlocked";
   const configured =
@@ -634,7 +647,7 @@ function ScopeModelCard({
           disabled={probe.loading || desktopManagedSecrets}
           onClick={() => void controller.probeScope(config.scope)}
         >
-          {probe.loading ? "拉取中…" : "拉取模型与能力"}
+          {probe.loading ? "验证中…" : "验证模型与当前功能"}
         </button>
         <span style={styles.probeHint}>{formatProbeHint(probe)}</span>
       </div>
@@ -656,6 +669,59 @@ function ScopeModelCard({
           ))}
         </select>
       </label>
+      <div style={styles.capabilityStack}>
+        <div style={styles.capabilityRow}>
+          <StatusBadge
+            label={
+              !probe.lastCheckedAt
+                ? "模型列表：未验证"
+                : probe.available && modelListed
+                  ? "模型列表：已列出"
+                  : probe.available
+                    ? "模型列表：未列出"
+                    : "模型列表：拉取失败"
+            }
+            tone={probe.available && modelListed ? "positive" : probe.lastCheckedAt ? "negative" : "muted"}
+          />
+          <StatusBadge
+            label={
+              !probe.lastCheckedAt
+                ? "鉴权：未验证"
+                : authenticationPassed
+                  ? "鉴权：已通过"
+                  : "鉴权：未确认"
+            }
+            tone={authenticationPassed ? "positive" : probe.lastCheckedAt ? "negative" : "muted"}
+          />
+        </div>
+        {featureLabels.map(([feature, label]) => {
+          const readiness = probe.featureReadiness[feature];
+          const current = readiness?.model === currentModel ? readiness : undefined;
+          return (
+            <div key={feature} style={styles.capabilityStack}>
+              <div style={styles.capabilityRow}>
+                <StatusBadge
+                  label={`${label}：${
+                    current?.status === "ready"
+                      ? "可调用"
+                      : current?.status === "unsupported"
+                        ? "参数不兼容"
+                        : current?.status === "failed"
+                          ? "调用失败"
+                          : "未验证"
+                  }`}
+                  tone={current?.status === "ready" ? "positive" : current ? "negative" : "muted"}
+                />
+              </div>
+              {current?.note ? <p style={styles.capabilityNote}>{current.note}</p> : null}
+              {current?.parameterAdjustments.length ? (
+                <p style={styles.ruleText}>显式参数适配：{current.parameterAdjustments.join("、")}</p>
+              ) : null}
+              {current?.code ? <p style={styles.ruleText}>原因代码：{current.code}</p> : null}
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }

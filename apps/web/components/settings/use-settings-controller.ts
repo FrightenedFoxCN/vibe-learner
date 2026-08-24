@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
-import type { DesktopVaultState, RuntimeSettings } from "@vibe-learner/shared";
+import type { DesktopVaultState, RuntimeFeatureProbeName, RuntimeSettings } from "@vibe-learner/shared";
 import { useRuntimeSettings } from "../runtime-settings-provider";
 import {
   applyRuntimeSessionSecrets,
@@ -81,6 +81,7 @@ interface CachedProbeResult {
   available: boolean;
   models: string[];
   capabilities: ScopeProbeState["capabilities"];
+  featureReadiness: ScopeProbeState["featureReadiness"];
   error: string;
   lastCheckedAt: string;
   sourceScope: ProbeScope;
@@ -303,6 +304,7 @@ export function useSettingsController(): SettingsController {
 
     const endpoint = resolveScopeEndpoint(settings, scope);
     const endpointKey = buildProbeEndpointKey(endpoint);
+    const featureProbe = resolveFeatureProbe(settings, scope);
     if (!endpoint.apiKey || !endpoint.baseUrl) {
       setProbeState((prev) => ({
         ...prev,
@@ -312,6 +314,7 @@ export function useSettingsController(): SettingsController {
           available: false,
           models: [],
           capabilities: {},
+          featureReadiness: prev[scope].featureReadiness,
           error: "请先填写可用的访问密钥和服务地址",
           lastCheckedAt: prev[scope].lastCheckedAt,
           endpointKey,
@@ -322,7 +325,10 @@ export function useSettingsController(): SettingsController {
     }
 
     const cached = probeCacheRef.current.get(endpointKey);
-    if (cached) {
+    const hasCurrentFeatureReadiness = featureProbe.features.every(
+      (feature) => cached?.featureReadiness[feature]?.model === featureProbe.model
+    );
+    if (cached && (scope === "global" || hasCurrentFeatureReadiness)) {
       const refreshed = {
         ...cached,
         sourceScope: scope,
@@ -350,11 +356,19 @@ export function useSettingsController(): SettingsController {
     });
 
     try {
-      const result = await probeRuntimeOpenAIModels(endpoint);
+      const result = await probeRuntimeOpenAIModels({
+        ...endpoint,
+        model: featureProbe.model,
+        features: featureProbe.features,
+      });
       const nextCached: CachedProbeResult = {
         available: result.available,
         models: result.models,
         capabilities: result.capabilities,
+        featureReadiness: {
+          ...(cached?.featureReadiness ?? {}),
+          ...result.featureReadiness,
+        },
         error: result.error,
         lastCheckedAt: new Date().toISOString(),
         sourceScope: scope
@@ -370,6 +384,7 @@ export function useSettingsController(): SettingsController {
           available: false,
           models: [],
           capabilities: {},
+          featureReadiness: prev[scope].featureReadiness,
           error: String(err),
           endpointKey,
           sharedFromScope: null
@@ -552,6 +567,28 @@ export function useSettingsController(): SettingsController {
   };
 }
 
+function resolveFeatureProbe(
+  settings: RuntimeSettings,
+  scope: ProbeScope
+): { model: string; features: RuntimeFeatureProbeName[] } {
+  if (scope === "plan") {
+    return { model: settings.openaiPlanModel.trim(), features: ["plan"] };
+  }
+  if (scope === "setting") {
+    return {
+      model: settings.openaiSettingModel.trim(),
+      features: ["persona", "scene"],
+    };
+  }
+  if (scope === "chat") {
+    return {
+      model: settings.openaiChatModel.trim(),
+      features: ["study", "tavern"],
+    };
+  }
+  return { model: "", features: [] };
+}
+
 function buildScopeProbeState(
   cached: CachedProbeResult,
   endpointKey: string,
@@ -562,6 +599,7 @@ function buildScopeProbeState(
     available: cached.available,
     models: cached.models,
     capabilities: cached.capabilities,
+    featureReadiness: cached.featureReadiness,
     error: cached.error,
     lastCheckedAt: cached.lastCheckedAt,
     endpointKey,

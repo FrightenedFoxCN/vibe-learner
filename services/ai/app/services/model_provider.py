@@ -195,6 +195,10 @@ CHAT_EXEMPT_TOOL_NAMES = frozenset(
 CHAT_EXEMPT_TOOL_EXTRA_ROUNDS = 12
 LITELLM_TRANSIENT_RETRY_COUNT = 2
 LITELLM_TRANSIENT_RETRYABLE_STATUS_CODES = frozenset({"408", "409", "425", "500", "502", "503", "504"})
+REASONING_CHAT_MODEL_RE = re.compile(
+    r"^(?:gpt-5(?:[.-]|$)|o[134](?:[.-]|$))",
+    re.IGNORECASE,
+)
 
 
 class ModelRequestError(RuntimeError):
@@ -212,6 +216,109 @@ class ModelRequestError(RuntimeError):
         self.status_code = status_code
         self.upstream_code = upstream_code
         self.upstream_message = upstream_message
+
+
+def adapt_openai_compatible_payload(
+    payload: dict[str, Any],
+    *,
+    model: str,
+) -> tuple[dict[str, Any], list[str]]:
+    """Apply explicit model-family request rules without global parameter dropping."""
+    adapted = dict(payload)
+    adjustments: list[str] = []
+    model_id = _bare_model_id(model)
+    if REASONING_CHAT_MODEL_RE.match(model_id):
+        if "temperature" in adapted:
+            adapted.pop("temperature", None)
+            adjustments.append("temperature_omitted")
+        if "max_tokens" in adapted and "max_completion_tokens" not in adapted:
+            adapted["max_completion_tokens"] = adapted.pop("max_tokens")
+            adjustments.append("max_tokens_to_max_completion_tokens")
+    return adapted, adjustments
+
+
+def _bare_model_id(model: str) -> str:
+    normalized = model.strip()
+    if "/" in normalized:
+        normalized = normalized.rsplit("/", 1)[-1]
+    return normalized
+
+
+def _feature_probe_tools_payload(model: str) -> dict[str, Any]:
+    return {
+        "model": model,
+        "temperature": 0.2,
+        "max_tokens": 32,
+        "messages": [
+            {"role": "system", "content": "Return a brief acknowledgement."},
+            {"role": "user", "content": "Compatibility probe."},
+        ],
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_probe_context",
+                    "description": "Read a minimal compatibility probe context.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": False,
+                    },
+                },
+            }
+        ],
+        "tool_choice": "auto",
+    }
+
+
+def _feature_probe_json_payload(model: str) -> dict[str, Any]:
+    return {
+        "model": model,
+        "temperature": 0.4,
+        "max_tokens": 48,
+        "messages": [
+            {"role": "system", "content": "Return only a JSON object."},
+            {"role": "user", "content": 'Return {"ok":true}.'},
+        ],
+        "response_format": {"type": "json_object"},
+    }
+
+
+def _feature_probe_tavern_payload(model: str) -> dict[str, Any]:
+    return {
+        "model": model,
+        "temperature": 0.35,
+        "max_tokens": 48,
+        "messages": [
+            {"role": "system", "content": "Return the requested JSON object."},
+            {"role": "user", "content": "Return a short compatibility acknowledgement."},
+        ],
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "tavern_probe",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {"text": {"type": "string"}},
+                    "required": ["text"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+    }
+
+
+def _feature_probe_failure_note(code: str) -> str:
+    if code.endswith("_request_unsupported_params"):
+        return "当前模型拒绝该功能的代表请求参数，请更换模型或调整显式兼容策略。"
+    if code.endswith("_request_rate_limit"):
+        return "鉴权已到达上游，但代表请求受到额度或频率限制。"
+    if code.endswith("_request_timeout"):
+        return "代表请求超时；模型列表成功不代表当前功能可用。"
+    if code.endswith("_request_network_error"):
+        return "代表请求发生网络错误；请检查 endpoint 连通性。"
+    return "代表请求失败；模型可列出不代表当前功能可调用。"
 
 
 def _chat_prompt_sections() -> dict[str, str]:
@@ -694,7 +801,7 @@ class MockModelProvider(ModelProvider):
     ) -> TavernActorReply:
         if should_continue is not None and not should_continue():
             raise RuntimeError("tavern_actor_generation_canceled")
-        relationship = persona.relationship.strip() or "同行者"
+        relationship = persona.relationship.strip().rstrip("。！？!?，,；;：:") or "同行者"
         scene_hint = (
             f"在{scene_profile.scene_name or scene_profile.title}里，"
             if scene_profile is not None
@@ -1120,6 +1227,80 @@ class OpenAIModelProvider(MockModelProvider):
     def chat_memory_tool_runtime_enabled(self) -> bool:
         return self.chat_memory_tool_enabled
 
+    def probe_feature_readiness(self, features: list[str]) -> dict[str, dict[str, object]]:
+        requested = list(dict.fromkeys(features))
+        results: dict[str, dict[str, object]] = {}
+        transports: list[tuple[list[str], dict[str, Any], str]] = []
+        if "plan" in requested:
+            transports.append((["plan"], _feature_probe_tools_payload(self.plan_model), "plan"))
+        if "study" in requested:
+            transports.append((["study"], _feature_probe_tools_payload(self.chat_model), "chat"))
+        setting_features = [feature for feature in ("persona", "scene") if feature in requested]
+        if setting_features:
+            transports.append((setting_features, _feature_probe_json_payload(self.setting_model), "setting"))
+        if "tavern" in requested:
+            transports.append((["tavern"], _feature_probe_tavern_payload(self.chat_model), "chat"))
+
+        for transport_features, payload, request_kind in transports:
+            _, adjustments = adapt_openai_compatible_payload(
+                payload,
+                model=str(payload.get("model") or ""),
+            )
+            failure: RuntimeError | None = None
+            readiness_note = "最小代表请求已沿当前 LiteLLM 调用路径成功返回。"
+            try:
+                self._request_openai_chat_completion(
+                    payload,
+                    request_kind=request_kind,
+                    model=str(payload.get("model") or ""),
+                )
+            except RuntimeError as exc:
+                if (
+                    transport_features == ["tavern"]
+                    and isinstance(exc, ModelRequestError)
+                    and _should_fallback_tavern_schema_transport(exc)
+                ):
+                    fallback_payload = dict(payload)
+                    fallback_payload["response_format"] = {"type": "json_object"}
+                    try:
+                        self._request_openai_chat_completion(
+                            fallback_payload,
+                            request_kind=request_kind,
+                            model=str(payload.get("model") or ""),
+                        )
+                    except RuntimeError as fallback_exc:
+                        failure = fallback_exc
+                    else:
+                        adjustments = [*adjustments, "json_schema_to_json_object"]
+                        readiness_note = "严格 JSON Schema 被拒绝，但当前功能的 JSON Object 回退路径可调用。"
+                else:
+                    failure = exc
+
+            if failure is None:
+                readiness = {
+                    "model": str(payload.get("model") or ""),
+                    "status": "ready",
+                    "code": "",
+                    "note": readiness_note,
+                    "parameter_adjustments": adjustments,
+                }
+            else:
+                code = str(failure).split(":", 1)[0]
+                readiness = {
+                    "model": str(payload.get("model") or ""),
+                    "status": (
+                        "unsupported"
+                        if code.endswith("_request_unsupported_params")
+                        else "failed"
+                    ),
+                    "code": code,
+                    "note": _feature_probe_failure_note(code),
+                    "parameter_adjustments": adjustments,
+                }
+            for feature in transport_features:
+                results[feature] = dict(readiness)
+        return results
+
     def generate_chat(
         self,
         *,
@@ -1405,6 +1586,7 @@ class OpenAIModelProvider(MockModelProvider):
             "messages": messages,
             "response_format": response_format,
         }
+        active_response_format = response_format
         try:
             raw_payload, _ = self._request_openai_chat_completion(
                 payload,
@@ -1412,7 +1594,7 @@ class OpenAIModelProvider(MockModelProvider):
                 model=self.chat_model,
             )
         except ModelRequestError as exc:
-            if exc.status_code not in {"400", "422"}:
+            if not _should_fallback_tavern_schema_transport(exc):
                 raise
             if should_continue is not None and not should_continue():
                 raise RuntimeError("tavern_actor_generation_canceled") from exc
@@ -1427,9 +1609,10 @@ class OpenAIModelProvider(MockModelProvider):
                 strategy="retry_json_object",
                 attempts=2,
             )
-            payload["response_format"] = {"type": "json_object"}
+            active_response_format = {"type": "json_object"}
+            fallback_payload = {**payload, "response_format": active_response_format}
             raw_payload, _ = self._request_openai_chat_completion(
-                payload,
+                fallback_payload,
                 request_kind="chat",
                 model=self.chat_model,
             )
@@ -1458,7 +1641,7 @@ class OpenAIModelProvider(MockModelProvider):
                         "content": build_tavern_actor_recovery_message(actor_schema_text),
                     },
                 ],
-                "response_format": payload["response_format"],
+                "response_format": active_response_format,
             }
             recovery_raw_payload, _ = self._request_openai_chat_completion(
                 recovery_payload,
@@ -2428,9 +2611,33 @@ class OpenAIModelProvider(MockModelProvider):
             model=raw_model,
             api_base=api_base,
         )
-        return resolved_payload
+        adapted_payload, adjustments = adapt_openai_compatible_payload(
+            resolved_payload,
+            model=str(resolved_payload["model"]),
+        )
+        if adjustments:
+            logger.info(
+                "model.request.compatibility model=%s adjustments=%s",
+                raw_model,
+                ",".join(adjustments),
+            )
+        return adapted_payload
 
     def _map_litellm_request_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:
+        if _is_litellm_unsupported_params_error(exc):
+            status_code, error_code, error_message = _extract_litellm_exception_details(exc)
+            logger.warning(
+                "model.%s.unsupported_params provider=litellm status=%s upstream_code=%s",
+                request_kind,
+                status_code or "client_preflight",
+                error_code or "unsupported_params",
+            )
+            return ModelRequestError(
+                f"openai_{request_kind}_request_unsupported_params",
+                status_code=status_code,
+                upstream_code="unsupported_params",
+                upstream_message=error_message,
+            )
         if _is_litellm_rate_limit_error(exc):
             logger.exception("model.%s.rate_limit provider=litellm", request_kind)
             return ModelRequestError(f"openai_{request_kind}_request_rate_limit")
@@ -3690,6 +3897,14 @@ def _should_fallback_setting_web_search(exc: RuntimeError) -> bool:
     )
 
 
+def _should_fallback_tavern_schema_transport(exc: ModelRequestError) -> bool:
+    return (
+        exc.status_code in {"400", "422"}
+        or exc.upstream_code == "unsupported_params"
+        or str(exc) == "openai_chat_request_unsupported_params"
+    )
+
+
 def _normalize_litellm_model_name(*, model: str, api_base: str) -> str:
     normalized = model.strip()
     if not normalized:
@@ -3863,6 +4078,12 @@ def _is_litellm_rate_limit_error(exc: Exception) -> bool:
     if rate_limit_cls is not None and isinstance(exc, rate_limit_cls):
         return True
     return _extract_litellm_status_code(exc) == "429" or "ratelimit" in type(exc).__name__.lower()
+
+
+def _is_litellm_unsupported_params_error(exc: Exception) -> bool:
+    class_name = type(exc).__name__.lower()
+    message = str(exc).lower()
+    return "unsupportedparams" in class_name or "unsupported parameter" in message
 
 
 def _is_litellm_timeout_error(exc: Exception) -> bool:

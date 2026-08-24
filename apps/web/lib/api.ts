@@ -15,6 +15,7 @@ import type {
   PersonaCardGenerationMode,
   PersonaProfile,
   RuntimeOpenAIProbeResult,
+  RuntimeFeatureProbeName,
   RuntimeSettings,
   RuntimeSettingsPatch,
   RetryTavernRunInput,
@@ -2031,6 +2032,8 @@ export async function clearRuntimeSessionSecrets(): Promise<RuntimeSettings> {
 export async function probeRuntimeOpenAIModels(input: {
   apiKey: string;
   baseUrl: string;
+  model?: string;
+  features?: RuntimeFeatureProbeName[];
 }): Promise<RuntimeOpenAIProbeResult> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/runtime-settings/check-openai-models`, {
@@ -2040,7 +2043,9 @@ export async function probeRuntimeOpenAIModels(input: {
       },
       body: JSON.stringify({
         api_key: input.apiKey,
-        base_url: input.baseUrl
+        base_url: input.baseUrl,
+        model: input.model ?? "",
+        features: input.features ?? []
       })
     })
   );
@@ -2068,6 +2073,29 @@ export async function probeRuntimeOpenAIModels(input: {
                 webSearch: normalizeRuntimeCapabilitySignal((capability as any)?.web_search)
               }
             ])
+          )
+        : {},
+    featureReadiness:
+      payload.feature_readiness && typeof payload.feature_readiness === "object"
+        ? Object.fromEntries(
+            Object.entries(payload.feature_readiness).map(([feature, readiness]) => {
+              const status = String((readiness as any)?.status ?? "not_tested");
+              return [
+                feature,
+                {
+                  model: String((readiness as any)?.model ?? ""),
+                  status:
+                    status === "ready" || status === "unsupported" || status === "failed"
+                      ? status
+                      : "not_tested",
+                  code: String((readiness as any)?.code ?? ""),
+                  note: String((readiness as any)?.note ?? ""),
+                  parameterAdjustments: Array.isArray((readiness as any)?.parameter_adjustments)
+                    ? (readiness as any).parameter_adjustments.map((item: unknown) => String(item))
+                    : []
+                }
+              ];
+            })
           )
         : {},
     error: String(payload.error ?? "")

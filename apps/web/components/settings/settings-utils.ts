@@ -55,6 +55,7 @@ export const EMPTY_PROBE_STATE: ScopeProbeState = {
   available: false,
   models: [],
   capabilities: {},
+  featureReadiness: {},
   error: "",
   lastCheckedAt: "",
   endpointKey: "",
@@ -218,7 +219,7 @@ export function parseNumericSetting(value: string, config: NumericSettingConfig)
 
 export function formatProbeHint(state: ScopeProbeState): string {
   if (state.loading) {
-    return "拉取中…";
+    return "验证中…";
   }
   if (state.error) {
     return `失败：${state.error}`;

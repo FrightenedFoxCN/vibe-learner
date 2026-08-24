@@ -5,7 +5,7 @@ export const DISCONNECTED_NOTICE =
   "未连接到 AI 服务。";
 
 export const CONNECTED_NOTICE =
-  "AI 服务已连接。";
+  "数据服务已连接。";
 
 export const SNAPSHOT_REFRESHED_NOTICE =
   "计划已刷新。";

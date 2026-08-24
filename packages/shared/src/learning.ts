@@ -416,10 +416,22 @@ export interface RuntimeModelCapability {
   webSearch: RuntimeCapabilitySignal;
 }
 
+export type RuntimeFeatureProbeName = "plan" | "study" | "persona" | "scene" | "tavern";
+export type RuntimeFeatureReadinessStatus = "ready" | "unsupported" | "failed" | "not_tested";
+
+export interface RuntimeFeatureReadiness {
+  model: string;
+  status: RuntimeFeatureReadinessStatus;
+  code: string;
+  note: string;
+  parameterAdjustments: string[];
+}
+
 export interface RuntimeOpenAIProbeResult {
   available: boolean;
   models: string[];
   capabilities: Record<string, RuntimeModelCapability>;
+  featureReadiness: Partial<Record<RuntimeFeatureProbeName, RuntimeFeatureReadiness>>;
   error: string;
 }
 

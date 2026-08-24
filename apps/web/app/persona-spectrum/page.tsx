@@ -30,6 +30,7 @@ import {
 import { TopNav } from "../../components/top-nav";
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
+import { ProviderTruth } from "../../components/provider-truth";
 import {
   assistPersonaSlot,
   assistPersonaSetting,
@@ -1004,6 +1005,8 @@ export default function PersonaSpectrumPage() {
           <div style={styles.notice}>{pageNotice}</div>
         </div>
       </div>
+
+      <ProviderTruth scope="persona" />
 
       {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
 

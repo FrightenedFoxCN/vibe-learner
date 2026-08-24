@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { DocumentSetup } from "./document-setup";
 import { PlanHistory } from "./plan-history";
 import { PlanOverview } from "./plan-overview";
+import { ProviderTruth } from "./provider-truth";
 import { TopNav } from "./top-nav";
 import { useAppNavigator } from "../lib/app-navigation";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
@@ -111,6 +112,8 @@ export function LearningWorkspace() {
           {notice ? <div style={styles.notice}>{notice}</div> : null}
         </div>
       </div>
+
+      <ProviderTruth scope="plan" />
 
       <div className="plan-content-grid">
         <div className="plan-setup-shell" style={styles.planSetupShell}>

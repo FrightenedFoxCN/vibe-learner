@@ -38,6 +38,7 @@ import {
   type SceneLibraryItemPayload,
 } from "../lib/api";
 import { AppLink } from "../lib/app-navigation";
+import { ProviderTruth } from "./provider-truth";
 import {
   hasActiveTavernRun,
   authoritativeFacilitatedRecovery,
@@ -973,6 +974,8 @@ export function TavernWorkspace() {
         onRefresh={() => void refreshRoom()}
         onArchiveToggle={() => void handleArchiveToggle()}
       />
+
+      <ProviderTruth scope="tavern" />
 
       {visibleError ? (
         <div className="tavern-alert" role="alert">

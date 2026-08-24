@@ -5,6 +5,7 @@ import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "re
 import type { ModelRecovery, SceneProfile } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
+import { ProviderTruth } from "../../components/provider-truth";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { assistPersonaSlot } from "../../lib/data/personas";
@@ -1321,6 +1322,8 @@ export default function SceneSetupPage() {
           <div style={styles.notice}>{pageNotice}</div>
         </div>
       </div>
+
+      <ProviderTruth scope="scene" />
 
       <div
         style={{

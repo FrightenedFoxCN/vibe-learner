@@ -1,13 +1,13 @@
 # TODO
 
-## 下一位智能体接手顺序（2026-08-13）
+## 下一位智能体接手顺序（2026-08-24）
 
 本仓库当前以敏捷功能交付为主：每批保持单一功能、可用、轻量定向验证，次要缺陷集中登记后批量修复；不要重新扩大已通过批次的并发/攻击测试矩阵。每批独立提交后 fast-forward 回交本地 `main`，不自动 push。详细状态、验证记录与 Git 注意事项见 `docs/handoff-2026-08-13.md`。
 
 1. `SCH-STUDY-QUESTION-001` / `SCH-STUDY-ATTEMPT-001`：实现与实现者定向门已完成；先由非实现智能体复核未作答脱敏、服务端判分、Attempt 幂等/并发/历史兼容，再勾选关闭。
 2. `SCH-HRN-EFFECT-001` / `STUDY-EFFECT-COMMIT-001`：Session/Scene DB effects 与 operation-owned attachment staging 已有原子提交、精确回读和补偿；下一批收口 generated/provider 的 durable per-effect journal 与 Study v3 evidence，外部 provider 无权威回读时继续保持 `uncertain`。
 3. `TAV-RUN-VIEW-001` / `TAV-ERROR-001` / `TAV-RECOVERY-CLIENT-001`：实现与实现者定向门已完成；由非实现智能体复核权威链、结构化错误、同 key 单次终态取回和 Composer/Badge 真相后关闭 `UX-TAV-REC-001`。
-4. `MODEL-COMPAT-001` / `UX-PROVIDER-001`：补齐“模型可列出”到“具体工作流可调用”的能力探测、请求参数适配与用户可见 provider 真相。
+4. `UX-PROVIDER-001`：实现与类型门、受控 live gate 已完成；由非实现智能体用 mock/真实提供器复核五个页面提示、设置页分层状态和切换同步后关闭。`MODEL-COMPAT-001` 已完成。
 5. `PERF-001` / `PERF-002` 与 `DOC-AUDIT-001`：功能关键路径稳定后再做已登记的性能和文档审计。
 
 跨工作流 Harness 仍是长期主线；Tavern 或 Study 的局部切片完成不代表 Document、Planning、Persona、Scene、Study、Tavern、Frontend Decode 已整体采用 v3。
@@ -85,14 +85,14 @@
 - [ ] `HRN-EVAL-001` 建立跨工作流 fixture/eval 运行器与版本基线；验收：覆盖 malformed、boundary、retry exhaustion、duplicate、concurrency、commit failure，报告 schema-valid/repair/failure/commit-consistency/p95，并由各 workflow 注册最低 accuracy 指标（OCR 文本/覆盖、Section/Study Unit 边界、plan grounding/tool correctness、Persona/Tavern identity、Scene 结构、Study citation/effect correctness、frontend decode），用版本化基线和回退阈值使 CI 失败。
 - [ ] `QG-001` 替换 Next 16 已失效的 `next lint`，统一 `check` 命令并接入发布工作流。
 - [ ] `QG-WEB-ESM-001` 消除 Node 直接运行 TypeScript 测试时的 `MODULE_TYPELESS_PACKAGE_JSON` 警告；验收：选择不会破坏 Next/Tauri 构建的显式 module 配置或测试 runner，`test:web:tavern` 与 `test:web:reliability` 无重复 reparsing warning。
-- [ ] `MODEL-COMPAT-001` 建立 endpoint + model + feature 级请求能力适配；本次通过 OpenAI-compatible 端点列出模型成功，但 `gpt-5-mini` 的 Persona 卡请求在出站前被 LiteLLM 以 `UnsupportedParamsError` 拒绝，因为项目固定发送 `temperature=0.4`，同端点 `gpt-4.1-mini` 则可成功生成。验收：模型列表、鉴权、最小生成与各 feature readiness 分层探测；按实际调用路径选择或省略 `temperature`、`max_tokens` / `max_completion_tokens`、`response_format`、tools/web-search/reasoning 参数，不以全局 `drop_params` 静默降级；Plan/Persona/Scene/Study/Tavern 各有代表性 compatibility fixture 或受控 live gate，失败返回可操作的 typed reason，任何测试密钥只驻留会话且不写入仓库。
+- [x] `MODEL-COMPAT-001` 建立 endpoint + model + feature 级请求能力适配；`/models` 与 Plan/Study/Persona/Scene/Tavern 最小代表请求分层探测已接入设置页，推理模型族显式省略非默认 `temperature` 并将 `max_tokens` 改为 `max_completion_tokens`，Tavern 严格 Schema 拒绝时只使用已登记的 JSON Object 回退，不启用全局 `drop_params`。失败返回 feature 级 typed reason；`gpt-5-mini` 五类受控 live gate 于 2026-08-24 全部通过，测试密钥仅驻留单次进程且未写入仓库或数据库。
 - [x] `QG-TAV-API-001` 为 Tavern direct/facilitated、continue、partial、retry、幂等与 SQLite 升级增加 HTTP/仓储集成测试。
 - [ ] `QG-002` 维护跨 Document/Plan/Persona/Scene/Study/Tavern 的共享 adversarial payload/stream fixtures 与运行入口；本项只提供攻击语料和 golden，不替代各域 decoder、stale fence 或 stream 状态机的实现/关闭。
 - [x] `SEC-001` 为聊天附件增加 Session/path component 校验、单文件 12 MiB / 总量 24 MiB / 最多 4 个限制，并保持先 durable admission/Session 存在性校验、后 operation-owned staging 落盘；oversize、路径穿越、partial write、终态补偿与 committed digest read-back fixture 通过。
 - [ ] `UX-NAV-001` 重构顶级导航信息架构与 390px 行为；当前真实浏览器审计发现 9 个平级入口，桌面链接容器约 40px，窄屏则把全部入口压入单行横向滚动条。验收：学习、角色与世界、系统分组清晰，加入 Tavern 后标签不压缩或依赖隐蔽横向滚动，当前页与入口层级语义明确，焦点顺序可预测，键盘/触控目标不小于 44px。
 - [ ] `UX-A11Y-001` 为跨页面异步状态补齐 `aria-live` / `role=alert`、焦点恢复和最小 44px 交互目标；本次抽样中 Persona Spectrum、Scene Setup、Sensory Tools 分别约有 57/71/64 个交互目标低于 44px，Persona 还有多个无可访问名称的 24px 图标按钮。Interactive Question 还需 `aria-busy`、选择状态语义、填空 label，并将当前约 30–36px 的答题控件提升到触控门槛。Scene 删除层级 dialog 虽已有 `role="dialog"` / `aria-modal`，但打开后焦点仍在背景、背景未 inert、Escape 不关闭，Cancel 后焦点落到 `body`；需补初始聚焦、focus trap、Escape、背景 inert 与关闭后焦点恢复。
 - [ ] `UX-EDITOR-DENSITY-001` 为 Persona Spectrum、Scene Setup 与 Sensory Tools 建立渐进披露和长表单导航；本次页面抽样约有 60、78、66 个交互控件，Sensory Tools 页面高度约 2712px，主任务、批量开关、危险操作与高级字段处于同一视觉层级。验收：首屏只突出创建/选择/保存等主任务，高级字段可分组折叠，长列表支持搜索/筛选和稳定上下文，保存/错误定位不丢滚动与焦点，批量及删除动作与普通编辑明显区分。
-- [ ] `UX-PROVIDER-001` 在 Plan/Study/Persona/Scene/Tavern 显示真实 provider 状态；本次实测 Settings 为“本地模拟”时，Plan 仍显示“AI 服务已连接”，Tavern 的模板回复也没有 mock 标识且出现“作为你的以师生协作方式……”等拼接文案。验收：mock 模式明确“本地模拟，不调用真实模型”，切换后及时同步；模型“已列出”“鉴权通过”“当前 feature 可调用”分层呈现，并说明 schema/commit 可靠性不等于内容或事实质量。
+- [ ] `UX-PROVIDER-001` 在 Plan/Study/Persona/Scene/Tavern 显示真实 provider 状态；五个页面现已共享 provider 真相提示，mock 明示“本地模拟，不调用真实模型”，原“AI 服务已连接”已改为“数据服务已连接”；设置页将模型列表/鉴权与 Plan、Study、Persona、Scene、Tavern 代表请求 readiness 分层显示，并说明 feature callability、结构/提交可靠性与内容/事实质量不是同一结论。实现者类型门与真实端点 live gate 已通过，仍需非实现智能体复核 mock/真实切换、五页可见性和窄屏布局后勾选关闭。
 - [ ] `UX-DEBUG-DIALOG-001` 修复 Debug Overlay 模态语义；本次验证 Escape 可关闭，但打开后 active element 为 `body`，容器没有 dialog/aria-modal 语义，背景未 inert，也没有可观察的焦点圈定与触发点恢复。剩余验收：`role="dialog"`、`aria-modal`、打开初始聚焦、焦点圈定、背景 inert 与关闭后触发点焦点恢复通过键盘/VoiceOver 基本路径。
 - [ ] `UX-TAV-DRAFT-001` 清理 Tavern 创建草稿中的幽灵人格；验收：载入草稿时只保留当前人格库中仍存在的 ID，计数/提交/可见选择一致，人格删除后的刷新 fixture 通过。
 - [ ] `UX-EMPTY-001` 统一空状态的下一步动作；本次 Study 无 Plan 实测为整组 Composer/附件/打断控件禁用，仅有文本提示前往 Plan Workspace，没有可聚焦 CTA。验收：Tavern 无房间/无 Persona 时不出现不可操作的禁用 Composer/Roster 死端；Study 无 Plan 时解释前置条件并提供可聚焦的创建/选择 Plan CTA；空状态文案不依赖“左侧/右侧”等桌面方位。

@@ -7,6 +7,7 @@ import type { Citation, StudySessionRecord } from "@vibe-learner/shared";
 
 import { useLearningWorkspace } from "./learning-workspace-provider";
 import { MaterialIcon } from "./material-icon";
+import { ProviderTruth } from "./provider-truth";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
@@ -459,6 +460,8 @@ export function StudyDialogPage() {
           {notice ? <div style={styles.notice}>{notice}</div> : null}
         </div>
       </div>
+
+      <ProviderTruth scope="study" />
 
       <section style={styles.mainStage}>
           <StudyConsole

@@ -99,6 +99,7 @@ from app.persistence.study_chat_operation_repository import (
 )
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
+from app.services.model_provider import OpenAIModelProvider
 from app.services.study_chat_attachments import (
     cleanup_staged_study_chat_operation_attachments,
     prepare_study_chat_attachments,
@@ -171,6 +172,8 @@ def _runtime_error_retry_attempts(exc: RuntimeError) -> int:
 
 def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
+    if detail == "openai_plan_request_unsupported_params":
+        return HTTPException(status_code=422, detail="plan_model_unsupported_params")
     if detail == "openai_plan_request_rate_limit":
         return HTTPException(status_code=503, detail="plan_model_rate_limited")
     if detail == "openai_plan_request_timeout":
@@ -194,6 +197,8 @@ def _map_plan_generation_error(exc: RuntimeError) -> HTTPException:
 
 def _map_chat_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
+    if detail == "openai_chat_request_unsupported_params":
+        return HTTPException(status_code=422, detail="chat_model_unsupported_params")
     if detail == "openai_chat_request_rate_limit":
         return HTTPException(status_code=503, detail="chat_model_rate_limited")
     if detail == "openai_chat_request_timeout":
@@ -213,6 +218,8 @@ def _map_chat_generation_error(exc: RuntimeError) -> HTTPException:
 
 def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
     detail = str(exc)
+    if detail == "openai_setting_request_unsupported_params":
+        return HTTPException(status_code=422, detail="setting_model_unsupported_params")
     if detail == "openai_setting_request_rate_limit":
         return HTTPException(status_code=503, detail="setting_model_rate_limited")
     if detail == "openai_setting_request_timeout":
@@ -488,13 +495,25 @@ def check_openai_models(payload: RuntimeSettingsProbeRequest) -> RuntimeSettings
         raise HTTPException(status_code=400, detail="missing_base_url")
 
     timeout_seconds = max(5, container.runtime_settings_service.effective_settings().openai_timeout_seconds)
-    return RuntimeSettingsProbeResponse.model_validate(
-        probe_openai_models(
+    result = probe_openai_models(
+        api_key=api_key,
+        base_url=base_url,
+        timeout_seconds=timeout_seconds,
+    )
+    if payload.features:
+        probe_provider = OpenAIModelProvider(
             api_key=api_key,
             base_url=base_url,
+            plan_model=payload.model,
+            setting_model=payload.model,
+            chat_model=payload.model,
+            setting_web_search_enabled=False,
             timeout_seconds=timeout_seconds,
         )
-    )
+        result["feature_readiness"] = probe_provider.probe_feature_readiness(
+            payload.features
+        )
+    return RuntimeSettingsProbeResponse.model_validate(result)
 
 
 @router.get("/documents", response_model=DocumentListResponse)
