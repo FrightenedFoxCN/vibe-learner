@@ -90,6 +90,10 @@ import {
   isMissingStudyChatOperationError,
   studyChatPreAdmissionNotice,
 } from "../lib/http-error";
+import {
+  StudyAsyncViewFence,
+  type AsyncResultTicket,
+} from "../lib/async-result-fence";
 
 export interface GeneratePlanInput {
   mode: "document" | "goal_only";
@@ -174,7 +178,12 @@ export function useLearningWorkspaceController({
   const followUpTimerRef = useRef<Map<string, number>>(new Map());
   const followUpInFlightRef = useRef<Set<string>>(new Set());
   const interruptedDialogueSessionIdRef = useRef("");
-  const studySessionRef = useRef<StudySessionRecord | null>(state.studySession);
+  const studyViewFenceRef = useRef(
+    new StudyAsyncViewFence<StudySessionRecord>({
+      initialPlanId: initialPlan?.id,
+      session: state.studySession,
+    }),
+  );
   const restoredStudyOperationRef = useRef("");
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
   const planGenerationBlockedReason = resolvePlanGenerationBlockedReason({
@@ -210,6 +219,35 @@ export function useLearningWorkspaceController({
     state.studySession?.id && state.studySession.id === interruptedDialogueSessionId
   );
 
+  const transitionStudyView = (fieldTarget: string, clearSession = false) => {
+    studyViewFenceRef.current.transition(fieldTarget, clearSession);
+    restoredStudyOperationRef.current = "";
+    setChatFailure(null);
+  };
+
+  const activateStudySessionView = (session: StudySessionRecord) => {
+    if (studyViewFenceRef.current.activateSession(session)) {
+      restoredStudyOperationRef.current = "";
+      setChatFailure(null);
+    }
+  };
+
+  const beginStudyResponseTicket = (draft: StudyChatDraft): AsyncResultTicket =>
+    studyViewFenceRef.current.begin(
+      draft.sessionId,
+      draft.clientRequestId,
+    );
+
+  const isCurrentStudyResponseTicket = (
+    ticket: AsyncResultTicket,
+    resultOperationId = ticket.operationId,
+  ) =>
+    studyViewFenceRef.current.decide(
+      ticket,
+      selectedPlanIdRef.current,
+      resultOperationId,
+    ) === "apply";
+
   useEffect(() => {
     const persistedSessionId = readInterruptedDialogueSessionId();
     interruptedDialogueSessionIdRef.current = persistedSessionId;
@@ -222,7 +260,20 @@ export function useLearningWorkspaceController({
   }, [state.selectedPersonaId, state.selectedPlanId]);
 
   useEffect(() => {
-    studySessionRef.current = state.studySession;
+    const nextSession = state.studySession;
+    const previousSession = studyViewFenceRef.current.session;
+    if (
+      previousSession?.id !== nextSession?.id ||
+      previousSession?.studyUnitId !== nextSession?.studyUnitId
+    ) {
+      transitionStudyView(
+        nextSession
+          ? `study-session:${nextSession.id}:unit:${nextSession.studyUnitId}`
+          : `study-plan:${selectedPlanIdRef.current || "none"}`,
+        nextSession === null,
+      );
+    }
+    studyViewFenceRef.current.session = nextSession;
   }, [state.studySession]);
 
   const syncInterruptedDialogueSessionId = (sessionId: string) => {
@@ -346,6 +397,14 @@ export function useLearningWorkspaceController({
       currentSelectedPersonaId: selectedPersonaIdRef.current
     });
 
+    if (nextState.shouldResetStudySession) {
+      selectedPlanIdRef.current = nextState.selectedPlanId;
+      transitionStudyView(
+        `study-plan:${nextState.selectedPlanId || "none"}`,
+        true,
+      );
+    }
+
     dispatch({
       type: "snapshot_applied",
       personas: snapshot.personas,
@@ -401,6 +460,8 @@ export function useLearningWorkspaceController({
     if (!nextPlan || nextPlan.id === state.selectedPlanId) {
       return;
     }
+    selectedPlanIdRef.current = nextPlan.id;
+    transitionStudyView(`study-plan:${nextPlan.id}`, true);
     dispatch({
       type: "plan_selected",
       planId: nextPlan.id,
@@ -416,6 +477,8 @@ export function useLearningWorkspaceController({
   };
 
   const applyGeneratedPlan = (nextPlan: LearningPlan) => {
+    selectedPlanIdRef.current = nextPlan.id;
+    transitionStudyView(`study-plan:${nextPlan.id}`, true);
     dispatch({
       type: "generated_plan_applied",
       plan: nextPlan
@@ -479,6 +542,8 @@ export function useLearningWorkspaceController({
     planStreamIdRef.current = "";
     setIsInterruptingPlan(false);
     setIsGeneratingPlan(true);
+    selectedPlanIdRef.current = "";
+    transitionStudyView("study-plan:generating", true);
     dispatch({ type: "generation_started" });
     dispatch({ type: "busy_started" });
     setProcessStreamEvents([]);
@@ -610,6 +675,7 @@ export function useLearningWorkspaceController({
         taskCount: nextPlan.todayTasks.length
       });
       applyGeneratedPlan(nextPlan);
+      const generatedPlanViewRevision = studyViewFenceRef.current.viewRevision;
 
       try {
         const nextSession = await createInitialStudySession({
@@ -618,6 +684,13 @@ export function useLearningWorkspaceController({
           planId: nextPlan.id,
           personaId: selectedPersona.id
         });
+        if (
+          selectedPlanIdRef.current !== nextPlan.id ||
+          studyViewFenceRef.current.viewRevision !== generatedPlanViewRevision
+        ) {
+          return;
+        }
+        activateStudySessionView(nextSession);
         dispatch({
           type: "study_session_set",
           studySession: nextSession,
@@ -631,6 +704,12 @@ export function useLearningWorkspaceController({
               : PLAN_GENERATED_NOTICE
         });
       } catch (sessionError) {
+        if (
+          selectedPlanIdRef.current !== nextPlan.id ||
+          studyViewFenceRef.current.viewRevision !== generatedPlanViewRevision
+        ) {
+          return;
+        }
         dispatch({
           type: "notice_set",
           notice: PLAN_GENERATED_SESSION_FAILED_NOTICE
@@ -671,6 +750,9 @@ export function useLearningWorkspaceController({
     if (!activePlan) {
       return;
     }
+    const targetPlanId = activePlan.id;
+    transitionStudyView(`study-plan:${targetPlanId}:session-create`, true);
+    const targetViewRevision = studyViewFenceRef.current.viewRevision;
     try {
       dispatch({ type: "busy_started" });
       const nextSession = await createStudySession(
@@ -684,6 +766,13 @@ export function useLearningWorkspaceController({
           sceneProfile: resolveActiveSceneProfile(),
         }
       );
+      if (
+        selectedPlanIdRef.current !== targetPlanId ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return;
+      }
+      activateStudySessionView(nextSession);
       dispatch({
         type: "study_session_set",
         studySession: nextSession,
@@ -694,6 +783,12 @@ export function useLearningWorkspaceController({
         notice: SESSION_CREATED_NOTICE
       });
     } catch (error) {
+      if (
+        selectedPlanIdRef.current !== targetPlanId ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return;
+      }
       dispatch({
         type: "notice_set",
         notice: resolveStudySessionErrorNotice(
@@ -748,6 +843,13 @@ export function useLearningWorkspaceController({
     try {
       dispatch({ type: "busy_started" });
       await deleteLearningPlanRequest(planId);
+      if (state.selectedPlanId === planId) {
+        selectedPlanIdRef.current = preferredPlanId;
+        transitionStudyView(
+          `study-plan:${preferredPlanId || "none"}`,
+          true,
+        );
+      }
       dispatch({
         type: "plan_deleted",
         planId,
@@ -874,7 +976,7 @@ export function useLearningWorkspaceController({
   };
 
   const applyChatExchange = (next: StudyChatResponse & { session: StudySessionRecord }) => {
-    studySessionRef.current = next.session;
+    activateStudySessionView(next.session);
     dispatch({
       type: "study_session_set",
       studySession: next.session,
@@ -889,76 +991,92 @@ export function useLearningWorkspaceController({
   const applyStudyChatOperation = (
     receipt: StudyChatOperationResponse,
     draft: StudyChatDraft,
+    ticket?: AsyncResultTicket,
   ): boolean => {
     const learnerOperation = draft.messageKind === "learner";
-    if (receipt.status === "committed" && receipt.result) {
-      const currentSession = studySessionRef.current;
-      if (currentSession?.id !== receipt.sessionId) {
-        setChatFailure({
-          ...draft,
-          detail: "本次回复已完成，但当前已切换到其他会话。请返回原会话查看结果。",
-          operationStatus: "committed",
-          canQuery: false,
-          canResend: false,
-          canRefreshSession: false,
+    try {
+      if (
+        ticket &&
+        !isCurrentStudyResponseTicket(ticket, receipt.clientRequestId)
+      ) {
+        if (learnerOperation && receipt.status === "committed") {
+          clearPendingStudyOperation(receipt);
+        }
+        logWorkspaceInfo("workflow:study_chat:stale_result_discarded", {
+          sessionId: receipt.sessionId,
+          clientRequestId: receipt.clientRequestId,
         });
+        return false;
+      }
+      if (receipt.status === "committed" && receipt.result) {
+        const currentSession = studyViewFenceRef.current.session;
+        if (currentSession?.id !== receipt.sessionId) {
+          if (learnerOperation) {
+            clearPendingStudyOperation(receipt);
+          }
+          return false;
+        }
+        if (currentSession.revision <= receipt.result.session.revision) {
+          applyChatExchange(receipt.result);
+        }
+        setChatFailure(null);
         if (learnerOperation) {
           clearPendingStudyOperation(receipt);
         }
-        return false;
+        return true;
       }
-      if (currentSession.revision <= receipt.result.session.revision) {
-        applyChatExchange(receipt.result);
-      }
-      setChatFailure(null);
-      if (learnerOperation) {
-        clearPendingStudyOperation(receipt);
-      }
-      return true;
-    }
 
-    const presentation = presentStudyChatOperation(receipt);
-    const canResend = presentation.canResend &&
-      draft.messageKind === "learner" &&
-      Boolean(draft.message.trim());
-    setChatFailure({
-      ...draft,
-      detail: presentation.canResend && !canResend
-        ? draft.messageKind === "learner"
-          ? "已确认本次请求没有写入会话。刷新后原消息或附件不可恢复，请重新填写后再发送。"
-          : "已确认这次自动消息没有写入会话；流程继续时会使用新的请求身份安全重试。"
-        : presentation.detail,
-      operationStatus: receipt.status,
-      canQuery: presentation.canQuery,
-      canResend,
-      canRefreshSession: false,
-    });
-    if (learnerOperation) {
-      if (receipt.status === "not_committed") {
-        clearPendingStudyOperation(receipt);
-      } else {
-        persistPendingStudyOperation(draft);
+      const presentation = presentStudyChatOperation(receipt);
+      const canResend = presentation.canResend &&
+        draft.messageKind === "learner" &&
+        Boolean(draft.message.trim());
+      setChatFailure({
+        ...draft,
+        detail: presentation.canResend && !canResend
+          ? draft.messageKind === "learner"
+            ? "已确认本次请求没有写入会话。刷新后原消息或附件不可恢复，请重新填写后再发送。"
+            : "已确认这次自动消息没有写入会话；流程继续时会使用新的请求身份安全重试。"
+          : presentation.detail,
+        operationStatus: receipt.status,
+        canQuery: presentation.canQuery,
+        canResend,
+        canRefreshSession: false,
+      });
+      if (learnerOperation) {
+        if (receipt.status === "not_committed") {
+          clearPendingStudyOperation(receipt);
+        } else {
+          persistPendingStudyOperation(draft);
+        }
+      }
+      return false;
+    } finally {
+      if (ticket) {
+        studyViewFenceRef.current.settle(ticket);
       }
     }
-    return false;
   };
 
   const queryStudyChatOperation = async () => {
     if (!chatFailure?.canQuery) {
       return false;
     }
+    const ticket = beginStudyResponseTicket(chatFailure);
     try {
       dispatch({ type: "busy_started" });
       const receipt = await getStudyChatOperation({
         sessionId: chatFailure.sessionId,
         clientRequestId: chatFailure.clientRequestId,
       });
-      const applied = applyStudyChatOperation(receipt, chatFailure);
+      const applied = applyStudyChatOperation(receipt, chatFailure, ticket);
       if (applied) {
         dispatch({ type: "notice_set", notice: "已找回并载入本次回复。" });
       }
       return applied;
     } catch (error) {
+      if (!isCurrentStudyResponseTicket(ticket)) {
+        return false;
+      }
       if (isMissingStudyChatOperationError(error)) {
         clearPendingStudyOperation(chatFailure);
         setChatFailure((current) => current ? {
@@ -988,6 +1106,7 @@ export function useLearningWorkspaceController({
       logWorkspaceError("workflow:study_chat:operation_query_error", error);
       return false;
     } finally {
+      studyViewFenceRef.current.settle(ticket);
       dispatch({ type: "busy_finished" });
     }
   };
@@ -999,6 +1118,10 @@ export function useLearningWorkspaceController({
       !session ||
       !pending ||
       pending.sessionId !== session.id ||
+      Boolean(
+        pending.studyUnitId &&
+        pending.studyUnitId !== session.studyUnitId
+      ) ||
       restoredStudyOperationRef.current === pending.clientRequestId
     ) {
       return;
@@ -1019,11 +1142,15 @@ export function useLearningWorkspaceController({
       canResend: false,
       canRefreshSession: false,
     });
+    const ticket = beginStudyResponseTicket(restoredDraft);
     void (async () => {
       try {
         const receipt = await getStudyChatOperation(pending);
-        applyStudyChatOperation(receipt, restoredDraft);
+        applyStudyChatOperation(receipt, restoredDraft, ticket);
       } catch (error) {
+        if (!isCurrentStudyResponseTicket(ticket)) {
+          return;
+        }
         if (isMissingStudyChatOperationError(error)) {
           clearPendingStudyOperation(pending);
           setChatFailure((current) => current ? {
@@ -1043,9 +1170,11 @@ export function useLearningWorkspaceController({
           canRefreshSession: false,
         } : current);
         logWorkspaceError("workflow:study_chat:operation_restore_error", error);
+      } finally {
+        studyViewFenceRef.current.settle(ticket);
       }
     })();
-  }, [state.studySession?.id]);
+  }, [state.studySession?.id, state.studySession?.studyUnitId]);
 
   const sendHiddenSessionMessage = async (input: {
     session: StudySessionRecord;
@@ -1067,6 +1196,7 @@ export function useLearningWorkspaceController({
       followUpId: input.followUpId,
     };
     persistPendingStudyOperation(draft);
+    const ticket = beginStudyResponseTicket(draft);
     let next: StudyChatOperationResponse;
     try {
       next = input.queryExisting
@@ -1083,6 +1213,11 @@ export function useLearningWorkspaceController({
             followUpId: input.followUpId,
           });
     } catch (error) {
+      if (!isCurrentStudyResponseTicket(ticket)) {
+        studyViewFenceRef.current.settle(ticket);
+        return null;
+      }
+      studyViewFenceRef.current.settle(ticket);
       if (isDefiniteStudyChatPreAdmissionError(error)) {
         clearPendingStudyOperation(draft);
         forgetAutomaticStudyRequestId(
@@ -1115,7 +1250,8 @@ export function useLearningWorkspaceController({
         input.operationKey,
       );
     }
-    if (!applyStudyChatOperation(next, draft)) {
+    const shouldApply = isCurrentStudyResponseTicket(ticket, next.clientRequestId);
+    if (!applyStudyChatOperation(next, draft, ticket) && shouldApply) {
       throw new Error(`study_chat_operation_${next.status}`);
     }
     return next;
@@ -1183,9 +1319,28 @@ export function useLearningWorkspaceController({
       return null;
     }
 
-    let workingSession = state.studySession;
+    const targetPlanId = activePlan.id;
+    const currentSessionAtStart = studyViewFenceRef.current.session;
+    if (
+      currentSessionAtStart?.planId !== targetPlanId ||
+      currentSessionAtStart.studyUnitId !== studyUnitId
+    ) {
+      transitionStudyView(
+        `study-plan:${targetPlanId}:unit:${studyUnitId}`,
+        false,
+      );
+    }
+    const targetViewRevision = studyViewFenceRef.current.viewRevision;
+
+    let workingSession = studyViewFenceRef.current.session;
     if (!workingSession) {
       workingSession = await fetchLatestSessionForPlan();
+      if (
+        selectedPlanIdRef.current !== targetPlanId ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return null;
+      }
     }
 
     const activeSceneProfile = resolveActiveSceneProfile();
@@ -1206,12 +1361,19 @@ export function useLearningWorkspaceController({
       });
     }
 
+    if (
+      selectedPlanIdRef.current !== targetPlanId ||
+      studyViewFenceRef.current.viewRevision !== targetViewRevision
+    ) {
+      return null;
+    }
+
+    activateStudySessionView(workingSession);
     dispatch({
       type: "study_session_set",
       studySession: workingSession,
       clearResponse: options.clearResponseOnSwitch ?? true,
     });
-    studySessionRef.current = workingSession;
     return workingSession;
   };
 
@@ -1252,6 +1414,7 @@ export function useLearningWorkspaceController({
       hiddenMessagePrefix,
     };
     persistPendingStudyOperation(draft);
+    const ticket = beginStudyResponseTicket(draft);
     try {
       dispatch({ type: "busy_started" });
       logWorkspaceInfo("workflow:study_chat:start", {
@@ -1267,12 +1430,18 @@ export function useLearningWorkspaceController({
         hiddenMessagePrefix: draft.hiddenMessagePrefix,
         attachments: draft.attachments,
       });
-      const applied = applyStudyChatOperation(next, draft);
+      const shouldApply = isCurrentStudyResponseTicket(
+        ticket,
+        next.clientRequestId,
+      );
+      const applied = applyStudyChatOperation(next, draft, ticket);
       if (!applied) {
-        dispatch({
-          type: "notice_set",
-          notice: presentStudyChatOperation(next).detail,
-        });
+        if (shouldApply) {
+          dispatch({
+            type: "notice_set",
+            notice: presentStudyChatOperation(next).detail,
+          });
+        }
         return false;
       }
       clearInterruptedDialogueState(targetSession.id);
@@ -1283,6 +1452,9 @@ export function useLearningWorkspaceController({
       });
       return true;
     } catch (error) {
+      if (!isCurrentStudyResponseTicket(ticket)) {
+        return false;
+      }
       if (isDefiniteStudyChatPreAdmissionError(error)) {
         clearPendingStudyOperation(draft);
         setChatFailure({
@@ -1316,6 +1488,7 @@ export function useLearningWorkspaceController({
       logWorkspaceError("workflow:study_chat:error", error);
       return false;
     } finally {
+      studyViewFenceRef.current.settle(ticket);
       dispatch({ type: "busy_finished" });
     }
   };
@@ -1503,7 +1676,7 @@ export function useLearningWorkspaceController({
     turnId: string;
     submittedAnswer: string;
   }) => {
-    const currentSession = studySessionRef.current;
+    const currentSession = studyViewFenceRef.current.session;
     if (!currentSession) {
       return false;
     }
@@ -1522,7 +1695,7 @@ export function useLearningWorkspaceController({
         submittedAnswer: input.submittedAnswer,
       });
       const nextSession = committed.session;
-      const latestSession = studySessionRef.current;
+      const latestSession = studyViewFenceRef.current.session;
       const applyDecision = decideStudyQuestionAttemptApply({
         before: currentSession,
         after: nextSession,
@@ -1535,7 +1708,7 @@ export function useLearningWorkspaceController({
         throw new Error("study_question_attempt_read_back_mismatch");
       }
       if (applyDecision === "apply_returned") {
-        studySessionRef.current = nextSession;
+        activateStudySessionView(nextSession);
         dispatch({
           type: "study_session_set",
           studySession: nextSession,
@@ -1576,17 +1749,26 @@ export function useLearningWorkspaceController({
     decision: "approve" | "reject";
     note?: string;
   }) => {
-    if (!state.studySession) {
+    const targetSession = studyViewFenceRef.current.session;
+    if (!targetSession) {
       return false;
     }
+    const targetViewRevision = studyViewFenceRef.current.viewRevision;
     try {
       dispatch({ type: "busy_started" });
       const next = await resolveStudyPlanConfirmation({
-        sessionId: state.studySession.id,
+        sessionId: targetSession.id,
         confirmationId: input.confirmationId,
         decision: input.decision,
         note: input.note,
       });
+      if (
+        studyViewFenceRef.current.session?.id !== targetSession.id ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return false;
+      }
+      activateStudySessionView(next.session);
       dispatch({
         type: "study_session_set",
         studySession: next.session,
@@ -1604,6 +1786,12 @@ export function useLearningWorkspaceController({
       });
       return true;
     } catch (error) {
+      if (
+        studyViewFenceRef.current.session?.id !== targetSession.id ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return false;
+      }
       dispatch({
         type: "notice_set",
         notice: resolveStudySessionErrorNotice(
@@ -1620,7 +1808,7 @@ export function useLearningWorkspaceController({
   };
 
   const interruptDialogue = async () => {
-    const session = state.studySession;
+    const session = studyViewFenceRef.current.session;
     if (!session) {
       dispatch({
         type: "notice_set",
@@ -1647,11 +1835,19 @@ export function useLearningWorkspaceController({
       return true;
     }
     clearPendingFollowUpTimers(pendingFollowUpIds);
+    const targetViewRevision = studyViewFenceRef.current.viewRevision;
     try {
       dispatch({ type: "busy_started" });
       const nextSession = await cancelStudySessionFollowUps({
         sessionId: session.id,
       });
+      if (
+        studyViewFenceRef.current.session?.id !== session.id ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return false;
+      }
+      activateStudySessionView(nextSession);
       dispatch({
         type: "study_session_set",
         studySession: nextSession,
@@ -1664,6 +1860,12 @@ export function useLearningWorkspaceController({
       });
       return true;
     } catch (error) {
+      if (
+        studyViewFenceRef.current.session?.id !== session.id ||
+        studyViewFenceRef.current.viewRevision !== targetViewRevision
+      ) {
+        return false;
+      }
       dispatch({
         type: "notice_set",
         notice: resolveStudySessionErrorNotice(
@@ -1779,6 +1981,9 @@ export function useLearningWorkspaceController({
         const latest = await fetchLatestSessionForPlan();
         if (!active) {
           return;
+        }
+        if (latest) {
+          activateStudySessionView(latest);
         }
         dispatch({
           type: "study_session_set",
@@ -1912,10 +2117,11 @@ export function useLearningWorkspaceController({
 
   const refreshStudySessionAfterRejectedAdmission = async () => {
     const failure = chatFailure;
-    const currentSession = studySessionRef.current;
+    const currentSession = studyViewFenceRef.current.session;
     if (!failure?.canRefreshSession || !currentSession) {
       return false;
     }
+    const ticket = beginStudyResponseTicket(failure);
     try {
       dispatch({ type: "busy_started" });
       const sessions = await listStudySessions({
@@ -1924,11 +2130,17 @@ export function useLearningWorkspaceController({
         personaId: currentSession.personaId,
         studyUnitId: currentSession.studyUnitId,
       });
+      if (!isCurrentStudyResponseTicket(ticket)) {
+        return false;
+      }
       const refreshed = sessions.find((item) => item.id === currentSession.id) ?? null;
       clearPendingStudyOperation(failure);
       setChatFailure(null);
       if (!refreshed) {
-        studySessionRef.current = null;
+        transitionStudyView(
+          `study-plan:${selectedPlanIdRef.current || "none"}`,
+          true,
+        );
         dispatch({
           type: "study_session_set",
           studySession: null,
@@ -1940,7 +2152,7 @@ export function useLearningWorkspaceController({
         });
         return false;
       }
-      studySessionRef.current = refreshed;
+      activateStudySessionView(refreshed);
       dispatch({
         type: "study_session_set",
         studySession: refreshed,
@@ -1952,6 +2164,9 @@ export function useLearningWorkspaceController({
       });
       return true;
     } catch (error) {
+      if (!isCurrentStudyResponseTicket(ticket)) {
+        return false;
+      }
       setChatFailure((current) => current ? {
         ...current,
         detail: "刷新会话状态失败，草稿仍保留。请稍后重试刷新。",
@@ -1963,6 +2178,7 @@ export function useLearningWorkspaceController({
       logWorkspaceError("workflow:study_chat:refresh_after_rejection_error", error);
       return false;
     } finally {
+      studyViewFenceRef.current.settle(ticket);
       dispatch({ type: "busy_finished" });
     }
   };

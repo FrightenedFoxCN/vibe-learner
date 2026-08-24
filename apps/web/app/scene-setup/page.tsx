@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, SetStateAction } from "react";
 import type { ModelRecovery, SceneProfile } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
@@ -21,6 +21,11 @@ import {
   type SceneLibraryItemPayload,
   updateSceneLibraryItem,
 } from "../../lib/data/scenes";
+import {
+  applyAsyncResult,
+  AsyncResultFence,
+  type AsyncResultScope,
+} from "../../lib/async-result-fence";
 
 interface SceneObject {
   id: string;
@@ -303,11 +308,59 @@ export default function SceneSetupPage() {
     mode: "keywords" | "long_text";
   } | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const sceneDraftRevisionRef = useRef(0);
+  const sceneSubjectIdRef = useRef("scene-editor:local");
+  const selectedLayerIdRef = useRef(INITIAL_SCENE[0]?.id ?? "");
+  const selectedObjectIdRef = useRef("");
+  const activeSceneFieldTargetRef = useRef(
+    `scene-layer:${INITIAL_SCENE[0]?.id ?? "none"}`,
+  );
+  const rewriteFenceRef = useRef(new AsyncResultFence());
+  const sceneGenerationFenceRef = useRef(new AsyncResultFence());
+  const sceneImportFenceRef = useRef(new AsyncResultFence());
 
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
   const [collapsedNodeEditorSectionsByLayer, setCollapsedNodeEditorSectionsByLayer] = useState<Record<string, string[]>>({});
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const [isCompactLayout, setIsCompactLayout] = useState(false);
+
+  function currentSceneAsyncScope(fieldTarget = activeSceneFieldTargetRef.current): AsyncResultScope {
+    return {
+      subjectId: sceneSubjectIdRef.current,
+      draftRevision: sceneDraftRevisionRef.current,
+      fieldTarget,
+    };
+  }
+
+  function updateSceneLayersState(next: SetStateAction<SceneLayer[]>): void {
+    sceneDraftRevisionRef.current += 1;
+    setSceneLayers(next);
+  }
+
+  function updateSceneGenerationInput(update: () => void): void {
+    sceneDraftRevisionRef.current += 1;
+    update();
+  }
+
+  function selectSceneLayer(layerId: string): void {
+    rewriteFenceRef.current.invalidate();
+    setRewritePendingKey("");
+    selectedLayerIdRef.current = layerId;
+    selectedObjectIdRef.current = "";
+    activeSceneFieldTargetRef.current = `scene-layer:${layerId || "none"}`;
+    setSelectedObjectId("");
+    setSelectedLayerId(layerId);
+  }
+
+  function selectSceneObject(objectId: string): void {
+    rewriteFenceRef.current.invalidate();
+    setRewritePendingKey("");
+    selectedLayerIdRef.current = "";
+    selectedObjectIdRef.current = objectId;
+    activeSceneFieldTargetRef.current = `scene-object:${objectId || "none"}`;
+    setSelectedLayerId("");
+    setSelectedObjectId(objectId);
+  }
 
   const selectedLayer = useMemo(() => findLayerById(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
   const selectedObjectTarget = useMemo(
@@ -381,13 +434,13 @@ export default function SceneSetupPage() {
 
   useEffect(() => {
     if (selectedLayerId && !selectedLayer && sceneLayers[0]?.id) {
-      setSelectedLayerId(sceneLayers[0].id);
+      selectSceneLayer(sceneLayers[0].id);
     }
   }, [sceneLayers, selectedLayer, selectedLayerId]);
 
   useEffect(() => {
     if (selectedObjectId && !selectedObjectTarget) {
-      setSelectedObjectId("");
+      selectSceneObject("");
     }
   }, [selectedObjectId, selectedObjectTarget]);
 
@@ -531,22 +584,40 @@ export default function SceneSetupPage() {
     };
   }, [sceneLayers, sceneName, sceneSummary, selectedLayerId, collapsedLayerIds]);
 
-  function applySceneImport(imported: SceneImportPayload, message: string) {
+  function applySceneImport(
+    imported: SceneImportPayload,
+    message: string,
+    subjectId = "scene-editor:local",
+  ) {
     const knownIds = new Set(collectLayerIds(imported.sceneLayers));
+    const nextSelectedLayerId =
+      imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
+        ? imported.selectedLayerId
+        : imported.sceneLayers[0]?.id ?? "";
+    sceneDraftRevisionRef.current += 1;
+    sceneSubjectIdRef.current = subjectId;
+    selectedLayerIdRef.current = nextSelectedLayerId;
+    selectedObjectIdRef.current = "";
+    activeSceneFieldTargetRef.current = `scene-layer:${nextSelectedLayerId || "none"}`;
+    rewriteFenceRef.current.invalidate();
+    sceneGenerationFenceRef.current.invalidate();
+    setRewritePendingKey("");
+    setSceneGeneratePending(null);
+    setGeneratedSceneCandidate(null);
+    setSceneGenerateError("");
+    setSceneGenerateMessage("");
+    setSceneGenerateModelRecoveries([]);
     setSceneLayers(imported.sceneLayers);
     setSceneName(String(imported.sceneName || ""));
     setSceneSummary(String(imported.sceneSummary || ""));
-    setSelectedLayerId(
-      imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
-        ? imported.selectedLayerId
-        : imported.sceneLayers[0]?.id ?? ""
-    );
+    setSelectedLayerId(nextSelectedLayerId);
+    setSelectedObjectId("");
     setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
     setSceneIoMessage(message);
   }
 
   function updateLayer(targetId: string, updater: (layer: SceneLayer) => SceneLayer) {
-    setSceneLayers((current) => updateLayerTree(current, targetId, updater));
+    updateSceneLayersState((current) => updateLayerTree(current, targetId, updater));
   }
 
   function parseTagList(text: string) {
@@ -665,7 +736,7 @@ export default function SceneSetupPage() {
   }
 
   function addChildLayer(parentId: string) {
-    setSceneLayers((current) =>
+    updateSceneLayersState((current) =>
       updateLayerTree(current, parentId, (layer) => ({
         ...layer,
         children: [
@@ -686,8 +757,7 @@ export default function SceneSetupPage() {
       ...layer,
       objects: [...layer.objects, newObject]
     }));
-    setSelectedLayerId("");
-    setSelectedObjectId(newObject.id);
+    selectSceneObject(newObject.id);
     const targetId = `scene-object-editor-${layerId}-${newObject.id}`;
     globalThis.setTimeout(() => {
       const target = document.getElementById(targetId);
@@ -706,7 +776,7 @@ export default function SceneSetupPage() {
 
   function removeObject(layerId: string, objectId: string) {
     if (selectedObjectId === objectId) {
-      setSelectedObjectId("");
+      selectSceneObject("");
     }
     updateLayer(layerId, (layer) => ({
       ...layer,
@@ -715,7 +785,7 @@ export default function SceneSetupPage() {
   }
 
   function removeLayer(layerId: string) {
-    setSceneLayers((current) => {
+    updateSceneLayersState((current) => {
       if (!canDeleteLayerSafely(current, layerId)) {
         return current;
       }
@@ -816,7 +886,11 @@ export default function SceneSetupPage() {
         selectedLayerId: target.selectedLayerId,
         collapsedLayerIds: target.collapsedLayerIds,
       });
-      applySceneImport(imported, `已载入场景”${target.sceneName}”。`);
+      applySceneImport(
+        imported,
+        `已载入场景”${target.sceneName}”。`,
+        `scene-library:${target.sceneId}`,
+      );
       setSelectedSavedSceneId(target.sceneId);
     } catch {
       setSceneIoMessage(`载入场景”${target.sceneName}”时数据格式异常。`);
@@ -878,19 +952,41 @@ export default function SceneSetupPage() {
     if (!file) {
       return;
     }
+    const fieldTarget = "scene-file-import";
+    const ticket = sceneImportFenceRef.current.begin(
+      currentSceneAsyncScope(fieldTarget),
+    );
     try {
       const content = await file.text();
       const parsed = JSON.parse(content);
       const imported = parseSceneImportPayload(parsed);
-      applySceneImport(imported, "场景导入成功。");
+      const decision = applyAsyncResult({
+        fence: sceneImportFenceRef.current,
+        ticket,
+        currentScope: currentSceneAsyncScope(fieldTarget),
+        value: imported,
+        apply: (next) => applySceneImport(next, "场景导入成功。"),
+      });
+      if (decision !== "apply") {
+        return;
+      }
     } catch {
-      setSceneIoMessage("导入失败：文件格式不正确。");
+      if (
+        sceneImportFenceRef.current.decide(
+          ticket,
+          currentSceneAsyncScope(fieldTarget),
+        ) === "apply"
+      ) {
+        setSceneIoMessage("导入失败：文件格式不正确。");
+      }
     } finally {
+      sceneImportFenceRef.current.settle(ticket);
       event.target.value = "";
     }
   }
 
   async function handleGenerateScene(mode: "keywords" | "long_text") {
+    const requestScope = currentSceneAsyncScope("scene-generation-candidate");
     let inputText = "";
     if (mode === "keywords") {
       inputText = sceneKeywordInput.trim();
@@ -925,6 +1021,17 @@ export default function SceneSetupPage() {
     setSceneGenerateMessage("");
     setSceneGenerateModelRecoveries([]);
     setSceneGeneratePending(mode);
+    const ticket = sceneGenerationFenceRef.current.begin(requestScope);
+    if (
+      sceneGenerationFenceRef.current.decide(
+        ticket,
+        currentSceneAsyncScope("scene-generation-candidate"),
+      ) !== "apply"
+    ) {
+      sceneGenerationFenceRef.current.settle(ticket);
+      setSceneGeneratePending(null);
+      return;
+    }
     try {
       const result = await generateSceneTree({
         mode,
@@ -938,6 +1045,14 @@ export default function SceneSetupPage() {
         selectedLayerId: result.selectedLayerId,
         collapsedLayerIds: [],
       });
+      if (
+        sceneGenerationFenceRef.current.decide(
+          ticket,
+          currentSceneAsyncScope("scene-generation-candidate"),
+        ) !== "apply"
+      ) {
+        return;
+      }
       setGeneratedSceneCandidate({
         ...imported,
         usedModel: result.usedModel,
@@ -949,9 +1064,18 @@ export default function SceneSetupPage() {
         `已生成 ${countSceneNodes(imported.sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer)))} 个节点。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
       );
     } catch (error) {
-      setSceneGenerateError(String(error));
+      if (
+        sceneGenerationFenceRef.current.decide(
+          ticket,
+          currentSceneAsyncScope("scene-generation-candidate"),
+        ) === "apply"
+      ) {
+        setSceneGenerateError(String(error));
+      }
     } finally {
-      setSceneGeneratePending(null);
+      if (sceneGenerationFenceRef.current.settle(ticket)) {
+        setSceneGeneratePending(null);
+      }
     }
   }
 
@@ -974,9 +1098,11 @@ export default function SceneSetupPage() {
     }
 
     const pendingKey = `${layerId}:${field}`;
+    activeSceneFieldTargetRef.current = pendingKey;
     setRewriteError("");
     setRewriteModelRecoveries([]);
     setRewritePendingKey(pendingKey);
+    const ticket = rewriteFenceRef.current.begin(currentSceneAsyncScope());
     try {
       const previousValue = layer[field];
       const result = await assistPersonaSlot({
@@ -992,6 +1118,9 @@ export default function SceneSetupPage() {
         },
         rewriteStrength: Number(rewriteStrength.toFixed(2))
       });
+      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) !== "apply") {
+        return;
+      }
       updateLayer(layerId, (currentLayer) => ({
         ...currentLayer,
         [field]: result.slot.content
@@ -1006,9 +1135,13 @@ export default function SceneSetupPage() {
         previousValue
       });
     } catch (error) {
-      setRewriteError(String(error));
+      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) === "apply") {
+        setRewriteError(String(error));
+      }
     } finally {
-      setRewritePendingKey("");
+      if (rewriteFenceRef.current.settle(ticket)) {
+        setRewritePendingKey("");
+      }
     }
   }
 
@@ -1025,9 +1158,11 @@ export default function SceneSetupPage() {
     }
 
     const pendingKey = `${layerId}:${objectId}:${field}`;
+    activeSceneFieldTargetRef.current = pendingKey;
     setRewriteError("");
     setRewriteModelRecoveries([]);
     setRewritePendingKey(pendingKey);
+    const ticket = rewriteFenceRef.current.begin(currentSceneAsyncScope());
     try {
       const previousValue = object[field];
       const result = await assistPersonaSlot({
@@ -1043,6 +1178,9 @@ export default function SceneSetupPage() {
         },
         rewriteStrength: Number(rewriteStrength.toFixed(2))
       });
+      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) !== "apply") {
+        return;
+      }
       updateObject(layerId, objectId, field, result.slot.content);
       setRewriteModelRecoveries(result.modelRecoveries ?? []);
       setLastRewrite({
@@ -1055,9 +1193,13 @@ export default function SceneSetupPage() {
         previousValue
       });
     } catch (error) {
-      setRewriteError(String(error));
+      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) === "apply") {
+        setRewriteError(String(error));
+      }
     } finally {
-      setRewritePendingKey("");
+      if (rewriteFenceRef.current.settle(ticket)) {
+        setRewritePendingKey("");
+      }
     }
   }
 
@@ -1085,18 +1227,15 @@ export default function SceneSetupPage() {
   }
 
   function toggleLayerEditor(layerId: string) {
-    setSelectedObjectId("");
-    setSelectedLayerId((current) => (current === layerId ? "" : layerId));
+    selectSceneLayer(selectedLayerIdRef.current === layerId ? "" : layerId);
   }
 
   function toggleObjectEditor(objectId: string) {
-    setSelectedLayerId("");
-    setSelectedObjectId((current) => (current === objectId ? "" : objectId));
+    selectSceneObject(selectedObjectIdRef.current === objectId ? "" : objectId);
   }
 
   function handleSelectLayer(layerId: string) {
-    setSelectedObjectId("");
-    setSelectedLayerId(layerId);
+    selectSceneLayer(layerId);
   }
 
   function renderSelectedLayerEditor(): ReactNode {
@@ -1157,7 +1296,7 @@ export default function SceneSetupPage() {
                 pendingKey={rewritePendingKey}
                 lastRewrite={lastRewrite}
                 rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={setRewriteStrength}
+                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
                 onRewrite={() => void rewriteLayerField(selectedLayer.id, "summary", "层级总述")}
                 onUndo={undoLastRewrite}
               />
@@ -1178,7 +1317,7 @@ export default function SceneSetupPage() {
                 pendingKey={rewritePendingKey}
                 lastRewrite={lastRewrite}
                 rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={setRewriteStrength}
+                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
                 onRewrite={() => void rewriteLayerField(selectedLayer.id, "atmosphere", "氛围与感知")}
                 onUndo={undoLastRewrite}
               />
@@ -1199,7 +1338,7 @@ export default function SceneSetupPage() {
                 pendingKey={rewritePendingKey}
                 lastRewrite={lastRewrite}
                 rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={setRewriteStrength}
+                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
                 onRewrite={() => void rewriteLayerField(selectedLayer.id, "entrance", "进入方式 / 过渡")}
                 onUndo={undoLastRewrite}
               />
@@ -1220,7 +1359,7 @@ export default function SceneSetupPage() {
                 pendingKey={rewritePendingKey}
                 lastRewrite={lastRewrite}
                 rewriteStrength={rewriteStrength}
-                onRewriteStrengthChange={setRewriteStrength}
+                onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
                 onRewrite={() => void rewriteLayerField(selectedLayer.id, "rules", "层级规则")}
                 onUndo={undoLastRewrite}
               />
@@ -1270,7 +1409,7 @@ export default function SceneSetupPage() {
                     pendingKey={rewritePendingKey}
                     lastRewrite={lastRewrite}
                     rewriteStrength={rewriteStrength}
-                    onRewriteStrengthChange={setRewriteStrength}
+                    onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
                     onRewrite={() => void rewriteObjectField(layerId, object.id, "description", "物体外观与说明")}
                     onUndo={undoLastRewrite}
                   />
@@ -1291,7 +1430,7 @@ export default function SceneSetupPage() {
                     pendingKey={rewritePendingKey}
                     lastRewrite={lastRewrite}
                     rewriteStrength={rewriteStrength}
-                    onRewriteStrengthChange={setRewriteStrength}
+                    onRewriteStrengthChange={(value) => updateSceneGenerationInput(() => setRewriteStrength(value))}
                     onRewrite={() => void rewriteObjectField(layerId, object.id, "interaction", "物体交互方式")}
                     onUndo={undoLastRewrite}
                   />
@@ -1446,7 +1585,7 @@ export default function SceneSetupPage() {
                 <input
                   style={styles.sceneNameInput}
                   value={sceneName}
-                  onChange={(event) => setSceneName(event.target.value)}
+                  onChange={(event) => updateSceneGenerationInput(() => setSceneName(event.target.value))}
                   placeholder="例如：高一物理-力学基础"
                 />
               </label>
@@ -1455,7 +1594,7 @@ export default function SceneSetupPage() {
                 <textarea
                   style={styles.sceneSummaryInput}
                   value={sceneSummary}
-                  onChange={(event) => setSceneSummary(event.target.value)}
+                  onChange={(event) => updateSceneGenerationInput(() => setSceneSummary(event.target.value))}
                   placeholder="用自己的话描述这个场景。"
                 />
               </label>
@@ -1477,7 +1616,7 @@ export default function SceneSetupPage() {
                     min={1}
                     step={1}
                     value={sceneGenerateLayerCount}
-                    onChange={(event) => setSceneGenerateLayerCount(event.target.value)}
+                    onChange={(event) => updateSceneGenerationInput(() => setSceneGenerateLayerCount(event.target.value))}
                     placeholder="留空表示不限"
                   />
                 </label>
@@ -1486,14 +1625,14 @@ export default function SceneSetupPage() {
                     <button
                       type="button"
                       style={sceneGenerateMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => setSceneGenerateMode("keywords")}
+                      onClick={() => updateSceneGenerationInput(() => setSceneGenerateMode("keywords"))}
                     >
                       关键词搜索
                     </button>
                     <button
                       type="button"
                       style={sceneGenerateMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => setSceneGenerateMode("long_text")}
+                      onClick={() => updateSceneGenerationInput(() => setSceneGenerateMode("long_text"))}
                     >
                       长文本提取
                     </button>
@@ -1529,7 +1668,7 @@ export default function SceneSetupPage() {
                     <input
                       style={styles.input}
                       value={sceneKeywordInput}
-                      onChange={(event) => setSceneKeywordInput(event.target.value)}
+                      onChange={(event) => updateSceneGenerationInput(() => setSceneKeywordInput(event.target.value))}
                       placeholder="输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
                     />
                   </label>
@@ -1539,7 +1678,7 @@ export default function SceneSetupPage() {
                       type="file"
                       accept=".txt,.md,text/plain,text/markdown"
                       style={styles.fileInput}
-                      onChange={(event) => setSceneLongTextFile(event.target.files?.[0] ?? null)}
+                      onChange={(event) => updateSceneGenerationInput(() => setSceneLongTextFile(event.target.files?.[0] ?? null))}
                     />
                     {sceneLongTextFile ? <span style={styles.helperText}>{sceneLongTextFile.name}</span> : null}
                   </label>

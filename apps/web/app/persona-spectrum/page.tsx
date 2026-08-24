@@ -7,7 +7,8 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type DragEvent as ReactDragEvent
+  type DragEvent as ReactDragEvent,
+  type SetStateAction,
 } from "react";
 import type { CSSProperties } from "react";
 import {
@@ -45,6 +46,11 @@ import {
   listPersonaCards,
 } from "../../lib/data/persona-cards";
 import { broadcastPersonaLibraryUpdated } from "../../lib/persona-library-sync";
+import {
+  applyAsyncResult,
+  AsyncResultFence,
+  type AsyncResultScope,
+} from "../../lib/async-result-fence";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
   worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
@@ -122,6 +128,10 @@ export default function PersonaSpectrumPage() {
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const selectedPersonaIdRef = useRef("");
+  const draftRevisionRef = useRef(0);
+  const assistFenceRef = useRef(new AsyncResultFence());
+  const cardGenerationFenceRef = useRef(new AsyncResultFence());
+  const configImportFenceRef = useRef(new AsyncResultFence());
 
   const [draft, setDraft] = useState<PersonaDraft>(EMPTY_DRAFT);
   const [savingPersona, setSavingPersona] = useState(false);
@@ -171,6 +181,51 @@ export default function PersonaSpectrumPage() {
   const [personaLibraryMessage, setPersonaLibraryMessage] = useState("");
   const [personaLibraryError, setPersonaLibraryError] = useState("");
   const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
+
+  function currentPersonaSubject(): string {
+    return selectedPersonaIdRef.current || "persona-draft:new";
+  }
+
+  function currentPersonaAsyncScope(fieldTarget: string): AsyncResultScope {
+    return {
+      subjectId: currentPersonaSubject(),
+      draftRevision: draftRevisionRef.current,
+      fieldTarget,
+    };
+  }
+
+  function updatePersonaDraft(next: SetStateAction<PersonaDraft>): void {
+    draftRevisionRef.current += 1;
+    setDraft(next);
+  }
+
+  function selectPersonaDraft(personaId: string): void {
+    const normalizedPersonaId = personaId.trim();
+    if (selectedPersonaIdRef.current !== normalizedPersonaId) {
+      draftRevisionRef.current += 1;
+      assistFenceRef.current.invalidate();
+      cardGenerationFenceRef.current.invalidate();
+      setAssistPending(false);
+      setSlotAssistIndex(null);
+      setCardActionPending(null);
+      setGeneratedCards([]);
+      setGeneratedPersonaMeta({
+        summary: "",
+        relationship: "",
+        learnerAddress: "",
+      });
+      setCardMessage("");
+      setCardError("");
+      setCardModelRecoveries([]);
+    }
+    selectedPersonaIdRef.current = normalizedPersonaId;
+    setSelectedPersonaId(normalizedPersonaId);
+  }
+
+  function updatePersonaAssistInput(update: () => void): void {
+    draftRevisionRef.current += 1;
+    update();
+  }
 
   useEffect(() => {
     selectedPersonaIdRef.current = selectedPersonaId;
@@ -222,8 +277,8 @@ export default function PersonaSpectrumPage() {
         setPersonaCards(cardList);
         const initialPersona = personaList[0];
         if (initialPersona && !selectedPersonaIdRef.current) {
-          setSelectedPersonaId(initialPersona.id);
-          setDraft(personaToDraft(initialPersona));
+          selectPersonaDraft(initialPersona.id);
+          updatePersonaDraft(personaToDraft(initialPersona));
         }
       } catch (error) {
         if (!cancelled) setLoadError(String(error));
@@ -236,7 +291,7 @@ export default function PersonaSpectrumPage() {
   useEffect(() => {
     const selectedPersona = personas.find((p) => p.id === selectedPersonaId);
     if (!selectedPersona) return;
-    setDraft(personaToDraft(selectedPersona));
+    updatePersonaDraft(personaToDraft(selectedPersona));
     setSystemPromptSuggestion("");
     setSystemPromptSuggestionSource("");
   }, [selectedPersonaId, personas]);
@@ -390,12 +445,12 @@ export default function PersonaSpectrumPage() {
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
     if (assistError) setAssistError("");
-    setDraft((prev) => ({ ...prev, [key]: value }));
+    updatePersonaDraft((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleAddSlot(kind: PersonaSlotKind | string) {
     const label = PERSONA_SLOT_KIND_LABELS[kind as PersonaSlotKind] ?? kind;
-    setDraft((prev) => ({
+    updatePersonaDraft((prev) => ({
       ...prev,
       slots: [
         ...prev.slots,
@@ -412,7 +467,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function handleClearSlots() {
-    setDraft((prev) => ({ ...prev, slots: [] }));
+    updatePersonaDraft((prev) => ({ ...prev, slots: [] }));
     setExpandedSlotIndex(null);
     setDraggingSlotIndex(null);
     setSlotInsertIndex(null);
@@ -420,7 +475,7 @@ export default function PersonaSpectrumPage() {
 
   function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: PersonaSlot[keyof PersonaSlot]) {
     if (assistError) setAssistError("");
-    setDraft((prev) => {
+    updatePersonaDraft((prev) => {
       const next = [...prev.slots];
       let nextValue = value;
       if (field === "weight") {
@@ -433,7 +488,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function handleRemoveSlot(index: number) {
-    setDraft((prev) => ({ ...prev, slots: prev.slots.filter((_, i) => i !== index) }));
+    updatePersonaDraft((prev) => ({ ...prev, slots: prev.slots.filter((_, i) => i !== index) }));
   }
 
   function handleMoveSlot(index: number, direction: -1 | 1) {
@@ -441,7 +496,7 @@ export default function PersonaSpectrumPage() {
     if (target < 0 || target >= draft.slots.length) {
       return;
     }
-    setDraft((prev) => {
+    updatePersonaDraft((prev) => {
       const next = [...prev.slots];
       const temp = next[index];
       next[index] = next[target];
@@ -455,7 +510,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function handleSortSlotsByPriority() {
-    setDraft((prev) => ({
+    updatePersonaDraft((prev) => ({
       ...prev,
       slots: [...prev.slots]
         .sort((a, b) => {
@@ -473,7 +528,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function reorderSlots(fromIndex: number, insertIndex: number) {
-    setDraft((prev) => {
+    updatePersonaDraft((prev) => {
       if (fromIndex < 0 || insertIndex < 0 || fromIndex >= prev.slots.length || insertIndex > prev.slots.length) {
         return prev;
       }
@@ -552,7 +607,10 @@ export default function PersonaSpectrumPage() {
     }
     setAssistError("");
     setAssistModelRecoveries([]);
+    setAssistPending(false);
     setSlotAssistIndex(index);
+    const fieldTarget = `persona-slot:${index}`;
+    const ticket = assistFenceRef.current.begin(currentPersonaAsyncScope(fieldTarget));
     try {
       const result = await assistPersonaSlot({
         name: draft.name.trim(),
@@ -560,24 +618,34 @@ export default function PersonaSpectrumPage() {
         slot: targetSlot,
         rewriteStrength: Number((1 - retainRatio).toFixed(2))
       });
-      setDraft((prev) => {
+      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) !== "apply") {
+        return;
+      }
+      updatePersonaDraft((prev) => {
         const next = [...prev.slots];
         next[index] = result.slot;
         return { ...prev, slots: next };
       });
       setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
-      setAssistError(String(error));
+      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) === "apply") {
+        setAssistError(String(error));
+      }
     } finally {
-      setSlotAssistIndex(null);
+      if (assistFenceRef.current.settle(ticket)) {
+        setSlotAssistIndex(null);
+      }
     }
   }
 
   async function handleAssistSetting() {
     setAssistError("");
     setAssistModelRecoveries([]);
+    setSlotAssistIndex(null);
     setAssistPending(true);
     setIsRewritePopoverOpen(false);
+    const fieldTarget = "persona-setting";
+    const ticket = assistFenceRef.current.begin(currentPersonaAsyncScope(fieldTarget));
     try {
       const result = await assistPersonaSetting({
         name: draft.name.trim(),
@@ -585,7 +653,10 @@ export default function PersonaSpectrumPage() {
         slots: draft.slots,
         rewriteStrength: Number((1 - retainRatio).toFixed(2))
       });
-      setDraft((prev) => ({
+      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) !== "apply") {
+        return;
+      }
+      updatePersonaDraft((prev) => ({
         ...prev,
         slots: result.slots.length
           ? prev.slots.map((slot, index) => {
@@ -605,9 +676,13 @@ export default function PersonaSpectrumPage() {
       setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
       setAssistModelRecoveries(result.modelRecoveries ?? []);
     } catch (error) {
-      setAssistError(String(error));
+      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) === "apply") {
+        setAssistError(String(error));
+      }
     } finally {
-      setAssistPending(false);
+      if (assistFenceRef.current.settle(ticket)) {
+        setAssistPending(false);
+      }
     }
   }
 
@@ -622,8 +697,8 @@ export default function PersonaSpectrumPage() {
       const latest = await listPersonas();
       setPersonas(latest);
       broadcastPersonaLibraryUpdated();
-      setSelectedPersonaId(created.id);
-      setDraft(personaToDraft(created));
+      selectPersonaDraft(created.id);
+      updatePersonaDraft(personaToDraft(created));
       dismissSystemPromptSuggestion();
       setPersonaLibraryMessage(`已创建人格「${created.name}」。`);
       setPersonaLibraryError("");
@@ -648,8 +723,8 @@ export default function PersonaSpectrumPage() {
       const latest = await listPersonas();
       setPersonas(latest);
       broadcastPersonaLibraryUpdated();
-      setSelectedPersonaId(updated.id);
-      setDraft(personaToDraft(updated));
+      selectPersonaDraft(updated.id);
+      updatePersonaDraft(personaToDraft(updated));
       dismissSystemPromptSuggestion();
       setPersonaLibraryMessage(`已更新人格「${updated.name}」。`);
       setPersonaLibraryError("");
@@ -692,15 +767,36 @@ export default function PersonaSpectrumPage() {
     setConfigError(""); setConfigMessage("");
     const file = event.target.files?.[0];
     if (!file) return;
+    const fieldTarget = "persona-config-import";
+    const ticket = configImportFenceRef.current.begin(
+      currentPersonaAsyncScope(fieldTarget),
+    );
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       const normalized = normalizeImportedPersonaConfig(parsed);
-      setDraft(createInputToDraft(normalized));
+      const decision = applyAsyncResult({
+        fence: configImportFenceRef.current,
+        ticket,
+        currentScope: currentPersonaAsyncScope(fieldTarget),
+        value: createInputToDraft(normalized),
+        apply: updatePersonaDraft,
+      });
+      if (decision !== "apply") {
+        return;
+      }
       setConfigMessage("配置导入成功，已应用到当前编辑区。");
     } catch (error) {
-      setConfigError(`导入失败: ${String(error)}`);
+      if (
+        configImportFenceRef.current.decide(
+          ticket,
+          currentPersonaAsyncScope(fieldTarget),
+        ) === "apply"
+      ) {
+        setConfigError(`导入失败: ${String(error)}`);
+      }
     } finally {
+      configImportFenceRef.current.settle(ticket);
       event.target.value = "";
     }
   }
@@ -732,7 +828,7 @@ export default function PersonaSpectrumPage() {
     setCardMessage("");
     const baseDraft = clearBeforeBackfill ? clearDraftForGeneratedBackfill(draft) : draft;
     const insertion = buildDraftWithInsertedCards(baseDraft, generatedCards);
-    setDraft({
+    updatePersonaDraft({
       ...insertion.draft,
       summary: generatedPersonaMeta.summary || insertion.draft.summary,
       relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
@@ -763,7 +859,7 @@ export default function PersonaSpectrumPage() {
     setCardError("");
     setCardMessage("");
     const insertion = buildDraftWithInsertedCards(draft, cards, insertIndex);
-    setDraft({
+    updatePersonaDraft({
       ...insertion.draft,
       referenceHints: mergeReferenceHints(
         insertion.draft.referenceHints,
@@ -778,6 +874,7 @@ export default function PersonaSpectrumPage() {
   }
 
   async function handleGenerateCards(mode: "keywords" | "long_text") {
+    const requestScope = currentPersonaAsyncScope("persona-card-candidate");
     let inputText = "";
     if (mode === "keywords") {
       inputText = cardKeywordInput.trim();
@@ -811,12 +908,31 @@ export default function PersonaSpectrumPage() {
     setCardMessage("");
     setCardModelRecoveries([]);
     setCardActionPending(mode === "keywords" ? "generate_keywords" : "generate_long_text");
+    const ticket = cardGenerationFenceRef.current.begin(requestScope);
+    if (
+      cardGenerationFenceRef.current.decide(
+        ticket,
+        currentPersonaAsyncScope("persona-card-candidate"),
+      ) !== "apply"
+    ) {
+      cardGenerationFenceRef.current.settle(ticket);
+      setCardActionPending(null);
+      return;
+    }
     try {
       const result = await generatePersonaCards({
         mode,
         inputText,
         count,
       });
+      if (
+        cardGenerationFenceRef.current.decide(
+          ticket,
+          currentPersonaAsyncScope("persona-card-candidate"),
+        ) !== "apply"
+      ) {
+        return;
+      }
       setGeneratedCards(result.items);
       setGeneratedPersonaMeta({
         summary: result.summary,
@@ -828,9 +944,18 @@ export default function PersonaSpectrumPage() {
         `已生成 ${result.items.length} 张卡片。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
       );
     } catch (error) {
-      setCardError(String(error));
+      if (
+        cardGenerationFenceRef.current.decide(
+          ticket,
+          currentPersonaAsyncScope("persona-card-candidate"),
+        ) === "apply"
+      ) {
+        setCardError(String(error));
+      }
     } finally {
-      setCardActionPending(null);
+      if (cardGenerationFenceRef.current.settle(ticket)) {
+        setCardActionPending(null);
+      }
     }
   }
 
@@ -868,10 +993,10 @@ export default function PersonaSpectrumPage() {
         selectedPersonaId === persona.id || !latest.some((item) => item.id === selectedPersonaId)
           ? (latest[0]?.id ?? "")
           : selectedPersonaId;
-      setSelectedPersonaId(nextSelectedId);
+      selectPersonaDraft(nextSelectedId);
       const nextSelectedPersona = latest.find((item) => item.id === nextSelectedId) ?? null;
       if (nextSelectedPersona) {
-        setDraft(personaToDraft(nextSelectedPersona));
+        updatePersonaDraft(personaToDraft(nextSelectedPersona));
       }
       dismissSystemPromptSuggestion();
       setPersonaLibraryMessage(`已删除人格「${persona.name}」。`);
@@ -969,7 +1094,7 @@ export default function PersonaSpectrumPage() {
             type="button"
             style={isSelected ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
             onClick={() => {
-              setSelectedPersonaId(persona.id);
+              selectPersonaDraft(persona.id);
               setPersonaLibraryError("");
               setPersonaLibraryMessage(`已载入人格「${persona.name}」。`);
             }}
@@ -1063,7 +1188,7 @@ export default function PersonaSpectrumPage() {
                           max={1}
                           step={0.05}
                           value={retainRatio}
-                          onChange={(e) => setRetainRatio(Number(e.target.value))}
+                          onChange={(e) => updatePersonaAssistInput(() => setRetainRatio(Number(e.target.value)))}
                         />
                         <p style={styles.rewritePopoverHint}>数值越高，AI 重写时越接近原始设定。</p>
                         <button
@@ -1102,7 +1227,7 @@ export default function PersonaSpectrumPage() {
                 <div style={styles.basicPanePrimarySection}>
                 <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>人格</label>
-                <select style={styles.select} value={selectedPersonaId} onChange={(e) => setSelectedPersonaId(e.target.value)}>
+                <select style={styles.select} value={selectedPersonaId} onChange={(e) => selectPersonaDraft(e.target.value)}>
                   {personas.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
                   ))}
@@ -1435,7 +1560,7 @@ export default function PersonaSpectrumPage() {
                     min={1}
                     step={1}
                     value={cardGenerateCount}
-                    onChange={(e) => setCardGenerateCount(e.target.value)}
+                    onChange={(e) => updatePersonaAssistInput(() => setCardGenerateCount(e.target.value))}
                     placeholder="留空表示不限制卡片数量"
                   />
                 </label>
@@ -1452,14 +1577,14 @@ export default function PersonaSpectrumPage() {
                     <button
                       type="button"
                       style={cardGenerationMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => setCardGenerationMode("keywords")}
+                      onClick={() => updatePersonaAssistInput(() => setCardGenerationMode("keywords"))}
                     >
                       关键词搜索
                     </button>
                     <button
                       type="button"
                       style={cardGenerationMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
-                      onClick={() => setCardGenerationMode("long_text")}
+                      onClick={() => updatePersonaAssistInput(() => setCardGenerationMode("long_text"))}
                     >
                       长文本提取
                     </button>
@@ -1495,7 +1620,7 @@ export default function PersonaSpectrumPage() {
                     <input
                       style={styles.input}
                       value={cardKeywordInput}
-                      onChange={(e) => setCardKeywordInput(e.target.value)}
+                      onChange={(e) => updatePersonaAssistInput(() => setCardKeywordInput(e.target.value))}
                       placeholder="例如：冷静学术、学院派导师、侦探式推理"
                     />
                   </label>
@@ -1505,7 +1630,7 @@ export default function PersonaSpectrumPage() {
                       type="file"
                       accept=".txt,.md,text/plain,text/markdown"
                       style={styles.fileInput}
-                      onChange={(event) => setCardLongTextFile(event.target.files?.[0] ?? null)}
+                      onChange={(event) => updatePersonaAssistInput(() => setCardLongTextFile(event.target.files?.[0] ?? null))}
                     />
                     {cardLongTextFile ? <span style={styles.mutedText}>{cardLongTextFile.name}</span> : null}
                   </label>
