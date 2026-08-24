@@ -62,7 +62,14 @@ Tavern uses a separate client boundary:
 - `apps/web/lib/tavern-decode.ts`: fail-closed legacy-v1 Tavern wire decoder;
 - `apps/web/lib/tavern-workspace-state.ts`: message/run reconciliation and monotonic state helpers.
 
-This Tavern decoder does not complete repository-wide frontend Harness adoption: other domains still use permissive response normalizers, and Tavern v2/v3 trace forwarding remains open under `HRN-WEB-001`.
+Document and Planning now have their own fail-closed client boundaries in
+`apps/web/lib/document-decode.ts` and `apps/web/lib/planning-decode.ts`. They
+bind response identity, enums, finite numbers, nullability, ordering, ranges,
+cross-record references, duplicate IDs, derived progress/trace projections,
+and Planning tool/recovery contract versions before API preview compaction.
+Persona/Scene and the broader Study response remain under the decoder migration,
+while versioned stream state and Tavern v2/v3 trace forwarding remain open under
+`HRN-WEB-001`.
 
 ### AI service
 

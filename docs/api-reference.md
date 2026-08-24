@@ -23,7 +23,11 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
 - Standard endpoints return JSON.
 - Streaming endpoints return `application/x-ndjson`.
 - Error payloads from FastAPI follow `{"detail": ...}`.
-- Frontend normalization is implemented in `apps/web/lib/api.ts`. Tavern payloads additionally pass through the fail-closed decoder in `apps/web/lib/tavern-decode.ts`; other domains remain under the repository-wide decoder migration tracked by `HRN-WEB-001`.
+- Frontend projection is coordinated by `apps/web/lib/api.ts`. Tavern,
+  Document/Debug, and Planning HTTP projections pass through their domain-owned
+  fail-closed decoders before rendering; Persona/Scene, the broader Study
+  response, and versioned stream terminal state remain under the repository-wide
+  migration tracked by `HRN-WEB-001`.
 
 ## Complete operation index
 

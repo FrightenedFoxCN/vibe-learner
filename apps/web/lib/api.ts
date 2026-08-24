@@ -6,7 +6,6 @@ import type {
   DocumentPlanningTraceResponse,
   ModelToolConfig,
   ModelToolToggle,
-  PlanGenerationTrace,
   DocumentDebugRecord,
   DocumentRecord,
   LearningGoal,
@@ -38,6 +37,19 @@ import { getAiBaseUrl, getDesktopRuntimeConfig } from "./runtime-config";
 import { ApiHttpError, extractApiErrorCode } from "./http-error";
 import { decodeStudySessionCommittedIdentity } from "./study-session-decode";
 import {
+  decodeDocumentDebugRecord,
+  decodeDocumentList,
+  decodeDocumentRecord,
+  DocumentDecodeError,
+} from "./document-decode";
+import {
+  decodeDocumentPlanningContext,
+  decodeDocumentPlanningTraceResponse,
+  decodeDocumentStudyUnitUpdate,
+  decodeLearningPlan,
+  decodeLearningPlanList,
+} from "./planning-decode";
+import {
   decodeStudyChatOperationReceipt,
   type StudyChatCommittedResultEvidence,
   type StudyChatOperationReceipt,
@@ -55,6 +67,8 @@ export {
   TavernDecodeError,
 } from "./tavern-decode";
 export { StudySessionDecodeError } from "./study-session-decode";
+export { DocumentDecodeError } from "./document-decode";
+export { PlanningDecodeError } from "./planning-decode";
 export type {
   StudyChatOperationReceipt,
   StudyChatOperationStatus,
@@ -522,235 +536,73 @@ function serializePersonaInput(input: CreatePersonaInput) {
   };
 }
 
-function normalizeDocument(document: any): DocumentRecord {
+function normalizeDocument(document: unknown, expectedDocumentId?: string): DocumentRecord {
+  const decoded = decodeDocumentRecord(document, expectedDocumentId);
   return {
-    id: document.id,
-    title: document.title,
-    originalFilename: document.original_filename,
-    storedPath: document.stored_path,
-    status: document.status,
-    ocrStatus: String(document.ocr_status ?? "pending") as DocumentRecord["ocrStatus"],
-    createdAt: document.created_at,
-    updatedAt: document.updated_at,
-    pageCount: document.page_count,
-    chunkCount: document.chunk_count,
-    studyUnitCount: document.study_unit_count,
-    previewExcerpt: compactPreviewString(document.preview_excerpt, 240),
-    debugReady: document.debug_ready,
-    sections: document.sections.map((section: any) => ({
-      id: section.id,
-      documentId: section.document_id,
-      title: section.title,
-      pageStart: section.page_start,
-      pageEnd: section.page_end,
-      level: section.level
-    })),
-    studyUnits: document.study_units.map(normalizeStudyUnit)
+    ...decoded,
+    previewExcerpt: compactPreviewString(decoded.previewExcerpt, 240),
   };
 }
 
-function normalizeStudyUnit(unit: any) {
+function normalizeDebugRecord(record: unknown, expectedDocumentId?: string): DocumentDebugRecord {
+  const decoded = decodeDocumentDebugRecord(record, expectedDocumentId);
   return {
-    id: unit.id,
-    documentId: unit.document_id,
-    title: unit.title,
-    pageStart: unit.page_start,
-    pageEnd: unit.page_end,
-    unitKind: unit.unit_kind,
-    includeInPlan: unit.include_in_plan,
-    sourceSectionIds: unit.source_section_ids,
-    summary: unit.summary ?? "",
-    confidence: unit.confidence
+    ...decoded,
+    pages: decoded.pages.map((page) => ({
+      ...page,
+      textPreview: compactPreviewString(page.textPreview, 320),
+    })),
+    chunks: decoded.chunks.map((chunk) => ({
+      ...chunk,
+      textPreview: compactPreviewString(chunk.textPreview, 240),
+      content: compactPreviewString(chunk.content, 600),
+    })),
   };
 }
 
-function normalizeScheduleItem(item: any) {
+function normalizePlanningContext(
+  record: unknown,
+  expectedDocumentId?: string,
+): DocumentPlanningContext {
+  const decoded = decodeDocumentPlanningContext(record, expectedDocumentId);
   return {
-    id: item.id,
-    unitId: item.unit_id,
-    title: item.title,
-    focus: item.focus,
-    activityType: item.activity_type,
-    status: item.status,
-    scheduleChapters: Array.isArray(item.schedule_chapters)
-      ? item.schedule_chapters.map((chapter: any) => ({
-          id: String(chapter.id ?? ""),
-          title: String(chapter.title ?? ""),
-          anchorPageStart: Number(chapter.anchor_page_start ?? 0),
-          anchorPageEnd: Number(chapter.anchor_page_end ?? 0),
-          sourceSectionIds: Array.isArray(chapter.source_section_ids)
-            ? chapter.source_section_ids.map((entry: unknown) => String(entry))
-            : [],
-          contentSlices: Array.isArray(chapter.content_slices)
-            ? chapter.content_slices.map((slice: any) => ({
-                pageStart: Number(slice.page_start ?? 0),
-                pageEnd: Number(slice.page_end ?? 0),
-                sourceSectionIds: Array.isArray(slice.source_section_ids)
-                  ? slice.source_section_ids.map((entry: unknown) => String(entry))
-                  : [],
-              }))
-            : [],
-        }))
-      : [],
-  };
-}
-
-function normalizeDebugRecord(record: any): DocumentDebugRecord {
-  return {
-    documentId: record.document_id,
-    parserName: record.parser_name,
-    processedAt: record.processed_at,
-    pageCount: record.page_count,
-    totalCharacters: record.total_characters,
-    extractionMethod: record.extraction_method,
-    ocrStatus: String(record.ocr_status ?? "completed") as DocumentDebugRecord["ocrStatus"],
-    ocrApplied: record.ocr_applied,
-    ocrLanguage: record.ocr_language,
-    ocrEngine: record.ocr_engine ? String(record.ocr_engine) : null,
-    ocrModelId: record.ocr_model_id ? String(record.ocr_model_id) : null,
-    ocrAppliedPageCount: Number(record.ocr_applied_page_count ?? 0),
-    ocrWarnings: Array.isArray(record.ocr_warnings)
-      ? record.ocr_warnings.map((item: unknown) => String(item))
-      : [],
-    dominantLanguageHint: record.dominant_language_hint,
-    sections: record.sections.map((section: any) => ({
-      id: section.id,
-      documentId: section.document_id,
-      title: section.title,
-      pageStart: section.page_start,
-      pageEnd: section.page_end,
-      level: section.level
-    })),
-    studyUnits: record.study_units.map(normalizeStudyUnit),
-    pages: record.pages.map((page: any) => ({
-      pageNumber: page.page_number,
-      charCount: page.char_count,
-      wordCount: page.word_count,
-      textPreview: compactPreviewString(page.text_preview, 320),
-      dominantFontSize: page.dominant_font_size,
-      extractionSource: page.extraction_source,
-      headingCandidates: page.heading_candidates.map((candidate: any) => ({
-        pageNumber: candidate.page_number,
-        text: candidate.text,
-        fontSize: candidate.font_size,
-        confidence: candidate.confidence
-      }))
-    })),
-    chunks: record.chunks.map((chunk: any) => ({
-      id: chunk.id,
-      documentId: chunk.document_id,
-      sectionId: chunk.section_id,
-      pageStart: chunk.page_start,
-      pageEnd: chunk.page_end,
-      charCount: chunk.char_count,
-      textPreview: compactPreviewString(chunk.text_preview, 240),
-      content: compactPreviewString(chunk.content ?? "", 600)
-    })),
-    warnings: record.warnings.map((warning: any) => ({
-      code: warning.code,
-      message: warning.message,
-      pageNumber: warning.page_number
-    }))
-  };
-}
-
-function normalizePlanningSection(section: any) {
-  return {
-    sectionId: section.section_id,
-    title: section.title,
-    level: section.level,
-    pageStart: section.page_start,
-    pageEnd: section.page_end
-  };
-}
-
-function normalizePlanningContext(record: any): DocumentPlanningContext {
-  return {
-    documentId: record.document_id,
-    courseOutline: record.course_outline.map((section: any) => ({
-      ...normalizePlanningSection(section),
-      children: (section.children ?? []).map(normalizePlanningSection)
-    })),
-    studyUnits: record.study_units.map((unit: any) => ({
-      unitId: unit.unit_id,
-      title: unit.title,
-      pageStart: unit.page_start,
-      pageEnd: unit.page_end,
-      summary: unit.summary,
-      unitKind: unit.unit_kind,
-      includeInPlan: unit.include_in_plan,
-      subsectionTitles: unit.subsection_titles ?? [],
-      relatedSectionIds: unit.related_section_ids ?? [],
-      detailToolTargetId: unit.detail_tool_target_id
-    })),
+    ...decoded,
     detailMap: Object.fromEntries(
-      Object.entries(record.detail_map ?? {}).map(([key, value]: [string, any]) => [
-        key,
+      Object.entries(decoded.detailMap).map(([unitId, detail]) => [
+        unitId,
         {
-          unitId: value.unit_id,
-          title: value.title,
-          pageStart: value.page_start,
-          pageEnd: value.page_end,
-          summary: value.summary,
-          unitKind: value.unit_kind,
-          includeInPlan: value.include_in_plan,
-          relatedSectionIds: value.related_section_ids ?? [],
-          subsectionTitles: value.subsection_titles ?? [],
-          relatedSections: (value.related_sections ?? []).map(normalizePlanningSection),
-          chunkCount: value.chunk_count,
-          chunkExcerpts: (value.chunk_excerpts ?? []).map((chunk: any) => ({
-            chunkId: chunk.chunk_id,
-            sectionId: chunk.section_id,
-            pageStart: chunk.page_start,
-            pageEnd: chunk.page_end,
-            charCount: chunk.char_count,
-            content: compactPreviewString(chunk.content ?? "", 600)
-          }))
-        }
-      ])
+          ...detail,
+          chunkExcerpts: detail.chunkExcerpts.map((chunk) => ({
+            ...chunk,
+            content: compactPreviewString(chunk.content, 600),
+          })),
+        },
+      ]),
     ),
-    availableTools: (record.available_tools ?? []).map((tool: any) => ({
-      name: tool.name,
-      description: tool.description
-    }))
   };
 }
 
-function normalizePlanningTrace(record: any): PlanGenerationTrace {
+function normalizePlanningTraceResponse(
+  record: unknown,
+  expectedDocumentId?: string,
+): DocumentPlanningTraceResponse {
+  const decoded = decodeDocumentPlanningTraceResponse(record, expectedDocumentId);
+  if (!decoded.trace) return decoded;
   return {
-    documentId: record.document_id,
-    planId: record.plan_id ?? null,
-    model: record.model,
-    createdAt: record.created_at,
-    rounds: (record.rounds ?? []).map((round: any) => ({
-      roundIndex: round.round_index,
-      finishReason: round.finish_reason ?? "",
-      assistantContent: compactPreviewString(round.assistant_content ?? "", 800),
-      thinking: compactPreviewString(round.thinking ?? "", 800),
-      elapsedMs: round.elapsed_ms ?? 0,
-      timeoutSeconds: round.timeout_seconds ?? 0,
-      toolCalls: (round.tool_calls ?? []).map((toolCall: any) => ({
-        toolCallId: toolCall.tool_call_id,
-        toolName: toolCall.tool_name,
-        argumentsJson: compactPreviewString(toolCall.arguments_json ?? "", 800),
-        resultSummary: toolCall.result_summary ?? "",
-        resultJson: compactPreviewString(toolCall.result_json ?? "", 800)
+    ...decoded,
+    trace: {
+      ...decoded.trace,
+      rounds: decoded.trace.rounds.map((round) => ({
+        ...round,
+        assistantContent: compactPreviewString(round.assistantContent, 800),
+        thinking: compactPreviewString(round.thinking, 800),
+        toolCalls: round.toolCalls.map((toolCall) => ({
+          ...toolCall,
+          argumentsJson: compactPreviewString(toolCall.argumentsJson, 800),
+          resultJson: compactPreviewString(toolCall.resultJson, 800),
+        })),
       })),
-      recoveries: normalizeModelRecoveries(round.recoveries),
-    }))
-  };
-}
-
-function normalizePlanningTraceResponse(record: any): DocumentPlanningTraceResponse {
-  return {
-    documentId: record.document_id,
-    hasTrace: Boolean(record.has_trace),
-    summary: {
-      roundCount: record.summary?.round_count ?? 0,
-      toolCallCount: record.summary?.tool_call_count ?? 0,
-      latestFinishReason: record.summary?.latest_finish_reason ?? ""
     },
-    trace: record.trace ? normalizePlanningTrace(record.trace) : null
   };
 }
 
@@ -851,79 +703,11 @@ function normalizeStreamReport(record: any): StreamReport {
   };
 }
 
-function normalizePlan(plan: any): LearningPlan {
-  const rawStudyUnitProgress = Array.isArray(plan.study_unit_progress)
-    ? plan.study_unit_progress
-    : Array.isArray(plan.chapter_progress)
-      ? plan.chapter_progress
-      : [];
-  return {
-    id: plan.id,
-    documentId: plan.document_id,
-    personaId: plan.persona_id,
-    creationMode: plan.creation_mode === "goal_only" ? "goal_only" : "document",
-    courseTitle: plan.course_title,
-    objective: plan.objective,
-    sceneProfileSummary: String(plan.scene_profile_summary ?? ""),
-    sceneProfile: normalizeSceneProfile(plan.scene_profile),
-    overview: plan.overview,
-    todayTasks: plan.today_tasks,
-    studyUnits: plan.study_units.map(normalizeStudyUnit),
-    schedule: plan.schedule.map(normalizeScheduleItem),
-    progressSummary: {
-      totalScheduleCount: Number(plan.progress_summary?.total_schedule_count ?? 0),
-      completedScheduleCount: Number(plan.progress_summary?.completed_schedule_count ?? 0),
-      inProgressScheduleCount: Number(plan.progress_summary?.in_progress_schedule_count ?? 0),
-      pendingScheduleCount: Number(plan.progress_summary?.pending_schedule_count ?? 0),
-      blockedScheduleCount: Number(plan.progress_summary?.blocked_schedule_count ?? 0),
-      completionPercent: Number(plan.progress_summary?.completion_percent ?? 0),
-    },
-    studyUnitProgress: rawStudyUnitProgress
-      .map((item: any) => ({
-          unitId: String(item.unit_id ?? ""),
-          title: String(item.title ?? ""),
-          objectiveFragment: String(item.objective_fragment ?? ""),
-          scheduleIds: Array.isArray(item.schedule_ids)
-            ? item.schedule_ids.map((entry: unknown) => String(entry))
-            : [],
-          totalScheduleCount: Number(item.total_schedule_count ?? 0),
-          completedScheduleCount: Number(item.completed_schedule_count ?? 0),
-          inProgressScheduleCount: Number(item.in_progress_schedule_count ?? 0),
-          pendingScheduleCount: Number(item.pending_schedule_count ?? 0),
-          blockedScheduleCount: Number(item.blocked_schedule_count ?? 0),
-          completionPercent: Number(item.completion_percent ?? 0),
-          status: String(item.status ?? "planned"),
-        })),
-    progressEvents: Array.isArray(plan.progress_events)
-      ? plan.progress_events.map((item: any) => ({
-          id: String(item.id ?? ""),
-          actor: String(item.actor ?? "user"),
-          source: String(item.source ?? "ui"),
-          scheduleIds: Array.isArray(item.schedule_ids)
-            ? item.schedule_ids.map((entry: unknown) => String(entry))
-            : [],
-          status: String(item.status ?? "planned"),
-          note: String(item.note ?? ""),
-          createdAt: String(item.created_at ?? ""),
-        }))
-      : [],
-    planningQuestions: Array.isArray(plan.planning_questions)
-      ? plan.planning_questions.map((item: any) => ({
-          id: String(item.id ?? ""),
-          question: String(item.question ?? ""),
-          reason: String(item.reason ?? ""),
-          assumptions: Array.isArray(item.assumptions)
-            ? item.assumptions.map((entry: unknown) => String(entry))
-            : [],
-          answer: String(item.answer ?? ""),
-          status: String(item.status ?? "pending"),
-          sourceToolName: String(item.source_tool_name ?? "ask_planning_question"),
-          createdAt: String(item.created_at ?? ""),
-          answeredAt: String(item.answered_at ?? ""),
-        }))
-      : [],
-    createdAt: plan.created_at
-  };
+function normalizePlan(
+  plan: unknown,
+  options: { expectedPlanId?: string; expectedDocumentId?: string; path?: string } = {},
+): LearningPlan {
+  return decodeLearningPlan(plan, options);
 }
 
 function normalizeSceneSetupState(payload: any): SceneSetupStatePayload {
@@ -1717,35 +1501,38 @@ export async function assistPersonaSlot(
 }
 
 export async function listDocuments(): Promise<DocumentRecord[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents`)
   );
-  return payload.items.map(normalizeDocument);
+  return decodeDocumentList(payload).map((document) => ({
+    ...document,
+    previewExcerpt: compactPreviewString(document.previewExcerpt, 240),
+  }));
 }
 
 export async function getDocumentDebug(documentId: string): Promise<DocumentDebugRecord> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/debug`)
   );
-  return normalizeDebugRecord(payload);
+  return normalizeDebugRecord(payload, documentId);
 }
 
 export async function getDocumentPlanningContext(
   documentId: string
 ): Promise<DocumentPlanningContext> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/planning-context`)
   );
-  return normalizePlanningContext(payload);
+  return normalizePlanningContext(payload, documentId);
 }
 
 export async function getDocumentPlanningTrace(
   documentId: string
 ): Promise<DocumentPlanningTraceResponse> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/planning-trace`)
   );
-  return normalizePlanningTraceResponse(payload);
+  return normalizePlanningTraceResponse(payload, documentId);
 }
 
 export async function getModelToolConfig(): Promise<ModelToolConfig> {
@@ -2128,7 +1915,7 @@ export async function uploadDocument(
 ): Promise<DocumentRecord> {
   const form = new FormData();
   form.append("file", file);
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents`, {
       method: "POST",
       body: form,
@@ -2149,7 +1936,7 @@ export async function processDocument(
     forceOcr?: boolean;
   }
 ): Promise<DocumentRecord> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/process`, {
       method: "POST",
       headers: {
@@ -2160,7 +1947,7 @@ export async function processDocument(
       })
     })
   );
-  return normalizeDocument(payload);
+  return normalizeDocument(payload, documentId);
 }
 
 export async function processDocumentStream(
@@ -2205,7 +1992,7 @@ export async function processDocumentStream(
       const event = JSON.parse(trimmed) as {
         stage: string;
         payload?: Record<string, unknown>;
-        document?: any;
+        document?: unknown;
       };
       onEvent({
         stage: event.stage,
@@ -2218,7 +2005,7 @@ export async function processDocumentStream(
         streamError = formatStreamErrorPayload(event.payload, "processing_stream_error");
       }
       if (event.document) {
-        finalDocument = normalizeDocument(event.document);
+        finalDocument = normalizeDocument(event.document, documentId);
       }
     }
     if (done) {
@@ -2245,7 +2032,7 @@ function createLearningPlanRequestId(): string {
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
   const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/learning-plans`, {
       method: "POST",
       headers: {
@@ -2262,14 +2049,14 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
       })
     })
   );
-  return normalizePlan(payload);
+  return normalizePlan(payload, { expectedDocumentId: goal.documentId ?? "" });
 }
 
 export async function listLearningPlans(): Promise<LearningPlan[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/learning-plans`)
   );
-  return payload.items.map(normalizePlan);
+  return decodeLearningPlanList(payload);
 }
 
 export async function updateDocumentStudyUnitTitle(
@@ -2277,10 +2064,7 @@ export async function updateDocumentStudyUnitTitle(
   studyUnitId: string,
   title: string
 ): Promise<DocumentStudyUnitUpdatePayload> {
-  const payload = await readJson<{
-    document: any;
-    plans: any[];
-  }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/study-units/${studyUnitId}`, {
       method: "PATCH",
       headers: {
@@ -2291,17 +2075,21 @@ export async function updateDocumentStudyUnitTitle(
       })
     })
   );
-  return {
-    document: normalizeDocument(payload.document),
-    plans: payload.plans.map(normalizePlan)
-  };
+  const decoded = decodeDocumentStudyUnitUpdate(payload, documentId);
+  if (!decoded.document.studyUnits.some((unit) => unit.id === studyUnitId)) {
+    throw new DocumentDecodeError(
+      "document_study_unit_update.document.study_units",
+      `missing_updated_study_unit_${studyUnitId}`,
+    );
+  }
+  return decoded;
 }
 
 export async function updateLearningPlanTitle(
   planId: string,
   courseTitle: string
 ): Promise<LearningPlan> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
       method: "PATCH",
       headers: {
@@ -2312,7 +2100,7 @@ export async function updateLearningPlanTitle(
       })
     })
   );
-  return normalizePlan(payload);
+  return normalizePlan(payload, { expectedPlanId: planId });
 }
 
 export async function updateLearningPlanProgress(input: {
@@ -2321,7 +2109,7 @@ export async function updateLearningPlanProgress(input: {
   status: string;
   note?: string;
 }): Promise<LearningPlan> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/learning-plans/${input.planId}/progress`, {
       method: "PATCH",
       headers: {
@@ -2334,7 +2122,7 @@ export async function updateLearningPlanProgress(input: {
       })
     })
   );
-  return normalizePlan(payload);
+  return normalizePlan(payload, { expectedPlanId: input.planId });
 }
 
 export async function answerLearningPlanQuestion(input: {
@@ -2342,7 +2130,7 @@ export async function answerLearningPlanQuestion(input: {
   questionId: string;
   answer: string;
 }): Promise<LearningPlan> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(
       `${AI_BASE_URL()}/learning-plans/${input.planId}/planning-questions/${input.questionId}`,
       {
@@ -2356,7 +2144,7 @@ export async function answerLearningPlanQuestion(input: {
       }
     )
   );
-  return normalizePlan(payload);
+  return normalizePlan(payload, { expectedPlanId: input.planId });
 }
 
 export async function deleteLearningPlan(planId: string): Promise<void> {
@@ -2414,7 +2202,7 @@ export async function createLearningPlanStream(
       const event = JSON.parse(trimmed) as {
         stage: string;
         payload?: Record<string, unknown>;
-        plan?: any;
+        plan?: unknown;
       };
       onEvent({
         stage: event.stage,
@@ -2427,7 +2215,9 @@ export async function createLearningPlanStream(
         streamError = formatStreamErrorPayload(event.payload, "learning_plan_stream_error");
       }
       if (event.plan) {
-        finalPlan = normalizePlan(event.plan);
+        finalPlan = normalizePlan(event.plan, {
+          expectedDocumentId: goal.documentId ?? "",
+        });
       }
     }
     if (done) {

@@ -443,11 +443,16 @@ export interface PlanToolCallTrace {
   toolCallId: string;
   toolName: string;
   argumentsJson: string;
+  argumentContractVersion: "" | "planning-tool-arguments-v1";
+  resultContractVersion: "" | "planning-tool-result-v1";
   resultSummary: string;
   resultJson: string;
 }
 
 export interface ModelRecovery {
+  // Missing means the historical unversioned recovery record. Explicit
+  // versions are decoded fail-closed by the owning response boundary.
+  schemaVersion?: "model-recovery-v1";
   recoveryId: string;
   category: string;
   reason: string;
