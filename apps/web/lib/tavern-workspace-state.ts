@@ -3,6 +3,7 @@ import type {
   TavernParticipant,
   TavernRoomState,
   TavernRun,
+  TavernRunRecoveryChain,
   TavernSpeakerStepStatus,
 } from "@vibe-learner/shared";
 
@@ -34,6 +35,7 @@ export interface TavernCreationDraft {
 
 export interface TavernFacilitatedRecovery {
   run: TavernRun;
+  chainStatus: "recoverable" | "recovered";
   completedCount: number;
   totalCount: number;
   unfinishedPersonaIds: string[];
@@ -261,11 +263,34 @@ export function latestFacilitatedRecovery(
   if (!run) return null;
   return {
     run,
+    chainStatus: "recoverable",
     completedCount: run.speakerSteps.filter((step) => step.status === "completed").length,
     totalCount: run.speakerSteps.length,
     unfinishedPersonaIds: run.speakerSteps
       .filter((step) => step.status === "failed" || step.status === "blocked")
       .map((step) => step.personaId),
+  };
+}
+
+export function authoritativeFacilitatedRecovery(
+  chains: TavernRunRecoveryChain[]
+): TavernFacilitatedRecovery | null {
+  const candidates = chains.filter(
+    (chain) =>
+      chain.leafRun.mode === "facilitated" &&
+      (chain.rootStatus === "partial" || chain.rootStatus === "failed") &&
+      (chain.chainStatus === "recoverable" || chain.chainStatus === "recovered")
+  );
+  const chain = candidates.find((item) => item.chainStatus === "recoverable")
+    ?? candidates.find((item) => item.chainStatus === "recovered");
+  if (!chain) return null;
+  return {
+    run: chain.leafRun,
+    chainStatus: chain.chainStatus === "recoverable" ? "recoverable" : "recovered",
+    completedCount: chain.completedParticipantIds.length,
+    totalCount:
+      chain.completedParticipantIds.length + chain.unfinishedParticipantIds.length,
+    unfinishedPersonaIds: chain.unfinishedParticipantIds,
   };
 }
 

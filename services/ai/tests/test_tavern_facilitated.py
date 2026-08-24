@@ -304,6 +304,10 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             json=source_payload,
         )
         self.assertEqual(failed.status_code, 502, failed.text)
+        error_detail = failed.json()["detail"]
+        self.assertEqual(error_detail["code"], "tavern_run_failed")
+        self.assertEqual(error_detail["recovery_action"], "replay_same_request")
+        self.assertEqual(error_detail["current_revision"], 1)
         source = self.repository.get_run_by_idempotency_key(
             room_id=room_id,
             idempotency_key="facilitated-partial-1",
@@ -345,6 +349,24 @@ class TavernFacilitatedApiTests(unittest.TestCase):
         self.assertIsNone(retried.json()["input_message"])
         self.assertEqual(child["parent_run_id"], source.id)
         self.assertEqual(child["root_run_id"], source.id)
+        recent_window = self.client.get(f"/tavern/rooms/{room_id}/runs?limit=1")
+        self.assertEqual(recent_window.status_code, 200, recent_window.text)
+        self.assertEqual(
+            [item["id"] for item in recent_window.json()["items"]],
+            [child["id"]],
+        )
+        recovery = self.client.get(f"/tavern/rooms/{room_id}/run-recovery?limit=1")
+        self.assertEqual(recovery.status_code, 200, recovery.text)
+        chain = recovery.json()["items"][0]
+        self.assertEqual(chain["run_ids"], [source.id, child["id"]])
+        self.assertEqual(chain["leaf_run"]["id"], child["id"])
+        self.assertEqual(chain["chain_status"], "recovered")
+        self.assertEqual(chain["recovery_action"], "none")
+        self.assertEqual(
+            chain["completed_participant_ids"],
+            [item.id for item in self.personas],
+        )
+        self.assertEqual(chain["unfinished_participant_ids"], [])
         self.assertEqual(
             child["scheduled_participant_ids"],
             [self.personas[1].id, self.personas[2].id],
@@ -643,7 +665,9 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             f"/tavern/rooms/{room_id}/runs/{completed_run['id']}/cancel"
         )
         self.assertEqual(rejected_cancel.status_code, 409, rejected_cancel.text)
-        self.assertIn("tavern_run_not_cancelable:completed", rejected_cancel.text)
+        cancel_detail = rejected_cancel.json()["detail"]
+        self.assertEqual(cancel_detail["code"], "tavern_run_not_cancelable")
+        self.assertEqual(cancel_detail["run_id"], completed_run["id"])
 
         self.provider.fail_calls = {len(self.provider.calls) + 2}
         partial = self.client.post(

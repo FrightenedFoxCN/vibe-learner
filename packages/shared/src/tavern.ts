@@ -14,6 +14,18 @@ export type TavernSpeakerStepStatus =
   | "failed"
   | "blocked"
   | "canceled";
+export type TavernRecoveryAction =
+  | "none"
+  | "replay_same_request"
+  | "reload_room"
+  | "wait_and_resume"
+  | "retry_leaf";
+export type TavernRunChainStatus =
+  | "active"
+  | "recoverable"
+  | "recovered"
+  | "completed"
+  | "canceled";
 
 export interface TavernHarnessPolicy {
   version: "tavern-harness-v1" | string;
@@ -123,6 +135,25 @@ export interface TavernRun {
   completedAt?: string;
 }
 
+export interface TavernRunRecoveryChain {
+  rootRunId: string;
+  runIds: string[];
+  rootStatus: TavernRunStatus;
+  leafRun: TavernRun;
+  chainStatus: TavernRunChainStatus;
+  recoveryAction: TavernRecoveryAction;
+  completedParticipantIds: string[];
+  unfinishedParticipantIds: string[];
+}
+
+export interface TavernErrorDetail {
+  code: string;
+  runId?: string;
+  childRunId?: string;
+  currentRevision: number | null;
+  recoveryAction: TavernRecoveryAction;
+}
+
 export interface TavernSpeakerStep {
   runId: string;
   stepIndex: number;
@@ -203,4 +234,8 @@ export interface TavernTurnResult {
 
 export interface TavernRunListResult {
   items: TavernRun[];
+}
+
+export interface TavernRunRecoveryResult {
+  items: TavernRunRecoveryChain[];
 }

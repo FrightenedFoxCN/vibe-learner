@@ -4,6 +4,7 @@ import type {
   SceneObjectSnapshot,
   SceneProfile,
   SceneTreeNode,
+  TavernErrorDetail,
   TavernHarnessPolicy,
   TavernMessage,
   TavernParticipant,
@@ -12,6 +13,7 @@ import type {
   TavernRoomState,
   TavernRoomSummary,
   TavernRun,
+  TavernRunRecoveryChain,
   TavernSpeakerStep,
   TavernTurnResult,
 } from "@vibe-learner/shared";
@@ -574,4 +576,96 @@ export function normalizeTavernRunList(
   }
   assertUnique(runs.map((run) => run.id), `${path}.items.id`);
   return runs;
+}
+
+export function normalizeTavernRunRecovery(
+  raw: unknown,
+  expectedRoomId?: string
+): TavernRunRecoveryChain[] {
+  const path = "tavern.run_recovery";
+  const value = record(raw, path);
+  const chains = array(
+    field(value, "items", path),
+    `${path}.items`,
+    (rawItem, itemPath) => {
+      const item = record(rawItem, itemPath);
+      const rootRunId = string(field(item, "root_run_id", itemPath), `${itemPath}.root_run_id`);
+      const runIds = stringArray(field(item, "run_ids", itemPath), `${itemPath}.run_ids`);
+      const leafRun = decodeRun(field(item, "leaf_run", itemPath), `${itemPath}.leaf_run`);
+      if (!runIds.length || runIds[0] !== rootRunId || runIds[runIds.length - 1] !== leafRun.id) {
+        throw new TavernDecodeError(`${itemPath}.run_ids`, "retry_chain_identity_mismatch");
+      }
+      assertUnique(runIds, `${itemPath}.run_ids`);
+      if (expectedRoomId !== undefined) {
+        assertEqual(leafRun.roomId, expectedRoomId, `${itemPath}.leaf_run.room_id`);
+      }
+      const chainStatus = enumeration(
+        field(item, "chain_status", itemPath),
+        ["active", "recoverable", "recovered", "completed", "canceled"] as const,
+        `${itemPath}.chain_status`
+      );
+      const recoveryAction = enumeration(
+        field(item, "recovery_action", itemPath),
+        ["none", "replay_same_request", "reload_room", "wait_and_resume", "retry_leaf"] as const,
+        `${itemPath}.recovery_action`
+      );
+      if ((chainStatus === "recoverable") !== (recoveryAction === "retry_leaf")) {
+        throw new TavernDecodeError(`${itemPath}.recovery_action`, "chain_action_mismatch");
+      }
+      return {
+        rootRunId,
+        runIds,
+        rootStatus: enumeration(
+          field(item, "root_status", itemPath),
+          ["pending", "completed", "partial", "failed", "canceled"] as const,
+          `${itemPath}.root_status`
+        ),
+        leafRun,
+        chainStatus,
+        recoveryAction,
+        completedParticipantIds: stringArray(
+          field(item, "completed_participant_ids", itemPath),
+          `${itemPath}.completed_participant_ids`
+        ),
+        unfinishedParticipantIds: stringArray(
+          field(item, "unfinished_participant_ids", itemPath),
+          `${itemPath}.unfinished_participant_ids`
+        ),
+      };
+    }
+  );
+  assertUnique(chains.map((chain) => chain.rootRunId), `${path}.items.root_run_id`);
+  return chains;
+}
+
+export function normalizeTavernErrorDetail(raw: unknown): TavernErrorDetail {
+  const path = "tavern.error";
+  const envelope = record(raw, path);
+  const detailPath = `${path}.detail`;
+  const value = record(field(envelope, "detail", path), detailPath);
+  return {
+    code: string(field(value, "code", detailPath), `${detailPath}.code`),
+    runId: optionalStringField(value, "run_id", detailPath),
+    childRunId: optionalStringField(value, "child_run_id", detailPath),
+    currentRevision: nullableField(
+      value,
+      "current_revision",
+      detailPath,
+      (item, itemPath) => integer(item, itemPath, 0)
+    ),
+    recoveryAction: enumeration(
+      field(value, "recovery_action", detailPath),
+      ["none", "replay_same_request", "reload_room", "wait_and_resume", "retry_leaf"] as const,
+      `${detailPath}.recovery_action`
+    ),
+  };
+}
+
+export function isTavernTerminalReplayDirective(
+  status: number,
+  detail: TavernErrorDetail | null
+): boolean {
+  return status === 502 &&
+    detail?.recoveryAction === "replay_same_request" &&
+    Boolean(detail.runId);
 }

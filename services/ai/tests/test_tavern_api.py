@@ -210,14 +210,20 @@ class TavernApiTests(unittest.TestCase):
             },
         )
         self.assertEqual(conflicting_replay.status_code, 409)
-        self.assertIn("tavern_idempotency_key_reused:turn", conflicting_replay.text)
+        self.assertEqual(
+            conflicting_replay.json()["detail"]["code"],
+            "tavern_idempotency_key_reused",
+        )
 
         stale = self.client.post(
             f"/tavern/rooms/{room_id}/turns",
             json={**turn_payload, "idempotency_key": "turn-request-stale-1"},
         )
         self.assertEqual(stale.status_code, 409)
-        self.assertIn("tavern_revision_conflict:1", stale.text)
+        stale_detail = stale.json()["detail"]
+        self.assertEqual(stale_detail["code"], "tavern_revision_conflict")
+        self.assertEqual(stale_detail["current_revision"], 1)
+        self.assertEqual(stale_detail["recovery_action"], "reload_room")
 
         archived = self.client.patch(
             f"/tavern/rooms/{room_id}",
@@ -251,7 +257,10 @@ class TavernApiTests(unittest.TestCase):
             },
         )
         self.assertEqual(response.status_code, 409)
-        self.assertIn("tavern_idempotency_key_reused:room_creation", response.text)
+        self.assertEqual(
+            response.json()["detail"]["code"],
+            "tavern_idempotency_key_reused",
+        )
 
     def test_failed_harness_keeps_user_message_and_failed_run_only(self) -> None:
         created = self._create_room(creation_key="create-room-leak-1")

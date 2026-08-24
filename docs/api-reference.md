@@ -27,7 +27,7 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
 
 ## Complete operation index
 
-This reference covers **78 business HTTP operations across 59 unique paths**: 68 operations in the main router and 10 under the mounted `/tavern` router. The count is based on explicit `(method, full path)` pairs in `services/ai/app/api/routes.py` and `services/ai/app/api/tavern_routes.py`; generated `/docs`, `/redoc`, `/openapi.json`, implicit `HEAD`, and `OPTIONS` are excluded. FastAPI OpenAPI remains the field-level source for operations that are summarized rather than expanded below.
+This reference covers **79 business HTTP operations across 60 unique paths**: 68 operations in the main router and 11 under the mounted `/tavern` router. The count is based on explicit `(method, full path)` pairs in `services/ai/app/api/routes.py` and `services/ai/app/api/tavern_routes.py`; generated `/docs`, `/redoc`, `/openapi.json`, implicit `HEAD`, and `OPTIONS` are excluded. FastAPI OpenAPI remains the field-level source for operations that are summarized rather than expanded below.
 
 ### Service, storage, model tools, and runtime settings (11)
 
@@ -127,7 +127,7 @@ This reference covers **78 business HTTP operations across 59 unique paths**: 68
 | `POST` | `/exercises/generate` | Generate a structured exercise. |
 | `POST` | `/submissions/grade` | Grade one structured submission. |
 
-### Tavern (10)
+### Tavern (11)
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -137,6 +137,7 @@ This reference covers **78 business HTTP operations across 59 unique paths**: 68
 | `PATCH` | `/tavern/rooms/{room_id}` | Revision-check room metadata, cast, scene, or archive state. |
 | `DELETE` | `/tavern/rooms/{room_id}` | Revision-check permanent deletion. |
 | `GET` | `/tavern/rooms/{room_id}/runs` | Read a bounded recent run list. |
+| `GET` | `/tavern/rooms/{room_id}/run-recovery` | Read authoritative retry-chain leaves independently of recent-run paging. |
 | `POST` | `/tavern/rooms/{room_id}/turns` | Start an idempotent direct/facilitated run. |
 | `POST` | `/tavern/rooms/{room_id}/runs/{run_id}/retry` | Start a scoped child retry. |
 | `POST` | `/tavern/rooms/{room_id}/runs/{run_id}/cancel` | Fence result commits and future recovery. |
@@ -840,7 +841,7 @@ Tavern clients must decode every aggregate from `unknown` and bind it to the req
 
 ### `PATCH /tavern/rooms/{room_id}`
 
-Updates title, cast, scene snapshot, or `active`/`archived` status. `expected_revision` is mandatory; stale writers receive `409` with `tavern_revision_conflict:{current_revision}`.
+Updates title, cast, scene snapshot, or `active`/`archived` status. `expected_revision` is mandatory; stale writers receive `409` with structured `code=tavern_revision_conflict`, the authoritative `current_revision`, and `recovery_action=reload_room`.
 
 Removing a participant only changes future scheduling. Historical messages retain their saved `persona_name` and `persona_id`.
 
@@ -851,7 +852,11 @@ A room with a pending run returns `409`; its user message and failure/recovery e
 
 ### `GET /tavern/rooms/{room_id}/runs`
 
-Returns up to `limit` recent runs (`1`–`100`, default `50`) in reverse creation order. This bounded list supports local recovery/debug after a turn returns `502`: the client can inspect failed status, stable error code, attempts, recovery strategy, and Harness checks without parsing logs. It is not an authoritative retry-chain aggregate; a child outside the window may be omitted, which is tracked by `TAV-RUN-VIEW-001`.
+Returns up to `limit` recent runs (`1`–`100`, default `50`) in reverse creation order. This is the bounded debug/history window and is not used as retry-chain truth.
+
+### `GET /tavern/rooms/{room_id}/run-recovery`
+
+Returns up to `limit` root-chain projections (`1`–`100`, default `50`) after loading and validating complete room lineage. Each item includes the ordered `run_ids`, immutable root status, authoritative `leaf_run`, derived chain status and recovery action, plus completed/unfinished participant IDs. A recent-run page may contain only a child, but this projection still binds it to the root and suppresses retry after a completed child.
 
 ### `POST /tavern/rooms/{room_id}/turns`
 
@@ -909,8 +914,10 @@ Reliability behavior:
 - stale revisions and another pending room run return `409`;
 - a stale `continue.anchor_message_id` returns `409 tavern_continue_anchor_stale`;
 - first-actor failure produces `failed`; later-actor failure produces `partial`, keeps prior actor messages, marks the current step `failed`, and marks remaining steps `blocked`;
-- schema/provider/Harness failures return `502` only after the terminal evidence is committed;
+- schema/provider/Harness failures return `502` only after the terminal evidence is committed; the structured detail contains `code`, `run_id`, `child_run_id`, `current_revision`, and `recovery_action`;
 - replaying that identical failed request returns `200` with the typed terminal recovery envelope. Clients must inspect `run.status`.
+
+The web client automatically replays exactly once only when a `502` explicitly declares `recovery_action=replay_same_request` and a committed `run_id`. It reuses the identical URL/body, revision, and idempotency key. Network failures, malformed envelopes, and other recovery actions are never treated as authorization to invoke the mutation again.
 
 Client reconciliation must bind the response to the active room and operation token, discard stale cross-room results, merge messages monotonically, and never allow a terminal run to regress to `pending`. HTTP success describes transport/recovery delivery only; `completed`, `partial`, `failed`, and `canceled` remain distinct domain outcomes.
 
@@ -920,7 +927,7 @@ Pending speaker steps expose `claim_count`. A generating step owns a database-cl
 
 ### `POST /tavern/rooms/{room_id}/runs/{run_id}/resume`
 
-Resumes a pending run after a process or worker interruption. Completed steps and messages are reused, never regenerated. An active lease returns `409 tavern_run_in_progress:{run_id}`. An expired lease is claimed with a new fencing epoch; claim-budget exhaustion returns the durable terminal recovery envelope.
+Resumes a pending run after a process or worker interruption. Completed steps and messages are reused, never regenerated. An active lease returns structured `409` with `code=tavern_run_in_progress`, its run ID, and `recovery_action=wait_and_resume`. An expired lease is claimed with a new fencing epoch; claim-budget exhaustion returns the durable terminal recovery envelope.
 
 ### `POST /tavern/rooms/{room_id}/runs/{run_id}/cancel`
 

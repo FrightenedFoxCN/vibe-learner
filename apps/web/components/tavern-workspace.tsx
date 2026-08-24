@@ -17,13 +17,16 @@ import type {
   TavernRoomDetail,
   TavernRoomSummary,
   TavernRun,
+  TavernRunRecoveryChain,
   TavernTurnResult,
 } from "@vibe-learner/shared";
 
 import {
   createTavernRoom,
   cancelTavernRun,
+  decodeTavernHttpError,
   getTavernRoom,
+  getTavernRunRecovery,
   listPersonas,
   listSceneLibrary,
   listTavernRooms,
@@ -37,10 +40,9 @@ import {
 import { AppLink } from "../lib/app-navigation";
 import {
   hasActiveTavernRun,
+  authoritativeFacilitatedRecovery,
   isTavernRoomStateAtLeast,
-  latestFacilitatedRecovery,
   latestTavernMessage,
-  listRetryableRuns,
   makeTavernRequestKey,
   mergeTavernMessages,
   projectParticipantStates,
@@ -93,6 +95,7 @@ export function TavernWorkspace() {
   const [detail, setDetail] = useState<TavernRoomDetail | null>(null);
   const [messages, setMessages] = useState<TavernMessage[]>([]);
   const [runs, setRuns] = useState<TavernRun[]>([]);
+  const [recoveryChains, setRecoveryChains] = useState<TavernRunRecoveryChain[]>([]);
   const [targetPersonaIds, setTargetPersonaIds] = useState<string[]>([]);
   const [generatingPersonaIds, setGeneratingPersonaIds] = useState<string[]>([]);
   const [showSetup, setShowSetup] = useState(false);
@@ -123,8 +126,16 @@ export function TavernWorkspace() {
   const mutationBusy = busyAction !== null && !roomBusy;
   const runPending = hasActiveTavernRun(runs);
   const latestMessage = latestTavernMessage(messages);
-  const retryableRuns = useMemo(() => listRetryableRuns(runs), [runs]);
-  const facilitatedRecovery = useMemo(() => latestFacilitatedRecovery(runs), [runs]);
+  const retryableRuns = useMemo(
+    () => recoveryChains
+      .filter((chain) => chain.recoveryAction === "retry_leaf")
+      .map((chain) => chain.leafRun),
+    [recoveryChains]
+  );
+  const facilitatedRecovery = useMemo(
+    () => authoritativeFacilitatedRecovery(recoveryChains),
+    [recoveryChains]
+  );
   const participantStates = useMemo(
     () => projectParticipantStates(detail?.participants ?? [], runs),
     [detail?.participants, runs]
@@ -184,14 +195,16 @@ export function TavernWorkspace() {
     olderLoadRoomRef.current = null;
     setLoadingOlder(false);
     setGeneratingPersonaIds([]);
+    setRecoveryChains([]);
     setBusyAction("room");
     setVisibleError("");
     setRawError("");
     setNotice("正在恢复最近对话…");
     try {
-      const [nextDetail, nextRuns] = await Promise.all([
+      const [nextDetail, nextRuns, nextRecoveryChains] = await Promise.all([
         getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }),
         listTavernRuns(roomId),
+        getTavernRunRecovery(roomId),
       ]);
       if (loadVersion !== roomLoadVersion.current) {
         return;
@@ -214,6 +227,7 @@ export function TavernWorkspace() {
       setDetail(nextDetail);
       setMessages(nextMessages);
       setRuns(nextRuns);
+      setRecoveryChains(nextRecoveryChains);
       setTargetPersonaIds(
         restoredTargetIds.length
           ? restoredTargetIds
@@ -251,9 +265,10 @@ export function TavernWorkspace() {
     const roomId = activeRoom.id;
     const refreshVersion = ++roomRefreshVersion.current;
     try {
-      const [nextDetail, nextRuns, nextRooms] = await Promise.all([
+      const [nextDetail, nextRuns, nextRecoveryChains, nextRooms] = await Promise.all([
         getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }),
         listTavernRuns(roomId),
+        getTavernRunRecovery(roomId),
         listTavernRooms(),
       ]);
       if (
@@ -277,6 +292,7 @@ export function TavernWorkspace() {
       messagesRef.current = nextMessages;
       setMessages(nextMessages);
       setRuns(reconciledRuns);
+      setRecoveryChains(nextRecoveryChains);
       setRooms(nextRooms);
       const latestRun = reconciledRuns[0];
       setNotice(
@@ -382,6 +398,20 @@ export function TavernWorkspace() {
     }
   }, []);
 
+  const updateRunRecovery = useCallback(async (roomId: string) => {
+    try {
+      const nextChains = await getTavernRunRecovery(roomId);
+      if (
+        activeRoomIdRef.current === roomId &&
+        requestedRoomIdRef.current === roomId
+      ) {
+        setRecoveryChains(nextChains);
+      }
+    } catch (error) {
+      setRawError(String(error));
+    }
+  }, []);
+
   const syncTurnResult = useCallback((result: TavernTurnResult) => {
     if (
       activeRoomIdRef.current !== result.roomState.id ||
@@ -461,8 +491,7 @@ export function TavernWorkspace() {
       setNotice(result.run.status === "completed" ? "中断的互动已恢复" : RUN_STATUS_LABELS[result.run.status]);
       setVisibleError("");
     } catch (error) {
-      const raw = error instanceof Error ? error.message : String(error);
-      if (raw.includes("tavern_run_in_progress")) {
+      if (decodeTavernHttpError(error)?.code === "tavern_run_in_progress") {
         resumeAttemptsRef.current.set(
           run.id,
           Math.min(3, (resumeAttemptsRef.current.get(run.id) ?? 0) + 1)
@@ -581,6 +610,7 @@ export function TavernWorkspace() {
         setDetail(created);
         setMessages(nextMessages);
         setRuns([]);
+        setRecoveryChains([]);
         setTargetPersonaIds(created.participants[0] ? [created.participants[0].personaId] : []);
         setShowSetup(false);
         setNotice("酒馆已创建，可以开始对话");
@@ -717,7 +747,14 @@ export function TavernWorkspace() {
             ? "本轮互动已完成"
             : RUN_STATUS_LABELS[result.run.status]
         );
-        await updateRooms();
+        if (result.run.status === "partial" || result.run.status === "failed") {
+          setVisibleError(
+            result.run.status === "partial"
+              ? "部分角色回应未完成；已保存的回应不会重复生成，可在下方仅恢复未完成角色。"
+              : "本轮角色回应未完成；服务端已保存失败证据，可从恢复入口再次尝试。"
+          );
+        }
+        await Promise.all([updateRooms(), updateRunRecovery(roomId)]);
         return result.inputMessage !== null || input.kind === "continue";
       } catch (error) {
         if (!operationIsCurrent(operation)) return false;
@@ -740,7 +777,7 @@ export function TavernWorkspace() {
         if (finishMutation(operation)) setGeneratingPersonaIds([]);
       }
     },
-    [activeRoom, beginMutation, finishMutation, operationIsCurrent, refreshRoom, releaseForegroundOperation, roomIsActive, runPending, syncTurnResult, targetPersonaIds, updateRooms]
+    [activeRoom, beginMutation, finishMutation, operationIsCurrent, refreshRoom, releaseForegroundOperation, roomIsActive, runPending, syncTurnResult, targetPersonaIds, updateRooms, updateRunRecovery]
   );
 
   const handleCancelRun = useCallback(async () => {
@@ -822,7 +859,10 @@ export function TavernWorkspace() {
         ) return;
         if (!syncTurnResult(result)) return;
         setNotice(result.run.status === "completed" ? "剩余角色已完成回应" : RUN_STATUS_LABELS[result.run.status]);
-        await updateRooms();
+        if (result.run.status === "partial" || result.run.status === "failed") {
+          setVisibleError("恢复运行仍有角色未完成；已完成回应不会重复生成，可继续恢复当前叶节点。");
+        }
+        await Promise.all([updateRooms(), updateRunRecovery(operation.roomId)]);
       } catch (error) {
         if (!operationIsCurrent(operation)) return;
         recordError(error, "重试未完整返回；已重新同步已保存的结果。", setVisibleError, setRawError);
@@ -832,7 +872,7 @@ export function TavernWorkspace() {
         if (finishMutation(operation)) setGeneratingPersonaIds([]);
       }
     },
-    [activeRoom, beginMutation, finishMutation, operationIsCurrent, recoverCurrentRoom, releaseForegroundOperation, roomIsActive, runPending, syncTurnResult, updateRooms]
+    [activeRoom, beginMutation, finishMutation, operationIsCurrent, recoverCurrentRoom, releaseForegroundOperation, roomIsActive, runPending, syncTurnResult, updateRooms, updateRunRecovery]
   );
 
   const handleLoadOlder = useCallback(async () => {
@@ -983,6 +1023,7 @@ export function TavernWorkspace() {
           <ReliabilityDetails
             runs={runs}
             retryableRuns={retryableRuns}
+            recoveryChains={recoveryChains}
             participants={detail?.participants ?? []}
             roomActive={Boolean(roomIsActive)}
             busy={mutationBusy || runPending || loadingOlder}
@@ -1468,7 +1509,7 @@ function InteractionComposer({
   participants: TavernParticipant[];
   selectedIds: string[];
   latestMessage: TavernMessage | null;
-  recovery: ReturnType<typeof latestFacilitatedRecovery>;
+  recovery: ReturnType<typeof authoritativeFacilitatedRecovery>;
   busy: boolean;
   recoveryBusy: boolean;
   retrying: boolean;
@@ -1565,20 +1606,30 @@ function InteractionComposer({
       {showRecovery && recovery ? (
         <div className="tavern-recovery-callout" role="status" aria-live="polite">
           <div>
-            <strong>上次多人互动还有角色未回应</strong>
-            <p>
-              {recovery.completedCount}/{recovery.totalCount} 位已回应；
-              {unfinishedNames.join("、")} 尚未完成。已保存的回应不会重复生成。
-            </p>
+            <strong>
+              {recovery.chainStatus === "recovered"
+                ? "上次未完成的多人互动已由重试恢复"
+                : "上次多人互动还有角色未回应"}
+            </strong>
+            {recovery.chainStatus === "recovered" ? (
+              <p>{recovery.completedCount}/{recovery.totalCount} 位已完成回应，旧的部分结果不会再次暴露为可重试操作。</p>
+            ) : (
+              <p>
+                {recovery.completedCount}/{recovery.totalCount} 位已回应；
+                {unfinishedNames.join("、")} 尚未完成。已保存的回应不会重复生成。
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            className="tavern-button secondary full"
-            onClick={() => onRetry(recovery.run)}
-            disabled={recoveryBusy || !roomActive}
-          >
-            {retrying ? "正在重试未完成角色…" : "仅重试未完成角色"}
-          </button>
+          {recovery.chainStatus === "recoverable" ? (
+            <button
+              type="button"
+              className="tavern-button secondary full"
+              onClick={() => onRetry(recovery.run)}
+              disabled={recoveryBusy || !roomActive}
+            >
+              {retrying ? "正在重试未完成角色…" : "仅重试未完成角色"}
+            </button>
+          ) : null}
         </div>
       ) : null}
       <label className="tavern-composer-label">
@@ -1648,6 +1699,7 @@ function InteractionComposer({
 function ReliabilityDetails({
   runs,
   retryableRuns,
+  recoveryChains,
   participants,
   roomActive,
   busy,
@@ -1655,12 +1707,18 @@ function ReliabilityDetails({
 }: {
   runs: TavernRun[];
   retryableRuns: TavernRun[];
+  recoveryChains: TavernRunRecoveryChain[];
   participants: TavernParticipant[];
   roomActive: boolean;
   busy: boolean;
   onRetry: (run: TavernRun) => void;
 }) {
   const retryableIds = new Set(retryableRuns.map((run) => run.id));
+  const recoveredRootIds = new Set(
+    recoveryChains
+      .filter((chain) => chain.chainStatus === "recovered")
+      .map((chain) => chain.rootRunId)
+  );
   const names = new Map(participants.map((participant) => [
     participant.personaId,
     participant.displayName || "未命名角色",
@@ -1669,7 +1727,9 @@ function ReliabilityDetails({
     <details className="tavern-panel reliability-details">
       <summary>
         <span><span className="tavern-kicker">Reliability Details</span><strong>可靠性摘要</strong></span>
-        <span className="tavern-count">{runs.length}</span>
+        <span className="tavern-count" aria-label={`${retryableRuns.length} 个待恢复项`}>
+          待恢复 {retryableRuns.length}
+        </span>
       </summary>
       <div className="tavern-reliability-content">
         <p className="tavern-panel-footnote">这里只显示可读恢复摘要；完整 Harness trace 可在全局调试层查看。</p>
@@ -1697,6 +1757,8 @@ function ReliabilityDetails({
                 <button type="button" className="tavern-button secondary full" onClick={() => onRetry(run)} disabled={!roomActive || busy}>
                   仅重试未完成角色
                 </button>
+              ) : recoveredRootIds.has(run.id) ? (
+                <p className="tavern-repair-note">该部分结果已由后续范围重试完整恢复。</p>
               ) : run.parentRunId ? (
                 <p className="tavern-repair-note">这是一次范围受限的恢复运行。</p>
               ) : null}
@@ -1734,20 +1796,23 @@ function recordError(
 ) {
   const raw = error instanceof Error ? error.message : String(error);
   setRaw(raw);
-  setVisible(friendlyTavernError(raw, fallback));
+  setVisible(friendlyTavernError(error, fallback));
 }
 
-function friendlyTavernError(raw: string, fallback: string): string {
+function friendlyTavernError(error: unknown, fallback: string): string {
+  const detail = decodeTavernHttpError(error);
+  const code = detail?.code ?? "";
+  if (code === "tavern_revision_conflict") return "房间刚刚发生了更新，已重新同步；请确认内容后重试。";
+  if (code === "tavern_run_in_progress") return "这个房间已有一轮互动正在生成，请稍后刷新。";
+  if (code === "tavern_continue_anchor_stale") return "对话已出现更新；请基于最新一条消息继续。";
+  if (code === "tavern_retry_context_changed") return "房间内容或角色设定已变化，不能继续旧恢复任务。";
+  if (code === "tavern_retry_already_created") return "这次未完成互动已经创建过恢复任务，已重新同步。";
+  if (code === "tavern_room_not_active") return "这个房间已归档；恢复使用后才能继续互动。";
+  if (code === "tavern_run_failed") return "部分角色回应未通过可靠性检查。已保存的消息不会丢失，可从恢复入口继续未完成角色。";
+  const raw = error instanceof Error ? error.message : String(error);
   if (raw.includes("tavern_response_decode_error") || / at tavern\./.test(raw)) {
     return "服务器返回的数据未通过可靠性校验；页面已保留现有内容，请刷新恢复，若持续出现请查看调试详情。";
   }
-  if (raw.includes("tavern_revision_conflict")) return "房间刚刚发生了更新，已重新同步；请确认内容后重试。";
-  if (raw.includes("tavern_run_in_progress")) return "这个房间已有一轮互动正在生成，请稍后刷新。";
-  if (raw.includes("tavern_continue_anchor_stale")) return "对话已出现更新；请基于最新一条消息继续。";
-  if (raw.includes("tavern_retry_context_changed")) return "房间内容或角色设定已变化，不能继续旧恢复任务。";
-  if (raw.includes("tavern_retry_already_created")) return "这次未完成互动已经创建过恢复任务，已重新同步。";
-  if (raw.includes("tavern_room_not_active")) return "这个房间已归档；恢复使用后才能继续互动。";
-  if (raw.includes("tavern_run_failed")) return "部分角色回应未通过可靠性检查。已保存的消息不会丢失，可在可靠性摘要中恢复剩余角色。";
   if (raw.includes("Cannot reach AI service")) return "无法连接 AI 服务，请检查服务是否已启动。";
   return fallback;
 }

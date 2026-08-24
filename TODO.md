@@ -6,7 +6,7 @@
 
 1. `SCH-STUDY-QUESTION-001` / `SCH-STUDY-ATTEMPT-001`：实现与实现者定向门已完成；先由非实现智能体复核未作答脱敏、服务端判分、Attempt 幂等/并发/历史兼容，再勾选关闭。
 2. `SCH-HRN-EFFECT-001` / `STUDY-EFFECT-COMMIT-001`：Session/Scene DB effects 与 operation-owned attachment staging 已有原子提交、精确回读和补偿；下一批收口 generated/provider 的 durable per-effect journal 与 Study v3 evidence，外部 provider 无权威回读时继续保持 `uncertain`。
-3. `TAV-RUN-VIEW-001` → `TAV-ERROR-001` → `TAV-RECOVERY-CLIENT-001`：完成 Tavern 跨分页 retry-chain 权威恢复，随后收口 `UX-TAV-REC-001`。
+3. `TAV-RUN-VIEW-001` / `TAV-ERROR-001` / `TAV-RECOVERY-CLIENT-001`：实现与实现者定向门已完成；由非实现智能体复核权威链、结构化错误、同 key 单次终态取回和 Composer/Badge 真相后关闭 `UX-TAV-REC-001`。
 4. `MODEL-COMPAT-001` / `UX-PROVIDER-001`：补齐“模型可列出”到“具体工作流可调用”的能力探测、请求参数适配与用户可见 provider 真相。
 5. `PERF-001` / `PERF-002` 与 `DOC-AUDIT-001`：功能关键路径稳定后再做已登记的性能和文档审计。
 
@@ -25,14 +25,14 @@
 - [ ] `HRN-TAV-PERF-001` 为 Tavern prompt 增加字符/token 总预算、场景快照尺寸和嵌套深度限制；验收：最坏 6 人长对话仍在配置预算内，截断/摘要写入 trace。
 - [ ] `SCH-TAV-001` 决定并实现 run/message/step 软引用策略；验收：`run_id`、`message_id`、`reply_to_message_id` 要么具备可迁移外键与插入顺序，要么由统一 invariant scanner 检测并阻断破损图。
 - [ ] `UX-001` Tavern Workspace 发布体验 tracking epic（依赖 `TAV-004`、`UX-TAV-REC-001`、`UX-TAV-MOBILE-001`、`UX-TAV-STATE-001`、`UX-TAV-DRAFT-001`、`UX-EMPTY-001`、`TAV-UX-COPY-001`）；已实现 1–6 人设置、单聊/多人互动、tail 翻页、刷新恢复、IME 事件 fencing、strict decode 与 390px 无横向溢出。仅在全部子项通过且非实现智能体完成无 Persona/无 Room/已有 Room、390×844、真实 IME、键盘/触控、焦点顺序和无横向溢出复验后关闭；本项不重复承载子项实现。
-- [ ] `UX-TAV-REC-001` 建立 Tavern run 派生恢复视图（依赖 `TAV-RUN-VIEW-001`、`TAV-ERROR-001`、`TAV-RECOVERY-CLIENT-001`）；验收：父 run 保持 immutable partial，但存在 completed child 时显示“已由重试恢复”，主界面在 Header/Composer 附近说明已保存消息、未完成角色和恢复动作，不再次暴露已完成链的可重试操作。
+- [ ] `UX-TAV-REC-001` 建立 Tavern run 派生恢复视图（依赖 `TAV-RUN-VIEW-001`、`TAV-ERROR-001`、`TAV-RECOVERY-CLIENT-001`）；实现者门已覆盖 authoritative leaf、completed child“已由重试恢复”、保存/未完成角色文案、旧 root retry 抑制与待恢复 badge；待非实现智能体用真实后端完成跨分页 partial→child completed、child 再失败、刷新和 502 取回复验后关闭。
 - [x] `UX-TAV-REC-COMPOSER-001` 将当前历史窗口内最新可恢复的 facilitated run 提升到 Interaction Composer 常显；横幅列出已完成数和 failed/blocked 角色，明确已保存回应不会重复生成，复用 scoped child retry，重试期间禁用新互动且不清空消息/引导草稿或改变当前目标选择。完整跨分页 retry-chain 权威视图和结构化 `502` recovery 仍由 `UX-TAV-REC-001` 的依赖项完成。
-- [ ] `UX-TAV-REC-BADGE-001` 让 Reliability Details 同时显示“待恢复项”而不只显示总 run 数；本次实测 badge 为 `3`，展开内容却是 3 个已完成 run，视觉上会被理解为 3 个待处理告警。验收：badge 与当前可恢复 leaf 数一致，已创建 child 或已完成链不继续计数；若继续展示历史总数，必须使用不同标签与视觉层级。
+- [ ] `UX-TAV-REC-BADGE-001` Reliability Details badge 已改为 authoritative `retry_leaf` 数并显式标注“待恢复”，已创建 child 或 recovered chain 不再计数；待非实现智能体真实浏览器复验 0/1/多 leaf 的视觉和辅助名称后关闭。
 - [ ] `UX-TAV-MOBILE-001` 重排 Tavern 移动端首要任务；独立 390×844 浏览器审计确认无 Room 时约 430px 空 Conversation 和禁用 Composer 占据首屏，而 Session/Setup 约到 1507/1635px 才出现。本次桌面复验还确认点击“新建酒馆”后 Setup Panel 追加在 Conversation/Composer/Roster/Session 之后，焦点仍停留在触发按钮。验收：无 Room 的 DOM/焦点顺序为 Tavern Header → Tavern Session Panel → Tavern Setup Panel → Tavern Conversation Panel，Participant Roster 与禁用 Interaction Composer 隐藏或降级；已有 Room 的 Composer 在首屏或固定可达；“新建酒馆”调用 `scrollIntoView` 并聚焦标题；去除“左侧”等桌面方位文案；无 Persona/无 Room fixture 在 390×844 下无横向溢出、焦点正确且主要触控目标不小于 44px。本项必须由非实现智能体真实浏览器复验。
 - [ ] `UX-TAV-STATE-001` 对齐 Participant Roster 与真实 speaker step；本次载入已有 Room 时，在没有 active run、Composer 已可开始下一轮的状态下，Roster 仍显示上一轮的“已回应”，容易被理解为当前轮状态。验收：当前 claimed actor 显示 generating，尚未轮到者显示 pending，completed/failed/blocked/canceled 不被前端 optimistic state 覆盖；无 active run 时明确显示“就绪”或带时间范围的“上一轮已回应”，direct/facilitated/partial/resume fixtures 通过。
-- [ ] `TAV-RECOVERY-CLIENT-001` 前端 API client 自动执行 Tavern `502` 同 key 终态恢复（依赖 `TAV-ERROR-001`）；验收：保留原 revision/key，按结构化 recovery action 和 `run.status` 归一化 completed/partial/failed，不把 HTTP 200 等同成功完成。
-- [ ] `TAV-RUN-VIEW-001` 增加可靠的 retry-chain 聚合读取；验收：单次读取不会因 run list 分页截断而遗漏 child，latest leaf 决定可恢复动作。
-- [ ] `TAV-ERROR-001` Tavern 冲突/执行失败改用结构化错误 envelope；验收：code、run/child ID、current revision 与 recovery action 可直接 decode，前端不解析冒号字符串。
+- [ ] `TAV-RECOVERY-CLIENT-001` 前端 turn/retry API 已仅在结构化 `502 replay_same_request + run_id` 时以原 URL/body/revision/key 自动取回一次终态，并继续按 `run.status` 呈现 partial/failed；网络错误、畸形 envelope 与其他 action 不自动重放。实现者严格解码/判定门已通过，待非实现智能体抓取请求确认 provider 调用数不增加后关闭。
+- [ ] `TAV-RUN-VIEW-001` 已增加 `GET /tavern/rooms/{room_id}/run-recovery`：完整读取房间 lineage、验证线性 parent/root 链，按 root 返回 authoritative leaf/action；实现者用 recent `limit=1` 仅含 child 的 fixture 验证单次恢复读取仍返回 parent→child 且 completed child 标为 recovered。待非实现智能体复核破损链 fail-closed 与跨数据库行为后关闭。
+- [ ] `TAV-ERROR-001` Tavern mutations 已返回结构化 `detail {code,run_id,child_run_id,current_revision,recovery_action}`，Web 走 strict decoder，不再解析冒号字符串；实现者冲突/502/恢复门已通过，待非实现智能体核对全部 mutation 错误矩阵后关闭。
 - [ ] `TAV-CANCEL-TRANSPORT-001` 将 Tavern provider 改为真正可取消的传输；验收：Cancel 能中断已发出的上游请求而不只 fencing 结果，释放连接/worker 并停止 token 消耗；在此之前 UI 文案必须称“取消接收结果”，不能承诺已停止模型计算。
 - [ ] `TAV-UX-COPY-001` 固化 pending/generating/completed/partial/failed/blocked/retry/stale/archived 中文文案；验收：blocked 不显示为角色失败，raw code 只进入 Reliability Details/debug。
 
@@ -103,7 +103,7 @@
 - [ ] `PERF-002` 延迟导入 LiteLLM/OCR 重依赖；验收：mock 模式 `/health` 冷启动小于 2 秒。
 - [ ] `PERF-TAV-ROOMS-001` 为 Tavern Room 历史增加 cursor/limit；验收：使用 `(updated_at DESC, id DESC)` 稳定 cursor，默认 30、最大 50，当前页批量聚合与 UI load-more；选中的 Room 跨页保持可见，retry-chain authoritative view 继续独立于 Room 分页。1,000 Room fixture 必须满足 `docs/performance-budgets-v1.md` 的 query、payload、server P95 与 React P95 门槛。
 - [ ] `DOC-AUDIT-001` 对齐用户手册与真实 Home 副标题、Tavern 已保存 Scene Library 快照来源、Plan recovery 展示位置；验收：逐项与当前 DOM/API 交叉检查，无主界面未实现承诺。当前 Plan UI 未解析/显示 recovery count/details；要么实现并验证该展示，要么从用户手册删除承诺。
-- [x] `DOC-001` 对齐 78 个业务 HTTP operation（主 router 68 + Tavern router 10）、六个注册 planner tools、SQLite/PostgreSQL 默认说明、依赖清单和当前 8 个首页入口。
+- [x] `DOC-001` 对齐 79 个业务 HTTP operation（主 router 68 + Tavern router 11）、六个注册 planner tools、SQLite/PostgreSQL 默认说明、依赖清单和当前 8 个首页入口。
 - [x] `DOC-003` 修正 `docs/architecture.md` 的旧 `/debug` 页面、PostgreSQL-only/no-database 矛盾，并补齐 Tavern/Harness/Persona/Scene 当前边界；验收：与代码和根 `AGENTS.md` 一致。
 - [x] `DOC-002` 更新根 `AGENTS.md` 的仓库快照、Tavern 术语、测试命令与已知风险。
 

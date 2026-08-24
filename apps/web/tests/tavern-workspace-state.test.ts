@@ -10,6 +10,7 @@ import type {
 
 import {
   isTavernRoomStateAtLeast,
+  authoritativeFacilitatedRecovery,
   latestFacilitatedRecovery,
   listRetryableRuns,
   mergeTavernMessages,
@@ -18,9 +19,12 @@ import {
 } from "../lib/tavern-workspace-state.ts";
 import {
   normalizeTavernRoomDetail,
+  normalizeTavernErrorDetail,
   normalizeTavernRoomList,
   normalizeTavernRunList,
+  normalizeTavernRunRecovery,
   normalizeTavernTurnResult,
+  isTavernTerminalReplayDirective,
   TavernDecodeError,
 } from "../lib/tavern-decode.ts";
 
@@ -144,6 +148,60 @@ test("facilitated recovery hides ineligible and already retried runs", () => {
   assert.equal(
     latestFacilitatedRecovery([parent, run("child", "completed", "parent")]),
     null
+  );
+});
+
+test("authoritative recovery follows the chain leaf instead of a recent run window", () => {
+  const parent = {
+    ...run("parent", "partial"),
+    mode: "facilitated" as const,
+    scheduledParticipantIds: ["persona-1", "persona-2"],
+    speakerSteps: [
+      speakerStep("parent", 0, "persona-1", "completed"),
+      speakerStep("parent", 1, "persona-2", "failed"),
+    ],
+  };
+  const child = {
+    ...run("child", "completed", "parent"),
+    mode: "facilitated" as const,
+    scheduledParticipantIds: ["persona-2"],
+    speakerSteps: [speakerStep("child", 0, "persona-2", "completed")],
+  };
+  const recovery = authoritativeFacilitatedRecovery([{
+    rootRunId: parent.id,
+    runIds: [parent.id, child.id],
+    rootStatus: "partial",
+    leafRun: child,
+    chainStatus: "recovered",
+    recoveryAction: "none",
+    completedParticipantIds: ["persona-1", "persona-2"],
+    unfinishedParticipantIds: [],
+  }]);
+  assert.equal(recovery?.run.id, child.id);
+  assert.equal(recovery?.chainStatus, "recovered");
+  assert.equal(recovery?.completedCount, 2);
+  assert.deepEqual(recovery?.unfinishedPersonaIds, []);
+});
+
+test("Tavern client recovery only accepts an explicit terminal replay directive", () => {
+  const detail = normalizeTavernErrorDetail({
+    detail: {
+      code: "tavern_run_failed",
+      run_id: "run-1",
+      child_run_id: "",
+      current_revision: 1,
+      recovery_action: "replay_same_request",
+    },
+  });
+  assert.equal(isTavernTerminalReplayDirective(502, detail), true);
+  assert.equal(isTavernTerminalReplayDirective(409, detail), false);
+  assert.equal(
+    isTavernTerminalReplayDirective(502, { ...detail, runId: undefined }),
+    false
+  );
+  assert.equal(
+    isTavernTerminalReplayDirective(502, { ...detail, recoveryAction: "reload_room" }),
+    false
   );
 });
 
@@ -509,6 +567,53 @@ test("strict Tavern list decoders reject a malformed envelope", () => {
   assert.throws(() => normalizeTavernRoomList(null), TavernDecodeError);
   assert.throws(() => normalizeTavernRoomList({}), TavernDecodeError);
   assert.throws(() => normalizeTavernRunList({ items: null }), TavernDecodeError);
+  assert.throws(() => normalizeTavernRunRecovery({ items: null }), TavernDecodeError);
+});
+
+test("strict Tavern recovery and error decoders enforce identity and action", () => {
+  const rawRun = rawTurnResult().run;
+  const validChain = {
+    root_run_id: rawRun.id,
+    run_ids: [rawRun.id],
+    root_status: rawRun.status,
+    leaf_run: rawRun,
+    chain_status: "completed",
+    recovery_action: "none",
+    completed_participant_ids: rawRun.scheduled_participant_ids,
+    unfinished_participant_ids: [],
+  };
+  const decoded = normalizeTavernRunRecovery({ items: [validChain] }, "room-1");
+  assert.equal(decoded[0]?.leafRun.id, rawRun.id);
+  assert.deepEqual(
+    normalizeTavernErrorDetail({
+      detail: {
+        code: "tavern_run_failed",
+        run_id: rawRun.id,
+        child_run_id: "",
+        current_revision: 2,
+        recovery_action: "replay_same_request",
+      },
+    }),
+    {
+      code: "tavern_run_failed",
+      runId: rawRun.id,
+      childRunId: undefined,
+      currentRevision: 2,
+      recoveryAction: "replay_same_request",
+    }
+  );
+  assert.throws(
+    () => normalizeTavernRunRecovery({
+      items: [{ ...validChain, run_ids: ["wrong-root", rawRun.id] }],
+    }),
+    TavernDecodeError
+  );
+  assert.throws(
+    () => normalizeTavernRunRecovery({
+      items: [{ ...validChain, chain_status: "recoverable", recovery_action: "none" }],
+    }),
+    TavernDecodeError
+  );
 });
 
 test("strict Tavern decoders bind responses to the requested room", () => {

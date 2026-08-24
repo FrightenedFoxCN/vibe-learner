@@ -239,6 +239,28 @@ class TavernRepository:
             steps_by_run[step_row.run_id].append(step_row)
         return [_run_from_row(row, steps_by_run[row.id]) for row in rows]
 
+    def list_all_runs(self, room_id: str) -> list[TavernRunRecord]:
+        """Load complete room run lineage for an authoritative recovery projection."""
+        with self.database.session() as session:
+            rows = session.scalars(
+                select(TavernRunRow)
+                .where(TavernRunRow.room_id == room_id)
+                .order_by(TavernRunRow.created_at.asc(), TavernRunRow.id.asc())
+            ).all()
+            step_rows = (
+                session.scalars(
+                    select(TavernRunStepRow)
+                    .where(TavernRunStepRow.run_id.in_([row.id for row in rows]))
+                    .order_by(TavernRunStepRow.run_id, TavernRunStepRow.step_index)
+                ).all()
+                if rows
+                else []
+            )
+        steps_by_run: defaultdict[str, list[TavernRunStepRow]] = defaultdict(list)
+        for step_row in step_rows:
+            steps_by_run[step_row.run_id].append(step_row)
+        return [_run_from_row(row, steps_by_run[row.id]) for row in rows]
+
     def begin_run(
         self,
         *,

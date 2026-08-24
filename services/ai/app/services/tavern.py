@@ -23,7 +23,10 @@ from app.models.tavern import (
     TavernRoomState,
     TavernRoomStatus,
     TavernRoomSummary,
+    TavernRecoveryAction,
     TavernRunRecord,
+    TavernRunChainStatus,
+    TavernRunRecoveryChain,
     TavernRunStatus,
     TavernRunTriggerKind,
     TavernSpeakerStepRecord,
@@ -169,6 +172,96 @@ class TavernService:
     def list_runs(self, room_id: str, *, limit: int = 50) -> list[TavernRunRecord]:
         self.require_room(room_id, limit=1)
         return self.repository.list_runs(room_id, limit=limit)
+
+    def list_run_recovery(
+        self,
+        room_id: str,
+        *,
+        limit: int = 50,
+    ) -> list[TavernRunRecoveryChain]:
+        self.require_room(room_id, limit=1)
+        runs = self.repository.list_all_runs(room_id)
+        by_id = {run.id: run for run in runs}
+        children: defaultdict[str, list[TavernRunRecord]] = defaultdict(list)
+        roots: list[TavernRunRecord] = []
+        for run in runs:
+            if run.parent_run_id:
+                parent = by_id.get(run.parent_run_id)
+                if parent is None or parent.room_id != room_id:
+                    raise RuntimeError("tavern_retry_chain_parent_missing")
+                children[parent.id].append(run)
+            else:
+                roots.append(run)
+        if any(len(items) != 1 for items in children.values()):
+            raise RuntimeError("tavern_retry_chain_branch_detected")
+
+        projections: list[TavernRunRecoveryChain] = []
+        visited: set[str] = set()
+        for root in sorted(
+            roots,
+            key=lambda item: (item.created_at, item.id),
+            reverse=True,
+        ):
+            chain = [root]
+            seen = {root.id}
+            current = root
+            while children.get(current.id):
+                child = children[current.id][0]
+                if child.id in seen:
+                    raise RuntimeError("tavern_retry_chain_cycle_detected")
+                if (child.root_run_id or child.id) != root.id:
+                    raise RuntimeError("tavern_retry_chain_root_mismatch")
+                chain.append(child)
+                seen.add(child.id)
+                current = child
+            visited.update(seen)
+            leaf = chain[-1]
+            completed = {
+                step.persona_id
+                for member in chain
+                for step in member.speaker_steps
+                if step.status == TavernSpeakerStepStatus.COMPLETED
+            }
+            completed_ids = [
+                persona_id
+                for persona_id in root.scheduled_participant_ids
+                if persona_id in completed
+            ]
+            unfinished_ids = [
+                persona_id
+                for persona_id in root.scheduled_participant_ids
+                if persona_id not in completed
+            ]
+            if leaf.status == TavernRunStatus.PENDING:
+                chain_status = TavernRunChainStatus.ACTIVE
+                action = TavernRecoveryAction.WAIT_AND_RESUME
+            elif leaf.status in {TavernRunStatus.PARTIAL, TavernRunStatus.FAILED}:
+                chain_status = TavernRunChainStatus.RECOVERABLE
+                action = TavernRecoveryAction.RETRY_LEAF
+            elif leaf.status == TavernRunStatus.CANCELED:
+                chain_status = TavernRunChainStatus.CANCELED
+                action = TavernRecoveryAction.NONE
+            elif len(chain) > 1:
+                chain_status = TavernRunChainStatus.RECOVERED
+                action = TavernRecoveryAction.NONE
+            else:
+                chain_status = TavernRunChainStatus.COMPLETED
+                action = TavernRecoveryAction.NONE
+            projections.append(
+                TavernRunRecoveryChain(
+                    root_run_id=root.id,
+                    run_ids=[member.id for member in chain],
+                    root_status=root.status,
+                    leaf_run=leaf,
+                    chain_status=chain_status,
+                    recovery_action=action,
+                    completed_participant_ids=completed_ids,
+                    unfinished_participant_ids=unfinished_ids,
+                )
+            )
+        if visited != set(by_id):
+            raise RuntimeError("tavern_retry_chain_orphan_detected")
+        return projections[: max(1, min(limit, 100))]
 
     def update_room(
         self,

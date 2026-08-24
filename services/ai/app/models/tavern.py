@@ -56,6 +56,22 @@ class TavernSpeakerStepStatus(StrEnum):
     CANCELED = "canceled"
 
 
+class TavernRecoveryAction(StrEnum):
+    NONE = "none"
+    REPLAY_SAME_REQUEST = "replay_same_request"
+    RELOAD_ROOM = "reload_room"
+    WAIT_AND_RESUME = "wait_and_resume"
+    RETRY_LEAF = "retry_leaf"
+
+
+class TavernRunChainStatus(StrEnum):
+    ACTIVE = "active"
+    RECOVERABLE = "recoverable"
+    RECOVERED = "recovered"
+    COMPLETED = "completed"
+    CANCELED = "canceled"
+
+
 class TavernHarnessPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -162,6 +178,25 @@ class TavernRunRecord(BaseModel):
     terminal_sequence: int = Field(default=0, ge=0)
     created_at: str
     completed_at: str = ""
+
+
+class TavernRunRecoveryChain(BaseModel):
+    root_run_id: str
+    run_ids: list[str] = Field(min_length=1)
+    root_status: TavernRunStatus
+    leaf_run: TavernRunRecord
+    chain_status: TavernRunChainStatus
+    recovery_action: TavernRecoveryAction
+    completed_participant_ids: list[str] = Field(default_factory=list)
+    unfinished_participant_ids: list[str] = Field(default_factory=list)
+
+
+class TavernErrorDetail(BaseModel):
+    code: str
+    run_id: str = ""
+    child_run_id: str = ""
+    current_revision: int | None = Field(default=None, ge=0)
+    recovery_action: TavernRecoveryAction = TavernRecoveryAction.NONE
 
 
 class TavernRoomDetail(BaseModel):
@@ -467,6 +502,10 @@ class TavernRoomListResponse(BaseModel):
 
 class TavernRunListResponse(BaseModel):
     items: list[TavernRunRecord]
+
+
+class TavernRunRecoveryResponse(BaseModel):
+    items: list[TavernRunRecoveryChain]
 
 
 class TavernTurnResponse(BaseModel):

@@ -21,9 +21,11 @@ import type {
   StreamReport,
   StudyChatResponse,
   StudySessionRecord,
+  TavernErrorDetail,
   TavernRoomDetail,
   TavernRoomSummary,
   TavernRun,
+  TavernRunRecoveryChain,
   TavernTurnInput,
   TavernTurnResult,
   TokenUsageStats,
@@ -46,6 +48,8 @@ import {
 
 export {
   normalizeTavernRoomDetail,
+  normalizeTavernErrorDetail,
+  normalizeTavernRunRecovery,
   normalizeTavernTurnResult,
   TavernDecodeError,
 } from "./tavern-decode";
@@ -58,7 +62,10 @@ import {
   normalizeTavernRoomDetail,
   normalizeTavernRoomList,
   normalizeTavernRunList,
+  normalizeTavernRunRecovery,
   normalizeTavernTurnResult,
+  normalizeTavernErrorDetail,
+  isTavernTerminalReplayDirective,
 } from "./tavern-decode";
 
 export interface StudyChatExchangeResponse extends StudyChatResponse {
@@ -374,6 +381,35 @@ async function readJson<T>(response: Response): Promise<T> {
     });
   }
   return (await response.json()) as T;
+}
+
+export function decodeTavernHttpError(error: unknown): TavernErrorDetail | null {
+  if (!(error instanceof ApiHttpError)) return null;
+  try {
+    return normalizeTavernErrorDetail(error.payload);
+  } catch {
+    return null;
+  }
+}
+
+async function requestTavernMutationWithRecovery(
+  input: string,
+  init: RequestInit
+): Promise<unknown> {
+  try {
+    return await readJson<unknown>(await request(input, init));
+  } catch (error) {
+    const detail = decodeTavernHttpError(error);
+    if (
+      !(error instanceof ApiHttpError) ||
+      !isTavernTerminalReplayDirective(error.status, detail)
+    ) {
+      throw error;
+    }
+    // The server has already committed terminal evidence. Replaying the exact
+    // request key is query-only recovery and must not invoke the model again.
+    return await readJson<unknown>(await request(input, init));
+  }
 }
 
 function formatStreamErrorPayload(
@@ -1384,6 +1420,16 @@ export async function listTavernRuns(
   return normalizeTavernRunList(payload, roomId);
 }
 
+export async function getTavernRunRecovery(
+  roomId: string,
+  limit = 50
+): Promise<TavernRunRecoveryChain[]> {
+  const payload = await readJson<unknown>(
+    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/run-recovery?limit=${limit}`)
+  );
+  return normalizeTavernRunRecovery(payload, roomId);
+}
+
 function serializeTavernTurnInput(input: TavernTurnInput) {
   return {
     input:
@@ -1402,12 +1448,13 @@ export async function runTavernTurn(
   roomId: string,
   input: TavernTurnInput
 ): Promise<TavernTurnResult> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/turns`, {
+  const payload = await requestTavernMutationWithRecovery(
+    `${AI_BASE_URL()}/tavern/rooms/${roomId}/turns`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(serializeTavernTurnInput(input)),
-    })
+    }
   );
   return normalizeTavernTurnResult(payload, roomId);
 }
@@ -1417,15 +1464,16 @@ export async function retryTavernRun(
   runId: string,
   input: RetryTavernRunInput
 ): Promise<TavernTurnResult> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/retry`, {
+  const payload = await requestTavernMutationWithRecovery(
+    `${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/retry`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         idempotency_key: input.idempotencyKey,
         expected_room_revision: input.expectedRoomRevision,
       }),
-    })
+    }
   );
   return normalizeTavernTurnResult(payload, roomId);
 }
