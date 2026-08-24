@@ -17,11 +17,11 @@ from app.models.domain import (
     SceneLibraryRecord,
     SceneSetupStateRecord,
     SessionSceneRecord,
-    StreamReportRecord,
     StudySessionRecord,
     ReusableSceneNodeRecord,
     TokenUsageRecord,
 )
+from app.models.stream import StreamReportRecord
 from app.persistence.database import Database
 from app.persistence.storage import StorageManager
 from app.services.local_store import LegacyLocalJsonStore, LocalJsonStore

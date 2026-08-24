@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import queue
 import threading
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -86,6 +87,13 @@ from app.models.api import (
     TokenUsageDailyBucket,
 )
 from app.models.domain import Citation, PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
+from app.models.harness import canonical_harness_digest
+from app.models.stream import (
+    DOCUMENT_STREAM_PROJECTION_CONTRACT,
+    LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
+    StreamSubjectRefV1,
+    StreamTerminalEvidenceV1,
+)
 from app.models.study_chat_operation import (
     StudyChatAttachmentManifestEntry,
     StudyChatOperationRequestPayload,
@@ -145,11 +153,121 @@ def _into_response_with_model_recoveries(
     return response_model.model_validate(payload)
 
 
-def _with_stream_id(stream_id: str, payload: dict[str, object]) -> dict[str, object]:
-    return {
-        **payload,
-        "stream_id": stream_id,
-    }
+def _document_stream_subject(document_id: str) -> StreamSubjectRefV1:
+    return StreamSubjectRefV1(subject_type="document", subject_id=document_id)
+
+
+def _learning_plan_stream_subject(
+    payload: LearningPlanCreateRequest,
+) -> StreamSubjectRefV1:
+    if payload.document_id:
+        return StreamSubjectRefV1(
+            subject_type="document",
+            subject_id=payload.document_id,
+        )
+    return StreamSubjectRefV1(
+        subject_type="learning_plan_request",
+        subject_id=payload.client_request_id,
+    )
+
+
+def _document_stream_committed_evidence(
+    *,
+    operation_id: str,
+    document_payload: dict[str, object],
+) -> StreamTerminalEvidenceV1:
+    operation = container.document_service.process_repository.require(
+        operation_id=operation_id,
+        validate_read_back=True,
+    )
+    projection_digest = canonical_harness_digest(document_payload)
+    if (
+        operation.status.value != "committed"
+        or operation.document_id != document_payload.get("id")
+        or operation.document_digest != projection_digest
+    ):
+        raise RuntimeError("document_stream_commit_read_back_mismatch")
+    return StreamTerminalEvidenceV1(
+        commit_status="committed",
+        domain_operation_id=operation.operation_id,
+        domain_operation_status=operation.status.value,
+        resource_type="document",
+        resource_id=operation.document_id,
+        commit_contract_version=operation.commit_contract_version,
+        projection_contract_version=DOCUMENT_STREAM_PROJECTION_CONTRACT,
+        projection_digest=projection_digest,
+    )
+
+
+def _learning_plan_stream_committed_evidence(
+    *,
+    operation_id: str,
+    plan_payload: dict[str, object],
+) -> StreamTerminalEvidenceV1:
+    operation = container.plan_service.operation_repository.require(
+        operation_id=operation_id,
+        validate_current=False,
+    )
+    projection = operation.committed_projection
+    projection_digest = canonical_harness_digest(plan_payload)
+    if (
+        operation.status.value != "committed"
+        or projection is None
+        or operation.plan_id != plan_payload.get("id")
+        or projection.plan_digest != projection_digest
+    ):
+        raise RuntimeError("learning_plan_stream_commit_read_back_mismatch")
+    return StreamTerminalEvidenceV1(
+        commit_status="committed",
+        domain_operation_id=operation.operation_id,
+        domain_operation_status=operation.status.value,
+        resource_type="learning_plan",
+        resource_id=operation.plan_id,
+        commit_contract_version=operation.commit_contract_version,
+        projection_contract_version=LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
+        projection_digest=projection_digest,
+    )
+
+
+def _stream_failure_evidence(
+    *,
+    operation_id: str,
+    domain: Literal["document_process", "learning_plan"],
+) -> StreamTerminalEvidenceV1:
+    if not operation_id:
+        return StreamTerminalEvidenceV1(
+            commit_status="not_committed",
+            domain_operation_status="not_admitted",
+        )
+    try:
+        if domain == "document_process":
+            operation = container.document_service.process_repository.require(
+                operation_id=operation_id,
+                validate_read_back=False,
+            )
+        else:
+            operation = container.plan_service.operation_repository.require(
+                operation_id=operation_id,
+                validate_current=False,
+            )
+    except Exception:
+        return StreamTerminalEvidenceV1(
+            commit_status="uncertain",
+            domain_operation_id=operation_id,
+            domain_operation_status="read_back_failed",
+        )
+    status = operation.status.value
+    commit_status = (
+        "uncertain"
+        if status in {"running", "uncertain", "committed"}
+        else "not_committed"
+    )
+    return StreamTerminalEvidenceV1(
+        commit_status=commit_status,
+        domain_operation_id=operation.operation_id,
+        domain_operation_status=status,
+    )
+
 
 def _map_openai_upstream_error(detail_prefix: str, exc: RuntimeError) -> HTTPException:
     detail = str(exc)
@@ -550,11 +668,18 @@ def create_document(file: UploadFile = File(...)) -> DocumentResponse:
 def process_document(
     document_id: str, payload: ProcessDocumentRequest | None = None
 ) -> DocumentResponse:
+    domain_operation_id = ""
+
+    def remember_operation(operation_id: str) -> None:
+        nonlocal domain_operation_id
+        domain_operation_id = operation_id
+
     recorder = StreamReportRecorder(
         store=container.store,
         category=DOCUMENT_PROCESS_STREAM_CATEGORY,
         document_id=document_id,
         stream_kind="document_process",
+        subject=_document_stream_subject(document_id),
     )
     logger.info(
         "documents.process document_id=%s force_ocr=%s",
@@ -566,6 +691,7 @@ def process_document(
             document_id,
             force_ocr=(payload.force_ocr if payload else False),
             progress_callback=recorder.callback,
+            operation_admitted_callback=remember_operation,
         )
     except Exception as exc:
         recorder.emit(
@@ -574,14 +700,24 @@ def process_document(
                 "document_id": document_id,
                 "error": _stringify_error(exc),
             },
+            terminal_evidence=_stream_failure_evidence(
+                operation_id=domain_operation_id,
+                domain="document_process",
+            ),
         )
         raise
+    document_projection = document.model_dump(mode="json")
     recorder.emit(
         "stream_completed",
         {
             "document_id": document.id,
             "status": document.status,
         },
+        terminal_evidence=_document_stream_committed_evidence(
+            operation_id=domain_operation_id,
+            document_payload=document_projection,
+        ),
+        committed_projection=document_projection,
     )
     return _into_response(DocumentResponse, document)
 
@@ -626,13 +762,19 @@ def process_document_stream(
         category=DOCUMENT_PROCESS_STREAM_CATEGORY,
         document_id=document_id,
         stream_kind="document_process",
+        subject=_document_stream_subject(document_id),
+        operation_id=interrupt_handle.stream_id,
     )
+    domain_operation_id = ""
+
+    def remember_operation(operation_id: str) -> None:
+        nonlocal domain_operation_id
+        domain_operation_id = operation_id
 
     def report(stage: str, event_payload: dict[str, object]) -> None:
         interrupt_handle.raise_if_cancelled()
-        payload_with_stream = _with_stream_id(interrupt_handle.stream_id, event_payload)
-        recorder.emit(stage, payload_with_stream)
-        event_queue.put({"stage": stage, "payload": payload_with_stream})
+        event = recorder.emit(stage, event_payload)
+        event_queue.put(event.model_dump(mode="json"))
 
     def run() -> None:
         try:
@@ -641,54 +783,48 @@ def process_document_stream(
                 force_ocr=force_ocr,
                 progress_callback=report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
+                operation_admitted_callback=remember_operation,
             )
-            recorder.emit(
+            document_projection = document.model_dump(mode="json")
+            event = recorder.emit(
                 "stream_completed",
-                _with_stream_id(interrupt_handle.stream_id, {
+                {
                     "document_id": document.id,
                     "status": document.status,
-                }),
+                },
+                terminal_evidence=_document_stream_committed_evidence(
+                    operation_id=domain_operation_id,
+                    document_payload=document_projection,
+                ),
+                committed_projection=document_projection,
             )
-            event_queue.put(
-                {
-                    "stage": "stream_completed",
-                    "payload": _with_stream_id(interrupt_handle.stream_id, {
-                        "document_id": document.id,
-                        "status": document.status,
-                    }),
-                    "document": document.model_dump(mode="json"),
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
-            payload = _with_stream_id(
-                interrupt_handle.stream_id,
+            event = recorder.emit(
+                "stream_cancelled",
                 {
                     "document_id": document_id,
                     "detail": "stream_interrupted",
                 },
+                terminal_evidence=_stream_failure_evidence(
+                    operation_id=domain_operation_id,
+                    domain="document_process",
+                ),
             )
-            recorder.emit("stream_cancelled", payload)
-            event_queue.put(
-                {
-                    "stage": "stream_cancelled",
-                    "payload": payload,
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         except Exception as exc:
-            payload = _with_stream_id(
-                interrupt_handle.stream_id,
+            event = recorder.emit(
+                "stream_error",
                 {
                     "document_id": document_id,
                     "error": _stringify_error(exc),
                 },
+                terminal_evidence=_stream_failure_evidence(
+                    operation_id=domain_operation_id,
+                    domain="document_process",
+                ),
             )
-            recorder.emit("stream_error", payload)
-            event_queue.put(
-                {
-                    "stage": "stream_error",
-                    "payload": payload,
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         finally:
             interrupt_handle.mark_completed()
             event_queue.put(None)
@@ -1817,11 +1953,18 @@ def _ensure_session_scene_binding(session):
 def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResponse:
     reset_model_recovery_state()
     stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
+    domain_operation_id = ""
+
+    def remember_operation(operation_id: str) -> None:
+        nonlocal domain_operation_id
+        domain_operation_id = operation_id
+
     recorder = StreamReportRecorder(
         store=container.store,
         category=LEARNING_PLAN_STREAM_CATEGORY,
         document_id=stream_document_id,
         stream_kind="learning_plan",
+        subject=_learning_plan_stream_subject(payload),
     )
     logger.info(
         "learning_plans.create document_id=%s persona_id=%s",
@@ -1854,6 +1997,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
             persona=persona,
             debug_report=debug_report,
             progress_callback=recorder.callback,
+            operation_admitted_callback=remember_operation,
         )
     except RuntimeError as exc:
         http_error = _map_plan_generation_error(exc)
@@ -1866,6 +2010,10 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
                 "internal_error_code": str(exc),
                 "retry_attempts": _runtime_error_retry_attempts(exc),
             },
+            terminal_evidence=_stream_failure_evidence(
+                operation_id=domain_operation_id,
+                domain="learning_plan",
+            ),
         )
         logger.warning(
             "learning_plans.create_failed document_id=%s persona_id=%s detail=%s status_code=%s internal_error_code=%s retry_attempts=%s",
@@ -1877,6 +2025,20 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
             _runtime_error_retry_attempts(exc),
         )
         raise http_error from exc
+    except Exception as exc:
+        recorder.emit(
+            "stream_error",
+            {
+                "document_id": payload.document_id,
+                "detail": _stringify_error(exc),
+            },
+            terminal_evidence=_stream_failure_evidence(
+                operation_id=domain_operation_id,
+                domain="learning_plan",
+            ),
+        )
+        raise
+    plan_projection = plan.model_dump(mode="json")
     recorder.emit(
         "stream_completed",
         {
@@ -1884,6 +2046,11 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
             "plan_id": plan.id,
             "creation_mode": plan.creation_mode,
         },
+        terminal_evidence=_learning_plan_stream_committed_evidence(
+            operation_id=domain_operation_id,
+            plan_payload=plan_projection,
+        ),
+        committed_projection=plan_projection,
     )
     return _into_response(LearningPlanResponse, plan)
 
@@ -1953,13 +2120,19 @@ def create_learning_plan_stream(
         category=LEARNING_PLAN_STREAM_CATEGORY,
         document_id=stream_document_id,
         stream_kind="learning_plan",
+        subject=_learning_plan_stream_subject(payload),
+        operation_id=interrupt_handle.stream_id,
     )
+    domain_operation_id = ""
+
+    def remember_operation(operation_id: str) -> None:
+        nonlocal domain_operation_id
+        domain_operation_id = operation_id
 
     def report(stage: str, event_payload: dict[str, object]) -> None:
         interrupt_handle.raise_if_cancelled()
-        payload_with_stream = _with_stream_id(interrupt_handle.stream_id, event_payload)
-        recorder.emit(stage, payload_with_stream)
-        event_queue.put({"stage": stage, "payload": payload_with_stream})
+        event = recorder.emit(stage, event_payload)
+        event_queue.put(event.model_dump(mode="json"))
 
     def run() -> None:
         reset_model_recovery_state()
@@ -1980,45 +2153,40 @@ def create_learning_plan_stream(
                 debug_report=debug_report,
                 progress_callback=report,
                 interrupt_check=interrupt_handle.raise_if_cancelled,
+                operation_admitted_callback=remember_operation,
             )
-            recorder.emit(
+            plan_projection = plan.model_dump(mode="json")
+            event = recorder.emit(
                 "stream_completed",
-                _with_stream_id(interrupt_handle.stream_id, {
+                {
                     "document_id": payload.document_id,
                     "plan_id": plan.id,
                     "creation_mode": plan.creation_mode,
-                }),
+                },
+                terminal_evidence=_learning_plan_stream_committed_evidence(
+                    operation_id=domain_operation_id,
+                    plan_payload=plan_projection,
+                ),
+                committed_projection=plan_projection,
             )
-            event_queue.put(
-                {
-                    "stage": "stream_completed",
-                    "payload": _with_stream_id(interrupt_handle.stream_id, {
-                        "document_id": payload.document_id,
-                        "plan_id": plan.id,
-                        "creation_mode": plan.creation_mode,
-                    }),
-                    "plan": plan.model_dump(mode="json"),
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
-            payload_with_stream = _with_stream_id(
-                interrupt_handle.stream_id,
+            event = recorder.emit(
+                "stream_cancelled",
                 {
                     "document_id": payload.document_id,
                     "detail": "stream_interrupted",
                 },
+                terminal_evidence=_stream_failure_evidence(
+                    operation_id=domain_operation_id,
+                    domain="learning_plan",
+                ),
             )
-            recorder.emit("stream_cancelled", payload_with_stream)
-            event_queue.put(
-                {
-                    "stage": "stream_cancelled",
-                    "payload": payload_with_stream,
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         except RuntimeError as exc:
             http_error = _map_plan_generation_error(exc)
-            payload_with_stream = _with_stream_id(
-                interrupt_handle.stream_id,
+            event = recorder.emit(
+                "stream_error",
                 {
                     "document_id": payload.document_id,
                     "detail": http_error.detail,
@@ -2026,29 +2194,25 @@ def create_learning_plan_stream(
                     "internal_error_code": str(exc),
                     "retry_attempts": _runtime_error_retry_attempts(exc),
                 },
+                terminal_evidence=_stream_failure_evidence(
+                    operation_id=domain_operation_id,
+                    domain="learning_plan",
+                ),
             )
-            recorder.emit("stream_error", payload_with_stream)
-            event_queue.put(
-                {
-                    "stage": "stream_error",
-                    "payload": payload_with_stream,
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         except Exception as exc:
-            payload_with_stream = _with_stream_id(
-                interrupt_handle.stream_id,
+            event = recorder.emit(
+                "stream_error",
                 {
                     "document_id": payload.document_id,
                     "detail": str(exc),
                 },
+                terminal_evidence=_stream_failure_evidence(
+                    operation_id=domain_operation_id,
+                    domain="learning_plan",
+                ),
             )
-            recorder.emit("stream_error", payload_with_stream)
-            event_queue.put(
-                {
-                    "stage": "stream_error",
-                    "payload": payload_with_stream,
-                }
-            )
+            event_queue.put(event.model_dump(mode="json"))
         finally:
             interrupt_handle.mark_completed()
             event_queue.put(None)

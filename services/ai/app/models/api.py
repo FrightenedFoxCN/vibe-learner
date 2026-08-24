@@ -25,8 +25,6 @@ from app.models.domain import (
     PersonaSlot,
     SceneLibraryRecord,
     ReusableSceneNodeRecord,
-    StreamEventRecord,
-    StreamReportRecord,
     StudySessionRecord,
     SceneProfileRecord,
     SceneLayerStateRecord,
@@ -34,6 +32,7 @@ from app.models.domain import (
     SessionSceneRecord,
     SceneSetupStateRecord,
 )
+from app.models.stream import StreamEventRecord, StreamReportRecord
 from app.models.study_question import (
     StudyQuestionAttemptResponseV1,
     StudyQuestionPromptResponseV1,

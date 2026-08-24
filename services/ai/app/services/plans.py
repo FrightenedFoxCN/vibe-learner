@@ -73,6 +73,7 @@ class LearningPlanService:
         debug_report: DocumentDebugRecord | None = None,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
+        operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> LearningPlanRecord:
         if document is not None and document.debug_ready and debug_report is None:
             debug_report = self.store.load_item(
@@ -122,6 +123,8 @@ class LearningPlanService:
             ) from exc
 
         if duplicate:
+            if operation_admitted_callback is not None:
+                operation_admitted_callback(operation.operation_id)
             projection = operation.committed_projection
             if projection is None:
                 raise RuntimeError("learning_plan_committed_projection_missing")
@@ -138,6 +141,8 @@ class LearningPlanService:
             provider_started = True
 
         try:
+            if operation_admitted_callback is not None:
+                operation_admitted_callback(operation.operation_id)
             if document is not None and planning_projection_digest(
                 document.model_dump(mode="json")
             ) != operation.base_document_digest:

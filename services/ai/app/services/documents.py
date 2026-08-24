@@ -84,6 +84,7 @@ class DocumentService:
         force_ocr: bool = False,
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
+        operation_admitted_callback: Callable[[str], None] | None = None,
     ) -> DocumentRecord:
         try:
             operation, document = self.process_repository.admit(
@@ -97,6 +98,8 @@ class DocumentService:
         except (DocumentProcessStateConflict, DocumentProcessAdmissionRace) as exc:
             raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
         try:
+            if operation_admitted_callback is not None:
+                operation_admitted_callback(operation.operation_id)
             _emit_progress(
                 progress_callback,
                 "document_processing_started",

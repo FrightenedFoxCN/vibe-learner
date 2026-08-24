@@ -1,4 +1,5 @@
 import base64
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import io
@@ -18,7 +19,15 @@ from app.api.routes import (
     _map_setting_generation_error,
     get_document_planning_trace,
 )
-from app.models.api import CreatePersonaCardRequest, CreatePersonaRequest, DocumentResponse, PersonaCardGenerateRequest
+from app.api import routes
+from app.models.api import (
+    CreatePersonaCardRequest,
+    CreatePersonaRequest,
+    DocumentResponse,
+    LearningPlanCreateRequest,
+    PersonaCardGenerateRequest,
+    ProcessDocumentRequest,
+)
 from app.models.domain import (
     ChatToolCallTraceRecord,
     Citation,
@@ -42,6 +51,14 @@ from app.models.study_question import (
     StudyQuestionProposalV1,
     StudyQuestionResultRecordV1,
     project_study_question_proposal,
+)
+from app.models.harness import canonical_harness_digest
+from app.models.stream import (
+    DOCUMENT_STREAM_PROJECTION_CONTRACT,
+    LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
+    StreamSubjectRefV1,
+    StreamTerminalEvidenceV1,
+    StreamEventRecord,
 )
 from app.services.documents import DocumentService
 from app.services.document_parser import DocumentParser, ParsedPage
@@ -82,7 +99,7 @@ from app.services.study_chat_attachments import (
 from app.services.study_chat_effects import StudyChatEffectCollector
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.study_session_prompt import build_study_session_system_prompt
-from app.services.stream_interrupts import StreamInterruptedError
+from app.services.stream_interrupts import StreamInterruptedError, StreamInterruptRegistry
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
     LEARNING_PLAN_STREAM_CATEGORY,
@@ -98,6 +115,13 @@ class FakeLiteLLMResult:
 
     def model_dump(self, mode: str = "json") -> dict[str, object]:
         return self.payload
+
+
+async def _read_streaming_response(response) -> list[dict[str, object]]:
+    content = ""
+    async for chunk in response.body_iterator:
+        content += chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
+    return [json.loads(line) for line in content.splitlines() if line.strip()]
 
 
 def _schedule_chapter_record(
@@ -2445,17 +2469,33 @@ class PersonaPipelineTests(unittest.TestCase):
             category=DOCUMENT_PROCESS_STREAM_CATEGORY,
             document_id=document.id,
             stream_kind="document_process",
+            subject=StreamSubjectRefV1(
+                subject_type="document",
+                subject_id=document.id,
+            ),
         )
         processed = self.document_service.process_document(
             document.id,
             progress_callback=recorder.callback,
         )
+        document_projection = processed.model_dump(mode="json")
         recorder.emit(
             "stream_completed",
             {
                 "document_id": processed.id,
                 "status": processed.status,
             },
+            terminal_evidence=StreamTerminalEvidenceV1(
+                commit_status="committed",
+                domain_operation_id="document-process-op-test",
+                domain_operation_status="committed",
+                resource_type="document",
+                resource_id=processed.id,
+                commit_contract_version="document-process-commit-v1",
+                projection_contract_version=DOCUMENT_STREAM_PROJECTION_CONTRACT,
+                projection_digest=canonical_harness_digest(document_projection),
+            ),
+            committed_projection=document_projection,
         )
 
         report = StreamReportRecorder.load(
@@ -2494,6 +2534,10 @@ class PersonaPipelineTests(unittest.TestCase):
             category=LEARNING_PLAN_STREAM_CATEGORY,
             document_id=processed.id,
             stream_kind="learning_plan",
+            subject=StreamSubjectRefV1(
+                subject_type="document",
+                subject_id=processed.id,
+            ),
         )
         recorder.emit(
             "learning_plan_started",
@@ -2513,12 +2557,24 @@ class PersonaPipelineTests(unittest.TestCase):
             persona=persona,
             progress_callback=recorder.callback,
         )
+        plan_projection = plan.model_dump(mode="json")
         recorder.emit(
             "stream_completed",
             {
                 "document_id": processed.id,
                 "plan_id": plan.id,
             },
+            terminal_evidence=StreamTerminalEvidenceV1(
+                commit_status="committed",
+                domain_operation_id="learning-plan-op-test",
+                domain_operation_status="committed",
+                resource_type="learning_plan",
+                resource_id=plan.id,
+                commit_contract_version="learning-plan-commit-v1",
+                projection_contract_version=LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
+                projection_digest=canonical_harness_digest(plan_projection),
+            ),
+            committed_projection=plan_projection,
         )
 
         report = StreamReportRecorder.load(
@@ -2534,6 +2590,88 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertIn("heuristic_plan_built", stages)
         self.assertIn("model_plan_applied", stages)
         self.assertIn("stream_completed", stages)
+
+    def test_document_and_plan_stream_routes_emit_versioned_committed_terminal_wire(self) -> None:
+        from fastapi import UploadFile
+
+        sample_pdf = Path(self.temp_dir.name) / "stream-route.pdf"
+        pdf = fitz.open()
+        page = pdf.new_page()
+        page.insert_text((72, 72), "Chapter 1", fontsize=24)
+        page.insert_text((72, 120), "Enough text for route-level stream evidence.", fontsize=12)
+        pdf.save(sample_pdf)
+        pdf.close()
+
+        upload = UploadFile(filename="stream-route.pdf", file=open(sample_pdf, "rb"))
+        try:
+            document = self.document_service.create_document(upload)
+        finally:
+            upload.file.close()
+
+        with (
+            patch.object(routes.container, "store", self.store),
+            patch.object(routes.container, "document_service", self.document_service),
+            patch.object(
+                routes.container,
+                "stream_interrupt_registry",
+                StreamInterruptRegistry(),
+            ),
+        ):
+            response = routes.process_document_stream(
+                document.id,
+                ProcessDocumentRequest(force_ocr=False),
+            )
+            document_frames = asyncio.run(_read_streaming_response(response))
+
+        decoded_document_frames = [
+            StreamEventRecord.model_validate(frame) for frame in document_frames
+        ]
+        self.assertTrue(decoded_document_frames)
+        self.assertEqual(decoded_document_frames[-1].stage, "stream_completed")
+        self.assertEqual(
+            decoded_document_frames[-1].committed_projection["id"],  # type: ignore[index]
+            document.id,
+        )
+        self.assertEqual(
+            decoded_document_frames[-1].terminal_evidence.commit_status,  # type: ignore[union-attr]
+            "committed",
+        )
+
+        processed = self.document_service.require_document(document.id)
+        plan_request = LearningPlanCreateRequest(
+            document_id=processed.id,
+            persona_id="mentor-aurora",
+            client_request_id="stream-route-plan-request",
+            expected_document_updated_at=processed.updated_at,
+            objective="掌握第一章",
+        )
+        with (
+            patch.object(routes.container, "store", self.store),
+            patch.object(routes.container, "document_service", self.document_service),
+            patch.object(routes.container, "plan_service", self.plan_service),
+            patch.object(routes.container, "persona_engine", self.persona_engine),
+            patch.object(
+                routes.container,
+                "stream_interrupt_registry",
+                StreamInterruptRegistry(),
+            ),
+        ):
+            response = routes.create_learning_plan_stream(plan_request)
+            plan_frames = asyncio.run(_read_streaming_response(response))
+
+        decoded_plan_frames = [
+            StreamEventRecord.model_validate(frame) for frame in plan_frames
+        ]
+        self.assertTrue(decoded_plan_frames)
+        self.assertEqual(decoded_plan_frames[-1].stage, "stream_completed")
+        self.assertEqual(
+            decoded_plan_frames[-1].terminal_evidence.commit_status,  # type: ignore[union-attr]
+            "committed",
+        )
+        self.assertEqual(
+            decoded_plan_frames[-1].committed_projection["id"],  # type: ignore[index]
+            decoded_plan_frames[-1].terminal_evidence.resource_id,  # type: ignore[union-attr]
+        )
 
     def test_parser_force_ocr_can_recover_blank_page(self) -> None:
         sample_pdf = Path(self.temp_dir.name) / "blank-scan.pdf"

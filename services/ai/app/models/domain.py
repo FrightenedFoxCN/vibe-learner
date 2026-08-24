@@ -693,21 +693,6 @@ class RuntimeSettingsRecord(BaseModel):
     show_debug_info: bool = True
 
 
-class StreamEventRecord(BaseModel):
-    stage: str
-    payload: dict[str, Any] = Field(default_factory=dict)
-    created_at: str
-
-
-class StreamReportRecord(BaseModel):
-    document_id: str
-    stream_kind: str
-    status: str = "idle"
-    created_at: str
-    updated_at: str
-    events: list[StreamEventRecord] = Field(default_factory=list)
-
-
 class ChatToolCallTraceRecord(BaseModel):
     tool_call_id: str
     tool_name: str

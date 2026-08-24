@@ -435,39 +435,84 @@ Current stream event stages may include:
 - `document_processing_completed`
 - `stream_completed`
 - `stream_error`
+- `stream_cancelled`
 
-Each line is one JSON object:
+Each line is a `stream-event-v1` object. The service owns `operation_id`,
+`event_id`, and the monotonic `event_sequence`; `subject` binds every frame to
+the requested Document. `payload_digest` is the backend canonical SHA-256 of
+`payload` under `document-process-stream-payload-v1`:
 
 ```json
 {
+  "event_schema_version": "stream-event-v1",
+  "operation_id": "stream-a1b2c3d4e5f6",
+  "event_id": "stream-a1b2c3d4e5f6:event:1",
+  "event_sequence": 1,
+  "stream_kind": "document_process",
+  "subject": {
+    "subject_type": "document",
+    "subject_id": "doc-123"
+  },
   "stage": "document_processing_started",
+  "payload_contract_version": "document-process-stream-payload-v1",
+  "payload_digest": "<sha256>",
   "payload": {
     "document_id": "doc-123",
     "force_ocr": false
-  }
+  },
+  "terminal_evidence": null,
+  "committed_projection": null,
+  "created_at": "2026-08-25T00:00:00+00:00"
 }
 ```
 
-The final success event also includes a document payload:
+The final success event is valid only when its terminal evidence binds the
+committed Document projection and exact digest:
 
 ```json
 {
+  "event_schema_version": "stream-event-v1",
+  "operation_id": "stream-a1b2c3d4e5f6",
+  "event_id": "stream-a1b2c3d4e5f6:event:9",
+  "event_sequence": 9,
+  "stream_kind": "document_process",
+  "subject": {
+    "subject_type": "document",
+    "subject_id": "doc-123"
+  },
   "stage": "stream_completed",
+  "payload_contract_version": "document-process-stream-payload-v1",
+  "payload_digest": "<sha256>",
   "payload": {
     "document_id": "doc-123",
     "status": "processed"
   },
-  "document": {
+  "terminal_evidence": {
+    "commit_status": "committed",
+    "domain_operation_id": "document-process-op-123",
+    "domain_operation_status": "committed",
+    "evidence_scope": "primary_output_only",
+    "resource_type": "document",
+    "resource_id": "doc-123",
+    "commit_contract_version": "document-process-commit-v1",
+    "projection_contract_version": "document-record-v1",
+    "projection_digest": "<sha256>"
+  },
+  "committed_projection": {
     "...": "DocumentRecord"
-  }
+  },
+  "created_at": "2026-08-25T00:00:05+00:00"
 }
 ```
 
-Stream delivery is progress evidence, not commit evidence. A callback or client
-disconnect after the atomic database commit cannot reverse the committed
-Document/Debug result. Versioned event identity, resume tokens, and strict
-frontend terminal decoding remain tracked separately by `SCH-WEB-STREAM-001`
-and `HRN-WEB-STREAM-001`.
+`stream_error` and `stream_cancelled` are terminal and carry `not_committed` or
+`uncertain` evidence without a committed projection. The evidence is a narrow
+transport read-back with `primary_output_only` scope; it does not claim Harness
+v3 adoption or prove every Document/Debug transaction effect. Persisted
+`stream-report-v1` snapshots retain the latest 120 events plus the total
+`last_event_sequence`, so a trimmed/reconnected reader can detect gaps. Old
+reports without an explicit version remain readable as legacy records without
+invented operation, sequence, or digest evidence.
 
 ### `GET /documents/{document_id}/status`
 
@@ -617,21 +662,54 @@ Current stream event stages may include:
 - `learning_plan_completed`
 - `stream_completed`
 - `stream_error`
+- `stream_cancelled`
 
-The final success line includes the full plan:
+Planning lines use the same `stream-event-v1` envelope with
+`stream_kind=learning_plan` and
+`payload_contract_version=learning-plan-stream-payload-v1`. Document-backed
+requests use a `document` subject; goal-only requests use the stable
+`learning_plan_request` subject from `client_request_id`. The final success line
+binds the full Plan as the committed projection:
 
 ```json
 {
+  "event_schema_version": "stream-event-v1",
+  "operation_id": "stream-f6e5d4c3b2a1",
+  "event_id": "stream-f6e5d4c3b2a1:event:12",
+  "event_sequence": 12,
+  "stream_kind": "learning_plan",
+  "subject": {
+    "subject_type": "document",
+    "subject_id": "doc-123"
+  },
   "stage": "stream_completed",
+  "payload_contract_version": "learning-plan-stream-payload-v1",
+  "payload_digest": "<sha256>",
   "payload": {
     "document_id": "doc-123",
     "plan_id": "plan-123"
   },
-  "plan": {
+  "terminal_evidence": {
+    "commit_status": "committed",
+    "domain_operation_id": "learning-plan-op-123",
+    "domain_operation_status": "committed",
+    "evidence_scope": "primary_output_only",
+    "resource_type": "learning_plan",
+    "resource_id": "plan-123",
+    "commit_contract_version": "learning-plan-commit-v1",
+    "projection_contract_version": "learning-plan-record-v1",
+    "projection_digest": "<sha256>"
+  },
+  "committed_projection": {
     "...": "LearningPlanRecord"
-  }
+  },
+  "created_at": "2026-08-25T00:01:00+00:00"
 }
 ```
+
+The digest is produced by Python, the canonical authority. Browser clients may
+use the supplied event ID/digest pair for replay equality but must not use
+`JSON.stringify` to claim cross-language digest verification.
 
 ### `GET /learning-plan-operations/{client_request_id}`
 
