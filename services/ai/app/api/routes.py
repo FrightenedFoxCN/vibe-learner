@@ -107,6 +107,10 @@ from app.services.study_chat_attachments import (
     validate_study_chat_attachment_inputs,
 )
 from app.services.study_chat_attachments import render_pdf_page_png_bytes
+from app.services.study_chat_preflight import (
+    StudyChatPreflightError,
+    validate_study_chat_preclaim,
+)
 from app.services.study_session_chat_runtime import StudySessionChatToolRuntime
 from app.services.stream_interrupts import StreamInterruptedError
 from app.services.stream_reports import (
@@ -1103,14 +1107,19 @@ def _admit_and_run_study_chat(
         _cleanup_terminal_study_chat_staging(operation)
         return _study_chat_operation_response(operation)
     try:
+        validate_study_chat_preclaim(
+            session=container.study_session_service.require_session(session_id),
+            request_payload=operation.request_payload,
+        )
         validate_study_chat_attachment_inputs(
             attachment_inputs or [],
             allow_image_input=container.model_provider.supports_chat_page_image_tools(),
         )
-    except HTTPException as exc:
+    except (HTTPException, StudyChatPreflightError) as exc:
+        detail = exc.detail if isinstance(exc, HTTPException) else exc.code
         not_committed = container.study_chat_operation_repository.mark_not_committed(
             operation_id=operation.operation_id,
-            error_code=f"study_chat_not_committed_{str(exc.detail)}"[:128],
+            error_code=f"study_chat_not_committed_{str(detail)}"[:128],
         )
         return _study_chat_operation_response(not_committed)
 

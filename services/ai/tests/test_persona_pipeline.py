@@ -4834,6 +4834,11 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(project_payload["predicted_state"]["title"], "矩阵变换草图")
         self.assertEqual(project_payload["predicted_state"]["image_url"], "data:image/png;base64,AAA")
         self.assertEqual(project_payload["external_effect_state"], "completed_uncommitted")
+        self.assertTrue(
+            project_payload["external_effect_id"].startswith(
+                "study-provider-effect-"
+            )
+        )
         self.assertEqual(
             project_payload["external_effect_adapter"]["name"],
             "study_provider_execution",

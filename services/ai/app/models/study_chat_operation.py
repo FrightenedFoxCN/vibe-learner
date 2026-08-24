@@ -21,6 +21,17 @@ STUDY_CHAT_RESPONSE_SCHEMA_VERSIONS = {
 }
 
 
+def study_chat_provider_effect_id(
+    *,
+    operation_id: str,
+    source_effect_id: str,
+) -> str:
+    digest = hashlib.sha256(
+        f"{operation_id}:provider:{source_effect_id}".encode("utf-8")
+    ).hexdigest()[:20]
+    return f"study-provider-effect-{digest}"
+
+
 class StudyChatOperationStatus(StrEnum):
     ADMITTED = "admitted"
     RUNNING = "running"

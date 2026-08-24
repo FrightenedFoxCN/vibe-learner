@@ -12,6 +12,7 @@ from app.models.domain import (
     SessionProjectedPdfRecord,
 )
 from app.models.harness_effect import HARNESS_EFFECT_ADAPTER_POLICIES
+from app.models.study_chat_operation import study_chat_provider_effect_id
 from app.models.study_chat_effect import (
     StudyAffinityDeltaEffectProposalV1,
     StudyFollowUpEffectAction,
@@ -849,11 +850,18 @@ class StudySessionChatToolRuntime:
         if tool_name == "generate_projected_image":
             if self._model_provider is None:
                 raise HTTPException(status_code=422, detail="chat_image_generation_unsupported")
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
             prompt = str(arguments.get("prompt") or "").strip()
             title = str(arguments.get("title") or "").strip() or "AI 生成图像"
             size = str(arguments.get("size") or "1024x1024").strip() or "1024x1024"
             if not prompt:
                 raise HTTPException(status_code=422, detail="chat_image_generation_prompt_required")
+            expected_projection_effect_id = self._effect_collector.next_effect_id()
+            external_effect_id = study_chat_provider_effect_id(
+                operation_id=self._effect_collector.operation_id,
+                source_effect_id=expected_projection_effect_id,
+            )
             try:
                 generated = self._model_provider.generate_projected_image(
                     prompt=prompt,
@@ -865,8 +873,6 @@ class StudySessionChatToolRuntime:
                     "tool_name": tool_name,
                     "error": str(exc),
                 }
-            if self._effect_collector is None:
-                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
             proposal = StudyProjectionEffectProposalV1(
                 action=StudyProjectionEffectAction.SET,
                 source_kind="generated_image",
@@ -876,6 +882,8 @@ class StudySessionChatToolRuntime:
                 image_url=str(generated.get("image_url") or ""),
             )
             effect = self._effect_collector.prepare_projection(proposal)
+            if effect.effect_id != expected_projection_effect_id:
+                raise RuntimeError("study_provider_effect_slot_drift")
             session = self._session_service.require_session(self.session_id)
             projected_pdf = self._effect_collector.preview_projected_state(
                 session.projected_pdf
@@ -890,6 +898,7 @@ class StudySessionChatToolRuntime:
                 "prepared_proposal": proposal.model_dump(mode="json"),
                 "predicted_state": projected_pdf.model_dump(mode="json"),
                 "external_effect_state": "completed_uncommitted",
+                "external_effect_id": external_effect_id,
                 "external_effect_adapter": HARNESS_EFFECT_ADAPTER_POLICIES[
                     "study_provider_execution"
                 ].model_dump(mode="json"),

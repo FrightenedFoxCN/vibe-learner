@@ -1,4 +1,6 @@
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -8,13 +10,25 @@ from app.models.study_chat_operation import (
 )
 from app.persistence.database import Database
 from app.persistence.study_chat_operation_repository import (
+    StudyChatOperationAlreadyActive,
+    StudyChatOperationAdmissionRace,
     StudyChatOperationRepository,
     StudyChatOperationRequestMismatch,
 )
+from app.persistence.models import StudyChatOperationRow
 from app.persistence.study_session_repository import StudySessionRepository
-from app.models.domain import StudyChatResult, StudySessionRecord
+from app.models.domain import (
+    SceneProfileRecord,
+    SessionFollowUpRecord,
+    StudyChatResult,
+    StudySessionRecord,
+)
 from app.models.api import StudyChatOperationReceiptResponse
 from app.models.study_chat_operation import StudyChatOperationRecord
+from app.services.study_chat_preflight import (
+    StudyChatPreflightError,
+    validate_study_chat_preclaim,
+)
 from pydantic import ValidationError
 
 
@@ -149,6 +163,121 @@ class StudyChatOperationTests(unittest.TestCase):
             timeout_seconds=30,
         )
         self.assertFalse(claimed_again)
+
+    def test_concurrent_admission_allows_exactly_one_active_operation(self) -> None:
+        worker_count = 4
+        barrier = Barrier(worker_count)
+
+        def admit(index: int):
+            barrier.wait(timeout=5)
+            try:
+                return self.operations.admit(
+                    session_id="session-operation",
+                    client_request_id=f"request-concurrent-{index:04d}",
+                    request_payload=self.payload(),
+                )
+            except (StudyChatOperationAlreadyActive, StudyChatOperationAdmissionRace):
+                return None
+
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            results = list(executor.map(admit, range(worker_count)))
+        admitted = [item for item in results if item is not None]
+        self.assertEqual(len(admitted), 1)
+        with self.database.session() as db_session:
+            rows = db_session.query(StudyChatOperationRow).all()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].active_slot, 1)
+
+    def test_expired_running_operation_becomes_uncertain_and_cannot_reclaim(self) -> None:
+        operation = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-timeout-0001",
+            request_payload=self.payload(),
+        )
+        running, claimed = self.operations.claim(
+            operation_id=operation.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertTrue(claimed)
+        with self.database.session() as db_session:
+            row = db_session.get(StudyChatOperationRow, running.operation_id)
+            assert row is not None
+            row.execution_deadline_at = "2026-01-01T00:00:00+00:00"
+        expired = self.operations.require(
+            session_id="session-operation",
+            client_request_id="request-timeout-0001",
+        )
+        self.assertEqual(expired.status, StudyChatOperationStatus.UNCERTAIN)
+        self.assertEqual(expired.error_code, "study_chat_execution_deadline_expired")
+        self.assertFalse(self.operations.receipt(expired).safe_to_retry)
+        _, claimed_again = self.operations.claim(
+            operation_id=running.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertFalse(claimed_again)
+
+    def test_preclaim_rejects_deterministic_revision_follow_up_and_scene_conflicts(self) -> None:
+        session = self.sessions.require("session-operation")
+        validate_study_chat_preclaim(
+            session=session,
+            request_payload=self.payload(),
+        )
+        with self.assertRaisesRegex(
+            StudyChatPreflightError,
+            "study_chat_preflight_revision_changed",
+        ):
+            validate_study_chat_preclaim(
+                session=session.model_copy(update={"revision": 1}),
+                request_payload=self.payload(),
+            )
+        scheduled = self.payload().model_copy(
+            update={
+                "message_kind": "scheduled_follow_up",
+                "follow_up_id": "follow-up-missing",
+            }
+        )
+        with self.assertRaisesRegex(StudyChatPreflightError, "follow_up_not_pending"):
+            validate_study_chat_preclaim(
+                session=session,
+                request_payload=scheduled,
+            )
+        pending_session = session.model_copy(
+            update={
+                "pending_follow_ups": [
+                    SessionFollowUpRecord(
+                        id="follow-up-pending",
+                        status="pending",
+                        due_at="2026-08-12T00:00:30+00:00",
+                        hidden_message="continue",
+                        created_at="2026-08-12T00:00:00+00:00",
+                    )
+                ]
+            }
+        )
+        validate_study_chat_preclaim(
+            session=pending_session,
+            request_payload=scheduled.model_copy(
+                update={"follow_up_id": "follow-up-pending"}
+            ),
+        )
+        broken_scene = session.model_copy(
+            update={
+                "scene_profile": SceneProfileRecord(
+                    scene_id="scene-root",
+                    title="Scene",
+                    summary="Bound profile without instance",
+                ),
+                "scene_instance_id": "",
+            }
+        )
+        with self.assertRaisesRegex(
+            StudyChatPreflightError,
+            "session_scene_binding_required",
+        ):
+            validate_study_chat_preclaim(
+                session=broken_scene,
+                request_payload=self.payload(),
+            )
 
     def test_turn_and_committed_receipt_publish_atomically(self) -> None:
         operation = self.operations.admit(
