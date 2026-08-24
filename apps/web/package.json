@@ -7,7 +7,8 @@
     "build": "next build",
     "build:desktop": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "check": "tsc --noEmit",
+    "lint": "npm run check",
     "test:tavern": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts",
     "test:reliability": "node --experimental-strip-types --test tests/async-result-fence.test.ts tests/document-decode.test.ts tests/planning-decode.test.ts tests/persona-scene-decode.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts"
   },

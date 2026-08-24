@@ -258,14 +258,16 @@ OPENAI_CHAT_MODEL_MULTIMODAL=false
 npm run dev:web      # 启动前端
 npm run build:web    # 构建前端
 npm run build:desktop # 为当前操作系统构建桌面预览安装包
-npm run lint:web     # 前端 lint
+npm run check:web    # 前端 TypeScript 检查（lint:web 为兼容别名）
+npm run check        # 共享契约 + Web 类型与可靠性门
+npm run check:release # check + 后端全测 + Web 生产构建
 npm run test:ai      # 运行后端测试（unittest）
 npm run test:contracts # 校验共享 TypeScript 合同
 npm run test:web:tavern # Tavern 前端状态与 strict decoder 测试
 npm run test:web:reliability # Tavern 与 Study committed-identity 前端可靠性测试
 ```
 
-注意：Next.js 16 下当前 `npm run lint:web` 已失效，替代检查命令正在 `QG-001` 中跟踪。
+`npm run lint:web` 保留为 `check:web` 的兼容别名，不再调用 Next.js 16 已移除的 `next lint`。
 
 ## 桌面预览封包
 
