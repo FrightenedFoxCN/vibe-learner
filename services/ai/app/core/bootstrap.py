@@ -83,7 +83,10 @@ class Container:
             self.model_provider,
         )
         self.study_session_repository = StudySessionRepository(self.database)
-        self.study_chat_operation_repository = StudyChatOperationRepository(self.database)
+        self.study_chat_operation_repository = StudyChatOperationRepository(
+            self.database,
+            chat_attachment_root=self.storage.chat_attachment_root,
+        )
         self.study_session_service = StudySessionService(
             self.store,
             repository=self.study_session_repository,

@@ -75,6 +75,15 @@ HARNESS_EFFECT_ADAPTER_POLICIES = MappingProxyType(
             compensation_policy=HarnessEffectCompensationPolicy.NOT_APPLICABLE,
             read_back_policy=HarnessEffectReadBackPolicy.EXACT_PROJECTION,
         ),
+        "study_attachment_stage": HarnessEffectAdapterRefV1(
+            name="study_attachment_stage",
+            version="study-attachment-stage-v1",
+            boundary_kind=HarnessEffectBoundaryKind.FILE_WRITE,
+            prepare_policy=HarnessEffectPreparePolicy.VALIDATE_AND_ASSIGN_IDENTITY,
+            commit_policy=HarnessEffectCommitPolicy.STAGING_OUTBOX,
+            compensation_policy=HarnessEffectCompensationPolicy.CLEANUP,
+            read_back_policy=HarnessEffectReadBackPolicy.EXACT_PROJECTION,
+        ),
         "study_memory_upsert": HarnessEffectAdapterRefV1(
             name="study_memory_upsert",
             version="study-memory-upsert-v1",
@@ -101,6 +110,15 @@ HARNESS_EFFECT_ADAPTER_POLICIES = MappingProxyType(
             commit_policy=HarnessEffectCommitPolicy.DATABASE_TRANSACTION,
             compensation_policy=HarnessEffectCompensationPolicy.NOT_APPLICABLE,
             read_back_policy=HarnessEffectReadBackPolicy.EXACT_PROJECTION,
+        ),
+        "study_provider_execution": HarnessEffectAdapterRefV1(
+            name="study_provider_execution",
+            version="study-provider-execution-v1",
+            boundary_kind=HarnessEffectBoundaryKind.EXTERNAL_CALL,
+            prepare_policy=HarnessEffectPreparePolicy.VALIDATE_AND_ASSIGN_IDENTITY,
+            commit_policy=HarnessEffectCommitPolicy.EXTERNAL_IDEMPOTENCY_OR_READ_BACK,
+            compensation_policy=HarnessEffectCompensationPolicy.NOT_APPLICABLE,
+            read_back_policy=HarnessEffectReadBackPolicy.UNSUPPORTED,
         ),
         "study_scene_replace": HarnessEffectAdapterRefV1(
             name="study_scene_replace",

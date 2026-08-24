@@ -17,7 +17,6 @@ from app.models.study_question import (
 )
 from app.models.study_chat_operation import (
     STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION,
-    STUDY_CHAT_REQUEST_SCHEMA_VERSION,
     StudyChatOperationRecord,
     StudyChatOperationRequestPayload,
     study_chat_request_fingerprint,
@@ -135,7 +134,7 @@ class StudyQuestionAttemptTests(unittest.TestCase):
             "operation_id": "study-chat-op-legacy",
             "session_id": "session-legacy-operation",
             "client_request_id": "client-request-legacy",
-            "request_schema_version": STUDY_CHAT_REQUEST_SCHEMA_VERSION,
+            "request_schema_version": "study-chat-request-v1",
             "fingerprint_contract_version": STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION,
             "request_fingerprint": study_chat_request_fingerprint(request),
             "request_payload": request.model_dump(mode="json"),

@@ -11,6 +11,7 @@ from app.models.domain import (
     PdfRectRecord,
     SessionProjectedPdfRecord,
 )
+from app.models.harness_effect import HARNESS_EFFECT_ADAPTER_POLICIES
 from app.models.study_chat_effect import (
     StudyAffinityDeltaEffectProposalV1,
     StudyFollowUpEffectAction,
@@ -889,6 +890,10 @@ class StudySessionChatToolRuntime:
                 "prepared_proposal": proposal.model_dump(mode="json"),
                 "predicted_state": projected_pdf.model_dump(mode="json"),
                 "external_effect_state": "completed_uncommitted",
+                "external_effect_adapter": HARNESS_EFFECT_ADAPTER_POLICIES[
+                    "study_provider_execution"
+                ].model_dump(mode="json"),
+                "external_effect_read_back": "unsupported",
                 "revised_prompt": str(generated.get("revised_prompt") or ""),
             }
 

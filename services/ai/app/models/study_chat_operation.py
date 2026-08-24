@@ -8,7 +8,10 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v1"
+STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v2"
+STUDY_CHAT_REQUEST_SCHEMA_VERSIONS = frozenset(
+    {"study-chat-request-v1", STUDY_CHAT_REQUEST_SCHEMA_VERSION}
+)
 STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION = "study-chat-request-fingerprint-v1"
 STUDY_CHAT_RESPONSE_SCHEMA_VERSION_V1 = "study-chat-exchange-v1"
 STUDY_CHAT_RESPONSE_SCHEMA_VERSION = "study-chat-exchange-v2"
@@ -86,7 +89,7 @@ class StudyChatOperationRecord(BaseModel):
 
     @model_validator(mode="after")
     def validate_state_projection(self) -> "StudyChatOperationRecord":
-        if self.request_schema_version != STUDY_CHAT_REQUEST_SCHEMA_VERSION:
+        if self.request_schema_version not in STUDY_CHAT_REQUEST_SCHEMA_VERSIONS:
             raise ValueError("study_chat_operation_request_schema_unsupported")
         if self.fingerprint_contract_version != STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION:
             raise ValueError("study_chat_operation_fingerprint_contract_unsupported")

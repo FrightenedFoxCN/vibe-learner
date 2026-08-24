@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy import select, update
@@ -31,13 +32,22 @@ from app.persistence.models import (
 from app.services.study_chat_effects import (
     validate_study_chat_committed_effect_read_back,
 )
+from app.services.study_chat_attachments import (
+    validate_committed_study_chat_attachment_read_back,
+)
 
 
 class StudyChatOperationRepository:
     """Durable admission and execution fence for one Study Chat request."""
 
-    def __init__(self, database: Database) -> None:
+    def __init__(
+        self,
+        database: Database,
+        *,
+        chat_attachment_root: Path | None = None,
+    ) -> None:
         self.database = database
+        self.chat_attachment_root = chat_attachment_root
 
     def admit(
         self,
@@ -69,6 +79,7 @@ class StudyChatOperationRepository:
                                 session,
                                 record,
                             ),
+                            chat_attachment_root=self.chat_attachment_root,
                         )
                     return record
                 session_row = session.get(StudySessionRow, session_id)
@@ -147,6 +158,7 @@ class StudyChatOperationRepository:
                     record,
                     session_row=session_row,
                     scene_records=_load_operation_scene_records(session, record),
+                    chat_attachment_root=self.chat_attachment_root,
                 )
         if (
             record.status == StudyChatOperationStatus.RUNNING
@@ -396,6 +408,7 @@ def _validate_committed_read_back(
     *,
     session_row: StudySessionRow | None,
     scene_records: dict[str, SessionSceneRecord],
+    chat_attachment_root: Path | None,
 ) -> None:
     if session_row is None or record.response_payload is None:
         raise ValueError("study_chat_operation_committed_session_missing")
@@ -417,6 +430,19 @@ def _validate_committed_read_back(
     ]
     if len(matching_response_turns) != 1:
         raise ValueError("study_chat_operation_committed_response_turn_missing")
+    if (
+        record.request_schema_version == STUDY_CHAT_REQUEST_SCHEMA_VERSION
+        and record.request_payload.attachments
+    ):
+        if chat_attachment_root is None:
+            raise ValueError("study_chat_attachment_read_back_root_missing")
+        validate_committed_study_chat_attachment_read_back(
+            chat_attachment_root=chat_attachment_root,
+            session_id=record.session_id,
+            operation_id=record.operation_id,
+            manifests=record.request_payload.attachments,
+            records=matching_response_turns[0].learner_attachments,
+        )
     raw_effect_batch = record.response_payload.get("_committed_effect_batch")
     if raw_effect_batch is not None:
         effect_batch = StudyChatCommittedEffectBatchV1.model_validate(

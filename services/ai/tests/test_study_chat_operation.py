@@ -114,6 +114,42 @@ class StudyChatOperationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             StudyChatOperationRecord.model_validate(invalid)
 
+    def test_provider_started_uncertain_operation_never_reclaims_or_retries(self) -> None:
+        operation = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-provider-uncertain-0001",
+            request_payload=self.payload(),
+        )
+        running, claimed = self.operations.claim(
+            operation_id=operation.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertTrue(claimed)
+        self.operations.mark_provider_started(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+        )
+        uncertain = self.operations.mark_uncertain(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            error_code="study_provider_read_back_unsupported",
+        )
+        receipt = self.operations.receipt(uncertain)
+        self.assertEqual(receipt.status, StudyChatOperationStatus.UNCERTAIN)
+        self.assertFalse(receipt.safe_to_retry)
+        replay = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-provider-uncertain-0001",
+            request_payload=self.payload(),
+        )
+        self.assertEqual(replay.operation_id, operation.operation_id)
+        self.assertEqual(replay.status, StudyChatOperationStatus.UNCERTAIN)
+        _, claimed_again = self.operations.claim(
+            operation_id=operation.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertFalse(claimed_again)
+
     def test_turn_and_committed_receipt_publish_atomically(self) -> None:
         operation = self.operations.admit(
             session_id="session-operation",

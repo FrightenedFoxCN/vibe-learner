@@ -100,7 +100,7 @@ from app.persistence.study_chat_operation_repository import (
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
 from app.services.study_chat_attachments import (
-    cleanup_prepared_study_chat_attachments,
+    cleanup_staged_study_chat_operation_attachments,
     prepare_study_chat_attachments,
     read_study_chat_attachment_inputs,
     study_chat_attachment_manifest,
@@ -1052,6 +1052,7 @@ def get_study_chat_operation(
         )
     except StudyChatOperationNotFound as exc:
         raise HTTPException(status_code=404, detail="study_chat_operation_not_found") from exc
+    _cleanup_terminal_study_chat_staging(operation)
     return _study_chat_operation_response(operation)
 
 
@@ -1099,6 +1100,7 @@ def _admit_and_run_study_chat(
         raise HTTPException(status_code=409, detail="study_chat_operation_already_active") from exc
 
     if operation.status != StudyChatOperationStatus.ADMITTED:
+        _cleanup_terminal_study_chat_staging(operation)
         return _study_chat_operation_response(operation)
     try:
         validate_study_chat_attachment_inputs(
@@ -1120,7 +1122,6 @@ def _admit_and_run_study_chat(
     )
     if not claimed:
         return _study_chat_operation_response(operation)
-    prepared = None
     try:
         prepared = prepare_study_chat_attachments(
             store=container.store,
@@ -1128,6 +1129,8 @@ def _admit_and_run_study_chat(
             files=[],
             allow_image_input=container.model_provider.supports_chat_page_image_tools(),
             inputs=attachment_inputs or [],
+            operation_id=operation.operation_id,
+            inputs_validated=True,
         )
         response_payload = _run_study_chat(
             session_id=session_id,
@@ -1155,15 +1158,12 @@ def _admit_and_run_study_chat(
             execution_token=operation.execution_token,
             error_code=error_code,
         )
-        if (
-            prepared is not None
-            and terminal.status != StudyChatOperationStatus.COMMITTED
-        ):
+        if terminal.status != StudyChatOperationStatus.COMMITTED:
             try:
-                cleanup_prepared_study_chat_attachments(
+                cleanup_staged_study_chat_operation_attachments(
                     store=container.store,
                     session_id=session_id,
-                    records=prepared.records,
+                    operation_id=operation.operation_id,
                 )
             except Exception:
                 logger.exception(
@@ -1178,6 +1178,26 @@ def _admit_and_run_study_chat(
             error_code,
         )
         return _study_chat_operation_response(terminal)
+
+
+def _cleanup_terminal_study_chat_staging(operation) -> None:
+    if operation.status not in {
+        StudyChatOperationStatus.NOT_COMMITTED,
+        StudyChatOperationStatus.UNCERTAIN,
+    }:
+        return
+    try:
+        cleanup_staged_study_chat_operation_attachments(
+            store=container.store,
+            session_id=operation.session_id,
+            operation_id=operation.operation_id,
+        )
+    except Exception:
+        logger.exception(
+            "study_chat.attachment_recovery_cleanup_failed session_id=%s operation_id=%s",
+            operation.session_id,
+            operation.operation_id,
+        )
 
 
 def _study_chat_operation_response(operation) -> StudyChatOperationReceiptResponse:

@@ -1417,27 +1417,72 @@ class PersonaPipelineTests(unittest.TestCase):
         )
         self.assertFalse(stored_path.exists())
 
-        with self.assertRaises(HTTPException):
-            prepare_study_chat_attachments(
-                store=self.store,
-                session_id=session_id,
-                files=[],
-                allow_image_input=True,
-                inputs=[
-                    StudyChatAttachmentInput(
-                        filename="first.png",
-                        mime_type="image/png",
-                        raw_bytes=b"first-image",
-                    ),
-                    StudyChatAttachmentInput(
-                        filename="malware.bin",
-                        mime_type="application/octet-stream",
-                        raw_bytes=b"unsupported",
-                    ),
-                ],
-            )
+        from app.services import study_chat_attachments
+
+        original_store = study_chat_attachments._store_session_attachment_file
+        store_calls = 0
+
+        def fail_second_store(**kwargs):
+            nonlocal store_calls
+            store_calls += 1
+            if store_calls == 2:
+                raise OSError("forced_attachment_write_failure")
+            return original_store(**kwargs)
+
+        with patch(
+            "app.services.study_chat_attachments._store_session_attachment_file",
+            side_effect=fail_second_store,
+        ):
+            with self.assertRaisesRegex(OSError, "forced_attachment_write_failure"):
+                prepare_study_chat_attachments(
+                    store=self.store,
+                    session_id=session_id,
+                    files=[],
+                    allow_image_input=True,
+                    inputs=[
+                        StudyChatAttachmentInput(
+                            filename="first.png",
+                            mime_type="image/png",
+                            raw_bytes=b"first-image",
+                        ),
+                        StudyChatAttachmentInput(
+                            filename="second.png",
+                            mime_type="image/png",
+                            raw_bytes=b"second-image",
+                        ),
+                    ],
+                )
         attachment_dir = self.store.chat_attachment_root / session_id
         self.assertEqual(list(attachment_dir.glob("*")), [])
+
+        with patch(
+            "app.services.study_chat_attachments._MAX_ATTACHMENT_FILE_BYTES",
+            4,
+        ):
+            with self.assertRaises(HTTPException) as oversized:
+                prepare_study_chat_attachments(
+                    store=self.store,
+                    session_id=session_id,
+                    files=[],
+                    allow_image_input=True,
+                    inputs=[
+                        StudyChatAttachmentInput(
+                            filename="large.png",
+                            mime_type="image/png",
+                            raw_bytes=b"12345",
+                        )
+                    ],
+                )
+        self.assertEqual(oversized.exception.status_code, 413)
+        self.assertEqual(oversized.exception.detail, "chat_attachment_file_too_large")
+        with self.assertRaisesRegex(ValueError, "study_chat_session_id_invalid"):
+            prepare_study_chat_attachments(
+                store=self.store,
+                session_id="../foreign",
+                files=[],
+                allow_image_input=True,
+                inputs=[],
+            )
 
     def test_prepare_study_chat_attachments_extracts_pdf_excerpt(self) -> None:
         from fastapi import UploadFile
@@ -4789,6 +4834,15 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(project_payload["predicted_state"]["title"], "矩阵变换草图")
         self.assertEqual(project_payload["predicted_state"]["image_url"], "data:image/png;base64,AAA")
         self.assertEqual(project_payload["external_effect_state"], "completed_uncommitted")
+        self.assertEqual(
+            project_payload["external_effect_adapter"]["name"],
+            "study_provider_execution",
+        )
+        self.assertEqual(
+            project_payload["external_effect_adapter"]["read_back_policy"],
+            "unsupported",
+        )
+        self.assertEqual(project_payload["external_effect_read_back"], "unsupported")
         self.assertEqual(project_payload["revised_prompt"], "矩阵映射草图，已补充箭头与标签。")
         self.assertTrue(annotate_payload["ok"])
         self.assertIsNone(annotate_payload["citation"])

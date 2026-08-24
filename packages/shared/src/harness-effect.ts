@@ -370,6 +370,15 @@ export const HARNESS_EFFECT_ADAPTER_POLICIES = deepFreeze({
     compensation_policy: "not_applicable",
     read_back_policy: "exact_projection",
   },
+  study_attachment_stage: {
+    name: "study_attachment_stage",
+    version: "study-attachment-stage-v1",
+    boundary_kind: "file_write",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "staging_outbox",
+    compensation_policy: "cleanup",
+    read_back_policy: "exact_projection",
+  },
   study_memory_upsert: {
     name: "study_memory_upsert",
     version: "study-memory-upsert-v1",
@@ -396,6 +405,15 @@ export const HARNESS_EFFECT_ADAPTER_POLICIES = deepFreeze({
     commit_policy: "database_transaction",
     compensation_policy: "not_applicable",
     read_back_policy: "exact_projection",
+  },
+  study_provider_execution: {
+    name: "study_provider_execution",
+    version: "study-provider-execution-v1",
+    boundary_kind: "external_call",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "external_idempotency_or_read_back",
+    compensation_policy: "not_applicable",
+    read_back_policy: "unsupported",
   },
   study_scene_replace: {
     name: "study_scene_replace",

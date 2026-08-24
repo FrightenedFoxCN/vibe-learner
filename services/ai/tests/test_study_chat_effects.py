@@ -46,6 +46,12 @@ from app.services.study_chat_effects import (
 )
 from app.services.local_store import LocalJsonStore
 from app.services.session_scene import SessionSceneService
+from app.services.study_chat_attachments import (
+    StudyChatAttachmentInput,
+    cleanup_staged_study_chat_operation_attachments,
+    prepare_study_chat_attachments,
+    study_chat_attachment_manifest,
+)
 from app.persistence.storage import StorageManager
 
 
@@ -55,8 +61,11 @@ class StudyChatEffectsTests(unittest.TestCase):
         self.database = Database(f"sqlite:///{Path(self.temp.name) / 'test.db'}")
         self.database.create_schema()
         self.sessions = StudySessionRepository(self.database)
-        self.operations = StudyChatOperationRepository(self.database)
         self.storage = StorageManager(Path(self.temp.name) / "data")
+        self.operations = StudyChatOperationRepository(
+            self.database,
+            chat_attachment_root=self.storage.chat_attachment_root,
+        )
         self.store = LocalJsonStore(self.database, self.storage)
         self.scene_service = SessionSceneService(self.store)
         plan = LearningPlanRecord(
@@ -743,6 +752,127 @@ class StudyChatEffectsTests(unittest.TestCase):
                 session_id="session-effect",
                 client_request_id="request-effect-scene-0003",
             )
+
+    def test_operation_owned_attachment_stage_commits_and_hashes_read_back(self) -> None:
+        inputs = [
+            StudyChatAttachmentInput(
+                filename="diagram.png",
+                mime_type="image/png",
+                raw_bytes=b"committed-image-bytes",
+            )
+        ]
+        request_payload = StudyChatOperationRequestPayload.model_validate(
+            {
+                **self._payload().model_dump(mode="json"),
+                "attachments": study_chat_attachment_manifest(inputs),
+            }
+        )
+        admitted = self.operations.admit(
+            session_id="session-effect",
+            client_request_id="request-effect-attachment-0001",
+            request_payload=request_payload,
+        )
+        running, claimed = self.operations.claim(
+            operation_id=admitted.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertTrue(claimed)
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id="session-effect",
+            files=[],
+            allow_image_input=True,
+            inputs=inputs,
+            operation_id=running.operation_id,
+        )
+        self.assertEqual(prepared.operation_id, running.operation_id)
+        self.assertEqual(prepared.effect_adapter.name, "study_attachment_stage")
+        self.assertEqual(len(prepared.staged_effect_ids), 1)
+        result = StudyChatResult(reply="saved", citations=[], character_events=[])
+        self.sessions.commit_chat_operation_turn(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            learner_message="use this image",
+            learner_message_kind="learner",
+            learner_attachments=prepared.records,
+            result=result,
+            prepared_study_unit_id=None,
+            completed_follow_up_id="",
+            cancel_pending_follow_ups=False,
+            build_response_payload=lambda session: {
+                **result.model_dump(mode="json"),
+                "session": session.model_dump(mode="json"),
+            },
+        )
+        committed = self.operations.require(
+            session_id="session-effect",
+            client_request_id="request-effect-attachment-0001",
+        )
+        self.assertEqual(committed.status.value, "committed")
+        stored_path = Path(prepared.records[0].stored_path)
+        self.assertEqual(stored_path.parent.name, running.operation_id)
+        stored_path.write_bytes(b"forged-image-bytes")
+        with self.assertRaisesRegex(ValueError, "attachment_file_digest_mismatch"):
+            self.operations.require(
+                session_id="session-effect",
+                client_request_id="request-effect-attachment-0001",
+            )
+
+    def test_uncertain_operation_staging_is_recoverable_by_identity(self) -> None:
+        admitted = self.operations.admit(
+            session_id="session-effect",
+            client_request_id="request-effect-attachment-0002",
+            request_payload=StudyChatOperationRequestPayload.model_validate(
+                {
+                    **self._payload().model_dump(mode="json"),
+                    "attachments": study_chat_attachment_manifest(
+                        [
+                            StudyChatAttachmentInput(
+                                filename="diagram.png",
+                                mime_type="image/png",
+                                raw_bytes=b"uncommitted-image-bytes",
+                            )
+                        ]
+                    ),
+                }
+            ),
+        )
+        running, claimed = self.operations.claim(
+            operation_id=admitted.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertTrue(claimed)
+        prepared = prepare_study_chat_attachments(
+            store=self.store,
+            session_id="session-effect",
+            files=[],
+            allow_image_input=True,
+            inputs=[
+                StudyChatAttachmentInput(
+                    filename="diagram.png",
+                    mime_type="image/png",
+                    raw_bytes=b"uncommitted-image-bytes",
+                )
+            ],
+            operation_id=running.operation_id,
+        )
+        operation_root = Path(prepared.records[0].stored_path).parent
+        self.assertTrue(operation_root.is_dir())
+        uncertain = self.operations.mark_uncertain(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            error_code="provider_result_unknown",
+        )
+        self.assertFalse(self.operations.receipt(uncertain).safe_to_retry)
+        self.assertEqual(
+            cleanup_staged_study_chat_operation_attachments(
+                store=self.store,
+                session_id="session-effect",
+                operation_id=running.operation_id,
+            ),
+            1,
+        )
+        self.assertFalse(operation_root.exists())
 
     def test_final_commit_rejects_effects_from_another_operation(self) -> None:
         running = self._running_operation("request-effect-0003")

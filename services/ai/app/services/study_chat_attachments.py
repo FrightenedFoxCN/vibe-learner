@@ -4,7 +4,7 @@ import base64
 import hashlib
 import io
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -13,10 +13,14 @@ import fitz
 from fastapi import HTTPException, UploadFile
 
 from app.models.domain import LearnerAttachmentRecord, PdfRectRecord
+from app.models.harness_effect import HARNESS_EFFECT_ADAPTER_POLICIES
 from app.services.local_store import LocalJsonStore
 
 _MAX_ATTACHMENT_COUNT = 4
+_MAX_ATTACHMENT_FILE_BYTES = 12 * 1024 * 1024
+_MAX_ATTACHMENT_TOTAL_BYTES = 24 * 1024 * 1024
 _MAX_TEXT_EXCERPT_CHARS = 4000
+_SAFE_PATH_COMPONENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _TEXTUAL_MIME_TYPES = {
     "application/json",
     "application/ld+json",
@@ -28,6 +32,9 @@ _TEXTUAL_MIME_TYPES = {
     "text/csv",
     "text/markdown",
 }
+STUDY_ATTACHMENT_STAGE_ADAPTER = HARNESS_EFFECT_ADAPTER_POLICIES[
+    "study_attachment_stage"
+]
 
 
 @dataclass
@@ -35,6 +42,12 @@ class PreparedStudyChatAttachments:
     records: list[LearnerAttachmentRecord]
     attachment_context: str
     multimodal_parts: list[dict[str, Any]]
+    operation_id: str = ""
+    staged_effect_ids: list[str] = field(default_factory=list)
+
+    @property
+    def effect_adapter(self):
+        return STUDY_ATTACHMENT_STAGE_ADAPTER
 
 
 @dataclass
@@ -51,9 +64,15 @@ def read_study_chat_attachment_inputs(
     if len(normalized_files) > _MAX_ATTACHMENT_COUNT:
         raise HTTPException(status_code=422, detail="chat_attachment_count_exceeded")
     result: list[StudyChatAttachmentInput] = []
+    total_bytes = 0
     for file in normalized_files:
-        raw_bytes = file.file.read()
+        raw_bytes = file.file.read(_MAX_ATTACHMENT_FILE_BYTES + 1)
         file.file.seek(0)
+        if len(raw_bytes) > _MAX_ATTACHMENT_FILE_BYTES:
+            raise HTTPException(status_code=413, detail="chat_attachment_file_too_large")
+        total_bytes += len(raw_bytes)
+        if total_bytes > _MAX_ATTACHMENT_TOTAL_BYTES:
+            raise HTTPException(status_code=413, detail="chat_attachment_total_too_large")
         if not raw_bytes:
             continue
         filename = (file.filename or "attachment").strip() or "attachment"
@@ -88,6 +107,13 @@ def validate_study_chat_attachment_inputs(
     allow_image_input: bool,
 ) -> None:
     """Validate bounded attachment content without publishing business files."""
+    if len(inputs) > _MAX_ATTACHMENT_COUNT:
+        raise HTTPException(status_code=422, detail="chat_attachment_count_exceeded")
+    total_bytes = sum(len(item.raw_bytes) for item in inputs)
+    if any(len(item.raw_bytes) > _MAX_ATTACHMENT_FILE_BYTES for item in inputs):
+        raise HTTPException(status_code=413, detail="chat_attachment_file_too_large")
+    if total_bytes > _MAX_ATTACHMENT_TOTAL_BYTES:
+        raise HTTPException(status_code=413, detail="chat_attachment_total_too_large")
     for item in inputs:
         filename = item.filename
         mime_type = item.mime_type
@@ -114,22 +140,32 @@ def prepare_study_chat_attachments(
     files: list[UploadFile],
     allow_image_input: bool,
     inputs: list[StudyChatAttachmentInput] | None = None,
+    operation_id: str = "",
+    inputs_validated: bool = False,
 ) -> PreparedStudyChatAttachments:
     attachment_inputs = inputs if inputs is not None else read_study_chat_attachment_inputs(files)
+    if not inputs_validated:
+        validate_study_chat_attachment_inputs(
+            attachment_inputs,
+            allow_image_input=allow_image_input,
+        )
+    if operation_id:
+        _validate_path_component(operation_id, "study_chat_operation_id_invalid")
+    _validate_path_component(session_id, "study_chat_session_id_invalid")
 
     records: list[LearnerAttachmentRecord] = []
     context_blocks: list[str] = []
     multimodal_parts: list[dict[str, Any]] = []
 
     try:
-        for attachment_input in attachment_inputs:
+        for attachment_index, attachment_input in enumerate(attachment_inputs):
             raw_bytes = attachment_input.raw_bytes
             filename = attachment_input.filename
             mime_type = attachment_input.mime_type
             size_bytes = len(raw_bytes)
 
             if mime_type.startswith("image/"):
-                attachment_id = f"attach-{uuid4().hex[:10]}"
+                attachment_id = _attachment_id(operation_id, attachment_index)
                 if not allow_image_input:
                     raise HTTPException(status_code=400, detail="chat_image_upload_requires_multimodal")
                 image_url = _build_data_url(mime_type, raw_bytes)
@@ -139,6 +175,7 @@ def prepare_study_chat_attachments(
                     attachment_id=attachment_id,
                     filename=filename,
                     raw_bytes=raw_bytes,
+                    operation_id=operation_id,
                 )
                 records.append(
                     LearnerAttachmentRecord(
@@ -163,7 +200,7 @@ def prepare_study_chat_attachments(
                 continue
 
             if mime_type == "application/pdf" or filename.lower().endswith(".pdf"):
-                attachment_id = f"attach-{uuid4().hex[:10]}"
+                attachment_id = _attachment_id(operation_id, attachment_index)
                 excerpt, page_count = _extract_pdf_excerpt(raw_bytes)
                 if not excerpt.strip():
                     raise HTTPException(status_code=400, detail="chat_pdf_attachment_empty")
@@ -173,6 +210,7 @@ def prepare_study_chat_attachments(
                     attachment_id=attachment_id,
                     filename=filename,
                     raw_bytes=raw_bytes,
+                    operation_id=operation_id,
                 )
                 records.append(
                     LearnerAttachmentRecord(
@@ -196,7 +234,7 @@ def prepare_study_chat_attachments(
                     raise HTTPException(status_code=400, detail="chat_text_attachment_empty")
                 records.append(
                     LearnerAttachmentRecord(
-                        attachment_id=f"attach-{uuid4().hex[:10]}",
+                        attachment_id=_attachment_id(operation_id, attachment_index),
                         name=filename,
                         mime_type=mime_type,
                         kind="text",
@@ -223,6 +261,12 @@ def prepare_study_chat_attachments(
         records=records,
         attachment_context=attachment_context,
         multimodal_parts=multimodal_parts,
+        operation_id=operation_id,
+        staged_effect_ids=[
+            _attachment_stage_effect_id(operation_id, index)
+            for index, record in enumerate(records)
+            if operation_id and record.stored_path
+        ],
     )
 
 
@@ -233,7 +277,7 @@ def cleanup_prepared_study_chat_attachments(
     records: list[LearnerAttachmentRecord],
 ) -> int:
     """Remove only files created for this Session/attachment identity set."""
-    session_root = (store.chat_attachment_root / session_id).resolve()
+    session_root = _session_attachment_root(store.chat_attachment_root, session_id)
     removed = 0
     for record in records:
         if not record.stored_path:
@@ -249,6 +293,79 @@ def cleanup_prepared_study_chat_attachments(
             path.unlink()
             removed += 1
     return removed
+
+
+def cleanup_staged_study_chat_operation_attachments(
+    *,
+    store: LocalJsonStore,
+    session_id: str,
+    operation_id: str,
+) -> int:
+    """Recover an operation-owned staging directory without broad deletion."""
+    operation_root = _operation_attachment_root(
+        store.chat_attachment_root,
+        session_id,
+        operation_id,
+    )
+    if not operation_root.exists():
+        return 0
+    removed = 0
+    for child in list(operation_root.iterdir()):
+        if not child.is_file():
+            raise ValueError("study_chat_attachment_staging_shape_invalid")
+        child.unlink()
+        removed += 1
+    operation_root.rmdir()
+    return removed
+
+
+def validate_committed_study_chat_attachment_read_back(
+    *,
+    chat_attachment_root: Path,
+    session_id: str,
+    operation_id: str,
+    manifests,
+    records: list[LearnerAttachmentRecord],
+) -> None:
+    """Bind a committed Turn projection to its admitted manifest and staged bytes."""
+    if len(records) != len(manifests):
+        raise ValueError("study_chat_attachment_read_back_count_mismatch")
+    operation_root = _operation_attachment_root(
+        chat_attachment_root,
+        session_id,
+        operation_id,
+    )
+    for index, (manifest, record) in enumerate(zip(manifests, records, strict=True)):
+        expected_id = _attachment_id(operation_id, index)
+        if (
+            record.attachment_id != expected_id
+            or _sanitize_filename(record.name) != manifest.normalized_name
+            or record.size_bytes != manifest.size_bytes
+        ):
+            raise ValueError("study_chat_attachment_read_back_projection_mismatch")
+        expected_kind = _attachment_kind(
+            manifest.mime_type,
+            manifest.normalized_name,
+        )
+        expected_mime_type = (
+            "application/pdf" if expected_kind == "pdf" else manifest.mime_type
+        )
+        if record.kind != expected_kind or record.mime_type != expected_mime_type:
+            raise ValueError("study_chat_attachment_read_back_kind_mismatch")
+        if expected_kind == "text":
+            if record.stored_path or not record.text_excerpt:
+                raise ValueError("study_chat_attachment_text_read_back_mismatch")
+            continue
+        expected_path = (
+            operation_root / f"{expected_id}-{manifest.normalized_name}"
+        ).resolve()
+        if Path(record.stored_path).resolve() != expected_path:
+            raise ValueError("study_chat_attachment_path_read_back_mismatch")
+        if not expected_path.is_file():
+            raise ValueError("study_chat_attachment_file_read_back_missing")
+        digest = hashlib.sha256(expected_path.read_bytes()).hexdigest()
+        if digest != manifest.sha256:
+            raise ValueError("study_chat_attachment_file_digest_mismatch")
 
 
 def _render_text_attachment_block(filename: str, label: str, excerpt: str) -> str:
@@ -387,6 +504,7 @@ def _store_session_attachment_pdf(
     attachment_id: str,
     filename: str,
     raw_bytes: bytes,
+    operation_id: str,
 ) -> Path:
     return _store_session_attachment_file(
         store=store,
@@ -394,6 +512,7 @@ def _store_session_attachment_pdf(
         attachment_id=attachment_id,
         filename=filename,
         raw_bytes=raw_bytes,
+        operation_id=operation_id,
     )
 
 
@@ -404,13 +523,75 @@ def _store_session_attachment_file(
     attachment_id: str,
     filename: str,
     raw_bytes: bytes,
+    operation_id: str,
 ) -> Path:
-    attachment_root = store.chat_attachment_root / session_id
+    attachment_root = (
+        _operation_attachment_root(
+            store.chat_attachment_root,
+            session_id,
+            operation_id,
+        )
+        if operation_id
+        else _session_attachment_root(store.chat_attachment_root, session_id)
+    )
     attachment_root.mkdir(parents=True, exist_ok=True)
     safe_name = _sanitize_filename(filename)
     path = attachment_root / f"{attachment_id}-{safe_name}"
     path.write_bytes(raw_bytes)
     return path
+
+
+def _attachment_id(operation_id: str, index: int) -> str:
+    if not operation_id:
+        return f"attach-{uuid4().hex[:10]}"
+    digest = hashlib.sha256(f"{operation_id}:{index}".encode("utf-8")).hexdigest()[:20]
+    return f"attach-{digest}"
+
+
+def _attachment_stage_effect_id(operation_id: str, index: int) -> str:
+    digest = hashlib.sha256(
+        f"{operation_id}:attachment-stage:{index}".encode("utf-8")
+    ).hexdigest()[:20]
+    return f"study-file-effect-{digest}"
+
+
+def _attachment_kind(mime_type: str, filename: str) -> str:
+    if mime_type.startswith("image/"):
+        return "image"
+    if mime_type == "application/pdf" or filename.lower().endswith(".pdf"):
+        return "pdf"
+    return "text"
+
+
+def _session_attachment_root(chat_attachment_root: Path, session_id: str) -> Path:
+    _validate_path_component(session_id, "study_chat_session_id_invalid")
+    root = chat_attachment_root.resolve()
+    session_root = (root / session_id).resolve()
+    try:
+        session_root.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("study_chat_attachment_session_scope_mismatch") from exc
+    return session_root
+
+
+def _operation_attachment_root(
+    chat_attachment_root: Path,
+    session_id: str,
+    operation_id: str,
+) -> Path:
+    _validate_path_component(operation_id, "study_chat_operation_id_invalid")
+    session_root = _session_attachment_root(chat_attachment_root, session_id)
+    operation_root = (session_root / operation_id).resolve()
+    try:
+        operation_root.relative_to(session_root)
+    except ValueError as exc:
+        raise ValueError("study_chat_attachment_operation_scope_mismatch") from exc
+    return operation_root
+
+
+def _validate_path_component(value: str, error_code: str) -> None:
+    if not _SAFE_PATH_COMPONENT.fullmatch(value):
+        raise ValueError(error_code)
 
 
 def _sanitize_filename(filename: str) -> str:

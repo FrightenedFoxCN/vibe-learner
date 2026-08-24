@@ -12,6 +12,15 @@
       "read_back_policy": "exact_projection"
     },
     {
+      "name": "study_attachment_stage",
+      "version": "study-attachment-stage-v1",
+      "boundary_kind": "file_write",
+      "prepare_policy": "validate_and_assign_identity",
+      "commit_policy": "staging_outbox",
+      "compensation_policy": "cleanup",
+      "read_back_policy": "exact_projection"
+    },
+    {
       "name": "study_follow_up_mutation",
       "version": "study-follow-up-mutation-v1",
       "boundary_kind": "database_write",
@@ -46,6 +55,15 @@
       "commit_policy": "database_transaction",
       "compensation_policy": "not_applicable",
       "read_back_policy": "exact_projection"
+    },
+    {
+      "name": "study_provider_execution",
+      "version": "study-provider-execution-v1",
+      "boundary_kind": "external_call",
+      "prepare_policy": "validate_and_assign_identity",
+      "commit_policy": "external_idempotency_or_read_back",
+      "compensation_policy": "not_applicable",
+      "read_back_policy": "unsupported"
     },
     {
       "name": "study_scene_replace",
