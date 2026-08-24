@@ -18,7 +18,11 @@ branch_labels = None
 depends_on = None
 
 
-JSON_TYPE = postgresql.JSONB(astext_type=sa.Text())
+JSON_TYPE = sa.JSON().with_variant(
+    postgresql.JSONB(astext_type=sa.Text()),
+    "postgresql",
+)
+JSON_DEFAULT = sa.text("'{}'")
 
 
 def upgrade() -> None:
@@ -32,7 +36,7 @@ def upgrade() -> None:
         sa.Column("ocr_status", sa.String(length=32), nullable=False, server_default="pending"),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "learning_plans",
@@ -42,7 +46,7 @@ def upgrade() -> None:
         sa.Column("creation_mode", sa.String(length=32), nullable=False, server_default="document"),
         sa.Column("course_title", sa.Text(), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_index("ix_learning_plans_document_id", "learning_plans", ["document_id"])
     op.create_index("ix_learning_plans_persona_id", "learning_plans", ["persona_id"])
@@ -56,7 +60,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(length=32), nullable=False, server_default="active"),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_index("ix_study_sessions_document_id", "study_sessions", ["document_id"])
     op.create_index("ix_study_sessions_persona_id", "study_sessions", ["persona_id"])
@@ -66,7 +70,7 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=64), primary_key=True),
         sa.Column("name", sa.Text(), nullable=False, server_default=""),
         sa.Column("source", sa.String(length=32), nullable=False, server_default="user"),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "persona_cards",
@@ -75,13 +79,13 @@ def upgrade() -> None:
         sa.Column("kind", sa.String(length=64), nullable=False, server_default="custom"),
         sa.Column("source", sa.String(length=64), nullable=False, server_default="manual"),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "scene_setup_states",
         sa.Column("config_id", sa.String(length=64), primary_key=True),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "scene_library_entries",
@@ -89,7 +93,7 @@ def upgrade() -> None:
         sa.Column("scene_name", sa.Text(), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "reusable_scene_nodes",
@@ -99,7 +103,7 @@ def upgrade() -> None:
         sa.Column("source_scene_id", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "session_scenes",
@@ -109,7 +113,7 @@ def upgrade() -> None:
         sa.Column("persona_id", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_index("ix_session_scenes_session_id", "session_scenes", ["session_id"])
     op.create_index("ix_session_scenes_document_id", "session_scenes", ["document_id"])
@@ -120,7 +124,7 @@ def upgrade() -> None:
         sa.Column("processed_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("page_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("extraction_method", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "planning_traces",
@@ -128,7 +132,7 @@ def upgrade() -> None:
         sa.Column("plan_id", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("model", sa.String(length=128), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "stream_reports",
@@ -139,7 +143,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(length=32), nullable=False, server_default="idle"),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
         sa.UniqueConstraint("category", "document_id", name="uq_stream_reports_category_document"),
     )
     op.create_index("ix_stream_reports_category", "stream_reports", ["category"])
@@ -149,13 +153,13 @@ def upgrade() -> None:
         sa.Column("config_id", sa.String(length=64), primary_key=True),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("plan_provider", sa.String(length=32), nullable=False, server_default="mock"),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "model_tool_configs",
         sa.Column("config_id", sa.String(length=64), primary_key=True),
         sa.Column("updated_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_table(
         "token_usage_records",
@@ -166,7 +170,7 @@ def upgrade() -> None:
         sa.Column("completion_tokens", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("total_tokens", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
     )
     op.create_index("ix_token_usage_records_feature", "token_usage_records", ["feature"])
     op.create_index("ix_token_usage_records_model", "token_usage_records", ["model"])

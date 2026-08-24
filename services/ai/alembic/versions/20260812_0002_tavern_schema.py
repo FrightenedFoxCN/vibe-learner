@@ -18,7 +18,11 @@ branch_labels = None
 depends_on = None
 
 
-JSON_TYPE = postgresql.JSONB(astext_type=sa.Text())
+JSON_TYPE = sa.JSON().with_variant(
+    postgresql.JSONB(astext_type=sa.Text()),
+    "postgresql",
+)
+JSON_DEFAULT = sa.text("'{}'")
 
 
 def upgrade() -> None:
@@ -28,7 +32,7 @@ def upgrade() -> None:
         sa.Column("title", sa.Text(), nullable=False, server_default=""),
         sa.Column("status", sa.String(length=32), nullable=False, server_default="active"),
         sa.Column("scene_profile", JSON_TYPE, nullable=True),
-        sa.Column("harness_policy", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("harness_policy", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
         sa.Column("revision", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("last_sequence", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
@@ -71,7 +75,7 @@ def upgrade() -> None:
         sa.Column("error_code", sa.String(length=128), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("completed_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
         sa.UniqueConstraint("room_id", "idempotency_key", name="uq_tavern_run_idempotency"),
     )
     op.create_index("ix_tavern_runs_room_id", "tavern_runs", ["room_id"])
@@ -93,7 +97,7 @@ def upgrade() -> None:
         sa.Column("client_request_id", sa.String(length=80), nullable=False, server_default=""),
         sa.Column("content", sa.Text(), nullable=False, server_default=""),
         sa.Column("created_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
         sa.UniqueConstraint("room_id", "sequence", name="uq_tavern_message_sequence"),
     )
     op.create_index("ix_tavern_messages_room_id", "tavern_messages", ["room_id"])

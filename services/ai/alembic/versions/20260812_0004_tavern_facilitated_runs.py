@@ -18,27 +18,29 @@ branch_labels = None
 depends_on = None
 
 
-JSON_TYPE = postgresql.JSONB(astext_type=sa.Text())
+JSON_TYPE = sa.JSON().with_variant(
+    postgresql.JSONB(astext_type=sa.Text()),
+    "postgresql",
+)
+JSON_DEFAULT = sa.text("'{}'")
 
 
 def upgrade() -> None:
-    op.add_column(
-        "tavern_runs",
-        sa.Column("parent_run_id", sa.String(length=64), nullable=True),
-    )
-    op.create_unique_constraint(
-        "uq_tavern_runs_parent_run_id",
-        "tavern_runs",
-        ["parent_run_id"],
-    )
-    op.create_foreign_key(
-        "fk_tavern_runs_parent_run_id",
-        "tavern_runs",
-        "tavern_runs",
-        ["parent_run_id"],
-        ["id"],
-        ondelete="CASCADE",
-    )
+    with op.batch_alter_table("tavern_runs") as batch_op:
+        batch_op.add_column(
+            sa.Column("parent_run_id", sa.String(length=64), nullable=True),
+        )
+        batch_op.create_unique_constraint(
+            "uq_tavern_runs_parent_run_id",
+            ["parent_run_id"],
+        )
+        batch_op.create_foreign_key(
+            "fk_tavern_runs_parent_run_id",
+            "tavern_runs",
+            ["parent_run_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
     op.create_table(
         "tavern_run_steps",
         sa.Column(
@@ -61,7 +63,7 @@ def upgrade() -> None:
         sa.Column("error_code", sa.String(length=128), nullable=False, server_default=""),
         sa.Column("started_at", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("completed_at", sa.String(length=64), nullable=False, server_default=""),
-        sa.Column("payload", JSON_TYPE, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column("payload", JSON_TYPE, nullable=False, server_default=JSON_DEFAULT),
         sa.UniqueConstraint("run_id", "persona_id", name="uq_tavern_run_step_persona"),
     )
     op.create_index(
@@ -80,14 +82,13 @@ def downgrade() -> None:
     op.drop_index("ix_tavern_run_steps_status", table_name="tavern_run_steps")
     op.drop_index("ix_tavern_run_steps_persona_id", table_name="tavern_run_steps")
     op.drop_table("tavern_run_steps")
-    op.drop_constraint(
-        "fk_tavern_runs_parent_run_id",
-        "tavern_runs",
-        type_="foreignkey",
-    )
-    op.drop_constraint(
-        "uq_tavern_runs_parent_run_id",
-        "tavern_runs",
-        type_="unique",
-    )
-    op.drop_column("tavern_runs", "parent_run_id")
+    with op.batch_alter_table("tavern_runs") as batch_op:
+        batch_op.drop_constraint(
+            "fk_tavern_runs_parent_run_id",
+            type_="foreignkey",
+        )
+        batch_op.drop_constraint(
+            "uq_tavern_runs_parent_run_id",
+            type_="unique",
+        )
+        batch_op.drop_column("parent_run_id")
