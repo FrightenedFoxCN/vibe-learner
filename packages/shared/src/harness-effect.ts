@@ -92,9 +92,58 @@ export interface StudyAffinityDeltaEffectProposalV1 {
   reason: string;
 }
 
+export type StudyFollowUpEffectAction =
+  | "schedule"
+  | "complete"
+  | "cancel_pending";
+
+export interface StudyFollowUpEffectProposalV1 {
+  schema_name: "StudyFollowUpEffectProposalV1";
+  schema_version: "study-follow-up-effect-v1";
+  effect_kind: "follow_up";
+  action: StudyFollowUpEffectAction;
+  follow_up_id: string;
+  delay_seconds: number;
+  hidden_message: string;
+  reason: string;
+}
+
+export type StudyProjectionEffectAction =
+  | "set"
+  | "focus"
+  | "append_overlay"
+  | "clear_overlays";
+
+export interface StudyProjectionRectV1 {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface StudyProjectionEffectProposalV1 {
+  schema_name: "StudyProjectionEffectProposalV1";
+  schema_version: "study-projection-effect-v1";
+  effect_kind: "projection";
+  action: StudyProjectionEffectAction;
+  source_kind: string;
+  source_id: string;
+  title: string;
+  page_number: number;
+  page_count: number;
+  image_url: string;
+  overlay_kind: string;
+  rects: StudyProjectionRectV1[];
+  label: string;
+  quote_text: string;
+  color: string;
+}
+
 export type StudyChatEffectProposalV1 =
   | StudyMemoryUpsertEffectProposalV1
   | StudyAffinityDeltaEffectProposalV1
+  | StudyFollowUpEffectProposalV1
+  | StudyProjectionEffectProposalV1
   | StudyPlanConfirmationEffectProposalV1;
 
 export interface StudyPlanConfirmationCommittedProjectionV1 {
@@ -150,9 +199,61 @@ export interface StudyAffinityDeltaCommittedProjectionV1 {
   updated_at: string;
 }
 
+export interface StudyFollowUpCommittedProjectionV1 {
+  schema_name: "StudyFollowUpCommittedProjectionV1";
+  schema_version: "study-follow-up-committed-projection-v1";
+  effect_kind: "follow_up";
+  operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  session_id: string;
+  action: StudyFollowUpEffectAction;
+  follow_up_id: string;
+  affected_follow_up_ids: string[];
+  committed_at: string;
+}
+
+export interface StudyProjectionOverlayStateV1 {
+  id: string;
+  kind: string;
+  page_number: number;
+  rects: StudyProjectionRectV1[];
+  label: string;
+  quote_text: string;
+  color: string;
+  created_at: string;
+}
+
+export interface StudyProjectedStateV1 {
+  source_kind: string;
+  source_id: string;
+  title: string;
+  page_number: number;
+  page_count: number;
+  image_url: string;
+  overlays: StudyProjectionOverlayStateV1[];
+  updated_at: string;
+}
+
+export interface StudyProjectionCommittedProjectionV1 {
+  schema_name: "StudyProjectionCommittedProjectionV1";
+  schema_version: "study-projection-committed-projection-v1";
+  effect_kind: "projection";
+  operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  session_id: string;
+  action: StudyProjectionEffectAction;
+  projected_state: StudyProjectedStateV1;
+}
+
 export type StudyChatCommittedEffectProjectionV1 =
   | StudyMemoryUpsertCommittedProjectionV1
   | StudyAffinityDeltaCommittedProjectionV1
+  | StudyFollowUpCommittedProjectionV1
+  | StudyProjectionCommittedProjectionV1
   | StudyPlanConfirmationCommittedProjectionV1;
 
 export interface StudyChatCommittedEffectBatchV1 {
@@ -186,6 +287,24 @@ export const HARNESS_EFFECT_ADAPTER_POLICIES = deepFreeze({
   study_memory_upsert: {
     name: "study_memory_upsert",
     version: "study-memory-upsert-v1",
+    boundary_kind: "database_write",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "database_transaction",
+    compensation_policy: "not_applicable",
+    read_back_policy: "exact_projection",
+  },
+  study_follow_up_mutation: {
+    name: "study_follow_up_mutation",
+    version: "study-follow-up-mutation-v1",
+    boundary_kind: "database_write",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "database_transaction",
+    compensation_policy: "not_applicable",
+    read_back_policy: "exact_projection",
+  },
+  study_projection_mutation: {
+    name: "study_projection_mutation",
+    version: "study-projection-mutation-v1",
     boundary_kind: "database_write",
     prepare_policy: "validate_and_assign_identity",
     commit_policy: "database_transaction",

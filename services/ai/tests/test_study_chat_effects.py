@@ -6,15 +6,26 @@ from copy import deepcopy
 import unittest
 from unittest.mock import patch
 
-from app.models.domain import LearningPlanRecord, StudyChatResult, StudySessionRecord
+from app.models.domain import (
+    LearnerAttachmentRecord,
+    LearningPlanRecord,
+    SessionFollowUpRecord,
+    StudyChatResult,
+    StudySessionRecord,
+)
 from app.models.api import StudyChatExchangeResponse
 from app.models.study_chat_effect import (
     STUDY_AFFINITY_DELTA_ADAPTER,
     STUDY_AFFINITY_DELTA_PROPOSAL_CONTRACT,
     StudyAffinityDeltaEffectProposalV1,
+    StudyFollowUpEffectAction,
+    StudyFollowUpEffectProposalV1,
     StudyMemoryUpsertEffectProposalV1,
     StudyPlanConfirmationEffectAction,
     StudyPlanConfirmationEffectProposalV1,
+    StudyProjectionEffectAction,
+    StudyProjectionEffectProposalV1,
+    StudyProjectionRectV1,
 )
 from app.models.study_chat_operation import StudyChatOperationRequestPayload
 from app.models.study_chat_operation import study_chat_response_digest
@@ -75,6 +86,24 @@ class StudyChatEffectsTests(unittest.TestCase):
                 study_unit_id="unit",
                 status="active",
                 turns=[],
+                pending_follow_ups=[
+                    SessionFollowUpRecord(
+                        id="follow-up-complete",
+                        status="pending",
+                        delay_seconds=30,
+                        due_at="2026-08-12T00:00:30+00:00",
+                        hidden_message="complete me",
+                        created_at="2026-08-12T00:00:00+00:00",
+                    ),
+                    SessionFollowUpRecord(
+                        id="follow-up-cancel",
+                        status="pending",
+                        delay_seconds=60,
+                        due_at="2026-08-12T00:01:00+00:00",
+                        hidden_message="cancel me",
+                        created_at="2026-08-12T00:00:00+00:00",
+                    ),
+                ],
                 revision=0,
                 last_turn_sequence=0,
                 created_at="2026-08-12T00:00:00+00:00",
@@ -115,7 +144,7 @@ class StudyChatEffectsTests(unittest.TestCase):
             result=result,
             prepared_study_unit_id=None,
             completed_follow_up_id="",
-            cancel_pending_follow_ups=True,
+            cancel_pending_follow_ups=False,
             prepared_effect_batch=collector.prepared_batch(),
             build_response_payload=lambda session: {
                 **result.model_dump(mode="json"),
@@ -268,6 +297,133 @@ class StudyChatEffectsTests(unittest.TestCase):
         self.assertEqual(record.turns, [])
         self.assertEqual(record.session_memory, [])
         self.assertEqual(record.affinity_state.events, [])
+
+    def test_follow_up_and_projection_effects_commit_in_slot_order(self) -> None:
+        running = self._running_operation("request-effect-session-db-0001")
+        collector = StudyChatEffectCollector(
+            operation_id=running.operation_id,
+            session_id="session-effect",
+            plan_id="plan-effect",
+            allowed_schedule_ids=set(),
+        )
+        collector.prepare_follow_up(
+            StudyFollowUpEffectProposalV1(
+                action=StudyFollowUpEffectAction.COMPLETE,
+                follow_up_id="follow-up-complete",
+            )
+        )
+        collector.prepare_follow_up(
+            StudyFollowUpEffectProposalV1(
+                action=StudyFollowUpEffectAction.CANCEL_PENDING,
+            )
+        )
+        collector.prepare_follow_up(
+            StudyFollowUpEffectProposalV1(
+                action=StudyFollowUpEffectAction.SCHEDULE,
+                delay_seconds=45,
+                hidden_message="new follow up",
+                reason="continue later",
+            )
+        )
+        collector.prepare_projection(
+            StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.SET,
+                source_kind="attachment_pdf",
+                source_id="attachment-pdf",
+                title="Reference",
+                page_number=1,
+                page_count=3,
+            )
+        )
+        collector.prepare_projection(
+            StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.FOCUS,
+                page_number=3,
+            )
+        )
+        collector.prepare_projection(
+            StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.APPEND_OVERLAY,
+                overlay_kind="region_box",
+                page_number=3,
+                rects=[
+                    StudyProjectionRectV1(
+                        x=0.1,
+                        y=0.2,
+                        width=0.3,
+                        height=0.4,
+                    )
+                ],
+                label="focus",
+                color="#38BDF8",
+            )
+        )
+        follow_up_overlay = collector.preview_follow_ups(
+            self.sessions.require("session-effect").pending_follow_ups
+        )
+        self.assertEqual(
+            [item["status"] for item in follow_up_overlay],
+            ["completed", "canceled", "pending"],
+        )
+        projected_overlay = collector.preview_projected_state(None)
+        assert projected_overlay is not None
+        self.assertEqual(projected_overlay.page_number, 3)
+        self.assertEqual(projected_overlay.overlays[-1].label, "focus")
+
+        attachment = LearnerAttachmentRecord(
+            attachment_id="attachment-pdf",
+            name="reference.pdf",
+            mime_type="application/pdf",
+            kind="pdf",
+            stored_path="/tmp/reference.pdf",
+            page_count=3,
+            previewable=True,
+        )
+        committed, payload = self._commit(
+            running,
+            collector.prepared_batch(),
+            learner_attachments=[attachment],
+        )
+        self.assertEqual(
+            [item.status for item in committed.pending_follow_ups],
+            ["completed", "canceled", "pending"],
+        )
+        self.assertIsNotNone(committed.projected_pdf)
+        assert committed.projected_pdf is not None
+        self.assertEqual(committed.projected_pdf.page_number, 3)
+        self.assertEqual(committed.projected_pdf.overlays[-1].label, "focus")
+        self.assertEqual(
+            [item["effect_kind"] for item in payload["_committed_effect_batch"]["effects"]],
+            ["follow_up", "follow_up", "follow_up", "projection", "projection", "projection"],
+        )
+
+    def test_projection_source_is_revalidated_at_commit(self) -> None:
+        operation_id = "study-chat-op-projection-source"
+        collector = StudyChatEffectCollector(
+            operation_id=operation_id,
+            session_id="session-effect",
+            plan_id=None,
+            allowed_schedule_ids=set(),
+        )
+        collector.prepare_projection(
+            StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.SET,
+                source_kind="attachment_image",
+                source_id="foreign-attachment",
+                title="Foreign",
+                page_number=1,
+                page_count=1,
+            )
+        )
+        with self.assertRaisesRegex(ValueError, "projection_source_target_unknown"):
+            commit_study_chat_effects(
+                record=self.sessions.require("session-effect").model_copy(deep=True),
+                batch=collector.prepared_batch(),
+                expected_operation_id=operation_id,
+                allowed_schedule_ids=set(),
+                allowed_projection_sources=set(),
+                committed_at="2026-08-24T00:00:00+00:00",
+            )
 
     def test_adapter_failure_after_first_effect_rolls_back_transaction(self) -> None:
         running = self._running_operation("request-effect-mixed-0003")
@@ -454,6 +610,7 @@ class StudyChatEffectsTests(unittest.TestCase):
                         batch=forged_batch,
                         expected_operation_id=operation_id,
                         allowed_schedule_ids=set(),
+                        allowed_projection_sources=set(),
                         committed_at="2026-08-24T00:00:00+00:00",
                     )
 
@@ -504,18 +661,18 @@ class StudyChatEffectsTests(unittest.TestCase):
             self._commit(running, collector.prepared_batch())
         self.assertEqual(self.sessions.require("session-effect").turns, [])
 
-    def _commit(self, running, prepared_effect_batch):
+    def _commit(self, running, prepared_effect_batch, learner_attachments=None):
         result = StudyChatResult(reply="ignored", citations=[], character_events=[])
         return self.sessions.commit_chat_operation_turn(
             operation_id=running.operation_id,
             execution_token=running.execution_token,
             learner_message="hello",
             learner_message_kind="learner",
-            learner_attachments=[],
+            learner_attachments=learner_attachments or [],
             result=result,
             prepared_study_unit_id=None,
             completed_follow_up_id="",
-            cancel_pending_follow_ups=True,
+            cancel_pending_follow_ups=False,
             prepared_effect_batch=prepared_effect_batch,
             build_response_payload=lambda session: {
                 **result.model_dump(mode="json"),

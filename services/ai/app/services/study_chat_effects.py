@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timedelta
 
 from app.models.domain import (
     SessionAffinityEventRecord,
     SessionAffinityStateRecord,
+    PdfRectRecord,
+    ProjectedPdfOverlayRecord,
     SessionMemoryRecord,
     SessionPlanConfirmationRecord,
+    SessionFollowUpRecord,
+    SessionProjectedPdfRecord,
     StudySessionRecord,
 )
 from app.models.harness import HarnessResourceType
@@ -14,10 +19,14 @@ from app.models.harness_effect import HarnessEffectTargetRefV1
 from app.models.study_chat_effect import (
     STUDY_AFFINITY_DELTA_ADAPTER,
     STUDY_AFFINITY_DELTA_PROPOSAL_CONTRACT,
+    STUDY_FOLLOW_UP_ADAPTER,
+    STUDY_FOLLOW_UP_PROPOSAL_CONTRACT,
     STUDY_MEMORY_UPSERT_ADAPTER,
     STUDY_MEMORY_UPSERT_PROPOSAL_CONTRACT,
     STUDY_PLAN_CONFIRMATION_ADAPTER,
     STUDY_PLAN_CONFIRMATION_PROPOSAL_CONTRACT,
+    STUDY_PROJECTION_ADAPTER,
+    STUDY_PROJECTION_PROPOSAL_CONTRACT,
     StudyAffinityDeltaCommittedProjectionV1,
     StudyAffinityDeltaEffectProposalV1,
     StudyChatCommittedEffectBatchV1,
@@ -25,11 +34,18 @@ from app.models.study_chat_effect import (
     StudyChatEffectProposalV1,
     StudyChatPreparedEffectBatchV1,
     StudyChatPreparedEffectV1,
+    StudyFollowUpCommittedProjectionV1,
+    StudyFollowUpEffectAction,
+    StudyFollowUpEffectProposalV1,
     StudyMemoryUpsertCommittedProjectionV1,
     StudyMemoryUpsertEffectProposalV1,
     StudyPlanConfirmationCommittedProjectionV1,
     StudyPlanConfirmationEffectAction,
     StudyPlanConfirmationEffectProposalV1,
+    StudyProjectedStateV1,
+    StudyProjectionCommittedProjectionV1,
+    StudyProjectionEffectAction,
+    StudyProjectionEffectProposalV1,
 )
 
 
@@ -73,6 +89,28 @@ class StudyChatEffectCollector:
             proposal=proposal,
             adapter=STUDY_AFFINITY_DELTA_ADAPTER,
             proposal_contract=STUDY_AFFINITY_DELTA_PROPOSAL_CONTRACT,
+            target_refs=[self._session_target()],
+        )
+
+    def prepare_follow_up(
+        self,
+        proposal: StudyFollowUpEffectProposalV1,
+    ) -> StudyChatPreparedEffectV1:
+        return self._prepare_effect(
+            proposal=proposal,
+            adapter=STUDY_FOLLOW_UP_ADAPTER,
+            proposal_contract=STUDY_FOLLOW_UP_PROPOSAL_CONTRACT,
+            target_refs=[self._session_target()],
+        )
+
+    def prepare_projection(
+        self,
+        proposal: StudyProjectionEffectProposalV1,
+    ) -> StudyChatPreparedEffectV1:
+        return self._prepare_effect(
+            proposal=proposal,
+            adapter=STUDY_PROJECTION_ADAPTER,
+            proposal_contract=STUDY_PROJECTION_PROPOSAL_CONTRACT,
             target_refs=[self._session_target()],
         )
 
@@ -175,6 +213,81 @@ class StudyChatEffectCollector:
         state["events"] = events[-12:]
         return state
 
+    def preview_follow_ups(
+        self,
+        base_items: list[SessionFollowUpRecord],
+    ) -> list[dict[str, object]]:
+        items = [item.model_dump(mode="json") for item in base_items]
+        for effect in self._effects:
+            proposal = effect.proposal
+            if not isinstance(proposal, StudyFollowUpEffectProposalV1):
+                continue
+            if proposal.action == StudyFollowUpEffectAction.SCHEDULE:
+                items.append(
+                    {
+                        "id": _stable_id("follow-up", effect.effect_id),
+                        "trigger_kind": "scheduled_reply",
+                        "status": "pending",
+                        "delay_seconds": proposal.delay_seconds,
+                        "due_at": "",
+                        "hidden_message": proposal.hidden_message,
+                        "reason": proposal.reason,
+                        "created_at": "",
+                        "completed_at": "",
+                        "canceled_at": "",
+                        "effect_state": "prepared",
+                        "committed": False,
+                        "effect_id": effect.effect_id,
+                    }
+                )
+            elif proposal.action == StudyFollowUpEffectAction.COMPLETE:
+                target = next(
+                    (item for item in items if item["id"] == proposal.follow_up_id),
+                    None,
+                )
+                if target is None or target["status"] != "pending":
+                    raise ValueError("study_follow_up_complete_target_invalid")
+                target.update(
+                    {
+                        "status": "completed",
+                        "completed_at": "",
+                        "effect_state": "prepared",
+                        "committed": False,
+                        "effect_id": effect.effect_id,
+                    }
+                )
+            else:
+                for item in items:
+                    if item["status"] != "pending":
+                        continue
+                    item.update(
+                        {
+                            "status": "canceled",
+                            "canceled_at": "",
+                            "effect_state": "prepared",
+                            "committed": False,
+                            "effect_id": effect.effect_id,
+                        }
+                    )
+        return items
+
+    def preview_projected_state(
+        self,
+        base_state: SessionProjectedPdfRecord | None,
+    ) -> SessionProjectedPdfRecord | None:
+        state = base_state.model_copy(deep=True) if base_state is not None else None
+        for effect in self._effects:
+            proposal = effect.proposal
+            if not isinstance(proposal, StudyProjectionEffectProposalV1):
+                continue
+            state = _apply_projection_proposal(
+                current=state,
+                proposal=proposal,
+                effect_id=effect.effect_id,
+                mutation_time="",
+            )
+        return state
+
     def _prepare_effect(
         self,
         *,
@@ -212,6 +325,7 @@ def commit_study_chat_effects(
     batch: StudyChatPreparedEffectBatchV1 | None,
     expected_operation_id: str,
     allowed_schedule_ids: set[str] | frozenset[str],
+    allowed_projection_sources: set[tuple[str, str]] | frozenset[tuple[str, str]],
     committed_at: str,
 ) -> StudyChatCommittedEffectBatchV1 | None:
     if batch is None:
@@ -221,7 +335,15 @@ def commit_study_chat_effects(
         batch=batch,
         expected_operation_id=expected_operation_id,
         allowed_schedule_ids=allowed_schedule_ids,
+        allowed_projection_sources=allowed_projection_sources,
     )
+    validation_record = record.model_copy(deep=True)
+    for effect in batch.effects:
+        _apply_prepared_effect(
+            record=validation_record,
+            effect=effect,
+            committed_at=committed_at,
+        )
     projections: list[StudyChatCommittedEffectProjectionV1] = []
     for effect in batch.effects:
         projections.append(
@@ -249,6 +371,7 @@ def validate_study_chat_committed_effect_read_back(
         raise ValueError("study_chat_committed_effect_batch_identity_mismatch")
     last_memory_by_key: dict[str, StudyMemoryUpsertCommittedProjectionV1] = {}
     affinity_projections: list[StudyAffinityDeltaCommittedProjectionV1] = []
+    last_projection: StudyProjectionCommittedProjectionV1 | None = None
     for projection in batch.effects:
         if projection.session_id != record.id:
             raise ValueError("study_chat_committed_effect_session_mismatch")
@@ -261,6 +384,43 @@ def validate_study_chat_committed_effect_read_back(
             last_memory_by_key[projection.key] = projection
         elif isinstance(projection, StudyAffinityDeltaCommittedProjectionV1):
             affinity_projections.append(projection)
+        elif isinstance(projection, StudyFollowUpCommittedProjectionV1):
+            affected = {
+                item.id: item
+                for item in record.pending_follow_ups
+                if item.id in projection.affected_follow_up_ids
+            }
+            if set(affected) != set(projection.affected_follow_up_ids):
+                raise ValueError("study_follow_up_read_back_missing")
+            if projection.action == StudyFollowUpEffectAction.SCHEDULE:
+                target = affected.get(projection.follow_up_id)
+                if (
+                    len(affected) != 1
+                    or target is None
+                    or target.status != "pending"
+                    or target.created_at != projection.committed_at
+                ):
+                    raise ValueError("study_follow_up_schedule_read_back_mismatch")
+            elif projection.action == StudyFollowUpEffectAction.COMPLETE:
+                target = affected.get(projection.follow_up_id)
+                if (
+                    len(affected) != 1
+                    or target is None
+                    or target.status != "completed"
+                    or target.completed_at != projection.committed_at
+                ):
+                    raise ValueError("study_follow_up_complete_read_back_mismatch")
+            else:
+                canceled_ids = {
+                    item.id
+                    for item in record.pending_follow_ups
+                    if item.status == "canceled"
+                    and item.canceled_at == projection.committed_at
+                }
+                if canceled_ids != set(projection.affected_follow_up_ids):
+                    raise ValueError("study_follow_up_cancel_read_back_mismatch")
+        elif isinstance(projection, StudyProjectionCommittedProjectionV1):
+            last_projection = projection
         elif isinstance(projection, StudyPlanConfirmationCommittedProjectionV1):
             matches = [
                 item
@@ -311,6 +471,14 @@ def validate_study_chat_committed_effect_read_back(
             or record.affinity_state.updated_at != final.updated_at
         ):
             raise ValueError("study_affinity_state_read_back_mismatch")
+    if last_projection is not None:
+        if record.projected_pdf is None or (
+            StudyProjectedStateV1.model_validate(
+                record.projected_pdf.model_dump(mode="json")
+            )
+            != last_projection.projected_state
+        ):
+            raise ValueError("study_projection_read_back_mismatch")
 
 
 def _validate_prepared_batch(
@@ -319,6 +487,7 @@ def _validate_prepared_batch(
     batch: StudyChatPreparedEffectBatchV1,
     expected_operation_id: str,
     allowed_schedule_ids: set[str] | frozenset[str],
+    allowed_projection_sources: set[tuple[str, str]] | frozenset[tuple[str, str]],
 ) -> None:
     if batch.operation_id != expected_operation_id:
         raise ValueError("study_chat_effect_operation_mismatch")
@@ -351,7 +520,20 @@ def _validate_prepared_batch(
         elif isinstance(proposal, StudyAffinityDeltaEffectProposalV1):
             expected_adapter = STUDY_AFFINITY_DELTA_ADAPTER
             expected_contract = STUDY_AFFINITY_DELTA_PROPOSAL_CONTRACT
-        else:
+        elif isinstance(proposal, StudyFollowUpEffectProposalV1):
+            expected_adapter = STUDY_FOLLOW_UP_ADAPTER
+            expected_contract = STUDY_FOLLOW_UP_PROPOSAL_CONTRACT
+        elif isinstance(proposal, StudyProjectionEffectProposalV1):
+            expected_adapter = STUDY_PROJECTION_ADAPTER
+            expected_contract = STUDY_PROJECTION_PROPOSAL_CONTRACT
+            if (
+                proposal.action == StudyProjectionEffectAction.SET
+                and proposal.source_kind != "generated_image"
+                and (proposal.source_kind, proposal.source_id)
+                not in allowed_projection_sources
+            ):
+                raise ValueError("study_projection_source_target_unknown")
+        elif isinstance(proposal, StudyPlanConfirmationEffectProposalV1):
             expected_adapter = STUDY_PLAN_CONFIRMATION_ADAPTER
             expected_contract = STUDY_PLAN_CONFIRMATION_PROPOSAL_CONTRACT
             if not record.plan_id:
@@ -364,6 +546,8 @@ def _validate_prepared_batch(
                 and not set(proposal.schedule_ids).issubset(allowed_schedule_ids)
             ):
                 raise ValueError("study_plan_confirmation_schedule_target_unknown")
+        else:
+            raise ValueError("study_chat_effect_proposal_unsupported")
         if effect.adapter != expected_adapter:
             raise ValueError("study_chat_effect_adapter_mismatch")
         if effect.proposal_contract != expected_contract:
@@ -446,6 +630,82 @@ def _apply_prepared_effect(
             created_at=event.created_at,
             updated_at=record.affinity_state.updated_at,
         )
+    if isinstance(proposal, StudyFollowUpEffectProposalV1):
+        affected_ids: list[str] = []
+        follow_up_id = proposal.follow_up_id
+        if proposal.action == StudyFollowUpEffectAction.SCHEDULE:
+            follow_up_id = _stable_id("follow-up", effect.effect_id)
+            if any(item.id == follow_up_id for item in record.pending_follow_ups):
+                raise ValueError("study_follow_up_identity_duplicate")
+            due_at = (
+                datetime.fromisoformat(committed_at)
+                + timedelta(seconds=proposal.delay_seconds)
+            ).isoformat()
+            record.pending_follow_ups.append(
+                SessionFollowUpRecord(
+                    id=follow_up_id,
+                    trigger_kind="scheduled_reply",
+                    status="pending",
+                    delay_seconds=proposal.delay_seconds,
+                    due_at=due_at,
+                    hidden_message=proposal.hidden_message,
+                    reason=proposal.reason,
+                    created_at=committed_at,
+                )
+            )
+            affected_ids.append(follow_up_id)
+        elif proposal.action == StudyFollowUpEffectAction.COMPLETE:
+            target = next(
+                (
+                    item
+                    for item in record.pending_follow_ups
+                    if item.id == proposal.follow_up_id and item.status == "pending"
+                ),
+                None,
+            )
+            if target is None:
+                raise ValueError("study_follow_up_complete_target_invalid")
+            target.status = "completed"
+            target.completed_at = committed_at
+            affected_ids.append(target.id)
+        else:
+            for item in record.pending_follow_ups:
+                if item.status != "pending":
+                    continue
+                item.status = "canceled"
+                item.canceled_at = committed_at
+                affected_ids.append(item.id)
+        return StudyFollowUpCommittedProjectionV1(
+            operation_id=effect.operation_id,
+            effect_batch_id=effect.effect_batch_id,
+            effect_id=effect.effect_id,
+            slot=effect.slot,
+            session_id=record.id,
+            action=proposal.action,
+            follow_up_id=follow_up_id,
+            affected_follow_up_ids=affected_ids,
+            committed_at=committed_at,
+        )
+    if isinstance(proposal, StudyProjectionEffectProposalV1):
+        record.projected_pdf = _apply_projection_proposal(
+            current=record.projected_pdf,
+            proposal=proposal,
+            effect_id=effect.effect_id,
+            mutation_time=committed_at,
+        )
+        if record.projected_pdf is None:
+            raise ValueError("study_projection_read_back_missing")
+        return StudyProjectionCommittedProjectionV1(
+            operation_id=effect.operation_id,
+            effect_batch_id=effect.effect_batch_id,
+            effect_id=effect.effect_id,
+            slot=effect.slot,
+            session_id=record.id,
+            action=proposal.action,
+            projected_state=StudyProjectedStateV1.model_validate(
+                record.projected_pdf.model_dump(mode="json")
+            ),
+        )
     confirmation_id = _stable_id("plan-confirm", effect.effect_id)
     if any(item.id == confirmation_id for item in record.plan_confirmations):
         raise ValueError("study_plan_confirmation_identity_duplicate")
@@ -506,6 +766,70 @@ def _confirmation_content(
 def _stable_id(prefix: str, seed: str) -> str:
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:20]
     return f"{prefix}-{digest}"
+
+
+def _apply_projection_proposal(
+    *,
+    current: SessionProjectedPdfRecord | None,
+    proposal: StudyProjectionEffectProposalV1,
+    effect_id: str,
+    mutation_time: str,
+) -> SessionProjectedPdfRecord:
+    if proposal.action == StudyProjectionEffectAction.SET:
+        source_id = (
+            _stable_id("generated-image", effect_id)
+            if proposal.source_kind == "generated_image"
+            else proposal.source_id
+        )
+        return SessionProjectedPdfRecord(
+            source_kind=proposal.source_kind,
+            source_id=source_id,
+            title=proposal.title,
+            page_number=min(proposal.page_number, proposal.page_count),
+            page_count=proposal.page_count,
+            image_url=proposal.image_url,
+            overlays=[],
+            updated_at=mutation_time,
+        )
+    if current is None:
+        raise ValueError("study_projection_target_missing")
+    projected = current.model_copy(deep=True)
+    if proposal.action == StudyProjectionEffectAction.FOCUS:
+        projected.page_number = min(proposal.page_number, projected.page_count)
+    elif proposal.action == StudyProjectionEffectAction.APPEND_OVERLAY:
+        overlay_prefix = (
+            "image-overlay"
+            if projected.source_kind in {"attachment_image", "generated_image"}
+            else "pdf-overlay"
+        )
+        projected.overlays.append(
+            ProjectedPdfOverlayRecord(
+                id=_stable_id(overlay_prefix, effect_id),
+                kind=proposal.overlay_kind,
+                page_number=min(proposal.page_number, projected.page_count),
+                rects=[
+                    PdfRectRecord.model_validate(item.model_dump(mode="json"))
+                    for item in proposal.rects
+                ],
+                label=proposal.label,
+                quote_text=proposal.quote_text,
+                color=proposal.color or "#FACC15",
+                created_at=mutation_time,
+            )
+        )
+        projected.overlays = projected.overlays[-24:]
+        projected.page_number = min(proposal.page_number, projected.page_count)
+    else:
+        if proposal.page_number:
+            projected.overlays = [
+                item
+                for item in projected.overlays
+                if item.page_number != proposal.page_number
+            ]
+        else:
+            projected.overlays = []
+    projected.updated_at = mutation_time
+    return projected
 
 
 def _clamp_affinity(score: int) -> int:

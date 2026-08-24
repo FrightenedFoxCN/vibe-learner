@@ -1258,6 +1258,10 @@ def _run_study_chat(
         else None
     )
     from app.services.study_chat_effects import StudyChatEffectCollector
+    from app.models.study_chat_effect import (
+        StudyFollowUpEffectAction,
+        StudyFollowUpEffectProposalV1,
+    )
 
     effect_collector = StudyChatEffectCollector(
         operation_id=operation_id,
@@ -1267,6 +1271,19 @@ def _run_study_chat(
             item.id for item in bound_session_plan.schedule
         } if bound_session_plan is not None else set(),
     )
+    if normalized_follow_up_id:
+        effect_collector.prepare_follow_up(
+            StudyFollowUpEffectProposalV1(
+                action=StudyFollowUpEffectAction.COMPLETE,
+                follow_up_id=normalized_follow_up_id,
+            )
+        )
+    if normalized_message_kind == "learner":
+        effect_collector.prepare_follow_up(
+            StudyFollowUpEffectProposalV1(
+                action=StudyFollowUpEffectAction.CANCEL_PENDING,
+            )
+        )
     session_tool_runtime = StudySessionChatToolRuntime(
         session_service=container.study_session_service,
         plan_service=container.plan_service,
@@ -1352,8 +1369,8 @@ def _run_study_chat(
         prepared_study_unit_id=(
             session.study_unit_id if normalized_message_kind == "session_prelude" else None
         ),
-        completed_follow_up_id=normalized_follow_up_id,
-        cancel_pending_follow_ups=normalized_message_kind == "learner",
+        completed_follow_up_id="",
+        cancel_pending_follow_ups=False,
         prepared_effect_batch=effect_collector.prepared_batch(),
         build_response_payload=build_exchange_payload,
     )

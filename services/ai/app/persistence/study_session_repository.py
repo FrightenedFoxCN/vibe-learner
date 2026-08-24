@@ -489,6 +489,12 @@ class StudySessionRepository:
                 batch=prepared_effect_batch,
                 expected_operation_id=operation_id,
                 allowed_schedule_ids=allowed_schedule_ids,
+                allowed_projection_sources={
+                    (f"attachment_{attachment.kind}", attachment.attachment_id)
+                    for turn in record.turns
+                    for attachment in turn.learner_attachments
+                    if attachment.kind in {"pdf", "image"}
+                },
                 committed_at=committed_at,
             )
             record.updated_at = committed_at

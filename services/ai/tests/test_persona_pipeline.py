@@ -4550,6 +4550,12 @@ class PersonaPipelineTests(unittest.TestCase):
             plan_service=self.plan_service,
             session_id=session.id,
             transient_attachments=prepared.records,
+            effect_collector=StudyChatEffectCollector(
+                operation_id="study-chat-op-project-pdf",
+                session_id=session.id,
+                plan_id=None,
+                allowed_schedule_ids=set(),
+            ),
         )
 
         project_payload = runtime.execute_tool(
@@ -4572,10 +4578,17 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertTrue(highlight_payload["ok"])
         self.assertGreaterEqual(highlight_payload["match_count"], 1)
         refreshed_session = self.study_session_service.require_session(session.id)
-        self.assertIsNotNone(refreshed_session.projected_pdf)
-        self.assertEqual(refreshed_session.projected_pdf.source_id, prepared.records[0].attachment_id)
-        self.assertEqual(refreshed_session.projected_pdf.page_number, 1)
-        self.assertEqual(refreshed_session.projected_pdf.overlays[-1].kind, "text_highlight")
+        self.assertIsNone(refreshed_session.projected_pdf)
+        self.assertEqual(project_payload["effect_state"], "prepared")
+        self.assertFalse(project_payload["committed"])
+        self.assertEqual(
+            project_payload["predicted_state"]["source_id"],
+            prepared.records[0].attachment_id,
+        )
+        self.assertEqual(
+            highlight_payload["predicted_state"]["kind"],
+            "text_highlight",
+        )
         self.assertEqual(runtime.response_citations()[-1].source_kind, "attachment_pdf")
 
     def test_study_session_chat_runtime_projects_image_and_clears_region_overlays(self) -> None:
@@ -4613,6 +4626,12 @@ class PersonaPipelineTests(unittest.TestCase):
             plan_service=self.plan_service,
             session_id=session.id,
             transient_attachments=prepared.records,
+            effect_collector=StudyChatEffectCollector(
+                operation_id="study-chat-op-project-image",
+                session_id=session.id,
+                plan_id=None,
+                allowed_schedule_ids=set(),
+            ),
         )
 
         project_payload = runtime.execute_tool(
@@ -4636,19 +4655,17 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertTrue(project_payload["ok"])
         self.assertTrue(annotate_payload["ok"])
-        self.assertEqual(annotate_payload["overlay"]["kind"], "region_box")
-        self.assertIsNotNone(refreshed_session.projected_pdf)
-        self.assertEqual(refreshed_session.projected_pdf.source_kind, "attachment_image")
-        self.assertEqual(refreshed_session.projected_pdf.source_id, prepared.records[0].attachment_id)
-        self.assertEqual(refreshed_session.projected_pdf.overlays[-1].kind, "region_box")
+        self.assertEqual(annotate_payload["predicted_state"]["kind"], "region_box")
+        self.assertIsNone(refreshed_session.projected_pdf)
+        self.assertEqual(project_payload["effect_state"], "prepared")
         self.assertEqual(runtime.response_citations()[-1].source_kind, "attachment_image")
 
         clear_payload = runtime.execute_tool("clear_projected_image_overlays", {})
         cleared_session = self.study_session_service.require_session(session.id)
 
         self.assertTrue(clear_payload["ok"])
-        self.assertEqual(clear_payload["remaining_overlay_count"], 0)
-        self.assertEqual(len(cleared_session.projected_pdf.overlays), 0)
+        self.assertEqual(clear_payload["predicted_state"]["overlays"], [])
+        self.assertIsNone(cleared_session.projected_pdf)
 
     def test_study_session_chat_runtime_generates_projected_image_and_allows_overlays(self) -> None:
         class StubGeneratedImageProvider:
@@ -4681,6 +4698,12 @@ class PersonaPipelineTests(unittest.TestCase):
             plan_service=self.plan_service,
             session_id=session.id,
             model_provider=provider,
+            effect_collector=StudyChatEffectCollector(
+                operation_id="study-chat-op-generate-image",
+                session_id=session.id,
+                plan_id=None,
+                allowed_schedule_ids=set(),
+            ),
         )
 
         tool_names = [item["function"]["name"] for item in runtime.tool_specs()]
@@ -4709,24 +4732,23 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertTrue(project_payload["ok"])
         self.assertEqual(provider.calls, [("画一个矩阵变换后的坐标网格示意图。", "1536x1024")])
-        self.assertEqual(project_payload["projected_pdf"]["source_kind"], "generated_image")
-        self.assertEqual(project_payload["projected_pdf"]["title"], "矩阵变换草图")
-        self.assertEqual(project_payload["projected_pdf"]["image_url"], "data:image/png;base64,AAA")
+        self.assertEqual(project_payload["predicted_state"]["source_kind"], "generated_image")
+        self.assertEqual(project_payload["predicted_state"]["title"], "矩阵变换草图")
+        self.assertEqual(project_payload["predicted_state"]["image_url"], "data:image/png;base64,AAA")
+        self.assertEqual(project_payload["external_effect_state"], "completed_uncommitted")
         self.assertEqual(project_payload["revised_prompt"], "矩阵映射草图，已补充箭头与标签。")
         self.assertTrue(annotate_payload["ok"])
         self.assertIsNone(annotate_payload["citation"])
         self.assertEqual(runtime.response_citations(), [])
-        self.assertIsNotNone(refreshed_session.projected_pdf)
-        self.assertEqual(refreshed_session.projected_pdf.source_kind, "generated_image")
-        self.assertEqual(refreshed_session.projected_pdf.image_url, "data:image/png;base64,AAA")
-        self.assertEqual(refreshed_session.projected_pdf.overlays[-1].kind, "region_box")
+        self.assertIsNone(refreshed_session.projected_pdf)
+        self.assertEqual(annotate_payload["predicted_state"]["kind"], "region_box")
 
         clear_payload = runtime.execute_tool("clear_projected_image_overlays", {})
         cleared_session = self.study_session_service.require_session(session.id)
 
         self.assertTrue(clear_payload["ok"])
-        self.assertEqual(clear_payload["remaining_overlay_count"], 0)
-        self.assertEqual(len(cleared_session.projected_pdf.overlays), 0)
+        self.assertEqual(clear_payload["predicted_state"]["overlays"], [])
+        self.assertIsNone(cleared_session.projected_pdf)
 
     def test_document_service_resets_state_when_processing_is_interrupted(self) -> None:
         pdf_doc = fitz.open()

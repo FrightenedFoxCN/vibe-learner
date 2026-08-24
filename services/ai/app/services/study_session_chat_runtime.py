@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
-from uuid import uuid4
 
 from fastapi import HTTPException
 
@@ -10,14 +9,18 @@ from app.models.domain import (
     Citation,
     LearnerAttachmentRecord,
     PdfRectRecord,
-    ProjectedPdfOverlayRecord,
     SessionProjectedPdfRecord,
 )
 from app.models.study_chat_effect import (
     StudyAffinityDeltaEffectProposalV1,
+    StudyFollowUpEffectAction,
+    StudyFollowUpEffectProposalV1,
     StudyMemoryUpsertEffectProposalV1,
     StudyPlanConfirmationEffectAction,
     StudyPlanConfirmationEffectProposalV1,
+    StudyProjectionEffectAction,
+    StudyProjectionEffectProposalV1,
+    StudyProjectionRectV1,
 )
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.plans import LearningPlanService
@@ -736,41 +739,57 @@ class StudySessionChatToolRuntime:
             }
 
         if tool_name == "schedule_session_follow_up":
-            delay_seconds = max(10, min(int(arguments.get("delay_seconds") or 30), 1800))
+            delay_seconds = int(arguments.get("delay_seconds") or 30)
+            if delay_seconds < 10 or delay_seconds > 1800:
+                raise HTTPException(status_code=422, detail="follow_up_delay_invalid")
             prompt = str(arguments.get("prompt") or "").strip()
             reason = str(arguments.get("reason") or "").strip()
             if not prompt:
                 raise HTTPException(status_code=422, detail="follow_up_prompt_required")
-            follow_up = self._session_service.schedule_follow_up(
-                session_id=self.session_id,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyFollowUpEffectProposalV1(
+                action=StudyFollowUpEffectAction.SCHEDULE,
                 delay_seconds=delay_seconds,
                 hidden_message=prompt,
                 reason=reason,
             )
+            effect = self._effect_collector.prepare_follow_up(proposal)
+            session = self._session_service.require_session(self.session_id)
+            predicted = self._effect_collector.preview_follow_ups(
+                session.pending_follow_ups
+            )[-1]
             return {
                 "ok": True,
                 "tool_name": tool_name,
                 "requires_client_schedule": True,
-                "follow_up": follow_up.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": predicted,
             }
 
         if tool_name == "project_uploaded_pdf":
             attachment_id = str(arguments.get("attachment_id") or "").strip()
             page_number = max(1, int(arguments.get("page_number") or 1))
             attachment = self._require_pdf_attachment(attachment_id)
-            projected_pdf = SessionProjectedPdfRecord(
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.SET,
                 source_kind="attachment_pdf",
                 source_id=attachment.attachment_id,
                 title=attachment.name,
                 page_number=min(page_number, max(1, attachment.page_count or page_number)),
-                page_count=attachment.page_count,
-                overlays=[],
-                updated_at=datetime.now().astimezone().isoformat(),
+                page_count=max(1, attachment.page_count or page_number),
             )
-            self._session_service.upsert_projected_pdf(
-                session_id=self.session_id,
-                projected_pdf=projected_pdf,
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
             )
+            assert projected_pdf is not None
             citation = self._push_citation(
                 title=attachment.name,
                 page_start=projected_pdf.page_number,
@@ -781,26 +800,33 @@ class StudySessionChatToolRuntime:
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "projected_pdf": projected_pdf.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": projected_pdf.model_dump(mode="json"),
                 "citation": citation.model_dump(mode="json"),
             }
 
         if tool_name == "project_uploaded_image":
             attachment_id = str(arguments.get("attachment_id") or "").strip()
             attachment = self._require_image_attachment(attachment_id)
-            projected_pdf = SessionProjectedPdfRecord(
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.SET,
                 source_kind="attachment_image",
                 source_id=attachment.attachment_id,
                 title=attachment.name,
                 page_number=1,
                 page_count=1,
-                overlays=[],
-                updated_at=datetime.now().astimezone().isoformat(),
             )
-            self._session_service.upsert_projected_pdf(
-                session_id=self.session_id,
-                projected_pdf=projected_pdf,
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
             )
+            assert projected_pdf is not None
             citation = self._push_citation(
                 title=attachment.name,
                 page_start=1,
@@ -811,7 +837,11 @@ class StudySessionChatToolRuntime:
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "projected_pdf": projected_pdf.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": projected_pdf.model_dump(mode="json"),
                 "citation": citation.model_dump(mode="json"),
             }
 
@@ -834,24 +864,31 @@ class StudySessionChatToolRuntime:
                     "tool_name": tool_name,
                     "error": str(exc),
                 }
-            projected_pdf = SessionProjectedPdfRecord(
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.SET,
                 source_kind="generated_image",
-                source_id=f"generated-image-{uuid4().hex[:10]}",
                 title=title,
                 page_number=1,
                 page_count=1,
                 image_url=str(generated.get("image_url") or ""),
-                overlays=[],
-                updated_at=datetime.now().astimezone().isoformat(),
             )
-            self._session_service.upsert_projected_pdf(
-                session_id=self.session_id,
-                projected_pdf=projected_pdf,
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
             )
+            assert projected_pdf is not None
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "projected_pdf": projected_pdf.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": projected_pdf.model_dump(mode="json"),
+                "external_effect_state": "completed_uncommitted",
                 "revised_prompt": str(generated.get("revised_prompt") or ""),
             }
 
@@ -911,10 +948,18 @@ class StudySessionChatToolRuntime:
             attachment, _ = self._require_projected_pdf_attachment()
             page_number = max(1, int(arguments.get("page_number") or 1))
             resolved_page = min(page_number, max(1, attachment.page_count or page_number))
-            session = self._session_service.focus_projected_pdf_page(
-                session_id=self.session_id,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.FOCUS,
                 page_number=resolved_page,
             )
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
+            )
+            assert projected_pdf is not None
             citation = self._push_citation(
                 title=attachment.name,
                 page_start=resolved_page,
@@ -925,7 +970,11 @@ class StudySessionChatToolRuntime:
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "projected_pdf": session.projected_pdf.model_dump(mode="json") if session.projected_pdf else {},
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": projected_pdf.model_dump(mode="json"),
                 "citation": citation.model_dump(mode="json"),
             }
 
@@ -942,21 +991,27 @@ class StudySessionChatToolRuntime:
             )
             if not rects:
                 raise HTTPException(status_code=404, detail="projected_pdf_text_not_found")
-            overlay = ProjectedPdfOverlayRecord(
-                id=f"pdf-overlay-{uuid4().hex[:10]}",
-                kind="text_highlight",
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.APPEND_OVERLAY,
+                overlay_kind="text_highlight",
                 page_number=page_number,
-                rects=rects,
+                rects=[
+                    StudyProjectionRectV1.model_validate(item.model_dump(mode="json"))
+                    for item in rects
+                ],
                 label=label,
                 quote_text=quote_text,
                 color=color,
-                created_at=datetime.now().astimezone().isoformat(),
             )
-            self._session_service.append_projected_pdf_overlay(
-                session_id=self.session_id,
-                overlay=overlay,
-                page_number=page_number,
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
             )
+            assert projected_pdf is not None
+            overlay = projected_pdf.overlays[-1]
             citation = self._push_citation(
                 title=attachment.name,
                 page_start=page_number,
@@ -967,7 +1022,11 @@ class StudySessionChatToolRuntime:
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "overlay": overlay.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": overlay.model_dump(mode="json"),
                 "match_count": len(rects),
                 "citation": citation.model_dump(mode="json"),
             }
@@ -983,20 +1042,23 @@ class StudySessionChatToolRuntime:
                 width=float(arguments.get("width") or 0.0),
                 height=float(arguments.get("height") or 0.0),
             )
-            overlay = ProjectedPdfOverlayRecord(
-                id=f"pdf-overlay-{uuid4().hex[:10]}",
-                kind="region_box",
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.APPEND_OVERLAY,
+                overlay_kind="region_box",
                 page_number=page_number,
-                rects=[rect],
+                rects=[StudyProjectionRectV1.model_validate(rect.model_dump(mode="json"))],
                 label=label,
                 color=color,
-                created_at=datetime.now().astimezone().isoformat(),
             )
-            self._session_service.append_projected_pdf_overlay(
-                session_id=self.session_id,
-                overlay=overlay,
-                page_number=page_number,
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
             )
+            assert projected_pdf is not None
+            overlay = projected_pdf.overlays[-1]
             citation = self._push_citation(
                 title=attachment.name,
                 page_start=page_number,
@@ -1007,7 +1069,11 @@ class StudySessionChatToolRuntime:
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "overlay": overlay.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": overlay.model_dump(mode="json"),
                 "citation": citation.model_dump(mode="json"),
             }
 
@@ -1021,20 +1087,23 @@ class StudySessionChatToolRuntime:
                 width=float(arguments.get("width") or 0.0),
                 height=float(arguments.get("height") or 0.0),
             )
-            overlay = ProjectedPdfOverlayRecord(
-                id=f"image-overlay-{uuid4().hex[:10]}",
-                kind="region_box",
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.APPEND_OVERLAY,
+                overlay_kind="region_box",
                 page_number=1,
-                rects=[rect],
+                rects=[StudyProjectionRectV1.model_validate(rect.model_dump(mode="json"))],
                 label=label,
                 color=color,
-                created_at=datetime.now().astimezone().isoformat(),
             )
-            self._session_service.append_projected_pdf_overlay(
-                session_id=self.session_id,
-                overlay=overlay,
-                page_number=1,
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            next_projected = self._effect_collector.preview_projected_state(
+                session.projected_pdf
             )
+            assert next_projected is not None
+            overlay = next_projected.overlays[-1]
             citation = (
                 self._push_citation(
                     title=projected_pdf.title,
@@ -1049,40 +1118,60 @@ class StudySessionChatToolRuntime:
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "overlay": overlay.model_dump(mode="json"),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": overlay.model_dump(mode="json"),
                 "citation": citation.model_dump(mode="json") if citation is not None else None,
             }
 
         if tool_name == "clear_projected_pdf_overlays":
             page_number = arguments.get("page_number")
             resolved_page = max(1, int(page_number)) if page_number is not None else None
-            session = self._session_service.clear_projected_pdf_overlays(
-                session_id=self.session_id,
-                page_number=resolved_page,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.CLEAR_OVERLAYS,
+                page_number=resolved_page or 0,
             )
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
+            )
+            assert projected_pdf is not None
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "remaining_overlay_count": (
-                    len(session.projected_pdf.overlays)
-                    if session.projected_pdf is not None
-                    else 0
-                ),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": projected_pdf.model_dump(mode="json"),
             }
 
         if tool_name == "clear_projected_image_overlays":
-            session = self._session_service.clear_projected_pdf_overlays(
-                session_id=self.session_id,
-                page_number=None,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            self._require_projected_image_projection()
+            proposal = StudyProjectionEffectProposalV1(
+                action=StudyProjectionEffectAction.CLEAR_OVERLAYS,
             )
+            effect = self._effect_collector.prepare_projection(proposal)
+            session = self._session_service.require_session(self.session_id)
+            projected_pdf = self._effect_collector.preview_projected_state(
+                session.projected_pdf
+            )
+            assert projected_pdf is not None
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "remaining_overlay_count": (
-                    len(session.projected_pdf.overlays)
-                    if session.projected_pdf is not None
-                    else 0
-                ),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": projected_pdf.model_dump(mode="json"),
             }
 
         if tool_name == "update_learning_plan":
@@ -1184,7 +1273,11 @@ class StudySessionChatToolRuntime:
 
     def _require_projected_pdf_attachment(self) -> tuple[LearnerAttachmentRecord, SessionProjectedPdfRecord]:
         session = self._session_service.require_session(self.session_id)
-        projected_pdf = session.projected_pdf
+        projected_pdf = (
+            self._effect_collector.preview_projected_state(session.projected_pdf)
+            if self._effect_collector is not None
+            else session.projected_pdf
+        )
         if projected_pdf is None:
             raise HTTPException(status_code=409, detail="projected_pdf_not_set")
         if projected_pdf.source_kind != "attachment_pdf":
@@ -1194,7 +1287,11 @@ class StudySessionChatToolRuntime:
 
     def _require_projected_image_projection(self) -> SessionProjectedPdfRecord:
         session = self._session_service.require_session(self.session_id)
-        projected_pdf = session.projected_pdf
+        projected_pdf = (
+            self._effect_collector.preview_projected_state(session.projected_pdf)
+            if self._effect_collector is not None
+            else session.projected_pdf
+        )
         if projected_pdf is None:
             raise HTTPException(status_code=409, detail="projected_pdf_not_set")
         if projected_pdf.source_kind not in {"attachment_image", "generated_image"}:
