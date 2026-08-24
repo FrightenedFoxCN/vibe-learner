@@ -311,6 +311,10 @@ textarea {
   gap: 14px;
 }
 
+.tavern-workspace-grid.empty-room {
+  grid-template-columns: minmax(210px, 260px) minmax(400px, 1fr);
+}
+
 .tavern-left-rail,
 .tavern-right-rail {
   min-width: 0;
@@ -1052,7 +1056,23 @@ textarea {
 
   .tavern-conversation-panel {
     grid-column: 1;
+    grid-row: 2;
+  }
+
+  .tavern-workspace-grid.has-room .tavern-right-rail {
     grid-row: 1;
+  }
+
+  .tavern-workspace-grid.has-room .tavern-left-rail {
+    grid-row: 3;
+  }
+
+  .tavern-workspace-grid.empty-room .tavern-left-rail {
+    grid-row: 1;
+  }
+
+  .tavern-workspace-grid.empty-room .tavern-conversation-panel {
+    grid-row: 2;
   }
 
   .interaction-composer {
@@ -1074,6 +1094,11 @@ textarea {
   .tavern-conversation-panel {
     height: min(68vh, 720px);
     min-height: 480px;
+  }
+
+  .tavern-workspace-grid.empty-room .tavern-conversation-panel {
+    height: auto;
+    min-height: 180px;
   }
 }
 
@@ -1203,6 +1228,11 @@ textarea {
   .tavern-conversation-panel {
     height: 64vh;
     min-height: 430px;
+  }
+
+  .tavern-workspace-grid.empty-room .tavern-conversation-panel {
+    height: auto;
+    min-height: 160px;
   }
 
   .tavern-transcript {

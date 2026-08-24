@@ -9,6 +9,7 @@ import {
   useState,
   type FormEvent,
   type KeyboardEvent,
+  type RefObject,
 } from "react";
 import type {
   PersonaProfile,
@@ -80,13 +81,17 @@ const RUN_STATUS_LABELS: Record<TavernRun["status"], string> = {
 };
 
 const STEP_STATUS_LABELS: Record<TavernParticipantGenerationState, string> = {
-  idle: "待选择",
+  idle: "就绪",
   pending: "等待发言",
   generating: "正在生成",
   completed: "已回应",
   failed: "回应未完成",
   blocked: "等待前序恢复",
   canceled: "已取消",
+  previous_completed: "上一轮已回应",
+  previous_failed: "上一轮未完成",
+  previous_blocked: "上一轮待恢复",
+  previous_canceled: "上一轮已取消",
 };
 
 export function TavernWorkspace() {
@@ -100,6 +105,7 @@ export function TavernWorkspace() {
   const [targetPersonaIds, setTargetPersonaIds] = useState<string[]>([]);
   const [generatingPersonaIds, setGeneratingPersonaIds] = useState<string[]>([]);
   const [showSetup, setShowSetup] = useState(false);
+  const [setupFocusRequest, setSetupFocusRequest] = useState(0);
   const [busyAction, setBusyAction] = useState<BusyAction>("bootstrap");
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [notice, setNotice] = useState("正在载入酒馆记录…");
@@ -120,6 +126,7 @@ export function TavernWorkspace() {
   const detailRef = useRef<TavernRoomDetail | null>(null);
   const runsRef = useRef<TavernRun[]>([]);
   const messagesRef = useRef<TavernMessage[]>([]);
+  const setupTitleRef = useRef<HTMLInputElement>(null);
 
   const activeRoom = detail?.room ?? null;
   const roomIsActive = activeRoom?.status === "active";
@@ -138,9 +145,22 @@ export function TavernWorkspace() {
     [recoveryChains]
   );
   const participantStates = useMemo(
-    () => projectParticipantStates(detail?.participants ?? [], runs),
-    [detail?.participants, runs]
+    () => projectParticipantStates(
+      detail?.participants ?? [],
+      runs,
+      generatingPersonaIds
+    ),
+    [detail?.participants, generatingPersonaIds, runs]
   );
+
+  useEffect(() => {
+    if (!showSetup || setupFocusRequest === 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      setupTitleRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setupTitleRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [setupFocusRequest, showSetup]);
 
   useEffect(() => {
     detailRef.current = detail;
@@ -970,7 +990,10 @@ export function TavernWorkspace() {
         notice={notice}
         busy={roomBusy || mutationBusy || loadingOlder}
         runPending={runPending}
-        onCreate={() => setShowSetup(true)}
+        onCreate={() => {
+          setShowSetup(true);
+          setSetupFocusRequest((current) => current + 1);
+        }}
         onRefresh={() => void refreshRoom()}
         onArchiveToggle={() => void handleArchiveToggle()}
       />
@@ -983,57 +1006,7 @@ export function TavernWorkspace() {
         </div>
       ) : null}
 
-      <div className="tavern-workspace-grid">
-        <TavernConversationPanel
-          key={activeRoom?.id ?? "empty-room"}
-          room={activeRoom}
-          participants={detail?.participants ?? []}
-          messages={messages}
-          messageCount={detail?.messageCount ?? 0}
-          hasOlder={detail?.nextBeforeSequence != null}
-          loading={roomBusy}
-          loadingOlder={loadingOlder}
-          olderDisabled={roomBusy || mutationBusy || runPending}
-          onLoadOlder={handleLoadOlder}
-        />
-
-        <div className="tavern-right-rail">
-          <InteractionComposer
-            key={activeRoom?.id ?? "empty-composer"}
-            roomId={activeRoom?.id ?? ""}
-            roomAvailable={Boolean(activeRoom)}
-            roomActive={Boolean(roomIsActive)}
-            participants={detail?.participants ?? []}
-            selectedIds={targetPersonaIds}
-            latestMessage={latestMessage}
-            recovery={facilitatedRecovery}
-            busy={busyAction === "turn" || busyAction === "retry" || busyAction === "cancel" || runPending || loadingOlder}
-            recoveryBusy={mutationBusy || runPending || loadingOlder}
-            retrying={busyAction === "retry"}
-            canCancel={runPending}
-            canceling={busyAction === "cancel"}
-            onTurn={handleTurn}
-            onCancel={handleCancelRun}
-            onRetry={(run) => void handleRetry(run)}
-          />
-          <ParticipantRoster
-            states={participantStates}
-            selectedIds={targetPersonaIds}
-            disabled={!roomIsActive || mutationBusy || runPending || loadingOlder}
-            generatingPersonaIds={generatingPersonaIds}
-            onToggle={handleTargetToggle}
-          />
-          <ReliabilityDetails
-            runs={runs}
-            retryableRuns={retryableRuns}
-            recoveryChains={recoveryChains}
-            participants={detail?.participants ?? []}
-            roomActive={Boolean(roomIsActive)}
-            busy={mutationBusy || runPending || loadingOlder}
-            onRetry={(run) => void handleRetry(run)}
-          />
-        </div>
-
+      <div className={`tavern-workspace-grid ${activeRoom ? "has-room" : "empty-room"}`}>
         <div className="tavern-left-rail">
           <TavernSessionPanel
             rooms={rooms}
@@ -1046,11 +1019,63 @@ export function TavernWorkspace() {
               personas={personas}
               scenes={scenes}
               busy={busyAction === "create"}
+              titleInputRef={setupTitleRef}
               onCancel={activeRoom ? () => setShowSetup(false) : undefined}
               onCreate={handleCreateRoom}
             />
           ) : null}
         </div>
+
+        {activeRoom ? (
+          <div className="tavern-right-rail">
+            <InteractionComposer
+              key={activeRoom.id}
+              roomId={activeRoom.id}
+              roomAvailable
+              roomActive={Boolean(roomIsActive)}
+              participants={detail?.participants ?? []}
+              selectedIds={targetPersonaIds}
+              latestMessage={latestMessage}
+              recovery={facilitatedRecovery}
+              busy={busyAction === "turn" || busyAction === "retry" || busyAction === "cancel" || runPending || loadingOlder}
+              recoveryBusy={mutationBusy || runPending || loadingOlder}
+              retrying={busyAction === "retry"}
+              canCancel={runPending}
+              canceling={busyAction === "cancel"}
+              onTurn={handleTurn}
+              onCancel={handleCancelRun}
+              onRetry={(run) => void handleRetry(run)}
+            />
+            <ParticipantRoster
+              states={participantStates}
+              selectedIds={targetPersonaIds}
+              disabled={!roomIsActive || mutationBusy || runPending || loadingOlder}
+              onToggle={handleTargetToggle}
+            />
+            <ReliabilityDetails
+              runs={runs}
+              retryableRuns={retryableRuns}
+              recoveryChains={recoveryChains}
+              participants={detail?.participants ?? []}
+              roomActive={Boolean(roomIsActive)}
+              busy={mutationBusy || runPending || loadingOlder}
+              onRetry={(run) => void handleRetry(run)}
+            />
+          </div>
+        ) : null}
+
+        <TavernConversationPanel
+          key={activeRoom?.id ?? "empty-room"}
+          room={activeRoom}
+          participants={detail?.participants ?? []}
+          messages={messages}
+          messageCount={detail?.messageCount ?? 0}
+          hasOlder={detail?.nextBeforeSequence != null}
+          loading={roomBusy}
+          loadingOlder={loadingOlder}
+          olderDisabled={roomBusy || mutationBusy || runPending}
+          onLoadOlder={handleLoadOlder}
+        />
       </div>
     </main>
   );
@@ -1164,12 +1189,14 @@ function TavernSetupPanel({
   personas,
   scenes,
   busy,
+  titleInputRef,
   onCancel,
   onCreate,
 }: {
   personas: PersonaProfile[];
   scenes: SceneLibraryItemPayload[];
   busy: boolean;
+  titleInputRef: RefObject<HTMLInputElement | null>;
   onCancel?: () => void;
   onCreate: (input: { title: string; personaIds: string[]; sceneId: string; openingPrompt: string }) => Promise<void>;
 }) {
@@ -1229,7 +1256,7 @@ function TavernSetupPanel({
       >
         <label>
           <span>标题</span>
-          <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} disabled={busy} />
+          <input ref={titleInputRef} value={title} onChange={(event) => setTitle(event.target.value)} maxLength={80} disabled={busy} />
         </label>
         <fieldset>
           <legend>人格角色 <span>{selectedIds.length}/6</span></legend>
@@ -1402,7 +1429,7 @@ function TavernConversationPanel({
         {loading && !messages.length ? (
           <div className="tavern-empty-state"><MaterialIcon name="hourglass_top" size={24} /><p>正在恢复最近对话…</p></div>
         ) : !room ? (
-          <div className="tavern-empty-state"><MaterialIcon name="forum" size={28} /><p>从左侧创建或打开一个酒馆。</p></div>
+          <div className="tavern-empty-state"><MaterialIcon name="forum" size={28} /><p>先创建或打开一个酒馆，然后开始对话。</p></div>
         ) : !messages.length ? (
           <div className="tavern-empty-state"><MaterialIcon name="forum" size={28} /><p>这里还很安静。选择角色并发送第一句话。</p></div>
         ) : (
@@ -1437,13 +1464,11 @@ function ParticipantRoster({
   states,
   selectedIds,
   disabled,
-  generatingPersonaIds,
   onToggle,
 }: {
   states: ReturnType<typeof projectParticipantStates>;
   selectedIds: string[];
   disabled: boolean;
-  generatingPersonaIds: string[];
   onToggle: (personaId: string) => void;
 }) {
   return (
@@ -1460,12 +1485,9 @@ function ParticipantRoster({
           {states.map(({ participant, state }) => {
             const selected = selectedIds.includes(participant.personaId);
             const displayName = participant.displayName || "未命名角色";
-            const displayState = generatingPersonaIds.includes(participant.personaId)
-              ? "generating"
-              : state;
-            const stateLabel = selected && displayState === "idle"
+            const stateLabel = selected && state === "idle"
               ? "本轮目标"
-              : STEP_STATUS_LABELS[displayState];
+              : STEP_STATUS_LABELS[state];
             return (
               <label key={participant.personaId} className={`tavern-roster-item${selected ? " selected" : ""}`}>
                 <input
@@ -1477,7 +1499,7 @@ function ParticipantRoster({
                 <span className="tavern-avatar" aria-hidden="true">{displayName.slice(0, 1)}</span>
                 <span className="tavern-roster-copy">
                   <strong>{displayName}</strong>
-                  <small className={`state-${displayState}`}>{stateLabel}</small>
+                  <small className={`state-${state}`}>{stateLabel}</small>
                 </span>
               </label>
             );

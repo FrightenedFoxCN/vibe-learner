@@ -146,6 +146,10 @@ export function writeTavernCreationDraft(draft: TavernCreationDraft | null): voi
 
 export type TavernParticipantGenerationState =
   | TavernSpeakerStepStatus
+  | "previous_completed"
+  | "previous_failed"
+  | "previous_blocked"
+  | "previous_canceled"
   | "idle";
 
 export interface TavernParticipantState {
@@ -223,14 +227,56 @@ export class TavernMessageConflictError extends Error {
 
 export function projectParticipantStates(
   participants: TavernParticipant[],
-  runs: TavernRun[]
+  runs: TavernRun[],
+  optimisticPersonaIds: string[] = []
 ): TavernParticipantState[] {
-  const latestRun = [...runs].sort(compareRunsNewestFirst)[0];
-  const stepByPersona = new Map(
-    (latestRun?.speakerSteps ?? []).map((step) => [step.personaId, step.status])
-  );
-  return [...participants]
-    .sort((left, right) => left.displayOrder - right.displayOrder)
+  const orderedParticipants = [...participants]
+    .sort((left, right) => left.displayOrder - right.displayOrder);
+  const activeRun = [...runs]
+    .filter((run) => run.status === "pending")
+    .sort(compareRunsNewestFirst)[0];
+  const latestTerminalRun = activeRun
+    ? undefined
+    : [...runs].sort(compareRunsNewestFirst)[0];
+  const stepByPersona = new Map<string, TavernParticipantGenerationState>();
+
+  if (activeRun?.speakerSteps.length) {
+    for (const step of activeRun.speakerSteps) {
+      stepByPersona.set(step.personaId, step.status);
+    }
+  } else if (activeRun) {
+    const startingIds = optimisticPersonaIds.length
+      ? optimisticPersonaIds
+      : activeRun.scheduledParticipantIds;
+    const starting = orderedParticipants
+      .filter((participant) => startingIds.includes(participant.personaId));
+    starting.forEach((participant, index) => {
+      stepByPersona.set(
+        participant.personaId,
+        optimisticPersonaIds.length && index === 0 ? "generating" : "pending"
+      );
+    });
+  } else if (optimisticPersonaIds.length) {
+    const optimistic = orderedParticipants
+      .filter((participant) => optimisticPersonaIds.includes(participant.personaId));
+    optimistic.forEach((participant, index) => {
+      stepByPersona.set(participant.personaId, index === 0 ? "generating" : "pending");
+    });
+  } else if (latestTerminalRun) {
+    for (const step of latestTerminalRun.speakerSteps) {
+      if (step.status === "completed") {
+        stepByPersona.set(step.personaId, "previous_completed");
+      } else if (step.status === "failed") {
+        stepByPersona.set(step.personaId, "previous_failed");
+      } else if (step.status === "blocked") {
+        stepByPersona.set(step.personaId, "previous_blocked");
+      } else if (step.status === "canceled") {
+        stepByPersona.set(step.personaId, "previous_canceled");
+      }
+    }
+  }
+
+  return orderedParticipants
     .map((participant) => ({
       participant,
       state: stepByPersona.get(participant.personaId) ?? "idle",

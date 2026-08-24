@@ -4,6 +4,7 @@ import test from "node:test";
 
 import type {
   TavernMessage,
+  TavernParticipant,
   TavernRoomState,
   TavernRun,
 } from "@vibe-learner/shared";
@@ -14,6 +15,7 @@ import {
   latestFacilitatedRecovery,
   listRetryableRuns,
   mergeTavernMessages,
+  projectParticipantStates,
   reconcileTavernRuns,
   TavernMessageConflictError,
 } from "../lib/tavern-workspace-state.ts";
@@ -59,6 +61,31 @@ function run(id: string, status: TavernRun["status"], parentRunId?: string): Tav
     harnessTrace: [],
     terminalSequence: 0,
     createdAt: `2026-08-12T00:00:0${id.length}Z`,
+  };
+}
+
+function participant(personaId: string, displayOrder: number): TavernParticipant {
+  return {
+    roomId: "room-1",
+    personaId,
+    displayOrder,
+    displayName: personaId,
+    personaSnapshot: {
+      id: personaId,
+      name: personaId,
+      source: "user",
+      summary: "summary",
+      relationship: "peer",
+      learnerAddress: "learner",
+      systemPrompt: "prompt",
+      referenceHints: [],
+      slots: [],
+      availableEmotions: ["calm"],
+      availableActions: ["nod"],
+      defaultSpeechStyle: "warm",
+    },
+    promptHash: `hash-${personaId}`,
+    joinedAt: "2026-08-12T00:00:00Z",
   };
 }
 
@@ -248,17 +275,90 @@ test("late run polling cannot resurrect a terminal run", () => {
   assert.equal(advanced[0]?.status, "completed");
 });
 
+test("optimistic roster marks only the first eligible actor as generating", () => {
+  const states = projectParticipantStates(
+    [participant("persona-2", 1), participant("persona-1", 0), participant("persona-3", 2)],
+    [],
+    ["persona-2", "persona-1"]
+  );
+  assert.deepEqual(
+    states.map((item) => [item.participant.personaId, item.state]),
+    [
+      ["persona-1", "generating"],
+      ["persona-2", "pending"],
+      ["persona-3", "idle"],
+    ]
+  );
+});
+
+test("server speaker steps override optimistic roster state", () => {
+  const active = {
+    ...run("active", "pending"),
+    mode: "facilitated" as const,
+    speakerSteps: [
+      speakerStep("active", 0, "persona-1", "completed"),
+      speakerStep("active", 1, "persona-2", "generating"),
+      speakerStep("active", 2, "persona-3", "pending"),
+    ],
+  };
+  const states = projectParticipantStates(
+    [participant("persona-1", 0), participant("persona-2", 1), participant("persona-3", 2)],
+    [active],
+    ["persona-1", "persona-3"]
+  );
+  assert.deepEqual(
+    states.map((item) => item.state),
+    ["completed", "generating", "pending"]
+  );
+});
+
+test("an admitted run without visible steps stays truthful while starting", () => {
+  const active = {
+    ...run("active-no-steps", "pending"),
+    mode: "facilitated" as const,
+    scheduledParticipantIds: ["persona-1", "persona-2"],
+  };
+  const states = projectParticipantStates(
+    [participant("persona-1", 0), participant("persona-2", 1)],
+    [active]
+  );
+  assert.deepEqual(states.map((item) => item.state), ["pending", "pending"]);
+});
+
+test("terminal roster states are explicitly scoped to the previous round", () => {
+  const terminal = {
+    ...run("terminal", "partial"),
+    mode: "facilitated" as const,
+    speakerSteps: [
+      speakerStep("terminal", 0, "persona-1", "completed"),
+      speakerStep("terminal", 1, "persona-2", "failed"),
+      speakerStep("terminal", 2, "persona-3", "blocked"),
+    ],
+  };
+  const states = projectParticipantStates(
+    [participant("persona-1", 0), participant("persona-2", 1), participant("persona-3", 2)],
+    [terminal]
+  );
+  assert.deepEqual(
+    states.map((item) => item.state),
+    ["previous_completed", "previous_failed", "previous_blocked"]
+  );
+});
+
 test("mobile Tavern DOM order matches its primary visual flow", () => {
   const componentSource = readFileSync(
     new URL("../components/tavern-workspace.tsx", import.meta.url),
     "utf8"
   );
-  const gridStart = componentSource.indexOf('<div className="tavern-workspace-grid">');
-  const conversation = componentSource.indexOf("<TavernConversationPanel", gridStart);
-  const rightRail = componentSource.indexOf('className="tavern-right-rail"', gridStart);
+  const gridStart = componentSource.indexOf('<div className={`tavern-workspace-grid');
   const leftRail = componentSource.indexOf('className="tavern-left-rail"', gridStart);
+  const rightRail = componentSource.indexOf('className="tavern-right-rail"', gridStart);
+  const conversation = componentSource.indexOf("<TavernConversationPanel", gridStart);
   assert.ok(gridStart >= 0);
-  assert.ok(conversation > gridStart && rightRail > conversation && leftRail > rightRail);
+  assert.ok(leftRail > gridStart && rightRail > leftRail && conversation > rightRail);
+  assert.ok(componentSource.includes('activeRoom ? "has-room" : "empty-room"'));
+  assert.ok(componentSource.includes("先创建或打开一个酒馆，然后开始对话。"));
+  assert.ok(!componentSource.includes("从左侧创建或打开一个酒馆。"));
 });
 
 function rawPersona() {

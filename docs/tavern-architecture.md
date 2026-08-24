@@ -90,6 +90,10 @@ The UI derives the mode from recipient selection. Internal scheduling details an
 
 One selected target starts a direct run; two to four targets start a facilitated run in server-owned display order. Guidance is carried as hidden orchestration context and is never appended as a visible director message. Continue anchors the latest visible message without fabricating a user turn.
 
+Responsive DOM order follows the current task rather than desktop column order. Without an active Room, Session and Setup precede a compact empty Conversation and the disabled Composer/Roster are not rendered. With an active Room, Composer/Roster/Recovery precede Conversation and Session on narrow viewports; desktop grid placement remains Session, Conversation, Composer. The create action scrolls to and focuses the Setup title.
+
+`Participant Roster` treats server speaker steps as authoritative whenever they exist. The pre-response projection marks only the first display-order target as generating and later targets as pending. When there is no active run, terminal step labels are explicitly scoped to the previous round instead of looking like current generation state.
+
 The client requests a 40-message tail and uses `next_before_sequence` to prepend older pages. It binds async work to the active room/mutation operation, merges messages by sequence and identity, prevents terminal runs from regressing to pending, preserves idempotency drafts across uncertain failures, and rejects malformed Tavern aggregates through a typed `TavernDecodeError`.
 
 Keyboard handling suppresses Enter while a composition is active (including key code 229 and the composition-end trailing event); Shift+Enter inserts a newline. The responsive DOM order follows the primary mobile reading/focus flow, with explicit desktop grid placement.
