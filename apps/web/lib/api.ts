@@ -58,6 +58,23 @@ import {
   decodeStudyQuestionAttemptResponse,
   type StudyQuestionAttemptResponse,
 } from "./study-question-attempt";
+import {
+  decodeDeletedIdentity,
+  decodePersonaAssets,
+  decodePersonaCardGenerateResult,
+  decodePersonaCardList,
+  decodePersonaList,
+  decodePersonaProfile,
+  decodePersonaSettingAssistOutput,
+  decodePersonaSlotAssistOutput,
+  decodeReusableSceneNode,
+  decodeReusableSceneNodeList,
+  decodeSceneLibraryItem,
+  decodeSceneLibraryList,
+  decodeSceneProfile,
+  decodeSceneSetupState,
+  decodeSceneTreeGenerateResult,
+} from "./persona-scene-decode";
 
 export {
   normalizeTavernRoomDetail,
@@ -69,6 +86,7 @@ export {
 export { StudySessionDecodeError } from "./study-session-decode";
 export { DocumentDecodeError } from "./document-decode";
 export { PlanningDecodeError } from "./planning-decode";
+export { PersonaSceneDecodeError } from "./persona-scene-decode";
 export type {
   StudyChatOperationReceipt,
   StudyChatOperationStatus,
@@ -157,7 +175,7 @@ export interface SceneSetupStatePayload {
   updatedAt: string;
   sceneName: string;
   sceneSummary: string;
-  sceneLayers: unknown[];
+  sceneLayers: import("@vibe-learner/shared").SceneTreeNode[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
   sceneProfile?: import("@vibe-learner/shared").SceneProfile;
@@ -170,7 +188,7 @@ export interface SceneLibraryItemPayload {
   updatedAt: string;
   sceneName: string;
   sceneSummary: string;
-  sceneLayers: unknown[];
+  sceneLayers: import("@vibe-learner/shared").SceneTreeNode[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
   sceneProfile?: import("@vibe-learner/shared").SceneProfile;
@@ -242,51 +260,11 @@ function serializeSceneProfile(
   };
 }
 
-function normalizeSceneTreeNode(node: any): import("@vibe-learner/shared").SceneTreeNode {
-  return {
-    id: String(node.id ?? ""),
-    title: String(node.title ?? ""),
-    scopeLabel: String(node.scope_label ?? ""),
-    summary: String(node.summary ?? ""),
-    atmosphere: String(node.atmosphere ?? ""),
-    rules: String(node.rules ?? ""),
-    entrance: String(node.entrance ?? ""),
-    tags: String(node.tags ?? ""),
-    reuseId: String(node.reuse_id ?? ""),
-    reuseHint: String(node.reuse_hint ?? ""),
-    objects: Array.isArray(node.objects)
-      ? node.objects.map((object: any) => ({
-          id: String(object.id ?? ""),
-          name: String(object.name ?? ""),
-          description: String(object.description ?? ""),
-          interaction: String(object.interaction ?? ""),
-          tags: String(object.tags ?? ""),
-          reuseId: String(object.reuse_id ?? ""),
-          reuseHint: String(object.reuse_hint ?? ""),
-        }))
-      : [],
-    children: Array.isArray(node.children) ? node.children.map(normalizeSceneTreeNode) : [],
-  };
-}
-
-function normalizeSceneProfile(scene: any) {
-  if (!scene || typeof scene !== "object") {
+function normalizeSceneProfile(scene: unknown) {
+  if (scene === null || scene === undefined) {
     return undefined;
   }
-  return {
-    sceneId: String(scene.scene_id ?? ""),
-    sceneName: String(scene.scene_name ?? ""),
-    title: String(scene.title ?? ""),
-    summary: String(scene.summary ?? ""),
-    tags: Array.isArray(scene.tags) ? scene.tags.map((item: unknown) => String(item)) : [],
-    selectedPath: Array.isArray(scene.selected_path)
-      ? scene.selected_path.map((item: unknown) => String(item))
-      : [],
-    focusObjectNames: Array.isArray(scene.focus_object_names)
-      ? scene.focus_object_names.map((item: unknown) => String(item))
-      : [],
-    sceneTree: Array.isArray(scene.scene_tree) ? scene.scene_tree.map(normalizeSceneTreeNode) : [],
-  };
+  return decodeSceneProfile(scene);
 }
 
 function normalizeChatToolCalls(toolCalls: any): import("@vibe-learner/shared").ChatToolCallTrace[] {
@@ -451,50 +429,6 @@ function formatStreamErrorPayload(
     return detail;
   }
   return `${detail} (${suffixParts.join(", ")})`;
-}
-
-function normalizePersona(persona: any): PersonaProfile {
-  return {
-    id: persona.id,
-    name: persona.name,
-    source: persona.source,
-    summary: persona.summary,
-    relationship: String(persona.relationship ?? ""),
-    learnerAddress: String(persona.learner_address ?? ""),
-    systemPrompt: persona.system_prompt,
-    referenceHints: Array.isArray(persona.reference_hints)
-      ? persona.reference_hints.map((item: unknown) => String(item)).filter(Boolean)
-      : [],
-    slots: Array.isArray(persona.slots)
-      ? persona.slots.map((s: any) => ({
-          kind: String(s.kind ?? "custom"),
-          label: String(s.label ?? s.kind ?? ""),
-          content: String(s.content ?? ""),
-          weight: Number(s.weight ?? 1),
-          locked: Boolean(s.locked),
-          sortOrder: Number(s.sort_order ?? 0)
-        }))
-      : [],
-    availableEmotions: persona.available_emotions,
-    availableActions: persona.available_actions,
-    defaultSpeechStyle: persona.default_speech_style
-  };
-}
-
-function normalizePersonaCard(card: any): PersonaCard {
-  return {
-    id: String(card.id ?? ""),
-    title: String(card.title ?? ""),
-    kind: String(card.kind ?? "custom"),
-    label: String(card.label ?? card.kind ?? ""),
-    content: String(card.content ?? ""),
-    tags: Array.isArray(card.tags) ? card.tags.map((item: unknown) => String(item)) : [],
-    searchKeywords: String(card.search_keywords ?? "自定义"),
-    source: String(card.source ?? "manual") as PersonaCard["source"],
-    sourceNote: String(card.source_note ?? ""),
-    createdAt: String(card.created_at ?? ""),
-    updatedAt: String(card.updated_at ?? "")
-  };
 }
 
 function serializeSlot(slot: any) {
@@ -708,74 +642,6 @@ function normalizePlan(
   options: { expectedPlanId?: string; expectedDocumentId?: string; path?: string } = {},
 ): LearningPlan {
   return decodeLearningPlan(plan, options);
-}
-
-function normalizeSceneSetupState(payload: any): SceneSetupStatePayload {
-  return {
-    revision: Number(payload.revision ?? 0),
-    updatedAt: String(payload.updated_at ?? ""),
-    sceneName: String(payload.scene_name ?? ""),
-    sceneSummary: String(payload.scene_summary ?? ""),
-    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers : [],
-    selectedLayerId: String(payload.selected_layer_id ?? ""),
-    collapsedLayerIds: Array.isArray(payload.collapsed_layer_ids)
-      ? payload.collapsed_layer_ids.map((item: unknown) => String(item))
-      : [],
-    sceneProfile: normalizeSceneProfile(payload.scene_profile),
-  };
-}
-
-function normalizeSceneLibraryItem(payload: any): SceneLibraryItemPayload {
-  // 尝试从多个源获取sceneSummary：scene_summary, sceneSummary, 或从scene_profile.summary
-  const sceneSummary = String(
-    payload.scene_summary ??
-    payload.sceneSummary ??
-    payload.scene_profile?.summary ??
-    payload.sceneProfile?.summary ??
-    ""
-  );
-  return {
-    sceneId: String(payload.scene_id ?? ""),
-    revision: Number(payload.revision ?? 0),
-    createdAt: String(payload.created_at ?? ""),
-    updatedAt: String(payload.updated_at ?? ""),
-    sceneName: String(payload.scene_name ?? payload.sceneName ?? ""),
-    sceneSummary,
-    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers : (Array.isArray(payload.sceneLayers) ? payload.sceneLayers : []),
-    selectedLayerId: String(payload.selected_layer_id ?? payload.selectedLayerId ?? ""),
-    collapsedLayerIds: Array.isArray(payload.collapsed_layer_ids)
-      ? payload.collapsed_layer_ids.map((item: unknown) => String(item))
-      : (Array.isArray(payload.collapsedLayerIds) ? payload.collapsedLayerIds.map((item: unknown) => String(item)) : []),
-    sceneProfile: normalizeSceneProfile(payload.scene_profile ?? payload.sceneProfile),
-  };
-}
-
-function normalizeReusableSceneNode(payload: any): ReusableSceneNodePayload {
-  return {
-    nodeId: String(payload.node_id ?? ""),
-    nodeType: (payload.node_type === "object" ? "object" : "layer") as "layer" | "object",
-    title: String(payload.title ?? ""),
-    summary: String(payload.summary ?? ""),
-    tags: Array.isArray(payload.tags) ? payload.tags.map((item: unknown) => String(item)) : [],
-    reuseId: String(payload.reuse_id ?? ""),
-    reuseHint: String(payload.reuse_hint ?? ""),
-    sourceSceneId: String(payload.source_scene_id ?? ""),
-    sourceSceneName: String(payload.source_scene_name ?? ""),
-    layerNode: payload.layer_node ? normalizeSceneTreeNode(payload.layer_node) : undefined,
-    objectNode: payload.object_node
-      ? {
-          id: String(payload.object_node.id ?? ""),
-          name: String(payload.object_node.name ?? ""),
-          description: String(payload.object_node.description ?? ""),
-          interaction: String(payload.object_node.interaction ?? ""),
-          tags: String(payload.object_node.tags ?? ""),
-          reuseId: String(payload.object_node.reuse_id ?? ""),
-          reuseHint: String(payload.object_node.reuse_hint ?? ""),
-        }
-      : undefined,
-    createdAt: String(payload.created_at ?? ""),
-    updatedAt: String(payload.updated_at ?? ""),
-  };
 }
 
 function normalizeMemoryTrace(items: any[] | undefined) {
@@ -1093,10 +959,10 @@ function normalizeSession(session: any): StudySessionRecord {
 }
 
 export async function listPersonas(): Promise<PersonaProfile[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas`)
   );
-  return payload.items.map(normalizePersona);
+  return decodePersonaList(payload);
 }
 
 export async function listTavernRooms(): Promise<TavernRoomSummary[]> {
@@ -1292,7 +1158,7 @@ export async function cancelTavernRun(
 }
 
 export async function createPersona(input: CreatePersonaInput): Promise<PersonaProfile> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas`, {
       method: "POST",
       headers: {
@@ -1301,14 +1167,14 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaP
       body: JSON.stringify(serializePersonaInput(input))
     })
   );
-  return normalizePersona(payload);
+  return decodePersonaProfile(payload, { expectedSource: "user" });
 }
 
 export async function updatePersona(
   personaId: string,
   input: CreatePersonaInput
 ): Promise<PersonaProfile> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas/${personaId}`, {
       method: "PATCH",
       headers: {
@@ -1317,39 +1183,43 @@ export async function updatePersona(
       body: JSON.stringify(serializePersonaInput(input))
     })
   );
-  return normalizePersona(payload);
+  return decodePersonaProfile(payload, {
+    expectedPersonaId: personaId,
+    expectedSource: "user",
+  });
 }
 
 export async function deletePersona(personaId: string): Promise<void> {
-  await readJson<{ deleted_persona_id: string }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas/${personaId}`, {
       method: "DELETE"
     })
   );
+  decodeDeletedIdentity(payload, {
+    wireField: "deleted_persona_id",
+    expectedId: personaId,
+    path: "persona_delete",
+  });
 }
 
 export async function getPersonaAssets(personaId: string): Promise<PersonaAssets> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas/${personaId}/assets`)
   );
-  return {
-    personaId: payload.persona_id,
-    renderer: payload.renderer,
-    assetManifest: payload.asset_manifest ?? {}
-  };
+  return decodePersonaAssets(payload, personaId);
 }
 
 export async function listPersonaCards(): Promise<PersonaCard[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/persona-cards`)
   );
-  return payload.items.map(normalizePersonaCard);
+  return decodePersonaCardList(payload);
 }
 
 export async function createPersonaCardsBatch(
   items: CreatePersonaCardInput[]
 ): Promise<PersonaCard[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/persona-cards/batch`, {
       method: "POST",
       headers: {
@@ -1360,15 +1230,20 @@ export async function createPersonaCardsBatch(
       })
     })
   );
-  return payload.items.map(normalizePersonaCard);
+  return decodePersonaCardList(payload, "persona_card_batch");
 }
 
 export async function deletePersonaCard(cardId: string): Promise<void> {
-  await readJson<{ deleted_persona_card_id: string }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/persona-cards/${cardId}`, {
       method: "DELETE"
     })
   );
+  decodeDeletedIdentity(payload, {
+    wireField: "deleted_persona_card_id",
+    expectedId: cardId,
+    path: "persona_card_delete",
+  });
 }
 
 export async function generatePersonaCards(input: {
@@ -1383,7 +1258,7 @@ export async function generatePersonaCards(input: {
   if (typeof input.count === "number" && Number.isFinite(input.count)) {
     requestBody.count = input.count;
   }
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/persona-cards/generate`, {
       method: "POST",
       headers: {
@@ -1392,16 +1267,7 @@ export async function generatePersonaCards(input: {
       body: JSON.stringify(requestBody)
     })
   );
-  return {
-    mode: (payload.mode === "keywords" ? "keywords" : "long_text") as PersonaCardGenerationMode,
-    usedModel: String(payload.used_model ?? ""),
-    usedWebSearch: Boolean(payload.used_web_search),
-    summary: String(payload.summary ?? ""),
-    relationship: String(payload.relationship ?? ""),
-    learnerAddress: String(payload.learner_address ?? ""),
-    items: Array.isArray(payload.items) ? payload.items.map(normalizePersonaCard) : [],
-    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
-  };
+  return decodePersonaCardGenerateResult(payload, { expectedMode: input.mode });
 }
 
 export async function generateSceneTree(input: {
@@ -1416,7 +1282,7 @@ export async function generateSceneTree(input: {
   if (typeof input.layerCount === "number" && Number.isFinite(input.layerCount)) {
     requestBody.layer_count = input.layerCount;
   }
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-setup/generate`, {
       method: "POST",
       headers: {
@@ -1425,22 +1291,13 @@ export async function generateSceneTree(input: {
       body: JSON.stringify(requestBody)
     })
   );
-  return {
-    mode: (payload.mode === "keywords" ? "keywords" : "long_text") as "keywords" | "long_text",
-    usedModel: String(payload.used_model ?? ""),
-    usedWebSearch: Boolean(payload.used_web_search),
-    sceneName: String(payload.scene_name ?? ""),
-    sceneSummary: String(payload.scene_summary ?? ""),
-    selectedLayerId: String(payload.selected_layer_id ?? ""),
-    sceneLayers: Array.isArray(payload.scene_layers) ? payload.scene_layers.map(normalizeSceneTreeNode) : [],
-    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
-  };
+  return decodeSceneTreeGenerateResult(payload, { expectedMode: input.mode });
 }
 
 export async function assistPersonaSetting(
   input: PersonaSettingAssistInput
 ): Promise<PersonaSettingAssistOutput> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas/assist-setting`, {
       method: "POST",
       headers: {
@@ -1454,25 +1311,13 @@ export async function assistPersonaSetting(
       })
     })
   );
-  const rawSlots: any[] = Array.isArray(payload.slots) ? payload.slots : [];
-  return {
-    slots: rawSlots.map((s: any) => ({
-      kind: String(s.kind ?? "custom"),
-      label: String(s.label ?? s.kind ?? ""),
-      content: String(s.content ?? ""),
-      weight: Number(s.weight ?? 1),
-      locked: Boolean(s.locked),
-      sortOrder: Number(s.sort_order ?? 0)
-    })),
-    systemPromptSuggestion: String(payload.system_prompt_suggestion ?? ""),
-    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
-  };
+  return decodePersonaSettingAssistOutput(payload);
 }
 
 export async function assistPersonaSlot(
   input: PersonaSlotAssistInput
 ): Promise<PersonaSlotAssistOutput> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas/assist-slot`, {
       method: "POST",
       headers: {
@@ -1486,18 +1331,7 @@ export async function assistPersonaSlot(
       })
     })
   );
-  const slot = payload.slot ?? {};
-  return {
-    slot: {
-      kind: String(slot.kind ?? "custom"),
-      label: String(slot.label ?? slot.kind ?? ""),
-      content: String(slot.content ?? ""),
-      weight: Number(slot.weight ?? 1),
-      locked: Boolean(slot.locked),
-      sortOrder: Number(slot.sort_order ?? 0)
-    },
-    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries)
-  };
+  return decodePersonaSlotAssistOutput(payload, input.slot);
 }
 
 export async function listDocuments(): Promise<DocumentRecord[]> {
@@ -1571,10 +1405,10 @@ export async function getRuntimeSettings(): Promise<RuntimeSettings> {
 }
 
 export async function getSceneSetupState(): Promise<SceneSetupStatePayload> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-setup`)
   );
-  return normalizeSceneSetupState(payload);
+  return decodeSceneSetupState(payload);
 }
 
 export async function updateSceneSetupState(input: {
@@ -1585,7 +1419,7 @@ export async function updateSceneSetupState(input: {
   sceneName?: string;
   sceneSummary?: string;
 }): Promise<SceneSetupStatePayload> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-setup`, {
       method: "PUT",
       headers: {
@@ -1602,21 +1436,23 @@ export async function updateSceneSetupState(input: {
       })
     })
   );
-  return normalizeSceneSetupState(payload);
+  return decodeSceneSetupState(payload, {
+    expectedRevision: input.expectedRevision + 1,
+  });
 }
 
 export async function listSceneLibrary(): Promise<SceneLibraryItemPayload[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-library`)
   );
-  return payload.items.map(normalizeSceneLibraryItem);
+  return decodeSceneLibraryList(payload);
 }
 
 export async function getSceneLibraryItem(sceneId: string): Promise<SceneLibraryItemPayload> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-library/${sceneId}`)
   );
-  return normalizeSceneLibraryItem(payload);
+  return decodeSceneLibraryItem(payload, { expectedSceneId: sceneId });
 }
 
 export async function createSceneLibraryItem(input: {
@@ -1626,7 +1462,7 @@ export async function createSceneLibraryItem(input: {
   selectedLayerId: string;
   collapsedLayerIds: string[];
 }): Promise<SceneLibraryItemPayload> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-library`, {
       method: "POST",
       headers: {
@@ -1643,7 +1479,7 @@ export async function createSceneLibraryItem(input: {
       })
     })
   );
-  return normalizeSceneLibraryItem(payload);
+  return decodeSceneLibraryItem(payload, { expectedRevision: 1 });
 }
 
 export async function updateSceneLibraryItem(sceneId: string, input: {
@@ -1654,7 +1490,7 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
   selectedLayerId: string;
   collapsedLayerIds: string[];
 }): Promise<SceneLibraryItemPayload> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "PUT",
       headers: {
@@ -1671,25 +1507,32 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
       })
     })
   );
-  return normalizeSceneLibraryItem(payload);
+  return decodeSceneLibraryItem(payload, {
+    expectedSceneId: sceneId,
+    expectedRevision: input.expectedRevision + 1,
+  });
 }
 
 export async function deleteSceneLibraryItem(sceneId: string): Promise<{ deletedSceneId: string }> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "DELETE"
     })
   );
   return {
-    deletedSceneId: String(payload.deleted_scene_id ?? sceneId),
+    deletedSceneId: decodeDeletedIdentity(payload, {
+      wireField: "deleted_scene_id",
+      expectedId: sceneId,
+      path: "scene_library_delete",
+    }),
   };
 }
 
 export async function listReusableSceneNodes(): Promise<ReusableSceneNodePayload[]> {
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/reusable-scene-nodes`)
   );
-  return payload.items.map(normalizeReusableSceneNode);
+  return decodeReusableSceneNodeList(payload);
 }
 
 export async function createReusableSceneNode(input: {
@@ -1704,7 +1547,7 @@ export async function createReusableSceneNode(input: {
   layerNode?: import("@vibe-learner/shared").SceneTreeNode | null;
   objectNode?: import("@vibe-learner/shared").SceneObjectSnapshot | null;
 }): Promise<ReusableSceneNodePayload> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/reusable-scene-nodes`, {
       method: "POST",
       headers: {
@@ -1734,17 +1577,21 @@ export async function createReusableSceneNode(input: {
       })
     })
   );
-  return normalizeReusableSceneNode(payload);
+  return decodeReusableSceneNode(payload);
 }
 
 export async function deleteReusableSceneNode(nodeId: string): Promise<{ deletedReusableSceneNodeId: string }> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/reusable-scene-nodes/${nodeId}`, {
       method: "DELETE"
     })
   );
   return {
-    deletedReusableSceneNodeId: String(payload.deleted_reusable_scene_node_id ?? nodeId),
+    deletedReusableSceneNodeId: decodeDeletedIdentity(payload, {
+      wireField: "deleted_reusable_scene_node_id",
+      expectedId: nodeId,
+      path: "reusable_scene_node_delete",
+    }),
   };
 }
 
