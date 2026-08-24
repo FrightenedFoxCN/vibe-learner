@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.domain import (
     CharacterStateEvent,
@@ -6,6 +6,7 @@ from app.models.domain import (
     Citation,
     DocumentDebugRecord,
     DocumentRecord,
+    DialogueTurnRecord,
     InteractiveQuestion,
     InteractiveQuestionOption,
     LearningGoalInput,
@@ -30,6 +31,10 @@ from app.models.domain import (
     SceneObjectStateRecord,
     SessionSceneRecord,
     SceneSetupStateRecord,
+)
+from app.models.study_question import (
+    StudyQuestionAttemptResponseV1,
+    StudyQuestionPromptResponseV1,
 )
 
 
@@ -560,8 +565,25 @@ class UpdateStudySessionRequest(BaseModel):
         return value
 
 
+class DialogueTurnResponse(DialogueTurnRecord):
+    interactive_question: StudyQuestionPromptResponseV1 | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def project_private_question(cls, value):
+        if not isinstance(value, dict) or not isinstance(
+            value.get("interactive_question"), dict
+        ):
+            return value
+        payload = dict(value)
+        payload["interactive_question"] = InteractiveQuestion.model_validate(
+            payload["interactive_question"]
+        ).model_dump(mode="json")
+        return payload
+
+
 class StudySessionResponse(StudySessionRecord):
-    pass
+    turns: list[DialogueTurnResponse]
 
 
 class ChatToolCallTraceResponse(ChatToolCallTraceRecord):
@@ -586,12 +608,25 @@ class StudyChatResponse(BaseModel):
     citations: list[Citation]
     character_events: list[CharacterStateEvent]
     rich_blocks: list[dict[str, str]] = []
-    interactive_question: InteractiveQuestion | None = None
+    interactive_question: StudyQuestionPromptResponseV1 | None = None
     persona_slot_trace: list[dict[str, str]] = []
     memory_trace: list[dict[str, object]] = []
     tool_calls: list[ChatToolCallTraceResponse] = []
     scene_profile: SceneProfileRecord | None = None
     model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def project_private_question(cls, value):
+        if not isinstance(value, dict) or not isinstance(
+            value.get("interactive_question"), dict
+        ):
+            return value
+        payload = dict(value)
+        payload["interactive_question"] = InteractiveQuestion.model_validate(
+            payload["interactive_question"]
+        ).model_dump(mode="json")
+        return payload
 
 
 class StudyChatExchangeResponse(StudyChatResponse):
@@ -626,17 +661,25 @@ class StudySessionPlanConfirmationDecisionResponse(BaseModel):
 
 
 class StudyQuestionAttemptRequest(BaseModel):
-    question_type: str
-    prompt: str
-    topic: str = ""
-    difficulty: str = "medium"
-    options: list[InteractiveQuestionOption] = []
-    call_back: bool = False
-    answer_key: str | None = None
-    accepted_answers: list[str] = []
-    submitted_answer: str
-    is_correct: bool
-    explanation: str = ""
+    model_config = ConfigDict(extra="forbid")
+
+    turn_id: str = Field(min_length=1, max_length=64)
+    expected_session_revision: int = Field(ge=0)
+    client_attempt_id: str = Field(min_length=8, max_length=80)
+    submitted_answer: str = Field(min_length=1, max_length=8_000)
+
+    @model_validator(mode="after")
+    def validate_attempt_input(self) -> "StudyQuestionAttemptRequest":
+        self.turn_id = self.turn_id.strip()
+        self.client_attempt_id = self.client_attempt_id.strip()
+        self.submitted_answer = self.submitted_answer.strip()
+        if not self.turn_id or not self.client_attempt_id or not self.submitted_answer:
+            raise ValueError("study_question_attempt_input_empty")
+        return self
+
+
+class StudyQuestionAttemptResponse(StudyQuestionAttemptResponseV1):
+    pass
 
 
 class ExerciseGenerateRequest(BaseModel):

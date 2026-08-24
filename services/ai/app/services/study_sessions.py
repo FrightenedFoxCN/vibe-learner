@@ -21,11 +21,18 @@ from app.models.domain import (
     StudySessionRecord,
 )
 from app.persistence.study_session_repository import (
+    StudyQuestionAttemptCommitRace,
+    StudyQuestionAttemptGradingUnavailable,
+    StudyQuestionAttemptRequestMismatch,
+    StudyQuestionAttemptRevisionConflict,
+    StudyQuestionAttemptTurnAlreadyAnswered,
+    StudyQuestionAttemptTurnNotFound,
     StudySessionAlreadyExists,
     StudySessionNotFound,
     StudySessionRepository,
     StudySessionRevisionConflict,
 )
+from app.models.study_question import StudyQuestionAttemptResponseV1
 from app.services.local_store import LocalJsonStore
 
 
@@ -337,35 +344,58 @@ class StudySessionService:
             raise RuntimeError("plan_confirmation_resolution_missing")
         return updated, resolved
 
-    def append_attempt_turn(
+    def record_question_attempt(
         self,
         *,
         session_id: str,
-        prompt: str,
+        turn_id: str,
+        expected_session_revision: int,
+        client_attempt_id: str,
         submitted_answer: str,
-        is_correct: bool,
-        feedback_text: str,
-    ) -> StudySessionRecord:
-        updated_at = _now()
-
-        def mutation(session: StudySessionRecord) -> None:
-            for turn in reversed(session.turns):
-                question = turn.interactive_question
-                if question is None or question.prompt.strip() != prompt.strip():
-                    continue
-                question.submitted_answer = submitted_answer
-                question.is_correct = is_correct
-                question.feedback_text = feedback_text
-                session.updated_at = updated_at
-                return
-            raise HTTPException(status_code=404, detail="interactive_question_not_found")
-
-        updated = self._mutate(
-            session_id=session_id,
-            mutation=mutation,
-            committed_turn_policy="answer_patch",
-        )
-        return updated
+    ) -> StudyQuestionAttemptResponseV1:
+        try:
+            return self.repository.commit_question_attempt(
+                session_id=session_id,
+                turn_id=turn_id,
+                expected_session_revision=expected_session_revision,
+                client_attempt_id=client_attempt_id,
+                submitted_answer=submitted_answer,
+            )
+        except StudySessionNotFound as exc:
+            raise HTTPException(status_code=404, detail="session_not_found") from exc
+        except StudyQuestionAttemptTurnNotFound as exc:
+            raise HTTPException(
+                status_code=404,
+                detail="study_question_attempt_turn_not_found",
+            ) from exc
+        except StudyQuestionAttemptRequestMismatch as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="study_question_attempt_request_mismatch",
+            ) from exc
+        except StudyQuestionAttemptTurnAlreadyAnswered as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="study_question_attempt_turn_already_answered",
+            ) from exc
+        except StudyQuestionAttemptGradingUnavailable as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="study_question_attempt_grading_unavailable",
+            ) from exc
+        except StudyQuestionAttemptRevisionConflict as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "study_question_attempt_revision_conflict",
+                    "actual_revision": exc.actual_revision,
+                },
+            ) from exc
+        except StudyQuestionAttemptCommitRace as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="study_question_attempt_commit_race",
+            ) from exc
 
     def list_attachments(
         self,

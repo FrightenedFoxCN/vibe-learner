@@ -703,30 +703,45 @@ Operation status semantics:
 
 This receipt proves admission identity and final Study Turn/result read-back. It does not prove memory, affinity, follow-up, Scene, projection/overlay, plan-confirmation, attachment/file, generated-image, or upstream provider effects are exactly once, and it is not a v3 Harness trace.
 
+### `GET /study-sessions/{session_id}`
+
+Returns the current public `StudySessionRecord` projection for one Session. Interactive questions expose prompt/options plus an optional committed `result`; the server-only grading spec is never serialized. The frontend uses this read after an Attempt response so a response loss can replay the same Attempt identity and then recover the authoritative Session without submitting a second answer.
+
 ### `POST /study-sessions/{session_id}/attempt`
 
-Patches the answer state of an existing interactive question Turn and advances the Session revision. It does not append a new Turn, so `last_turn_sequence` remains unchanged unless another concurrent operation legitimately appends a Turn first.
+Grades and commits one answer against an existing interactive-question Turn. The request is `extra=forbid`, targets an application-owned Turn ID, binds the expected Session revision, and carries a stable browser-owned attempt key. It never accepts prompt/options/answer material, a client verdict, or explanation.
 
 Request body:
 
 ```json
 {
-  "question_type": "multiple_choice",
-  "prompt": "string",
-  "topic": "string",
-  "difficulty": "easy",
-  "options": [{ "key": "A", "text": "string" }],
-  "answer_key": "A",
-  "accepted_answers": ["A"],
-  "submitted_answer": "A",
-  "is_correct": true,
-  "explanation": "string"
+  "turn_id": "turn-...",
+  "expected_session_revision": 4,
+  "client_attempt_id": "study-attempt-...",
+  "submitted_answer": "A"
 }
 ```
 
-Returns updated `StudySessionRecord`.
+Returns the narrow `study-question-attempt-response-v1` projection:
 
-The browser validates this returned Session as a candidate read-back authority: it does not display a verdict before the response advances the same Session and contains the submitted answer, verdict, and feedback on the originating Turn. A late lower-revision candidate cannot replace a newer active snapshot, and a valid concurrent append-only Turn suffix is accepted. The current request contract still includes client grading material and the backend still locates the question by prompt; `SCH-STUDY-QUESTION-001` and `SCH-STUDY-ATTEMPT-001` track migration to private server grading, Turn identity, revision fencing, and stable attempt identity.
+```json
+{
+  "schema_version": "study-question-attempt-response-v1",
+  "attempt_id": "study-question-attempt-...",
+  "client_attempt_id": "study-attempt-...",
+  "session_id": "session-...",
+  "turn_id": "turn-...",
+  "submitted_answer": "A",
+  "is_correct": true,
+  "feedback_text": "回答正确",
+  "explanation": "string",
+  "before_revision": 4,
+  "committed_revision": 5,
+  "committed_at": "2026-08-24T00:00:00+00:00"
+}
+```
+
+The server grades with `unicode-nfkc-casefold-whitespace-v1`: multiple choice compares the committed option key, and fill-blank compares a normalized answer against the private accepted-answer set. Session result state and the durable `study_question_attempts` row commit in one transaction. Same key + same normalized input reads the original response without advancing revision; same key + different input, a second identity for an answered Turn, a cross-Session Turn, or a stale revision fails closed. The browser strictly decodes this response, reads the current Session, and displays a verdict only when the returned Attempt identity/result is present on the exact Turn.
 
 ### `PATCH /study-sessions/{session_id}`
 

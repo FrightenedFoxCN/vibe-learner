@@ -61,6 +61,45 @@ class StudySessionRow(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
 
 
+class StudyQuestionAttemptRow(Base):
+    __tablename__ = "study_question_attempts"
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id",
+            "client_attempt_id",
+            name="uq_study_question_attempt_request",
+        ),
+        UniqueConstraint(
+            "session_id",
+            "turn_id",
+            name="uq_study_question_attempt_turn",
+        ),
+        CheckConstraint(
+            "committed_session_revision = before_session_revision + 1",
+            name="ck_study_question_attempt_revision",
+        ),
+    )
+
+    attempt_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("study_sessions.id", ondelete="RESTRICT"),
+        index=True,
+    )
+    turn_id: Mapped[str] = mapped_column(String(64), index=True)
+    client_attempt_id: Mapped[str] = mapped_column(String(80))
+    request_schema_version: Mapped[str] = mapped_column(String(64))
+    fingerprint_contract_version: Mapped[str] = mapped_column(String(64))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    request_payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    response_schema_version: Mapped[str] = mapped_column(String(64))
+    response_payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    response_digest: Mapped[str] = mapped_column(String(64))
+    before_session_revision: Mapped[int] = mapped_column(Integer)
+    committed_session_revision: Mapped[int] = mapped_column(Integer)
+    committed_at: Mapped[str] = mapped_column(String(64))
+
+
 class StudyChatOperationRow(Base):
     __tablename__ = "study_chat_operations"
     __table_args__ = (

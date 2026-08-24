@@ -1438,10 +1438,11 @@ export function useLearningWorkspaceController({
     if (!committedQuestion?.callBack) {
       return;
     }
+    const committedResult = committedQuestion.result;
     if (
-      !committedQuestion?.submittedAnswer ||
-      typeof committedQuestion.isCorrect !== "boolean" ||
-      !committedQuestion.feedbackText?.trim()
+      !committedResult?.submittedAnswer ||
+      typeof committedResult.isCorrect !== "boolean" ||
+      !committedResult.feedbackText.trim()
     ) {
       logWorkspaceError(
         "workflow:study_attempt:callback_read_back_missing",
@@ -1453,9 +1454,9 @@ export function useLearningWorkspaceController({
       questionType: committedQuestion.questionType,
       prompt: committedQuestion.prompt,
       topic: committedQuestion.topic,
-      submittedAnswer: committedQuestion.submittedAnswer,
-      isCorrect: committedQuestion.isCorrect,
-      explanation: committedQuestion.explanation,
+      submittedAnswer: committedResult.submittedAnswer,
+      isCorrect: committedResult.isCorrect,
+      explanation: committedResult.explanation,
     });
     if (isDialogueInterruptedForSession(session.id)) {
       queueDeferredInteractiveCallback(session.id, callbackMessage);
@@ -1497,27 +1498,27 @@ export function useLearningWorkspaceController({
 
   const handleSubmitQuestionAttempt = async (input: {
     turnId: string;
-    questionType: "multiple_choice" | "fill_blank";
-    prompt: string;
-    topic: string;
-    difficulty: "easy" | "medium" | "hard";
-    options: Array<{ key: string; text: string }>;
-    callBack?: boolean;
-    answerKey?: string;
-    acceptedAnswers: string[];
     submittedAnswer: string;
-    isCorrect: boolean;
-    explanation: string;
   }) => {
     const currentSession = studySessionRef.current;
     if (!currentSession) {
       return false;
     }
+    const attemptKey = `attempt:${currentSession.id}:${input.turnId}`;
+    const attemptIdentity = getOrCreateAutomaticRequestId(
+      automaticRequestIdsRef.current,
+      attemptKey,
+      "attempt",
+    );
     try {
-      const nextSession = await submitStudyQuestionAttempt({
+      const committed = await submitStudyQuestionAttempt({
         sessionId: currentSession.id,
-        ...input
+        turnId: input.turnId,
+        expectedSessionRevision: currentSession.revision,
+        clientAttemptId: attemptIdentity.clientRequestId,
+        submittedAnswer: input.submittedAnswer,
       });
+      const nextSession = committed.session;
       const latestSession = studySessionRef.current;
       const applyDecision = decideStudyQuestionAttemptApply({
         before: currentSession,
@@ -1525,6 +1526,7 @@ export function useLearningWorkspaceController({
         current: latestSession,
         turnId: input.turnId,
         submittedAnswer: input.submittedAnswer,
+        attempt: committed.attempt,
       });
       if (applyDecision === "reject") {
         throw new Error("study_question_attempt_read_back_mismatch");
@@ -1547,6 +1549,10 @@ export function useLearningWorkspaceController({
           turnId: input.turnId,
         });
       }
+      forgetAutomaticStudyRequestId(
+        automaticRequestIdsRef.current,
+        attemptKey,
+      );
       return true;
     } catch (error) {
       dispatch({

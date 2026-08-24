@@ -2,6 +2,7 @@ export {
   cancelStudySessionFollowUps,
   createStudySession,
   getStudyChatOperation,
+  getStudySession,
   listStudySessions,
   resolveStudyPlanConfirmation,
   sendStudyMessage,

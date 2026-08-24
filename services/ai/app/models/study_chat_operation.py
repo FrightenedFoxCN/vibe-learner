@@ -10,7 +10,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v1"
 STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION = "study-chat-request-fingerprint-v1"
-STUDY_CHAT_RESPONSE_SCHEMA_VERSION = "study-chat-exchange-v1"
+STUDY_CHAT_RESPONSE_SCHEMA_VERSION_V1 = "study-chat-exchange-v1"
+STUDY_CHAT_RESPONSE_SCHEMA_VERSION = "study-chat-exchange-v2"
+STUDY_CHAT_RESPONSE_SCHEMA_VERSIONS = {
+    STUDY_CHAT_RESPONSE_SCHEMA_VERSION_V1,
+    STUDY_CHAT_RESPONSE_SCHEMA_VERSION,
+}
 
 
 class StudyChatOperationStatus(StrEnum):
@@ -124,7 +129,7 @@ class StudyChatOperationRecord(BaseModel):
                 or self.committed_session_revision <= self.admitted_session_revision
                 or not self.committed_turn_id
                 or self.committed_turn_sequence is None
-                or self.response_schema_version != STUDY_CHAT_RESPONSE_SCHEMA_VERSION
+                or self.response_schema_version not in STUDY_CHAT_RESPONSE_SCHEMA_VERSIONS
                 or self.response_payload is None
                 or self.response_digest != study_chat_response_digest(self.response_payload)
                 or self.error_code

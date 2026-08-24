@@ -20,8 +20,24 @@ from app.models.study_chat_operation import (
     study_chat_response_digest,
 )
 from app.models.study_chat_effect import StudyPlanConfirmationPreparedEffectBatchV1
+from app.models.study_question import (
+    STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION,
+    STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION,
+    STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION,
+    StudyQuestionAttemptRequestPayloadV1,
+    StudyQuestionAttemptResponseV1,
+    StudyQuestionResultRecordV1,
+    grade_study_question,
+    normalize_study_answer,
+    study_question_attempt_fingerprint,
+    study_question_attempt_response_digest,
+)
 from app.persistence.database import Database
-from app.persistence.models import StudyChatOperationRow, StudySessionRow
+from app.persistence.models import (
+    StudyChatOperationRow,
+    StudyQuestionAttemptRow,
+    StudySessionRow,
+)
 from app.services.study_chat_effects import commit_study_plan_confirmation_effects
 
 
@@ -159,6 +175,224 @@ class StudySessionRepository:
                 if not _is_retryable_sqlite_lock(self.database, exc):
                     raise
         raise StudySessionRevisionConflict(session_id)
+
+    def commit_question_attempt(
+        self,
+        *,
+        session_id: str,
+        turn_id: str,
+        expected_session_revision: int,
+        client_attempt_id: str,
+        submitted_answer: str,
+        max_attempts: int = 8,
+    ) -> StudyQuestionAttemptResponseV1:
+        if max_attempts < 1 or max_attempts > 32:
+            raise ValueError("study_question_attempt_commit_attempts_invalid")
+        normalized_submitted_answer = normalize_study_answer(submitted_answer)
+        request_payload = StudyQuestionAttemptRequestPayloadV1(
+            turn_id=turn_id,
+            expected_session_revision=expected_session_revision,
+            normalized_answer=normalized_submitted_answer,
+        )
+        request_fingerprint = study_question_attempt_fingerprint(request_payload)
+
+        for _ in range(max_attempts):
+            try:
+                with self.database.session() as session:
+                    existing = session.scalar(
+                        select(StudyQuestionAttemptRow).where(
+                            StudyQuestionAttemptRow.session_id == session_id,
+                            StudyQuestionAttemptRow.client_attempt_id == client_attempt_id,
+                        )
+                    )
+                    if existing is not None:
+                        return _read_question_attempt(
+                            existing,
+                            expected_fingerprint=request_fingerprint,
+                            session_row=session.get(StudySessionRow, session_id),
+                        )
+
+                    prior_turn_attempt = session.scalar(
+                        select(StudyQuestionAttemptRow).where(
+                            StudyQuestionAttemptRow.session_id == session_id,
+                            StudyQuestionAttemptRow.turn_id == turn_id,
+                        )
+                    )
+                    if prior_turn_attempt is not None:
+                        raise StudyQuestionAttemptTurnAlreadyAnswered(turn_id)
+
+                    session_row = session.get(StudySessionRow, session_id)
+                    if session_row is None:
+                        raise StudySessionNotFound(session_id)
+                    if session_row.revision != expected_session_revision:
+                        raise StudyQuestionAttemptRevisionConflict(
+                            session_id,
+                            actual_revision=session_row.revision,
+                        )
+                    record = _from_row(session_row)
+                    before_record = record.model_copy(deep=True)
+                    matching_turns = [turn for turn in record.turns if turn.id == turn_id]
+                    if len(matching_turns) != 1:
+                        raise StudyQuestionAttemptTurnNotFound(turn_id)
+                    turn = matching_turns[0]
+                    question = turn.interactive_question
+                    if question is None:
+                        raise StudyQuestionAttemptTurnNotFound(turn_id)
+                    if question.result is not None:
+                        raise StudyQuestionAttemptTurnAlreadyAnswered(turn_id)
+                    try:
+                        normalized_answer, is_correct, feedback_text, explanation = (
+                            grade_study_question(question, submitted_answer)
+                        )
+                    except ValueError as exc:
+                        if str(exc) == "study_question_grading_unavailable":
+                            raise StudyQuestionAttemptGradingUnavailable(turn_id) from exc
+                        raise
+
+                    committed_at = datetime.now(timezone.utc).isoformat()
+                    attempt_id = f"study-question-attempt-{uuid4().hex[:16]}"
+                    committed_revision = expected_session_revision + 1
+                    response = StudyQuestionAttemptResponseV1(
+                        attempt_id=attempt_id,
+                        client_attempt_id=client_attempt_id,
+                        session_id=session_id,
+                        turn_id=turn_id,
+                        submitted_answer=submitted_answer.strip(),
+                        is_correct=is_correct,
+                        feedback_text=feedback_text,
+                        explanation=explanation,
+                        before_revision=expected_session_revision,
+                        committed_revision=committed_revision,
+                        committed_at=committed_at,
+                    )
+                    question.result = StudyQuestionResultRecordV1(
+                        attempt_id=attempt_id,
+                        client_attempt_id=client_attempt_id,
+                        submitted_answer=response.submitted_answer,
+                        normalized_answer=normalized_answer,
+                        is_correct=is_correct,
+                        feedback_text=feedback_text,
+                        explanation=explanation,
+                        before_revision=expected_session_revision,
+                        committed_revision=committed_revision,
+                        committed_at=committed_at,
+                    )
+                    record.updated_at = committed_at
+                    _validate_turn_identity_prefix(
+                        before=before_record,
+                        after=record,
+                        committed_turn_policy="answer_patch",
+                    )
+                    record.revision = committed_revision
+                    record = StudySessionRecord.model_validate(
+                        record.model_dump(mode="json")
+                    )
+                    response_payload = response.model_dump(mode="json")
+                    claimed = session.execute(
+                        update(StudySessionRow)
+                        .where(
+                            StudySessionRow.id == session_id,
+                            StudySessionRow.revision == expected_session_revision,
+                        )
+                        .values(
+                            payload=record.model_dump(mode="json"),
+                            **_mutable_metadata(record),
+                        )
+                    )
+                    if claimed.rowcount != 1:
+                        raise StudyQuestionAttemptRevisionConflict(
+                            session_id,
+                            actual_revision=expected_session_revision + 1,
+                        )
+                    session.add(
+                        StudyQuestionAttemptRow(
+                            attempt_id=attempt_id,
+                            session_id=session_id,
+                            turn_id=turn_id,
+                            client_attempt_id=client_attempt_id,
+                            request_schema_version=(
+                                STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION
+                            ),
+                            fingerprint_contract_version=(
+                                STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION
+                            ),
+                            request_fingerprint=request_fingerprint,
+                            request_payload=request_payload.model_dump(mode="json"),
+                            response_schema_version=(
+                                STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION
+                            ),
+                            response_payload=response_payload,
+                            response_digest=study_question_attempt_response_digest(response),
+                            before_session_revision=expected_session_revision,
+                            committed_session_revision=committed_revision,
+                            committed_at=committed_at,
+                        )
+                    )
+                    session.flush()
+                    return response
+            except IntegrityError:
+                resolved = self._resolve_question_attempt_race(
+                    session_id=session_id,
+                    turn_id=turn_id,
+                    client_attempt_id=client_attempt_id,
+                    request_fingerprint=request_fingerprint,
+                )
+                if resolved is not None:
+                    return resolved
+                raise StudyQuestionAttemptCommitRace(session_id)
+            except StudyQuestionAttemptRevisionConflict:
+                resolved = self._resolve_question_attempt_race(
+                    session_id=session_id,
+                    turn_id=turn_id,
+                    client_attempt_id=client_attempt_id,
+                    request_fingerprint=request_fingerprint,
+                )
+                if resolved is not None:
+                    return resolved
+                raise
+            except OperationalError as exc:
+                if not _is_retryable_sqlite_lock(self.database, exc):
+                    raise
+                resolved = self._resolve_question_attempt_race(
+                    session_id=session_id,
+                    turn_id=turn_id,
+                    client_attempt_id=client_attempt_id,
+                    request_fingerprint=request_fingerprint,
+                )
+                if resolved is not None:
+                    return resolved
+        raise StudyQuestionAttemptCommitRace(session_id)
+
+    def _resolve_question_attempt_race(
+        self,
+        *,
+        session_id: str,
+        turn_id: str,
+        client_attempt_id: str,
+        request_fingerprint: str,
+    ) -> StudyQuestionAttemptResponseV1 | None:
+        with self.database.session() as session:
+            existing = session.scalar(
+                select(StudyQuestionAttemptRow).where(
+                    StudyQuestionAttemptRow.session_id == session_id,
+                    StudyQuestionAttemptRow.client_attempt_id == client_attempt_id,
+                )
+            )
+            if existing is not None:
+                return _read_question_attempt(
+                    existing,
+                    expected_fingerprint=request_fingerprint,
+                    session_row=session.get(StudySessionRow, session_id),
+                )
+            prior_turn_attempt = session.scalar(
+                select(StudyQuestionAttemptRow).where(
+                    StudyQuestionAttemptRow.session_id == session_id,
+                    StudyQuestionAttemptRow.turn_id == turn_id,
+                )
+            )
+            if prior_turn_attempt is not None:
+                raise StudyQuestionAttemptTurnAlreadyAnswered(turn_id)
+        return None
 
     def commit_chat_operation_turn(
         self,
@@ -313,6 +547,39 @@ class StudySessionOperationFenced(StudySessionRepositoryError):
         super().__init__(f"study_session_operation_fenced:{operation_id}")
 
 
+class StudyQuestionAttemptRequestMismatch(StudySessionRepositoryError):
+    def __init__(self, client_attempt_id: str) -> None:
+        super().__init__(f"study_question_attempt_request_mismatch:{client_attempt_id}")
+
+
+class StudyQuestionAttemptTurnNotFound(StudySessionRepositoryError):
+    def __init__(self, turn_id: str) -> None:
+        super().__init__(f"study_question_attempt_turn_not_found:{turn_id}")
+
+
+class StudyQuestionAttemptTurnAlreadyAnswered(StudySessionRepositoryError):
+    def __init__(self, turn_id: str) -> None:
+        super().__init__(f"study_question_attempt_turn_already_answered:{turn_id}")
+
+
+class StudyQuestionAttemptGradingUnavailable(StudySessionRepositoryError):
+    def __init__(self, turn_id: str) -> None:
+        super().__init__(f"study_question_attempt_grading_unavailable:{turn_id}")
+
+
+class StudyQuestionAttemptRevisionConflict(StudySessionRepositoryError):
+    def __init__(self, session_id: str, *, actual_revision: int) -> None:
+        self.actual_revision = actual_revision
+        super().__init__(
+            f"study_question_attempt_revision_conflict:{session_id}:{actual_revision}"
+        )
+
+
+class StudyQuestionAttemptCommitRace(StudySessionRepositoryError):
+    def __init__(self, session_id: str) -> None:
+        super().__init__(f"study_question_attempt_commit_race:{session_id}")
+
+
 def _to_row(record: StudySessionRecord, payload: dict[str, object]) -> StudySessionRow:
     row = StudySessionRow(payload=payload)
     for key, value in _metadata(record).items():
@@ -401,10 +668,68 @@ def _committed_turn_projection(
         # These fields are the persisted learner answer state updated by the
         # dedicated attempt endpoint. The prompt/reply/citations/performance
         # and all other committed Turn content remain immutable.
-        question["submitted_answer"] = ""
-        question["is_correct"] = None
-        question["feedback_text"] = ""
+        question["result"] = None
     return projection
+
+
+def _read_question_attempt(
+    row: StudyQuestionAttemptRow,
+    *,
+    expected_fingerprint: str,
+    session_row: StudySessionRow | None,
+) -> StudyQuestionAttemptResponseV1:
+    if (
+        row.request_schema_version != STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION
+        or row.fingerprint_contract_version
+        != STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION
+        or row.response_schema_version
+        != STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION
+    ):
+        raise ValueError("study_question_attempt_schema_unsupported")
+    request_payload = StudyQuestionAttemptRequestPayloadV1.model_validate(
+        row.request_payload
+    )
+    if (
+        row.request_fingerprint != study_question_attempt_fingerprint(request_payload)
+        or row.request_fingerprint != expected_fingerprint
+    ):
+        raise StudyQuestionAttemptRequestMismatch(row.client_attempt_id)
+    response = StudyQuestionAttemptResponseV1.model_validate(row.response_payload)
+    if (
+        row.response_digest != study_question_attempt_response_digest(response)
+        or response.attempt_id != row.attempt_id
+        or response.client_attempt_id != row.client_attempt_id
+        or response.session_id != row.session_id
+        or response.turn_id != row.turn_id
+        or response.before_revision != row.before_session_revision
+        or response.committed_revision != row.committed_session_revision
+        or response.committed_at != row.committed_at
+    ):
+        raise ValueError("study_question_attempt_response_projection_mismatch")
+    if session_row is None:
+        raise ValueError("study_question_attempt_session_missing")
+    current = _from_row(session_row)
+    if current.revision < response.committed_revision:
+        raise ValueError("study_question_attempt_session_revision_regressed")
+    matching_turns = [turn for turn in current.turns if turn.id == response.turn_id]
+    if len(matching_turns) != 1:
+        raise ValueError("study_question_attempt_turn_read_back_missing")
+    question = matching_turns[0].interactive_question
+    result = question.result if question is not None else None
+    if (
+        result is None
+        or result.attempt_id != response.attempt_id
+        or result.client_attempt_id != response.client_attempt_id
+        or result.submitted_answer != response.submitted_answer
+        or result.is_correct != response.is_correct
+        or result.feedback_text != response.feedback_text
+        or result.explanation != response.explanation
+        or result.before_revision != response.before_revision
+        or result.committed_revision != response.committed_revision
+        or result.committed_at != response.committed_at
+    ):
+        raise ValueError("study_question_attempt_turn_read_back_mismatch")
+    return response
 
 
 def _from_row(row: StudySessionRow) -> StudySessionRecord:

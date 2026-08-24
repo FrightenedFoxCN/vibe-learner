@@ -36,6 +36,7 @@ from app.models.tavern import (
     TavernMessageRecord,
     TavernParticipantRecord,
 )
+from app.models.study_question import StudyQuestionProposalV1
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
 from app.services.persona_runtime import render_persona_runtime_instruction
@@ -427,7 +428,7 @@ class ModelReply:
     delivery_cue: str = ""
     state_commentary: str = ""
     rich_blocks: list[RichTextBlockRecord] | None = None
-    interactive_question: dict[str, Any] | None = None
+    interactive_question: StudyQuestionProposalV1 | None = None
     memory_trace: list[dict[str, Any]] | None = None
     tool_calls: list[ChatToolCallTraceRecord] | None = None
     scene_profile: SceneProfileRecord | None = None
@@ -2939,15 +2940,18 @@ def _coerce_int(value: Any, *, default: int) -> int:
         return default
 
 
-def _sanitize_reply_text_for_question(text: str, question: dict[str, Any] | None) -> str:
+def _sanitize_reply_text_for_question(
+    text: str,
+    question: StudyQuestionProposalV1 | None,
+) -> str:
     if not question:
         return text
     cleaned = text
-    prompt = str(question.get("prompt") or "").strip()
+    prompt = question.prompt
     if prompt and prompt in cleaned:
         cleaned = cleaned.replace(prompt, "")
-    for option in question.get("options") or []:
-        option_text = str((option or {}).get("text") or "").strip()
+    for option in question.options:
+        option_text = option.text
         if option_text and option_text in cleaned:
             cleaned = cleaned.replace(option_text, "")
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
@@ -2960,21 +2964,27 @@ def _extract_interactive_question_payload(
     *,
     parsed: dict[str, object],
     tool_results: list[dict[str, Any]],
-) -> dict[str, Any] | None:
+) -> StudyQuestionProposalV1 | None:
     payload = parsed.get("interactive_question")
     if isinstance(payload, dict):
         normalized = _normalize_interactive_question(payload)
-        if normalized is not None:
-            return normalized
+        if normalized is None:
+            raise RuntimeError("chat_model_invalid_interactive_question")
+        return normalized
 
     for result in reversed(tool_results):
+        if "question_type" not in result:
+            continue
         normalized = _normalize_interactive_question(result)
-        if normalized is not None:
-            return normalized
+        if normalized is None:
+            raise RuntimeError("chat_model_invalid_interactive_question")
+        return normalized
     return None
 
 
-def _normalize_interactive_question(payload: dict[str, Any]) -> dict[str, Any] | None:
+def _normalize_interactive_question(
+    payload: dict[str, Any],
+) -> StudyQuestionProposalV1 | None:
     question_type = str(payload.get("question_type") or "").strip().lower()
     prompt = str(payload.get("prompt") or payload.get("question") or "").strip()
     if question_type not in {"multiple_choice", "fill_blank"} or not prompt:
@@ -2989,12 +2999,10 @@ def _normalize_interactive_question(payload: dict[str, Any]) -> dict[str, Any] |
     raw_options = payload.get("options")
     if isinstance(raw_options, list):
         for index, option in enumerate(raw_options):
-            if isinstance(option, dict):
-                key = str(option.get("key") or chr(ord("A") + index)).strip() or chr(ord("A") + index)
-                text = str(option.get("text") or "").strip()
-            else:
-                key = chr(ord("A") + index)
-                text = str(option).strip()
+            if not isinstance(option, dict):
+                return None
+            key = str(option.get("key") or chr(ord("A") + index)).strip() or chr(ord("A") + index)
+            text = str(option.get("text") or "").strip()
             if text:
                 options.append({"key": key, "text": text})
 
@@ -3018,17 +3026,22 @@ def _normalize_interactive_question(payload: dict[str, Any]) -> dict[str, Any] |
         if fallback_answer:
             accepted_answers.append(fallback_answer)
 
-    return {
-        "question_type": question_type,
-        "prompt": prompt,
-        "difficulty": difficulty,
-        "topic": topic,
-        "options": options,
-        "call_back": call_back,
-        "answer_key": answer_key,
-        "accepted_answers": accepted_answers,
-        "explanation": explanation,
-    }
+    try:
+        return StudyQuestionProposalV1.model_validate(
+            {
+                "question_type": question_type,
+                "prompt": prompt,
+                "difficulty": difficulty,
+                "topic": topic,
+                "options": options,
+                "call_back": call_back,
+                "answer_key": answer_key,
+                "accepted_answers": accepted_answers,
+                "explanation": explanation,
+            }
+        )
+    except ValueError:
+        return None
 
 
 def _extract_json_payload(

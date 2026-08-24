@@ -553,19 +553,28 @@ export interface InteractiveQuestionOption {
   text: string;
 }
 
+export interface StudyQuestionResult {
+  schemaVersion: "study-question-result-v1";
+  attemptId: string | null;
+  clientAttemptId: string | null;
+  submittedAnswer: string;
+  isCorrect: boolean;
+  feedbackText: string;
+  explanation: string;
+  beforeRevision: number | null;
+  committedRevision: number | null;
+  committedAt: string | null;
+}
+
 export interface InteractiveQuestion {
+  schemaVersion: "study-interactive-question-v2";
   questionType: "multiple_choice" | "fill_blank";
   prompt: string;
   difficulty: "easy" | "medium" | "hard";
   topic: string;
   options: InteractiveQuestionOption[];
-  callBack?: boolean;
-  answerKey?: string;
-  acceptedAnswers: string[];
-  explanation: string;
-  submittedAnswer?: string;
-  isCorrect?: boolean;
-  feedbackText?: string;
+  callBack: boolean;
+  result: StudyQuestionResult | null;
 }
 
 export interface Exercise {

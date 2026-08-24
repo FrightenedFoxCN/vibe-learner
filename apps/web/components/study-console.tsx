@@ -31,17 +31,7 @@ interface StudyConsoleProps {
   onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
     turnId: string;
-    questionType: "multiple_choice" | "fill_blank";
-    prompt: string;
-    topic: string;
-    difficulty: "easy" | "medium" | "hard";
-    options: Array<{ key: string; text: string }>;
-    callBack?: boolean;
-    answerKey?: string;
-    acceptedAnswers: string[];
     submittedAnswer: string;
-    isCorrect: boolean;
-    explanation: string;
   }) => boolean | Promise<boolean>;
   onChangeSchedule: (scheduleId: string) => void;
   onOpenCitation?: (citation: Citation) => void;
@@ -1353,17 +1343,7 @@ function renderInteractiveQuestion(input: {
   onAsk: (message: string, attachments: File[]) => Promise<boolean> | boolean;
   onSubmitQuestionAttempt: (input: {
     turnId: string;
-    questionType: "multiple_choice" | "fill_blank";
-    prompt: string;
-    topic: string;
-    difficulty: "easy" | "medium" | "hard";
-    options: Array<{ key: string; text: string }>;
-    callBack?: boolean;
-    answerKey?: string;
-    acceptedAnswers: string[];
     submittedAnswer: string;
-    isCorrect: boolean;
-    explanation: string;
   }) => boolean | Promise<boolean>;
   disabled: boolean;
 }) {
@@ -1384,10 +1364,10 @@ function renderInteractiveQuestion(input: {
     disabled
   } = input;
   const explanationVisible = Boolean(expandedExplanation[turnKey]);
-  const persistedFeedback = question.feedbackText
-    ? { ok: Boolean(question.isCorrect), text: question.feedbackText }
+  const persistedFeedback = question.result
+    ? { ok: question.result.isCorrect, text: question.result.feedbackText }
     : undefined;
-  const isLocked = Boolean(question.submittedAnswer);
+  const isLocked = question.result !== null;
   const isSubmitting = attemptState === "submitting";
 
   const submitAttempt = async (input: Parameters<typeof onSubmitQuestionAttempt>[0]) => {
@@ -1405,7 +1385,7 @@ function renderInteractiveQuestion(input: {
   };
 
   if (question.questionType === "multiple_choice") {
-    const selected = selectedChoices[turnKey] ?? question.submittedAnswer ?? "";
+    const selected = selectedChoices[turnKey] ?? question.result?.submittedAnswer ?? "";
     return (
       <>
         <p style={styles.questionTitle}>选择题</p>
@@ -1438,20 +1418,9 @@ function renderInteractiveQuestion(input: {
             style={styles.checkButton}
             disabled={!selected || disabled || isLocked || isSubmitting}
             onClick={() => {
-              const correct = selected.trim().toUpperCase() === (question.answerKey ?? "").trim().toUpperCase();
               void submitAttempt({
                 turnId: turnKey,
-                questionType: question.questionType,
-                prompt: question.prompt,
-                topic: question.topic,
-                difficulty: question.difficulty,
-                options: question.options,
-                callBack: question.callBack,
-                answerKey: question.answerKey,
-                acceptedAnswers: question.acceptedAnswers,
                 submittedAnswer: selected,
-                isCorrect: correct,
-                explanation: question.explanation
               });
             }}
           >
@@ -1489,14 +1458,14 @@ function renderInteractiveQuestion(input: {
         ) : null}
         {explanationVisible ? (
           <div style={styles.explanationBox}>
-            <RichTextMessage content={question.explanation || "暂无解析"} />
+            <RichTextMessage content={question.result?.explanation || "暂无解析"} />
           </div>
         ) : null}
       </>
     );
   }
 
-  const value = blankAnswers[turnKey] ?? question.submittedAnswer ?? "";
+  const value = blankAnswers[turnKey] ?? question.result?.submittedAnswer ?? "";
   return (
     <>
       <p style={styles.questionTitle}>填空题</p>
@@ -1519,22 +1488,9 @@ function renderInteractiveQuestion(input: {
           style={styles.checkButton}
           disabled={!value.trim() || disabled || isLocked || isSubmitting}
           onClick={() => {
-            const normalized = normalizeAnswer(value);
-            const accepted = question.acceptedAnswers.map(normalizeAnswer);
-            const correct = accepted.includes(normalized);
             void submitAttempt({
               turnId: turnKey,
-              questionType: question.questionType,
-              prompt: question.prompt,
-              topic: question.topic,
-              difficulty: question.difficulty,
-              options: question.options,
-              callBack: question.callBack,
-              answerKey: question.answerKey,
-              acceptedAnswers: question.acceptedAnswers,
               submittedAnswer: value,
-              isCorrect: correct,
-              explanation: question.explanation
             });
           }}
         >
@@ -1572,15 +1528,11 @@ function renderInteractiveQuestion(input: {
       ) : null}
       {explanationVisible ? (
         <div style={styles.explanationBox}>
-          <RichTextMessage content={question.explanation || "暂无解析"} />
+          <RichTextMessage content={question.result?.explanation || "暂无解析"} />
         </div>
       ) : null}
     </>
   );
-}
-
-function normalizeAnswer(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function buildRenderableReply(

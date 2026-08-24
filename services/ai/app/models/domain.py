@@ -5,6 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.models.study_question import (
+    StudyInteractiveQuestionRecordV2 as InteractiveQuestion,
+    StudyQuestionOptionV1 as InteractiveQuestionOption,
+)
+
 
 PERSONA_SLOT_KINDS = [
     "worldview",
@@ -760,26 +765,6 @@ class MemoryTraceHitRecord(BaseModel):
         if value.get("study_unit_id") is None and value.get("section_id") is not None:
             value["study_unit_id"] = value.get("section_id")
         return value
-
-
-class InteractiveQuestionOption(BaseModel):
-    key: str
-    text: str
-
-
-class InteractiveQuestion(BaseModel):
-    question_type: str
-    prompt: str
-    difficulty: str = "medium"
-    topic: str = ""
-    options: list[InteractiveQuestionOption] = []
-    call_back: bool = False
-    answer_key: str | None = None
-    accepted_answers: list[str] = []
-    explanation: str = ""
-    submitted_answer: str = ""
-    is_correct: bool | None = None
-    feedback_text: str = ""
 
 
 class DialogueTurnRecord(BaseModel):

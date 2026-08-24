@@ -19,6 +19,7 @@ from app.models.domain import (
 from app.services.model_provider import ModelProvider
 from app.services.performance import PerformanceMapper
 from app.services.study_memory import build_memory_context, retrieve_memory_hits
+from app.models.study_question import project_study_question_proposal
 
 
 class PedagogyOrchestrator:
@@ -124,7 +125,11 @@ class PedagogyOrchestrator:
             citations=citations,
             character_events=[*events, *tool_events],
             rich_blocks=raw_reply.rich_blocks or [],
-            interactive_question=raw_reply.interactive_question,
+            interactive_question=(
+                project_study_question_proposal(raw_reply.interactive_question)
+                if raw_reply.interactive_question is not None
+                else None
+            ),
             persona_slot_trace=slot_trace,
             memory_trace=memory_trace,
             tool_calls=raw_reply.tool_calls or [],

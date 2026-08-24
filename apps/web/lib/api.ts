@@ -39,6 +39,10 @@ import {
   type StudyChatCommittedResultEvidence,
   type StudyChatOperationReceipt,
 } from "./study-chat-operation-decode";
+import {
+  decodeStudyQuestionAttemptResponse,
+  type StudyQuestionAttemptResponse,
+} from "./study-question-attempt";
 
 export {
   normalizeTavernRoomDetail,
@@ -66,6 +70,11 @@ export type StudyChatOperationResponse = StudyChatOperationReceipt<StudyChatExch
 export interface StudyPlanConfirmationDecisionResponse {
   session: StudySessionRecord;
   plan: LearningPlan | null;
+}
+
+export interface StudyQuestionAttemptCommitResult {
+  attempt: StudyQuestionAttemptResponse;
+  session: StudySessionRecord;
 }
 
 export interface PersonaAssets {
@@ -2400,6 +2409,17 @@ export async function listStudySessions(input: {
   return payload.items.map(normalizeSession);
 }
 
+export async function getStudySession(sessionId: string): Promise<StudySessionRecord> {
+  const payload = await readJson<unknown>(
+    await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`)
+  );
+  const session = normalizeSession(payload);
+  if (session.id !== sessionId) {
+    throw new Error("study_session_response_identity_mismatch");
+  }
+  return session;
+}
+
 export async function updateStudySessionStudyUnit(input: {
   sessionId: string;
   studyUnitId?: string;
@@ -2560,40 +2580,33 @@ function normalizeStudyChatExchange(
 
 export async function submitStudyQuestionAttempt(input: {
   sessionId: string;
-  questionType: "multiple_choice" | "fill_blank";
-  prompt: string;
-  topic: string;
-  difficulty: "easy" | "medium" | "hard";
-  options: Array<{ key: string; text: string }>;
-  callBack?: boolean;
-  answerKey?: string;
-  acceptedAnswers: string[];
+  turnId: string;
+  expectedSessionRevision: number;
+  clientAttemptId: string;
   submittedAnswer: string;
-  isCorrect: boolean;
-  explanation: string;
-}): Promise<StudySessionRecord> {
-  const payload = await readJson<any>(
+}): Promise<StudyQuestionAttemptCommitResult> {
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        question_type: input.questionType,
-        prompt: input.prompt,
-        topic: input.topic,
-        difficulty: input.difficulty,
-        options: input.options.map((option) => ({ key: option.key, text: option.text })),
-        call_back: Boolean(input.callBack),
-        answer_key: input.answerKey ?? null,
-        accepted_answers: input.acceptedAnswers,
+        turn_id: input.turnId,
+        expected_session_revision: input.expectedSessionRevision,
+        client_attempt_id: input.clientAttemptId,
         submitted_answer: input.submittedAnswer,
-        is_correct: input.isCorrect,
-        explanation: input.explanation
       })
     })
   );
-  return normalizeSession(payload);
+  const attempt = decodeStudyQuestionAttemptResponse(payload, {
+    sessionId: input.sessionId,
+    turnId: input.turnId,
+    clientAttemptId: input.clientAttemptId,
+    expectedSessionRevision: input.expectedSessionRevision,
+  });
+  const session = await getStudySession(input.sessionId);
+  return { attempt, session };
 }
 
 export async function resolveStudyPlanConfirmation(input: {
@@ -2627,44 +2640,106 @@ function normalizeInteractiveQuestion(raw: any) {
   if (!raw || typeof raw !== "object") {
     return undefined;
   }
+  for (const forbidden of [
+    "grading_spec",
+    "answer_key",
+    "accepted_answers",
+    "explanation",
+    "submitted_answer",
+    "is_correct",
+    "feedback_text",
+  ]) {
+    if (Object.prototype.hasOwnProperty.call(raw, forbidden)) {
+      throw new Error("study_question_public_grading_material_exposed");
+    }
+  }
+  if (raw.schema_version !== "study-interactive-question-v2") {
+    throw new Error("study_question_public_schema_unsupported");
+  }
   const questionType = raw.question_type;
   if (questionType !== "multiple_choice" && questionType !== "fill_blank") {
-    return undefined;
+    throw new Error("study_question_public_type_invalid");
   }
+  if (raw.difficulty !== "easy" && raw.difficulty !== "medium" && raw.difficulty !== "hard") {
+    throw new Error("study_question_public_difficulty_invalid");
+  }
+  if (!Array.isArray(raw.options)) {
+    throw new Error("study_question_public_options_invalid");
+  }
+  const options = raw.options.map((option: unknown) => {
+    if (!option || typeof option !== "object") {
+      throw new Error("study_question_public_option_invalid");
+    }
+    const value = option as Record<string, unknown>;
+    if (typeof value.key !== "string" || !value.key.trim() || typeof value.text !== "string" || !value.text.trim()) {
+      throw new Error("study_question_public_option_invalid");
+    }
+    return { key: value.key, text: value.text };
+  });
+  const result = raw.result == null ? null : normalizeStudyQuestionResult(raw.result);
   return {
+    schemaVersion: "study-interactive-question-v2" as const,
     questionType,
-    prompt: String(raw.prompt ?? "").trim(),
-    difficulty: (raw.difficulty === "easy" || raw.difficulty === "hard" ? raw.difficulty : "medium") as
-      | "easy"
-      | "medium"
-      | "hard",
-    topic: String(raw.topic ?? "").trim(),
-    options: Array.isArray(raw.options)
-      ? raw.options
-          .map((option: any, index: number) => {
-            const text = String(option?.text ?? option ?? "").trim();
-            if (!text) {
-              return null;
-            }
-            return {
-              key: String(option?.key ?? String.fromCharCode(65 + index)),
-              text
-            };
-          })
-          .filter(Boolean)
-      : [],
-    callBack: Boolean(raw.call_back),
-    answerKey: raw.answer_key ? String(raw.answer_key) : undefined,
-    acceptedAnswers: Array.isArray(raw.accepted_answers)
-      ? raw.accepted_answers
-          .map((value: unknown) => String(value ?? "").trim())
-          .filter((value: string) => value.length > 0)
-      : [],
-    explanation: String(raw.explanation ?? "").trim(),
-    submittedAnswer: String(raw.submitted_answer ?? "").trim() || undefined,
-    isCorrect: typeof raw.is_correct === "boolean" ? raw.is_correct : undefined,
-    feedbackText: String(raw.feedback_text ?? "").trim() || undefined,
+    prompt: requireNonEmptyString(raw.prompt, "study_question_public_prompt_invalid"),
+    difficulty: raw.difficulty,
+    topic: typeof raw.topic === "string" ? raw.topic : "",
+    options,
+    callBack: raw.call_back === true,
+    result,
   };
+}
+
+function normalizeStudyQuestionResult(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("study_question_result_invalid");
+  }
+  const value = raw as Record<string, unknown>;
+  if (
+    value.schema_version !== "study-question-result-v1" ||
+    typeof value.submitted_answer !== "string" ||
+    !value.submitted_answer.trim() ||
+    typeof value.is_correct !== "boolean" ||
+    typeof value.feedback_text !== "string" ||
+    !value.feedback_text.trim() ||
+    typeof value.explanation !== "string"
+  ) {
+    throw new Error("study_question_result_invalid");
+  }
+  const nullableString = (field: string) => {
+    const candidate = value[field];
+    if (candidate === null) return null;
+    if (typeof candidate !== "string" || !candidate) {
+      throw new Error("study_question_result_invalid");
+    }
+    return candidate;
+  };
+  const nullableRevision = (field: string) => {
+    const candidate = value[field];
+    if (candidate === null) return null;
+    if (!Number.isSafeInteger(candidate) || Number(candidate) < 0) {
+      throw new Error("study_question_result_invalid");
+    }
+    return Number(candidate);
+  };
+  return {
+    schemaVersion: "study-question-result-v1" as const,
+    attemptId: nullableString("attempt_id"),
+    clientAttemptId: nullableString("client_attempt_id"),
+    submittedAnswer: value.submitted_answer,
+    isCorrect: value.is_correct,
+    feedbackText: value.feedback_text,
+    explanation: value.explanation,
+    beforeRevision: nullableRevision("before_revision"),
+    committedRevision: nullableRevision("committed_revision"),
+    committedAt: nullableString("committed_at"),
+  };
+}
+
+function requireNonEmptyString(value: unknown, code: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(code);
+  }
+  return value;
 }
 
 export async function getModelUsageStats(): Promise<TokenUsageStats> {

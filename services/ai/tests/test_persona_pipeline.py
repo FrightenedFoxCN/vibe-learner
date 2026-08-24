@@ -38,6 +38,11 @@ from app.models.domain import (
     StudyChatResult,
     StudySessionRecord,
 )
+from app.models.study_question import (
+    StudyQuestionProposalV1,
+    StudyQuestionResultRecordV1,
+    project_study_question_proposal,
+)
 from app.services.documents import DocumentService
 from app.services.document_parser import DocumentParser, ParsedPage
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
@@ -972,16 +977,26 @@ class PersonaPipelineTests(unittest.TestCase):
                 reply="Question ready",
                 citations=[],
                 character_events=[],
-                interactive_question=InteractiveQuestion(
-                    question_type="fill_blank",
-                    prompt="2 + 2 = ?",
+                interactive_question=project_study_question_proposal(
+                    StudyQuestionProposalV1(
+                        question_type="fill_blank",
+                        prompt="2 + 2 = ?",
+                        accepted_answers=["4"],
+                    )
                 ),
             ),
         )
 
         def implicit_answer_patch(record: StudySessionRecord) -> None:
             assert record.turns[0].interactive_question is not None
-            record.turns[0].interactive_question.submitted_answer = "4"
+            record.turns[0].interactive_question.result = StudyQuestionResultRecordV1(
+                attempt_id="attempt-implicit",
+                client_attempt_id="client-attempt-implicit",
+                submitted_answer="4",
+                normalized_answer="4",
+                is_correct=True,
+                feedback_text="Correct",
+            )
 
         with self.assertRaisesRegex(
             ValueError,
@@ -992,18 +1007,21 @@ class PersonaPipelineTests(unittest.TestCase):
                 mutation=implicit_answer_patch,
             )
 
-        updated = self.study_session_service.append_attempt_turn(
+        committed = self.study_session_service.record_question_attempt(
             session_id=session.id,
-            prompt="2 + 2 = ?",
+            turn_id=self.study_session_service.require_session(session.id).turns[0].id,
+            expected_session_revision=1,
+            client_attempt_id="client-attempt-policy-1",
             submitted_answer="4",
-            is_correct=True,
-            feedback_text="Correct",
         )
+        self.assertTrue(committed.is_correct)
+        updated = self.study_session_service.require_session(session.id)
         question = updated.turns[0].interactive_question
         assert question is not None
-        self.assertEqual(question.submitted_answer, "4")
-        self.assertTrue(question.is_correct)
-        self.assertEqual(question.feedback_text, "Correct")
+        assert question.result is not None
+        self.assertEqual(question.result.submitted_answer, "4")
+        self.assertTrue(question.result.is_correct)
+        self.assertEqual(question.result.feedback_text, "回答正确")
 
     def test_session_schema_rejects_partial_legacy_turn_identity(self) -> None:
         payload = {
@@ -1602,7 +1620,7 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertEqual(reply.action, "lean_in")
         self.assertIsNotNone(reply.interactive_question)
-        self.assertTrue(reply.interactive_question["call_back"])
+        self.assertTrue(reply.interactive_question.call_back)
         self.assertGreaterEqual(len(captured_payloads), 2)
         second_messages = captured_payloads[1]["messages"]
         self.assertTrue(

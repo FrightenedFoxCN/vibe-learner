@@ -70,6 +70,7 @@ from app.models.api import (
     StudySessionPlanConfirmationDecisionRequest,
     StudySessionPlanConfirmationDecisionResponse,
     StudyQuestionAttemptRequest,
+    StudyQuestionAttemptResponse,
     StorageCleanupRequest,
     StorageCleanupResponse,
     StorageSummaryResponse,
@@ -1163,7 +1164,12 @@ def _admit_and_run_study_chat(
 
 def _study_chat_operation_response(operation) -> StudyChatOperationReceiptResponse:
     receipt = container.study_chat_operation_repository.receipt(operation)
-    return StudyChatOperationReceiptResponse.model_validate(receipt.model_dump(mode="json"))
+    payload = receipt.model_dump(mode="json")
+    if receipt.result is not None:
+        payload["result"] = StudyChatExchangeResponse.model_validate(
+            receipt.result
+        ).model_dump(mode="json")
+    return StudyChatOperationReceiptResponse.model_validate(payload)
 
 
 def _study_chat_uncertain_error_code(exc: Exception) -> str:
@@ -1327,10 +1333,14 @@ def _run_study_chat(
     )
     response.model_recoveries = consume_model_recovery_state()
     def build_exchange_payload(committed_session):
-        return StudyChatExchangeResponse(
+        # This is a server-only committed projection used for durable operation
+        # read-back. Public receipts independently project it through
+        # StudyChatExchangeResponse so private grading material never crosses
+        # the API boundary.
+        return {
             **response.model_dump(mode="json"),
-            session=_into_response(StudySessionResponse, committed_session),
-        ).model_dump(mode="json")
+            "session": committed_session.model_dump(mode="json"),
+        }
 
     session, response_payload = container.study_session_repository.commit_chat_operation_turn(
         operation_id=operation_id,
@@ -1435,30 +1445,28 @@ def list_study_sessions(
     )
 
 
-@router.post("/study-sessions/{session_id}/attempt", response_model=StudySessionResponse)
+@router.get("/study-sessions/{session_id}", response_model=StudySessionResponse)
+def get_study_session(session_id: str) -> StudySessionResponse:
+    session = container.study_session_service.require_session(session_id)
+    return _into_response(StudySessionResponse, session)
+
+
+@router.post(
+    "/study-sessions/{session_id}/attempt",
+    response_model=StudyQuestionAttemptResponse,
+)
 def record_study_question_attempt(
     session_id: str,
     payload: StudyQuestionAttemptRequest,
-) -> StudySessionResponse:
-    answer = payload.submitted_answer.strip()
-    verdict = "回答正确" if payload.is_correct else "回答不正确"
-    feedback_text = (
-        verdict
-        if payload.is_correct
-        else (
-            f"{verdict}，正确答案是 {payload.answer_key}"
-            if payload.answer_key
-            else f"{verdict}，参考答案：{' / '.join(payload.accepted_answers) or '未提供'}"
-        )
-    )
-    session = container.study_session_service.append_attempt_turn(
+) -> StudyQuestionAttemptResponse:
+    result = container.study_session_service.record_question_attempt(
         session_id=session_id,
-        prompt=payload.prompt,
-        submitted_answer=answer,
-        is_correct=payload.is_correct,
-        feedback_text=feedback_text,
+        turn_id=payload.turn_id,
+        expected_session_revision=payload.expected_session_revision,
+        client_attempt_id=payload.client_attempt_id,
+        submitted_answer=payload.submitted_answer,
     )
-    return _into_response(StudySessionResponse, session)
+    return StudyQuestionAttemptResponse.model_validate(result.model_dump(mode="json"))
 
 
 @router.patch("/study-sessions/{session_id}", response_model=StudySessionResponse)
