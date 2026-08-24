@@ -7,6 +7,7 @@ import {
   STUDY_CHAT_OPERATION_STATUSES,
   StudyChatOperationDecodeError,
 } from "../lib/study-chat-operation-decode.ts";
+import { StudySessionDecodeError } from "../lib/study-session-decode.ts";
 
 const terminalTimestamp = "2026-08-12T13:00:02+00:00";
 
@@ -375,6 +376,18 @@ test("committed result decoder is mandatory and cannot return nullish output", (
     (error: unknown) =>
       error instanceof StudyChatOperationDecodeError &&
       error.path === "study_chat_operation.result",
+  );
+  assert.throws(
+    () => decode(operationWire("committed"), {
+      decodeResult() {
+        throw new StudySessionDecodeError(
+          "study_chat_operation.result.citations[0]",
+          "citation_source_identity_invalid",
+        );
+      },
+    }),
+    (error: unknown) => error instanceof StudySessionDecodeError &&
+      error.path === "study_chat_operation.result.citations[0]",
   );
 });
 

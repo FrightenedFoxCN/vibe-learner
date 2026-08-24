@@ -35,7 +35,12 @@ import type {
 import { compactPreviewString, compactPreviewValue } from "./preview";
 import { getAiBaseUrl, getDesktopRuntimeConfig } from "./runtime-config";
 import { ApiHttpError, extractApiErrorCode } from "./http-error";
-import { decodeStudySessionCommittedIdentity } from "./study-session-decode";
+import {
+  decodeStudyChatExchange,
+  decodeStudyPlanConfirmationDecisionResponse,
+  decodeStudySession,
+  decodeStudySessionList,
+} from "./study-session-decode";
 import {
   decodeDocumentDebugRecord,
   decodeDocumentList,
@@ -51,7 +56,6 @@ import {
 } from "./planning-decode";
 import {
   decodeStudyChatOperationReceipt,
-  type StudyChatCommittedResultEvidence,
   type StudyChatOperationReceipt,
 } from "./study-chat-operation-decode";
 import {
@@ -71,7 +75,6 @@ import {
   decodeReusableSceneNodeList,
   decodeSceneLibraryItem,
   decodeSceneLibraryList,
-  decodeSceneProfile,
   decodeSceneSetupState,
   decodeSceneTreeGenerateResult,
 } from "./persona-scene-decode";
@@ -258,41 +261,6 @@ function serializeSceneProfile(
     focus_object_names: sceneProfile.focusObjectNames,
     scene_tree: serializeSceneTree(sceneProfile.sceneTree),
   };
-}
-
-function normalizeSceneProfile(scene: unknown) {
-  if (scene === null || scene === undefined) {
-    return undefined;
-  }
-  return decodeSceneProfile(scene);
-}
-
-function normalizeChatToolCalls(toolCalls: any): import("@vibe-learner/shared").ChatToolCallTrace[] {
-  if (!Array.isArray(toolCalls)) {
-    return [];
-  }
-  return toolCalls.map((toolCall: any) => ({
-    toolCallId: String(toolCall.tool_call_id ?? ""),
-    toolName: String(toolCall.tool_name ?? ""),
-    argumentsJson: String(toolCall.arguments_json ?? "{}"),
-    resultSummary: compactPreviewString(toolCall.result_summary ?? "", 240),
-    resultJson: compactPreviewString(toolCall.result_json ?? "", 1200),
-  }));
-}
-
-function normalizeModelRecoveries(items: any): import("@vibe-learner/shared").ModelRecovery[] {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-  return items.map((item: any) => ({
-    recoveryId: String(item.recovery_id ?? ""),
-    category: String(item.category ?? ""),
-    reason: String(item.reason ?? ""),
-    strategy: String(item.strategy ?? ""),
-    attempts: Number(item.attempts ?? 1),
-    note: String(item.note ?? ""),
-    createdAt: String(item.created_at ?? ""),
-  }));
 }
 
 function extractErrorMessage(payload: unknown, fallbackMessage: string) {
@@ -642,320 +610,6 @@ function normalizePlan(
   options: { expectedPlanId?: string; expectedDocumentId?: string; path?: string } = {},
 ): LearningPlan {
   return decodeLearningPlan(plan, options);
-}
-
-function normalizeMemoryTrace(items: any[] | undefined) {
-  const raw = Array.isArray(items) ? items : [];
-  return raw.map((item: any) => ({
-    sessionId: String(item.session_id ?? ""),
-    studyUnitId: String(item.study_unit_id ?? item.section_id ?? ""),
-    sceneTitle: String(item.scene_title ?? ""),
-    score: Number(item.score ?? 0),
-    snippet: compactPreviewString(String(item.snippet ?? ""), 240),
-    createdAt: String(item.created_at ?? ""),
-    source: String(item.source ?? "retriever") as "retriever" | "tool_call"
-  }));
-}
-
-function normalizeSessionFollowUps(items: any[] | undefined) {
-  const raw = Array.isArray(items) ? items : [];
-  return raw.map((item: any) => ({
-    id: String(item.id ?? ""),
-    triggerKind: String(item.trigger_kind ?? ""),
-    status: String(item.status ?? "pending"),
-    delaySeconds: Number(item.delay_seconds ?? 0),
-    dueAt: String(item.due_at ?? ""),
-    hiddenMessage: String(item.hidden_message ?? ""),
-    reason: String(item.reason ?? ""),
-    createdAt: String(item.created_at ?? ""),
-    completedAt: String(item.completed_at ?? ""),
-    canceledAt: String(item.canceled_at ?? ""),
-  }));
-}
-
-function normalizeSessionMemory(items: any[] | undefined) {
-  const raw = Array.isArray(items) ? items : [];
-  return raw.map((item: any) => ({
-    id: String(item.id ?? ""),
-    key: String(item.key ?? ""),
-    content: compactPreviewString(String(item.content ?? ""), 280),
-    source: String(item.source ?? "tool_call"),
-    createdAt: String(item.created_at ?? ""),
-    updatedAt: String(item.updated_at ?? ""),
-  }));
-}
-
-function normalizeSessionAffinityState(value: any) {
-  const raw = value && typeof value === "object" ? value : {};
-  return {
-    score: Number(raw.score ?? 0),
-    level: String(raw.level ?? "neutral"),
-    summary: String(raw.summary ?? ""),
-    updatedAt: String(raw.updated_at ?? ""),
-    events: Array.isArray(raw.events)
-      ? raw.events.map((item: any) => ({
-          id: String(item.id ?? ""),
-          delta: Number(item.delta ?? 0),
-          reason: String(item.reason ?? ""),
-          source: String(item.source ?? "tool_call"),
-          createdAt: String(item.created_at ?? ""),
-        }))
-      : [],
-  };
-}
-
-function normalizePlanConfirmations(items: any[] | undefined) {
-  const raw = Array.isArray(items) ? items : [];
-  return raw.map((item: any) => ({
-    id: String(item.id ?? ""),
-    toolName: String(item.tool_name ?? ""),
-    actionType: String(item.action_type ?? ""),
-    planId: String(item.plan_id ?? ""),
-    title: String(item.title ?? ""),
-    summary: String(item.summary ?? ""),
-    previewLines: Array.isArray(item.preview_lines)
-      ? item.preview_lines.map((line: unknown) => String(line))
-      : [],
-    payload: item.payload && typeof item.payload === "object"
-      ? item.payload as Record<string, unknown>
-      : {},
-    status: String(item.status ?? "pending"),
-    createdAt: String(item.created_at ?? ""),
-    resolvedAt: String(item.resolved_at ?? ""),
-    resolutionNote: String(item.resolution_note ?? ""),
-  }));
-}
-
-function normalizeLearnerAttachments(items: any[] | undefined) {
-  const raw = Array.isArray(items) ? items : [];
-  return raw.map((item: any) => ({
-    attachmentId: String(item.attachment_id ?? ""),
-    name: String(item.name ?? ""),
-    mimeType: String(item.mime_type ?? ""),
-    kind: String(item.kind ?? ""),
-    sizeBytes: Number(item.size_bytes ?? 0),
-    imageUrl: item.image_url ? String(item.image_url) : undefined,
-    textExcerpt: item.text_excerpt ? compactPreviewString(String(item.text_excerpt), 240) : undefined,
-    source: item.source ? String(item.source) : undefined,
-    pageCount: Number(item.page_count ?? 0),
-    previewable: Boolean(item.previewable ?? false),
-  }));
-}
-
-function normalizeProjectedPdf(value: any) {
-  const raw = value && typeof value === "object" ? value : null;
-  if (!raw) {
-    return null;
-  }
-  return {
-    sourceKind: String(raw.source_kind ?? "document"),
-    sourceId: String(raw.source_id ?? ""),
-    title: String(raw.title ?? ""),
-    pageNumber: Number(raw.page_number ?? 1),
-    pageCount: Number(raw.page_count ?? 0),
-    imageUrl: raw.image_url ? String(raw.image_url) : undefined,
-    overlays: Array.isArray(raw.overlays)
-      ? raw.overlays.map((overlay: any) => ({
-          id: String(overlay.id ?? ""),
-          kind: String(overlay.kind ?? ""),
-          pageNumber: Number(overlay.page_number ?? 1),
-          rects: Array.isArray(overlay.rects)
-            ? overlay.rects.map((rect: any) => ({
-                x: Number(rect.x ?? 0),
-                y: Number(rect.y ?? 0),
-                width: Number(rect.width ?? 0),
-                height: Number(rect.height ?? 0),
-              }))
-            : [],
-          label: String(overlay.label ?? ""),
-          quoteText: overlay.quote_text ? String(overlay.quote_text) : undefined,
-          color: overlay.color ? String(overlay.color) : undefined,
-          createdAt: String(overlay.created_at ?? ""),
-        }))
-      : [],
-    updatedAt: String(raw.updated_at ?? ""),
-  };
-}
-
-function normalizeRichBlocks(items: any[] | undefined) {
-  const raw = Array.isArray(items) ? items : [];
-  return raw
-    .map((item: any) => ({
-      kind: String(item.kind ?? "").trim(),
-      content: String(item.content ?? "").trim(),
-    }))
-    .filter((item) => item.kind && item.content);
-}
-
-function repairLegacyRichReply(
-  reply: string,
-  existingBlocks: Array<{ kind: string; content: string }>
-) {
-  const normalizedReply = String(reply ?? "");
-  const normalizedBlocks = dedupeRichBlocks(existingBlocks);
-  if (!normalizedReply.trimStart().startsWith("```json")) {
-    const extracted = extractMermaidBlocksFromReply(normalizedReply);
-    return {
-      reply: extracted.reply,
-      richBlocks: dedupeRichBlocks([...normalizedBlocks, ...extracted.richBlocks]),
-    };
-  }
-
-  const textKey = '"text": "';
-  const textStart = normalizedReply.indexOf(textKey);
-  if (textStart === -1) {
-    return {
-      reply: normalizedReply,
-      richBlocks: normalizedBlocks,
-    };
-  }
-
-  try {
-    const rawTextStart = textStart + textKey.length;
-    const rawTextEnd = normalizedReply.indexOf('",\n  "mood"', rawTextStart);
-    const rawText = (
-      rawTextEnd === -1
-        ? normalizedReply
-            .slice(rawTextStart)
-            .replace(/\r\n/g, "\n")
-            .replace(/\r/g, "\n")
-            .replace(/"\s*}\s*```?\s*$/g, "")
-            .replace(/`+\s*$/g, "")
-            .trimEnd()
-        : normalizedReply.slice(rawTextStart, rawTextEnd)
-    );
-    const repairedSource = rawText
-      .replace(/\\"/g, "__ESCAPED_QUOTE__")
-      .replace(/"/g, "\\\"")
-      .replace(/__ESCAPED_QUOTE__/g, '\\"')
-      .replace(/\r?\n/g, "\\n");
-    const recoveredReply = JSON.parse(`"${repairedSource}"`) as string;
-    const extracted = extractMermaidBlocksFromReply(recoveredReply);
-    return {
-      reply: extracted.reply,
-      richBlocks: dedupeRichBlocks([...normalizedBlocks, ...extracted.richBlocks]),
-    };
-  } catch {
-    return {
-      reply: normalizedReply,
-      richBlocks: normalizedBlocks,
-    };
-  }
-}
-
-function extractMermaidBlocksFromReply(reply: string) {
-  const richBlocks: Array<{ kind: string; content: string }> = [];
-  const cleaned = reply.replace(/```mermaid\s*\n([\s\S]*?)```|```\s*\nmermaid\s*\n([\s\S]*?)```/gi, (_, chartA, chartB) => {
-    const content = String(chartA ?? chartB ?? "").trim();
-    if (content) {
-      richBlocks.push({ kind: "mermaid", content });
-    }
-    return "\n\n";
-  }).replace(/\n{3,}/g, "\n\n").trim();
-  return {
-    reply: cleaned,
-    richBlocks: dedupeRichBlocks(richBlocks),
-  };
-}
-
-function dedupeRichBlocks(items: Array<{ kind: string; content: string }>) {
-  const result: Array<{ kind: string; content: string }> = [];
-  const seen = new Set<string>();
-  items.forEach((item) => {
-    const kind = item.kind.trim();
-    const content = item.content.trim();
-    if (!kind || !content) {
-      return;
-    }
-    const key = `${kind.toLowerCase()}:${content}`;
-    if (seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    result.push({ kind, content });
-  });
-  return result;
-}
-
-function normalizeSession(session: any): StudySessionRecord {
-  const committed = decodeStudySessionCommittedIdentity(session);
-  const studyUnitId = String(session.study_unit_id ?? session.section_id ?? "");
-  const studyUnitTitle = String(session.study_unit_title ?? session.section_title ?? "");
-  const preparedStudyUnitIds = Array.isArray(session.prepared_study_unit_ids)
-    ? session.prepared_study_unit_ids
-    : Array.isArray(session.prepared_section_ids)
-      ? session.prepared_section_ids
-      : [];
-  return {
-    id: session.id,
-    documentId: session.document_id,
-    personaId: session.persona_id,
-    planId: session.plan_id ?? null,
-    sceneInstanceId: String(session.scene_instance_id ?? ""),
-    sceneProfile: normalizeSceneProfile(session.scene_profile),
-    studyUnitId,
-    studyUnitTitle,
-    themeHint: session.theme_hint ?? "",
-    sessionSystemPrompt: compactPreviewString(session.session_system_prompt ?? "", 1200),
-    status: session.status,
-    revision: committed.revision,
-    lastTurnSequence: committed.lastTurnSequence,
-    turns: (session.turns ?? []).map((turn: any, turnIndex: number) => {
-      const repaired = repairLegacyRichReply(
-        String(turn.assistant_reply ?? ""),
-        normalizeRichBlocks(turn.rich_blocks)
-      );
-      return {
-        id: committed.turns[turnIndex]!.id,
-        sequence: committed.turns[turnIndex]!.sequence,
-        learnerMessage: turn.learner_message,
-        learnerMessageKind: String(turn.learner_message_kind ?? "learner"),
-        learnerAttachments: normalizeLearnerAttachments(turn.learner_attachments),
-        assistantReply: repaired.reply,
-        citations: (turn.citations ?? []).map((citation: any) => ({
-          sectionId: String(citation.section_id ?? ""),
-          title: citation.title,
-          pageStart: citation.page_start,
-          pageEnd: citation.page_end,
-          sourceKind: citation.source_kind ? String(citation.source_kind) : undefined,
-          sourceId: citation.source_id ? String(citation.source_id) : undefined,
-        })),
-        characterEvents: (turn.character_events ?? []).map((event: any) => ({
-          emotion: event.emotion,
-          action: event.action,
-          speechStyle: event.speech_style,
-          sceneHint: event.scene_hint,
-          lineSegmentId: event.line_segment_id,
-          timingHint: event.timing_hint,
-          toolName: event.tool_name ? String(event.tool_name) : undefined,
-          toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
-          deliveryCue: event.delivery_cue ? compactPreviewString(event.delivery_cue, 160) : undefined,
-          commentary: event.commentary ? compactPreviewString(event.commentary, 280) : undefined,
-        })),
-        richBlocks: repaired.richBlocks,
-        interactiveQuestion: normalizeInteractiveQuestion(turn.interactive_question),
-        personaSlotTrace: (turn.persona_slot_trace ?? []).map((item: any) => ({
-          kind: String(item.kind ?? "custom"),
-          label: String(item.label ?? item.kind ?? ""),
-          contentExcerpt: compactPreviewString(item.content_excerpt ?? "", 280),
-          reason: String(item.reason ?? "")
-        })),
-        memoryTrace: normalizeMemoryTrace(turn.memory_trace),
-        toolCalls: normalizeChatToolCalls(turn.tool_calls),
-        sceneProfile: normalizeSceneProfile(turn.scene_profile),
-        modelRecoveries: normalizeModelRecoveries(turn.model_recoveries),
-        createdAt: turn.created_at
-      };
-    }),
-    preparedStudyUnitIds: preparedStudyUnitIds.map((item: unknown) => String(item)),
-    pendingFollowUps: normalizeSessionFollowUps(session.pending_follow_ups),
-    sessionMemory: normalizeSessionMemory(session.session_memory),
-    affinityState: normalizeSessionAffinityState(session.affinity_state),
-    planConfirmations: normalizePlanConfirmations(session.plan_confirmations),
-    projectedPdf: normalizeProjectedPdf(session.projected_pdf),
-    createdAt: session.created_at,
-    updatedAt: session.updated_at
-  };
 }
 
 export async function listPersonas(): Promise<PersonaProfile[]> {
@@ -2090,7 +1744,7 @@ export async function createStudySession(input: {
   studyUnitTitle?: string;
   themeHint?: string;
 }): Promise<StudySessionRecord> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/study-sessions`, {
       method: "POST",
       headers: {
@@ -2109,7 +1763,12 @@ export async function createStudySession(input: {
       })
     })
   );
-  return normalizeSession(payload);
+  return decodeStudySession(payload, {
+    expectedDocumentId: input.documentId,
+    expectedPersonaId: input.personaId,
+    expectedPlanId: input.planId ?? null,
+    expectedStudyUnitId: input.studyUnitId,
+  });
 }
 
 export async function cancelStreamRun(streamId: string): Promise<void> {
@@ -2135,21 +1794,22 @@ export async function listStudySessions(input: {
     query.set("section_id", input.studyUnitId);
   }
   const suffix = query.toString();
-  const payload = await readJson<{ items: any[] }>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`)
   );
-  return payload.items.map(normalizeSession);
+  return decodeStudySessionList(payload, {
+    ...(input.documentId ? { expectedDocumentId: input.documentId } : {}),
+    ...(input.personaId ? { expectedPersonaId: input.personaId } : {}),
+    ...(input.planId ? { expectedPlanId: input.planId } : {}),
+    ...(input.studyUnitId ? { expectedStudyUnitId: input.studyUnitId } : {}),
+  });
 }
 
 export async function getStudySession(sessionId: string): Promise<StudySessionRecord> {
   const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`)
   );
-  const session = normalizeSession(payload);
-  if (session.id !== sessionId) {
-    throw new Error("study_session_response_identity_mismatch");
-  }
-  return session;
+  return decodeStudySession(payload, { expectedSessionId: sessionId });
 }
 
 export async function updateStudySessionStudyUnit(input: {
@@ -2165,7 +1825,7 @@ export async function updateStudySessionStudyUnit(input: {
   if (Object.prototype.hasOwnProperty.call(input, "sceneProfile")) {
     body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);
   }
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}`, {
       method: "PATCH",
       headers: {
@@ -2174,18 +1834,24 @@ export async function updateStudySessionStudyUnit(input: {
       body: JSON.stringify(body)
     })
   );
-  return normalizeSession(payload);
+  return decodeStudySession(payload, {
+    expectedSessionId: input.sessionId,
+    ...(input.studyUnitId ? { expectedStudyUnitId: input.studyUnitId } : {}),
+  });
 }
 
 export async function cancelStudySessionFollowUps(input: {
   sessionId: string;
 }): Promise<StudySessionRecord> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/follow-ups/cancel`, {
       method: "POST",
     })
   );
-  return normalizeSession(payload);
+  return decodeStudySession(payload, {
+    expectedSessionId: input.sessionId,
+    requireNoPendingFollowUps: true,
+  });
 }
 
 export async function sendStudyMessage(input: {
@@ -2230,7 +1896,7 @@ export async function sendStudyMessage(input: {
           hidden_message_prefix: input.hiddenMessagePrefix ?? "",
         })
       });
-  const payload = await readJson<any>(response);
+  const payload = await readJson<unknown>(response);
   return decodeStudyChatOperationResponse(payload, {
     sessionId: input.sessionId,
     clientRequestId: input.clientRequestId,
@@ -2257,57 +1923,12 @@ function decodeStudyChatOperationResponse(
     path: "study_chat_operation",
     expectedSessionId: expected.sessionId,
     expectedClientRequestId: expected.clientRequestId,
-    decodeResult: (raw, path, evidence) => normalizeStudyChatExchange(raw, path, evidence),
+    decodeResult: (raw, path, evidence) => decodeStudyChatExchange(raw, {
+      path,
+      expectedSessionId: expected.sessionId,
+      evidence,
+    }),
   });
-}
-
-function normalizeStudyChatExchange(
-  rawPayload: Record<string, unknown>,
-  _path = "study_chat_exchange",
-  _evidence?: StudyChatCommittedResultEvidence,
-): StudyChatExchangeResponse {
-  const payload: any = rawPayload;
-  const repaired = repairLegacyRichReply(
-    String(payload.reply ?? ""),
-    normalizeRichBlocks(payload.rich_blocks)
-  );
-
-  return {
-    reply: repaired.reply,
-    citations: payload.citations.map((citation: any) => ({
-      sectionId: String(citation.section_id ?? ""),
-      title: citation.title,
-      pageStart: citation.page_start,
-      pageEnd: citation.page_end,
-      sourceKind: citation.source_kind ? String(citation.source_kind) : undefined,
-      sourceId: citation.source_id ? String(citation.source_id) : undefined,
-    })),
-    characterEvents: payload.character_events.map((event: any) => ({
-      emotion: event.emotion,
-      action: event.action,
-      speechStyle: event.speech_style,
-      sceneHint: event.scene_hint,
-      lineSegmentId: event.line_segment_id,
-      timingHint: event.timing_hint,
-      toolName: event.tool_name ? String(event.tool_name) : undefined,
-      toolSummary: event.tool_summary ? compactPreviewString(event.tool_summary, 240) : undefined,
-      deliveryCue: event.delivery_cue ? compactPreviewString(event.delivery_cue, 160) : undefined,
-      commentary: event.commentary ? compactPreviewString(event.commentary, 280) : undefined,
-    })),
-    richBlocks: repaired.richBlocks,
-    interactiveQuestion: normalizeInteractiveQuestion(payload.interactive_question),
-    personaSlotTrace: (payload.persona_slot_trace ?? []).map((item: any) => ({
-      kind: String(item.kind ?? "custom"),
-      label: String(item.label ?? item.kind ?? ""),
-      contentExcerpt: String(item.content_excerpt ?? ""),
-      reason: String(item.reason ?? "")
-    })),
-    memoryTrace: normalizeMemoryTrace(payload.memory_trace),
-    toolCalls: normalizeChatToolCalls(payload.tool_calls),
-    sceneProfile: normalizeSceneProfile(payload.scene_profile),
-    modelRecoveries: normalizeModelRecoveries(payload.model_recoveries),
-    session: normalizeSession(payload.session)
-  };
 }
 
 export async function submitStudyQuestionAttempt(input: {
@@ -2347,7 +1968,7 @@ export async function resolveStudyPlanConfirmation(input: {
   decision: "approve" | "reject";
   note?: string;
 }): Promise<StudyPlanConfirmationDecisionResponse> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(
       `${AI_BASE_URL()}/study-sessions/${input.sessionId}/plan-confirmations/${input.confirmationId}`,
       {
@@ -2362,116 +1983,16 @@ export async function resolveStudyPlanConfirmation(input: {
       }
     )
   );
-  return {
-    session: normalizeSession(payload.session),
-    plan: payload.plan ? normalizePlan(payload.plan) : null,
-  };
-}
-
-function normalizeInteractiveQuestion(raw: any) {
-  if (!raw || typeof raw !== "object") {
-    return undefined;
-  }
-  for (const forbidden of [
-    "grading_spec",
-    "answer_key",
-    "accepted_answers",
-    "explanation",
-    "submitted_answer",
-    "is_correct",
-    "feedback_text",
-  ]) {
-    if (Object.prototype.hasOwnProperty.call(raw, forbidden)) {
-      throw new Error("study_question_public_grading_material_exposed");
-    }
-  }
-  if (raw.schema_version !== "study-interactive-question-v2") {
-    throw new Error("study_question_public_schema_unsupported");
-  }
-  const questionType = raw.question_type;
-  if (questionType !== "multiple_choice" && questionType !== "fill_blank") {
-    throw new Error("study_question_public_type_invalid");
-  }
-  if (raw.difficulty !== "easy" && raw.difficulty !== "medium" && raw.difficulty !== "hard") {
-    throw new Error("study_question_public_difficulty_invalid");
-  }
-  if (!Array.isArray(raw.options)) {
-    throw new Error("study_question_public_options_invalid");
-  }
-  const options = raw.options.map((option: unknown) => {
-    if (!option || typeof option !== "object") {
-      throw new Error("study_question_public_option_invalid");
-    }
-    const value = option as Record<string, unknown>;
-    if (typeof value.key !== "string" || !value.key.trim() || typeof value.text !== "string" || !value.text.trim()) {
-      throw new Error("study_question_public_option_invalid");
-    }
-    return { key: value.key, text: value.text };
+  return decodeStudyPlanConfirmationDecisionResponse(payload, {
+    expectedSessionId: input.sessionId,
+    expectedConfirmationId: input.confirmationId,
+    expectedDecision: input.decision,
+    decodePlan: (rawPlan, path, expectedPlanId, expectedDocumentId) => normalizePlan(rawPlan, {
+      path,
+      expectedPlanId,
+      expectedDocumentId,
+    }),
   });
-  const result = raw.result == null ? null : normalizeStudyQuestionResult(raw.result);
-  return {
-    schemaVersion: "study-interactive-question-v2" as const,
-    questionType,
-    prompt: requireNonEmptyString(raw.prompt, "study_question_public_prompt_invalid"),
-    difficulty: raw.difficulty,
-    topic: typeof raw.topic === "string" ? raw.topic : "",
-    options,
-    callBack: raw.call_back === true,
-    result,
-  };
-}
-
-function normalizeStudyQuestionResult(raw: unknown) {
-  if (!raw || typeof raw !== "object") {
-    throw new Error("study_question_result_invalid");
-  }
-  const value = raw as Record<string, unknown>;
-  if (
-    value.schema_version !== "study-question-result-v1" ||
-    typeof value.submitted_answer !== "string" ||
-    !value.submitted_answer.trim() ||
-    typeof value.is_correct !== "boolean" ||
-    typeof value.feedback_text !== "string" ||
-    !value.feedback_text.trim() ||
-    typeof value.explanation !== "string"
-  ) {
-    throw new Error("study_question_result_invalid");
-  }
-  const nullableString = (field: string) => {
-    const candidate = value[field];
-    if (candidate === null) return null;
-    if (typeof candidate !== "string" || !candidate) {
-      throw new Error("study_question_result_invalid");
-    }
-    return candidate;
-  };
-  const nullableRevision = (field: string) => {
-    const candidate = value[field];
-    if (candidate === null) return null;
-    if (!Number.isSafeInteger(candidate) || Number(candidate) < 0) {
-      throw new Error("study_question_result_invalid");
-    }
-    return Number(candidate);
-  };
-  return {
-    schemaVersion: "study-question-result-v1" as const,
-    attemptId: nullableString("attempt_id"),
-    clientAttemptId: nullableString("client_attempt_id"),
-    submittedAnswer: value.submitted_answer,
-    isCorrect: value.is_correct,
-    feedbackText: value.feedback_text,
-    explanation: value.explanation,
-    beforeRevision: nullableRevision("before_revision"),
-    committedRevision: nullableRevision("committed_revision"),
-    committedAt: nullableString("committed_at"),
-  };
-}
-
-function requireNonEmptyString(value: unknown, code: string): string {
-  if (typeof value !== "string" || !value.trim()) {
-    throw new Error(code);
-  }
-  return value;
 }
 
 export async function getModelUsageStats(): Promise<TokenUsageStats> {

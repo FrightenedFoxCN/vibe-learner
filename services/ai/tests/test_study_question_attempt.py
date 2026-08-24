@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from app.models.api import StudyQuestionAttemptRequest, StudySessionResponse
-from app.models.domain import StudyChatResult
+from app.models.domain import LearnerAttachmentRecord, StudyChatResult
 from app.models.study_question import (
     StudyQuestionProposalV1,
     project_study_question_proposal,
@@ -93,6 +93,44 @@ class StudyQuestionAttemptTests(unittest.TestCase):
         self.assertNotIn("answer_key", question)
         self.assertNotIn("accepted_answers", question)
         self.assertNotIn("explanation", question)
+
+    def test_public_turn_attachment_never_exposes_local_storage_path(self) -> None:
+        session = self.service.create_session(
+            session_id="session-public-attachment",
+            document_id="doc-public-attachment",
+            persona_id="mentor-aurora",
+            study_unit_id="unit-1",
+        )
+        session = self.service.append_turn(
+            session_id=session.id,
+            learner_message="Read this file",
+            learner_attachments=[
+                LearnerAttachmentRecord(
+                    attachment_id="attachment-public-1",
+                    name="notes.txt",
+                    mime_type="text/plain",
+                    kind="text",
+                    size_bytes=12,
+                    text_excerpt="public excerpt",
+                    stored_path="/private/staging/session-public-attachment/notes.txt",
+                )
+            ],
+            result=StudyChatResult(
+                reply="I read the notes.",
+                citations=[],
+                character_events=[],
+            ),
+        )
+
+        public = StudySessionResponse.model_validate(
+            session.model_dump(mode="json")
+        ).model_dump(mode="json")
+        attachment = public["turns"][0]["learner_attachments"][0]
+        self.assertEqual(attachment["attachment_id"], "attachment-public-1")
+        self.assertNotIn("stored_path", attachment)
+
+        schema_text = str(StudySessionResponse.model_json_schema())
+        self.assertNotIn("stored_path", schema_text)
 
     def test_legacy_question_payload_is_migrated_then_redacted(self) -> None:
         session = self._question_session(session_id="session-legacy-question")

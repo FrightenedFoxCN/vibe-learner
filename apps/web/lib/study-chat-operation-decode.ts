@@ -209,7 +209,7 @@ export function decodeStudyChatOperationReceipt<
     try {
       result = options.decodeResult(resultRecord, resultPath, evidence);
     } catch (error) {
-      if (isStudyChatOperationDecodeError(error)) {
+      if (isStudyChatOperationDecodeError(error) || isStudySessionDecodeError(error)) {
         throw error;
       }
       throw new StudyChatOperationDecodeError(
@@ -275,6 +275,11 @@ export function decodeStudyChatOperationReceipt<
     updatedAt,
     completedAt,
   };
+}
+
+function isStudySessionDecodeError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error &&
+    error.code === "study_session_response_decode_error";
 }
 
 function record(raw: unknown, path: string): Record<string, unknown> {

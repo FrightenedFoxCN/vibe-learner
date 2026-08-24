@@ -610,7 +610,23 @@ class UpdateStudySessionRequest(BaseModel):
         return value
 
 
+class LearnerAttachmentResponse(BaseModel):
+    """Public attachment projection; local staging/storage paths stay private."""
+
+    attachment_id: str
+    name: str
+    mime_type: str
+    kind: str
+    size_bytes: int = 0
+    image_url: str = ""
+    text_excerpt: str = ""
+    source: str = "learner_upload"
+    page_count: int = 0
+    previewable: bool = False
+
+
 class DialogueTurnResponse(DialogueTurnRecord):
+    learner_attachments: list[LearnerAttachmentResponse]
     interactive_question: StudyQuestionPromptResponseV1 | None = None
 
     @model_validator(mode="before")
