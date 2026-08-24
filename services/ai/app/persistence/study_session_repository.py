@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from app.models.domain import (
     DialogueTurnRecord,
     LearnerAttachmentRecord,
+    LearningPlanRecord,
     StudyChatResult,
     StudySessionRecord,
 )
@@ -19,7 +20,10 @@ from app.models.study_chat_operation import (
     StudyChatOperationStatus,
     study_chat_response_digest,
 )
-from app.models.study_chat_effect import StudyPlanConfirmationPreparedEffectBatchV1
+from app.models.study_chat_effect import (
+    StudyChatPreparedEffectBatchV1,
+    StudyPlanConfirmationEffectProposalV1,
+)
 from app.models.study_question import (
     STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION,
     STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION,
@@ -34,11 +38,12 @@ from app.models.study_question import (
 )
 from app.persistence.database import Database
 from app.persistence.models import (
+    LearningPlanRow,
     StudyChatOperationRow,
     StudyQuestionAttemptRow,
     StudySessionRow,
 )
-from app.services.study_chat_effects import commit_study_plan_confirmation_effects
+from app.services.study_chat_effects import commit_study_chat_effects
 
 
 class StudySessionRepository:
@@ -406,7 +411,7 @@ class StudySessionRepository:
         prepared_study_unit_id: str | None,
         completed_follow_up_id: str,
         cancel_pending_follow_ups: bool,
-        prepared_effect_batch: StudyPlanConfirmationPreparedEffectBatchV1 | None = None,
+        prepared_effect_batch: StudyChatPreparedEffectBatchV1 | None = None,
         build_response_payload: Callable[[StudySessionRecord], dict[str, object]],
     ) -> tuple[StudySessionRecord, dict[str, object]]:
         """Append one Turn and publish its durable receipt in one transaction."""
@@ -463,16 +468,37 @@ class StudySessionRepository:
                     if follow_up.status == "pending":
                         follow_up.status = "canceled"
                         follow_up.canceled_at = committed_at
-            commit_study_plan_confirmation_effects(
+            allowed_schedule_ids: set[str] = set()
+            has_plan_effect = bool(
+                prepared_effect_batch
+                and any(
+                    isinstance(effect.proposal, StudyPlanConfirmationEffectProposalV1)
+                    for effect in prepared_effect_batch.effects
+                )
+            )
+            if has_plan_effect and record.plan_id:
+                plan_row = session.get(LearningPlanRow, record.plan_id)
+                if plan_row is None:
+                    raise ValueError("study_chat_effect_plan_target_missing")
+                plan = LearningPlanRecord.model_validate(plan_row.payload)
+                if plan.id != record.plan_id:
+                    raise ValueError("study_chat_effect_plan_target_mismatch")
+                allowed_schedule_ids = {item.id for item in plan.schedule}
+            committed_effect_batch = commit_study_chat_effects(
                 record=record,
                 batch=prepared_effect_batch,
                 expected_operation_id=operation_id,
+                allowed_schedule_ids=allowed_schedule_ids,
                 committed_at=committed_at,
             )
             record.updated_at = committed_at
             record.revision = expected_revision + 1
             record = StudySessionRecord.model_validate(record.model_dump(mode="json"))
             response_payload = build_response_payload(record)
+            if committed_effect_batch is not None:
+                response_payload["_committed_effect_batch"] = (
+                    committed_effect_batch.model_dump(mode="json")
+                )
             response_digest = study_chat_response_digest(response_payload)
             claimed_session = session.execute(
                 update(StudySessionRow)

@@ -701,7 +701,7 @@ Operation status semantics:
 - `not_committed`: terminal; retry is allowed only when `safe_to_retry=true`
 - `uncertain`: terminal ambiguity after execution may have started; never automatically replay
 
-This receipt proves admission identity and final Study Turn/result read-back. It does not prove memory, affinity, follow-up, Scene, projection/overlay, plan-confirmation, attachment/file, generated-image, or upstream provider effects are exactly once, and it is not a v3 Harness trace.
+This receipt proves admission identity and final Study Turn/result read-back. Memory upsert, affinity delta, and plan-confirmation proposals now share that final database transaction and a server-only per-effect committed projection; the public response intentionally omits the internal batch. This still does not prove follow-up, Scene, projection/overlay, attachment/file, generated-image, or upstream provider effects are exactly once, and it is not a v3 Harness trace or durable prepare journal.
 
 ### `GET /study-sessions/{session_id}`
 

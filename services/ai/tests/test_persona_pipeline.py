@@ -1313,6 +1313,50 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(updated.affinity_state.level, "neutral")
         self.assertEqual(updated.affinity_state.score, 12)
 
+    def test_study_chat_memory_and_affinity_tools_prepare_overlay_without_writing(self) -> None:
+        session = self.study_session_service.create_session(
+            document_id="doc-effect-overlay",
+            persona_id="mentor-aurora",
+            study_unit_id="unit-effect-overlay",
+        )
+        collector = StudyChatEffectCollector(
+            operation_id="study-chat-op-effect-overlay",
+            session_id=session.id,
+            plan_id=None,
+            allowed_schedule_ids=set(),
+        )
+        runtime = StudySessionChatToolRuntime(
+            session_service=self.study_session_service,
+            plan_service=self.plan_service,
+            session_id=session.id,
+            effect_collector=collector,
+        )
+
+        memory_result = runtime.execute_tool(
+            "write_session_memory",
+            {"key": "focus", "content": "matrix order"},
+        )
+        affinity_result = runtime.execute_tool(
+            "update_affinity_state",
+            {"delta": 7, "reason": "active recall"},
+        )
+        persisted = self.study_session_service.require_session(session.id)
+        self.assertEqual(persisted.session_memory, [])
+        self.assertEqual(persisted.affinity_state.score, 0)
+        self.assertEqual(memory_result["effect_state"], "prepared")
+        self.assertFalse(memory_result["committed"])
+        self.assertEqual(affinity_result["effect_state"], "prepared")
+        self.assertFalse(affinity_result["committed"])
+        memory_overlay = runtime.execute_tool(
+            "read_session_memory",
+            {"key": "focus"},
+        )
+        affinity_overlay = runtime.execute_tool("read_affinity_state", {})
+        self.assertEqual(memory_overlay["memory_items"][0]["content"], "matrix order")
+        self.assertFalse(memory_overlay["memory_items"][0]["committed"])
+        self.assertEqual(affinity_overlay["score"], 7)
+        self.assertFalse(affinity_overlay["committed"])
+
     def test_prepare_study_chat_attachments_supports_image_and_text(self) -> None:
         from fastapi import UploadFile
 
@@ -4465,7 +4509,9 @@ class PersonaPipelineTests(unittest.TestCase):
         )
 
         self.assertTrue(payload["requires_confirmation"])
-        self.assertEqual(payload["prepared_effect"]["slot"], 0)
+        self.assertEqual(payload["effect_state"], "prepared")
+        self.assertFalse(payload["committed"])
+        self.assertEqual(payload["predicted_state"]["slot"], 0)
         refreshed_session = self.study_session_service.require_session(session.id)
         self.assertEqual(refreshed_session.plan_confirmations, [])
         refreshed_plan = self.plan_service.require_plan(plan.id)

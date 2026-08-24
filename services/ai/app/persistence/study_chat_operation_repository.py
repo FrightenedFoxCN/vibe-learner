@@ -17,9 +17,13 @@ from app.models.study_chat_operation import (
     study_chat_request_fingerprint,
     study_chat_response_digest,
 )
+from app.models.study_chat_effect import StudyChatCommittedEffectBatchV1
 from app.persistence.database import Database
 from app.models.domain import StudySessionRecord
 from app.persistence.models import StudyChatOperationRow, StudySessionRow
+from app.services.study_chat_effects import (
+    validate_study_chat_committed_effect_read_back,
+)
 
 
 class StudyChatOperationRepository:
@@ -397,6 +401,17 @@ def _validate_committed_read_back(
     ]
     if len(matching_response_turns) != 1:
         raise ValueError("study_chat_operation_committed_response_turn_missing")
+    raw_effect_batch = record.response_payload.get("_committed_effect_batch")
+    if raw_effect_batch is not None:
+        effect_batch = StudyChatCommittedEffectBatchV1.model_validate(
+            raw_effect_batch
+        )
+        if effect_batch.operation_id != record.operation_id:
+            raise ValueError("study_chat_operation_effect_operation_mismatch")
+        validate_study_chat_committed_effect_read_back(
+            batch=effect_batch,
+            record=response_session,
+        )
     current_payload = dict(session_row.payload or {})
     current_payload["revision"] = session_row.revision
     current_payload["last_turn_sequence"] = session_row.last_turn_sequence

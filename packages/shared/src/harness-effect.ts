@@ -68,6 +68,7 @@ export type StudyPlanConfirmationEffectAction =
 export interface StudyPlanConfirmationEffectProposalV1 {
   schema_name: "StudyPlanConfirmationEffectProposalV1";
   schema_version: "study-plan-confirmation-effect-v1";
+  effect_kind: "plan_confirmation";
   action: StudyPlanConfirmationEffectAction;
   course_title: string;
   schedule_ids: string[];
@@ -75,9 +76,31 @@ export interface StudyPlanConfirmationEffectProposalV1 {
   note: string;
 }
 
+export interface StudyMemoryUpsertEffectProposalV1 {
+  schema_name: "StudyMemoryUpsertEffectProposalV1";
+  schema_version: "study-memory-upsert-effect-v1";
+  effect_kind: "memory_upsert";
+  key: string;
+  content: string;
+}
+
+export interface StudyAffinityDeltaEffectProposalV1 {
+  schema_name: "StudyAffinityDeltaEffectProposalV1";
+  schema_version: "study-affinity-delta-effect-v1";
+  effect_kind: "affinity_delta";
+  delta: number;
+  reason: string;
+}
+
+export type StudyChatEffectProposalV1 =
+  | StudyMemoryUpsertEffectProposalV1
+  | StudyAffinityDeltaEffectProposalV1
+  | StudyPlanConfirmationEffectProposalV1;
+
 export interface StudyPlanConfirmationCommittedProjectionV1 {
   schema_name: "StudyPlanConfirmationCommittedProjectionV1";
   schema_version: "study-plan-confirmation-committed-projection-v1";
+  effect_kind: "plan_confirmation";
   operation_id: string;
   effect_batch_id: string;
   effect_id: string;
@@ -88,6 +111,56 @@ export interface StudyPlanConfirmationCommittedProjectionV1 {
   plan_id: string;
   status: "pending";
   created_at: string;
+}
+
+export interface StudyMemoryUpsertCommittedProjectionV1 {
+  schema_name: "StudyMemoryUpsertCommittedProjectionV1";
+  schema_version: "study-memory-upsert-committed-projection-v1";
+  effect_kind: "memory_upsert";
+  operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  session_id: string;
+  memory_id: string;
+  key: string;
+  content: string;
+  source: "tool_call";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudyAffinityDeltaCommittedProjectionV1 {
+  schema_name: "StudyAffinityDeltaCommittedProjectionV1";
+  schema_version: "study-affinity-delta-committed-projection-v1";
+  effect_kind: "affinity_delta";
+  operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  session_id: string;
+  event_id: string;
+  delta: number;
+  reason: string;
+  source: "tool_call";
+  score: number;
+  level: string;
+  summary: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type StudyChatCommittedEffectProjectionV1 =
+  | StudyMemoryUpsertCommittedProjectionV1
+  | StudyAffinityDeltaCommittedProjectionV1
+  | StudyPlanConfirmationCommittedProjectionV1;
+
+export interface StudyChatCommittedEffectBatchV1 {
+  schema_name: "StudyChatCommittedEffectBatchV1";
+  schema_version: "study-chat-committed-effect-batch-v1";
+  operation_id: string;
+  effect_batch_id: string;
+  effects: StudyChatCommittedEffectProjectionV1[];
 }
 
 function deepFreeze<T>(value: T): Readonly<T> {
@@ -101,6 +174,24 @@ function deepFreeze<T>(value: T): Readonly<T> {
 }
 
 export const HARNESS_EFFECT_ADAPTER_POLICIES = deepFreeze({
+  study_affinity_delta: {
+    name: "study_affinity_delta",
+    version: "study-affinity-delta-v1",
+    boundary_kind: "database_write",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "database_transaction",
+    compensation_policy: "not_applicable",
+    read_back_policy: "exact_projection",
+  },
+  study_memory_upsert: {
+    name: "study_memory_upsert",
+    version: "study-memory-upsert-v1",
+    boundary_kind: "database_write",
+    prepare_policy: "validate_and_assign_identity",
+    commit_policy: "database_transaction",
+    compensation_policy: "not_applicable",
+    read_back_policy: "exact_projection",
+  },
   study_plan_confirmation_create: {
     name: "study_plan_confirmation_create",
     version: "study-plan-confirmation-create-v1",

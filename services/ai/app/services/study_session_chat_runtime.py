@@ -14,6 +14,8 @@ from app.models.domain import (
     SessionProjectedPdfRecord,
 )
 from app.models.study_chat_effect import (
+    StudyAffinityDeltaEffectProposalV1,
+    StudyMemoryUpsertEffectProposalV1,
     StudyPlanConfirmationEffectAction,
     StudyPlanConfirmationEffectProposalV1,
 )
@@ -637,62 +639,100 @@ class StudySessionChatToolRuntime:
             session = self._session_service.require_session(self.session_id)
             requested_key = str(arguments.get("key") or "").strip()
             limit = max(1, min(int(arguments.get("limit") or 6), 12))
-            items = session.session_memory
+            items = (
+                self._effect_collector.preview_session_memory(session.session_memory)
+                if self._effect_collector is not None
+                else [item.model_dump(mode="json") for item in session.session_memory]
+            )
             if requested_key:
-                items = [item for item in items if item.key == requested_key]
+                items = [item for item in items if item.get("key") == requested_key]
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "memory_items": [item.model_dump(mode="json") for item in items[-limit:]],
+                "memory_items": items[-limit:],
             }
 
         if tool_name == "write_session_memory":
             key = str(arguments.get("key") or "").strip()
             content = str(arguments.get("content") or "").strip()
-            updated_session = self._session_service.upsert_session_memory(
-                session_id=self.session_id,
-                key=key,
-                content=content,
+            if not key or not content:
+                raise HTTPException(status_code=422, detail="session_memory_invalid")
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyMemoryUpsertEffectProposalV1(key=key, content=content)
+            effect = self._effect_collector.prepare_memory_upsert(proposal)
+            session = self._session_service.require_session(self.session_id)
+            predicted = next(
+                item
+                for item in reversed(
+                    self._effect_collector.preview_session_memory(session.session_memory)
+                )
+                if item.get("key") == key
             )
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "saved_key": key,
-                "memory_count": len(updated_session.session_memory),
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": {
+                    "memory": predicted,
+                    "memory_count": len(
+                        self._effect_collector.preview_session_memory(
+                            session.session_memory
+                        )
+                    ),
+                },
             }
 
         if tool_name == "read_affinity_state":
             session = self._session_service.require_session(self.session_id)
-            affinity = session.affinity_state
+            affinity = (
+                self._effect_collector.preview_affinity_state(session.affinity_state)
+                if self._effect_collector is not None
+                else session.affinity_state.model_dump(mode="json")
+            )
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "score": affinity.score,
-                "level": affinity.level,
-                "summary": affinity.summary,
-                "updated_at": affinity.updated_at,
-                "recent_events": [
-                    item.model_dump(mode="json")
-                    for item in affinity.events[-6:]
-                ],
+                "score": affinity["score"],
+                "level": affinity["level"],
+                "summary": affinity["summary"],
+                "updated_at": affinity["updated_at"],
+                "effect_state": affinity.get("effect_state", "committed"),
+                "committed": affinity.get("committed", True),
+                "recent_events": list(affinity.get("events") or [])[-6:],
             }
 
         if tool_name == "update_affinity_state":
-            delta = max(-20, min(int(arguments.get("delta") or 0), 20))
+            delta = int(arguments.get("delta") or 0)
+            if delta < -20 or delta > 20:
+                raise HTTPException(status_code=422, detail="affinity_delta_invalid")
             reason = str(arguments.get("reason") or "").strip()
-            updated_session = self._session_service.update_affinity(
-                session_id=self.session_id,
+            if self._effect_collector is None:
+                raise HTTPException(status_code=409, detail="study_chat_effect_collector_required")
+            proposal = StudyAffinityDeltaEffectProposalV1(
                 delta=delta,
                 reason=reason,
             )
-            affinity = updated_session.affinity_state
+            effect = self._effect_collector.prepare_affinity_delta(proposal)
+            session = self._session_service.require_session(self.session_id)
+            affinity = self._effect_collector.preview_affinity_state(
+                session.affinity_state
+            )
             return {
                 "ok": True,
                 "tool_name": tool_name,
-                "score": affinity.score,
-                "level": affinity.level,
-                "summary": affinity.summary,
-                "updated_at": affinity.updated_at,
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": proposal.model_dump(mode="json"),
+                "predicted_state": {
+                    "score": affinity["score"],
+                    "level": affinity["level"],
+                    "summary": affinity["summary"],
+                },
             }
 
         if tool_name == "schedule_session_follow_up":
@@ -1066,10 +1106,12 @@ class StudySessionChatToolRuntime:
                 "ok": True,
                 "tool_name": tool_name,
                 "requires_confirmation": True,
-                "prepared_effect": {
-                    "effect_id": effect.effect_id,
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": effect.proposal.model_dump(mode="json"),
+                "predicted_state": {
                     "slot": effect.slot,
-                    "action_type": effect.proposal.action.value,
                     "plan_id": self.plan_id,
                     "preview_lines": [
                         f"课程标题：{plan.course_title} -> {course_title}"
@@ -1103,10 +1145,12 @@ class StudySessionChatToolRuntime:
                 "ok": True,
                 "tool_name": tool_name,
                 "requires_confirmation": True,
-                "prepared_effect": {
-                    "effect_id": effect.effect_id,
+                "effect_state": "prepared",
+                "committed": False,
+                "prepared_effect_id": effect.effect_id,
+                "prepared_proposal": effect.proposal.model_dump(mode="json"),
+                "predicted_state": {
                     "slot": effect.slot,
-                    "action_type": effect.proposal.action.value,
                     "plan_id": self.plan_id,
                     "preview_lines": [
                         f"{schedule_id} | {schedule_map[schedule_id].title} -> {status}"
