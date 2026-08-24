@@ -77,6 +77,7 @@ class Container:
             self.document_parser,
             self.study_arrangement_service,
         )
+        self.document_service.recover_abandoned_operations()
         self.plan_service = LearningPlanService(
             self.store,
             self.study_arrangement_service,

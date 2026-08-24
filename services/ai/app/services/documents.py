@@ -10,6 +10,13 @@ from fastapi import HTTPException, UploadFile
 
 from app.core.logging import get_logger
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
+from app.persistence.document_process_operation_repository import (
+    DocumentProcessAdmissionRace,
+    DocumentProcessAlreadyActive,
+    DocumentProcessDocumentNotFound,
+    DocumentProcessOperationRepository,
+    DocumentProcessStateConflict,
+)
 from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
 from app.services.stream_interrupts import StreamInterruptedError
@@ -24,10 +31,14 @@ class DocumentService:
         store: LocalJsonStore,
         parser: DocumentParser,
         arrangement_service: StudyArrangementService,
+        process_repository: DocumentProcessOperationRepository | None = None,
     ) -> None:
         self.store = store
         self.parser = parser
         self.arrangement_service = arrangement_service
+        self.process_repository = process_repository or DocumentProcessOperationRepository(
+            store.database
+        )
 
     def create_document(self, file: UploadFile) -> DocumentRecord:
         document_id = f"doc-{uuid4().hex[:10]}"
@@ -74,29 +85,34 @@ class DocumentService:
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
     ) -> DocumentRecord:
-        documents = self._load_documents()
-        document = self.require_document(document_id, documents)
-        document.status = "processing"
-        document.updated_at = _now()
-        self._save_documents(documents)
-        _emit_progress(
-            progress_callback,
-            "document_processing_started",
-            {
-                "document_id": document.id,
-                "force_ocr": force_ocr,
-                "stored_path": document.stored_path,
-            },
-        )
-        logger.info(
-            "document.processing.start id=%s force_ocr=%s path=%s",
-            document.id,
-            force_ocr,
-            document.stored_path,
-        )
-        _call_interrupt(interrupt_check)
-
         try:
+            operation, document = self.process_repository.admit(
+                document_id=document_id,
+                force_ocr=force_ocr,
+            )
+        except DocumentProcessDocumentNotFound as exc:
+            raise HTTPException(status_code=404, detail="document_not_found") from exc
+        except DocumentProcessAlreadyActive as exc:
+            raise HTTPException(status_code=409, detail="document_processing_already_active") from exc
+        except (DocumentProcessStateConflict, DocumentProcessAdmissionRace) as exc:
+            raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
+        try:
+            _emit_progress(
+                progress_callback,
+                "document_processing_started",
+                {
+                    "document_id": document.id,
+                    "force_ocr": force_ocr,
+                    "stored_path": document.stored_path,
+                },
+            )
+            logger.info(
+                "document.processing.start id=%s force_ocr=%s path=%s",
+                document.id,
+                force_ocr,
+                document.stored_path,
+            )
+            _call_interrupt(interrupt_check)
             debug_report = self.parser.parse(
                 document_id=document.id,
                 title=document.title,
@@ -105,79 +121,93 @@ class DocumentService:
                 progress_callback=progress_callback,
                 interrupt_check=interrupt_check,
             )
-        except StreamInterruptedError:
-            document.status = "uploaded"
-            document.ocr_status = "pending"
+            _call_interrupt(interrupt_check)
+            document.status = "processed"
+            document.ocr_status = debug_report.ocr_status
+            study_units = self.arrangement_service.build_study_units(
+                document=document,
+                debug_report=debug_report,
+            )
+            _emit_progress(
+                progress_callback,
+                "study_units_built",
+                {
+                    "document_id": document.id,
+                    "study_unit_count": len(study_units),
+                    "plannable_count": len([unit for unit in study_units if unit.include_in_plan]),
+                },
+            )
+            _call_interrupt(interrupt_check)
+            debug_report.study_units = study_units
+            document.study_units = study_units
+            document.study_unit_count = len(study_units)
+            document.sections = [
+                DocumentSection(
+                    id=unit.id,
+                    document_id=unit.document_id,
+                    title=unit.title,
+                    page_start=unit.page_start,
+                    page_end=unit.page_end,
+                    level=1,
+                )
+                for unit in study_units
+                if unit.include_in_plan
+            ]
+            document.page_count = debug_report.page_count
+            document.chunk_count = len(debug_report.chunks)
+            document.preview_excerpt = next(
+                (page.text_preview for page in debug_report.pages if page.text_preview),
+                "",
+            )
+            document.debug_ready = True
             document.updated_at = _now()
-            self._save_documents(documents)
+            self.process_repository.commit_success(
+                operation_id=operation.operation_id,
+                document=document,
+                debug_report=debug_report,
+            )
+        except StreamInterruptedError:
+            self.process_repository.mark_interrupted(operation_id=operation.operation_id)
+            self._mirror_current_document_projection(document.id)
             logger.info("document.processing.interrupted id=%s", document.id)
             raise
         except fitz.FileDataError as exc:
-            document.status = "failed"
-            document.ocr_status = "failed"
-            document.updated_at = _now()
-            self._save_documents(documents)
+            self.process_repository.mark_failed(
+                operation_id=operation.operation_id,
+                error_code="document_process_invalid_pdf",
+            )
+            self._mirror_current_document_projection(document.id)
             logger.exception("document.processing.invalid_pdf id=%s", document.id)
             raise HTTPException(status_code=400, detail="invalid_or_unsupported_pdf") from exc
-        except Exception:
-            document.status = "failed"
-            document.ocr_status = "failed"
-            document.updated_at = _now()
-            self._save_documents(documents)
+        except Exception as exc:
+            self.process_repository.mark_failed(
+                operation_id=operation.operation_id,
+                error_code=_document_process_error_code(exc),
+            )
+            self._mirror_current_document_projection(document.id)
             logger.exception("document.processing.failed id=%s", document.id)
             raise
-        _call_interrupt(interrupt_check)
-        document.status = "processed"
-        document.ocr_status = debug_report.ocr_status
-        study_units = self.arrangement_service.build_study_units(
-            document=document,
-            debug_report=debug_report,
-        )
-        _emit_progress(
-            progress_callback,
-            "study_units_built",
-            {
-                "document_id": document.id,
-                "study_unit_count": len(study_units),
-                "plannable_count": len([unit for unit in study_units if unit.include_in_plan]),
-            },
-        )
-        debug_report.study_units = study_units
-        document.study_units = study_units
-        document.study_unit_count = len(study_units)
-        document.sections = [
-            DocumentSection(
-                id=unit.id,
-                document_id=unit.document_id,
-                title=unit.title,
-                page_start=unit.page_start,
-                page_end=unit.page_end,
-                level=1,
+
+        self._mirror_current_document_projection(document.id, debug_report=debug_report)
+        try:
+            _emit_progress(
+                progress_callback,
+                "document_processing_completed",
+                {
+                    "document_id": document.id,
+                    "page_count": document.page_count,
+                    "chunk_count": document.chunk_count,
+                    "study_unit_count": document.study_unit_count,
+                    "ocr_status": document.ocr_status,
+                },
             )
-            for unit in study_units
-            if unit.include_in_plan
-        ]
-        document.page_count = debug_report.page_count
-        document.chunk_count = len(debug_report.chunks)
-        document.preview_excerpt = next(
-            (page.text_preview for page in debug_report.pages if page.text_preview),
-            "",
-        )
-        document.debug_ready = True
-        document.updated_at = _now()
-        self.store.save_item("document_debug", document.id, debug_report)
-        self._save_documents(documents)
-        _emit_progress(
-            progress_callback,
-            "document_processing_completed",
-            {
-                "document_id": document.id,
-                "page_count": document.page_count,
-                "chunk_count": document.chunk_count,
-                "study_unit_count": document.study_unit_count,
-                "ocr_status": document.ocr_status,
-            },
-        )
+        except Exception:
+            logger.warning(
+                "document.processing.progress_after_commit_ignored id=%s operation_id=%s",
+                document.id,
+                operation.operation_id,
+                exc_info=True,
+            )
         logger.info(
             "document.processing.end id=%s pages=%s chunks=%s raw_sections=%s study_units=%s extraction=%s ocr_applied=%s warnings=%s",
             document.id,
@@ -190,6 +220,14 @@ class DocumentService:
             len(debug_report.warnings),
         )
         return document
+
+    def recover_abandoned_operations(self) -> int:
+        recovered = self.process_repository.recover_abandoned()
+        for operation in recovered:
+            self._mirror_current_document_projection(operation.document_id)
+        if recovered:
+            logger.warning("document.processing.recovered_abandoned count=%s", len(recovered))
+        return len(recovered)
 
     def list_documents(self) -> list[DocumentRecord]:
         return self._load_documents()
@@ -258,6 +296,18 @@ class DocumentService:
     def _save_documents(self, documents: list[DocumentRecord]) -> None:
         self.store.save_list("documents", documents)
 
+    def _mirror_current_document_projection(
+        self,
+        document_id: str,
+        *,
+        debug_report: DocumentDebugRecord | None = None,
+    ) -> None:
+        documents = self._load_documents()
+        if not any(document.id == document_id for document in documents):
+            return
+        self.store.mirror_document_projection(documents, debug_report)
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -276,3 +326,9 @@ def _call_interrupt(callback: Callable[[], None] | None) -> None:
     if callback is None:
         return
     callback()
+
+
+def _document_process_error_code(exc: Exception) -> str:
+    name = type(exc).__name__.strip().lower()
+    normalized = "".join(character if character.isalnum() else "_" for character in name)
+    return f"document_process_{normalized or 'failed'}"[:128]

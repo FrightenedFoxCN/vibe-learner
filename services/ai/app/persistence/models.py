@@ -32,6 +32,50 @@ class DocumentRow(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
 
 
+class DocumentProcessOperationRow(Base):
+    __tablename__ = "document_process_operations"
+    __table_args__ = (
+        UniqueConstraint(
+            "document_id",
+            "active_slot",
+            name="uq_document_process_operation_active_slot",
+        ),
+        CheckConstraint(
+            "(status = 'running' AND active_slot = 1 AND projection_state = 'pending' "
+            "AND completed_at = '' AND error_code = '') OR "
+            "(status = 'committed' AND active_slot IS NULL AND projection_state = 'committed' "
+            "AND completed_at <> '' AND error_code = '' "
+            "AND document_digest <> '' AND debug_digest <> '' AND commit_contract_version <> '') OR "
+            "(status IN ('failed', 'interrupted') AND active_slot IS NULL "
+            "AND projection_state = 'not_committed' AND completed_at <> '' AND error_code <> '' "
+            "AND document_digest = '' AND debug_digest = '' AND commit_contract_version = '')",
+            name="ck_document_process_operation_state",
+        ),
+    )
+
+    operation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    document_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("documents.id", ondelete="RESTRICT"),
+        index=True,
+    )
+    request_schema_version: Mapped[str] = mapped_column(String(64))
+    fingerprint_contract_version: Mapped[str] = mapped_column(String(64))
+    request_fingerprint: Mapped[str] = mapped_column(String(64))
+    request_payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    active_slot: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    projection_state: Mapped[str] = mapped_column(String(32))
+    base_document_payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    document_digest: Mapped[str] = mapped_column(String(64), default="")
+    debug_digest: Mapped[str] = mapped_column(String(64), default="")
+    commit_contract_version: Mapped[str] = mapped_column(String(64), default="")
+    error_code: Mapped[str] = mapped_column(String(128), default="")
+    created_at: Mapped[str] = mapped_column(String(64))
+    updated_at: Mapped[str] = mapped_column(String(64), index=True)
+    completed_at: Mapped[str] = mapped_column(String(64), default="")
+
+
 class LearningPlanRow(Base):
     __tablename__ = "learning_plans"
 

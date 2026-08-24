@@ -119,9 +119,19 @@ See `plan-text-contract.md` before changing these meanings.
 2. OCR fallback when extraction is insufficient or forced;
 3. raw Section detection and Chunk generation;
 4. heuristic cleanup into ordered Study Units;
-5. document/debug persistence and stream evidence.
+5. atomic document/debug projection commit and stream evidence.
 
-Document and debug writes are still separate operations rather than one atomic Harness commit. This is tracked by `HRN-DOC-001`.
+Processing first admits a versioned request into the independent
+`document_process_operations` journal and marks the Document `processing` in
+the same transaction. Cleanup then runs without persisting either projection.
+Only after parsing and cleanup succeed are the Document projection, Debug
+projection, projection digests, and terminal operation receipt committed in one
+database transaction. A failed or interrupted operation records explicit
+`not_committed` truth, and startup recovery terminalizes abandoned `running`
+operations so a process exit cannot strand the Document indefinitely. JSON
+files are best-effort compatibility mirrors after the authoritative database
+commit. This repairs `AUD-DOC-COMMIT-001`; extraction/OCR/cleanup v3 trace,
+protected replay, and eval remain tracked by `HRN-DOC-001`.
 
 ### 2. Plan generation
 
@@ -198,7 +208,7 @@ The current frontend renderer is a placeholder adapter. This keeps Study UI, cha
 
 `Database` and SQLAlchemy are authoritative for structured records. Important tables include:
 
-- documents, learning plans, study sessions, personas, persona cards;
+- documents, document process operations, learning plans, study sessions, personas, persona cards;
 - scene setup/library/reusable nodes and session-scene state;
 - document debug, planning traces, stream reports, runtime settings, model-tool config, and token usage;
 - normalized `tavern_rooms`, `tavern_participants`, `tavern_messages`, `tavern_runs`, and `tavern_run_steps`.
@@ -224,7 +234,8 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - no background queue, Live2D, or TTS runtime;
 - OCR cleanup remains heuristic-heavy;
 - tool-enabled model calls increase provider latency and timeout pressure;
-- Study Chat has durable request admission and a mixed transactional batch for all current Session database effects, but Scene/file/provider effects remain outside that boundary and execution ambiguity remains explicit `uncertain`;
+- Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, but its extraction/OCR/cleanup stages are not yet v3-adopted;
+- Study Chat has durable request admission and a mixed transactional batch for all current Session database effects, while file/provider uncertainty remains explicit and full v3 protected replay/eval is still open;
 - production Harness v3 adoption is incomplete outside schema/context foundations;
 - Tavern prompt/token/scene-depth budgets and eval metrics remain open;
 - `npm run lint:web` invokes removed Next.js 16 behavior and is tracked by `QG-001`.

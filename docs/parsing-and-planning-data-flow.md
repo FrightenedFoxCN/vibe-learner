@@ -98,15 +98,23 @@ Key cleanup behavior:
 
 ### Parse persistence
 
-`DocumentService.process_document()` persists three backend-facing artifacts:
+`DocumentService.process_document()` persists three backend-facing projections:
 
-1. `services/ai/data/documents.json`
+1. the database-authoritative `documents` row
    Updates the `DocumentRecord` with:
    `status`, `ocr_status`, `sections`, `study_units`, `study_unit_count`, `page_count`, `chunk_count`, `preview_excerpt`, `debug_ready`.
-2. `services/ai/data/document_debug/{document_id}.json`
+2. the database-authoritative `document_debug_records` row
    Stores the full `DocumentDebugRecord`, including cleaned `study_units`.
 3. `services/ai/data/document_process_stream/{document_id}.json`
    Stores stream/progress events through `StreamReportRecorder`.
+
+Before parsing, `document_process_operations` durably records the versioned
+request/fingerprint and base Document projection. The first two projections and
+the committed operation receipt then share one transaction and are verified by
+projection digests. Failed/interrupted operations are explicit
+`not_committed`; abandoned `running` operations are terminalized at startup.
+The `documents.json` and `document_debug/` files are best-effort compatibility
+mirrors after the database commit, not the commit boundary.
 
 Important field transition:
 

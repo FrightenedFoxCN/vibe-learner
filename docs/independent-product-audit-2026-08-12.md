@@ -117,6 +117,17 @@ follow-ups can be scheduled. The user cannot distinguish `not_committed`,
 
 ## P1 — Document cleanup and persistence are outside the failure boundary
 
+### Implementation status (2026-08-24)
+
+The repair now durably admits a versioned operation before parsing, commits the
+Document projection, Debug projection, digests, and terminal receipt in one
+transaction, records explicit failed/interrupted `not_committed` outcomes, and
+terminalizes abandoned operations during startup. Implementer fault gates cover
+cleanup, each projection boundary, interruption, forced OCR, startup recovery,
+read-back tampering, and post-commit progress failure. The finding remains open
+until the repository-required independent fault review is recorded; full v3
+Document adoption remains separate under `HRN-DOC-001`.
+
 ### Evidence
 
 `services/ai/app/services/documents.py` catches parser failures, but Study Unit

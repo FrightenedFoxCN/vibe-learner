@@ -380,6 +380,15 @@ Optional request body:
 
 Returns the processed `DocumentRecord`.
 
+The service durably admits one process operation before parsing. The final
+Document and Debug projections commit atomically with a terminal operation
+receipt; cleanup or projection failure records `not_committed` and returns the
+Document to a durable non-`processing` state. An interrupted request restores
+its pre-process Document projection. A concurrent active process for the same
+Document returns `409`, and abandoned operations are terminalized during
+service startup. The operation journal is server-only and does not add fields
+to `DocumentRecord`.
+
 ### `POST /documents/{document_id}/process/stream`
 
 Runs parsing as an NDJSON stream.
@@ -427,6 +436,12 @@ The final success event also includes a document payload:
   }
 }
 ```
+
+Stream delivery is progress evidence, not commit evidence. A callback or client
+disconnect after the atomic database commit cannot reverse the committed
+Document/Debug result. Versioned event identity, resume tokens, and strict
+frontend terminal decoding remain tracked separately by `SCH-WEB-STREAM-001`
+and `HRN-WEB-STREAM-001`.
 
 ### `GET /documents/{document_id}/status`
 

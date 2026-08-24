@@ -1,0 +1,413 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Callable
+from uuid import uuid4
+
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
+from app.models.document_process_operation import (
+    DOCUMENT_PROCESS_COMMIT_CONTRACT_VERSION,
+    DOCUMENT_PROCESS_FINGERPRINT_CONTRACT_VERSION,
+    DOCUMENT_PROCESS_REQUEST_SCHEMA_VERSION,
+    DocumentProcessOperationRecord,
+    DocumentProcessOperationStatus,
+    DocumentProcessProjectionState,
+    DocumentProcessRequestPayload,
+    document_process_projection_digest,
+    document_process_request_fingerprint,
+)
+from app.models.domain import DocumentDebugRecord, DocumentRecord
+from app.persistence.database import Database
+from app.persistence.models import (
+    DocumentDebugRow,
+    DocumentProcessOperationRow,
+    DocumentRow,
+)
+
+
+class DocumentProcessOperationRepository:
+    """Durable terminal truth and atomic projection boundary for Document processing."""
+
+    def __init__(
+        self,
+        database: Database,
+        *,
+        fault_injector: Callable[[str], None] | None = None,
+    ) -> None:
+        self.database = database
+        self.fault_injector = fault_injector
+
+    def admit(
+        self,
+        *,
+        document_id: str,
+        force_ocr: bool,
+    ) -> tuple[DocumentProcessOperationRecord, DocumentRecord]:
+        operation_id = f"document-process-op-{uuid4().hex[:16]}"
+        request_payload = DocumentProcessRequestPayload(
+            document_id=document_id,
+            force_ocr=force_ocr,
+        )
+        now = _now()
+        try:
+            with self.database.session() as session:
+                document_row = session.get(DocumentRow, document_id)
+                if document_row is None:
+                    raise DocumentProcessDocumentNotFound(document_id)
+                active = session.scalar(
+                    select(DocumentProcessOperationRow).where(
+                        DocumentProcessOperationRow.document_id == document_id,
+                        DocumentProcessOperationRow.active_slot == 1,
+                    )
+                )
+                if active is not None:
+                    raise DocumentProcessAlreadyActive(document_id, active.operation_id)
+                base_document = DocumentRecord.model_validate(document_row.payload or {})
+                if base_document.status == "processing":
+                    raise DocumentProcessStateConflict(document_id)
+                processing_document = base_document.model_copy(deep=True)
+                processing_document.status = "processing"
+                processing_document.updated_at = now
+                _apply_document_row(document_row, processing_document)
+                row = DocumentProcessOperationRow(
+                    operation_id=operation_id,
+                    document_id=document_id,
+                    request_schema_version=DOCUMENT_PROCESS_REQUEST_SCHEMA_VERSION,
+                    fingerprint_contract_version=DOCUMENT_PROCESS_FINGERPRINT_CONTRACT_VERSION,
+                    request_fingerprint=document_process_request_fingerprint(request_payload),
+                    request_payload=request_payload.model_dump(mode="json"),
+                    status=DocumentProcessOperationStatus.RUNNING.value,
+                    active_slot=1,
+                    projection_state=DocumentProcessProjectionState.PENDING.value,
+                    base_document_payload=base_document.model_dump(mode="json"),
+                    document_digest="",
+                    debug_digest="",
+                    commit_contract_version="",
+                    error_code="",
+                    created_at=now,
+                    updated_at=now,
+                    completed_at="",
+                )
+                session.add(row)
+                session.flush()
+                return _from_row(row), processing_document
+        except IntegrityError as exc:
+            active = self.get_active(document_id=document_id)
+            if active is not None:
+                raise DocumentProcessAlreadyActive(document_id, active.operation_id) from exc
+            raise DocumentProcessAdmissionRace(document_id) from exc
+
+    def commit_success(
+        self,
+        *,
+        operation_id: str,
+        document: DocumentRecord,
+        debug_report: DocumentDebugRecord,
+    ) -> DocumentProcessOperationRecord:
+        document_payload = document.model_dump(mode="json")
+        debug_payload = debug_report.model_dump(mode="json")
+        now = _now()
+        with self.database.session() as session:
+            operation = session.get(DocumentProcessOperationRow, operation_id)
+            if operation is None:
+                raise DocumentProcessOperationNotFound(operation_id)
+            if operation.status != DocumentProcessOperationStatus.RUNNING.value:
+                raise DocumentProcessOperationNotRunning(operation_id, operation.status)
+            if operation.document_id != document.id or debug_report.document_id != document.id:
+                raise DocumentProcessProjectionIdentityMismatch(operation_id)
+            document_row = session.get(DocumentRow, document.id)
+            if document_row is None:
+                raise DocumentProcessDocumentNotFound(document.id)
+
+            self._inject("before_debug_projection")
+            debug_row = session.get(DocumentDebugRow, document.id) or DocumentDebugRow()
+            _apply_debug_row(debug_row, debug_report)
+            session.add(debug_row)
+            session.flush()
+            self._inject("after_debug_projection")
+
+            _apply_document_row(document_row, document)
+            session.flush()
+            self._inject("after_document_projection")
+
+            operation.status = DocumentProcessOperationStatus.COMMITTED.value
+            operation.active_slot = None
+            operation.projection_state = DocumentProcessProjectionState.COMMITTED.value
+            operation.document_digest = document_process_projection_digest(document_payload)
+            operation.debug_digest = document_process_projection_digest(debug_payload)
+            operation.commit_contract_version = DOCUMENT_PROCESS_COMMIT_CONTRACT_VERSION
+            operation.error_code = ""
+            operation.updated_at = now
+            operation.completed_at = now
+            session.flush()
+            self._inject("before_terminal_commit")
+
+        return self.require(operation_id=operation_id, validate_read_back=True)
+
+    def mark_failed(
+        self,
+        *,
+        operation_id: str,
+        error_code: str,
+    ) -> DocumentProcessOperationRecord:
+        return self._mark_not_committed(
+            operation_id=operation_id,
+            status=DocumentProcessOperationStatus.FAILED,
+            error_code=error_code,
+            restore_base=False,
+        )
+
+    def mark_interrupted(
+        self,
+        *,
+        operation_id: str,
+        error_code: str = "document_process_interrupted",
+    ) -> DocumentProcessOperationRecord:
+        return self._mark_not_committed(
+            operation_id=operation_id,
+            status=DocumentProcessOperationStatus.INTERRUPTED,
+            error_code=error_code,
+            restore_base=True,
+        )
+
+    def recover_abandoned(self) -> list[DocumentProcessOperationRecord]:
+        recovered_ids: list[str] = []
+        with self.database.session() as session:
+            rows = session.scalars(
+                select(DocumentProcessOperationRow).where(
+                    DocumentProcessOperationRow.status == DocumentProcessOperationStatus.RUNNING.value,
+                    DocumentProcessOperationRow.active_slot == 1,
+                )
+            ).all()
+            for row in rows:
+                document_row = session.get(DocumentRow, row.document_id)
+                if document_row is not None:
+                    base = DocumentRecord.model_validate(row.base_document_payload or {})
+                    failed_document = _failed_document_from_base(base, now=_now())
+                    _apply_document_row(document_row, failed_document)
+                now = _now()
+                row.status = DocumentProcessOperationStatus.FAILED.value
+                row.active_slot = None
+                row.projection_state = DocumentProcessProjectionState.NOT_COMMITTED.value
+                row.error_code = "document_process_abandoned_on_startup"
+                row.document_digest = ""
+                row.debug_digest = ""
+                row.commit_contract_version = ""
+                row.updated_at = now
+                row.completed_at = now
+                recovered_ids.append(row.operation_id)
+        return [self.require(operation_id=item) for item in recovered_ids]
+
+    def get_active(self, *, document_id: str) -> DocumentProcessOperationRecord | None:
+        with self.database.session() as session:
+            row = session.scalar(
+                select(DocumentProcessOperationRow).where(
+                    DocumentProcessOperationRow.document_id == document_id,
+                    DocumentProcessOperationRow.active_slot == 1,
+                )
+            )
+            return _from_row(row) if row is not None else None
+
+    def latest(
+        self,
+        *,
+        document_id: str,
+        validate_read_back: bool = True,
+    ) -> DocumentProcessOperationRecord | None:
+        with self.database.session() as session:
+            row = session.scalar(
+                select(DocumentProcessOperationRow)
+                .where(DocumentProcessOperationRow.document_id == document_id)
+                .order_by(
+                    DocumentProcessOperationRow.created_at.desc(),
+                    DocumentProcessOperationRow.operation_id.desc(),
+                )
+                .limit(1)
+            )
+            if row is None:
+                return None
+            record = _from_row(row)
+            if validate_read_back and record.status == DocumentProcessOperationStatus.COMMITTED:
+                _validate_read_back(
+                    record,
+                    document_row=session.get(DocumentRow, document_id),
+                    debug_row=session.get(DocumentDebugRow, document_id),
+                )
+            return record
+
+    def require(
+        self,
+        *,
+        operation_id: str,
+        validate_read_back: bool = True,
+    ) -> DocumentProcessOperationRecord:
+        with self.database.session() as session:
+            row = session.get(DocumentProcessOperationRow, operation_id)
+            if row is None:
+                raise DocumentProcessOperationNotFound(operation_id)
+            record = _from_row(row)
+            if validate_read_back and record.status == DocumentProcessOperationStatus.COMMITTED:
+                _validate_read_back(
+                    record,
+                    document_row=session.get(DocumentRow, record.document_id),
+                    debug_row=session.get(DocumentDebugRow, record.document_id),
+                )
+            return record
+
+    def _mark_not_committed(
+        self,
+        *,
+        operation_id: str,
+        status: DocumentProcessOperationStatus,
+        error_code: str,
+        restore_base: bool,
+    ) -> DocumentProcessOperationRecord:
+        now = _now()
+        with self.database.session() as session:
+            row = session.get(DocumentProcessOperationRow, operation_id)
+            if row is None:
+                raise DocumentProcessOperationNotFound(operation_id)
+            if row.status == DocumentProcessOperationStatus.COMMITTED.value:
+                return _from_row(row)
+            if row.status != DocumentProcessOperationStatus.RUNNING.value:
+                return _from_row(row)
+            document_row = session.get(DocumentRow, row.document_id)
+            if document_row is not None:
+                base = DocumentRecord.model_validate(row.base_document_payload or {})
+                terminal_document = (
+                    base.model_copy(deep=True)
+                    if restore_base
+                    else _failed_document_from_base(base, now=now)
+                )
+                terminal_document.updated_at = now
+                _apply_document_row(document_row, terminal_document)
+            row.status = status.value
+            row.active_slot = None
+            row.projection_state = DocumentProcessProjectionState.NOT_COMMITTED.value
+            row.document_digest = ""
+            row.debug_digest = ""
+            row.commit_contract_version = ""
+            row.error_code = error_code[:128] or "document_process_failed"
+            row.updated_at = now
+            row.completed_at = now
+        return self.require(operation_id=operation_id, validate_read_back=False)
+
+    def _inject(self, stage: str) -> None:
+        if self.fault_injector is not None:
+            self.fault_injector(stage)
+
+
+def _apply_document_row(row: DocumentRow, document: DocumentRecord) -> None:
+    payload = document.model_dump(mode="json")
+    row.id = document.id
+    row.title = document.title
+    row.original_filename = document.original_filename
+    row.stored_path = document.stored_path
+    row.status = document.status
+    row.ocr_status = document.ocr_status
+    row.created_at = document.created_at
+    row.updated_at = document.updated_at
+    row.payload = payload
+
+
+def _apply_debug_row(row: DocumentDebugRow, report: DocumentDebugRecord) -> None:
+    row.document_id = report.document_id
+    row.processed_at = report.processed_at
+    row.page_count = report.page_count
+    row.extraction_method = report.extraction_method
+    row.payload = report.model_dump(mode="json")
+
+
+def _failed_document_from_base(base: DocumentRecord, *, now: str) -> DocumentRecord:
+    failed = base.model_copy(deep=True)
+    failed.status = "failed"
+    failed.ocr_status = "failed"
+    failed.updated_at = now
+    return failed
+
+
+def _from_row(row: DocumentProcessOperationRow) -> DocumentProcessOperationRecord:
+    return DocumentProcessOperationRecord.model_validate(
+        {
+            "operation_id": row.operation_id,
+            "document_id": row.document_id,
+            "request_schema_version": row.request_schema_version,
+            "fingerprint_contract_version": row.fingerprint_contract_version,
+            "request_fingerprint": row.request_fingerprint,
+            "request_payload": row.request_payload,
+            "status": row.status,
+            "projection_state": row.projection_state,
+            "base_document_payload": row.base_document_payload,
+            "document_digest": row.document_digest,
+            "debug_digest": row.debug_digest,
+            "commit_contract_version": row.commit_contract_version,
+            "error_code": row.error_code,
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+            "completed_at": row.completed_at,
+        }
+    )
+
+
+def _validate_read_back(
+    record: DocumentProcessOperationRecord,
+    *,
+    document_row: DocumentRow | None,
+    debug_row: DocumentDebugRow | None,
+) -> None:
+    if document_row is None or debug_row is None:
+        raise DocumentProcessReadBackError(record.operation_id, "projection_missing")
+    document_digest = document_process_projection_digest(document_row.payload or {})
+    debug_digest = document_process_projection_digest(debug_row.payload or {})
+    if document_digest != record.document_digest:
+        raise DocumentProcessReadBackError(record.operation_id, "document_digest_mismatch")
+    if debug_digest != record.debug_digest:
+        raise DocumentProcessReadBackError(record.operation_id, "debug_digest_mismatch")
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+class DocumentProcessError(RuntimeError):
+    pass
+
+
+class DocumentProcessDocumentNotFound(DocumentProcessError):
+    pass
+
+
+class DocumentProcessAlreadyActive(DocumentProcessError):
+    def __init__(self, document_id: str, operation_id: str) -> None:
+        super().__init__(f"document_process_already_active:{document_id}:{operation_id}")
+        self.document_id = document_id
+        self.operation_id = operation_id
+
+
+class DocumentProcessStateConflict(DocumentProcessError):
+    pass
+
+
+class DocumentProcessAdmissionRace(DocumentProcessError):
+    pass
+
+
+class DocumentProcessOperationNotFound(DocumentProcessError):
+    pass
+
+
+class DocumentProcessOperationNotRunning(DocumentProcessError):
+    pass
+
+
+class DocumentProcessProjectionIdentityMismatch(DocumentProcessError):
+    pass
+
+
+class DocumentProcessReadBackError(DocumentProcessError):
+    def __init__(self, operation_id: str, reason: str) -> None:
+        super().__init__(f"document_process_read_back_failed:{reason}")
+        self.operation_id = operation_id
+        self.reason = reason

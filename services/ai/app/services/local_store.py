@@ -270,6 +270,21 @@ class LocalJsonStore:
     def close(self) -> None:
         self._db.dispose()
 
+    def mirror_document_projection(
+        self,
+        documents: list[BaseModel],
+        debug_report: BaseModel | None = None,
+    ) -> None:
+        """Best-effort legacy mirror; database projections remain authoritative."""
+        try:
+            self._legacy.save_list("documents", documents)
+            if debug_report is not None:
+                document_id = str(getattr(debug_report, "document_id", ""))
+                if document_id:
+                    self._legacy.save_item("document_debug", document_id, debug_report)
+        except OSError:
+            return
+
     def __del__(self) -> None:
         try:
             self.close()
