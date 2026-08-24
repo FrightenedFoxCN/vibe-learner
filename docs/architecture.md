@@ -143,7 +143,8 @@ protected replay, and eval remain tracked by `HRN-DOC-001`.
 2. model planning when enabled;
 3. optional use of the six registered planning tools for detail reads, clarification, completion estimates, Study Unit revision, page text, and multimodal page images; the effective set is filtered by configuration and runtime context;
 4. schedule normalization against known Study Units;
-5. plan and planning-trace persistence.
+5. one atomic Document/Debug/Planning Trace/Learning Plan commit plus terminal
+   operation receipt.
 
 Each of the six Planning tools now decodes a strict v1 argument contract and
 projects a strict v1 result. Malformed JSON, extra fields, and wrong primitive
@@ -153,9 +154,21 @@ Unit/Section references, never plan/schedule/chapter IDs, revision, state, or
 timestamps. One bounded repair is allowed. The application assigns committed
 schedule/chapter IDs and rejects unknown/duplicate Study Unit references,
 out-of-range chapters/slices, unordered anchors, and unknown Section refs
-instead of silently dropping them. The remaining document/debug/trace/plan
-atomic commit and operation read-back boundary is tracked by
-`AUD-PLAN-COMMIT-001`; v3 context/trace/replay/eval remains `HRN-PLAN-001`.
+instead of silently dropping them.
+
+Every plan-generation intent now carries a stable client request ID and, for a
+document-backed plan, the expected Document `updated_at` watermark. The
+`learning_plan_operations` journal admits one active operation per Document,
+records provider start plus Document/Debug base digests, and commits the revised
+Document, matching Debug projection, Planning Trace, Learning Plan, and
+versioned committed snapshot in
+one database transaction. Duplicate requests read the original committed
+snapshot; payload drift, active siblings, stale Document state, and missing
+Debug prerequisites fail closed. Startup recovery terminalizes abandoned work,
+and compatibility JSON files are mirrored only after the authoritative commit.
+This implements the `AUD-PLAN-COMMIT-001` boundary; independent revalidation is
+still required before closing that audit item, and v3 context/trace/replay/eval
+remains `HRN-PLAN-001`.
 
 ### 3. Study interaction
 

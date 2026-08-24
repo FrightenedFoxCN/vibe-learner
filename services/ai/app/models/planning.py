@@ -1,14 +1,29 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal, TypeAlias
+import hashlib
+import json
+from enum import Enum
+from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.models.domain import (
+    DocumentDebugRecord,
+    DocumentRecord,
+    LearningPlanRecord,
+    PlanGenerationTraceRecord,
+    SceneProfileRecord,
+)
 
 
 PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION = "planning-tool-arguments-v1"
 PLANNING_TOOL_RESULT_CONTRACT_VERSION = "planning-tool-result-v1"
 LEARNING_PLAN_PROPOSAL_SCHEMA_NAME = "learning-plan-proposal"
 LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION = "learning-plan-proposal-v1"
+LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION = "learning-plan-operation-request-v1"
+LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION = "learning-plan-operation-fingerprint-v1"
+LEARNING_PLAN_COMMITTED_PROJECTION_VERSION = "learning-plan-committed-projection-v1"
+LEARNING_PLAN_COMMIT_CONTRACT_VERSION = "learning-plan-commit-v1"
 
 
 class _StrictPlanningModel(BaseModel):
@@ -284,3 +299,198 @@ PLANNING_TOOL_RESULT_MODELS: dict[str, type[_StrictPlanningModel]] = {
     "read_page_range_content": ReadPageRangeContentResultV1,
     "read_page_range_images": ReadPageRangeImagesResultV1,
 }
+
+
+class LearningPlanOperationStatus(str, Enum):
+    RUNNING = "running"
+    COMMITTED = "committed"
+    NOT_COMMITTED = "not_committed"
+    INTERRUPTED = "interrupted"
+    UNCERTAIN = "uncertain"
+
+
+class LearningPlanProjectionState(str, Enum):
+    PENDING = "pending"
+    COMMITTED = "committed"
+    NOT_COMMITTED = "not_committed"
+
+
+class LearningPlanOperationRequestV1(_StrictPlanningModel):
+    schema_version: Literal["learning-plan-operation-request-v1"] = (
+        LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION
+    )
+    client_request_id: str = Field(min_length=1, max_length=80)
+    document_id: str = Field(default="", max_length=64)
+    persona_id: str = Field(min_length=1, max_length=64)
+    objective: str = Field(min_length=1, max_length=12000)
+    scene_profile_summary: str = Field(default="", max_length=4000)
+    scene_profile: SceneProfileRecord | None = None
+    expected_document_updated_at: str = Field(default="", max_length=64)
+
+    @model_validator(mode="after")
+    def validate_document_revision(self) -> "LearningPlanOperationRequestV1":
+        if self.document_id and not self.expected_document_updated_at:
+            raise ValueError("expected_document_updated_at_required")
+        if not self.document_id and self.expected_document_updated_at:
+            raise ValueError("goal_only_request_has_document_revision")
+        return self
+
+
+class LearningPlanCommittedProjectionV1(_StrictPlanningModel):
+    schema_version: Literal["learning-plan-committed-projection-v1"] = (
+        LEARNING_PLAN_COMMITTED_PROJECTION_VERSION
+    )
+    operation_id: str
+    client_request_id: str
+    plan_id: str
+    document_id: str
+    plan: LearningPlanRecord
+    document: DocumentRecord | None = None
+    debug_report: DocumentDebugRecord | None = None
+    trace: PlanGenerationTraceRecord | None = None
+    plan_digest: str
+    document_digest: str = ""
+    debug_digest: str = ""
+    trace_digest: str = ""
+
+    @model_validator(mode="after")
+    def validate_projection(self) -> "LearningPlanCommittedProjectionV1":
+        if self.plan.id != self.plan_id:
+            raise ValueError("committed_plan_identity_mismatch")
+        if self.plan.document_id != self.document_id:
+            raise ValueError("committed_plan_document_identity_mismatch")
+        if (
+            planning_projection_digest(self.plan.model_dump(mode="json"))
+            != self.plan_digest
+        ):
+            raise ValueError("committed_plan_digest_mismatch")
+        if self.document_id:
+            if self.document is None:
+                raise ValueError("committed_document_projection_required")
+            if self.document.id != self.document_id:
+                raise ValueError("committed_document_identity_mismatch")
+            if (
+                planning_projection_digest(self.document.model_dump(mode="json"))
+                != self.document_digest
+            ):
+                raise ValueError("committed_document_digest_mismatch")
+            if self.debug_report is not None:
+                if self.debug_report.document_id != self.document_id:
+                    raise ValueError("committed_debug_identity_mismatch")
+                if planning_projection_digest(
+                    self.debug_report.model_dump(mode="json")
+                ) != self.debug_digest:
+                    raise ValueError("committed_debug_digest_mismatch")
+            elif self.debug_digest:
+                raise ValueError("committed_debug_digest_without_projection")
+        elif self.document is not None or self.debug_report is not None:
+            raise ValueError("goal_only_commit_has_document_projection")
+        if self.trace is not None:
+            if self.trace.plan_id != self.plan_id:
+                raise ValueError("committed_trace_plan_identity_mismatch")
+            if (
+                planning_projection_digest(self.trace.model_dump(mode="json"))
+                != self.trace_digest
+            ):
+                raise ValueError("committed_trace_digest_mismatch")
+        elif self.trace_digest:
+            raise ValueError("committed_trace_digest_without_projection")
+        return self
+
+
+class LearningPlanOperationRecord(_StrictPlanningModel):
+    operation_id: str
+    client_request_id: str
+    document_id: str
+    persona_id: str
+    request_schema_version: str
+    fingerprint_contract_version: str
+    request_fingerprint: str
+    request_payload: LearningPlanOperationRequestV1
+    base_document_updated_at: str = ""
+    base_document_digest: str = ""
+    base_debug_digest: str = ""
+    status: LearningPlanOperationStatus
+    projection_state: LearningPlanProjectionState
+    provider_started_at: str = ""
+    plan_id: str = ""
+    commit_contract_version: str = ""
+    committed_projection_digest: str = ""
+    committed_projection: LearningPlanCommittedProjectionV1 | None = None
+    error_code: str = ""
+    created_at: str
+    updated_at: str
+    completed_at: str = ""
+
+    @model_validator(mode="after")
+    def validate_operation(self) -> "LearningPlanOperationRecord":
+        if self.request_schema_version != LEARNING_PLAN_OPERATION_REQUEST_SCHEMA_VERSION:
+            raise ValueError("unsupported_learning_plan_request_schema")
+        if self.fingerprint_contract_version != LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION:
+            raise ValueError("unsupported_learning_plan_fingerprint_contract")
+        if self.request_payload.client_request_id != self.client_request_id:
+            raise ValueError("learning_plan_request_identity_mismatch")
+        if self.request_payload.document_id != self.document_id:
+            raise ValueError("learning_plan_document_identity_mismatch")
+        if self.request_payload.persona_id != self.persona_id:
+            raise ValueError("learning_plan_persona_identity_mismatch")
+        if learning_plan_request_fingerprint(self.request_payload) != self.request_fingerprint:
+            raise ValueError("learning_plan_request_fingerprint_mismatch")
+        if self.document_id:
+            if not self.base_document_updated_at or not self.base_document_digest:
+                raise ValueError("learning_plan_document_base_evidence_missing")
+        elif (
+            self.base_document_updated_at
+            or self.base_document_digest
+            or self.base_debug_digest
+        ):
+            raise ValueError("goal_only_plan_has_document_base_evidence")
+        if self.status == LearningPlanOperationStatus.RUNNING:
+            if self.projection_state != LearningPlanProjectionState.PENDING:
+                raise ValueError("running_plan_projection_must_be_pending")
+            if self.completed_at or self.error_code or self.committed_projection is not None:
+                raise ValueError("running_plan_operation_has_terminal_evidence")
+        elif self.status == LearningPlanOperationStatus.COMMITTED:
+            if self.projection_state != LearningPlanProjectionState.COMMITTED:
+                raise ValueError("committed_plan_projection_required")
+            if (
+                not self.completed_at
+                or not self.plan_id
+                or self.commit_contract_version != LEARNING_PLAN_COMMIT_CONTRACT_VERSION
+                or not self.committed_projection_digest
+                or self.committed_projection is None
+                or self.error_code
+            ):
+                raise ValueError("committed_plan_operation_evidence_incomplete")
+            projection_digest = planning_projection_digest(
+                self.committed_projection.model_dump(mode="json")
+            )
+            if projection_digest != self.committed_projection_digest:
+                raise ValueError("committed_plan_projection_digest_mismatch")
+        else:
+            if self.projection_state != LearningPlanProjectionState.NOT_COMMITTED:
+                raise ValueError("terminal_plan_failure_must_be_not_committed")
+            if (
+                not self.completed_at
+                or not self.error_code
+                or self.plan_id
+                or self.commit_contract_version
+                or self.committed_projection_digest
+                or self.committed_projection is not None
+            ):
+                raise ValueError("failed_plan_operation_evidence_invalid")
+        return self
+
+
+def learning_plan_request_fingerprint(payload: LearningPlanOperationRequestV1) -> str:
+    return planning_projection_digest(payload.model_dump(mode="json"))
+
+
+def planning_projection_digest(payload: dict[str, Any]) -> str:
+    canonical = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()

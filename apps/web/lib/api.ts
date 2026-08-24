@@ -2229,7 +2229,15 @@ export async function processDocumentStream(
   return finalDocument;
 }
 
+function createLearningPlanRequestId(): string {
+  const suffix = typeof globalThis.crypto?.randomUUID === "function"
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  return `learning-plan-${suffix}`;
+}
+
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
+  const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/learning-plans`, {
@@ -2240,6 +2248,8 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
       body: JSON.stringify({
         document_id: goal.documentId ?? "",
         persona_id: goal.personaId,
+        client_request_id: clientRequestId,
+        expected_document_updated_at: goal.expectedDocumentUpdatedAt ?? "",
         objective: goal.objective,
         scene_profile_summary: sceneSummary,
         scene_profile: serializeSceneProfile(goal.sceneProfile)
@@ -2356,6 +2366,7 @@ export async function createLearningPlanStream(
   onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void,
   options?: { signal?: AbortSignal }
 ): Promise<LearningPlan> {
+  const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
   const response = await request(`${AI_BASE_URL()}/learning-plans/stream`, {
     method: "POST",
@@ -2366,6 +2377,8 @@ export async function createLearningPlanStream(
     body: JSON.stringify({
       document_id: goal.documentId ?? "",
       persona_id: goal.personaId,
+      client_request_id: clientRequestId,
+      expected_document_updated_at: goal.expectedDocumentUpdatedAt ?? "",
       objective: goal.objective,
       scene_profile_summary: sceneSummary,
       scene_profile: serializeSceneProfile(goal.sceneProfile)

@@ -111,13 +111,14 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `GET` | `/study-sessions/{session_id}/attachments/{attachment_id}/file` | Read a stored attachment. |
 | `GET` | `/study-sessions/{session_id}/attachments/{attachment_id}/pages/{page_number}/image` | Render/serve one attachment PDF page image. |
 
-### Learning Plans, streams, exercises, and grading (11)
+### Learning Plans, streams, exercises, and grading (12)
 
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/learning-plans` | List plans. |
 | `POST` | `/learning-plans` | Generate and persist a plan synchronously. |
 | `POST` | `/learning-plans/stream` | Generate through NDJSON events. |
+| `GET` | `/learning-plan-operations/{client_request_id}` | Query one admitted plan operation and its committed plan snapshot. |
 | `GET` | `/learning-plans/{plan_id}` | Read one plan. |
 | `PATCH` | `/learning-plans/{plan_id}` | Update editable plan fields. |
 | `PATCH` | `/learning-plans/{plan_id}/progress` | Update Study Unit progress. |
@@ -532,9 +533,17 @@ Request body:
 {
   "document_id": "doc-123",
   "persona_id": "persona-123",
+  "client_request_id": "learning-plan-019ff5f5f4c14ec3",
+  "expected_document_updated_at": "2026-08-24T10:00:00+00:00",
   "objective": "Prepare for midterm"
 }
 ```
+
+`client_request_id` identifies one generation intent and must remain stable for
+terminal read-back. Document-backed requests also carry the exact
+`expected_document_updated_at` returned with the selected Document. Reusing a
+request ID with different content, starting a sibling operation for the same
+Document, or submitting a stale watermark is rejected with `409`.
 
 Returns:
 
@@ -553,6 +562,10 @@ Text-field naming and display rules are defined in `docs/plan-text-contract.md`.
 
 Possible mapped backend errors:
 
+- `409 learning_plan_stale_document`
+- `409 learning_plan_operation_active`
+- `409 learning_plan_request_conflict`
+- `409 learning_plan_projection_prerequisite_missing`
 - `503 plan_model_rate_limited`
 - `504 plan_model_timeout`
 - `502 plan_model_network_error`
@@ -594,6 +607,14 @@ The final success line includes the full plan:
   }
 }
 ```
+
+### `GET /learning-plan-operations/{client_request_id}`
+
+Returns the durable operation state (`running`, `committed`, `not_committed`,
+`interrupted`, or `uncertain`), projection state, provider-start watermark,
+terminal error code, and the original committed Plan snapshot when available.
+This endpoint is query-only recovery; an `uncertain` operation must not be
+blindly replayed with a new request identity.
 
 ## Study Sessions
 

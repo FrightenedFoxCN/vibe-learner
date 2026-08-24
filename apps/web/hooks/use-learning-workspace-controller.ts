@@ -567,10 +567,13 @@ export function useLearningWorkspaceController({
       }
 
       setPlanStreamStatus("running");
+      const planClientRequestId = createStudyChatRequestId("learning-plan");
       const nextPlan = await createLearningPlanStream(
         {
           documentId: nextDocument?.id ?? "",
           personaId: selectedPersona.id,
+          clientRequestId: planClientRequestId,
+          expectedDocumentUpdatedAt: nextDocument?.updatedAt ?? "",
           objective: input.objective,
           sceneProfileSummary: sceneProfile?.summary ?? "",
           sceneProfile,

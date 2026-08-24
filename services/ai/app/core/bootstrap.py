@@ -83,6 +83,7 @@ class Container:
             self.study_arrangement_service,
             self.model_provider,
         )
+        self.plan_service.recover_abandoned_operations()
         self.study_session_repository = StudySessionRepository(self.database)
         self.study_chat_operation_repository = StudyChatOperationRepository(
             self.database,

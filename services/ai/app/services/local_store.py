@@ -285,6 +285,41 @@ class LocalJsonStore:
         except OSError:
             return
 
+    def mirror_learning_plan_projection(
+        self,
+        *,
+        plan: BaseModel,
+        document: BaseModel | None,
+        debug_report: BaseModel | None,
+        trace: BaseModel | None,
+    ) -> None:
+        """Best-effort legacy mirrors after the authoritative Planning commit."""
+        try:
+            plan_model = type(plan)
+            self._legacy.save_list("plans", self.load_list("plans", plan_model))
+            if document is not None:
+                document_model = type(document)
+                self._legacy.save_list(
+                    "documents",
+                    self.load_list("documents", document_model),
+                )
+            if debug_report is not None:
+                document_id = str(getattr(debug_report, "document_id", ""))
+                if document_id:
+                    self._legacy.save_item(
+                        "document_debug",
+                        document_id,
+                        debug_report,
+                    )
+            if trace is not None:
+                trace_key = str(getattr(trace, "document_id", "")) or str(
+                    getattr(plan, "id", "")
+                )
+                if trace_key:
+                    self._legacy.save_item("planning_trace", trace_key, trace)
+        except OSError:
+            return
+
     def __del__(self) -> None:
         try:
             self.close()

@@ -12,6 +12,7 @@ from app.models.domain import (
     DocumentSection,
     LearningGoalInput,
     LearningPlanRecord,
+    PlanGenerationTraceRecord,
     PlanProgressEventRecord,
     PlanProgressSummaryRecord,
     PlanningQuestionRecord,
@@ -23,8 +24,27 @@ from app.models.domain import (
     StudyUnitRecord,
 )
 from app.models.planning import PlanScheduleChapterProposalV1
+from app.models.planning import (
+    LearningPlanOperationRecord,
+    LearningPlanOperationRequestV1,
+    LearningPlanOperationStatus,
+    planning_projection_digest,
+)
+from app.persistence.learning_plan_operation_repository import (
+    LearningPlanAdmissionRace,
+    LearningPlanAlreadyActive,
+    LearningPlanDocumentNotFound,
+    LearningPlanOperationError,
+    LearningPlanOperationRepository,
+    LearningPlanProjectionIdentityMismatch,
+    LearningPlanProjectionPrerequisiteMissing,
+    LearningPlanRequestConflict,
+    LearningPlanStaleDocument,
+    LearningPlanTerminalReplayBlocked,
+)
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import ModelProvider
+from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
 
 
@@ -34,10 +54,14 @@ class LearningPlanService:
         store: LocalJsonStore,
         arrangement_service: StudyArrangementService,
         model_provider: ModelProvider,
+        operation_repository: LearningPlanOperationRepository | None = None,
     ) -> None:
         self.store = store
         self.arrangement_service = arrangement_service
         self.model_provider = model_provider
+        self.operation_repository = operation_repository or LearningPlanOperationRepository(
+            store.database
+        )
 
     def create_plan(
         self,
@@ -50,6 +74,168 @@ class LearningPlanService:
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
         interrupt_check: Callable[[], None] | None = None,
     ) -> LearningPlanRecord:
+        if document is not None and document.debug_ready and debug_report is None:
+            debug_report = self.store.load_item(
+                "document_debug",
+                document.id,
+                DocumentDebugRecord,
+            )
+        client_request_id = str(getattr(goal, "client_request_id", "") or "").strip()
+        if not client_request_id:
+            client_request_id = f"plan-request-{uuid4().hex}"
+        expected_document_updated_at = str(
+            getattr(goal, "expected_document_updated_at", "") or ""
+        ).strip()
+        if document is not None and not expected_document_updated_at:
+            expected_document_updated_at = document.updated_at
+        request = LearningPlanOperationRequestV1(
+            client_request_id=client_request_id,
+            document_id=document.id if document is not None else "",
+            persona_id=goal.persona_id,
+            objective=goal.objective,
+            scene_profile_summary=goal.scene_profile_summary,
+            scene_profile=goal.scene_profile,
+            expected_document_updated_at=expected_document_updated_at,
+        )
+        try:
+            operation, duplicate = self.operation_repository.admit(request=request)
+        except LearningPlanDocumentNotFound as exc:
+            raise HTTPException(status_code=404, detail="document_not_found") from exc
+        except LearningPlanStaleDocument as exc:
+            raise HTTPException(status_code=409, detail="learning_plan_stale_document") from exc
+        except (
+            LearningPlanAlreadyActive,
+            LearningPlanAdmissionRace,
+        ) as exc:
+            raise HTTPException(status_code=409, detail="learning_plan_operation_active") from exc
+        except LearningPlanRequestConflict as exc:
+            raise HTTPException(status_code=409, detail="learning_plan_request_conflict") from exc
+        except LearningPlanTerminalReplayBlocked as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"learning_plan_operation_{exc.status}",
+            ) from exc
+        except LearningPlanProjectionPrerequisiteMissing as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="learning_plan_projection_prerequisite_missing",
+            ) from exc
+
+        if duplicate:
+            projection = operation.committed_projection
+            if projection is None:
+                raise RuntimeError("learning_plan_committed_projection_missing")
+            return projection.plan.model_copy(deep=True)
+
+        provider_started = False
+        candidate_built = False
+
+        def mark_provider_started() -> None:
+            nonlocal provider_started
+            self.operation_repository.mark_provider_started(
+                operation_id=operation.operation_id
+            )
+            provider_started = True
+
+        try:
+            if document is not None and planning_projection_digest(
+                document.model_dump(mode="json")
+            ) != operation.base_document_digest:
+                raise LearningPlanProjectionIdentityMismatch(
+                    operation.operation_id,
+                    "input_document_snapshot",
+                )
+            if debug_report is not None and planning_projection_digest(
+                debug_report.model_dump(mode="json")
+            ) != operation.base_debug_digest:
+                raise LearningPlanProjectionIdentityMismatch(
+                    operation.operation_id,
+                    "input_debug_snapshot",
+                )
+            plan, projected_document, projected_debug, trace = (
+                self._build_plan_candidate(
+                    goal=goal,
+                    document=document,
+                    persona_name=persona_name,
+                    persona=persona,
+                    debug_report=debug_report,
+                    progress_callback=progress_callback,
+                    interrupt_check=interrupt_check,
+                    provider_start_callback=mark_provider_started,
+                )
+            )
+            candidate_built = True
+            self.operation_repository.commit_success(
+                operation_id=operation.operation_id,
+                plan=plan,
+                document=projected_document,
+                debug_report=projected_debug,
+                trace=trace,
+            )
+        except StreamInterruptedError:
+            self.operation_repository.mark_terminal(
+                operation_id=operation.operation_id,
+                status=LearningPlanOperationStatus.INTERRUPTED,
+                error_code="learning_plan_interrupted",
+            )
+            raise
+        except Exception as exc:
+            self.operation_repository.mark_terminal(
+                operation_id=operation.operation_id,
+                status=_learning_plan_failure_status(
+                    exc,
+                    provider_started=provider_started,
+                    candidate_built=candidate_built,
+                ),
+                error_code=_learning_plan_error_code(exc),
+            )
+            raise
+
+        self.store.mirror_learning_plan_projection(
+            plan=plan,
+            document=projected_document,
+            debug_report=projected_debug,
+            trace=trace,
+        )
+        try:
+            _emit_progress(
+                progress_callback,
+                "learning_plan_completed",
+                {
+                    "document_id": document.id if document is not None else "",
+                    "plan_id": plan.id,
+                    "schedule_count": len(plan.schedule),
+                    "creation_mode": plan.creation_mode,
+                    "pending_question_count": len(
+                        [
+                            item
+                            for item in plan.planning_questions
+                            if item.status != "answered"
+                        ]
+                    ),
+                },
+            )
+        except Exception:
+            pass
+        return plan
+
+    def _build_plan_candidate(
+        self,
+        *,
+        goal: LearningGoalInput,
+        document: DocumentRecord | None,
+        persona_name: str,
+        persona: PersonaProfile,
+        debug_report: DocumentDebugRecord | None = None,
+        progress_callback: Callable[[str, dict[str, object]], None] | None = None,
+        interrupt_check: Callable[[], None] | None = None,
+        provider_start_callback: Callable[[], None] | None = None,
+    ) -> tuple[
+        LearningPlanRecord,
+        DocumentRecord | None,
+        DocumentDebugRecord | None,
+        PlanGenerationTraceRecord | None,
+    ]:
         _call_interrupt(interrupt_check)
         progress_document_id = document.id if document is not None else ""
         if document is not None and debug_report is not None and not document.study_units:
@@ -116,6 +302,8 @@ class LearningPlanService:
                 "creation_mode": plan.creation_mode,
             },
         )
+        if provider_start_callback is not None:
+            provider_start_callback()
         model_plan = self.model_provider.generate_learning_plan(
             persona=persona,
             document_title=document_title,
@@ -133,10 +321,9 @@ class LearningPlanService:
                 document.study_units = model_plan.revised_study_units
                 document.study_unit_count = len(model_plan.revised_study_units)
                 document.sections = _project_sections_from_study_units(model_plan.revised_study_units)
+                document.updated_at = _now()
                 if debug_report is not None:
                     debug_report.study_units = model_plan.revised_study_units
-                    self.store.save_item("document_debug", document.id, debug_report)
-                self._persist_document(document)
         unit_by_id = {unit.id: unit for unit in plan.study_units}
         filtered_schedule: list[StudyScheduleRecord] = []
         seen_unit_ids: set[str] = set()
@@ -181,28 +368,28 @@ class LearningPlanService:
         plan.progress_summary = self._build_progress_summary(plan.schedule)
         if model_plan.debug_trace is not None:
             model_plan.debug_trace.plan_id = plan.id
-            self.store.save_item(
-                "planning_trace",
-                document.id if document is not None else plan.id,
-                model_plan.debug_trace,
-            )
-        plans = self._load_plans()
-        plans.append(self._refresh_plan_derived_fields(plan))
-        self._save_plans(plans)
-        _emit_progress(
-            progress_callback,
-            "learning_plan_completed",
-            {
-                "document_id": progress_document_id,
-                "plan_id": plan.id,
-                "schedule_count": len(plan.schedule),
-                "creation_mode": plan.creation_mode,
-                "pending_question_count": len(
-                    [item for item in plan.planning_questions if item.status != "answered"]
-                ),
-            },
+        plan = self._refresh_plan_derived_fields(plan)
+        return plan, document, debug_report, model_plan.debug_trace
+
+    def recover_abandoned_operations(self) -> int:
+        recovered = self.operation_repository.recover_abandoned()
+        return len(recovered)
+
+    def require_operation(
+        self,
+        *,
+        client_request_id: str,
+    ) -> LearningPlanOperationRecord:
+        operation = self.operation_repository.get_by_client_request_id(
+            client_request_id=client_request_id,
+            validate_current=False,
         )
-        return plan
+        if operation is None:
+            raise HTTPException(
+                status_code=404,
+                detail="learning_plan_operation_not_found",
+            )
+        return operation
 
     def require_plan(self, plan_id: str) -> LearningPlanRecord:
         plans = self._load_plans()
@@ -892,3 +1079,36 @@ def _project_sections_from_study_units(study_units: list[StudyUnitRecord]) -> li
         for unit in study_units
         if bool(unit.include_in_plan)
     ]
+
+
+def _learning_plan_failure_status(
+    exc: Exception,
+    *,
+    provider_started: bool,
+    candidate_built: bool,
+) -> LearningPlanOperationStatus:
+    if not provider_started or candidate_built:
+        return LearningPlanOperationStatus.NOT_COMMITTED
+    if isinstance(exc, LearningPlanOperationError):
+        return LearningPlanOperationStatus.NOT_COMMITTED
+    detail = str(exc)
+    known_not_committed_prefixes = (
+        "plan_model_invalid_",
+        "plan_model_content_filter",
+        "plan_model_tool_loop_exhausted",
+        "plan_proposal_",
+        "planning_tool_",
+        "learning_plan_read_back_failed:",
+    )
+    if detail.startswith(known_not_committed_prefixes):
+        return LearningPlanOperationStatus.NOT_COMMITTED
+    return LearningPlanOperationStatus.UNCERTAIN
+
+
+def _learning_plan_error_code(exc: Exception) -> str:
+    raw = str(exc).strip() or type(exc).__name__
+    normalized = "".join(
+        character if character.isalnum() else "_"
+        for character in raw.lower()
+    ).strip("_")
+    return f"learning_plan_{normalized or 'failed'}"[:128]

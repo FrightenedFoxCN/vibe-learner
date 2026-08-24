@@ -468,7 +468,16 @@ class StudyUnitTitleUpdateRequest(BaseModel):
 
 
 class LearningPlanCreateRequest(LearningGoalInput):
-    pass
+    client_request_id: str = Field(min_length=1, max_length=80)
+    expected_document_updated_at: str = Field(default="", max_length=64)
+
+    @model_validator(mode="after")
+    def validate_operation_identity(self) -> "LearningPlanCreateRequest":
+        if self.document_id and not self.expected_document_updated_at:
+            raise ValueError("expected_document_updated_at_required")
+        if not self.document_id and self.expected_document_updated_at:
+            raise ValueError("goal_only_request_has_document_revision")
+        return self
 
 
 class LearningPlanUpdateRequest(BaseModel):
@@ -496,6 +505,23 @@ class LearningPlanResponse(LearningPlanRecord):
 
 class LearningPlanListResponse(BaseModel):
     items: list[LearningPlanResponse]
+
+
+class LearningPlanOperationResponse(BaseModel):
+    contract_version: str = "learning-plan-operation-response-v1"
+    operation_id: str
+    client_request_id: str
+    document_id: str
+    persona_id: str
+    status: str
+    projection_state: str
+    provider_started_at: str
+    plan_id: str
+    error_code: str
+    created_at: str
+    updated_at: str
+    completed_at: str
+    plan: LearningPlanResponse | None = None
 
 
 class SceneSetupResponse(SceneSetupStateRecord):

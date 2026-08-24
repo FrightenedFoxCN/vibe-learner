@@ -98,6 +98,17 @@ class Database:
                         "claim_count INTEGER NOT NULL DEFAULT 0"
                     )
 
+            if "learning_plan_operations" in table_names:
+                plan_operation_columns = self._sqlite_column_names(
+                    connection,
+                    "learning_plan_operations",
+                )
+                if "base_debug_digest" not in plan_operation_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE learning_plan_operations ADD COLUMN "
+                        "base_debug_digest VARCHAR(64) NOT NULL DEFAULT ''"
+                    )
+
             # Recover partially applied migrations that left a duplicate legacy table behind.
             if "study_sessions_legacy" in table_names and "study_sessions" not in table_names:
                 connection.exec_driver_sql("ALTER TABLE study_sessions_legacy RENAME TO study_sessions")

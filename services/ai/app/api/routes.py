@@ -30,6 +30,7 @@ from app.models.api import (
     ExerciseGenerateResponse,
     LearningPlanCreateRequest,
     LearningPlanListResponse,
+    LearningPlanOperationResponse,
     LearningPlanProgressUpdateRequest,
     LearningPlanResponse,
     LearningPlanUpdateRequest,
@@ -1890,6 +1891,38 @@ def list_learning_plans() -> LearningPlanListResponse:
     plans = container.plan_service.list_plans()
     return LearningPlanListResponse(
         items=[_into_response(LearningPlanResponse, plan) for plan in plans]
+    )
+
+
+@router.get(
+    "/learning-plan-operations/{client_request_id}",
+    response_model=LearningPlanOperationResponse,
+)
+def get_learning_plan_operation(
+    client_request_id: str,
+) -> LearningPlanOperationResponse:
+    operation = container.plan_service.require_operation(
+        client_request_id=client_request_id
+    )
+    projection = operation.committed_projection
+    return LearningPlanOperationResponse(
+        operation_id=operation.operation_id,
+        client_request_id=operation.client_request_id,
+        document_id=operation.document_id,
+        persona_id=operation.persona_id,
+        status=operation.status.value,
+        projection_state=operation.projection_state.value,
+        provider_started_at=operation.provider_started_at,
+        plan_id=operation.plan_id,
+        error_code=operation.error_code,
+        created_at=operation.created_at,
+        updated_at=operation.updated_at,
+        completed_at=operation.completed_at,
+        plan=(
+            _into_response(LearningPlanResponse, projection.plan)
+            if projection is not None
+            else None
+        ),
     )
 
 

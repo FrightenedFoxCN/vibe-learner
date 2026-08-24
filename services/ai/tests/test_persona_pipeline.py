@@ -3749,6 +3749,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        store.save_list("documents", [document])
 
         with patch.object(
             provider,
@@ -3848,6 +3850,7 @@ class PersonaPipelineTests(unittest.TestCase):
                 "dominant_language_hint": "en",
             }
         )
+        store.save_item("document_debug", document.id, debug_report)
 
         with patch.object(
             provider,
@@ -3958,6 +3961,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        self.store.save_list("documents", [document])
 
         plan = self.plan_service.create_plan(
             goal=LearningGoalInput(
@@ -4401,6 +4406,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        self.store.save_list("documents", [document])
 
         plan = self.plan_service.create_plan(
             goal=LearningGoalInput(
@@ -4466,6 +4473,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        store.save_list("documents", [document])
 
         with patch.object(
             provider,
@@ -4536,6 +4545,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        self.store.save_list("documents", [document])
 
         plan = self.plan_service.create_plan(
             goal=LearningGoalInput(
@@ -4590,6 +4601,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        self.store.save_list("documents", [document])
 
         plan = self.plan_service.create_plan(
             goal=LearningGoalInput(
@@ -4957,6 +4970,8 @@ class PersonaPipelineTests(unittest.TestCase):
                 "debug_ready": True,
             }
         )
+        document.debug_ready = False
+        self.store.save_list("documents", [document])
 
         plan = self.plan_service.create_plan(
             goal=LearningGoalInput(

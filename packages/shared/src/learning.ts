@@ -124,6 +124,10 @@ export interface SessionProjectedPdf {
 export interface LearningGoal {
   documentId: string;
   personaId: string;
+  // Stable identity for one plan-generation intent and its terminal read-back.
+  clientRequestId?: string;
+  // Document projection watermark captured before generation.
+  expectedDocumentUpdatedAt?: string;
   // 创建学习计划时记录的学习者原始目标文本。
   objective: string;
   // Optional scene summary chosen before planning.
