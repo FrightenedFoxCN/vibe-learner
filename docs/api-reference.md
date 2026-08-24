@@ -24,10 +24,11 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
 - Streaming endpoints return `application/x-ndjson`.
 - Error payloads from FastAPI follow `{"detail": ...}`.
 - Frontend projection is coordinated by `apps/web/lib/api.ts`. Tavern,
-  Document/Debug, and Planning HTTP projections pass through their domain-owned
-  fail-closed decoders before rendering; Persona/Scene, the broader Study
-  response, and versioned stream terminal state remain under the repository-wide
-  migration tracked by `HRN-WEB-001`.
+  Document/Debug, Planning, Persona/Scene, and Study HTTP projections pass
+  through domain-owned fail-closed decoders before rendering. Document and
+  Planning live NDJSON plus persisted v1 reports additionally pass the strict
+  versioned stream state machine. Independent real-wire closure and async stale
+  response fencing remain tracked by `HRN-WEB-001`.
 
 ## Complete operation index
 

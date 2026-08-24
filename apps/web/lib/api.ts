@@ -18,6 +18,7 @@ import type {
   RuntimeSettings,
   RuntimeSettingsPatch,
   RetryTavernRunInput,
+  StreamEvent,
   StreamReport,
   StudyChatResponse,
   StudySessionRecord,
@@ -78,6 +79,11 @@ import {
   decodeSceneSetupState,
   decodeSceneTreeGenerateResult,
 } from "./persona-scene-decode";
+import {
+  consumeVersionedStream,
+  decodeStreamReport,
+  StrictStreamStateMachine,
+} from "./stream-decode";
 
 export {
   normalizeTavernRoomDetail,
@@ -590,18 +596,39 @@ function normalizeRuntimeCapabilitySignal(record: any): import("@vibe-learner/sh
   };
 }
 
-function normalizeStreamReport(record: any): StreamReport {
+function normalizeStreamReport(
+  record: unknown,
+  expectedDocumentId: string,
+  expectedStreamKind: "document_process" | "learning_plan",
+): StreamReport {
+  const decoded = decodeStreamReport(record, {
+    expectedDocumentId,
+    expectedStreamKind,
+  });
+  for (const event of decoded.events) {
+    if (event.stage !== "stream_completed" || event.committedProjection === null) {
+      continue;
+    }
+    if (expectedStreamKind === "document_process") {
+      normalizeDocument(event.committedProjection, expectedDocumentId);
+    } else {
+      normalizePlan(event.committedProjection, {
+        expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
+        expectedDocumentId,
+        path: "stream_report.committed_projection",
+      });
+    }
+  }
   return {
-    documentId: record.document_id,
-    streamKind: record.stream_kind,
-    status: record.status,
-    createdAt: record.created_at ?? "",
-    updatedAt: record.updated_at ?? "",
-    events: (record.events ?? []).map((event: any) => ({
-      stage: event.stage,
-      payload: compactPreviewValue(event.payload ?? {}) as Record<string, unknown>,
-      createdAt: event.created_at ?? ""
-    }))
+    ...decoded,
+    events: decoded.events.map((event) => ({
+      ...event,
+      payload: compactPreviewValue(event.payload) as Record<string, unknown>,
+      committedProjection:
+        event.committedProjection === null
+          ? null
+          : compactPreviewValue(event.committedProjection) as Record<string, unknown>,
+    })),
   };
 }
 
@@ -1397,17 +1424,17 @@ export async function probeRuntimeOpenAIModels(input: {
 }
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/process-events`)
   );
-  return normalizeStreamReport(payload);
+  return normalizeStreamReport(payload, documentId, "document_process");
 }
 
 export async function getDocumentPlanEvents(documentId: string): Promise<StreamReport> {
-  const payload = await readJson<any>(
+  const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/documents/${documentId}/plan-events`)
   );
-  return normalizeStreamReport(payload);
+  return normalizeStreamReport(payload, documentId, "learning_plan");
 }
 
 export async function uploadDocument(
@@ -1457,7 +1484,7 @@ export async function processDocumentStream(
     forceOcr?: boolean;
     signal?: AbortSignal;
   },
-  onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void
+  onEvent: (event: StreamEvent) => void
 ): Promise<DocumentRecord> {
   const response = await request(`${AI_BASE_URL()}/documents/${documentId}/process/stream`, {
     method: "POST",
@@ -1474,51 +1501,25 @@ export async function processDocumentStream(
     throw new Error(text || `HTTP ${response.status}`);
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let finalDocument: DocumentRecord | null = null;
-  let streamError: string | null = null;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        continue;
-      }
-      const event = JSON.parse(trimmed) as {
-        stage: string;
-        payload?: Record<string, unknown>;
-        document?: unknown;
-      };
-      onEvent({
-        stage: event.stage,
-        payload: event.payload ?? {}
-      });
-      if (event.stage === "stream_cancelled") {
-        throw new DOMException("stream_interrupted", "AbortError");
-      }
-      if (event.stage === "stream_error") {
-        streamError = formatStreamErrorPayload(event.payload, "processing_stream_error");
-      }
-      if (event.document) {
-        finalDocument = normalizeDocument(event.document, documentId);
-      }
+  const machine = new StrictStreamStateMachine({
+    streamKind: "document_process",
+    subject: { subjectType: "document", subjectId: documentId },
+  });
+  const terminal = await consumeVersionedStream(response.body, machine, (event) => {
+    if (event.stage === "stream_completed") {
+      finalDocument = normalizeDocument(event.committedProjection, documentId);
     }
-    if (done) {
-      break;
-    }
+    onEvent(event);
+  });
+  if (terminal.stage === "stream_cancelled") {
+    throw new DOMException("stream_interrupted", "AbortError");
   }
-
-  if (streamError) {
-    throw new Error(streamError);
+  if (terminal.stage === "stream_error") {
+    throw new Error(formatStreamErrorPayload(terminal.payload, "processing_stream_error"));
   }
   if (!finalDocument) {
-    throw new Error("processing_stream_ended_without_document");
+    throw new Error("processing_stream_committed_terminal_without_document");
   }
   return finalDocument;
 }
@@ -1658,7 +1659,7 @@ export async function deleteLearningPlan(planId: string): Promise<void> {
 
 export async function createLearningPlanStream(
   goal: LearningGoal,
-  onEvent: (event: { stage: string; payload: Record<string, unknown> }) => void,
+  onEvent: (event: StreamEvent) => void,
   options?: { signal?: AbortSignal }
 ): Promise<LearningPlan> {
   const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
@@ -1684,53 +1685,32 @@ export async function createLearningPlanStream(
     throw new Error(text || `HTTP ${response.status}`);
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
   let finalPlan: LearningPlan | null = null;
-  let streamError: string | null = null;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        continue;
-      }
-      const event = JSON.parse(trimmed) as {
-        stage: string;
-        payload?: Record<string, unknown>;
-        plan?: unknown;
-      };
-      onEvent({
-        stage: event.stage,
-        payload: event.payload ?? {}
+  const expectedDocumentId = goal.documentId ?? "";
+  const machine = new StrictStreamStateMachine({
+    streamKind: "learning_plan",
+    subject: expectedDocumentId
+      ? { subjectType: "document", subjectId: expectedDocumentId }
+      : { subjectType: "learning_plan_request", subjectId: clientRequestId },
+  });
+  const terminal = await consumeVersionedStream(response.body, machine, (event) => {
+    if (event.stage === "stream_completed") {
+      finalPlan = normalizePlan(event.committedProjection, {
+        expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
+        expectedDocumentId,
+        path: "stream.committed_projection",
       });
-      if (event.stage === "stream_cancelled") {
-        throw new DOMException("stream_interrupted", "AbortError");
-      }
-      if (event.stage === "stream_error") {
-        streamError = formatStreamErrorPayload(event.payload, "learning_plan_stream_error");
-      }
-      if (event.plan) {
-        finalPlan = normalizePlan(event.plan, {
-          expectedDocumentId: goal.documentId ?? "",
-        });
-      }
     }
-    if (done) {
-      break;
-    }
+    onEvent(event);
+  });
+  if (terminal.stage === "stream_cancelled") {
+    throw new DOMException("stream_interrupted", "AbortError");
   }
-
-  if (streamError) {
-    throw new Error(streamError);
+  if (terminal.stage === "stream_error") {
+    throw new Error(formatStreamErrorPayload(terminal.payload, "learning_plan_stream_error"));
   }
   if (!finalPlan) {
-    throw new Error("learning_plan_stream_ended_without_plan");
+    throw new Error("learning_plan_stream_committed_terminal_without_plan");
   }
   return finalPlan;
 }

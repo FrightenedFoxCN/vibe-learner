@@ -409,7 +409,6 @@ export function decodeDocumentPlanningContext(
 function decodePlanStudyUnit(
   raw: unknown,
   path: string,
-  documentId: string,
 ): StudyUnit {
   const value = decoder.record(raw, path);
   const unit: StudyUnit = {
@@ -451,10 +450,45 @@ function decodePlanStudyUnit(
       1,
     ),
   };
-  decoder.equal(unit.documentId, documentId, `${path}.document_id`);
   decoder.range(unit.pageStart, unit.pageEnd, `${path}.page_range`);
   decoder.unique(unit.sourceSectionIds, `${path}.source_section_ids`);
   return unit;
+}
+
+function validatePlanStudyUnitIdentity(
+  studyUnits: StudyUnit[],
+  creationMode: "document" | "goal_only",
+  documentId: string,
+  path: string,
+): void {
+  if (creationMode === "document") {
+    for (const [index, unit] of studyUnits.entries()) {
+      decoder.equal(unit.documentId, documentId, `${path}[${index}].document_id`);
+    }
+    return;
+  }
+
+  if (studyUnits.length === 0) return;
+  const syntheticDocumentId = studyUnits[0]?.documentId ?? "";
+  if (!/^goal-only:[^:\s]+$/.test(syntheticDocumentId)) {
+    throw new PlanningDecodeError(
+      `${path}[0].document_id`,
+      "invalid_goal_only_study_unit_scope",
+    );
+  }
+  for (const [index, unit] of studyUnits.entries()) {
+    decoder.equal(
+      unit.documentId,
+      syntheticDocumentId,
+      `${path}[${index}].document_id`,
+    );
+    if (!unit.id.startsWith(`${syntheticDocumentId}:study-unit:`)) {
+      throw new PlanningDecodeError(
+        `${path}[${index}].id`,
+        "goal_only_study_unit_scope_mismatch",
+      );
+    }
+  }
 }
 
 function decodeContentSlice(
@@ -792,7 +826,13 @@ export function decodeLearningPlan(
   const studyUnits = decoder.array(
     decoder.field(value, "study_units", path),
     `${path}.study_units`,
-    (item, itemPath) => decodePlanStudyUnit(item, itemPath, documentId),
+    (item, itemPath) => decodePlanStudyUnit(item, itemPath),
+  );
+  validatePlanStudyUnitIdentity(
+    studyUnits,
+    creationMode,
+    documentId,
+    `${path}.study_units`,
   );
   decoder.unique(studyUnits.map((unit) => unit.id), `${path}.study_units.id`);
   decoder.nonDecreasing(studyUnits.map((unit) => unit.pageStart), `${path}.study_units.page_start`);

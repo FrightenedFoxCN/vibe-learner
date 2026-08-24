@@ -494,16 +494,51 @@ export interface DocumentPlanningTraceResponse {
   trace: PlanGenerationTrace | null;
 }
 
+export type StreamKind = "document_process" | "learning_plan";
+export type StreamSubjectType = "document" | "learning_plan_request";
+export type StreamCommitStatus = "committed" | "not_committed" | "uncertain";
+
+export interface StreamSubject {
+  subjectType: StreamSubjectType;
+  subjectId: string;
+}
+
+export interface StreamTerminalEvidence {
+  commitStatus: StreamCommitStatus;
+  domainOperationId: string;
+  domainOperationStatus: string;
+  evidenceScope: "primary_output_only";
+  resourceType: "document" | "learning_plan" | null;
+  resourceId: string | null;
+  commitContractVersion: string | null;
+  projectionContractVersion: string | null;
+  projectionDigest: string | null;
+}
+
 export interface StreamEvent {
+  eventSchemaVersion: "stream-event-v1" | null;
+  operationId: string | null;
+  eventId: string | null;
+  eventSequence: number | null;
+  streamKind: StreamKind | null;
+  subject: StreamSubject | null;
   stage: string;
   payload: Record<string, unknown>;
+  payloadContractVersion: string | null;
+  payloadDigest: string | null;
+  terminalEvidence: StreamTerminalEvidence | null;
+  committedProjection: Record<string, unknown> | null;
   createdAt: string;
 }
 
 export interface StreamReport {
+  reportSchemaVersion: "stream-report-v1" | null;
+  operationId: string | null;
+  subject: StreamSubject | null;
   documentId: string;
-  streamKind: string;
-  status: string;
+  streamKind: StreamKind;
+  status: "idle" | "running" | "completed" | "error" | "cancelled";
+  lastEventSequence: number | null;
   createdAt: string;
   updatedAt: string;
   events: StreamEvent[];

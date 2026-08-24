@@ -104,7 +104,7 @@ function decodeStudyUnit(
   raw: unknown,
   path: string,
   scope: DocumentScope,
-  sectionIds: ReadonlySet<string>,
+  allowedSourceSectionIds: ReadonlySet<string> | null,
 ): StudyUnit {
   const value = decoder.record(raw, path);
   const sourceSectionIds = decoder.stringArray(
@@ -113,7 +113,7 @@ function decodeStudyUnit(
   );
   decoder.unique(sourceSectionIds, `${path}.source_section_ids`);
   for (const [index, sectionId] of sourceSectionIds.entries()) {
-    if (!sectionIds.has(sectionId)) {
+    if (allowedSourceSectionIds !== null && !allowedSourceSectionIds.has(sectionId)) {
       throw new DocumentDecodeError(
         `${path}.source_section_ids[${index}]`,
         "unknown_section_reference",
@@ -164,15 +164,43 @@ function decodeStudyUnits(
   raw: unknown,
   path: string,
   scope: DocumentScope,
-  sections: DocumentSection[],
+  sourceSections: DocumentSection[] | null,
 ): StudyUnit[] {
-  const sectionIds = new Set(sections.map((section) => section.id));
+  const sourceSectionIds = sourceSections === null
+    ? null
+    : new Set(sourceSections.map((section) => section.id));
   const units = decoder.array(raw, path, (item, itemPath) =>
-    decodeStudyUnit(item, itemPath, scope, sectionIds)
+    decodeStudyUnit(item, itemPath, scope, sourceSectionIds)
   );
   decoder.unique(units.map((unit) => unit.id), `${path}.id`);
   decoder.nonDecreasing(units.map((unit) => unit.pageStart), `${path}.page_start`);
   return units;
+}
+
+function validateDocumentSectionProjection(
+  sections: DocumentSection[],
+  studyUnits: StudyUnit[],
+  path: string,
+): void {
+  const projectedUnits = studyUnits.filter((unit) => unit.includeInPlan);
+  decoder.equal(sections.length, projectedUnits.length, `${path}.sections`);
+  for (const [index, section] of sections.entries()) {
+    const unit = projectedUnits[index];
+    if (
+      unit === undefined ||
+      section.id !== unit.id ||
+      section.documentId !== unit.documentId ||
+      section.title !== unit.title ||
+      section.pageStart !== unit.pageStart ||
+      section.pageEnd !== unit.pageEnd ||
+      section.level !== 1
+    ) {
+      throw new DocumentDecodeError(
+        `${path}.sections[${index}]`,
+        "study_unit_section_projection_mismatch",
+      );
+    }
+  }
 }
 
 export function decodeDocumentRecord(
@@ -195,8 +223,9 @@ export function decodeDocumentRecord(
     decoder.field(value, "study_units", path),
     `${path}.study_units`,
     scope,
-    sections,
+    null,
   );
+  validateDocumentSectionProjection(sections, studyUnits, path);
   const studyUnitCount = decoder.integer(
     decoder.field(value, "study_unit_count", path),
     `${path}.study_unit_count`,

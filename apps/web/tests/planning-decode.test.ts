@@ -90,6 +90,50 @@ function wirePlan() {
   };
 }
 
+function wireGoalOnlyPlan() {
+  const syntheticDocumentId = "goal-only:f9ebca2c";
+  const unitId = `${syntheticDocumentId}:study-unit:goal:1`;
+  const scheduleId = "schedule-goal-1";
+  return {
+    ...wirePlan(),
+    id: "plan-goal-1",
+    document_id: "",
+    creation_mode: "goal_only",
+    study_units: [
+      {
+        ...wireUnit(),
+        id: unitId,
+        document_id: syntheticDocumentId,
+        source_section_ids: [],
+      },
+    ],
+    schedule: [
+      {
+        ...wirePlan().schedule[0],
+        id: scheduleId,
+        unit_id: unitId,
+        schedule_chapters: [
+          {
+            ...wireChapter(),
+            id: `${unitId}:schedule-chapter:1`,
+            source_section_ids: [],
+            content_slices: [
+              { page_start: 1, page_end: 2, source_section_ids: [] },
+            ],
+          },
+        ],
+      },
+    ],
+    study_unit_progress: [
+      {
+        ...wirePlan().study_unit_progress[0],
+        unit_id: unitId,
+        schedule_ids: [scheduleId],
+      },
+    ],
+  };
+}
+
 function wirePlanningContext() {
   const section = {
     section_id: "section-1",
@@ -196,6 +240,58 @@ test("Planning decoder accepts a coherent plan and list envelope", () => {
   });
   assert.equal(plan.schedule[0]?.scheduleChapters[0]?.anchorPageEnd, 2);
   assert.deepEqual(decodeLearningPlanList({ items: [wirePlan()] }), [plan]);
+});
+
+test("Planning decoder accepts the real goal-only synthetic Study Unit scope", () => {
+  const plan = decodeLearningPlan(wireGoalOnlyPlan(), {
+    expectedPlanId: "plan-goal-1",
+    expectedDocumentId: "",
+  });
+
+  assert.equal(plan.documentId, "");
+  assert.equal(plan.creationMode, "goal_only");
+  assert.equal(plan.studyUnits[0]?.documentId, "goal-only:f9ebca2c");
+});
+
+test("Planning decoder rejects forged goal-only Study Unit scopes", () => {
+  const goalOnlyPlan = wireGoalOnlyPlan();
+  const firstUnit = goalOnlyPlan.study_units[0];
+  assert.throws(
+    () => decodeLearningPlan({
+      ...goalOnlyPlan,
+      study_units: [{ ...firstUnit, document_id: "document-1" }],
+    }),
+    (error: unknown) =>
+      error instanceof PlanningDecodeError &&
+      error.reason === "invalid_goal_only_study_unit_scope",
+  );
+  assert.throws(
+    () => decodeLearningPlan({
+      ...goalOnlyPlan,
+      study_units: [
+        firstUnit,
+        {
+          ...firstUnit,
+          id: "goal-only:attacker:study-unit:goal:2",
+          document_id: "goal-only:attacker",
+          page_start: 3,
+          page_end: 3,
+        },
+      ],
+    }),
+    (error: unknown) =>
+      error instanceof PlanningDecodeError &&
+      error.path === "learning_plan.study_units[1].document_id",
+  );
+  assert.throws(
+    () => decodeLearningPlan({
+      ...goalOnlyPlan,
+      study_units: [{ ...firstUnit, id: "goal-only:other:study-unit:goal:1" }],
+    }),
+    (error: unknown) =>
+      error instanceof PlanningDecodeError &&
+      error.reason === "goal_only_study_unit_scope_mismatch",
+  );
 });
 
 test("Planning decoder rejects plan/document identity and illegal enums", () => {

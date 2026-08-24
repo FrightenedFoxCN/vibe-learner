@@ -34,6 +34,17 @@ function wireStudyUnit(id = "unit-1", pageStart = 1, pageEnd = 2) {
   };
 }
 
+function wireProjectedSection(unit = wireStudyUnit()) {
+  return {
+    id: unit.id,
+    document_id: unit.document_id,
+    title: unit.title,
+    page_start: unit.page_start,
+    page_end: unit.page_end,
+    level: 1,
+  };
+}
+
 function wireDocument() {
   return {
     id: "document-1",
@@ -44,7 +55,7 @@ function wireDocument() {
     ocr_status: "completed",
     created_at: "2026-08-24T00:00:00Z",
     updated_at: "2026-08-24T00:01:00Z",
-    sections: [wireSection()],
+    sections: [wireProjectedSection()],
     study_units: [wireStudyUnit()],
     study_unit_count: 1,
     page_count: 2,
@@ -136,26 +147,33 @@ test("Document decoder rejects wrong identity, status, count, and scalar coercio
   }
 });
 
-test("Document decoder rejects unordered, duplicate, reversed, and broken references", () => {
-  const secondSection = wireSection("section-2", 2, 2);
+test("Document decoder rejects unordered, duplicate, reversed, and drifted projected sections", () => {
   const secondUnit = {
     ...wireStudyUnit("unit-2", 2, 2),
     source_section_ids: ["section-2"],
   };
+  const firstProjectedSection = wireProjectedSection();
+  const secondProjectedSection = wireProjectedSection(secondUnit);
   const base = {
     ...wireDocument(),
-    sections: [wireSection(), secondSection],
+    sections: [firstProjectedSection, secondProjectedSection],
     study_units: [wireStudyUnit(), secondUnit],
     study_unit_count: 2,
   };
   assert.throws(
-    () => decodeDocumentRecord({ ...base, sections: [secondSection, wireSection()] }),
+    () => decodeDocumentRecord({
+      ...base,
+      sections: [secondProjectedSection, firstProjectedSection],
+    }),
     (error: unknown) =>
       error instanceof DocumentDecodeError &&
       error.reason === "expected_non_decreasing_order",
   );
   assert.throws(
-    () => decodeDocumentRecord({ ...base, sections: [wireSection(), wireSection()] }),
+    () => decodeDocumentRecord({
+      ...base,
+      sections: [firstProjectedSection, firstProjectedSection],
+    }),
     DocumentDecodeError,
   );
   assert.throws(
@@ -168,11 +186,16 @@ test("Document decoder rejects unordered, duplicate, reversed, and broken refere
   assert.throws(
     () => decodeDocumentRecord({
       ...wireDocument(),
-      study_units: [{ ...wireStudyUnit(), source_section_ids: ["missing"] }],
+      sections: [{ ...wireProjectedSection(), title: "Forged" }],
     }),
     (error: unknown) =>
-      error instanceof DocumentDecodeError && error.reason === "unknown_section_reference",
+      error instanceof DocumentDecodeError &&
+      error.reason === "study_unit_section_projection_mismatch",
   );
+  assert.doesNotThrow(() => decodeDocumentRecord({
+    ...wireDocument(),
+    study_units: [{ ...wireStudyUnit(), source_section_ids: ["raw-section-not-projected"] }],
+  }));
 });
 
 test("Document decoder rejects non-finite confidence", () => {
@@ -204,6 +227,10 @@ test("Document Debug decoder validates page order, ranges, chunk refs, and nulla
     {
       ...wireDebug(),
       chunks: [{ ...wireDebug().chunks[0], page_end: 3 }],
+    },
+    {
+      ...wireDebug(),
+      study_units: [{ ...wireStudyUnit(), source_section_ids: ["missing"] }],
     },
     { ...wireDebug(), ocr_engine: 7 },
     { ...wireDebug(), warnings: [{ code: "notice", message: "Notice", page_number: "1" }] },

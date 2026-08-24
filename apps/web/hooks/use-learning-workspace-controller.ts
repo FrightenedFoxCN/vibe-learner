@@ -519,7 +519,7 @@ export function useLearningWorkspaceController({
             signal: abortController.signal,
           },
           (event) => {
-            const streamId = String(event.payload.stream_id ?? "").trim();
+            const streamId = event.operationId?.trim() ?? "";
             if (streamId) {
               processStreamIdRef.current = streamId;
             }
@@ -579,7 +579,7 @@ export function useLearningWorkspaceController({
           sceneProfile,
         },
         (event) => {
-          const streamId = String(event.payload.stream_id ?? "").trim();
+          const streamId = event.operationId?.trim() ?? "";
           if (streamId) {
             planStreamIdRef.current = streamId;
           }
