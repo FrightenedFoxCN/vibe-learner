@@ -55,6 +55,7 @@ This roadmap keeps the current local-first product shape intact while removing t
 
 - Use `tauri-plugin-stronghold` as the encrypted local vault.
 - Require a user-created master password on first secure setup.
+- Keep every desktop navigation destination except Settings unavailable until the first Vault has been created.
 - Store API credentials only in Stronghold, never in backend JSON, SQLite, or logs.
 - Keep ordinary runtime settings in backend storage, but replace raw secret values with configured-state flags over time.
 - Add lock, unlock, change-password, reset-vault, and status flows.
@@ -100,7 +101,8 @@ This roadmap keeps the current local-first product shape intact while removing t
   - macOS `dmg`
   - Windows `nsis`
   - Linux `AppImage`
-- Add CI matrix builds that produce unsigned preview installers.
+- Add CI matrix builds that produce ad-hoc-signed preview installers and verify
+  the final macOS bundle seal from inside the DMG.
 
 ## Security Model
 

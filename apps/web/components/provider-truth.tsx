@@ -17,48 +17,51 @@ const SCOPE_LABELS: Record<ProviderScope, string> = {
 export function ProviderTruth({ scope }: { scope: ProviderScope }) {
   const runtime = useRuntimeSettings();
   const settings = runtime.settings;
+  const scopeLabel = SCOPE_LABELS[scope];
+
   if (runtime.loading) {
-    return <div style={styles.banner}>正在确认 {SCOPE_LABELS[scope]} 的提供器状态…</div>;
+    return <ProviderMarker label="正在确认模型状态" description={`${scopeLabel}的提供器状态正在确认`} tone="neutral" />;
   }
   if (runtime.error || !settings) {
-    return (
-      <div style={{ ...styles.banner, ...styles.warning }} role="status">
-        无法读取提供器状态；当前页面不会把服务连通误报为模型可调用。
-      </div>
-    );
+    return <ProviderMarker label="模型状态不可用" description={`${scopeLabel}的提供器状态不可用`} tone="warning" />;
   }
   if (settings.planProvider === "mock") {
-    return (
-      <div style={{ ...styles.banner, ...styles.mock }} role="status">
-        <strong>本地模拟，不调用真实模型</strong>
-        <span>{SCOPE_LABELS[scope]} 将使用确定性模板结果，仅用于本地流程验证。</span>
-      </div>
-    );
+    return <ProviderMarker label="本地模拟" description={`${scopeLabel}使用本地模拟，不调用真实模型`} tone="mock" />;
   }
 
   const connection = resolveConnection(settings, scope);
   const configured = Boolean(connection.baseUrl && connection.model && connection.keyConfigured);
   return (
-    <div style={{ ...styles.banner, ...(configured ? styles.real : styles.warning) }} role="status">
-      <strong>
-        {configured
-          ? `真实模型接口已配置 · ${connection.model}`
-          : "真实模型接口配置不完整"}
-      </strong>
-      <span>
-        {configured
-          ? "已配置或模型可列出不代表当前功能可调用；请在统一设置运行代表请求验证。"
-          : "请在统一设置补齐 endpoint、模型与会话密钥。"}
-      </span>
-      {configured ? (
-        <details style={styles.details}>
-          <summary style={styles.summary}>了解可靠性边界</summary>
-          <span style={styles.detailText}>
-            功能可调用也不代表内容或事实正确；结构与提交证据只说明可靠性边界。
-          </span>
-        </details>
-      ) : null}
-    </div>
+    <ProviderMarker
+      label={configured ? `网络模型 · ${connection.model}` : "网络模型未配置"}
+      description={configured
+        ? `${scopeLabel}使用网络模型 ${connection.model}；请在统一设置运行代表请求验证。`
+        : `${scopeLabel}的网络模型接口配置不完整。`}
+      tone={configured ? "real" : "warning"}
+    />
+  );
+}
+
+function ProviderMarker({
+  label,
+  description,
+  tone,
+}: {
+  label: string;
+  description: string;
+  tone: keyof typeof toneStyles;
+}) {
+  const toneStyle = toneStyles[tone];
+  return (
+    <span
+      style={{ ...styles.marker, ...toneStyle.marker }}
+      role="status"
+      aria-label={description}
+      title={description}
+    >
+      <span style={{ ...styles.dot, ...toneStyle.dot }} aria-hidden="true" />
+      <span style={styles.label}>{label}</span>
+    </span>
   );
 }
 
@@ -88,44 +91,65 @@ function resolveConnection(
 }
 
 const styles = {
-  banner: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    alignItems: "baseline",
-    gap: "6px 12px",
-    margin: "0 0 14px",
-    padding: "10px 12px",
+  marker: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 24,
+    minWidth: 0,
+    maxWidth: "100%",
+    padding: "2px 8px",
     border: "1px solid var(--border)",
-    borderRadius: 12,
-    color: "var(--muted-foreground)",
+    borderRadius: 999,
+    color: "var(--ink-2)",
     background: "var(--panel)",
     fontSize: 13,
+    fontWeight: 600,
+    lineHeight: 1.3,
+    flexShrink: 0,
+    overflow: "hidden",
   },
-  mock: {
-    borderColor: "color-mix(in srgb, var(--warning) 38%, var(--border))",
-    background: "color-mix(in srgb, var(--warning) 8%, var(--panel))",
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+    flex: "0 0 auto",
   },
-  real: {
-    borderColor: "color-mix(in srgb, var(--positive) 35%, var(--border))",
-    background: "color-mix(in srgb, var(--positive) 7%, var(--panel))",
-  },
-  warning: {
-    borderColor: "color-mix(in srgb, var(--negative) 35%, var(--border))",
-    background: "color-mix(in srgb, var(--negative) 6%, var(--panel))",
-  },
-  details: {
-    flexBasis: "100%",
-  },
-  summary: {
-    width: "fit-content",
-    minHeight: 44,
-    display: "flex",
-    alignItems: "center",
-    cursor: "pointer",
-    color: "var(--muted-foreground)",
-  },
-  detailText: {
-    display: "block",
-    paddingTop: 4,
+  label: {
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
 };
+
+const toneStyles = {
+  neutral: {
+    marker: {},
+    dot: { background: "var(--muted)" },
+  },
+  mock: {
+    marker: {
+      borderColor: "#d8b763",
+      background: "#fff8e1",
+      color: "#725b16",
+    },
+    dot: { background: "#a16d00" },
+  },
+  real: {
+    marker: {
+      borderColor: "color-mix(in srgb, var(--positive) 35%, var(--border))",
+      background: "color-mix(in srgb, var(--positive) 7%, var(--panel))",
+      color: "var(--positive)",
+    },
+    dot: { background: "var(--positive)" },
+  },
+  warning: {
+    marker: {
+      borderColor: "color-mix(in srgb, var(--negative) 35%, var(--border))",
+      background: "color-mix(in srgb, var(--negative) 6%, var(--panel))",
+      color: "var(--negative)",
+    },
+    dot: { background: "var(--negative)" },
+  },
+} as const;

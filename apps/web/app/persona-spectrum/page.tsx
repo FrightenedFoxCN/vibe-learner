@@ -352,7 +352,7 @@ export default function PersonaSpectrumPage() {
         ? `当前编辑 · ${selectedPersona.name} · 内置只读`
         : `当前编辑 · ${selectedPersona.name}`;
     }
-    return "从人格库选择或创建一个教师人格";
+    return "新建人格草稿 — 填写名称后保存即可创建";
   }, [
     assistPending,
     cardActionPending,
@@ -708,6 +708,17 @@ export default function PersonaSpectrumPage() {
     } finally {
       setSavingPersona(false);
     }
+  }
+
+  function handleNewPersonaDraft() {
+    setConfigError("");
+    setConfigMessage("");
+    setSaveError("");
+    setPersonaLibraryError("");
+    selectPersonaDraft("");
+    updatePersonaDraft({ ...EMPTY_DRAFT });
+    dismissSystemPromptSuggestion();
+    setPersonaLibraryMessage("已新建人格草稿。填写名称后保存即可创建。");
   }
 
   async function handleUpdatePersona() {
@@ -1134,11 +1145,10 @@ export default function PersonaSpectrumPage() {
       <div style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>人格色谱</h1>
+          <ProviderTruth scope="persona" />
           <div style={styles.notice}>{pageNotice}</div>
         </div>
       </div>
-
-      <ProviderTruth scope="persona" />
 
       {loadError ? <div style={styles.errorBanner}>加载失败: {loadError}</div> : null}
 
@@ -1212,9 +1222,9 @@ export default function PersonaSpectrumPage() {
                     type="button"
                     style={{ ...styles.basicIconButton, ...styles.basicIconButtonPrimary, ...(savingPersona ? styles.basicIconButtonDisabled : {}) }}
                     disabled={savingPersona}
-                    onClick={handleCreatePersona}
-                    title={savingPersona ? "创建人格中" : "创建人格"}
-                    aria-label={savingPersona ? "创建人格中" : "创建人格"}
+                    onClick={handleNewPersonaDraft}
+                    title={savingPersona ? "保存中" : "新建人格草稿"}
+                    aria-label={savingPersona ? "保存中" : "新建人格草稿"}
                   >
                     <MaterialIcon name="add_circle" size={18} />
                   </button>
@@ -1222,9 +1232,9 @@ export default function PersonaSpectrumPage() {
                     type="button"
                     style={{ ...styles.basicIconButton, ...(savingPersona || isReadonlyPersona ? styles.basicIconButtonDisabled : {}) }}
                     disabled={savingPersona || isReadonlyPersona}
-                    onClick={handleUpdatePersona}
-                    title={savingPersona ? "更新人格中" : "更新人格"}
-                    aria-label={savingPersona ? "更新人格中" : "更新人格"}
+                    onClick={() => void (selectedPersonaId ? handleUpdatePersona() : handleCreatePersona())}
+                    title={savingPersona ? "保存中" : selectedPersonaId ? "更新人格" : "创建人格"}
+                    aria-label={savingPersona ? "保存中" : selectedPersonaId ? "更新人格" : "创建人格"}
                   >
                     <MaterialIcon name="save" size={16} />
                   </button>
@@ -1235,6 +1245,7 @@ export default function PersonaSpectrumPage() {
                 <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>人格</label>
                 <select style={styles.select} value={selectedPersonaId} onChange={(e) => selectPersonaDraft(e.target.value)}>
+                  <option value="">新建人格（未保存）</option>
                   {personas.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
                   ))}
@@ -1331,7 +1342,7 @@ export default function PersonaSpectrumPage() {
                 </div>
                 {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
                 {isReadonlyPersona ? (
-                  <span style={styles.mutedText}>只读 — 编辑后可另存为新人格</span>
+                  <span style={styles.mutedText}>内置人格只读；点击加号可开始一个新的可保存草稿。</span>
                 ) : null}
                 {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
                 {configError ? <span style={styles.errorInline}>{configError}</span> : null}

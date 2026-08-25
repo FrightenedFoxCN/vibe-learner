@@ -7,6 +7,7 @@
 - `api-reference.md`: HTTP and streaming API reference, including debug endpoints
 - `desktop-roadmap.md`: active desktop implementation roadmap for Tauri packaging, OnnxTR OCR, and master-password vault storage
 - `desktop-packaging.md`: concrete desktop preview packaging commands, artifact paths, sidecar bundling, and CI workflow notes
+- `desktop-startup-hotspots-v1.md`: packaged macOS cold-start evidence, hotspot analysis, and follow-up boundary
 - `parsing-and-planning-data-flow.md`: end-to-end backend data chain for textbook parsing, study-unit cleanup, planning context, and plan trace persistence
 - `study-chapter-and-schedule.md`: canonical terminology and runtime data chain for study units, chapter labels, schedule items, and session scope
 - `plan-text-contract.md`: canonical meaning of learning-plan learner-facing text fields

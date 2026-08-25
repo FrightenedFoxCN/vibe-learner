@@ -1107,8 +1107,6 @@ export function TavernWorkspace() {
         onArchiveToggle={() => void handleArchiveToggle()}
       />
 
-      <ProviderTruth scope="tavern" />
-
       {visibleError ? (
         <div className="tavern-alert" role="alert">
           {visibleError}
@@ -1230,6 +1228,7 @@ function TavernHeader({
           />
           {busy ? "处理中 · " : ""}{notice}
           {room ? ` · revision ${room.revision}` : ""}
+          <ProviderTruth scope="tavern" />
         </p>
       </div>
       <div className="tavern-header-actions">

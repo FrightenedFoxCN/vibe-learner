@@ -17,6 +17,7 @@ def optional(callable_, *args, **kwargs):
 
 datas = [
     (str(ROOT / "app" / "prompts"), "app/prompts"),
+    *collect_data_files("certifi", include_py_files=False),
     *optional(collect_data_files, "litellm", include_py_files=False),
     *optional(collect_data_files, "onnxtr", include_py_files=False),
     *optional(collect_data_files, "fitz", include_py_files=False),

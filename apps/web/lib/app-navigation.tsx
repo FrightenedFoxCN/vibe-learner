@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import type { AnchorHTMLAttributes, MouseEvent } from "react";
 
+import { isDesktopVaultCreationRequired } from "./desktop-vault";
 import { getDesktopRuntimeConfig } from "./runtime-config";
 
 export type AppRoutePath =
@@ -51,30 +52,23 @@ export function useAppNavigator() {
     query?: AppRouteQuery,
     options?: { replace?: boolean }
   ) => {
+    const allowedPath = resolveDesktopVaultNavigation(path);
     const desktopSafe = isDesktopNavigationMode();
-    const href = buildAppHref(path, query, { desktopSafe });
-    if (desktopSafe) {
-      if (typeof window !== "undefined") {
-        if (options?.replace) {
-          window.location.replace(href);
-        } else {
-          window.location.assign(href);
-        }
-      }
-      return;
-    }
-
-    const browserHref = buildAppHref(path, query);
+    const href = buildAppHref(allowedPath, allowedPath === path ? query : undefined, { desktopSafe });
     if (options?.replace) {
-      router.replace(browserHref as Route);
+      router.replace(href as Route);
     } else {
-      router.push(browserHref as Route);
+      router.push(href as Route);
     }
   };
 
   return {
-    href: (path: AppRoutePath, query?: AppRouteQuery) =>
-      buildAppHref(path, query, { desktopSafe: isDesktopNavigationMode() }),
+    href: (path: AppRoutePath, query?: AppRouteQuery) => {
+      const allowedPath = resolveDesktopVaultNavigation(path);
+      return buildAppHref(allowedPath, allowedPath === path ? query : undefined, {
+        desktopSafe: isDesktopNavigationMode()
+      });
+    },
     push: (path: AppRoutePath, query?: AppRouteQuery) => navigate(path, query),
     replace: (path: AppRoutePath, query?: AppRouteQuery) =>
       navigate(path, query, { replace: true }),
@@ -98,12 +92,16 @@ export function AppLink({
 }: AppLinkProps) {
   const router = useRouter();
   const desktopSafe = isDesktopNavigationMode();
+  const vaultCreationRequired = isDesktopVaultCreationRequired();
   const href = buildAppHref(path, query, { desktopSafe });
-  const browserHref = buildAppHref(path, query);
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event);
-    if (event.defaultPrevented || desktopSafe) {
+    if (vaultCreationRequired && path !== "/settings") {
+      event.preventDefault();
+      return;
+    }
+    if (event.defaultPrevented) {
       return;
     }
     if (!shouldHandleClientNavigation(event, target, download)) {
@@ -111,9 +109,9 @@ export function AppLink({
     }
     event.preventDefault();
     if (replace) {
-      router.replace(browserHref as Route);
+      router.replace(href as Route);
     } else {
-      router.push(browserHref as Route);
+      router.push(href as Route);
     }
   };
 
@@ -138,6 +136,13 @@ function normalizeAppPath(path: AppRoutePath, desktopSafe: boolean): string {
 
 function isDesktopNavigationMode(): boolean {
   return Boolean(getDesktopRuntimeConfig()?.isDesktop);
+}
+
+function resolveDesktopVaultNavigation(path: AppRoutePath): AppRoutePath {
+  if (path !== "/settings" && isDesktopVaultCreationRequired()) {
+    return "/settings";
+  }
+  return path;
 }
 
 function shouldHandleClientNavigation(

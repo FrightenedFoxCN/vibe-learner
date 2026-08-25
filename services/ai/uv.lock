@@ -2176,10 +2176,11 @@ wheels = [
 
 [[package]]
 name = "vibe-learner-ai"
-version = "0.2.1"
+version = "0.2.2"
 source = { virtual = "." }
 dependencies = [
     { name = "alembic" },
+    { name = "certifi" },
     { name = "fastapi" },
     { name = "litellm" },
     { name = "onnxtr", extra = ["cpu-headless"] },
@@ -2194,6 +2195,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.16.0" },
+    { name = "certifi", specifier = ">=2026.2.25" },
     { name = "fastapi", specifier = ">=0.116.0" },
     { name = "litellm", specifier = ">=1.82.1" },
     { name = "onnxtr", extras = ["cpu-headless"], specifier = ">=0.8.1" },

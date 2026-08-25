@@ -1466,11 +1466,10 @@ export default function SceneSetupPage() {
       <div style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>场景搭建</h1>
+          <ProviderTruth scope="scene" />
           <div style={styles.notice}>{pageNotice}</div>
         </div>
       </div>
-
-      <ProviderTruth scope="scene" />
 
       <div
         style={{

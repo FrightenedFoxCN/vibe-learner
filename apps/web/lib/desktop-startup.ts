@@ -11,6 +11,16 @@ interface DesktopStartupRequirementInput {
   settings: RuntimeSettings | null;
 }
 
+interface DesktopVaultCreationRequirementInput {
+  isDesktop: boolean;
+  vaultState?: DesktopVaultState;
+  vaultUnlocked: boolean;
+}
+
+export function requiresDesktopVaultCreation(input: DesktopVaultCreationRequirementInput) {
+  return input.isDesktop && (input.vaultState ?? "unconfigured") === "unconfigured" && !input.vaultUnlocked;
+}
+
 export function hasConfiguredRuntimeApiKey(settings: RuntimeSettings | null | undefined) {
   if (!settings) {
     return false;

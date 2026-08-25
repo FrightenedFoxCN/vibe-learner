@@ -73,10 +73,18 @@ fn runtime_config_from_state(state: &DesktopAppState) -> DesktopRuntimeConfig {
             _ => "unknown",
         },
         secret_storage_mode: "stronghold",
-        vault_state: state.vault_state,
+        vault_state: current_vault_state(state),
         vault_path: state.vault_path.clone(),
         storage_root: state.storage_root.clone(),
         startup_error: state.startup_error.clone(),
+    }
+}
+
+fn current_vault_state(state: &DesktopAppState) -> &'static str {
+    if state.vault_state == "unconfigured" && Path::new(&state.vault_path).exists() {
+        "locked"
+    } else {
+        state.vault_state
     }
 }
 

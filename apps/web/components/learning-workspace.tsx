@@ -109,11 +109,10 @@ export function LearningWorkspace() {
       <div ref={headingRef} style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>计划生成</h1>
+          <ProviderTruth scope="plan" />
           {notice ? <div style={styles.notice}>{notice}</div> : null}
         </div>
       </div>
-
-      <ProviderTruth scope="plan" />
 
       <div className="plan-content-grid">
         <div className="plan-setup-shell" style={styles.planSetupShell}>

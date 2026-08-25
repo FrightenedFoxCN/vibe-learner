@@ -7,6 +7,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
+import { normalizeRichTextContent } from "../lib/rich-text-normalize";
 import { MermaidDiagram } from "./mermaid-diagram";
 
 interface RichTextMessageClientProps {
@@ -80,19 +81,6 @@ export default function RichTextMessageClient({ content, style, inline = false }
       </ReactMarkdown>
     </WrapperTag>
   );
-}
-
-function normalizeRichTextContent(content: string) {
-  return content
-    .replace(/\r\n/g, "\n")
-    .replace(/([:：])\s+(?=\d+\.\s+)/g, "$1\n\n")
-    .replace(/([。！？])\s+(?=\d+\.\s+)/g, "$1\n\n")
-    .replace(/([:：])\s+[*-]\s+/g, "$1\n\n   - ")
-    .replace(/([。；;])\s+[*-]\s+/g, "$1\n   - ")
-    .replace(/(\n\d+\.\s[^\n]*?)\s+[*-]\s+/g, "$1\n\n   - ")
-    .replace(/\n\s*[*-]\s+/g, "\n   - ")
-    .replace(/([^\n])\n(\d+\.\s+)/g, "$1\n\n$2")
-    .replace(/\n{3,}/g, "\n\n");
 }
 
 function extractMermaidChart(children: ReactNode) {

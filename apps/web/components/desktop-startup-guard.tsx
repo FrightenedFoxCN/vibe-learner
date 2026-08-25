@@ -10,6 +10,7 @@ import {
   DESKTOP_STARTUP_QUERY_VALUE,
   resolveDesktopStartupRequirement
 } from "../lib/desktop-startup";
+import { isDesktopVaultCreationRequired } from "../lib/desktop-vault";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
 import { useRuntimeSettings } from "./runtime-settings-provider";
 
@@ -19,12 +20,26 @@ export function DesktopStartupGuard() {
   const runtimeSettings = useRuntimeSettings();
 
   useEffect(() => {
-    if (typeof window === "undefined" || runtimeSettings.loading) {
+    if (typeof window === "undefined") {
       return;
     }
 
     const desktopRuntimeConfig = getDesktopRuntimeConfig();
     if (!desktopRuntimeConfig?.isDesktop) {
+      return;
+    }
+
+    if (isDesktopVaultCreationRequired()) {
+      if (pathname !== "/settings") {
+        window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
+        appNavigator.replace("/settings", {
+          [DESKTOP_STARTUP_QUERY_KEY]: DESKTOP_STARTUP_QUERY_VALUE
+        });
+      }
+      return;
+    }
+
+    if (runtimeSettings.loading) {
       return;
     }
 

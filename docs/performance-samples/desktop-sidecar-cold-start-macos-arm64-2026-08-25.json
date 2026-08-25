@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "desktop-sidecar-cold-start-v1",
+  "artifact": {
+    "path": "apps/desktop/src-tauri/target/release/bundle/dmg/Vibe Learner_0.2.1_aarch64.dmg",
+    "sha256": "c3967371f533f4c73aa16d083952088a1bf27d5864df00e8f584ff76d4ece0a1",
+    "sizeBytes": 193470436,
+    "buildProfile": "release",
+    "gitRevision": "0524bf9",
+    "worktreeState": "dirty"
+  },
+  "measurement": {
+    "boundary": "packaged_sidecar_spawn_to_first_successful_health_200",
+    "probeCadenceMs": 200,
+    "healthRequestTimeoutMs": 800,
+    "overallTimeoutMs": 20000,
+    "notes": [
+      "Every sample uses a newly spawned packaged sidecar process and a fresh temporary SQLite/storage root.",
+      "The sampler uses the desktop runtime environment and mock planning provider, and sends health probes only over loopback HTTP.",
+      "This sampler does not independently prove that startup performs no outbound network request.",
+      "This measures the synchronous sidecar readiness gate used during desktop startup; it excludes Tauri/WebView window readiness, frontend hydration, vault initialization/unlock, and OCR/model inference."
+    ]
+  },
+  "environment": {
+    "capturedAt": "2026-08-25T12:34:32.506Z",
+    "hostname": "FFoxdeMacBook-Air.local",
+    "platform": "darwin",
+    "release": "25.6.0",
+    "macOSVersion": "26.6.2",
+    "arch": "arm64",
+    "cpu": "Apple M4",
+    "cpuCount": 10,
+    "totalMemoryBytes": 17179869184,
+    "nodeVersion": "v26.7.0",
+    "uvVersion": "0.12.3",
+    "binaryLocationDuringTest": "read-only temporary DMG mount; removed after sampling",
+    "onnxtrModelDir": null
+  },
+  "samples": [
+    {
+      "index": 1,
+      "startedAt": "2026-08-25T12:33:14.654Z",
+      "status": "ready",
+      "durationMs": 6862.400333
+    },
+    {
+      "index": 2,
+      "startedAt": "2026-08-25T12:33:21.825Z",
+      "status": "ready",
+      "durationMs": 7874.601667
+    },
+    {
+      "index": 3,
+      "startedAt": "2026-08-25T12:33:29.958Z",
+      "status": "ready",
+      "durationMs": 7057.4235
+    },
+    {
+      "index": 4,
+      "startedAt": "2026-08-25T12:33:37.289Z",
+      "status": "ready",
+      "durationMs": 6656.672917
+    },
+    {
+      "index": 5,
+      "startedAt": "2026-08-25T12:33:44.288Z",
+      "status": "ready",
+      "durationMs": 6651.199125
+    },
+    {
+      "index": 6,
+      "startedAt": "2026-08-25T12:33:51.270Z",
+      "status": "ready",
+      "durationMs": 7462.029667
+    },
+    {
+      "index": 7,
+      "startedAt": "2026-08-25T12:33:58.982Z",
+      "status": "ready",
+      "durationMs": 9080.390709
+    },
+    {
+      "index": 8,
+      "startedAt": "2026-08-25T12:34:08.373Z",
+      "status": "ready",
+      "durationMs": 7055.2985
+    },
+    {
+      "index": 9,
+      "startedAt": "2026-08-25T12:34:15.704Z",
+      "status": "ready",
+      "durationMs": 7664.900458
+    },
+    {
+      "index": 10,
+      "startedAt": "2026-08-25T12:34:23.697Z",
+      "status": "ready",
+      "durationMs": 8466.046917
+    }
+  ],
+  "summary": {
+    "sampleCount": 10,
+    "readyCount": 10,
+    "minMs": 6651.199125,
+    "maxMs": 9080.390709,
+    "meanMs": 7483.0963793,
+    "p50Ms": 7057.4235,
+    "p95Ms": 9080.390709,
+    "percentileMethod": "nearest_rank"
+  }
+}

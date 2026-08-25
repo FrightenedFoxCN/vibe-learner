@@ -1,8 +1,13 @@
 "use client";
 
+import {
+  DESKTOP_STARTUP_GUARD_SESSION_KEY,
+  requiresDesktopVaultCreation
+} from "./desktop-startup";
 import { getDesktopRuntimeConfig } from "./runtime-config";
 
 const CLIENT_NAME = "vibe-learner-runtime";
+export const DESKTOP_VAULT_STATE_CHANGE_EVENT = "vibe-learner:desktop-vault-state-change";
 
 const SECRET_KEY_MAP = {
   openaiApiKey: "openai_api_key",
@@ -33,12 +38,25 @@ export function isDesktopVaultUnlocked() {
   return Boolean(activeStronghold && activeClient);
 }
 
+export function isDesktopVaultCreationRequired() {
+  const config = getDesktopRuntimeConfig();
+  return requiresDesktopVaultCreation({
+    isDesktop: Boolean(config?.isDesktop),
+    vaultState: config?.vaultState,
+    vaultUnlocked: isDesktopVaultUnlocked(),
+  });
+}
+
 export async function initializeDesktopVault(password: string) {
   const { stronghold, client } = await loadStrongholdInstance(password);
   activeStronghold = stronghold;
   activeClient = client;
   activeVaultPath = stronghold.path;
   await stronghold.save();
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(DESKTOP_STARTUP_GUARD_SESSION_KEY, "1");
+  }
+  notifyDesktopVaultStateChange();
 }
 
 export async function unlockDesktopVault(password: string) {
@@ -46,6 +64,7 @@ export async function unlockDesktopVault(password: string) {
   activeStronghold = stronghold;
   activeClient = client;
   activeVaultPath = stronghold.path;
+  notifyDesktopVaultStateChange();
 }
 
 export async function lockDesktopVault() {
@@ -55,6 +74,7 @@ export async function lockDesktopVault() {
   activeStronghold = null;
   activeClient = null;
   activeVaultPath = "";
+  notifyDesktopVaultStateChange();
 }
 
 export async function loadDesktopVaultSecrets(): Promise<DesktopVaultSecrets> {
@@ -138,4 +158,10 @@ function decodeSecret(value: Uint8Array | null) {
     return "";
   }
   return new TextDecoder().decode(value);
+}
+
+function notifyDesktopVaultStateChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(DESKTOP_VAULT_STATE_CHANGE_EVENT));
+  }
 }

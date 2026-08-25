@@ -2,7 +2,7 @@
 
 ## Goal
 
-Produce unsigned preview desktop installers from the current monorepo for:
+Produce host-native preview desktop installers from the current monorepo for:
 
 - macOS `dmg`
 - Windows `nsis`
@@ -67,6 +67,13 @@ The generated binary is staged into:
 
 Tauri then embeds it through `bundle.externalBin`.
 
+The sidecar declares and bundles `certifi` as its portable public CA store.
+Desktop startup fills standard Python/Requests CA environment variables only
+when the user has not supplied a custom bundle. The `/models` probe also builds
+a verified SSL context from the platform defaults and adds the bundled certifi
+roots explicitly. Missing CA data fails the build or request setup; TLS
+verification and hostname checks are never disabled.
+
 ## CI Preview Builds
 
 Preview installers are produced by `.github/workflows/desktop-preview.yml`.
@@ -77,7 +84,17 @@ The workflow:
 - builds one host-native preview installer per OS in a matrix
 - uploads the generated installer as a workflow artifact
 
-These artifacts are intentionally unsigned. Signing, notarization, and auto-update release plumbing remain separate release-hardening work.
+macOS preview artifacts use Tauri's ad-hoc identity (`-`). Their hardened
+runtime is disabled because the PyInstaller one-file sidecar extracts its own
+dynamic libraries at runtime; with an ad-hoc outer signature, enabling hardened
+runtime makes macOS library validation reject those extracted libraries. CI
+mounts the final DMG and requires
+`codesign --verify --deep --strict` to pass. Ad-hoc signing is not Developer ID
+distribution signing and does not satisfy Gatekeeper or notarization on a
+default macOS security policy. A future Developer ID/notarized build must sign
+the PyInstaller sidecar and every extracted native dependency with the same
+Developer ID team before re-enabling hardened runtime. Auto-update release
+plumbing remains separate release-hardening work.
 
 ## GitHub Release Builds
 

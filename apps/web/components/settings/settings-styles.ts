@@ -89,6 +89,13 @@ export const settingsStyles: Record<string, CSSProperties> = {
     gap: 6,
     fontSize: 13
   },
+  compactConnectionField: {
+    display: "grid",
+    gap: 6,
+    width: "100%",
+    maxWidth: 280,
+    fontSize: 13
+  },
   label: {
     fontSize: 11,
     fontWeight: 600,

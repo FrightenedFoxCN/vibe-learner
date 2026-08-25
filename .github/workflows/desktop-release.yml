@@ -113,6 +113,11 @@ jobs:
       - name: Build desktop release installer
         run: npm run build:desktop
 
+      - name: Verify macOS bundle signature
+        if: runner.os == 'macOS'
+        shell: bash
+        run: bash apps/desktop/scripts/verify-macos-dmg.sh apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:

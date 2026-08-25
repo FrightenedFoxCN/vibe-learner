@@ -1,6 +1,6 @@
 {
   "name": "@vibe-learner/web",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,12 +11,12 @@
     "check": "tsc --noEmit",
     "lint": "npm run check",
     "test:tavern": "node --experimental-strip-types --test tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts",
-    "test:reliability": "node --experimental-strip-types --test tests/async-result-fence.test.ts tests/debug-overlay-accessibility.test.ts tests/document-decode.test.ts tests/navigation-study-accessibility.test.ts tests/planning-decode.test.ts tests/persona-scene-decode.test.ts tests/shared-adversarial-fixtures.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-dialog-empty-state.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts"
+    "test:reliability": "node --experimental-strip-types --test tests/async-result-fence.test.ts tests/debug-overlay-accessibility.test.ts tests/desktop-startup.test.ts tests/document-decode.test.ts tests/navigation-study-accessibility.test.ts tests/planning-decode.test.ts tests/persona-scene-decode.test.ts tests/rich-text-normalize.test.ts tests/shared-adversarial-fixtures.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-dialog-empty-state.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
     "@tauri-apps/plugin-stronghold": "^2.3.1",
-    "@vibe-learner/shared": "0.2.1",
+    "@vibe-learner/shared": "0.2.2",
     "mermaid": "^11.14.0",
     "next": "16.2.3",
     "pdfjs-dist": "^5.4.296",

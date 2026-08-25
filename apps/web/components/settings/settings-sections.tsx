@@ -600,7 +600,7 @@ function ScopeModelCard({
         <p style={styles.tip}>{config.description}</p>
       </div>
 
-      <label style={styles.field}>
+      <label style={styles.compactConnectionField}>
         <span style={styles.label}>访问密钥</span>
         <input
           type="password"
@@ -627,7 +627,7 @@ function ScopeModelCard({
           </span>
         ) : null}
       </label>
-      <label style={styles.field}>
+      <label style={styles.compactConnectionField}>
         <span style={styles.label}>服务地址</span>
         <input
           value={String(settings[config.baseUrlKey] || "")}

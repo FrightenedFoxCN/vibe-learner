@@ -7,6 +7,10 @@ import { BrandMark } from "./brand-mark";
 import { MaterialIcon, type MaterialIconName } from "./material-icon";
 import { AppLink, type AppRoutePath } from "../lib/app-navigation";
 import {
+  DESKTOP_VAULT_STATE_CHANGE_EVENT,
+  isDesktopVaultCreationRequired
+} from "../lib/desktop-vault";
+import {
   APP_NAV_COLLAPSED_STORAGE_KEY,
   BROWSER_VIEW_TOGGLE_NAV_EVENT,
   readStoredBoolean,
@@ -35,9 +39,21 @@ const NAV_ITEMS: Array<{
 
 export function TopNav({ currentPath }: TopNavProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [vaultCreationRequired, setVaultCreationRequired] = useState(false);
 
   useEffect(() => {
     setCollapsed(readStoredBoolean(APP_NAV_COLLAPSED_STORAGE_KEY));
+  }, []);
+
+  useEffect(() => {
+    const syncVaultCreationRequirement = () => {
+      setVaultCreationRequired(isDesktopVaultCreationRequired());
+    };
+    syncVaultCreationRequirement();
+    window.addEventListener(DESKTOP_VAULT_STATE_CHANGE_EVENT, syncVaultCreationRequirement);
+    return () => {
+      window.removeEventListener(DESKTOP_VAULT_STATE_CHANGE_EVENT, syncVaultCreationRequirement);
+    };
   }, []);
 
   useEffect(() => {
@@ -68,12 +84,31 @@ export function TopNav({ currentPath }: TopNavProps) {
       <nav className="app-nav-links" style={styles.nav}>
         {NAV_ITEMS.map((item) => {
           const active = item.href === currentPath;
+          const disabled = vaultCreationRequired && item.href !== "/settings";
+          const linkStyle = collapsed
+            ? { ...styles.linkCollapsed, ...(disabled ? styles.linkDisabled : {}) }
+            : disabled ? styles.linkDisabled : undefined;
+          if (disabled) {
+            return (
+              <span
+                key={item.href}
+                className="app-nav-link"
+                style={linkStyle}
+                aria-disabled="true"
+                aria-label={item.label}
+                title="请先在统一设置创建桌面 Vault"
+              >
+                <MaterialIcon name={item.icon} size={18} />
+                {!collapsed ? <span className="app-nav-label">{item.label}</span> : null}
+              </span>
+            );
+          }
           return (
             <AppLink
               key={item.href}
               path={item.href}
               className={active ? "app-nav-link--active" : "app-nav-link"}
-              style={collapsed ? styles.linkCollapsed : undefined}
+              style={linkStyle}
               aria-label={item.label}
               title={item.label}
             >
@@ -173,6 +208,10 @@ const styles: Record<string, CSSProperties> = {
   linkCollapsed: {
     justifyContent: "center",
     padding: "0",
+  },
+  linkDisabled: {
+    cursor: "not-allowed",
+    opacity: 0.45,
   },
   toggle: {
     ...toggleBase,

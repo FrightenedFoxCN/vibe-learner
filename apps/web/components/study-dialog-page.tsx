@@ -458,11 +458,10 @@ export function StudyDialogPage() {
       <div ref={headingRef} style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>章节对话</h1>
+          <ProviderTruth scope="study" />
           {notice ? <div style={styles.notice}>{notice}</div> : null}
         </div>
       </div>
-
-      <ProviderTruth scope="study" />
 
       <section style={styles.mainStage}>
         {isHydrated && !planHistoryItems.length ? (

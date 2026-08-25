@@ -7,6 +7,8 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from app.core.tls import create_outbound_ssl_context
+
 
 _IMAGE_MODALITY_TOKENS = {
     "image",
@@ -51,7 +53,11 @@ def probe_openai_models(*, api_key: str, base_url: str, timeout_seconds: int) ->
         method="GET",
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+        with urllib.request.urlopen(
+            request,
+            timeout=timeout_seconds,
+            context=create_outbound_ssl_context(),
+        ) as response:
             raw_payload = json.loads(response.read().decode("utf-8"))
         return parse_model_probe_payload(raw_payload)
     except urllib.error.HTTPError as exc:

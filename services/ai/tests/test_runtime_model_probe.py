@@ -1,9 +1,41 @@
 import unittest
+from unittest.mock import MagicMock, patch
 
-from app.services.runtime_model_probe import describe_model_capabilities, parse_model_probe_payload
+from app.services.runtime_model_probe import (
+    describe_model_capabilities,
+    parse_model_probe_payload,
+    probe_openai_models,
+)
 
 
 class RuntimeModelProbeTests(unittest.TestCase):
+    def test_probe_uses_verified_outbound_ssl_context(self) -> None:
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = b'{"data":[{"id":"test-model"}]}'
+        ssl_context = MagicMock()
+
+        with (
+            patch(
+                "app.services.runtime_model_probe.create_outbound_ssl_context",
+                return_value=ssl_context,
+            ) as create_context,
+            patch(
+                "app.services.runtime_model_probe.urllib.request.urlopen",
+                return_value=response,
+            ) as urlopen,
+        ):
+            result = probe_openai_models(
+                api_key="test-key",
+                base_url="https://api.example.test/v1",
+                timeout_seconds=7,
+            )
+
+        create_context.assert_called_once_with()
+        self.assertIs(urlopen.call_args.kwargs["context"], ssl_context)
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], 7)
+        self.assertEqual(result["models"], ["test-model"])
+
     def test_parse_payload_preserves_capability_metadata(self) -> None:
         payload = {
             "data": [
