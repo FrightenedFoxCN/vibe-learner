@@ -51,7 +51,12 @@ export function ProviderTruth({ scope }: { scope: ProviderScope }) {
           : "请在统一设置补齐 endpoint、模型与会话密钥。"}
       </span>
       {configured ? (
-        <span>功能可调用也不代表内容或事实正确；结构与提交证据只说明可靠性边界。</span>
+        <details style={styles.details}>
+          <summary style={styles.summary}>了解可靠性边界</summary>
+          <span style={styles.detailText}>
+            功能可调用也不代表内容或事实正确；结构与提交证据只说明可靠性边界。
+          </span>
+        </details>
       ) : null}
     </div>
   );
@@ -107,5 +112,20 @@ const styles = {
   warning: {
     borderColor: "color-mix(in srgb, var(--negative) 35%, var(--border))",
     background: "color-mix(in srgb, var(--negative) 6%, var(--panel))",
+  },
+  details: {
+    flexBasis: "100%",
+  },
+  summary: {
+    width: "fit-content",
+    minHeight: 44,
+    display: "flex",
+    alignItems: "center",
+    cursor: "pointer",
+    color: "var(--muted-foreground)",
+  },
+  detailText: {
+    display: "block",
+    paddingTop: 4,
   },
 };

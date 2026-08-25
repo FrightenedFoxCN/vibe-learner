@@ -17,9 +17,9 @@ test("strict Tavern decoders accept live backend room aggregates", {
     assert.equal(response.ok, true);
     return response.json();
   });
-  const rooms = normalizeTavernRoomList(roomPayload);
-  assert.ok(rooms.length > 0, "live backend must expose a Tavern room fixture");
-  const roomId = rooms[0]!.id;
+  const roomPage = normalizeTavernRoomList(roomPayload);
+  assert.ok(roomPage.items.length > 0, "live backend must expose a Tavern room fixture");
+  const roomId = roomPage.items[0]!.id;
 
   const [detailPayload, runPayload] = await Promise.all([
     fetch(`${apiBaseUrl}/tavern/rooms/${roomId}?tail=true&limit=40`).then((response) => {

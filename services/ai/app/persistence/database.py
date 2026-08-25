@@ -35,6 +35,7 @@ class Database:
         if self.url.startswith("sqlite"):
             with self.engine.begin() as connection:
                 self._ensure_sqlite_study_session_indexes(connection)
+                self._ensure_sqlite_tavern_room_indexes(connection)
 
     def dispose(self) -> None:
         self.engine.dispose()
@@ -358,6 +359,13 @@ class Database:
             return
         for index in table.indexes:
             index.create(connection, checkfirst=True)
+
+    @staticmethod
+    def _ensure_sqlite_tavern_room_indexes(connection) -> None:
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS ix_tavern_rooms_updated_at_id "
+            "ON tavern_rooms (updated_at DESC, id DESC)"
+        )
 
     def _rebuild_legacy_study_sessions_table(self, connection, *, source_table: str) -> None:
         legacy_table = "study_sessions_legacy_migration"

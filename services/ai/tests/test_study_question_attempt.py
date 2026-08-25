@@ -13,8 +13,10 @@ from sqlalchemy import select
 from app.models.api import StudyQuestionAttemptRequest, StudySessionResponse
 from app.models.domain import LearnerAttachmentRecord, StudyChatResult
 from app.models.study_question import (
+    StudyQuestionAttemptResponseV1,
     StudyQuestionProposalV1,
     project_study_question_proposal,
+    study_question_attempt_response_digest,
 )
 from app.models.study_chat_operation import (
     STUDY_CHAT_FINGERPRINT_CONTRACT_VERSION,
@@ -23,7 +25,7 @@ from app.models.study_chat_operation import (
     study_chat_request_fingerprint,
     study_chat_response_digest,
 )
-from app.persistence.models import StudyQuestionAttemptRow
+from app.persistence.models import StudyQuestionAttemptRow, StudySessionRow
 from app.services.local_store import LocalJsonStore
 from app.services.study_sessions import StudySessionService
 
@@ -182,6 +184,106 @@ class StudyQuestionAttemptTests(unittest.TestCase):
         self.assertIsNone(question["result"])
         self.assertNotIn("answer_key", question)
         self.assertNotIn("grading_spec", question)
+
+    def test_explicit_unknown_legacy_question_schema_is_not_downgraded(self) -> None:
+        session = self._question_session(session_id="session-legacy-unknown-schema")
+        payload = session.model_dump(mode="json")
+        payload["turns"][0]["interactive_question"] = {
+            "schema_version": "study-interactive-question-unknown",
+            "question_type": "multiple_choice",
+            "prompt": "Legacy prompt",
+            "options": [
+                {"key": "A", "text": "First"},
+                {"key": "B", "text": "Second"},
+            ],
+            "answer_key": "A",
+        }
+
+        with self.assertRaises(ValidationError) as invalid:
+            StudySessionResponse.model_validate(payload)
+
+        self.assertTrue(
+            any(
+                error["type"] == "literal_error"
+                and error["loc"][-1] == "schema_version"
+                for error in invalid.exception.errors()
+            )
+        )
+
+    def test_legacy_question_rejects_extra_committed_field_corruption(self) -> None:
+        session = self._question_session(session_id="session-legacy-extra-field")
+        payload = session.model_dump(mode="json")
+        payload["turns"][0]["interactive_question"] = {
+            "question_type": "multiple_choice",
+            "prompt": "Legacy prompt",
+            "options": [
+                {"key": "A", "text": "First"},
+                {"key": "B", "text": "Second"},
+            ],
+            "answer_key": "A",
+            "committed_revision": 999,
+        }
+
+        with self.assertRaises(ValidationError) as invalid:
+            StudySessionResponse.model_validate(payload)
+
+        self.assertTrue(
+            any(
+                error["type"] == "extra_forbidden"
+                and error["loc"][-1] == "committed_revision"
+                for error in invalid.exception.errors()
+            )
+        )
+
+    def test_legacy_question_without_grading_is_readable_but_unanswerable(self) -> None:
+        session = self._question_session(session_id="session-legacy-ungradeable")
+        payload = session.model_dump(mode="json")
+        payload["turns"][0]["interactive_question"] = {
+            "question_type": "multiple_choice",
+            "prompt": "Legacy prompt without private grading material",
+            "difficulty": "medium",
+            "topic": "legacy",
+            "options": [
+                {"key": "A", "text": "First"},
+                {"key": "B", "text": "Second"},
+            ],
+            "call_back": False,
+        }
+        with self.store.database.session() as database_session:
+            row = database_session.get(StudySessionRow, session.id)
+            assert row is not None
+            row.payload = payload
+
+        stored = self.service.require_session(session.id)
+        public = StudySessionResponse.model_validate(
+            stored.model_dump(mode="json")
+        ).model_dump(mode="json")
+        question = public["turns"][0]["interactive_question"]
+        self.assertEqual(question["schema_version"], "study-interactive-question-v2")
+        self.assertIsNone(question["result"])
+        self.assertNotIn("grading_spec", question)
+        with self.assertRaises(HTTPException) as unavailable:
+            self.service.record_question_attempt(
+                session_id=session.id,
+                turn_id=stored.turns[0].id,
+                expected_session_revision=stored.revision,
+                client_attempt_id="client-attempt-legacy-ungradeable",
+                submitted_answer="A",
+            )
+        self.assertEqual(unavailable.exception.status_code, 409)
+        self.assertEqual(
+            unavailable.exception.detail,
+            "study_question_attempt_grading_unavailable",
+        )
+        with self.store.database.session() as database_session:
+            self.assertIsNone(
+                database_session.scalar(
+                    select(StudyQuestionAttemptRow).where(
+                        StudyQuestionAttemptRow.client_attempt_id
+                        == "client-attempt-legacy-ungradeable"
+                    )
+                )
+            )
 
     def test_historical_chat_exchange_version_remains_digest_valid(self) -> None:
         request = StudyChatOperationRequestPayload(
@@ -370,6 +472,110 @@ class StudyQuestionAttemptTests(unittest.TestCase):
                         == "client-attempt-stale"
                     )
                 )
+            )
+
+    def test_attempt_read_back_rejects_unknown_response_schema(self) -> None:
+        session = self._question_session(session_id="session-attempt-unknown-schema")
+        turn_id = session.turns[0].id
+        self.service.record_question_attempt(
+            session_id=session.id,
+            turn_id=turn_id,
+            expected_session_revision=session.revision,
+            client_attempt_id="client-attempt-unknown-schema",
+            submitted_answer="A",
+        )
+        with self.store.database.session() as database_session:
+            row = database_session.scalar(
+                select(StudyQuestionAttemptRow).where(
+                    StudyQuestionAttemptRow.client_attempt_id
+                    == "client-attempt-unknown-schema"
+                )
+            )
+            assert row is not None
+            row.response_schema_version = "study-question-attempt-response-unknown"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_question_attempt_schema_unsupported",
+        ):
+            self.service.record_question_attempt(
+                session_id=session.id,
+                turn_id=turn_id,
+                expected_session_revision=session.revision,
+                client_attempt_id="client-attempt-unknown-schema",
+                submitted_answer="A",
+            )
+
+    def test_attempt_read_back_rejects_response_digest_drift(self) -> None:
+        session = self._question_session(session_id="session-attempt-digest-drift")
+        turn_id = session.turns[0].id
+        self.service.record_question_attempt(
+            session_id=session.id,
+            turn_id=turn_id,
+            expected_session_revision=session.revision,
+            client_attempt_id="client-attempt-digest-drift",
+            submitted_answer="A",
+        )
+        with self.store.database.session() as database_session:
+            row = database_session.scalar(
+                select(StudyQuestionAttemptRow).where(
+                    StudyQuestionAttemptRow.client_attempt_id
+                    == "client-attempt-digest-drift"
+                )
+            )
+            assert row is not None
+            row.response_digest = "0" * 64
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_question_attempt_response_projection_mismatch",
+        ):
+            self.service.record_question_attempt(
+                session_id=session.id,
+                turn_id=turn_id,
+                expected_session_revision=session.revision,
+                client_attempt_id="client-attempt-digest-drift",
+                submitted_answer="A",
+            )
+
+    def test_self_consistent_forged_attempt_response_fails_turn_read_back(self) -> None:
+        session = self._question_session(session_id="session-attempt-forged-response")
+        turn_id = session.turns[0].id
+        self.service.record_question_attempt(
+            session_id=session.id,
+            turn_id=turn_id,
+            expected_session_revision=session.revision,
+            client_attempt_id="client-attempt-forged-response",
+            submitted_answer="A",
+        )
+        with self.store.database.session() as database_session:
+            row = database_session.scalar(
+                select(StudyQuestionAttemptRow).where(
+                    StudyQuestionAttemptRow.client_attempt_id
+                    == "client-attempt-forged-response"
+                )
+            )
+            assert row is not None
+            forged_payload = dict(row.response_payload)
+            forged_payload["feedback_text"] = "Forged but digest-consistent feedback"
+            forged_response = StudyQuestionAttemptResponseV1.model_validate(
+                forged_payload
+            )
+            row.response_payload = forged_response.model_dump(mode="json")
+            row.response_digest = study_question_attempt_response_digest(
+                forged_response
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_question_attempt_turn_read_back_mismatch",
+        ):
+            self.service.record_question_attempt(
+                session_id=session.id,
+                turn_id=turn_id,
+                expected_session_revision=session.revision,
+                client_attempt_id="client-attempt-forged-response",
+                submitted_answer="A",
             )
 
     def test_concurrent_same_request_commits_once(self) -> None:

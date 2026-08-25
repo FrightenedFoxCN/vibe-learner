@@ -10,6 +10,7 @@ import type {
   TavernParticipant,
   TavernRoom,
   TavernRoomDetail,
+  TavernRoomPage,
   TavernRoomState,
   TavernRoomSummary,
   TavernRun,
@@ -541,9 +542,14 @@ export function normalizeTavernTurnResult(
   return { run, inputMessage, generatedMessages, roomState };
 }
 
-export function normalizeTavernRoomList(raw: unknown): TavernRoomSummary[] {
+export function normalizeTavernRoomList(raw: unknown): TavernRoomPage {
   const path = "tavern.room_list";
   const value = record(raw, path);
+  const contractVersion = enumeration(
+    field(value, "contract_version", path),
+    ["tavern-room-list-v1"] as const,
+    `${path}.contract_version`
+  );
   const rooms = array(field(value, "items", path), `${path}.items`, (rawItem, itemPath) => {
     const item = record(rawItem, itemPath);
     return {
@@ -558,8 +564,39 @@ export function normalizeTavernRoomList(raw: unknown): TavernRoomSummary[] {
       updatedAt: string(field(item, "updated_at", itemPath), `${itemPath}.updated_at`),
     };
   });
+  if (rooms.length > 50) {
+    throw new TavernDecodeError(`${path}.items`, "room_page_exceeds_maximum");
+  }
   assertUnique(rooms.map((room) => room.id), `${path}.items.id`);
-  return rooms;
+  for (let index = 1; index < rooms.length; index += 1) {
+    const previous = rooms[index - 1]!;
+    const current = rooms[index]!;
+    if (
+      previous.updatedAt < current.updatedAt ||
+      (previous.updatedAt === current.updatedAt && previous.id <= current.id)
+    ) {
+      throw new TavernDecodeError(
+        `${path}.items[${index}]`,
+        "room_page_not_monotonic_updated_at_id_desc"
+      );
+    }
+  }
+  const nextCursor = nullableField(
+    value,
+    "next_cursor",
+    path,
+    (cursor, cursorPath) => {
+      const decoded = string(cursor, cursorPath);
+      if (decoded.length > 512) {
+        throw new TavernDecodeError(cursorPath, "cursor_exceeds_maximum_length");
+      }
+      return decoded;
+    }
+  );
+  if (!rooms.length && nextCursor !== null) {
+    throw new TavernDecodeError(`${path}.next_cursor`, "empty_page_has_next_cursor");
+  }
+  return { contractVersion, items: rooms, nextCursor };
 }
 
 export function normalizeTavernRunList(

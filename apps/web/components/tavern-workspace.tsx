@@ -46,6 +46,7 @@ import {
   isTavernRoomStateAtLeast,
   latestTavernMessage,
   makeTavernRequestKey,
+  mergeTavernRoomPages,
   mergeTavernMessages,
   projectParticipantStates,
   reconcileTavernRuns,
@@ -54,9 +55,12 @@ import {
   readTavernRoomDraft,
   reconcileTavernCreationDraftPersonas,
   rememberActiveTavernRoomId,
+  tavernRoomSummaryButtons,
   writeTavernCreationDraft,
   writeTavernRoomDraft,
   TAVERN_PAGE_SIZE,
+  TAVERN_ROOM_PAGE_SIZE,
+  TAVERN_ROOM_SUMMARY_LIMIT,
   type TavernParticipantGenerationState,
 } from "../lib/tavern-workspace-state";
 import { MaterialIcon } from "./material-icon";
@@ -97,6 +101,10 @@ const STEP_STATUS_LABELS: Record<TavernParticipantGenerationState, string> = {
 
 export function TavernWorkspace() {
   const [rooms, setRooms] = useState<TavernRoomSummary[]>([]);
+  const [nextRoomCursor, setNextRoomCursor] = useState<string | null>(null);
+  const [loadingMoreRooms, setLoadingMoreRooms] = useState(false);
+  const [roomPageError, setRoomPageError] = useState("");
+  const [roomHistoryTruncated, setRoomHistoryTruncated] = useState(false);
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [scenes, setScenes] = useState<SceneLibraryItemPayload[]>([]);
   const [detail, setDetail] = useState<TavernRoomDetail | null>(null);
@@ -127,6 +135,9 @@ export function TavernWorkspace() {
   const detailRef = useRef<TavernRoomDetail | null>(null);
   const runsRef = useRef<TavernRun[]>([]);
   const messagesRef = useRef<TavernMessage[]>([]);
+  const roomsRef = useRef<TavernRoomSummary[]>([]);
+  const roomPageVersionRef = useRef(0);
+  const loadingRoomCursorRef = useRef<string | null>(null);
   const setupTitleRef = useRef<HTMLInputElement>(null);
 
   const activeRoom = detail?.room ?? null;
@@ -153,6 +164,10 @@ export function TavernWorkspace() {
     ),
     [detail?.participants, generatingPersonaIds, runs]
   );
+  const roomButtons = useMemo(
+    () => tavernRoomSummaryButtons(rooms, detail),
+    [detail, rooms]
+  );
 
   useEffect(() => {
     if (!showSetup || setupFocusRequest === 0) return;
@@ -174,6 +189,10 @@ export function TavernWorkspace() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    roomsRef.current = rooms;
+  }, [rooms]);
 
   const beginMutation = useCallback(
     (action: MutationAction, roomId: string, replaceCurrent = false): MutationOperation | null => {
@@ -266,13 +285,15 @@ export function TavernWorkspace() {
             : "酒馆已就绪"
       );
       rememberActiveTavernRoomId(roomId);
+      return true;
     } catch (error) {
       if (loadVersion !== roomLoadVersion.current) {
-        return;
+        return false;
       }
       recordError(error, "无法打开这个酒馆，请稍后重试。", setVisibleError, setRawError);
       setNotice("恢复失败");
       requestedRoomIdRef.current = activeRoomIdRef.current;
+      return false;
     } finally {
       if (loadVersion === roomLoadVersion.current) {
         setBusyAction(null);
@@ -287,11 +308,11 @@ export function TavernWorkspace() {
     const roomId = activeRoom.id;
     const refreshVersion = ++roomRefreshVersion.current;
     try {
-      const [nextDetail, nextRuns, nextRecoveryChains, nextRooms] = await Promise.all([
+      const [nextDetail, nextRuns, nextRecoveryChains, nextRoomPage] = await Promise.all([
         getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }),
         listTavernRuns(roomId),
         getTavernRunRecovery(roomId),
-        listTavernRooms(),
+        listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }),
       ]);
       if (
         activeRoomIdRef.current !== roomId ||
@@ -315,7 +336,14 @@ export function TavernWorkspace() {
       setMessages(nextMessages);
       setRuns(reconciledRuns);
       setRecoveryChains(nextRecoveryChains);
-      setRooms(nextRooms);
+      roomPageVersionRef.current += 1;
+      loadingRoomCursorRef.current = null;
+      setLoadingMoreRooms(false);
+      roomsRef.current = nextRoomPage.items;
+      setRooms(nextRoomPage.items);
+      setNextRoomCursor(nextRoomPage.nextCursor);
+      setRoomHistoryTruncated(false);
+      setRoomPageError("");
       const latestRun = reconciledRuns[0];
       setNotice(
         nextDetail.room.status === "archived"
@@ -345,12 +373,13 @@ export function TavernWorkspace() {
       setBusyAction("bootstrap");
       try {
         const [roomsResult, personasResult, scenesResult] = await Promise.allSettled([
-          listTavernRooms(),
+          listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }),
           listPersonas(),
           listSceneLibrary(),
         ]);
         if (canceled) return;
-        const nextRooms = roomsResult.status === "fulfilled" ? roomsResult.value : [];
+        const nextRoomPage = roomsResult.status === "fulfilled" ? roomsResult.value : null;
+        const nextRooms = nextRoomPage?.items ?? [];
         const nextPersonas = personasResult.status === "fulfilled" ? personasResult.value : [];
         const nextScenes = scenesResult.status === "fulfilled" ? scenesResult.value : [];
         if (personasResult.status === "fulfilled") {
@@ -364,7 +393,16 @@ export function TavernWorkspace() {
             writeTavernCreationDraft(reconciledCreationDraft);
           }
         }
+        roomPageVersionRef.current += 1;
+        loadingRoomCursorRef.current = null;
+        setLoadingMoreRooms(false);
+        roomsRef.current = nextRooms;
         setRooms(nextRooms);
+        setNextRoomCursor(nextRoomPage?.nextCursor ?? null);
+        setRoomHistoryTruncated(false);
+        setRoomPageError(
+          roomsResult.status === "rejected" ? "房间历史暂时无法载入。" : ""
+        );
         setPersonas(nextPersonas);
         setScenes(nextScenes);
         const failures = [roomsResult, personasResult, scenesResult]
@@ -372,11 +410,14 @@ export function TavernWorkspace() {
           .map((result) => String((result as PromiseRejectedResult).reason));
         const storedRoomId = readActiveTavernRoomId();
         const preferredRoom =
-          nextRooms.find((room) => room.id === storedRoomId) ??
-          nextRooms.find((room) => room.status === "active") ??
-          nextRooms[0];
-        if (preferredRoom) {
-          await openRoom(preferredRoom.id);
+          nextRooms.find((room) => room.status === "active") ?? nextRooms[0];
+        const restoredStoredRoom = storedRoomId
+          ? await openRoom(storedRoomId)
+          : false;
+        if (restoredStoredRoom || preferredRoom) {
+          if (!restoredStoredRoom && preferredRoom) {
+            await openRoom(preferredRoom.id);
+          }
           if (failures.length) {
             setRawError(failures.join("；"));
             setVisibleError("部分酒馆资料暂时无法载入；已恢复的房间仍可继续使用。");
@@ -407,6 +448,8 @@ export function TavernWorkspace() {
       canceled = true;
       roomLoadVersion.current += 1;
       roomRefreshVersion.current += 1;
+      roomPageVersionRef.current += 1;
+      loadingRoomCursorRef.current = null;
       requestedRoomIdRef.current = "";
       mutationOperationRef.current = null;
       mutationOperationVersionRef.current += 1;
@@ -425,11 +468,65 @@ export function TavernWorkspace() {
 
   const updateRooms = useCallback(async () => {
     try {
-      setRooms(await listTavernRooms());
+      const page = await listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE });
+      roomPageVersionRef.current += 1;
+      loadingRoomCursorRef.current = null;
+      setLoadingMoreRooms(false);
+      roomsRef.current = page.items;
+      setRooms(page.items);
+      setNextRoomCursor(page.nextCursor);
+      setRoomHistoryTruncated(false);
+      setRoomPageError("");
     } catch (error) {
       setRawError(String(error));
+      setRoomPageError("房间历史刷新失败；当前列表已保留。");
     }
   }, []);
+
+  const loadMoreRooms = useCallback(async () => {
+    const cursor = nextRoomCursor;
+    if (!cursor || loadingRoomCursorRef.current === cursor) return;
+    const pageVersion = roomPageVersionRef.current;
+    loadingRoomCursorRef.current = cursor;
+    setLoadingMoreRooms(true);
+    setRoomPageError("");
+    try {
+      const page = await listTavernRooms({
+        limit: TAVERN_ROOM_PAGE_SIZE,
+        cursor,
+      });
+      if (
+        pageVersion !== roomPageVersionRef.current ||
+        loadingRoomCursorRef.current !== cursor
+      ) return;
+      const currentRoomIds = new Set(roomsRef.current.map((room) => room.id));
+      const uniqueIncomingCount = page.items.filter(
+        (room) => !currentRoomIds.has(room.id)
+      ).length;
+      const fetchedSummaryCount = roomsRef.current.length + uniqueIncomingCount;
+      const merged = mergeTavernRoomPages(roomsRef.current, page.items);
+      const reachedLimit =
+        fetchedSummaryCount > TAVERN_ROOM_SUMMARY_LIMIT ||
+        (merged.length >= TAVERN_ROOM_SUMMARY_LIMIT && page.nextCursor !== null);
+      roomsRef.current = merged;
+      setRooms(merged);
+      setNextRoomCursor(reachedLimit ? null : page.nextCursor);
+      setRoomHistoryTruncated(reachedLimit);
+    } catch (error) {
+      if (
+        pageVersion === roomPageVersionRef.current &&
+        loadingRoomCursorRef.current === cursor
+      ) {
+        setRawError(String(error));
+        setRoomPageError("更多房间未载入；可以重试。当前列表没有变化。");
+      }
+    } finally {
+      if (loadingRoomCursorRef.current === cursor) {
+        loadingRoomCursorRef.current = null;
+        setLoadingMoreRooms(false);
+      }
+    }
+  }, [nextRoomCursor]);
 
   const updateRunRecovery = useCallback(async (roomId: string) => {
     try {
@@ -1021,10 +1118,15 @@ export function TavernWorkspace() {
       <div className={`tavern-workspace-grid ${activeRoom ? "has-room" : "empty-room"}`}>
         <div className="tavern-left-rail">
           <TavernSessionPanel
-            rooms={rooms}
+            rooms={roomButtons}
             activeRoomId={activeRoom?.id ?? ""}
             busy={busyAction !== null}
+            hasMore={nextRoomCursor !== null}
+            loadingMore={loadingMoreRooms}
+            historyTruncated={roomHistoryTruncated}
+            pageError={roomPageError}
             onOpen={(roomId) => void openRoom(roomId)}
+            onLoadMore={() => void loadMoreRooms()}
           />
           {showSetup ? (
             <TavernSetupPanel
@@ -1153,12 +1255,22 @@ function TavernSessionPanel({
   rooms,
   activeRoomId,
   busy,
+  hasMore,
+  loadingMore,
+  historyTruncated,
+  pageError,
   onOpen,
+  onLoadMore,
 }: {
   rooms: TavernRoomSummary[];
   activeRoomId: string;
   busy: boolean;
+  hasMore: boolean;
+  loadingMore: boolean;
+  historyTruncated: boolean;
+  pageError: string;
   onOpen: (roomId: string) => void;
+  onLoadMore: () => void;
 }) {
   return (
     <section className="tavern-panel tavern-session-panel" aria-labelledby="tavern-session-title">
@@ -1193,6 +1305,22 @@ function TavernSessionPanel({
       ) : (
         <p className="tavern-empty-copy">还没有房间。选择 1–6 位人格即可创建。</p>
       )}
+      <div className="tavern-room-page-status">
+        {pageError ? <p role="alert">{pageError}</p> : null}
+        {hasMore ? (
+          <button
+            type="button"
+            className="tavern-button secondary tavern-room-more"
+            onClick={onLoadMore}
+            disabled={busy || loadingMore}
+          >
+            <MaterialIcon name="expand_more" size={16} />
+            {loadingMore ? "正在载入…" : pageError ? "重试载入更多" : "载入更多房间"}
+          </button>
+        ) : rooms.length ? (
+          <p>{historyTruncated ? "已显示最近 100 个房间" : "已显示全部房间"}</p>
+        ) : null}
+      </div>
     </section>
   );
 }

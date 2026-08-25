@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -19,6 +19,13 @@ STUDY_CHAT_RESPONSE_SCHEMA_VERSIONS = {
     STUDY_CHAT_RESPONSE_SCHEMA_VERSION_V1,
     STUDY_CHAT_RESPONSE_SCHEMA_VERSION,
 }
+
+StudyChatMessageKind = Literal[
+    "learner",
+    "session_prelude",
+    "scheduled_follow_up",
+    "interactive_callback",
+]
 
 
 def study_chat_provider_effect_id(
@@ -55,9 +62,7 @@ class StudyChatOperationRequestPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     message: str = Field(max_length=20_000)
-    message_kind: str = Field(
-        pattern=r"^(learner|session_prelude|scheduled_follow_up|interactive_callback)$"
-    )
+    message_kind: StudyChatMessageKind
     follow_up_id: str = Field(max_length=128)
     hidden_message_prefix: str = Field(max_length=20_000)
     expected_session_revision: int = Field(ge=0)

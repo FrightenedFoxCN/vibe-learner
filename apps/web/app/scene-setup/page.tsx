@@ -888,12 +888,12 @@ export default function SceneSetupPage() {
       });
       applySceneImport(
         imported,
-        `已载入场景”${target.sceneName}”。`,
+        `已载入场景“${target.sceneName}”。`,
         `scene-library:${target.sceneId}`,
       );
       setSelectedSavedSceneId(target.sceneId);
     } catch {
-      setSceneIoMessage(`载入场景”${target.sceneName}”时数据格式异常。`);
+      setSceneIoMessage(`载入场景“${target.sceneName}”时数据格式异常。`);
     }
   }
 

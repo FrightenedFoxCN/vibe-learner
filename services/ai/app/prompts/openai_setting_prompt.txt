@@ -58,9 +58,9 @@ JSON schema：
 {{PERSONA_CARD_SCHEMA}}
 
 要求：
-- 构建一组可直接使用的人格卡片；`card_count` 如果提供，只是数量偏好，不是硬性上限或下限。
-- 可以优先考虑 worldview / past_experiences / thinking_style / teaching_method / narrative_mode / encouragement_style / correction_style，但不要为了凑满类别而生成低价值卡片。
-- 允许同一种 kind 拆成多张细分卡片；如果素材稀疏，也可以只保留较少但更扎实的卡片。
+- 构建一组可直接使用的人格卡片；`card_count` 如果提供，`cards` 必须恰好包含该数量的卡片，不能更多或更少；未提供时才由你根据素材决定数量。
+- 可以优先考虑 worldview / past_experiences / thinking_style / teaching_method / narrative_mode / encouragement_style / correction_style；在严格满足指定数量的前提下，让每张卡片保持明确差异和实际价值。
+- 允许同一种 kind 拆成多张细分卡片，以便在不制造应用 ID 的前提下严格满足指定数量。
 - 每张卡片都必须能直接插入教师人格 slots。
 - 内容必须是中文，且适合教材导学型教师人格，可以有适当的角色扮演风格的卡片。
 - 同时生成该组卡片对应的人格摘要 `summary`、人格关系 `relationship`、学习者称呼 `learner_address`。
@@ -75,7 +75,7 @@ card_count_hint: {{CARD_COUNT}}
 
 输出要求：
 - 严格匹配 JSON schema。
-- `card_count_hint` 仅供参考；可以更少，也可以更多，以人格信息密度和可用性为准。
+- `card_count_hint` 为数字时，`cards` 必须恰好生成该数量，不能更多或更少；为“未指定”时才由你根据人格信息密度决定数量。
 - `summary` 是 1-2 句的人格摘要。
 - `relationship` 是该人格与学习者的关系定位。
 - `learner_address` 是该人格对学习者的常用称呼。
@@ -91,9 +91,9 @@ JSON schema：
 {{PERSONA_CARD_SCHEMA}}
 
 要求：
-- 从长文本中提炼一组高质量人格卡片；`card_count` 如果提供，只是数量偏好。
+- 从长文本中提炼一组高质量人格卡片；`card_count` 如果提供，`cards` 必须恰好包含该数量的卡片，不能更多或更少；未提供时才由你根据原文决定数量。
 - 优先提炼稳定的人格设定、教学策略、叙事方式、关系定位，不要机械复述原文。
-- 允许同一种 kind 拆成多张细分卡片；如果原文信息集中，也可以只生成较少但信息密度更高的卡片。
+- 允许同一种 kind 拆成多张细分卡片；指定数量时必须严格满足，未指定数量时可以根据原文信息密度灵活决定。
 - 每张卡片都必须能直接插入教师人格 slots。
 - 内容必须是中文，适合教材导学型教师人格。
 - 同时生成该组卡片对应的人格摘要 `summary`、人格关系 `relationship`、学习者称呼 `learner_address`。
@@ -108,7 +108,7 @@ source_text:
 
 输出要求：
 - 严格匹配 JSON schema。
-- `card_count_hint` 仅供参考；可以更少，也可以更多，以原文中可提炼的人格信息密度为准。
+- `card_count_hint` 为数字时，`cards` 必须恰好生成该数量，不能更多或更少；为“未指定”时才由你根据原文信息密度决定数量。
 - `summary` 是 1-2 句的人格摘要。
 - `relationship` 是该人格与学习者的关系定位。
 - `learner_address` 是该人格对学习者的常用称呼。

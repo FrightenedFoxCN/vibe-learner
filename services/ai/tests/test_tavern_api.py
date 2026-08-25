@@ -148,7 +148,26 @@ class TavernApiTests(unittest.TestCase):
 
         listed = self.client.get("/tavern/rooms")
         self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()["contract_version"], "tavern-room-list-v1")
         self.assertEqual(len(listed.json()["items"]), 1)
+        self.assertIsNone(listed.json()["next_cursor"])
+
+        malformed_cursor = self.client.get("/tavern/rooms?cursor=malformed")
+        self.assertEqual(malformed_cursor.status_code, 400)
+        self.assertIn("tavern_room_cursor_malformed", malformed_cursor.text)
+        over_limit = self.client.get("/tavern/rooms?limit=51")
+        self.assertEqual(over_limit.status_code, 422)
+        self._create_room(creation_key="create-second-room-123456")
+        paged = self.client.get("/tavern/rooms?limit=1")
+        cursor = paged.json()["next_cursor"]
+        self.assertIsInstance(cursor, str)
+        replacement = "0" if cursor[-1] != "0" else "1"
+        tampered_cursor = self.client.get(
+            "/tavern/rooms",
+            params={"cursor": f"{cursor[:-1]}{replacement}"},
+        )
+        self.assertEqual(tampered_cursor.status_code, 400)
+        self.assertIn("tavern_room_cursor_tampered", tampered_cursor.text)
 
         turn_payload = {
             "input": {"kind": "user_message", "content": "今晚适合聊些什么？"},
@@ -337,7 +356,12 @@ class TavernApiTests(unittest.TestCase):
             idempotency_key="turn-action-leak",
         )
         assert run is not None
-        self.assertIn("prompt_material_leak:action", run.harness_trace[0].checks[-2].code)
+        self.assertTrue(
+            any(
+                "prompt_material_leak:action" in check.code
+                for check in run.harness_trace[0].checks
+            )
+        )
 
     def test_harness_rejects_verbatim_stage_guidance_leak(self) -> None:
         created = self._create_room(creation_key="create-room-guidance-leak")

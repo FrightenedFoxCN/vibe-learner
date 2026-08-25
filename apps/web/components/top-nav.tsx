@@ -74,10 +74,11 @@ export function TopNav({ currentPath }: TopNavProps) {
               path={item.href}
               className={active ? "app-nav-link--active" : "app-nav-link"}
               style={collapsed ? styles.linkCollapsed : undefined}
+              aria-label={item.label}
               title={item.label}
             >
               <MaterialIcon name={item.icon} size={18} />
-              {!collapsed ? <span>{item.label}</span> : null}
+              {!collapsed ? <span className="app-nav-label">{item.label}</span> : null}
             </AppLink>
           );
         })}

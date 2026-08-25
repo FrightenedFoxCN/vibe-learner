@@ -10,7 +10,7 @@ const PAGES = [
     href: "/plan" as const,
     icon: "event_note" as MaterialIconName,
     title: "计划生成",
-    desc: "上传教材并生成学习计划。",
+    desc: "上传教材或输入目标，生成学习计划。",
   },
   {
     num: "02",

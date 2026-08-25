@@ -96,6 +96,7 @@ from app.models.stream import (
 )
 from app.models.study_chat_operation import (
     StudyChatAttachmentManifestEntry,
+    StudyChatMessageKind,
     StudyChatOperationRequestPayload,
     StudyChatOperationStatus,
 )
@@ -361,6 +362,8 @@ def _map_setting_generation_error(exc: RuntimeError) -> HTTPException:
         return HTTPException(status_code=502, detail="setting_model_invalid_json")
     if detail == "setting_model_invalid_payload":
         return HTTPException(status_code=502, detail="setting_model_invalid_payload")
+    if detail == "setting_persona_card_count_mismatch":
+        return HTTPException(status_code=502, detail="setting_persona_card_count_mismatch")
     if detail.startswith("setting_scene_proposal_invalid:"):
         return HTTPException(status_code=502, detail="setting_model_invalid_payload")
     return HTTPException(status_code=500, detail="setting_generation_failed")
@@ -1318,7 +1321,7 @@ def _admit_and_run_study_chat(
         response_payload = _run_study_chat(
             session_id=session_id,
             message=message,
-            message_kind=message_kind,
+            message_kind=operation.request_payload.message_kind,
             follow_up_id=follow_up_id,
             hidden_message_prefix=hidden_message_prefix,
             learner_attachments=prepared.records,
@@ -1410,7 +1413,7 @@ def _run_study_chat(
     *,
     session_id: str,
     message: str,
-    message_kind: str = "learner",
+    message_kind: StudyChatMessageKind = "learner",
     follow_up_id: str = "",
     hidden_message_prefix: str = "",
     learner_attachments=None,
@@ -1423,7 +1426,7 @@ def _run_study_chat(
     session = container.study_session_service.require_session(session_id)
     if session.scene_profile is not None and not session.scene_instance_id:
         raise HTTPException(status_code=409, detail="session_scene_binding_required")
-    normalized_message_kind = (message_kind or "learner").strip() or "learner"
+    normalized_message_kind = message_kind
     normalized_follow_up_id = follow_up_id.strip()
     if normalized_message_kind == "scheduled_follow_up" and normalized_follow_up_id:
         target_follow_up = next(
@@ -1539,6 +1542,7 @@ def _run_study_chat(
             session_id=session_id,
             persona=persona,
             message=model_message,
+            message_kind=normalized_message_kind,
             study_unit_id=session.study_unit_id,
             study_unit_title=session.study_unit_title,
             theme_hint=session.theme_hint,

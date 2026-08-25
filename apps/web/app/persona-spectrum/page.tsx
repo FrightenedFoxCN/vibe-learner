@@ -51,6 +51,7 @@ import {
   AsyncResultFence,
   type AsyncResultScope,
 } from "../../lib/async-result-fence";
+import { isApiHttpError } from "../../lib/http-error";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
   worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
@@ -898,8 +899,8 @@ export default function PersonaSpectrumPage() {
     let count: number | null = null;
     if (countText) {
       const parsedCount = Number(countText);
-      if (!Number.isInteger(parsedCount) || parsedCount < 1) {
-        setCardError("卡片数量偏好必须是大于 0 的整数，或留空交给模型决定。");
+      if (!Number.isInteger(parsedCount) || parsedCount < 1 || parsedCount > 24) {
+        setCardError("精确卡片数量必须是 1 到 24 的整数，或留空交给模型决定。");
         return;
       }
       count = parsedCount;
@@ -941,7 +942,13 @@ export default function PersonaSpectrumPage() {
       });
       setCardModelRecoveries(result.modelRecoveries ?? []);
       setCardMessage(
-        `已生成 ${result.items.length} 张卡片。模型：${result.usedModel || "unknown"}${result.usedWebSearch ? "，已启用联网搜索。" : "。"}`
+        `已生成 ${result.items.length} 张卡片。${
+          result.usedWebSearch
+            ? "已使用联网搜索。"
+            : result.usedModel === "mock"
+              ? "本地模拟结果。"
+              : ""
+        }`
       );
     } catch (error) {
       if (
@@ -950,7 +957,7 @@ export default function PersonaSpectrumPage() {
           currentPersonaAsyncScope("persona-card-candidate"),
         ) === "apply"
       ) {
-        setCardError(String(error));
+        setCardError(humanizePersonaCardGenerationError(error));
       }
     } finally {
       if (cardGenerationFenceRef.current.settle(ticket)) {
@@ -1553,15 +1560,16 @@ export default function PersonaSpectrumPage() {
             {!collapsedSidebarSections.includes("generate") ? (
               <div style={styles.sidebarSectionBody}>
                 <label style={styles.fieldGroup}>
-                  <span style={styles.fieldLabel}>卡片数量偏好（可选）</span>
+                  <span style={styles.fieldLabel}>精确卡片数量（可选）</span>
                   <input
                     style={styles.input}
                     type="number"
                     min={1}
+                    max={24}
                     step={1}
                     value={cardGenerateCount}
                     onChange={(e) => updatePersonaAssistInput(() => setCardGenerateCount(e.target.value))}
-                    placeholder="留空表示不限制卡片数量"
+                    placeholder="留空由模型决定，填写后精确生成 1–24 张"
                   />
                 </label>
                 <label style={styles.checkboxRow}>
@@ -1943,6 +1951,23 @@ function humanizePersonaDeleteError(error: unknown): string {
   return parts.length
     ? `该人格仍被${parts.join("、")}引用，暂时不能删除。`
     : "该人格仍被现有数据引用，暂时不能删除。";
+}
+
+function humanizePersonaCardGenerationError(error: unknown): string {
+  if (!isApiHttpError(error)) {
+    return "人格卡片生成失败，请稍后重试。";
+  }
+  const code = error.code || error.message;
+  if (code === "setting_persona_card_count_mismatch") {
+    return "模型返回的卡片数量不符合精确数量要求，请重试或调整数量。";
+  }
+  if (code === "keyword_generation_requires_openai") {
+    return "当前提供器暂不支持关键词生成，请切换提供器或使用长文本提取。";
+  }
+  if (error.status === 422) {
+    return "生成条件未通过校验，请检查关键词和精确卡片数量。";
+  }
+  return "人格卡片生成失败，请稍后重试。";
 }
 
 function splitCsv(value: string): string[] {

@@ -20,6 +20,7 @@ from app.services.model_provider import ModelProvider
 from app.services.performance import PerformanceMapper
 from app.services.study_memory import build_memory_context, retrieve_memory_hits
 from app.models.study_question import project_study_question_proposal
+from app.models.study_chat_operation import StudyChatMessageKind
 
 
 class PedagogyOrchestrator:
@@ -35,6 +36,7 @@ class PedagogyOrchestrator:
         session_id: str,
         persona: PersonaProfile,
         message: str,
+        message_kind: StudyChatMessageKind = "learner",
         study_unit_id: str,
         study_unit_title: str = "",
         theme_hint: str = "",
@@ -77,6 +79,7 @@ class PedagogyOrchestrator:
             persona=persona,
             section_id=study_unit_id,
             message=message,
+            message_kind=message_kind,
             session_prompt=session_system_prompt,
             section_context=section_context,
             memory_context=memory_context,

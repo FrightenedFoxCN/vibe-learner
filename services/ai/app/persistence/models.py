@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint,
+    desc,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -295,6 +305,13 @@ class StudyChatOperationRow(Base):
 
 class TavernRoomRow(Base):
     __tablename__ = "tavern_rooms"
+    __table_args__ = (
+        Index(
+            "ix_tavern_rooms_updated_at_id",
+            desc("updated_at"),
+            desc("id"),
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     creation_key: Mapped[str | None] = mapped_column(String(80), unique=True, nullable=True)

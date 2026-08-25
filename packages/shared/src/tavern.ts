@@ -190,6 +190,12 @@ export interface TavernRoomSummary {
   updatedAt: string;
 }
 
+export interface TavernRoomPage {
+  contractVersion: "tavern-room-list-v1";
+  items: TavernRoomSummary[];
+  nextCursor: string | null;
+}
+
 export interface CreateTavernRoomInput {
   title: string;
   personaIds: string[];

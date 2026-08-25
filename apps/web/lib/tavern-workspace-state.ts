@@ -1,7 +1,9 @@
 import type {
   TavernMessage,
   TavernParticipant,
+  TavernRoomDetail,
   TavernRoomState,
+  TavernRoomSummary,
   TavernRun,
   TavernRunRecoveryChain,
   TavernSpeakerStepStatus,
@@ -11,6 +13,8 @@ export const TAVERN_ACTIVE_ROOM_STORAGE_KEY = "vibe-learner:tavern:active-room";
 export const TAVERN_DRAFT_STORAGE_KEY = "vibe-learner:tavern:drafts";
 export const TAVERN_CREATION_DRAFT_STORAGE_KEY = "vibe-learner:tavern:creation-draft";
 export const TAVERN_PAGE_SIZE = 40;
+export const TAVERN_ROOM_PAGE_SIZE = 30;
+export const TAVERN_ROOM_SUMMARY_LIMIT = 100;
 export const TAVERN_RUN_HISTORY_LIMIT = 50;
 
 export interface TavernRoomDraft {
@@ -179,6 +183,83 @@ export type TavernParticipantGenerationState =
 export interface TavernParticipantState {
   participant: TavernParticipant;
   state: TavernParticipantGenerationState;
+}
+
+export class TavernRoomPageConflictError extends Error {
+  readonly code = "tavern_room_page_order_conflict";
+
+  constructor(reason: string, roomId: string) {
+    super(`${reason}:${roomId}`);
+    this.name = "TavernRoomPageConflictError";
+  }
+}
+
+export function compareTavernRoomSummaries(
+  left: TavernRoomSummary,
+  right: TavernRoomSummary
+): number {
+  if (left.updatedAt !== right.updatedAt) {
+    return left.updatedAt > right.updatedAt ? -1 : 1;
+  }
+  if (left.id === right.id) return 0;
+  return left.id > right.id ? -1 : 1;
+}
+
+export function mergeTavernRoomPages(
+  current: TavernRoomSummary[],
+  incoming: TavernRoomSummary[],
+  limit = TAVERN_ROOM_SUMMARY_LIMIT
+): TavernRoomSummary[] {
+  const boundedLimit = Math.max(1, limit);
+  const seen = new Set(current.map((room) => room.id));
+  const merged = [...current];
+  let previous = merged[merged.length - 1];
+  for (const room of incoming) {
+    if (seen.has(room.id)) continue;
+    if (previous && compareTavernRoomSummaries(previous, room) >= 0) {
+      throw new TavernRoomPageConflictError(
+        "room_page_not_monotonic_updated_at_id_desc",
+        room.id
+      );
+    }
+    merged.push(room);
+    seen.add(room.id);
+    previous = room;
+  }
+  return merged.slice(0, boundedLimit);
+}
+
+export function tavernRoomSummaryFromDetail(
+  detail: TavernRoomDetail
+): TavernRoomSummary {
+  return {
+    id: detail.room.id,
+    title: detail.room.title,
+    participantPersonaIds: detail.participants.map((item) => item.personaId),
+    participantNames: detail.participants.map((item) => item.displayName),
+    messageCount: detail.messageCount,
+    revision: detail.room.revision,
+    status: detail.room.status,
+    createdAt: detail.room.createdAt,
+    updatedAt: detail.room.updatedAt,
+  };
+}
+
+export function tavernRoomSummaryButtons(
+  rooms: TavernRoomSummary[],
+  selectedDetail: TavernRoomDetail | null,
+  limit = TAVERN_ROOM_SUMMARY_LIMIT
+): TavernRoomSummary[] {
+  const boundedLimit = Math.max(1, limit);
+  if (!selectedDetail) return rooms.slice(0, boundedLimit);
+  const selected = tavernRoomSummaryFromDetail(selectedDetail);
+  const selectedIndex = rooms.findIndex((room) => room.id === selected.id);
+  if (selectedIndex < 0 || selectedIndex >= boundedLimit) {
+    return [selected, ...rooms].slice(0, boundedLimit);
+  }
+  const visible = rooms.slice(0, boundedLimit);
+  if (selectedIndex < visible.length) visible[selectedIndex] = selected;
+  return visible;
 }
 
 export function mergeTavernMessages(

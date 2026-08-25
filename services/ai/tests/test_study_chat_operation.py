@@ -19,7 +19,7 @@ from app.persistence.study_chat_operation_repository import (
     StudyChatOperationRepository,
     StudyChatOperationRequestMismatch,
 )
-from app.persistence.models import StudyChatOperationRow
+from app.persistence.models import StudyChatOperationRow, StudyQuestionAttemptRow
 from app.persistence.study_session_repository import StudySessionRepository
 from app.models.domain import (
     SceneProfileRecord,
@@ -485,6 +485,19 @@ class StudyChatOperationTests(unittest.TestCase):
         self.assertIsNotNone(answered_question["result"])
         self.assertNotIn("normalized_answer", answered_question["result"])
         self.assertNotIn("grading_spec", answered_question)
+
+        with self.database.session() as db_session:
+            attempt_row = db_session.get(StudyQuestionAttemptRow, attempt.attempt_id)
+            assert attempt_row is not None
+            db_session.delete(attempt_row)
+        with self.assertRaisesRegex(
+            ValueError,
+            "study_chat_operation_question_attempt_read_back_missing",
+        ):
+            self.operations.require(
+                session_id="session-operation",
+                client_request_id="request-question-0001",
+            )
 
 
 if __name__ == "__main__":

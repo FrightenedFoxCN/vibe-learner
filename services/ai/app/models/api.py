@@ -39,6 +39,7 @@ from app.models.study_question import (
     StudyQuestionAttemptResponseV1,
     StudyQuestionPromptResponseV1,
 )
+from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.scene import SceneCommittedSaveV1
 
 
@@ -125,7 +126,7 @@ class BatchCreatePersonaCardsRequest(BaseModel):
 class PersonaCardGenerateRequest(BaseModel):
     mode: str
     input_text: str
-    count: int | None = Field(default=None, ge=1)
+    count: int | None = Field(default=None, ge=1, le=24)
 
 
 class PersonaCardResponse(PersonaCardRecord):
@@ -696,7 +697,7 @@ class StudyChatRequest(BaseModel):
     client_request_id: str = Field(min_length=8, max_length=80)
     expected_session_revision: int = Field(ge=0)
     message: str
-    message_kind: str = "learner"
+    message_kind: StudyChatMessageKind = "learner"
     follow_up_id: str = ""
     hidden_message_prefix: str = ""
 

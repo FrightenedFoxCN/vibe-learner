@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import base64
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import hashlib
+import hmac
+import json
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.models.harness import HarnessTraceRecord
@@ -13,6 +17,7 @@ from app.models.tavern import (
     TavernMessageRecord,
     TavernParticipantRecord,
     TavernRoomDetail,
+    TavernRoomListResponse,
     TavernRoomRecord,
     TavernRoomStatus,
     TavernRoomSummary,
@@ -29,6 +34,14 @@ from app.persistence.models import (
     TavernRunRow,
     TavernRunStepRow,
 )
+
+
+_TAVERN_ROOM_CURSOR_VERSION = 1
+_TAVERN_ROOM_CURSOR_KEY = b"vibe-learner:tavern-room-list-v1:cursor"
+
+
+class TavernRoomCursorInvalid(ValueError):
+    pass
 
 
 class TavernRepository:
@@ -79,21 +92,57 @@ class TavernRepository:
             )
         return self.get_room(room_id) if room_id else None
 
-    def list_rooms(self) -> list[TavernRoomSummary]:
+    def list_rooms(
+        self,
+        *,
+        limit: int = 30,
+        cursor: str | None = None,
+    ) -> TavernRoomListResponse:
+        bounded_limit = max(1, min(limit, 50))
+        cursor_boundary = _decode_room_cursor(cursor) if cursor else None
         with self.database.session() as session:
-            room_rows = session.scalars(
-                select(TavernRoomRow).order_by(
+            if cursor_boundary is not None:
+                cursor_updated_at, cursor_id = cursor_boundary
+                cursor_room_id = session.scalar(
+                    select(TavernRoomRow.id).where(
+                        TavernRoomRow.updated_at == cursor_updated_at,
+                        TavernRoomRow.id == cursor_id,
+                    )
+                )
+                if cursor_room_id is None:
+                    raise TavernRoomCursorInvalid("tavern_room_cursor_unknown")
+
+            room_id_query = select(TavernRoomRow.id)
+            if cursor_boundary is not None:
+                cursor_updated_at, cursor_id = cursor_boundary
+                room_id_query = room_id_query.where(
+                    or_(
+                        TavernRoomRow.updated_at < cursor_updated_at,
+                        and_(
+                            TavernRoomRow.updated_at == cursor_updated_at,
+                            TavernRoomRow.id < cursor_id,
+                        ),
+                    )
+                )
+            fetched_room_ids = session.scalars(
+                room_id_query.order_by(
                     TavernRoomRow.updated_at.desc(),
                     TavernRoomRow.id.desc(),
                 )
+                .limit(bounded_limit + 1)
             ).all()
-            if not room_rows:
-                return []
-            room_ids = [row.id for row in room_rows]
-            participant_rows = session.scalars(
-                select(TavernParticipantRow)
-                .where(TavernParticipantRow.room_id.in_(room_ids))
-                .order_by(TavernParticipantRow.room_id, TavernParticipantRow.display_order)
+            room_ids = fetched_room_ids[:bounded_limit]
+            if not room_ids:
+                return TavernRoomListResponse(items=[], next_cursor=None)
+
+            room_participant_rows = session.execute(
+                select(TavernRoomRow, TavernParticipantRow)
+                .outerjoin(
+                    TavernParticipantRow,
+                    TavernParticipantRow.room_id == TavernRoomRow.id,
+                )
+                .where(TavernRoomRow.id.in_(room_ids))
+                .order_by(TavernRoomRow.id, TavernParticipantRow.display_order)
             ).all()
             counts = dict(
                 session.execute(
@@ -103,10 +152,13 @@ class TavernRepository:
                 ).all()
             )
 
+        room_rows_by_id: dict[str, TavernRoomRow] = {}
         participants_by_room: defaultdict[str, list[TavernParticipantRow]] = defaultdict(list)
-        for row in participant_rows:
-            participants_by_room[row.room_id].append(row)
-        return [
+        for room_row, participant_row in room_participant_rows:
+            room_rows_by_id[room_row.id] = room_row
+            if participant_row is not None:
+                participants_by_room[room_row.id].append(participant_row)
+        summaries = [
             TavernRoomSummary(
                 id=row.id,
                 title=row.title,
@@ -118,8 +170,14 @@ class TavernRepository:
                 created_at=row.created_at,
                 updated_at=row.updated_at,
             )
-            for row in room_rows
+            for room_id in room_ids
+            for row in [room_rows_by_id[room_id]]
         ]
+        next_cursor = None
+        if len(fetched_room_ids) > bounded_limit:
+            last_row = room_rows_by_id[room_ids[-1]]
+            next_cursor = _encode_room_cursor(last_row.updated_at, last_row.id)
+        return TavernRoomListResponse(items=summaries, next_cursor=next_cursor)
 
     def get_room(
         self,
@@ -1397,6 +1455,73 @@ def _validate_new_run_schedule(run: TavernRunRecord) -> None:
         for index, step in enumerate(steps)
     ):
         raise ValueError("tavern_run_schedule_step_identity_invalid")
+
+
+def _encode_room_cursor(updated_at: str, room_id: str) -> str:
+    payload = json.dumps(
+        {
+            "v": _TAVERN_ROOM_CURSOR_VERSION,
+            "updated_at": updated_at,
+            "id": room_id,
+        },
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    encoded_payload = base64.urlsafe_b64encode(payload).rstrip(b"=")
+    signature = hmac.new(
+        _TAVERN_ROOM_CURSOR_KEY,
+        encoded_payload,
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{encoded_payload.decode('ascii')}.{signature}"
+
+
+def _decode_room_cursor(cursor: str) -> tuple[str, str]:
+    if not cursor or len(cursor) > 512 or cursor.count(".") != 1:
+        raise TavernRoomCursorInvalid("tavern_room_cursor_malformed")
+    encoded_payload_text, signature = cursor.split(".", 1)
+    try:
+        encoded_payload = encoded_payload_text.encode("ascii")
+        supplied_signature = bytes.fromhex(signature)
+    except (UnicodeEncodeError, ValueError) as exc:
+        raise TavernRoomCursorInvalid("tavern_room_cursor_malformed") from exc
+    expected_signature = hmac.new(
+        _TAVERN_ROOM_CURSOR_KEY,
+        encoded_payload,
+        hashlib.sha256,
+    ).digest()
+    if len(supplied_signature) != len(expected_signature) or not hmac.compare_digest(
+        supplied_signature,
+        expected_signature,
+    ):
+        raise TavernRoomCursorInvalid("tavern_room_cursor_tampered")
+    try:
+        padding = b"=" * (-len(encoded_payload) % 4)
+        raw_payload = base64.b64decode(
+            encoded_payload + padding,
+            altchars=b"-_",
+            validate=True,
+        )
+        payload = json.loads(raw_payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
+        raise TavernRoomCursorInvalid("tavern_room_cursor_malformed") from exc
+    if not isinstance(payload, dict) or set(payload) != {"v", "updated_at", "id"}:
+        raise TavernRoomCursorInvalid("tavern_room_cursor_malformed")
+    if payload["v"] != _TAVERN_ROOM_CURSOR_VERSION:
+        raise TavernRoomCursorInvalid("tavern_room_cursor_version_unknown")
+    updated_at = payload["updated_at"]
+    room_id = payload["id"]
+    if (
+        not isinstance(updated_at, str)
+        or not updated_at
+        or len(updated_at) > 64
+        or not isinstance(room_id, str)
+        or not room_id
+        or len(room_id) > 64
+    ):
+        raise TavernRoomCursorInvalid("tavern_room_cursor_malformed")
+    return updated_at, room_id
 
 
 def _assert_run_replay_matches(

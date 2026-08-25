@@ -411,6 +411,8 @@ export function StudyConsole({
               <textarea
                 ref={textareaRef}
                 style={styles.textarea}
+                aria-label={`向${persona.name}提问`}
+                placeholder="输入本节学习问题…"
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 disabled={disabled || isPending || recoveryLocked}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timezone
+import json
 from threading import Event, RLock, Thread
 import time
 from typing import Callable
@@ -14,15 +15,16 @@ from app.models.harness import HarnessTraceRecord
 from app.models.tavern import (
     CreateTavernRoomRequest,
     TavernAuthorKind,
+    TavernActorReply,
     TavernInteractionMode,
     TavernContinueInput,
     TavernMessageRecord,
     TavernParticipantRecord,
     TavernRoomDetail,
+    TavernRoomListResponse,
     TavernRoomRecord,
     TavernRoomState,
     TavernRoomStatus,
-    TavernRoomSummary,
     TavernRecoveryAction,
     TavernRunRecord,
     TavernRunChainStatus,
@@ -41,6 +43,7 @@ from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
 from app.persistence.tavern_repository import (
     TavernIdempotencyConflict,
     TavernRepository,
+    TavernRoomCursorInvalid,
     TavernRetryAlreadyCreated,
     TavernRevisionConflict,
     TavernRunTerminalConflict,
@@ -59,6 +62,10 @@ from app.services.tavern_harness import (
     TavernHarnessViolation,
     persona_prompt_hash,
     tavern_payload_digest,
+)
+from app.services.tavern_prompt import (
+    TavernPromptBudgetError,
+    preflight_tavern_actor_prompt,
 )
 
 
@@ -143,8 +150,16 @@ class TavernService:
             except TavernIdempotencyConflict as exc:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    def list_rooms(self) -> list[TavernRoomSummary]:
-        return self.repository.list_rooms()
+    def list_rooms(
+        self,
+        *,
+        limit: int = 30,
+        cursor: str | None = None,
+    ) -> TavernRoomListResponse:
+        try:
+            return self.repository.list_rooms(limit=limit, cursor=cursor)
+        except TavernRoomCursorInvalid as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     def require_room(
         self,
@@ -780,7 +795,25 @@ class TavernService:
         reset_model_recovery_state()
         generation_started_at = time.perf_counter()
         model_recoveries = []
+        prompt_preflight = None
         try:
+            prompt_preflight = preflight_tavern_actor_prompt(
+                persona=actor.persona_snapshot,
+                participants=detail.participants,
+                scene_profile=detail.room.scene_profile,
+                recent_messages=recent_messages,
+                user_message=input_content,
+                guidance=run.guidance,
+                allowed_target_ids=[item.persona_id for item in detail.participants],
+                actor_reply_schema=json.dumps(
+                    TavernActorReply.transport_json_schema(),
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ),
+                turn_kind=run.trigger_kind.value,
+                required_target_id=required_target_id,
+            )
+            recent_messages = prompt_preflight.recent_messages
             raw_reply = self.model_provider.generate_tavern_actor_reply(
                 persona=actor.persona_snapshot,
                 participants=detail.participants,
@@ -806,6 +839,10 @@ class TavernService:
                 policy=detail.room.harness_policy,
             )
             trace = self.actor_harness.merge_model_recoveries(trace, model_recoveries)
+            trace = self.actor_harness.merge_prompt_budget_report(
+                trace,
+                prompt_preflight.report,
+            )
             trace.duration_ms = max(
                 trace.duration_ms,
                 int((time.perf_counter() - generation_started_at) * 1000),
@@ -815,6 +852,11 @@ class TavernService:
                 exc.trace,
                 [*model_recoveries, *consume_model_recovery_state()],
             )
+            if prompt_preflight is not None:
+                trace = self.actor_harness.merge_prompt_budget_report(
+                    trace,
+                    prompt_preflight.report,
+                )
             trace.duration_ms = max(
                 trace.duration_ms,
                 int((time.perf_counter() - generation_started_at) * 1000),
@@ -823,7 +865,9 @@ class TavernService:
         except Exception as exc:
             trace = self.actor_harness.build_failure_trace(
                 stage=(
-                    "actor_decode"
+                    "prompt_preflight"
+                    if isinstance(exc, TavernPromptBudgetError)
+                    else "actor_decode"
                     if str(exc) == "tavern_actor_invalid_payload"
                     else "actor_generation"
                 ),
@@ -837,6 +881,13 @@ class TavernService:
                 recoveries=consume_model_recovery_state(),
                 duration_ms=int((time.perf_counter() - generation_started_at) * 1000),
             )
+            if prompt_preflight is not None:
+                trace = self.actor_harness.merge_prompt_budget_report(
+                    trace,
+                    prompt_preflight.report,
+                )
+            if isinstance(exc, TavernPromptBudgetError):
+                trace = self.actor_harness.merge_prompt_budget_failure(trace, exc)
             raise TavernActorExecutionError(_error_code(exc), trace, exc) from exc
         return TavernMessageRecord(
             id=f"tavern-message-{uuid4().hex[:12]}",

@@ -24,7 +24,7 @@ import type {
   StudySessionRecord,
   TavernErrorDetail,
   TavernRoomDetail,
-  TavernRoomSummary,
+  TavernRoomPage,
   TavernRun,
   TavernRunRecoveryChain,
   TavernTurnInput,
@@ -646,9 +646,15 @@ export async function listPersonas(): Promise<PersonaProfile[]> {
   return decodePersonaList(payload);
 }
 
-export async function listTavernRooms(): Promise<TavernRoomSummary[]> {
+export async function listTavernRooms(
+  input: { limit?: number; cursor?: string } = {}
+): Promise<TavernRoomPage> {
+  const params = new URLSearchParams();
+  if (input.limit !== undefined) params.set("limit", String(input.limit));
+  if (input.cursor) params.set("cursor", input.cursor);
+  const suffix = params.toString();
   const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/tavern/rooms`)
+    await request(`${AI_BASE_URL()}/tavern/rooms${suffix ? `?${suffix}` : ""}`)
   );
   return normalizeTavernRoomList(payload);
 }

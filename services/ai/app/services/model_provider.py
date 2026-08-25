@@ -40,6 +40,7 @@ from app.models.scene import (
     project_scene_tree_proposal,
 )
 from app.models.study_chat_reply import StudyChatReplyProposalV1
+from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.tavern import (
     TavernActorReply,
     TavernMessageRecord,
@@ -588,6 +589,7 @@ class ModelProvider:
         persona: PersonaProfile,
         section_id: str,
         message: str,
+        message_kind: StudyChatMessageKind = "learner",
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
@@ -737,6 +739,7 @@ class MockModelProvider(ModelProvider):
         persona: PersonaProfile,
         section_id: str,
         message: str,
+        message_kind: StudyChatMessageKind = "learner",
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
@@ -753,28 +756,20 @@ class MockModelProvider(ModelProvider):
         debug_report: DocumentDebugRecord | None = None,
         document_path: str | None = None,
     ) -> ModelReply:
-        teaching_method = persona_slot_content(persona, "teaching_method")
-        style = teaching_method.split(",")[0].strip() if teaching_method else "结构化讲解"
-        history_hint = ""
-        if conversation_history:
-            history_hint = f" 我已读取最近 {len(conversation_history)} 条上下文。"
-        section_hint = f" 章节上下文：{section_context[:80]}。" if section_context else ""
-        memory_hint = f" 我还参考了历史互动记忆：{memory_context[:80]}。" if memory_context else ""
-        attachment_hint = f" 学习者还上传了材料：{attachment_context[:80]}。" if attachment_context else ""
-        scene_hint = f" 当前会话场景：{scene_context[:80]}。" if scene_context else ""
-        session_state_hint = f" 当前会话动态状态：{session_state_context[:80]}。" if session_state_context else ""
-        text = (
-            f"{persona.name} 正在结合章节 {section_id} 讲解。"
-            f" 当前提问是：{message}。"
-            f"{section_hint}"
-            f"{memory_hint}"
-            f"{attachment_hint}"
-            f"{scene_hint}"
-            f"{session_state_hint}"
-            f"{history_hint}"
-            f"{' 会话约束：' + session_prompt[:80] if session_prompt else ''}"
-            f" 我会用 {style} 的方式先解释核心概念，再给你一个复述任务。"
-        )
+        if message_kind == "session_prelude":
+            text = (
+                "我们先把这一轮学习的落脚点安顿好。"
+                "接下来我会先给出一条清晰主线，再用一个小问题帮你确认抓手。"
+                "准备好后，我们就从最核心的概念开始。"
+            )
+            state_commentary = "已准备好自然进入本轮学习的引导节奏。"
+        else:
+            text = (
+                "我们先把这个问题拆成一个清晰的学习抓手。"
+                "先确认核心概念和成立条件，再用一个具体例子检查理解。"
+                "请你试着用自己的话复述关键点，我会继续补齐边界与易错处。"
+            )
+            state_commentary = "保持连续讲解，并根据当前互动推进重点。"
         narrative_mode = persona_slot_content(persona, "narrative_mode", "稳态导学")
         mood = "playful" if normalize_persona_narrative_mode(narrative_mode) == "light_story" else "calm"
         return ModelReply(
@@ -783,7 +778,7 @@ class MockModelProvider(ModelProvider):
             action="point",
             speech_style=persona.default_speech_style,
             delivery_cue="先稳住节奏，再把概念拆成两到三个抓手。",
-            state_commentary=f"围绕 {section_id} 保持连续讲解，并根据当前提问延展重点。",
+            state_commentary=state_commentary,
             rich_blocks=[],
             memory_trace=memory_trace_hits or [],
         )
@@ -1055,7 +1050,46 @@ class MockModelProvider(ModelProvider):
         keywords: str,
         count: int | None,
     ) -> dict[str, object]:
-        raise RuntimeError("setting_keyword_generation_requires_openai")
+        keyword_parts = [
+            part.strip()
+            for part in re.split(r"[，,、；;|\n]+", keywords)
+            if part.strip()
+        ]
+        if not keyword_parts:
+            raise RuntimeError("setting_model_invalid_payload")
+        target_count = _resolve_persona_card_count_hint(count, default=6)
+        slot_cycle = [
+            ("worldview", "世界观起点"),
+            ("past_experiences", "过往经历"),
+            ("thinking_style", "思维风格"),
+            ("teaching_method", "教学方法"),
+            ("encouragement_style", "鼓励策略"),
+            ("correction_style", "纠错策略"),
+            ("narrative_mode", "叙事模式"),
+        ]
+        cards: list[dict[str, object]] = []
+        for index in range(target_count):
+            keyword = keyword_parts[index % len(keyword_parts)]
+            kind, label = slot_cycle[index % len(slot_cycle)]
+            cards.append(
+                {
+                    "title": f"{label}卡片 {index + 1}",
+                    "kind": kind,
+                    "label": label,
+                    "content": f"围绕“{keyword}”形成稳定、可执行的{label}。",
+                    "tags": ["关键词生成", keyword],
+                    "source_note": "由关键词在本地模拟模式下确定性生成。",
+                }
+            )
+        _enforce_exact_persona_card_count(cards, count=count)
+        return {
+            "summary": f"围绕{'、'.join(keyword_parts[:3])}构建的导学型教师人格。",
+            "relationship": "陪伴式导师",
+            "learner_address": "同学",
+            "cards": cards,
+            "used_model": "mock",
+            "used_web_search": False,
+        }
 
     def generate_persona_cards_from_text(
         self,
@@ -1065,9 +1099,12 @@ class MockModelProvider(ModelProvider):
     ) -> dict[str, object]:
         sentences = [segment.strip() for segment in re.split(r"[。！？\n]+", text) if segment.strip()]
         target_count = _resolve_persona_card_count_hint(count, default=6)
-        seed = sentences[:target_count]
-        if not seed:
+        if not sentences:
             raise RuntimeError("setting_model_invalid_payload")
+        if count is not None and count >= 1:
+            seed = [sentences[index % len(sentences)] for index in range(target_count)]
+        else:
+            seed = sentences[:target_count]
         cards: list[dict[str, object]] = []
         slot_cycle = [
             ("worldview", "世界观起点"),
@@ -1090,6 +1127,7 @@ class MockModelProvider(ModelProvider):
                     "source_note": "由输入长文本抽取的设定片段。",
                 }
             )
+        _enforce_exact_persona_card_count(cards, count=count)
         return {
             "summary": "从长文本中提取出的导学型教师人格，强调稳定叙事与可执行反馈。",
             "relationship": "陪伴式导师",
@@ -1333,6 +1371,7 @@ class OpenAIModelProvider(MockModelProvider):
         persona: PersonaProfile,
         section_id: str,
         message: str,
+        message_kind: StudyChatMessageKind = "learner",
         session_prompt: str = "",
         section_context: str = "",
         memory_context: str = "",
@@ -1868,11 +1907,13 @@ class OpenAIModelProvider(MockModelProvider):
                 keywords=keywords,
                 card_count_hint=card_count_hint,
             )
+        cards = _normalize_generated_persona_cards(parsed)
+        _enforce_exact_persona_card_count(cards, count=count)
         return {
             "summary": str(parsed.get("summary") or "").strip(),
             "relationship": str(parsed.get("relationship") or "").strip(),
             "learner_address": str(parsed.get("learner_address") or "").strip(),
-            "cards": _normalize_generated_persona_cards(parsed),
+            "cards": cards,
             "used_model": self.setting_model,
             "used_web_search": used_web_search,
         }
@@ -1910,11 +1951,13 @@ class OpenAIModelProvider(MockModelProvider):
             payload,
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 summary、relationship、learner_address、cards 字段完整。",
         )
+        cards = _normalize_generated_persona_cards(parsed)
+        _enforce_exact_persona_card_count(cards, count=count)
         return {
             "summary": str(parsed.get("summary") or "").strip(),
             "relationship": str(parsed.get("relationship") or "").strip(),
             "learner_address": str(parsed.get("learner_address") or "").strip(),
-            "cards": _normalize_generated_persona_cards(parsed),
+            "cards": cards,
             "used_model": self.setting_model,
             "used_web_search": False,
         }
@@ -2975,6 +3018,10 @@ def _chat_tools(
     ]
 
 
+def _reject_nonstandard_json_constant(value: str) -> None:
+    raise json.JSONDecodeError("non-standard JSON constant", value, 0)
+
+
 def _execute_chat_tool_call(
     tool_call: dict[str, Any],
     *,
@@ -2992,11 +3039,46 @@ def _execute_chat_tool_call(
     function_payload = tool_call.get("function") or {}
     tool_name = str(function_payload.get("name") or "")
     tool_call_id = str(tool_call.get("id") or "")
-    raw_arguments = str(function_payload.get("arguments") or "{}")
+    arguments_payload = function_payload.get("arguments")
+    if not isinstance(arguments_payload, str):
+        return {
+            "tool_call_id": tool_call_id,
+            "tool_name": tool_name,
+            "arguments_json": "",
+            "result": {
+                "ok": False,
+                "error": "tool_argument_schema_invalid",
+                "tool_name": tool_name,
+            },
+        }
+    raw_arguments = arguments_payload
     try:
-        arguments = json.loads(raw_arguments)
+        arguments = json.loads(
+            raw_arguments,
+            parse_constant=_reject_nonstandard_json_constant,
+        )
     except json.JSONDecodeError:
-        arguments = {}
+        return {
+            "tool_call_id": tool_call_id,
+            "tool_name": tool_name,
+            "arguments_json": raw_arguments,
+            "result": {
+                "ok": False,
+                "error": "tool_argument_invalid_json",
+                "tool_name": tool_name,
+            },
+        }
+    if not isinstance(arguments, dict):
+        return {
+            "tool_call_id": tool_call_id,
+            "tool_name": tool_name,
+            "arguments_json": raw_arguments,
+            "result": {
+                "ok": False,
+                "error": "tool_argument_schema_invalid",
+                "tool_name": tool_name,
+            },
+        }
 
     if tool_name in (disabled_tools or set()):
         result = {
@@ -3523,6 +3605,17 @@ def _normalize_generated_persona_cards(parsed: dict[str, object]) -> list[dict[s
     if not cards:
         raise RuntimeError("setting_model_invalid_payload")
     return cards
+
+
+def _enforce_exact_persona_card_count(
+    cards: list[dict[str, object]],
+    *,
+    count: int | None,
+) -> None:
+    if count is None or count < 1:
+        return
+    if len(cards) != count:
+        raise RuntimeError("setting_persona_card_count_mismatch")
 
 
 def _stable_scene_token(seed: str, prefix: str) -> str:

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -19,6 +20,11 @@ import {
   decodeSceneTreeGenerateResult,
   PersonaSceneDecodeError,
 } from "../lib/persona-scene-decode.ts";
+
+const personaSpectrumSource = readFileSync(
+  new URL("../app/persona-spectrum/page.tsx", import.meta.url),
+  "utf8",
+);
 
 function wireSlot(overrides: Record<string, unknown> = {}) {
   return {
@@ -254,6 +260,14 @@ test("Persona generation binds mode, generated source, booleans, and recovery sc
       PersonaSceneDecodeError,
     );
   }
+});
+
+test("Persona count UI states exact 1-24 semantics", () => {
+  assert.match(personaSpectrumSource, />精确卡片数量（可选）</);
+  assert.match(personaSpectrumSource, /min=\{1\}/);
+  assert.match(personaSpectrumSource, /max=\{24\}/);
+  assert.match(personaSpectrumSource, /parsedCount > 24/);
+  assert.match(personaSpectrumSource, /填写后精确生成 1–24 张/);
 });
 
 test("Persona assist decoders require typed slots and preserve assisted slot identity", () => {

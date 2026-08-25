@@ -21,7 +21,11 @@ from app.models.study_question import project_study_question_proposal
 from app.persistence.database import Database
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
 from app.persistence.study_session_repository import StudySessionRepository
-from app.services.model_provider import OpenAIModelProvider, _parse_chat_model_reply
+from app.services.model_provider import (
+    OpenAIModelProvider,
+    _execute_chat_tool_call,
+    _parse_chat_model_reply,
+)
 from app.services.study_chat_attachments import PreparedStudyChatAttachments
 
 
@@ -81,6 +85,115 @@ def _valid_question_reply() -> dict[str, object]:
 
 
 class StudyChatReplyDecodeTests(unittest.TestCase):
+    def test_malformed_builtin_question_arguments_fail_closed(self) -> None:
+        raw_arguments = '{"topic":"vector basis"'
+
+        execution = _execute_chat_tool_call(
+            {
+                "id": "call-malformed-question",
+                "function": {
+                    "name": "ask_multiple_choice_question",
+                    "arguments": raw_arguments,
+                },
+            },
+            section_id="unit-1",
+            section_context="Vector spaces",
+            learner_message="Quiz me",
+            memory_hits=[],
+            debug_report=None,
+            document_path=None,
+        )
+
+        self.assertEqual(execution["arguments_json"], raw_arguments)
+        self.assertEqual(
+            execution["result"],
+            {
+                "ok": False,
+                "error": "tool_argument_invalid_json",
+                "tool_name": "ask_multiple_choice_question",
+            },
+        )
+        self.assertNotIn("question_type", execution["result"])
+        self.assertNotIn("question", execution["result"])
+
+    def test_non_object_or_malformed_arguments_never_reach_proxy_runtimes(self) -> None:
+        class CountingRuntime:
+            def __init__(self) -> None:
+                self.execution_count = 0
+
+            def has_tool(self, _tool_name: str) -> bool:
+                return True
+
+            def execute_tool(self, tool_name: str, arguments: dict[str, object]):
+                self.execution_count += 1
+                return {"ok": True, "tool_name": tool_name, "arguments": arguments}
+
+        runtime = CountingRuntime()
+        cases = (
+            ('{"broken":', "tool_argument_invalid_json"),
+            ('{"value":NaN}', "tool_argument_invalid_json"),
+            ('{"value":Infinity}', "tool_argument_invalid_json"),
+            ('{"value":-Infinity}', "tool_argument_invalid_json"),
+            ("[]", "tool_argument_schema_invalid"),
+            ('"not-an-object"', "tool_argument_schema_invalid"),
+            ("null", "tool_argument_schema_invalid"),
+        )
+        for raw_arguments, expected_error in cases:
+            with self.subTest(raw_arguments=raw_arguments):
+                execution = _execute_chat_tool_call(
+                    {
+                        "id": "call-proxy",
+                        "function": {
+                            "name": "proxy_tool",
+                            "arguments": raw_arguments,
+                        },
+                    },
+                    section_id="unit-1",
+                    section_context="Vector spaces",
+                    learner_message="Use a tool",
+                    memory_hits=[],
+                    debug_report=None,
+                    document_path=None,
+                    session_tool_runtime=runtime,
+                    plan_tool_runtime=runtime,
+                    scene_tool_runtime=runtime,
+                )
+                self.assertEqual(execution["arguments_json"], raw_arguments)
+                self.assertEqual(execution["result"]["error"], expected_error)
+                self.assertFalse(execution["result"]["ok"])
+
+        non_string_function_payloads = (
+            {"name": "proxy_tool"},
+            {"name": "proxy_tool", "arguments": None},
+            {"name": "proxy_tool", "arguments": {}},
+            {"name": "proxy_tool", "arguments": []},
+        )
+        for function_payload in non_string_function_payloads:
+            with self.subTest(function_payload=function_payload):
+                execution = _execute_chat_tool_call(
+                    {
+                        "id": "call-proxy-non-string",
+                        "function": function_payload,
+                    },
+                    section_id="unit-1",
+                    section_context="Vector spaces",
+                    learner_message="Use a tool",
+                    memory_hits=[],
+                    debug_report=None,
+                    document_path=None,
+                    session_tool_runtime=runtime,
+                    plan_tool_runtime=runtime,
+                    scene_tool_runtime=runtime,
+                )
+                self.assertEqual(execution["arguments_json"], "")
+                self.assertEqual(
+                    execution["result"]["error"],
+                    "tool_argument_schema_invalid",
+                )
+                self.assertFalse(execution["result"]["ok"])
+
+        self.assertEqual(runtime.execution_count, 0)
+
     def test_natural_language_plain_text_remains_accepted(self) -> None:
         result = _parse("好的，我们继续！向量基是一组线性无关并张成空间的向量。")
 
@@ -508,6 +621,57 @@ class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
         self.assertEqual(session.revision, 0)
         self.assertEqual(session.last_turn_sequence, 0)
         self.assertEqual(session.turns, [])
+
+    def test_route_forwards_validated_session_prelude_kind_to_execution(self) -> None:
+        captured: dict[str, object] = {}
+
+        def fail_after_capture(**kwargs: object):
+            captured.update(kwargs)
+            raise RuntimeError("captured_message_kind")
+
+        runtime_settings = SimpleNamespace(
+            effective_settings=lambda: SimpleNamespace(
+                openai_timeout_seconds=3,
+                openai_chat_tool_max_rounds=1,
+            )
+        )
+        session_service = SimpleNamespace(require_session=self.sessions.require)
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            chat_model="gpt-test",
+            timeout_seconds=3,
+        )
+        prepared = PreparedStudyChatAttachments(
+            records=[],
+            attachment_context="",
+            multimodal_parts=[],
+        )
+
+        with (
+            patch.object(routes.container, "study_chat_operation_repository", self.operations),
+            patch.object(routes.container, "study_session_service", session_service),
+            patch.object(routes.container, "runtime_settings_service", runtime_settings),
+            patch.object(routes.container, "model_provider", provider),
+            patch.object(routes.container, "store", object()),
+            patch.object(routes, "prepare_study_chat_attachments", return_value=prepared),
+            patch.object(routes, "cleanup_staged_study_chat_operation_attachments"),
+            patch.object(routes, "_run_study_chat", side_effect=fail_after_capture),
+        ):
+            receipt = routes._admit_and_run_study_chat(
+                session_id="session-invalid-reply",
+                client_request_id="prelude-kind-forwarding-0001",
+                expected_session_revision=0,
+                message="正式对话开始前的预处理消息",
+                message_kind=" session_prelude ",
+                follow_up_id="",
+                hidden_message_prefix="",
+                attachment_inputs=[],
+            )
+
+        self.assertEqual(receipt.status, "uncertain")
+        self.assertEqual(captured["message_kind"], "session_prelude")
 
     def test_historical_question_tool_traces_are_redacted_on_all_public_replays(self) -> None:
         request_payload = StudyChatOperationRequestPayload(

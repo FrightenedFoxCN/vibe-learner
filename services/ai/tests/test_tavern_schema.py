@@ -151,6 +151,14 @@ class TavernSchemaTests(unittest.TestCase):
             }
             self.assertIn("creation_key", columns)
             self.assertIn("creation_input_digest", columns)
+            room_indexes = {
+                item["name"]: tuple(item["column_names"])
+                for item in inspect(legacy_database.engine).get_indexes("tavern_rooms")
+            }
+            self.assertEqual(
+                room_indexes.get("ix_tavern_rooms_updated_at_id"),
+                ("updated_at", "id"),
+            )
         finally:
             legacy_database.dispose()
 
@@ -398,14 +406,15 @@ class TavernSchemaTests(unittest.TestCase):
         self.assertEqual(created.messages[0].author_kind, TavernAuthorKind.DIRECTOR)
         self.assertEqual(created.room.harness_policy.context_message_limit, 12)
 
-        summaries = self.repository.list_rooms()
-        self.assertEqual(len(summaries), 1)
-        self.assertEqual(summaries[0].participant_names, ["阿澜", "柏舟"])
-        self.assertEqual(summaries[0].message_count, 1)
+        summary_page = self.repository.list_rooms()
+        self.assertEqual(len(summary_page.items), 1)
+        self.assertIsNone(summary_page.next_cursor)
+        self.assertEqual(summary_page.items[0].participant_names, ["阿澜", "柏舟"])
+        self.assertEqual(summary_page.items[0].message_count, 1)
         self.assertEqual(self.repository.count_persona_references("persona-a"), 1)
 
         self.assertTrue(self.repository.delete_room(room.id, expected_revision=0))
-        self.assertEqual(self.repository.list_rooms(), [])
+        self.assertEqual(self.repository.list_rooms().items, [])
         self.assertFalse(self.repository.delete_room(room.id, expected_revision=0))
 
     def test_repository_refuses_to_finalize_before_all_speaker_steps_complete(self) -> None:

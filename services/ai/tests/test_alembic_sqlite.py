@@ -16,7 +16,7 @@ from app.persistence.database import Database
 
 
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD = "20260824_0011"
+ALEMBIC_HEAD = "20260825_0012"
 
 
 def _alembic_config(database_url: str) -> Config:
@@ -133,6 +133,7 @@ class AlembicSqliteTests(unittest.TestCase):
         ]
         self.assertIn("payload JSONB DEFAULT '{}' NOT NULL", documents_ddl)
         self.assertIn("uq_tavern_rooms_creation_key", ddl)
+        self.assertIn("ix_tavern_rooms_updated_at_id", ddl)
         self.assertIn("uq_tavern_runs_parent_run_id", ddl)
         self.assertIn("fk_tavern_runs_parent_run_id", ddl)
 

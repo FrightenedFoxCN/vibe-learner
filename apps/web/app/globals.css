@@ -417,6 +417,23 @@ textarea {
   white-space: nowrap;
 }
 
+.tavern-room-page-status {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.tavern-room-page-status p {
+  margin: 0;
+}
+
+.tavern-room-more {
+  width: 100%;
+}
+
 .tavern-empty-copy,
 .tavern-panel-footnote,
 .tavern-field-error,
@@ -578,9 +595,13 @@ textarea {
 
 .tavern-load-older {
   width: max-content;
+  min-width: 44px;
+  min-height: 44px;
   margin: 0 auto 14px;
   padding: 6px 12px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted);
   font-size: 11px;
 }
@@ -1161,11 +1182,18 @@ textarea {
 
   .app-nav-link,
   .app-nav-link--active {
+    flex: 0 0 44px;
+    min-width: 44px;
     height: var(--mobile-nav-height);
-    padding: 0 10px;
+    padding: 0 !important;
+    justify-content: center;
     border-left: none !important;
     border-bottom: 2px solid transparent;
     font-size: 12px;
+  }
+
+  .app-nav-label {
+    display: none;
   }
 
   .app-nav-link--active {
@@ -1216,6 +1244,12 @@ textarea {
   }
 
   .tavern-button {
+    min-height: 44px;
+  }
+
+  .tavern-setup-form input,
+  .tavern-setup-form select {
+    height: 44px;
     min-height: 44px;
   }
 

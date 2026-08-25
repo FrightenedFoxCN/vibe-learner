@@ -105,8 +105,11 @@ def create_tavern_room(payload: CreateTavernRoomRequest) -> TavernRoomDetail:
 
 
 @router.get("/rooms", response_model=TavernRoomListResponse)
-def list_tavern_rooms() -> TavernRoomListResponse:
-    return TavernRoomListResponse(items=container.tavern_service.list_rooms())
+def list_tavern_rooms(
+    limit: int = Query(default=30, ge=1, le=50),
+    cursor: str | None = Query(default=None, min_length=1, max_length=512),
+) -> TavernRoomListResponse:
+    return container.tavern_service.list_rooms(limit=limit, cursor=cursor)
 
 
 @router.get("/rooms/{room_id}", response_model=TavernRoomDetail)

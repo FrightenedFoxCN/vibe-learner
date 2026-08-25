@@ -497,7 +497,9 @@ class RetryTavernRunRequest(BaseModel):
 
 
 class TavernRoomListResponse(BaseModel):
+    contract_version: Literal["tavern-room-list-v1"] = "tavern-room-list-v1"
     items: list[TavernRoomSummary]
+    next_cursor: str | None = None
 
 
 class TavernRunListResponse(BaseModel):

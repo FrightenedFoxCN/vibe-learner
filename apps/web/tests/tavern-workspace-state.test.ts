@@ -6,6 +6,7 @@ import type {
   TavernMessage,
   TavernParticipant,
   TavernRoomState,
+  TavernRoomSummary,
   TavernRun,
 } from "@vibe-learner/shared";
 
@@ -15,10 +16,13 @@ import {
   latestFacilitatedRecovery,
   listRetryableRuns,
   mergeTavernMessages,
+  mergeTavernRoomPages,
   projectParticipantStates,
   reconcileTavernCreationDraftPersonas,
   reconcileTavernRuns,
+  tavernRoomSummaryButtons,
   TavernMessageConflictError,
+  TavernRoomPageConflictError,
 } from "../lib/tavern-workspace-state.ts";
 import {
   normalizeTavernRoomDetail,
@@ -30,6 +34,24 @@ import {
   isTavernTerminalReplayDirective,
   TavernDecodeError,
 } from "../lib/tavern-decode.ts";
+
+function roomSummary(
+  id: string,
+  updatedAt: string,
+  title = id
+): TavernRoomSummary {
+  return {
+    id,
+    title,
+    participantPersonaIds: ["persona-1"],
+    participantNames: ["Aurora"],
+    messageCount: 0,
+    revision: 0,
+    status: "active",
+    createdAt: "2026-08-12T00:00:00Z",
+    updatedAt,
+  };
+}
 
 function message(id: string, sequence: number): TavernMessage {
   return {
@@ -108,6 +130,66 @@ test("mergeTavernMessages orders and deduplicates tail/prepend pages", () => {
     ).map((item) => item.id),
     ["m1", "m2", "m3", "m4"]
   );
+});
+
+test("Tavern Room pages append monotonically, deduplicate IDs, and retain at most 100 summaries", () => {
+  const first = Array.from({ length: 80 }, (_, index) =>
+    roomSummary(
+      `room-${String(200 - index).padStart(3, "0")}`,
+      `2026-08-12T00:${String(59 - Math.floor(index / 60)).padStart(2, "0")}:${String(59 - (index % 60)).padStart(2, "0")}Z`
+    )
+  );
+  const incoming = [
+    first[79]!,
+    ...Array.from({ length: 30 }, (_, index) =>
+      roomSummary(
+        `room-${String(120 - index).padStart(3, "0")}`,
+        `2026-08-11T23:59:${String(59 - index).padStart(2, "0")}Z`
+      )
+    ),
+  ];
+  const merged = mergeTavernRoomPages(first, incoming);
+  assert.equal(merged.length, 100);
+  assert.equal(new Set(merged.map((room) => room.id)).size, 100);
+  assert.equal(merged[80]?.id, "room-120");
+
+  assert.throws(
+    () => mergeTavernRoomPages(
+      [roomSummary("room-z", "2026-08-12T00:00:00Z")],
+      [roomSummary("room-newer", "2026-08-13T00:00:00Z")]
+    ),
+    TavernRoomPageConflictError
+  );
+});
+
+test("selected Tavern Room detail remains a visible authoritative button outside loaded summaries", () => {
+  const loaded = Array.from({ length: 100 }, (_, index) =>
+    roomSummary(
+      `room-${String(200 - index).padStart(3, "0")}`,
+      `2026-08-${String(24 - Math.floor(index / 10)).padStart(2, "0")}T00:00:${String(59 - (index % 10)).padStart(2, "0")}Z`
+    )
+  );
+  const rawSelected = rawRoomDetail();
+  rawSelected.room.id = "selected-outside-page";
+  rawSelected.room.title = "权威详情标题";
+  rawSelected.room.updated_at = "2026-07-01T00:00:00Z";
+  rawSelected.participants[0]!.room_id = rawSelected.room.id;
+  const selectedDetail = normalizeTavernRoomDetail(rawSelected);
+  const buttons = tavernRoomSummaryButtons(loaded, selectedDetail);
+  assert.equal(buttons.length, 100);
+  assert.equal(buttons[0]?.id, "selected-outside-page");
+  assert.equal(buttons[0]?.title, "权威详情标题");
+  assert.equal(new Set(buttons.map((room) => room.id)).size, 100);
+
+  rawSelected.room.id = loaded[5]!.id;
+  rawSelected.room.title = "mutation 后的权威标题";
+  rawSelected.participants[0]!.room_id = rawSelected.room.id;
+  const refreshedButtons = tavernRoomSummaryButtons(
+    loaded,
+    normalizeTavernRoomDetail(rawSelected)
+  );
+  assert.equal(refreshedButtons[5]?.id, loaded[5]!.id);
+  assert.equal(refreshedButtons[5]?.title, "mutation 后的权威标题");
 });
 
 test("Tavern creation drafts drop deleted personas and rotate request identity", () => {
@@ -415,6 +497,17 @@ test("mobile Tavern DOM order matches its primary visual flow", () => {
   assert.ok(componentSource.includes('activeRoom ? "has-room" : "empty-room"'));
   assert.ok(componentSource.includes("先创建或打开一个酒馆，然后开始对话。"));
   assert.ok(!componentSource.includes("从左侧创建或打开一个酒馆。"));
+});
+
+test("Tavern Session pagination exposes pending, error, and duplicate-cursor fences", () => {
+  const componentSource = readFileSync(
+    new URL("../components/tavern-workspace.tsx", import.meta.url),
+    "utf8"
+  );
+  assert.ok(componentSource.includes("loadingRoomCursorRef.current === cursor"));
+  assert.ok(componentSource.includes('disabled={busy || loadingMore}'));
+  assert.ok(componentSource.includes('{pageError ? <p role="alert">{pageError}</p> : null}'));
+  assert.ok(componentSource.includes("已显示最近 100 个房间"));
 });
 
 test("mobile Tavern buttons keep a 44px minimum touch target", () => {
@@ -785,6 +878,51 @@ test("strict Tavern decoder rejects malformed nested persona and scene snapshots
 test("strict Tavern list decoders reject a malformed envelope", () => {
   assert.throws(() => normalizeTavernRoomList(null), TavernDecodeError);
   assert.throws(() => normalizeTavernRoomList({}), TavernDecodeError);
+  assert.throws(() => normalizeTavernRoomList([]), TavernDecodeError);
+  const rawSummary = {
+    id: "room-a",
+    title: "Room A",
+    participant_persona_ids: ["persona-1"],
+    participant_names: ["Aurora"],
+    message_count: 1,
+    revision: 0,
+    status: "active",
+    created_at: "2026-08-12T00:00:00Z",
+    updated_at: "2026-08-12T00:00:00Z",
+  };
+  const validPage = {
+    contract_version: "tavern-room-list-v1",
+    items: [rawSummary],
+    next_cursor: "opaque.cursor",
+  };
+  assert.equal(normalizeTavernRoomList(validPage).items[0]?.id, "room-a");
+  assert.throws(
+    () => normalizeTavernRoomList({ ...validPage, contract_version: "tavern-room-list-v2" }),
+    TavernDecodeError
+  );
+  assert.throws(
+    () => normalizeTavernRoomList({ ...validPage, next_cursor: 7 }),
+    TavernDecodeError
+  );
+  assert.throws(
+    () => normalizeTavernRoomList({
+      ...validPage,
+      items: [
+        { ...rawSummary, id: "room-a" },
+        { ...rawSummary, id: "room-b", updated_at: "2026-08-13T00:00:00Z" },
+      ],
+      next_cursor: null,
+    }),
+    TavernDecodeError
+  );
+  assert.throws(
+    () => normalizeTavernRoomList({
+      contract_version: "tavern-room-list-v1",
+      items: [],
+      next_cursor: "unexpected",
+    }),
+    TavernDecodeError
+  );
   assert.throws(() => normalizeTavernRunList({ items: null }), TavernDecodeError);
   assert.throws(() => normalizeTavernRunRecovery({ items: null }), TavernDecodeError);
 });

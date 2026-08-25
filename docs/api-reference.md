@@ -139,7 +139,7 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/tavern/rooms` | Idempotently create a room with persona snapshots. |
-| `GET` | `/tavern/rooms` | List room summaries. |
+| `GET` | `/tavern/rooms` | List a stable cursor page of room summaries. |
 | `GET` | `/tavern/rooms/{room_id}` | Read room detail with bounded message paging. |
 | `PATCH` | `/tavern/rooms/{room_id}` | Revision-check room metadata, cast, scene, or archive state. |
 | `DELETE` | `/tavern/rooms/{room_id}` | Revision-check permanent deletion. |
@@ -956,10 +956,19 @@ Returns `TavernRoomDetail` with `room`, ordered `participants`, paged `messages`
 
 ### `GET /tavern/rooms`
 
-Returns lightweight summaries without loading transcripts or persona snapshots:
+Returns lightweight summaries without loading transcripts or persona snapshots. Query parameters:
+
+- `limit`: page size from `1` to `50`, default `30`;
+- `cursor`: opaque continuation cursor from the preceding page.
+
+Pages are ordered by `(updated_at DESC, id DESC)`. The cursor is closed-versioned,
+integrity checked, and bound to that pair; malformed, modified, or no-longer-known
+anchors return `400` instead of silently restarting at the first page. Each page
+uses bounded batched aggregation and returns at most 50 summaries.
 
 ```json
 {
+  "contract_version": "tavern-room-list-v1",
   "items": [
     {
       "id": "tavern-...",
@@ -972,9 +981,15 @@ Returns lightweight summaries without loading transcripts or persona snapshots:
       "created_at": "...",
       "updated_at": "..."
     }
-  ]
+  ],
+  "next_cursor": "opaque-cursor-or-null"
 }
 ```
+
+`next_cursor = null` means no further page is available. The browser appends
+pages with ID deduplication, keeps an independently loaded selected Room visible,
+and retains at most 100 summary buttons; full selected Room state still comes
+from `GET /tavern/rooms/{room_id}`.
 
 ### `GET /tavern/rooms/{room_id}`
 

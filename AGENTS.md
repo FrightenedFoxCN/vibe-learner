@@ -59,7 +59,7 @@ The planner receives cleaned study units plus finer outline/detail context. With
 
 `POST /study-sessions` -> `POST /study-sessions/{id}/chat`
 
-The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing. Chat requests use durable operation admission and query-only recovery for ambiguous outcomes. All currently registered Study database effects share the final Turn/Session transaction; Scene mutation and operation-owned attachment staging have separate strict commit/read-back or compensation boundaries, while upstream provider calls remain `uncertain` without provider idempotency/read-back. Interactive-question UX waits for persisted Session read-back and never receives the server-only grading specification; independent wire revalidation remains open before its backlog gates close.
+The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing. Chat requests use durable operation admission and query-only recovery for ambiguous outcomes. All currently registered Study database effects share the final Turn/Session transaction; Scene mutation and operation-owned attachment staging have separate strict commit/read-back or compensation boundaries, while upstream provider calls remain `uncertain` without provider idempotency/read-back. Interactive-question UX waits for persisted Session read-back and never receives the server-only grading specification; its wire, corruption, concurrency, idempotency, and legacy-migration gates have passed independent revalidation, while the broader Study v3/live-decoder boundary remains open.
 
 ### 4. Tavern interaction (active implementation)
 

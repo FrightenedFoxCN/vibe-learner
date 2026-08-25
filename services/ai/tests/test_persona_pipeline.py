@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import io
 import json
+import re
 import sqlite3
 import threading
 import unittest
@@ -12,6 +13,7 @@ from unittest.mock import patch
 
 import fitz
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy.orm.attributes import flag_modified
 from app.api.routes import (
     _map_chat_generation_error,
@@ -311,13 +313,22 @@ class PersonaPipelineTests(unittest.TestCase):
         self.persona_card_library.delete_card(created.id)
         self.assertEqual(self.persona_card_library.list_cards(), [])
 
-    def test_mock_provider_keyword_card_generation_requires_openai(self) -> None:
-        with self.assertRaises(RuntimeError) as ctx:
-            MockModelProvider().generate_persona_cards_from_keywords(
-                keywords="福尔摩斯式导师",
-                count=6,
-            )
-        self.assertEqual(str(ctx.exception), "setting_keyword_generation_requires_openai")
+    def test_mock_provider_keyword_card_generation_is_exact_and_local(self) -> None:
+        for count in (1, 24):
+            with self.subTest(count=count):
+                result = MockModelProvider().generate_persona_cards_from_keywords(
+                    keywords="福尔摩斯式导师",
+                    count=count,
+                )
+                self.assertEqual(len(result["cards"]), count)
+                self.assertEqual(result["used_model"], "mock")
+                self.assertFalse(result["used_web_search"])
+                self.assertTrue(
+                    all(
+                        "福尔摩斯式导师" in str(card["content"])
+                        for card in result["cards"]
+                    )
+                )
 
     def test_openai_provider_keyword_card_generation_uses_responses_web_search(self) -> None:
         provider = OpenAIModelProvider(
@@ -365,7 +376,7 @@ class PersonaPipelineTests(unittest.TestCase):
         ) as mocked_responses:
             result = provider.generate_persona_cards_from_keywords(
                 keywords="侦探导师, 冷静推理",
-                count=5,
+                count=1,
             )
 
         payload = mocked_responses.call_args.kwargs
@@ -420,7 +431,7 @@ class PersonaPipelineTests(unittest.TestCase):
         ) as mocked_completion:
             result = provider.generate_persona_cards_from_keywords(
                 keywords="学院派导师",
-                count=4,
+                count=1,
             )
 
         payload = mocked_completion.call_args.kwargs
@@ -479,7 +490,7 @@ class PersonaPipelineTests(unittest.TestCase):
         ):
             result = provider.generate_persona_cards_from_keywords(
                 keywords="侦探导师, 冷静推理",
-                count=4,
+                count=1,
             )
 
         payload = mocked_completion.call_args.kwargs
@@ -491,6 +502,21 @@ class PersonaPipelineTests(unittest.TestCase):
         request = PersonaCardGenerateRequest(mode="keywords", input_text="学院派导师, 冷静推理")
         self.assertIsNone(request.count)
 
+    def test_persona_card_generate_request_limits_count_to_twenty_four(self) -> None:
+        request = PersonaCardGenerateRequest(
+            mode="keywords",
+            input_text="学院派导师",
+            count=24,
+        )
+        self.assertEqual(request.count, 24)
+
+        with self.assertRaises(ValidationError):
+            PersonaCardGenerateRequest(
+                mode="keywords",
+                input_text="学院派导师",
+                count=25,
+            )
+
     def test_mock_text_card_generation_no_longer_clamps_to_minimum_count(self) -> None:
         result = MockModelProvider().generate_persona_cards_from_text(
             text="冷静分析。先给框架。",
@@ -500,7 +526,100 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertEqual(len(result["cards"]), 1)
         self.assertEqual(result["cards"][0]["content"], "冷静分析")
 
-    def test_openai_provider_keyword_card_generation_uses_soft_count_hint(self) -> None:
+    def test_mock_text_card_generation_returns_exact_requested_count(self) -> None:
+        result = MockModelProvider().generate_persona_cards_from_text(
+            text="冷静分析。先给框架。",
+            count=4,
+        )
+
+        self.assertEqual(len(result["cards"]), 4)
+        self.assertEqual(
+            [card["content"] for card in result["cards"]],
+            ["冷静分析", "先给框架", "冷静分析", "先给框架"],
+        )
+
+    def test_openai_persona_card_count_invariant_accepts_exact_count(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            setting_model="gpt-setting-test",
+            setting_web_search_enabled=False,
+            timeout_seconds=3,
+        )
+        parsed = {
+            "summary": "结构化导师",
+            "relationship": "导师",
+            "learner_address": "同学",
+            "cards": [
+                {
+                    "title": f"卡片 {index + 1}",
+                    "kind": "thinking_style",
+                    "label": "思维风格",
+                    "content": f"内容 {index + 1}",
+                }
+                for index in range(2)
+            ],
+        }
+
+        with patch.object(
+            provider,
+            "_request_setting_json_chat",
+            return_value=parsed,
+        ) as request:
+            result = provider.generate_persona_cards_from_keywords(
+                keywords="结构化导师",
+                count=2,
+            )
+
+        self.assertEqual(len(result["cards"]), 2)
+        prompt_payload = request.call_args.args[0]
+        prompt_text = "\n".join(
+            str(message["content"])
+            for message in prompt_payload["messages"]
+        )
+        self.assertIn("card_count_hint: 2", prompt_text)
+        self.assertIn("`cards` 必须恰好生成该数量", prompt_text)
+
+    def test_openai_persona_card_count_invariant_rejects_under_and_over_generation(self) -> None:
+        provider = OpenAIModelProvider(
+            api_key="test-key",
+            base_url="https://api.openai.test/v1",
+            plan_model="gpt-test",
+            setting_model="gpt-setting-test",
+            setting_web_search_enabled=False,
+            timeout_seconds=3,
+        )
+        for actual_count in (1, 3):
+            parsed = {
+                "summary": "结构化导师",
+                "relationship": "导师",
+                "learner_address": "同学",
+                "cards": [
+                    {
+                        "title": f"卡片 {index + 1}",
+                        "kind": "thinking_style",
+                        "label": "思维风格",
+                        "content": f"内容 {index + 1}",
+                    }
+                    for index in range(actual_count)
+                ],
+            }
+            with self.subTest(actual_count=actual_count), patch.object(
+                provider,
+                "_request_setting_json_chat",
+                return_value=parsed,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "^setting_persona_card_count_mismatch$",
+                ):
+                    provider.generate_persona_cards_from_keywords(
+                        keywords="结构化导师",
+                        count=2,
+                    )
+
+    def test_openai_provider_keyword_card_generation_keeps_unspecified_count_flexible(self) -> None:
         provider = OpenAIModelProvider(
             api_key="test-key",
             base_url="https://api.openai.test/v1",
@@ -549,18 +668,18 @@ class PersonaPipelineTests(unittest.TestCase):
 
         payload = mocked_responses.call_args.kwargs
         self.assertIn("card_count_hint: 未指定", payload["input"])
-        self.assertIn("只是数量偏好", payload["instructions"])
+        self.assertIn("未提供时才由你根据素材决定数量", payload["instructions"])
 
-    def test_persona_card_prompt_mentions_soft_count_and_freedom(self) -> None:
+    def test_persona_card_prompt_requires_exact_count_when_specified(self) -> None:
         template = load_prompt_template("openai_setting_prompt.txt")
         keywords_system = template.require("generate_keywords_system")
         keywords_user = template.require("generate_keywords_user")
         long_text_system = template.require("generate_long_text_system")
 
-        self.assertIn("只是数量偏好", keywords_system)
-        self.assertIn("不要为了凑满类别而生成低价值卡片", keywords_system)
+        self.assertIn("`cards` 必须恰好包含该数量的卡片", keywords_system)
+        self.assertIn("不能更多或更少", keywords_system)
         self.assertIn("card_count_hint", keywords_user)
-        self.assertIn("可以更少，也可以更多", keywords_user)
+        self.assertIn("为数字时", keywords_user)
         self.assertIn("允许同一种 kind 拆成多张细分卡片", long_text_system)
 
     def test_learning_plan_prompt_includes_persona_identity_fields(self) -> None:
@@ -647,6 +766,100 @@ class PersonaPipelineTests(unittest.TestCase):
         self.assertTrue(result.reply)
         self.assertEqual(result.citations[0].section_id, "chapter-1")
         self.assertEqual(result.character_events[0].line_segment_id, "session-1:chat:0")
+
+    def test_mock_chat_public_text_never_echoes_internal_contexts(self) -> None:
+        provider = MockModelProvider()
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        internal_inputs = {
+            "section_id": "internal-study-unit-id-92",
+            "session_prompt": "会话约束：internal-session-prompt-92",
+            "section_context": "internal-section-context-92",
+            "memory_context": "internal-memory-context-92",
+            "attachment_context": "internal-attachment-context-92",
+            "scene_context": "internal-scene-context-92",
+            "active_plan_context": "internal-plan-context-92",
+            "session_state_context": "internal-session-state-context-92",
+            "conversation_history": [
+                {"role": "user", "content": "internal-history-context-92"}
+            ],
+        }
+        cases = (
+            (
+                "session_prelude",
+                "正式对话开始前：这是隐藏消息和预处理消息。",
+            ),
+            (
+                "learner",
+                "以下是隐藏消息，当前提问是：正式对话开始前。",
+            ),
+        )
+        forbidden_markers = (
+            "隐藏消息",
+            "预处理消息",
+            "会话约束",
+            "当前提问是：正式对话开始前",
+            "internal-study-unit-id-92",
+            "internal-session-prompt-92",
+            "internal-section-context-92",
+            "internal-memory-context-92",
+            "internal-attachment-context-92",
+            "internal-scene-context-92",
+            "internal-plan-context-92",
+            "internal-session-state-context-92",
+            "internal-history-context-92",
+        )
+
+        for message_kind, message in cases:
+            with self.subTest(message_kind=message_kind):
+                reply = provider.generate_chat(
+                    persona=persona,
+                    message=message,
+                    message_kind=message_kind,
+                    **internal_inputs,
+                )
+                public_surface = "\n".join(
+                    (
+                        reply.text,
+                        reply.delivery_cue,
+                        reply.state_commentary,
+                    )
+                )
+                for marker in forbidden_markers:
+                    self.assertNotIn(marker, public_surface)
+                if message_kind == "session_prelude":
+                    sentences = [
+                        item.strip()
+                        for item in re.split(r"[。！？!?]+", reply.text)
+                        if item.strip()
+                    ]
+                    self.assertGreaterEqual(len(sentences), 2)
+                    self.assertLessEqual(len(sentences), 4)
+
+    def test_pedagogy_forwards_application_owned_message_kind(self) -> None:
+        persona = self.persona_engine.require_persona("mentor-aurora")
+        provider = self.orchestrator.model_provider
+
+        with patch.object(
+            provider,
+            "generate_chat",
+            wraps=provider.generate_chat,
+        ) as generate_chat:
+            result = self.orchestrator.generate_chat_reply(
+                session_id="session-prelude-forwarding",
+                persona=persona,
+                message="正式对话开始前的内部预处理指令",
+                message_kind="session_prelude",
+                study_unit_id="internal-unit-prelude-forwarding",
+                session_system_prompt="internal-session-prompt-forwarding",
+            )
+
+        self.assertEqual(
+            generate_chat.call_args.kwargs["message_kind"],
+            "session_prelude",
+        )
+        self.assertNotIn("正式对话开始前", result.reply)
+        self.assertNotIn("internal-unit-prelude-forwarding", result.reply)
+        self.assertNotIn("internal-session-prompt-forwarding", result.reply)
 
     def test_session_scene_clone_and_mutation_are_isolated(self) -> None:
         source_profile = SceneProfileRecord(
@@ -3847,6 +4060,14 @@ class PersonaPipelineTests(unittest.TestCase):
 
         self.assertEqual(error.status_code, 502)
         self.assertEqual(error.detail, "setting_model_invalid_payload")
+
+    def test_route_maps_persona_count_mismatch_to_bad_gateway(self) -> None:
+        error = _map_setting_generation_error(
+            RuntimeError("setting_persona_card_count_mismatch")
+        )
+
+        self.assertEqual(error.status_code, 502)
+        self.assertEqual(error.detail, "setting_persona_card_count_mismatch")
 
     def test_plan_service_uses_model_provider_output_for_plan(self) -> None:
         arrangement_service = StudyArrangementService()
