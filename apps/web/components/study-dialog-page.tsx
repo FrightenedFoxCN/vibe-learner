@@ -11,6 +11,7 @@ import { ProviderTruth } from "./provider-truth";
 import { StudyConsole } from "./study-console";
 import { TopNav } from "./top-nav";
 import { PLAN_SWITCH_NOTICE } from "../lib/learning-workspace-copy";
+import { AppLink } from "../lib/app-navigation";
 import { getAiBaseUrl } from "../lib/runtime-config";
 import type {
   StudyConsolePageCache,
@@ -464,6 +465,19 @@ export function StudyDialogPage() {
       <ProviderTruth scope="study" />
 
       <section style={styles.mainStage}>
+        {isHydrated && !planHistoryItems.length ? (
+          <div style={styles.noPlanState}>
+            <div style={styles.noPlanCopy}>
+              <h2 style={styles.noPlanTitle}>先创建或选择学习计划</h2>
+              <p style={styles.noPlanDescription}>
+                章节对话需要一个学习计划来确定教材、章节和学习进度。
+              </p>
+            </div>
+            <AppLink path="/plan" style={styles.noPlanAction}>
+              前往计划工作区
+            </AppLink>
+          </div>
+        ) : (
           <StudyConsole
             isPending={isBusy}
             selectedPlanId={activePlan?.id ?? ""}
@@ -508,6 +522,7 @@ export function StudyDialogPage() {
             cachedState={studyConsoleCache}
             onCachedStateChange={(nextState: StudyConsolePageCache) => setPageCache("studyConsole", nextState)}
           />
+        )}
       </section>
 
       {isHydrated ? (
@@ -789,6 +804,46 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 0,
     width: "100%",
     maxWidth: "none",
+  },
+  noPlanState: {
+    minHeight: 240,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "column",
+    gap: 18,
+    padding: 28,
+    border: "1px solid var(--border)",
+    background: "white",
+    textAlign: "center",
+  },
+  noPlanCopy: {
+    display: "grid",
+    gap: 8,
+    maxWidth: 520,
+  },
+  noPlanTitle: {
+    margin: 0,
+    color: "var(--ink)",
+    fontSize: 20,
+  },
+  noPlanDescription: {
+    margin: 0,
+    color: "var(--muted)",
+    fontSize: 14,
+    lineHeight: 1.7,
+  },
+  noPlanAction: {
+    minHeight: 44,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 18px",
+    border: "1px solid var(--accent)",
+    background: "var(--accent)",
+    color: "white",
+    fontWeight: 700,
+    textDecoration: "none",
   },
   pdfWindow: {
     position: "fixed",

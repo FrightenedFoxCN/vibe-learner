@@ -265,6 +265,38 @@ test("planning state machines bind document and goal-only request subjects", () 
   }
 });
 
+test("planning question tool progress remains inside the strict stream lifecycle", () => {
+  const stages = [
+    "learning_plan_started",
+    "study_units_ready",
+    "heuristic_plan_built",
+    "model_round_started",
+    "planning_question_asked",
+    "model_tool_call",
+    "model_round_completed",
+    "model_plan_applied",
+    "learning_plan_completed",
+    "stream_completed",
+  ];
+  const machine = new StrictStreamStateMachine(PLAN_SCOPE);
+  for (const [index, stage] of stages.entries()) {
+    machine.accept(eventFixture({
+      scope: PLAN_SCOPE,
+      sequence: index + 1,
+      stage,
+      payload: stage === "planning_question_asked"
+        ? {
+            question_id: "planning-question-fixture",
+            question: "Which outcome matters most?",
+            reason: "Bind the plan objective.",
+            assumptions: [],
+          }
+        : undefined,
+    }));
+  }
+  assert.equal(machine.finish().stage, "stream_completed");
+});
+
 test("trimmed v1 reports remain decidable and legacy reports do not gain invented evidence", () => {
   const lifecycle = documentLifecycle();
   const trimmedEvents = lifecycle.slice(4);

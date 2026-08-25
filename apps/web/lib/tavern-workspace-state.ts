@@ -129,6 +129,30 @@ export function readTavernCreationDraft(): TavernCreationDraft | null {
   }
 }
 
+export function reconcileTavernCreationDraftPersonas(
+  draft: TavernCreationDraft | null,
+  availablePersonaIds: readonly string[],
+  replacementKey: string,
+): TavernCreationDraft | null {
+  if (!draft) return null;
+  const available = new Set(availablePersonaIds);
+  const seen = new Set<string>();
+  const personaIds = draft.personaIds.filter((personaId) => {
+    if (!available.has(personaId) || seen.has(personaId)) return false;
+    seen.add(personaId);
+    return true;
+  });
+  if (
+    personaIds.length === draft.personaIds.length &&
+    personaIds.every((personaId, index) => personaId === draft.personaIds[index])
+  ) return draft;
+  return {
+    ...draft,
+    key: replacementKey.slice(0, 80),
+    personaIds,
+  };
+}
+
 export function writeTavernCreationDraft(draft: TavernCreationDraft | null): void {
   try {
     if (draft) {

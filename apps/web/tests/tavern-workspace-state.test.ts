@@ -16,6 +16,7 @@ import {
   listRetryableRuns,
   mergeTavernMessages,
   projectParticipantStates,
+  reconcileTavernCreationDraftPersonas,
   reconcileTavernRuns,
   TavernMessageConflictError,
 } from "../lib/tavern-workspace-state.ts";
@@ -106,6 +107,36 @@ test("mergeTavernMessages orders and deduplicates tail/prepend pages", () => {
       [message("m1", 1), message("m2", 2), message("m3", 3)]
     ).map((item) => item.id),
     ["m1", "m2", "m3", "m4"]
+  );
+});
+
+test("Tavern creation drafts drop deleted personas and rotate request identity", () => {
+  const draft = {
+    key: "old-request-key",
+    title: "夜航酒馆",
+    personaIds: ["persona-1", "deleted-persona", "persona-1", "persona-2"],
+    sceneId: "",
+    openingPrompt: "",
+  };
+  assert.deepEqual(
+    reconcileTavernCreationDraftPersonas(
+      draft,
+      ["persona-1", "persona-2", "persona-3"],
+      "new-request-key",
+    ),
+    {
+      ...draft,
+      key: "new-request-key",
+      personaIds: ["persona-1", "persona-2"],
+    },
+  );
+  assert.equal(
+    reconcileTavernCreationDraftPersonas(
+      { ...draft, personaIds: ["persona-1", "persona-2"] },
+      ["persona-1", "persona-2"],
+      "unused-request-key",
+    )?.key,
+    "old-request-key",
   );
 });
 
@@ -229,6 +260,31 @@ test("Tavern client recovery only accepts an explicit terminal replay directive"
   assert.equal(
     isTavernTerminalReplayDirective(502, { ...detail, recoveryAction: "reload_room" }),
     false
+  );
+});
+
+test("Tavern client strictly decodes the empty room update error envelope", () => {
+  assert.deepEqual(
+    normalizeTavernErrorDetail({
+      detail: {
+        code: "tavern_update_payload_empty",
+        run_id: "",
+        child_run_id: "",
+        current_revision: 0,
+        recovery_action: "none",
+      },
+    }),
+    {
+      code: "tavern_update_payload_empty",
+      runId: undefined,
+      childRunId: undefined,
+      currentRevision: 0,
+      recoveryAction: "none",
+    }
+  );
+  assert.throws(
+    () => normalizeTavernErrorDetail({ detail: "tavern_update_payload_empty" }),
+    TavernDecodeError
   );
 });
 
@@ -359,6 +415,69 @@ test("mobile Tavern DOM order matches its primary visual flow", () => {
   assert.ok(componentSource.includes('activeRoom ? "has-room" : "empty-room"'));
   assert.ok(componentSource.includes("先创建或打开一个酒馆，然后开始对话。"));
   assert.ok(!componentSource.includes("从左侧创建或打开一个酒馆。"));
+});
+
+test("mobile Tavern buttons keep a 44px minimum touch target", () => {
+  const cssSource = readFileSync(
+    new URL("../app/globals.css", import.meta.url),
+    "utf8"
+  );
+  const mobileStart = cssSource.indexOf("@media (max-width: 480px)");
+  const mobileCss = cssSource.slice(mobileStart);
+
+  assert.ok(mobileStart >= 0);
+  assert.match(mobileCss, /\.tavern-button\s*\{\s*min-height:\s*44px;/);
+});
+
+test("Interaction Composer restores focus only after a confirmed user turn settles", () => {
+  const componentSource = readFileSync(
+    new URL("../components/tavern-workspace.tsx", import.meta.url),
+    "utf8"
+  );
+  const composerStart = componentSource.indexOf("function InteractionComposer");
+  const composerEnd = componentSource.indexOf("function ReliabilityDetails", composerStart);
+  const composer = componentSource.slice(composerStart, composerEnd);
+  const turnStart = componentSource.indexOf("const handleTurn = useCallback");
+  const turnEnd = componentSource.indexOf("const handleCancelRun", turnStart);
+  const handleTurn = componentSource.slice(turnStart, turnEnd);
+  const sendStart = composer.indexOf("const sendMessage = async () =>");
+  const continueStart = composer.indexOf("const continueConversation = async () =>");
+  const sendMessage = composer.slice(sendStart, continueStart);
+
+  assert.ok(composerStart >= 0 && composerEnd > composerStart);
+  assert.ok(turnStart >= 0 && turnEnd > turnStart);
+  assert.ok(sendStart >= 0 && continueStart > sendStart);
+  assert.ok(handleTurn.includes("return Boolean(recoveredRun);"));
+  assert.match(
+    sendMessage,
+    /if \(completed\) \{\s*setMessage\(""\);\s*setGuidance\(""\);\s*setFocusRequestVersion/
+  );
+  assert.equal((composer.match(/setFocusRequestVersion/g) ?? []).length, 2);
+  assert.ok(composer.includes("if (busy) return;"));
+  assert.ok(composer.includes("if (!roomActive || message || guidance)"));
+  assert.ok(composer.includes("mountedRoomIdRef.current !== expectedRoomId"));
+  assert.ok(composer.includes("!input.isConnected || input.disabled"));
+  assert.ok(composer.includes("window.requestAnimationFrame"));
+  assert.ok(composer.includes("window.cancelAnimationFrame(frame)"));
+  assert.ok(composer.includes("ref={messageInputRef}"));
+});
+
+test("Interaction Composer retains Enter, Shift+Enter, and IME composition fencing", () => {
+  const componentSource = readFileSync(
+    new URL("../components/tavern-workspace.tsx", import.meta.url),
+    "utf8"
+  );
+  const composer = componentSource.slice(
+    componentSource.indexOf("function InteractionComposer"),
+    componentSource.indexOf("function ReliabilityDetails")
+  );
+
+  assert.ok(composer.includes('event.key !== "Enter" || event.shiftKey'));
+  assert.ok(composer.includes("composingRef.current"));
+  assert.ok(composer.includes("event.nativeEvent.isComposing"));
+  assert.ok(composer.includes("event.nativeEvent.keyCode === 229"));
+  assert.ok(composer.includes("suppressCompositionEnterRef.current"));
+  assert.ok(composer.includes("event.preventDefault()"));
 });
 
 function rawPersona() {

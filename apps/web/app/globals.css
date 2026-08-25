@@ -1215,6 +1215,10 @@ textarea {
     width: 100%;
   }
 
+  .tavern-button {
+    min-height: 44px;
+  }
+
   .tavern-composer-actions {
     width: auto;
   }

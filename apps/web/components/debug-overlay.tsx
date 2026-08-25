@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useDocumentDebugData } from "../hooks/use-document-debug-data";
 import { DocumentDebugPanels } from "./document-debug-panels";
@@ -24,6 +24,11 @@ export function DebugOverlay() {
   const workspace = useLearningWorkspace();
   const pageSnapshot = useCurrentPageDebugSnapshot();
   const [open, setOpen] = useState(false);
+  const [openPreferenceLoaded, setOpenPreferenceLoaded] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
+  const collapseButtonRef = useRef<HTMLButtonElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   const activeDocumentId = workspace.activeDocument?.id ?? "";
   const debugData = useDocumentDebugData(
@@ -32,47 +37,126 @@ export function DebugOverlay() {
     Boolean(workspace.activeDocument?.debugReady)
   );
 
-  useEffect(() => {
-    setOpen(readStoredBoolean(DEBUG_OVERLAY_OPEN_STORAGE_KEY));
+  const closeOverlay = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const openOverlay = useCallback((trigger: HTMLElement | null = null) => {
+    const activeElement = document.activeElement;
+    restoreFocusRef.current = trigger ?? (activeElement instanceof HTMLElement ? activeElement : null);
+    setOpen(true);
   }, []);
 
   useEffect(() => {
+    if (readStoredBoolean(DEBUG_OVERLAY_OPEN_STORAGE_KEY)) {
+      openOverlay();
+    }
+    setOpenPreferenceLoaded(true);
+  }, [openOverlay]);
+
+  useEffect(() => {
+    if (!openPreferenceLoaded) {
+      return;
+    }
     writeStoredBoolean(DEBUG_OVERLAY_OPEN_STORAGE_KEY, open);
-  }, [open]);
+  }, [open, openPreferenceLoaded]);
 
   useEffect(() => {
     if (!showDebugInfo) {
-      setOpen(false);
+      closeOverlay();
     }
-  }, [showDebugInfo]);
+  }, [closeOverlay, showDebugInfo]);
 
   useEffect(() => {
     const handleToggle = () => {
       if (!showDebugInfo) {
         return;
       }
-      setOpen((value) => !value);
+      if (open) {
+        closeOverlay();
+        return;
+      }
+      openOverlay();
     };
     window.addEventListener(BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT, handleToggle);
     return () => {
       window.removeEventListener(BROWSER_VIEW_TOGGLE_DEBUG_OVERLAY_EVENT, handleToggle);
     };
-  }, [showDebugInfo]);
+  }, [closeOverlay, open, openOverlay, showDebugInfo]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
+
+    const mainElements = Array.from(document.querySelectorAll<HTMLElement>("main"));
+    const mainStates = mainElements.map((element) => ({
+      element,
+      ariaHidden: element.getAttribute("aria-hidden"),
+      inertAttribute: element.getAttribute("inert"),
+      inertProperty: element.inert
+    }));
+    const previousBodyOverflow = document.body.style.overflow;
+
+    for (const mainElement of mainElements) {
+      mainElement.inert = true;
+      mainElement.setAttribute("inert", "");
+      mainElement.setAttribute("aria-hidden", "true");
+    }
+    document.body.style.overflow = "hidden";
+    collapseButtonRef.current?.focus({ preventScroll: true });
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        event.preventDefault();
+        event.stopPropagation();
+        closeOverlay();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const dialog = dialogRef.current;
+      if (!dialog) {
+        return;
+      }
+      const focusableElements = getFocusableElements(dialog);
+      const firstFocusable = focusableElements[0] ?? dialog;
+      const lastFocusable = focusableElements[focusableElements.length - 1] ?? dialog;
+      const activeElement = document.activeElement;
+
+      if (!dialog.contains(activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? lastFocusable : firstFocusable).focus({ preventScroll: true });
+        return;
+      }
+      if (event.shiftKey && activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus({ preventScroll: true });
+        return;
+      }
+      if (!event.shiftKey && activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus({ preventScroll: true });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      for (const { element, ariaHidden, inertAttribute, inertProperty } of mainStates) {
+        restoreAttribute(element, "aria-hidden", ariaHidden);
+        element.inert = inertProperty;
+        restoreAttribute(element, "inert", inertAttribute);
+      }
+
+      const restoreTarget = restoreFocusRef.current;
+      if (restoreTarget?.isConnected) {
+        restoreTarget.focus({ preventScroll: true });
+      }
     };
-  }, [open]);
+  }, [closeOverlay, open]);
 
   const title = useMemo(() => getDebugTitle(pathname), [pathname]);
 
@@ -82,21 +166,40 @@ export function DebugOverlay() {
 
   return (
     <>
-      {open ? <button type="button" style={styles.scrim} onClick={() => setOpen(false)} aria-label="关闭调试浮窗背景遮罩" /> : null}
+      {open ? (
+        <button
+          type="button"
+          style={styles.scrim}
+          onClick={closeOverlay}
+          aria-label="关闭调试浮窗背景遮罩"
+          tabIndex={-1}
+        />
+      ) : null}
 
       <div style={styles.root}>
-        {!open ? (
-          <button type="button" style={styles.fab} onClick={() => setOpen(true)}>
-            <span style={styles.fabLabel}>Debug</span>
-            <span style={styles.fabMeta}>{getFabMeta(pathname)}</span>
-          </button>
-        ) : null}
+        <button
+          type="button"
+          style={open ? { ...styles.fab, ...styles.hiddenFab } : styles.fab}
+          onClick={(event) => openOverlay(event.currentTarget)}
+          aria-hidden={open ? "true" : undefined}
+          tabIndex={open ? -1 : undefined}
+        >
+          <span style={styles.fabLabel}>Debug</span>
+          <span style={styles.fabMeta}>{getFabMeta(pathname)}</span>
+        </button>
 
         {open ? (
-          <section style={styles.overlay} aria-label={title}>
+          <section
+            ref={dialogRef}
+            style={styles.overlay}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+          >
             <header style={styles.overlayHeader}>
               <div style={styles.headerCopy}>
-                <span style={styles.title}>{title}</span>
+                <span id={titleId} style={styles.title}>{title}</span>
               </div>
               <div style={styles.headerActions}>
                 {pathname === "/plan" ? (
@@ -104,7 +207,12 @@ export function DebugOverlay() {
                     刷新
                   </button>
                 ) : null}
-                <button type="button" style={styles.primaryButton} onClick={() => setOpen(false)}>
+                <button
+                  ref={collapseButtonRef}
+                  type="button"
+                  style={styles.primaryButton}
+                  onClick={closeOverlay}
+                >
                   收起
                 </button>
               </div>
@@ -179,6 +287,7 @@ const styles: Record<string, CSSProperties> = {
     display: "grid",
     gap: 2,
     minWidth: 88,
+    minHeight: 44,
     padding: "12px 14px",
     border: "1px solid color-mix(in srgb, var(--accent) 28%, var(--border))",
     borderRadius: 16,
@@ -186,6 +295,9 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: "0 10px 28px rgba(13, 32, 40, 0.12)",
     color: "var(--ink)",
     cursor: "pointer"
+  },
+  hiddenFab: {
+    display: "none"
   },
   fabLabel: {
     fontSize: 13,
@@ -235,7 +347,8 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center"
   },
   primaryButton: {
-    height: 34,
+    minWidth: 44,
+    minHeight: 44,
     padding: "0 12px",
     border: "1px solid var(--accent)",
     borderRadius: 10,
@@ -246,7 +359,8 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer"
   },
   secondaryButton: {
-    height: 34,
+    minWidth: 44,
+    minHeight: 44,
     padding: "0 12px",
     border: "1px solid var(--border)",
     borderRadius: 10,
@@ -269,6 +383,38 @@ const styles: Record<string, CSSProperties> = {
     background: "var(--bg)"
   }
 };
+
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=\"hidden\"])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[contenteditable=\"true\"]",
+  "[tabindex]:not([tabindex=\"-1\"])",
+  "audio[controls]",
+  "video[controls]",
+  "summary"
+].join(",");
+
+function getFocusableElements(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (element) =>
+      element.tabIndex >= 0 &&
+      element.getAttribute("aria-hidden") !== "true" &&
+      !element.closest("[hidden], [inert], [aria-hidden=\"true\"]") &&
+      element.getClientRects().length > 0
+  );
+}
+
+function restoreAttribute(element: HTMLElement, name: string, value: string | null) {
+  if (value === null) {
+    element.removeAttribute(name);
+    return;
+  }
+  element.setAttribute(name, value);
+}
 
 function getDebugTitle(pathname: string) {
   if (pathname === "/plan") {

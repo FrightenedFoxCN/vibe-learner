@@ -1,0 +1,198 @@
+{
+  "schema_version": "web-strict-decode-adversarial-v1",
+  "cases": [
+    {
+      "case_id": "QG002-DOCUMENT-IDENTITY-001",
+      "domain": "document",
+      "category": "identity",
+      "decoder": "document_record",
+      "input": {
+        "id": "document-attacker"
+      },
+      "invocation": {
+        "expected_document_id": "document-1"
+      },
+      "expected_error": {
+        "name": "DocumentDecodeError",
+        "code": "document_response_decode_error",
+        "path": "document.id",
+        "reason": "identity_mismatch_expected_document-1"
+      }
+    },
+    {
+      "case_id": "QG002-PLAN-IDENTITY-001",
+      "domain": "plan",
+      "category": "identity",
+      "decoder": "learning_plan",
+      "input": {
+        "id": "plan-attacker"
+      },
+      "invocation": {
+        "expected_plan_id": "plan-1"
+      },
+      "expected_error": {
+        "name": "PlanningDecodeError",
+        "code": "planning_response_decode_error",
+        "path": "learning_plan.id",
+        "reason": "identity_mismatch_expected_plan-1"
+      }
+    },
+    {
+      "case_id": "QG002-PERSONA-TYPE-001",
+      "domain": "persona",
+      "category": "type",
+      "decoder": "persona_profile",
+      "input": {
+        "id": "persona-1",
+        "name": "Mentor",
+        "source": "user",
+        "summary": "A careful mentor",
+        "relationship": "Teacher",
+        "learner_address": "Learner",
+        "system_prompt": "Stay grounded",
+        "reference_hints": [],
+        "slots": [
+          {
+            "kind": "tone",
+            "label": "Tone",
+            "content": "Patient",
+            "weight": "100",
+            "locked": false,
+            "sort_order": 0
+          }
+        ],
+        "available_emotions": [
+          "calm"
+        ],
+        "available_actions": [
+          "idle"
+        ],
+        "default_speech_style": "warm"
+      },
+      "invocation": {},
+      "expected_error": {
+        "name": "PersonaSceneDecodeError",
+        "code": "persona_scene_response_decode_error",
+        "path": "persona.slots[0].weight",
+        "reason": "expected_finite_number_0_to_100"
+      }
+    },
+    {
+      "case_id": "QG002-SCENE-TYPE-001",
+      "domain": "scene",
+      "category": "type",
+      "decoder": "scene_profile",
+      "input": {
+        "scene_name": "Night Library",
+        "summary": "A quiet study scene",
+        "scene_tree": "not-an-array"
+      },
+      "invocation": {},
+      "expected_error": {
+        "name": "PersonaSceneDecodeError",
+        "code": "persona_scene_response_decode_error",
+        "path": "scene_profile.scene_tree",
+        "reason": "expected_array"
+      }
+    },
+    {
+      "case_id": "QG002-STUDY-IDENTITY-001",
+      "domain": "study",
+      "category": "identity",
+      "decoder": "study_session",
+      "input": {
+        "id": "session-attacker",
+        "document_id": "document-1",
+        "persona_id": "persona-1",
+        "plan_id": null,
+        "study_unit_id": "unit-1",
+        "revision": 0,
+        "last_turn_sequence": 0
+      },
+      "invocation": {
+        "expected_session_id": "session-1"
+      },
+      "expected_error": {
+        "name": "StudySessionDecodeError",
+        "code": "study_session_response_decode_error",
+        "path": "study_session.id",
+        "reason": "identity_mismatch_expected_session-1"
+      }
+    },
+    {
+      "case_id": "QG002-TAVERN-ENVELOPE-001",
+      "domain": "tavern",
+      "category": "envelope",
+      "decoder": "tavern_error_detail",
+      "input": {
+        "detail": "tavern_update_payload_empty"
+      },
+      "invocation": {},
+      "expected_error": {
+        "name": "TavernDecodeError",
+        "code": "tavern_response_decode_error",
+        "path": "tavern.error.detail",
+        "reason": "expected_object"
+      }
+    },
+    {
+      "case_id": "QG002-STREAM-STATE-001",
+      "domain": "stream",
+      "category": "stream_state",
+      "decoder": "stream_state_machine",
+      "input": [
+        {
+          "event_schema_version": "stream-event-v1",
+          "operation_id": "document-stream-1",
+          "event_id": "document-stream-1:event:1",
+          "event_sequence": 1,
+          "stream_kind": "document_process",
+          "subject": {
+            "subject_type": "document",
+            "subject_id": "document-1"
+          },
+          "stage": "document_processing_started",
+          "payload_contract_version": "document-process-stream-payload-v1",
+          "payload_digest": "0000000000000000000000000000000000000000000000000000000000000001",
+          "payload": {
+            "document_id": "document-1"
+          },
+          "terminal_evidence": null,
+          "committed_projection": null,
+          "created_at": "2026-08-25T00:00:01Z"
+        },
+        {
+          "event_schema_version": "stream-event-v1",
+          "operation_id": "document-stream-1",
+          "event_id": "document-stream-1:event:3",
+          "event_sequence": 3,
+          "stream_kind": "document_process",
+          "subject": {
+            "subject_type": "document",
+            "subject_id": "document-1"
+          },
+          "stage": "parser_started",
+          "payload_contract_version": "document-process-stream-payload-v1",
+          "payload_digest": "0000000000000000000000000000000000000000000000000000000000000003",
+          "payload": {
+            "document_id": "document-1"
+          },
+          "terminal_evidence": null,
+          "committed_projection": null,
+          "created_at": "2026-08-25T00:00:03Z"
+        }
+      ],
+      "invocation": {
+        "stream_kind": "document_process",
+        "subject_type": "document",
+        "subject_id": "document-1"
+      },
+      "expected_error": {
+        "name": "StreamDecodeError",
+        "code": "stream_response_decode_error",
+        "path": "stream.frames[1].event_sequence",
+        "reason": "identity_mismatch_expected_2"
+      }
+    }
+  ]
+}

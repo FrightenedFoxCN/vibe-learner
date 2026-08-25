@@ -30,6 +30,7 @@ const PLAN_STAGES = [
   "study_units_ready",
   "heuristic_plan_built",
   "model_round_started",
+  "planning_question_asked",
   "model_tool_call",
   "model_round_completed",
   "model_round_failed",
@@ -76,6 +77,7 @@ const PLAN_TRANSITIONS: Readonly<Record<string, readonly string[]>> = {
     "model_plan_applied",
   ],
   model_round_started: [
+    "planning_question_asked",
     "model_tool_call",
     "model_round_completed",
     "model_round_failed",
@@ -83,10 +85,12 @@ const PLAN_TRANSITIONS: Readonly<Record<string, readonly string[]>> = {
     "model_fallback_started",
   ],
   model_tool_call: [
+    "planning_question_asked",
     "model_tool_call",
     "model_round_completed",
     "model_fallback_started",
   ],
+  planning_question_asked: ["model_tool_call"],
   model_round_completed: [
     "model_round_started",
     "model_recovery_attempt",

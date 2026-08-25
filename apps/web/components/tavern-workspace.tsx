@@ -52,6 +52,7 @@ import {
   readActiveTavernRoomId,
   readTavernCreationDraft,
   readTavernRoomDraft,
+  reconcileTavernCreationDraftPersonas,
   rememberActiveTavernRoomId,
   writeTavernCreationDraft,
   writeTavernRoomDraft,
@@ -352,6 +353,17 @@ export function TavernWorkspace() {
         const nextRooms = roomsResult.status === "fulfilled" ? roomsResult.value : [];
         const nextPersonas = personasResult.status === "fulfilled" ? personasResult.value : [];
         const nextScenes = scenesResult.status === "fulfilled" ? scenesResult.value : [];
+        if (personasResult.status === "fulfilled") {
+          const savedCreationDraft = readTavernCreationDraft();
+          const reconciledCreationDraft = reconcileTavernCreationDraftPersonas(
+            savedCreationDraft,
+            nextPersonas.map((persona) => persona.id),
+            makeTavernRequestKey("room"),
+          );
+          if (reconciledCreationDraft !== savedCreationDraft) {
+            writeTavernCreationDraft(reconciledCreationDraft);
+          }
+        }
         setRooms(nextRooms);
         setPersonas(nextPersonas);
         setScenes(nextScenes);
@@ -1550,8 +1562,12 @@ function InteractionComposer({
   const initialDraft = readTavernRoomDraft(roomId);
   const [message, setMessage] = useState(initialDraft.message);
   const [guidance, setGuidance] = useState(initialDraft.guidance);
+  const [focusRequestVersion, setFocusRequestVersion] = useState(0);
   const composingRef = useRef(false);
   const suppressCompositionEnterRef = useRef(false);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const mountedRoomIdRef = useRef(roomId);
+  const handledFocusRequestRef = useRef(0);
   const namesById = useMemo(
     () => new Map(participants.map((participant) => [
       participant.personaId,
@@ -1578,6 +1594,37 @@ function InteractionComposer({
     });
   }, [guidance, message, roomId]);
 
+  useEffect(() => {
+    mountedRoomIdRef.current = roomId;
+    return () => {
+      mountedRoomIdRef.current = "";
+    };
+  }, [roomId]);
+
+  useEffect(() => {
+    if (
+      focusRequestVersion === 0 ||
+      handledFocusRequestRef.current >= focusRequestVersion
+    ) return;
+    if (busy) return;
+    if (!roomActive || message || guidance) {
+      handledFocusRequestRef.current = focusRequestVersion;
+      return;
+    }
+    const expectedRoomId = roomId;
+    const frame = window.requestAnimationFrame(() => {
+      if (
+        mountedRoomIdRef.current !== expectedRoomId ||
+        handledFocusRequestRef.current >= focusRequestVersion
+      ) return;
+      handledFocusRequestRef.current = focusRequestVersion;
+      const input = messageInputRef.current;
+      if (!input || !input.isConnected || input.disabled) return;
+      input.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [busy, focusRequestVersion, guidance, message, roomActive, roomId]);
+
   const sendMessage = async () => {
     const content = message.trim();
     if (!content || !canRun) return;
@@ -1585,6 +1632,7 @@ function InteractionComposer({
     if (completed) {
       setMessage("");
       setGuidance("");
+      setFocusRequestVersion((current) => current + 1);
     }
   };
 
@@ -1660,6 +1708,7 @@ function InteractionComposer({
       <label className="tavern-composer-label">
         <span>你的消息</span>
         <textarea
+          ref={messageInputRef}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onKeyDown={handleKeyDown}
