@@ -78,76 +78,17 @@
 - [ ] `STUDY-OP-SCANNER-001` `[P2]` 增加 journal corruption、未知版本和 digest drift scanner，输出 typed read-back 结论。
 - [ ] `STUDY-OP-RECOVERY-UX-001` `[P2]` 覆盖超长轮询、终态刷新、断网和页面恢复文案，不放宽 same-key mismatch 或 `uncertain` 禁止重放。
 
-## Harness roadmap（按依赖顺序）
+## Harness roadmap
 
-跨工作流 Harness 是长期主线。局部 decoder、effect 或 evidence 完成不代表任一业务域已整体采用 v3。
+Harness 的未完成工作、依赖图、里程碑、评估基线和生产采用门统一维护在
+`docs/harness-roadmap.md`。本文件不重复 Harness-owned checkbox；Tavern schema、
+Study operation hardening、Plan CAS 等产品线前置任务继续在本文件维护，并由
+Harness roadmap 按任务 ID 引用。
 
-### Foundation
+## Planning 迭代
 
-- [ ] `HRN-SUBJECT-001` `[P1]` 定义 artifact principal / authorization 模型。
-  - 当前 API 无认证；必须先决定单用户本地主体、capability scope 或正式认证边界，并形成版本化 principal/capability contract。
-  - fixture 必须证明同主体允许、跨主体 `forbidden`、无主体 fail closed，才能赋予授权结论权威语义。
-
-- [ ] `SCH-HRN-EFFECT-001` `[P1]` 抽取跨工作流 durable effect batch primitive。
-  - 数据库、文件/staging/outbox 与外部 adapter 共享版本化 prepare/commit/compensate/read-back 接口和 durable per-effect journal。
-  - 应用必须按 `operation + slot` 分配 effect identity；重试不得重新发号或改变 effect 顺序。
-  - DB 事务不得冒充 provider exactly-once；无 idempotency/read-back 时保持 `uncertain`。
-
-- [ ] `HRN-CTX-ARTIFACT-001` `[P1]` 建立受保护 artifact resolver；依赖 `HRN-SUBJECT-001`。
-  - 支持 opaque ID、类型/contract 注册、授权后读取、留存/过期、digest read-back 和批量解析预算。
-  - 返回 typed `resolved/not_found/expired/forbidden/digest_mismatch/schema_unsupported`。
-  - fixture 覆盖删除、篡改和跨主体访问；可清理的 `document_debug` / `planning_trace` 不得冒充永久 replay artifact。
-
-- [ ] `HRN-CTX-RUNTIME-001` `[P1]` 建立跨业务 operation runtime；依赖 effect 与 artifact boundary。
-  - 统一 operation/attempt/check/commit/rollback/terminal-failure 组装，并提供幂等、失败持久化和 adapter 故障 fixture；生产调用方只能经过注册的 context/artifact/effect boundary。
-
-- [ ] `HRN-EVAL-001` `[P1]` 建立 fixture/eval core 与版本化基线。
-  - 提供 runner、指标 schema、raw samples、CI threshold 和域 adapter 注册；覆盖 malformed、boundary、retry、duplicate、concurrency 与 commit failure。
-  - 通用报告至少包含 schema-valid、repair、failure、commit-consistency 与 p95 指标。
-  - 每个域登记版本化最低阈值和回退门：OCR 文本/页覆盖、Section/Study Unit 边界、Plan grounding/tool correctness、Persona/Tavern identity、Scene 结构、Study citation/effect correctness 与 Frontend decode。
-
-- [ ] `HRN-CTX-PERF-001` `[P2]` 为 context canonical bytes、snapshot bytes、引用数、resolver I/O 和 p50/p95 建立预算；依赖可运行的 resolver/runtime，任何超限必须在模型/provider/worker 执行前 fail closed。
-
-- [ ] `HRN-RECOVERY-MIG-001` `[P2]` 统一 legacy recovery 与 v3 attempt/check 映射；依赖 runtime，确保同一 operation 可关联、兼容 API、指标不重复计数，并给出明确弃用路径。
-
-### Production adoption
-
-所有 v3 生产采用项共享关闭契约：依赖可运行的 artifact resolver、operation runtime 与 eval core；敏感原文不得进入 trace，受保护 artifact 必须可授权 replay；每个 stage 均有 attempt/check 与 terminal trace；失败路径和成功 commit evidence 必须完整。下列条目只补充各域特有的 proposal、invariant、effect 与指标，不能以局部 strict decoder 或 schema fixture 代替共享契约；独立 eval/perf 条目只服从其显式依赖。
-
-- [ ] `HRN-TAV-V3-001` `[P1]` 将 Tavern 生产证据从 legacy v1 切换到 v3。
-  - 依赖 `SCH-TAV-001`、artifact、runtime、eval 与 recovery migration。
-  - 覆盖 parent lineage、partial/failed/not-committed、per-step commit、child retry，以及 Message/Run/Step/Room 的真实证据范围。
-  - legacy v1/v2 保持可读，前端 v1/v2/v3 fixture 全部通过；迁移不得伪造历史证据。
-
-- [ ] `HRN-TAV-002` `[P1]` 建立 Tavern 身份与 prompt-injection eval 矩阵；只依赖 eval core，v3 trace 集成由 `HRN-TAV-V3-001` 后续承接。
-  - 覆盖身份、称呼、目标、跨角色冒充和 prompt injection，报告 schema-valid、repair、false-positive 和 identity-consistency rate，不以实现者单测代替基线。
-
-- [ ] `HRN-TAV-PERF-001` `[P2]` 完成 Tavern prompt 性能/eval 门；依赖 artifact、eval 与 Tavern v3。
-  - 使用最坏 6 人长对话、真实 tokenizer/provider p50/p95、版本化回退阈值和 content-free trace。
-
-- [ ] `HRN-STUDY-001` `[P1]` 将 Study Chat 接入 v3；依赖 durable effect、artifact、runtime 与 eval。
-  - 覆盖 prompt/context、strict reply、attempt/check、protected artifact replay、commit/rollback/uncertain、citation/effect correctness。
-
-- [ ] `HRN-PLAN-001` `[P2]` 将 Planning 接入 v3；覆盖版本化 toolset/prompt/context、attempt/check、protected artifact replay、terminal evidence、grounding 与 tool correctness。
-- [ ] `HRN-DOC-001` `[P2]` 将 extraction/OCR/Section/Chunk/Study Unit cleanup 接入 v3；记录真实 parser/heuristic 版本，并验证页覆盖、边界、排序、source-ID 与密度预算。
-- [ ] `HRN-SCENE-001` `[P2]` 建立 Scene v3 lifecycle、allow-list reuse、递归 invariant、失败零持久化和 replay/eval。
-- [ ] `HRN-PERSONA-001` `[P2]` 建立 Persona v3 lifecycle、proposal ownership、slot/身份/称呼 invariant、失败零持久化和 replay/eval。
-
-- [ ] `HRN-WEB-001` `[P2]` 完成 Frontend Decode v3 adoption。
-  - 列清仍未经过 `unknown -> strict decoder` 的端点，注册真实 Frontend Decoder component version。
-  - 增加独立 live-wire、v2/v3 trace forwarding、resource evidence 和未知版本 fail-closed fixture。
-
-## Planning 与工具演进
-
-- [ ] `TOOL-CATALOG-001` `[P1]` 建立单一版本化 Tool Manifest。
-  - 每个 Planning/Study tool 登记 ownership、input schema、effect class、sensitivity、budget、parallel safety、依赖和 provider capability。
-  - 重复、废弃和更名工具必须有兼容迁移与退役路径。
-
-- [ ] `PLAN-TOOLS-EVAL-001` `[P2]` 建立 Planning tool 基线。
-  - 报告 batch size、实际调用率、无效调用率、每工具 p50/p95、总 wall-clock、grounding 和 tool correctness；不得以 prompt 鼓励冒充调用证据。
-
-- [ ] `PLAN-TOOLS-PERF-001` `[P2]` 根据 eval 决定是否并行。
-  - 只有整批均为 `parallel_safe` 且读取同一不可变快照时才能并行；同批结果必须稳定排序。目标是降低同轮 wall-clock，不宣称减少模型轮次。
+Tool Manifest、Planning tool eval 和 parallel-safety 性能门属于 Harness roadmap；
+本节只保留 Plan 聚合与用户修订流程。
 
 - [ ] `SCH-PLAN-CAS-001` `[P1]` 建立数据库权威 Plan revision/CAS。
   - 覆盖全部计划写入口、旧数据迁移，以及既有 Study Session、进度和 schedule identity 的并发语义。
@@ -164,7 +105,6 @@
 - `UX-EDITOR-DENSITY-001`：由 Sensory、Persona、Scene 三个子项关闭。
 - `PERF-001`：由 Provider ownership、Request dedupe、Bundle budget 三个子项关闭。
 - `STUDY-OP-HARDEN-001`：由 Clock、Scanner、Recovery UX 三个子项关闭。
-- `HRN-CTX-001`：仅在 foundation、全部生产域 adoption、eval 和性能门完成后关闭。
 - `PLAN-ITER-001`：由 Plan CAS、Patch Operation、Revision UX 三个子项关闭。
 
 ## Research parking lot（未排期）
@@ -179,8 +119,6 @@
 
 ## 持续规则
 
-- `QG-002` 的 `web-strict-decode-adversarial-v1` 已是 release gate。新增域、decoder 或攻击类别必须原子更新 fixture、golden 和 runner；扩展基线使用新版本任务，不保留永久开放 checkbox。
-- Harness stage、attempt phase 与 stream event 是不同词汇；新增值必须同步 Python、TypeScript、registry、fixture、decoder routing 和 eval routing。
-- 无 provider idempotency 或权威 read-back 时保持 `uncertain`，不得以数据库提交冒充外部 exactly-once。
+- Harness-specific 持续规则、tracking epics 和 `QG-002` 扩展规则统一维护在 `docs/harness-roadmap.md`。
 - Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面。
 - 性能任务必须记录 fixture、环境、raw samples 和 before/after；不得通过放宽既有预算关闭回归。

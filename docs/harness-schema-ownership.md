@@ -4,6 +4,9 @@
 
 This document is the cross-workflow ownership registry for Harness adoption. It prevents one broad domain record from serving simultaneously as model output, application state, persistence payload, and public API response.
 
+Active task ordering and closure gates are maintained only in
+`harness-roadmap.md`.
+
 The repository has registered v1, v2, and v3 evidence contracts, but the business workflows in this table are not automatically harnessed. V3 adds a hardened context foundation; a workflow is complete only after its own typed proposal, strict decode, invariants, bounded recovery, protected artifact resolver, commit boundary, trace, fixtures, and release metrics are implemented.
 
 ## Four schema roles

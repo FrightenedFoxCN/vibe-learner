@@ -1,0 +1,445 @@
+# Harness Roadmap
+
+## Purpose and ownership
+
+This file is the canonical source for unfinished Harness work. It owns the
+cross-workflow reliability foundation, model-workflow organization, evaluation
+infrastructure, production v3 adoption, and Harness-specific performance gates.
+`../TODO.md` keeps product, UX, schema, and runtime work that is owned outside
+Harness and links here instead of duplicating checkboxes.
+
+Read these contracts before taking a task:
+
+- `harness-engineering.md` defines the lifecycle and adoption rubric;
+- `harness-schema-ownership.md` defines input, proposal, committed-record, and
+  API ownership;
+- `../AGENTS.md` defines repository-wide implementation constraints.
+
+Priority has the same meaning as the root backlog:
+
+- `P1`: cross-workflow correctness, truthful evidence, or a prerequisite for
+  production adoption;
+- `P2`: bounded adoption, evaluation, or performance work with clear value;
+- `P3`: documentation, bookkeeping, or research validation.
+
+Completed work should be removed from this roadmap after its durable facts and
+constraints are moved into `AGENTS.md` or the relevant architecture document.
+
+## Current baseline
+
+The repository already has useful foundations, but no production workflow is
+fully v3-adopted:
+
+- Python and TypeScript expose compatible v1/v2/v3 evidence contracts;
+- the closed workflow/stage/component registries and shared golden fixtures are
+  enforced in tests;
+- v3 safe-manifest canonicalization and context digest validation exist;
+- resource and operation commit policies fail closed, with the first narrow
+  Tavern Message policy registered;
+- Document and Planning have durable operation admission plus atomic committed
+  projections;
+- Study has durable admission, transactional database effects, recoverable file
+  staging, and truthful provider uncertainty;
+- Tavern production still emits legacy v1 traces;
+- `build_harness_context` has no production caller;
+- there is no shared operation runtime, protected artifact resolver, eval
+  runner, grader registry, or versioned evaluation baseline.
+
+These are baseline facts, not completion claims. A strict decoder, component
+version, fixture, operation journal, CAS boundary, or effect adapter does not by
+itself make a workflow Harness-adopted.
+
+## Program epics
+
+The following IDs are tracking epics and are not directly claimable:
+
+- `HRN-CTX-001`: closes only when workflow governance, operation identity,
+  protected artifacts, durable effects, shared runtime, recovery migration,
+  every production-domain adoption item, and Harness performance gates are
+  complete.
+- `SCH-HRN-EFFECT-001`: closes through
+  `SCH-HRN-EFFECT-JOURNAL-001` and `SCH-HRN-EFFECT-EVIDENCE-001`.
+- `HRN-EVAL-001`: closes through `HRN-EVAL-CONTRACT-001`,
+  `HRN-EVAL-RUNNER-001`, `HRN-EVAL-GRADER-001`, and
+  `HRN-EVAL-BASELINE-001`, after at least the Tavern identity and Planning tool
+  pilot suites use the shared core.
+
+## Dependency map
+
+```mermaid
+flowchart TD
+    WM[HRN-WORKFLOW-MANIFEST-001] --> RT[HRN-CTX-RUNTIME-001]
+    OP[HRN-OP-ID-001] --> RT
+    SUB[HRN-SUBJECT-001] --> ART[HRN-CTX-ARTIFACT-001]
+    ART --> RT
+    EJ[SCH-HRN-EFFECT-JOURNAL-001] --> EE[SCH-HRN-EFFECT-EVIDENCE-001]
+    EE --> RT
+
+    EC[HRN-EVAL-CONTRACT-001] --> ER[HRN-EVAL-RUNNER-001]
+    WM --> ER
+    EC --> EG[HRN-EVAL-GRADER-001]
+    ER --> EB[HRN-EVAL-BASELINE-001]
+    EG --> EB
+
+    RT --> RM[HRN-RECOVERY-MIG-001]
+    EB --> TAV_EVAL[HRN-TAV-002]
+    EB --> PLAN_TOOL[PLAN-TOOLS-EVAL-001]
+
+    RT --> TAV3[HRN-TAV-V3-001]
+    RM --> TAV3
+    TAV_EVAL --> TAV3
+    RT --> STUDY[HRN-STUDY-001]
+    EB --> STUDY
+    RT --> PLAN[HRN-PLAN-001]
+    EB --> PLAN
+    RT --> OTHER[Document / Persona / Scene / Frontend adoption]
+    EB --> OTHER
+```
+
+The graph shows hard ordering inside Harness. Product-line prerequisites owned
+by `../TODO.md` are listed separately below. Fixture/synthetic evals deliberately
+do not depend on the protected artifact resolver; production replay does.
+
+## Delivery waves
+
+| Wave | Outcome | Claimable work |
+|---|---|---|
+| 0 — contracts | Freeze workflow, identity, subject, tool, and eval vocabularies | Manifest, operation ID, subject, tool catalog, eval contract |
+| 1 — durable core | Make artifacts and effects replayable and evaluation executable | Effect journal/evidence, artifact resolver, eval runner/grader |
+| 2 — shared runtime | Assemble truthful operations and establish baselines | Operation runtime, recovery migration, eval baseline, pilot suites |
+| 3 — high-risk adoption | Migrate the two most stateful model paths | Tavern v3 and Study Chat v3 |
+| 4 — broad adoption | Cover remaining model, heuristic, and frontend workflows | Planning, Document/OCR/Study Unit, Persona, Scene, Frontend Decode |
+| 5 — performance | Gate cost and latency without weakening correctness | Context, Tavern prompt, and Planning tool performance |
+
+Tasks in the same wave may proceed in parallel only when their listed
+dependencies and shared contract ownership do not overlap.
+
+## Wave 0 — contracts and governance
+
+- [ ] `HRN-WORKFLOW-MANIFEST-001` `[P1]` establish a versioned executable
+  workflow/stage manifest.
+  - Extend or supersede the current operation-stage registry with exact
+    input/proposal/output contracts, owner adapter, component contracts,
+    prompt/policy/toolset references, attempt ceiling, execution budgets,
+    allowed artifact/effect types, commit-policy key, and eval suites.
+  - Keep raw prompt, document, transcript, user guidance, paths, and secrets out
+    of the shared manifest; bind them through protected artifact references.
+  - Python, TypeScript, the shared golden fixture, decoder/eval routing, and
+    ownership documentation must change atomically.
+  - Missing, unknown, placeholder, or inconsistent registrations fail closed;
+    a manifest entry is not production-adoption evidence.
+
+- [ ] `HRN-OP-ID-001` `[P1]` define one durable Harness/domain operation
+  identity relationship.
+  - Allocate `harness_operation_id` at durable admission, before provider or
+    worker execution; retain a domain operation ID only through an immutable
+    one-to-one mapping where compatibility requires it.
+  - Context, traces, parent lineage, artifact grants, effect batches, terminal
+    evidence, and eval samples must resolve to the same admitted operation.
+  - Tavern must not allocate its Harness operation only at Message commit time.
+  - Duplicate admission, crash/restart, replay, cross-operation rebinding, and
+    legacy rows without fabricated identities need fixtures.
+
+- [ ] `HRN-SUBJECT-001` `[P1]` define the artifact principal and authorization
+  model.
+  - The current API has no authentication; choose and version the authoritative
+    boundary for a single-user local principal, scoped capability, or formal
+    authenticated principal.
+  - Define subject, grant, scope, expiry, revocation, and audit-result contracts
+    without putting secrets in trace-visible evidence.
+  - Fixtures must prove same-principal access, cross-principal `forbidden`,
+    revoked/expired access, and no-principal fail-closed behavior.
+
+- [ ] `TOOL-CATALOG-001` `[P1]` establish one versioned Tool Manifest for model
+  workflows.
+  - Register ownership, strict input/result contracts, effect class,
+    sensitivity, budget, parallel safety, dependencies, and provider
+    capabilities for every Planning and Study tool.
+  - Distinguish pure reads, database writes, file/staging effects, and external
+    calls; a provider `tool_call_id` remains transport correlation only.
+  - Duplicate, renamed, and retired tools require compatibility and retirement
+    rules, with Python/provider projections checked against one golden catalog.
+
+- [ ] `HRN-EVAL-CONTRACT-001` `[P1]` define versioned evaluation data and report
+  contracts.
+  - Add strict `EvalCase`, `EvalRun`, `EvalSample`, metric, grader-result, and
+    failure-taxonomy DTOs with stable case/run/sample identity.
+  - Cases register `eval_route`, suite/version, provenance, sensitivity,
+    fixture/protected-artifact mode, tags, split, expected invariants, and
+    grader references.
+  - Runs bind the tested system configuration: provider adapter/model,
+    reasoning/sampling settings, prompt/policy/tool/component contracts,
+    attempt/tool/token/time budgets, and Harness version.
+  - Reports expose sample count and raw content-free evidence; secrets and
+    protected source material never appear in CI artifacts.
+
+## Wave 1 — durable artifacts, effects, and eval execution
+
+- [ ] `SCH-HRN-EFFECT-JOURNAL-001` `[P1]` create the reusable durable effect
+  journal.
+  - Persist versioned prepare/commit/compensate/read-back state for database,
+    file/staging/outbox, and external adapters.
+  - Allocate stable batch/effect identity by admitted Harness operation and
+    global slot; retries must not renumber effects or change ordering.
+  - Enforce adapter/contract/target identity, bounded slots, database-clock
+    ownership, and crash-safe terminalization in SQLite and PostgreSQL.
+  - Migrate or adapt the current Study in-process collector without weakening
+    its final Session/Scene transaction or attachment compensation semantics.
+
+- [ ] `SCH-HRN-EFFECT-EVIDENCE-001` `[P1]` add terminal per-effect evidence;
+  depends on `SCH-HRN-EFFECT-JOURNAL-001`.
+  - Define a strict terminal projection for `committed`, `not_committed`, and
+    `uncertain`, including provider-effect identity, read-back capability,
+    exact projection or compensation evidence, and timestamps.
+  - A database commit must not prove provider execution; unsupported external
+    read-back remains `uncertain` and never authorizes blind replay.
+  - Commit/read-back, partial file writes, compensation failure, provider
+    timeout after start, and forged terminal evidence require fixtures.
+
+- [ ] `HRN-CTX-ARTIFACT-001` `[P1]` build the protected artifact resolver;
+  depends on `HRN-SUBJECT-001`.
+  - Support opaque immutable IDs, artifact/contract registration,
+    authorization-before-read, retention/expiry, digest read-back, revocation,
+    and bounded batch resolution.
+  - Return typed `resolved`, `not_found`, `expired`, `forbidden`,
+    `digest_mismatch`, and `schema_unsupported` results.
+  - Cover deletion, corruption, cross-principal access, expired grants, partial
+    batch resolution, and replay after restart.
+  - `document_debug` and `planning_trace` remain removable caches and must not
+    masquerade as durable replay artifacts.
+
+- [ ] `HRN-EVAL-RUNNER-001` `[P1]` implement the shared eval runner; depends on
+  `HRN-EVAL-CONTRACT-001` and `HRN-WORKFLOW-MANIFEST-001`.
+  - Route cases only through registered `eval_route` adapters and reject
+    unknown suite, workflow, stage, contract, or configuration versions.
+  - Provide deterministic fixture/synthetic mode without artifact or network
+    dependencies and protected replay mode that requires authorized resolver
+    results.
+  - Emit stable ordered raw samples plus aggregate JSON; runner/grader failures
+    are reported separately from workflow failures.
+  - Add a repository command for selected suites, deterministic PR gates, and
+    explicit manual/nightly live-provider execution.
+
+- [ ] `HRN-EVAL-GRADER-001` `[P1]` establish a versioned grader registry;
+  depends on `HRN-EVAL-CONTRACT-001`.
+  - Prefer schema, invariant, commit/read-back, identity, citation, and tool
+    checks implemented by deterministic code.
+  - Model graders are allowed only for named subjective rubrics and must bind
+    grader model/config, prompt contract, rubric version, output schema, and
+    failure policy.
+  - Calibrate model graders against a held-out human-reviewed set and report
+    agreement plus false-positive/false-negative rates before using them as a
+    release gate.
+  - Do not let the candidate silently grade itself or turn grader failure into
+    candidate success.
+
+## Wave 2 — runtime, migration, and initial baselines
+
+- [ ] `HRN-CTX-RUNTIME-001` `[P1]` build the workflow-neutral operation runtime;
+  depends on `HRN-WORKFLOW-MANIFEST-001`, `HRN-OP-ID-001`,
+  `HRN-CTX-ARTIFACT-001`, and both effect-epic child tasks.
+  - Assemble durable operation, context, protected artifacts, ordered
+    generate/decode/validate/repair attempts, checks, effects,
+    commit/rollback, and terminal failure through registered adapters.
+  - Persist parent/child trace lineage and make duplicate admission, resume,
+    adapter failure, commit failure, rollback/compensation, and read-back
+    decidable after restart.
+  - Keep domain proposal/invariant/projector logic in domain adapters; the
+    shared runtime must not become a permissive generic proposal schema.
+  - Production callers may bypass the runtime only while their explicit
+    migration task remains open; new adopted workflows cannot add a second
+    lifecycle implementation.
+
+- [ ] `HRN-EVAL-BASELINE-001` `[P1]` establish versioned baselines and release
+  gates; depends on the eval runner and grader registry.
+  - Report raw/final schema-valid rate, repair success/rate, failure rate,
+    uncertain-effect rate, commit consistency, p50/p95 duration, token/cost and
+    tool/provider-call counts, plus suite-specific quality metrics.
+  - Bind every baseline and candidate to the complete tested-system config
+    digest, fixture/split version, sample count, repetitions/seeds, environment,
+    and raw-sample artifact.
+  - Use absolute minimums and regression thresholds; insufficient samples,
+    broken cases, grader drift, or incomparable configuration must block a
+    comparative claim rather than produce a misleading pass.
+  - Keep deterministic suites in PR/release CI and live-provider suites
+    manual/nightly until their cost and variance budgets are explicit.
+
+- [ ] `HRN-RECOVERY-MIG-001` `[P2]` map legacy recovery to v3 attempts/checks;
+  depends on `HRN-CTX-RUNTIME-001`.
+  - Bind legacy recoveries to the admitted operation and stage with one
+    versioned mapping from domain categories/reasons/strategies to attempt and
+    check evidence.
+  - Preserve compatible API/debug projections, avoid double-counting metrics,
+    and define the final write cutoff and read-only retention path.
+  - Never invent historical trace IDs, operation IDs, timestamps, attempts, or
+    commit claims.
+
+- [ ] `HRN-TAV-002` `[P1]` establish the Tavern identity and prompt-injection
+  eval matrix; depends on the eval core, not Tavern v3.
+  - Convert the existing identity/prompt-safety tests into versioned positive,
+    negative, boundary, confusable-Unicode, target, impersonation, guidance
+    leak, and prompt-injection cases.
+  - Report raw/final schema-valid rate, repair, false-positive,
+    false-negative, identity-consistency, and prompt-leak rates.
+  - Include independent reviewed cases and a held-out split; developer-authored
+    unit tests alone do not establish the baseline.
+
+- [ ] `PLAN-TOOLS-EVAL-001` `[P2]` establish the Planning tool baseline;
+  depends on the eval core and `TOOL-CATALOG-001`.
+  - Report eligible batch size, actual call rate, invalid call rate, per-tool
+    p50/p95, total wall-clock, grounding, tool correctness, retry, and provider
+    call counts.
+  - Include malformed JSON, strict argument/result failures, unknown/disabled
+    tools, coarse-unit refinement, duplicate calls, and source-anchor drift.
+  - Prompt encouragement is not evidence that a tool was called correctly.
+
+## Wave 3 — Tavern and Study production adoption
+
+Every production adoption task shares this close contract:
+
+- the real path uses the protected artifact resolver and shared operation
+  runtime;
+- each stage has ordered attempts/checks and terminal trace evidence;
+- malformed output, invariant failure, repair exhaustion, duplicate request,
+  relevant concurrency, commit failure, and protected replay are covered;
+- successful commit evidence proves only registered operation/resource scope;
+- sensitive content stays in authorized artifacts, not trace-visible evidence;
+- legacy records remain readable without fabricated history;
+- the domain's versioned eval and regression gates pass independently.
+
+- [ ] `HRN-TAV-V3-001` `[P1]` migrate Tavern production evidence from legacy v1
+  to v3.
+  - Depends on root-backlog `SCH-TAV-001`, the shared runtime, recovery
+    migration, protected artifacts, and `HRN-TAV-002`.
+  - Allocate Harness operation identity before actor generation and cover
+    parent lineage, partial/failed/not-committed steps, per-step commits, child
+    retry, cancel fencing, and truthful Message/Run/Step/Room evidence scope.
+  - Expand operation policies only with versioned committed projections and
+    authoritative one-snapshot read-back; do not upgrade `primary_output_only`
+    Message evidence into a claim about all transaction effects.
+  - Legacy v1/v2 and new v3 frontend fixtures must all pass; migration cannot
+    rewrite historical evidence.
+
+- [ ] `HRN-STUDY-001` `[P1]` adopt Study Chat into v3.
+  - Depends on the shared runtime, protected artifacts, effect epic, eval core,
+    and the root-backlog Study operation clock/scanner hardening needed for
+    authoritative recovery evidence.
+  - Cover prompt/context, strict reply, citations, Character Events, nested
+    tools, mixed database/Scene/file/provider effects, commit/rollback,
+    provider `uncertain`, and exact committed Session/Turn read-back.
+  - Keep grading material and server-only effect receipts out of the public
+    projection; the browser renders only persisted Session read-back.
+  - Close citation/effect correctness and independent live-wire decode gates.
+
+## Wave 4 — remaining production adoption
+
+- [ ] `HRN-PLAN-001` `[P2]` adopt Planning into v3.
+  - Register prompt, toolset, provider/runtime configuration, input/context,
+    proposal, committed projection, and protected replay contracts.
+  - Emit plan-generation and per-tool stage traces with bounded recovery and
+    atomic Document/Debug/Planning Trace/Learning Plan commit evidence.
+  - Gate grounding, schedule/Study Unit/Section reference correctness, tool
+    correctness, failure paths, and goal-only compatibility.
+
+- [ ] `HRN-DOC-001` `[P2]` adopt extraction, OCR, Section, Chunk, and Study Unit
+  cleanup into v3.
+  - Record reviewed parser/heuristic contracts separately from installed
+    dependency/OCR-engine versions and execution budgets.
+  - Emit distinct stage evidence for page extraction, OCR page, Section
+    detection, Chunk building, Study Unit cleanup, and the parent process.
+  - Validate page coverage, extraction density, OCR fallback, ordering,
+    boundaries, source IDs, warning/terminal behavior, and performance budgets.
+
+- [ ] `HRN-SCENE-001` `[P2]` adopt Scene generation into v3.
+  - Preserve the strict content-only proposal, allow-list reuse resolution,
+    application-owned IDs, recursive budgets, committed-save split, and row
+    CAS.
+  - Add prompt/context snapshots, attempt/repair/terminal evidence, zero-write
+    failures, protected replay, structure/correctness evals, and live-wire
+    decoding.
+
+- [ ] `HRN-PERSONA-001` `[P2]` adopt Persona generation and assist flows into v3.
+  - Keep Persona/card IDs, source, ordering, timestamps, and committed state out
+    of model-owned proposals.
+  - Register prompt/context/output contracts and validate slot, identity,
+    relationship, naming/address, count, and failure-zero-persistence behavior.
+  - Add protected replay, identity/quality evals, bounded recovery, and
+    independent API decoding.
+
+- [ ] `HRN-WEB-001` `[P2]` complete Frontend Decode v3 adoption.
+  - Inventory every endpoint and stream, moving remaining boundaries through
+    `unknown -> strict decoder | typed error` without default-filled records.
+  - Register the real Frontend Decoder component contract and
+    `FRONTEND_REQUEST` resource/evidence semantics.
+  - Add v1/v2/v3 trace forwarding, unknown-version fail-closed fixtures,
+    request/subject/revision ordering fences, and independent live-wire cases.
+  - Extend the existing `web-strict-decode-adversarial-v1` gate through a new
+    versioned catalog rather than silently editing its historical meaning.
+
+## Wave 5 — performance and optimization gates
+
+- [ ] `HRN-CTX-PERF-001` `[P2]` establish context/artifact/runtime budgets;
+  depends on a runnable resolver and runtime.
+  - Measure canonical bytes, resolved snapshot bytes, reference count, batch
+    resolver I/O, attempt/trace overhead, and p50/p95 latency.
+  - Any budget exceeded before provider/worker execution must fail closed with
+    typed evidence; raw samples and the measurement environment are required.
+
+- [ ] `HRN-TAV-PERF-001` `[P2]` establish the Tavern prompt performance/eval
+  gate; depends on Tavern v3, protected artifacts, and eval baselines.
+  - Use the worst supported six-person long conversation with a real tokenizer
+    and representative provider configuration.
+  - Report prompt partitions, trimming, tokens, provider/tool calls, cost,
+    p50/p95, repair/failure rates, and content-free trace evidence.
+
+- [ ] `PLAN-TOOLS-PERF-001` `[P2]` decide whether Planning tool batches may run
+  in parallel; depends on `PLAN-TOOLS-EVAL-001`.
+  - Parallelize only when the entire batch is registered `parallel_safe`, reads
+    the same immutable snapshot, has no dependent effects, and preserves stable
+    result ordering.
+  - Demonstrate lower same-round wall-clock without degrading grounding/tool
+    correctness or claiming fewer model rounds.
+  - Record fixture, provider/runtime config, raw samples, before/after, and a
+    rollback threshold.
+
+## External product-line dependencies
+
+These tasks remain owned by `../TODO.md`; they are referenced here and must not
+be duplicated as Harness checkboxes:
+
+| Root task | Harness relationship |
+|---|---|
+| `SCH-TAV-001` | hard prerequisite for `HRN-TAV-V3-001` truthful Room/Run/Step/Message evidence |
+| `STUDY-OP-CLOCK-001` | canonical lease/deadline time for Study terminal evidence |
+| `STUDY-OP-SCANNER-001` | corruption/version/digest conclusions consumed by Study read-back and eval |
+| `STUDY-OP-RECOVERY-UX-001` | public recovery behavior after truthful operation conclusions |
+| `TAV-CANCEL-TRANSPORT-001` | provider transport cancellation capability; does not replace commit fencing |
+| `SCH-PLAN-CAS-001` | required for future Plan patch/update operations, not for claiming current Plan creation evidence |
+| `PLAN-PATCH-001` | consumes `HRN-PLAN-001` after Plan CAS; it does not expand the Planning adoption scope retroactively |
+
+## Continuous rules
+
+- `HarnessStage`, `HarnessAttemptPhase`, and stream event types are separate
+  vocabularies. New values require one atomic update across Python, TypeScript,
+  registry, golden fixture, decoder routing, ownership docs, and eval routing.
+- A component contract versions reviewed application behavior; it is not a
+  provider model, dependency package, or placeholder adoption version.
+- Only explicitly reviewed `HarnessSafeManifest` DTOs may enter trace-visible
+  digests. Integrity hashes do not provide authorization, confidentiality, or
+  replay availability.
+- Unknown explicit evidence versions fail closed. Historical v1/v2 rows do not
+  gain invented v3 identity, timing, attempt, or commit evidence.
+- A generic resource capability never proves operation semantics; successful v3
+  claims require a registered full operation key and committed projection.
+- Without provider idempotency or authoritative read-back, external execution
+  remains `uncertain`; database atomicity must not be described as provider
+  exactly-once.
+- Eval reports must bind the tested system, budgets, data/split, grader, sample
+  count, and raw samples. A headline score without those identities cannot gate
+  release.
+- Deterministic graders take priority. Model graders require held-out human
+  calibration and their own failure evidence.
+- `QG-002` / `web-strict-decode-adversarial-v1` remains an immutable release
+  gate. New domains or attack classes use a new versioned catalog.
+- Developer-authored happy paths do not close UX/reliability or eval findings;
+  independent revalidation remains required.

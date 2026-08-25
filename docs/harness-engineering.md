@@ -11,6 +11,9 @@ Harness engineering is a repository-wide reliability discipline. Tavern interact
 - Tavern speaker scheduling, actor generation, and message commit;
 - frontend response decoding, request ordering, recovery, and debug reporting.
 
+Active dependencies, claimable tasks, evaluation milestones, and production
+adoption gates are maintained only in `harness-roadmap.md`.
+
 The harness is not one prompt and not one validator. It is the versioned boundary around an unreliable or stateful operation.
 
 ## Canonical lifecycle

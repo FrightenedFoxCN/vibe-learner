@@ -17,6 +17,7 @@
 - `tavern-architecture.md`: Tavern schema, transaction invariants, harness ownership, and performance boundaries
 - `harness-engineering.md`: repository-wide validate/repair/commit lifecycle, shared trace schema, adoption matrix, and release metrics
 - `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2/v3 evidence compatibility
+- `harness-roadmap.md`: canonical unfinished Harness backlog, dependency graph, delivery waves, eval program, and production adoption gates
 - `performance-budgets-v1.md`: versioned fixture, query/payload, server P95, and React render gates for focused performance work
 
 ## Reading Order
@@ -31,11 +32,12 @@
 8. Read `api-reference.md` before touching frontend/backend contracts.
 9. Read `harness-engineering.md` before adding or changing reliability, recovery, trace, or evaluation boundaries in any workflow.
 10. Read `harness-schema-ownership.md` before changing model-output, persisted-record, effect, or API schema ownership.
-11. Read `tavern-architecture.md` before changing Tavern persistence or orchestration.
-12. Read `performance-budgets-v1.md` before changing a registered performance-critical query or UI list.
-13. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
-14. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
-15. Read `../TODO.md` for the active implementation backlog and independent closure gates.
+11. Read `harness-roadmap.md` before claiming or scheduling Harness foundation, eval, migration, or production-adoption work.
+12. Read `tavern-architecture.md` before changing Tavern persistence or orchestration.
+13. Read `performance-budgets-v1.md` before changing a registered performance-critical query or UI list.
+14. Read `desktop-roadmap.md` before changing desktop packaging, OCR replacement, or secure secret storage.
+15. Read `../AGENTS.md` for repo entry points, commands, and local workflow notes.
+16. Read `../TODO.md` for the active non-Harness implementation backlog and independent closure gates.
 
 ## Scope
 
@@ -48,7 +50,7 @@ These docs describe the repository as it exists now, not the aspirational long-t
 - `/tavern` is active in both frontend and backend. It supports durable 1–6 persona rooms, direct and facilitated turns, append-only transcript paging, partial failure, scoped child retry, resume, and cancel fencing.
 - Domain-owned strict decoders now cover Tavern, Document, Planning, Persona/Scene, Study, and versioned Document/Planning streams. Independent live-wire closure, remaining endpoint inventory, Frontend Decoder component registration, and v2/v3 trace forwarding/resource evidence remain open; decoder coverage alone does not complete repository-wide Harness adoption.
 - Harness Engineering is repository-wide. V2/v3 contracts and the v3 context builder are schema foundations; no production workflow currently calls `build_harness_context`, and Tavern production evidence remains legacy v1 until `HRN-TAV-V3-001` is complete.
-- Snapshot digests are integrity references only. Protected replay needs the authorized artifact resolver, resource evidence policies, retention, and read-back verification tracked in `TODO.md`.
+- Snapshot digests are integrity references only. Protected replay needs the authorized artifact resolver, resource evidence policies, retention, and read-back verification tracked in `harness-roadmap.md`.
 - Study Chat now has independently revalidated safe-retry across durable admission/read-back, transactional Session/Scene effects, operation-owned attachment staging, and explicit provider uncertainty. Full v3 protected replay/eval, a reusable cross-workflow durable effect primitive, and the nested decoder's remaining live-wire samples stay open.
 - Interactive questions now use private server-owned grading, a narrow idempotent Attempt journal, and persisted Session read-back; the two schema tickets remain open only for required independent revalidation.
 - Document processing uses a durable operation journal and commits Document/Debug projections atomically with digest read-back and startup recovery. Planning likewise admits stable operations and atomically commits Document/Debug/Planning Trace/Learning Plan projections plus a versioned terminal snapshot; both still require their separate v3 trace/replay/eval adoption work.
