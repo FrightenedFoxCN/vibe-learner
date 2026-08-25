@@ -62,14 +62,13 @@ Tavern uses a separate client boundary:
 - `apps/web/lib/tavern-decode.ts`: fail-closed legacy-v1 Tavern wire decoder;
 - `apps/web/lib/tavern-workspace-state.ts`: message/run reconciliation and monotonic state helpers.
 
-Document and Planning now have their own fail-closed client boundaries in
-`apps/web/lib/document-decode.ts` and `apps/web/lib/planning-decode.ts`. They
-bind response identity, enums, finite numbers, nullability, ordering, ranges,
-cross-record references, duplicate IDs, derived progress/trace projections,
-and Planning tool/recovery contract versions before API preview compaction.
-Persona/Scene and the broader Study response remain under the decoder migration,
-while versioned stream state and Tavern v2/v3 trace forwarding remain open under
-`HRN-WEB-001`.
+Domain-owned fail-closed client boundaries now cover Document, Planning,
+Persona/Scene, Study, Tavern, and versioned Document/Planning streams. They bind
+response identity, enums, finite numbers, nullability, ordering, ranges,
+cross-record references, duplicate IDs, derived projections, and each domain's
+operation/recovery versions before rendering. Their independent live-wire
+closure gates and Tavern v2/v3 trace forwarding remain open; implemented strict
+decode does not itself prove Harness v3 adoption.
 
 ### AI service
 
@@ -137,8 +136,9 @@ database transaction. A failed or interrupted operation records explicit
 `not_committed` truth, and startup recovery terminalizes abandoned `running`
 operations so a process exit cannot strand the Document indefinitely. JSON
 files are best-effort compatibility mirrors after the authoritative database
-commit. This repairs `AUD-DOC-COMMIT-001`; extraction/OCR/cleanup v3 trace,
-protected replay, and eval remain tracked by `HRN-DOC-001`.
+commit. This atomic boundary has passed independent fault revalidation;
+extraction/OCR/cleanup v3 trace, protected replay, and eval remain tracked by
+`HRN-DOC-001`.
 
 ### 2. Plan generation
 
@@ -173,9 +173,9 @@ one database transaction. Duplicate requests read the original committed
 snapshot; payload drift, active siblings, stale Document state, and missing
 Debug prerequisites fail closed. Startup recovery terminalizes abandoned work,
 and compatibility JSON files are mirrored only after the authoritative commit.
-This implements the `AUD-PLAN-COMMIT-001` boundary; independent revalidation is
-still required before closing that audit item, and v3 context/trace/replay/eval
-remains `HRN-PLAN-001`.
+This ownership and atomic-commit boundary has passed independent schema/fault
+revalidation. It is not v3 operation evidence; protected replay and workflow
+adoption remain tracked by `HRN-PLAN-001`.
 
 ### 3. Scene generation and saves
 
@@ -195,8 +195,9 @@ references, and never accepts a caller-authored Scene Profile. The service
 rebuilds that profile from the validated tree and commits through row CAS;
 stale editors receive `409 scene_revision_conflict`. Legacy records decode with
 revision `0`, and migration `20260824_0011` adds authoritative revision columns.
-This implements the ownership/CAS slice of `SCH-SCENE-OWN-001`; protected
-context/replay, v3 traces, and eval remain `HRN-SCENE-001`.
+This ownership/CAS slice has passed independent model-wire, public-save, and
+concurrency revalidation. Protected context/replay, v3 traces, and eval remain
+tracked by `HRN-SCENE-001`.
 
 ### 4. Study interaction
 
@@ -214,7 +215,7 @@ Study Chat adds a separate durable operation-admission boundary above the Sessio
 
 The typed database-effect slice now covers memory, affinity, follow-up create/complete/cancel, projected-document/image set/focus/overlay/clear, and the two plan-confirmation tools. One discriminated proposal union feeds a single append-only operation batch, so every Session database effect shares global slots and `(operation, slot)`-derived identities. Memory, affinity, follow-up, and projected-state reads overlay the authoritative Session with all earlier prepared slots, giving the model read-your-writes without changing persisted state. Tool results explicitly report `effect_state=prepared` and `committed=false`; learner-message cancellation is prepared before model tools, so a newly scheduled follow-up is not accidentally canceled by the same request.
 
-Before commit the server revalidates the complete batch identity, slots, adapter/contract versions, Session/Plan targets, schedule membership, and attachment projection source membership. It then applies every slot with the final validated Turn, Session revision, operation receipt, and a server-only committed-effect projection in one database transaction; any adapter, validation, CAS, or response-build failure rolls the whole batch back. Replayed committed operations read the original receipt rather than applying effects again. The prepared batch remains in-process, not a durable prepare journal or public effect receipt. Scene, attachment files, and provider-generated artifacts retain separate file/external failure boundaries, and a generated-image tool result is explicitly `completed_uncommitted` until the final Session commit. `SCH-HRN-EFFECT-001`, `STUDY-EFFECT-COMMIT-001`, `HRN-STUDY-001`, and the complete `HRN-WEB-STUDY-DEC-001` remain open; neither Session CAS, operation admission, nor this database slice is v3 Harness adoption.
+Before commit the server revalidates the complete batch identity, slots, adapter/contract versions, Session/Plan/Scene targets, schedule membership, and attachment projection source membership. It then applies Session slots with the final validated Turn, Session revision, operation receipt, and a server-only committed-effect projection in one database transaction; Scene replacement adds row CAS plus an exact committed Scene snapshot/read-back in that boundary. Any adapter, validation, CAS, or response-build failure rolls the transaction back. Replayed committed operations read the original receipt rather than applying effects again. Attachment files use operation-owned staging, bounded cleanup/compensation, and committed digest read-back. Provider-generated artifacts retain a separate external failure boundary, and a generated-image tool result is explicitly `completed_uncommitted` until the final Session commit. These safe-retry boundaries have passed independent DB/Scene/file/provider-failure revalidation. The prepared batch remains in-process, not a reusable durable prepare journal or public effect receipt; provider-call exactly-once, Study v3 trace/replay/eval, and the public effect-evidence boundary remain open. None of Session CAS, operation admission, or these effect slices is v3 Harness adoption.
 
 ### 5. Tavern interaction
 
@@ -239,7 +240,7 @@ The browser `Tavern Workspace` implements:
 - `Interaction Composer`;
 - `Reliability Details`.
 
-Tavern functional/state checks cover create/direct/facilitated/recovery paths, a populated real-backend wire, composition-event fencing, and a 390px no-overflow inspection. The independent UX release gate remains open for mobile primary-action order, real per-step roster state, terminal replay recovery prominence, and a reproducible device-level IME/viewport pass under `UX-001`.
+Tavern functional/state checks cover create/direct/facilitated/recovery paths, authoritative roster/retry derivation, structured recovery/error transport, composition-event fencing, keyboard focus return, and a 390px no-overflow inspection. Recovery lineage, provider-call fencing, mutation errors, badges, and real per-step states have passed a non-implementer live browser/wire matrix. `UX-001` remains open for the remaining no-Persona/no-Room viewport, device-level IME, focus-order, and 44px touch-target acceptance.
 
 ## Character layer
 
@@ -286,7 +287,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - OCR cleanup remains heuristic-heavy;
 - tool-enabled model calls increase provider latency and timeout pressure;
 - Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, but its extraction/OCR/cleanup stages are not yet v3-adopted;
-- Study Chat has durable request admission and a mixed transactional batch for all current Session database effects, while file/provider uncertainty remains explicit and full v3 protected replay/eval is still open;
+- Study Chat has durable request admission, a mixed transactional batch for all current Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty and full v3 protected replay/eval remain open;
 - production Harness v3 adoption is incomplete outside schema/context foundations;
 - Tavern prompt/token/scene-depth budgets and eval metrics remain open;
-- `npm run lint:web` invokes removed Next.js 16 behavior and is tracked by `QG-001`.
+- `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` is only a compatibility alias.

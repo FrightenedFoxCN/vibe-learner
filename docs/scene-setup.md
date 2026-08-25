@@ -59,20 +59,21 @@ Interactive objects should usually include:
 
 ### Request Payloads
 
-**PUT `/scene-setup`** and **POST/PUT `/scene-library`** both use the same field structure:
+**PUT `/scene-setup`** and **POST/PUT `/scene-library`** use the strict `scene-committed-save-v1` field structure:
 
 ```json
 {
+  "contract_version": "scene-committed-save-v1",
+  "expected_revision": 7,
   "scene_name": "高一物理-力学基础",
   "scene_summary": "从世界整体出发...",
-  "scene_layers": [ /* SceneLayerStateRecord[] */ ],
+  "scene_layers": [ /* SceneLayerCommittedInputV1[] */ ],
   "selected_layer_id": "scene-classroom",
-  "collapsed_layer_ids": [],
-  "scene_profile": { /* SceneProfileRecord | null */ }
+  "collapsed_layer_ids": []
 }
 ```
 
-`scene_name` and `scene_summary` both have `min_length=1` (non-empty required). Sending an empty string produces a **422**.
+`scene_name` and `scene_summary` both have `min_length=1` (non-empty required). Sending an empty string produces a **422**. Create requests use `expected_revision=0`; update requests send the revision returned by the last successful read/write. The server rebuilds `scene_profile` from the validated tree and never accepts a caller-authored profile. A stale update returns **409** `scene_revision_conflict` instead of overwriting a newer editor.
 
 ### SceneLayerStateRecord (Python ↔ TypeScript)
 
@@ -93,7 +94,7 @@ Python backend (`SceneLayerStateRecord`) uses **snake_case**. TypeScript fronten
 | `objects` | `objects` | `SceneObjectStateRecord[]` |
 | `children` | `children` | Recursive `SceneLayerStateRecord[]` |
 
-**All string fields are required (no default)**; omitting any one causes a 422.
+Committed layer identity/content fields and `reuse_id` are required. `tags` and `reuse_hint` may be omitted and default to empty strings. The full tree is additionally bounded to depth 8, 64 layers, 128 objects, 8 children per layer, 16 objects per layer, and a 60,000-character aggregate text budget.
 
 ### SceneObjectStateRecord
 
@@ -152,50 +153,52 @@ Reusable nodes are a smaller-granularity library than the full scene library.
 Located in [apps/web/lib/api.ts](../apps/web/lib/api.ts):
 
 - **`serializeSceneTree(nodes)`** — recursively converts `SceneTreeNode[]` to snake_case objects for the API. Converts `scopeLabel` → `scope_label`. If any `SceneLayer` in React state was not normalized (still has snake_case fields), `node.scopeLabel` would be `undefined`, which `JSON.stringify` silently omits, causing a **422** on `scope_label`.
-- **`serializeSceneProfile(sceneProfile)`** — converts `SceneProfile` to snake_case for the API.
+- Scene saves deliberately do not serialize a caller Scene Profile; the response profile is application-owned committed state.
 
 ### Deserialization Functions (Python → TypeScript)
 
 Located in [apps/web/lib/api.ts](../apps/web/lib/api.ts):
 
-- **`normalizeSceneTreeNode(node)`** — converts a raw snake_case API layer to a `SceneTreeNode`. Correctly maps `scope_label` → `scopeLabel` and recurses into `children`.
-- **`normalizeSceneProfile(scene)`** — converts raw API `scene_profile` to `SceneProfile`.
-- **`normalizeSceneSetupState(payload)`** — converts `GET /scene-setup` response. Note: `sceneLayers` is passed through as raw API objects; the page normalizes them via `parseSceneImportPayload`.
-- **`normalizeSceneLibraryItem(payload)`** — converts a library item. `sceneLayers` is also raw; the page must normalize before using.
+- **`decodeSceneSetupState(payload)`** and **`decodeSceneLibraryItem(payload)`** consume `unknown`, recursively decode snake_case layers into `SceneTreeNode`, and validate revision, committed-ID uniqueness, selected/collapsed references, profile/tree consistency, and depth/count/text budgets.
+- List and reusable-node decoders also enforce unique aggregate identity and discriminated layer/object projections.
 
 ### Page-Level Normalization (page.tsx)
 
 Located in [apps/web/app/scene-setup/page.tsx](../apps/web/app/scene-setup/page.tsx):
 
-- **`parseSceneImportPayload(input)`** — entry point for all layer data entering React state. Handles both camelCase (localStorage, JSON export) and snake_case (API response) container keys. Calls `normalizeSceneLayer` on each layer.
+- **`parseSceneImportPayload(input)`** — entry point for imported/generated/library layer data entering React state. Handles both camelCase (localStorage, JSON export) and snake_case compatibility containers. Calls `normalizeSceneLayer` on each layer.
 - **`normalizeSceneLayer(input)`** — converts a raw layer object to the page-local `SceneLayer` type. Accepts both `scopeLabel` (camelCase) and `scope_label` (snake_case) via fallback.
 
-**Critical invariant**: all `SceneLayer[]` values stored in React state must pass through `normalizeSceneLayer` (or `parseSceneImportPayload`) before being set. Raw API snake_case objects must never be placed directly into state, as `serializeSceneTree` will produce malformed JSON.
+**Critical invariant**: all untyped or imported `SceneLayer[]` values must pass through the strict API decoder or `normalizeSceneLayer` / `parseSceneImportPayload` before being set. A raw snake_case object placed directly into state makes `serializeSceneTree` produce malformed JSON.
 
 ### Data Flow Summary
 
 ```
 [Page renders / edits]
   ↓
-SceneLayer[] in React state  (camelCase, always via normalizeSceneLayer)
-  ↓  auto-save / save button
+SceneLayer[] in React state  (camelCase)
+  ↓  auto-save / save button with expected_revision
 serializeSceneTree()
   ↓  snake_case JSON
 PUT /scene-setup  or  POST/PUT /scene-library
-  ↓  Pydantic validates SceneLayerStateRecord[]
-SceneSetupStateRecord / SceneLibraryRecord saved
+  ↓  strict SceneCommittedSaveV1 + tree invariants + row CAS
+SceneSetupStateRecord / SceneLibraryRecord saved; Scene Profile rebuilt server-side
 
 [Page hydrates]
 GET /scene-setup  or  GET /scene-library
   ↓  snake_case JSON
-normalizeSceneSetupState / normalizeSceneLibraryItem  (raw layers)
-  ↓
-parseSceneImportPayload → normalizeSceneLayer  (camelCase, in React state)
+decodeSceneSetupState / decodeSceneLibraryItem
+  ↓  strict recursive decode to camelCase
+SceneTreeNode[] in React state
 ```
 
 ### Known 422 Causes
 
-1. **`scope_label` missing** — raw API snake_case layer objects set into React state without normalization. `serializeSceneTree` writes `scope_label: undefined`, which `JSON.stringify` omits. Pydantic rejects the missing required field.  
-   *Fix*: always pass loaded layers through `parseSceneImportPayload` before `setSceneLayers`.
+1. **`scope_label` missing** — an imported or untyped snake_case layer was placed into React state without normalization. `serializeSceneTree` writes `scope_label: undefined`, which `JSON.stringify` omits. Pydantic rejects the missing required field.
+   *Fix*: consume API results through the strict decoder and pass imported JSON through `parseSceneImportPayload` before `setSceneLayers`.
 
 2. **Empty `scene_name` or `scene_summary`** — both fields have `min_length=1`. The frontend guards against this before sending, but callers must not bypass the guard.
+
+3. **Caller sends `scene_profile`, duplicate IDs, or dangling selected/collapsed IDs** — the committed-save DTO is `extra="forbid"` and tree invariants fail closed. Send only committed tree fields; consume the server-built profile from the response.
+
+4. **Stale `expected_revision`** — this is a **409** conflict, not a 422. Reload the current Scene projection before applying a deliberate retry.

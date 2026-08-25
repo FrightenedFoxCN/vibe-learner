@@ -27,8 +27,9 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
   Document/Debug, Planning, Persona/Scene, and Study HTTP projections pass
   through domain-owned fail-closed decoders before rendering. Document and
   Planning live NDJSON plus persisted v1 reports additionally pass the strict
-  versioned stream state machine. Independent real-wire closure and async stale
-  response fencing remain tracked by `HRN-WEB-001`.
+  versioned stream state machine. Subject/draft-revision/field-target fences
+  reject stale async results; independent real-wire closure remains tracked by
+  the domain decoder and stream gates under `HRN-WEB-001`.
 
 ## Complete operation index
 
@@ -657,6 +658,7 @@ Current stream event stages may include:
 - `study_units_ready`
 - `heuristic_plan_built`
 - `model_round_started`
+- `planning_question_asked`
 - `model_tool_call`
 - `model_round_completed`
 - `model_plan_applied`
@@ -752,7 +754,7 @@ Returns the persisted `StudySessionRecord`. The server owns:
 
 These fields are committed-record identity and ordering evidence. They are not model proposal fields, a Study Chat idempotency receipt, or proof that tool/file/provider effects are exactly once.
 
-The browser rejects missing, non-integer, duplicate, empty, gapped, or watermark-mismatched committed turn identity before rendering. This narrow decoder does not yet strictly validate every nested Study Chat citation, Character Event, attachment, or future effect receipt; that broader boundary remains `HRN-WEB-STUDY-DEC-001`.
+The browser rejects missing, non-integer, duplicate, empty, gapped, or watermark-mismatched committed Turn identity before rendering. The current Study decoder also validates Session/Document/Persona/Plan/Study Unit identity, attachments and citations, Character Events/tool calls, interactive-question public projections, projected state, follow-up/affinity/confirmation state, recursive Scene budgets, and committed exchange/Turn read-back. The internal committed effect batch is intentionally not part of the public wire; independent live-wire closure remains separate from this implemented decoder.
 
 ### `GET /study-sessions`
 
@@ -787,7 +789,7 @@ Notes:
 - `expected_session_revision` fences admission against a stale Session; the final visible Turn still commits through bounded revision CAS with an application-owned ID and contiguous sequence
 - admission is persisted before provider execution; a duplicate committed request returns the same terminal receipt without invoking the model again
 - after timeout, disconnect, `admitted`, `running`, or `uncertain`, query the original operation; do not automatically repeat this POST or mint a new key
-- request-schema and stale-revision failures are rejected before admission with 4xx; attachment validation after durable admission but before execution returns a `not_committed` receipt; an invalid scheduled follow-up is detected after claim because current Study runtime validation is not yet staged, so it conservatively becomes `uncertain`
+- request-schema and stale-revision failures are rejected before admission with 4xx; attachment validation after durable admission but before execution returns a `not_committed` receipt; deterministic scheduled-follow-up, Session, revision, and Scene conflicts are validated before the provider claim and therefore do not become false `uncertain` operations
 - the browser preserves HTTP status plus typed error code for pre-admission failures: explicit Session/request/revision/active-slot conflicts and request validation offer “refresh Session state” instead of querying an operation that was never created; the learner draft remains editable, while sending waits for refresh and then uses a new request identity
 - transport loss, response decode failure, provider failure, and timeout are not pre-admission proof and therefore remain query-only; an explicit `404 study_chat_operation_not_found` from the operation GET ends the query loop and also requires a Session refresh
 - after execution starts, invalid/empty model output, provider/network failure, and provider timeout persist as an `uncertain` receipt with HTTP 200; the internal failure is retained in `error_code` so the client can decode and query the operation instead of interpreting a transient HTTP error as permission to replay
@@ -828,7 +830,15 @@ All receipt fields are present. Nullable commit/result fields and `completed_at`
 
 ### `POST /study-sessions/{session_id}/chat-with-attachments`
 
-Runs the same admitted Study Chat operation as the JSON endpoint with multipart attachments. The form includes `client_request_id` and `expected_session_revision` in addition to the existing message/follow-up fields and files. File name, media type, size, and SHA-256 manifest participate in the canonical request identity. It returns the same `StudyChatOperationReceipt`; retry and query rules are identical. Prepared files do not gain exactly-once or compensation semantics from the operation journal and remain tracked by `STUDY-EFFECT-COMMIT-001`.
+Runs the same admitted Study Chat operation as the JSON endpoint with multipart attachments. The form includes `client_request_id` and `expected_session_revision` in addition to the existing message/follow-up fields and files. File name, media type, size, and SHA-256 manifest participate in the canonical request identity.
+
+Attachment limits are enforced before provider execution:
+
+- at most 4 files;
+- at most 12 MiB per file;
+- at most 24 MiB across the request.
+
+The request manifest is durably admitted before files are written. Attachment/file-effect identity, public attachment ID, and staging directory are derived from the operation and input slot; failed partial writes and terminal `not_committed`/`uncertain` operations are cleaned within the Session-scoped staging root. A committed read-back verifies the manifest, Turn attachment projection, bounded path, file existence, and SHA-256 digest. It returns the same `StudyChatOperationReceipt`; retry and query rules are identical. This file boundary does not make an upstream provider call exactly once and is not Harness v3 evidence.
 
 ### `GET /study-sessions/{session_id}/chat-operations/{client_request_id}`
 
@@ -842,7 +852,7 @@ Operation status semantics:
 - `not_committed`: terminal; retry is allowed only when `safe_to_retry=true`
 - `uncertain`: terminal ambiguity after execution may have started; never automatically replay
 
-This receipt proves admission identity and final Study Turn/result read-back. Memory, affinity, follow-up create/complete/cancel, projected-state set/focus/overlay/clear, and plan-confirmation proposals now share that final database transaction and a server-only per-effect committed projection; the public response intentionally omits the internal batch. This still does not prove Scene JSON, attachment/file, generated-image, or upstream provider effects are exactly once, and it is not a v3 Harness trace or durable prepare journal.
+This receipt proves admission identity and final Study Turn/result read-back. Memory, affinity, follow-up create/complete/cancel, projected-state set/focus/overlay/clear, plan confirmation, and Study Scene replacement use typed proposals and server-only committed projections; database effects share the final Turn/Session transaction, while Scene rows add their own CAS and exact snapshot read-back. Attachments use the separate operation-owned staging/cleanup/digest boundary described above. The public response intentionally omits the internal batch. Generated-image and upstream provider calls remain external effects: without provider idempotency or authoritative read-back, a started ambiguous call is `uncertain` and is never automatically replayed. None of these receipts is a v3 Harness trace.
 
 ### `GET /study-sessions/{session_id}`
 

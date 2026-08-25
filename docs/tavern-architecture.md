@@ -98,7 +98,7 @@ The client requests a 40-message tail and uses `next_before_sequence` to prepend
 
 Keyboard handling suppresses Enter while a composition is active (including key code 229 and the composition-end trailing event); Shift+Enter inserts a newline. The responsive DOM order follows the primary mobile reading/focus flow, with explicit desktop grid placement.
 
-Static/state tests, a populated real-backend wire acceptance, keyboard composition fencing, and a 390px no-overflow inspection have passed. The independent UX release audit keeps `UX-001` open because the small-screen primary-action order, real per-step roster state, terminal replay recovery prominence, and a reproducible device-level IME/viewport pass are still incomplete. The optional `TAVERN_TEST_API_URL` decoder fixture is skipped unless a populated backend with messages and a terminal run is explicitly supplied.
+Static/state tests, populated real-backend wire acceptance, keyboard composition fencing, authoritative recovery/roster derivation, structured mutation-error and provider-call fencing, keyboard focus return, and a 390px no-overflow inspection have passed. A non-implementer live matrix covered direct/facilitated/partial/resume/cancel state, recovery lineage, refresh, retry badges, 502 read-back, and failure cases. `UX-001` remains open for the no-Persona/no-Room viewport, device-level IME, full focus-order, and 44px touch-target acceptance. The optional `TAVERN_TEST_API_URL` decoder fixture is skipped unless a populated backend with messages and a terminal run is explicitly supplied.
 
 ## Performance boundaries
 

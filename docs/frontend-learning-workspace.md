@@ -12,9 +12,9 @@ When changing this area, preserve the separation below unless there is a clear a
 
 - `/` = navigation home
 - `/plan` = `Plan Workspace` (upload, process, generate, history)
-- `/study` = `Chapter Dialogue Workspace` (chat + PDF + chapter switching)
-- `/persona-spectrum` = `Persona Layer Workspace` (persona slots, style tuning, import/export)
-- `/scene-setup` = `Scene Setup Workspace` (world-to-classroom layered scene editing)
+- `/study` = `Study Dialog` (chat + PDF + chapter switching)
+- `/persona-spectrum` = `Persona Spectrum` (persona slots, style tuning, import/export)
+- `/scene-setup` = `Scene Setup` (world-to-classroom layered scene editing)
 
 `/plan` and `/study` share one runtime state source through `LearningWorkspaceProvider`.
 
@@ -93,6 +93,8 @@ Must not own:
 
 The reducer-backed state is still the source of truth for documents, plans, sessions, and replies.
 
+Study Chat POST, operation query, and rejected-admission refresh results also pass through `StudyAsyncViewFence`. Its ticket binds operation identity, current Plan/Session subject, a monotonic view revision, and the current Session/Study Unit field target. Switching Plan, Session, or Study Unit invalidates older tickets; a late result may be logged or its pending identity cleared, but it cannot overwrite the new view. Persona and Scene async generation/file reads use the same subject/draft-revision/field-target fencing primitive in their own pages.
+
 Page-cache state is only for page-local UI continuity such as:
 
 - `/plan` upload mode, objective draft, and selected-but-not-yet-submitted PDF file
@@ -160,8 +162,8 @@ Current `/study` interaction details:
 
 - theme selector routes to a concrete section id before sending chat
 - quick action allows jumping PDF preview to the current theme start page
-- transcript displays latest turns first (reverse chronological)
-- on chat failure, UI shows explicit error text and a manual retry button
+- transcript validates contiguous sequence and displays turns oldest-to-newest, scrolling to the latest committed Turn
+- ambiguous chat outcomes show an explicit query action for the original operation and lock new sends; only explicit `not_committed + safe_to_retry` permits resend, while known pre-admission rejection requires a Session refresh first
 - unsent composer text, question draft state, and preview/chapter position recover after route changes and same-tab refresh
 - successful model-side recoveries are debug-only: they surface in `StudyDebugPanels`, persona/scene page debug snapshots, and plan trace/debug panels, but not in the main user-facing page blocks
 
@@ -182,8 +184,8 @@ For `Plan Overview`, keep these display rules stable:
 
 - `courseTitle` is the main heading
 - `objective` is supporting goal text, not the heading
-- `studyChapters` and `todayTasks` are sequential content and should render as vertical reading flow, not same-row card grids
-- `schedule` remains part of the plan payload but is not currently rendered in `Plan Overview`
+- `todayTasks`, `schedule`, and nested `scheduleChapters` are sequential content and should render as vertical reading flow, not same-row card grids
+- `schedule` is rendered in `Plan Overview`; nested chapters expand under their parent schedule item and retain their page anchors
 
 ## Design Rule
 

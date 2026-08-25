@@ -94,14 +94,15 @@ The workflow:
   - `packages/shared/package.json`
   - `services/ai/pyproject.toml`
   - `apps/desktop/src-tauri/tauri.conf.json`
+  - `apps/desktop/src-tauri/Cargo.toml`
 - builds the macOS `dmg`, Windows `nsis`, and Linux `AppImage`
 - creates a GitHub Release and uploads the installers plus `SHA256SUMS.txt`
 
 Release usage:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 If the tag does not match the checked-in version values, the workflow fails before any packaging starts.

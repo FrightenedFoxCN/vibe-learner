@@ -3,8 +3,7 @@
 ## Status
 
 - Active roadmap for desktop packaging and secure local distribution work.
-- Replaces `desktop-distribution-plan.md` as the implementation-facing document.
-- Last updated: 2026-04-13
+- Last updated: 2026-08-25
 - Milestone 1 through Milestone 5 now have a working preview implementation in-repo.
 
 ## Summary
@@ -86,6 +85,7 @@ This roadmap keeps the current local-first product shape intact while removing t
   - `/study`
   - `/persona-spectrum`
   - `/scene-setup`
+  - `/tavern`
   - `/sensory-tools`
   - `/settings`
   - `/model-usage`
@@ -183,7 +183,6 @@ The remaining release-hardening slices are:
 
 ## References
 
-- [desktop-distribution-plan.md](./desktop-distribution-plan.md)
 - [desktop-packaging.md](./desktop-packaging.md)
 - [architecture.md](./architecture.md)
 - [api-reference.md](./api-reference.md)

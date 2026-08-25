@@ -2,7 +2,7 @@
 
 ## Repo Scan Snapshot
 
-This repository was last materially updated and handed off on 2026-08-13. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
+This repository was last materially updated on 2026-08-25. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
 
 - `apps/web`: Next.js 16 app-router frontend for upload, global debug, planning, study, persona/scene editing, and Tavern interaction.
 - `services/ai`: FastAPI backend for document ingestion, OCR parsing, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and Harness evidence.
@@ -25,13 +25,11 @@ This repository was last materially updated and handed off on 2026-08-13. The co
 - Harness contracts: `services/ai/app/models/harness.py` and `packages/shared/src/harness.ts`; v1/v2 are compatibility contracts, while v3 is the hardened context target for future workflow adoption.
 - Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
 - Harness schema ownership: `docs/harness-schema-ownership.md`
-- Independent audit evidence: `docs/independent-product-audit-2026-08-12.md`
 - Versioned performance gates: `docs/performance-budgets-v1.md`
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 - Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
 - Study Chat operation contracts: `services/ai/app/models/study_chat_operation.py`, `services/ai/app/persistence/study_chat_operation_repository.py`, and `apps/web/lib/study-chat-operation-decode.ts`.
 - Typed effect contracts: `services/ai/app/models/harness_effect.py`, `services/ai/app/models/study_chat_effect.py`, `services/ai/app/services/study_chat_effects.py`, and `packages/shared/src/harness-effect.ts`.
-- Current handoff: `docs/handoff-2026-08-13.md`.
 
 ## Current Runtime Layout
 
@@ -55,13 +53,13 @@ The backend creates a local document record, parses the uploaded PDF, falls back
 
 `GET /documents/{id}/planning-context` -> `POST /learning-plans` or `POST /learning-plans/stream`
 
-The planner receives cleaned study units plus finer outline/detail context. When `VIBE_LEARNER_PLAN_PROVIDER=openai`, the planner may call tools such as `get_study_unit_detail` and `read_page_range_content` before returning strict JSON.
+The planner receives cleaned study units plus finer outline/detail context. With the real LiteLLM provider enabled (legacy `openai` configuration is normalized to `litellm`), it may call any configured member of the six-tool Planning catalog before returning a strict `LearningPlanProposalV1`.
 
 ### 3. Study interaction
 
 `POST /study-sessions` -> `POST /study-sessions/{id}/chat`
 
-The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing. Chat requests use durable operation admission and query-only recovery for ambiguous outcomes. The two plan-confirmation tools are the first typed prepared database-effect slice; other Study effects remain outside that boundary. Interactive-question UX waits for persisted Session read-back, while its backend Turn/grading schema remains open in `SCH-STUDY-QUESTION-001` and `SCH-STUDY-ATTEMPT-001`.
+The frontend consumes structured chat replies with citations and `character_events`, not free-form roleplay text parsing. Chat requests use durable operation admission and query-only recovery for ambiguous outcomes. All currently registered Study database effects share the final Turn/Session transaction; Scene mutation and operation-owned attachment staging have separate strict commit/read-back or compensation boundaries, while upstream provider calls remain `uncertain` without provider idempotency/read-back. Interactive-question UX waits for persisted Session read-back and never receives the server-only grading specification; independent wire revalidation remains open before its backlog gates close.
 
 ### 4. Tavern interaction (active implementation)
 
@@ -129,17 +127,17 @@ Tavern frontend state and strict-decoder tests:
 npm run test:web:tavern
 ```
 
-Repository frontend reliability tests, including Tavern and the narrow Study
-Session committed-identity decoder:
+Repository frontend reliability tests, including Tavern and the domain-owned
+Document, Planning, Persona/Scene, Study, and stream decoders:
 
 ```bash
 npm run test:web:reliability
 ```
 
-This Study decoder gate covers Session revision/turn watermark and committed
-Turn identity/order only. It does not close the broader citations, Character
-Events, effect receipts, or recovery boundary tracked by
-`HRN-WEB-STUDY-DEC-001`.
+The Study decoder validates Session/Turn identity and ordering plus current
+citations, Character Events, attachments, interactive-question projections,
+projected state, and committed chat-operation read-back. Its independent live
+wire gate and the still-private effect-batch receipt boundary remain open.
 
 Run the optional live-backend decoder acceptance against a populated local service. The database must already contain a Tavern room with messages and at least one terminal run; without `TAVERN_TEST_API_URL` this case is intentionally skipped:
 
@@ -150,9 +148,9 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 ## Configuration Notes
 
 - Python work in this repo is `uv`-first. Do not assume a globally activated virtualenv.
-- Planner provider is controlled by `services/ai/.env`.
+- Planner provider defaults come from `services/ai/.env`; database-authoritative runtime settings can override them without a restart.
 - `VIBE_LEARNER_PLAN_PROVIDER=mock` keeps planning deterministic and local.
-- `VIBE_LEARNER_PLAN_PROVIDER=openai` enables real model planning through the configured OpenAI-compatible base URL.
+- `VIBE_LEARNER_PLAN_PROVIDER=litellm` enables real model planning through the configured OpenAI-compatible base URL; `openai` remains a normalized compatibility alias.
 
 ## Working Conventions
 
@@ -162,10 +160,10 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - V3 commit claims must match a registered full operation key and versioned committed projection. Generic resource evidence is insufficient; the Tavern actor Message policy is `primary_output_only`, not proof of all Room/Run/Step effects in its transaction.
 - Tavern persona Messages persist server-only operation/effect receipt metadata atomically. Keep it out of API/OpenAPI, and use `get_actor_commit_read_back` so Message/Run/Step/Participant/reply-anchor evidence comes from one database snapshot.
 - Treat Harness as a repository-wide lifecycle, not a Tavern feature. `build_harness_context` and v3 fixtures are foundation only; do not mark Document/OCR/Study Unit/Planning/Persona/Scene/Study Chat/Tavern/Frontend Decode adopted until their own TODO gates pass.
-- Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document now has durable admission plus atomic Document/Debug projections but still needs its v3 lifecycle evidence; Planning must repair its current multi-write boundary before adding v3 evidence; Scene separates model proposal, user-authored save, committed projection, and API DTO before Harness adoption.
-- Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; CAS completion closes `AUD-001` only and is not durable request admission or successful Harness commit evidence.
-- Interactive Question grading material must not remain in the pre-submit public projection. The next migration separates model proposal, server-only grading spec, prompt projection, result projection, and Turn-bound attempt input; do not extend the current prompt-matching/client-verdict contract.
-- UX/reliability findings require independent revalidation before closure; developer-authored happy-path tests alone do not close `docs/independent-product-audit-2026-08-12.md` findings.
+- Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document and Planning now have durable admission plus atomic committed projections but still need their own v3 lifecycle evidence; Scene separates model proposal, user-authored save, committed projection, and API DTO before Harness adoption.
+- Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; Session CAS is concurrency infrastructure, not durable request admission or successful Harness commit evidence.
+- Interactive Question grading material must remain server-only before submission. Keep model proposal, grading spec, public prompt, committed result, and Turn-bound attempt input separate; the browser must render only persisted Session read-back.
+- UX/reliability findings require independent revalidation before closure; developer-authored happy-path tests alone are insufficient.
 - Treat `HarnessStage`, `HarnessAttemptPhase`, and stream event types as separate vocabularies. Stages are domain operations such as page extraction or one planning tool execution; generate/decode/validate/repair/commit/rollback are phases inside a stage; progress names such as `page_parsed` are stream events. Keep the Python/TypeScript operation-stage registry and its shared golden fixture atomic.
 - An application component contract versions reviewed algorithm behavior; it is not a dependency/model version. An unaudited component uses a null registration and blocks context construction—never invent `pending-*`, `latest`, `unknown`, or a package version as adoption evidence.
 - Only digest explicitly reviewed `HarnessSafeManifest` DTOs. User/document/prompt/transcript content belongs behind an authorized artifact resolver; SHA-256 is integrity evidence, not confidentiality or replay availability. Python is the canonical digest authority until a cross-language canonical-bytes contract is added.
@@ -269,9 +267,9 @@ Use the following standard names when discussing frontend pages and page blocks.
 - OCR cleanup is still heuristic-heavy and remains the main source of planning noise.
 - Tool-enabled planning increases latency and timeout pressure on upstream model providers.
 - The frontend now depends on historical debug and plan artifacts; changes to local storage shape should be made carefully.
-- Study Session aggregate writes now use revision CAS and contiguous turn sequencing; compatibility reads share repository projection validation, and committed Turn content is immutable except the dedicated interactive-answer fields. Its remaining unsafe boundary is Study Chat request/effect replay, not lost-update append. Tavern keeps its separate normalized Room/Run/Step/Message repository.
+- Study Session aggregate writes use revision CAS and contiguous turn sequencing; compatibility reads share repository projection validation, and committed Turn content is immutable except the dedicated interactive-answer fields. Study Chat has durable request admission plus typed DB/Scene/file-effect slices, while provider-call exactly-once and workflow v3 evidence remain open. Tavern keeps its separate normalized Room/Run/Step/Message repository.
 - Most production workflows still predate the v3 Harness runtime. Do not infer repository-wide adoption from the Tavern v1 path or the v2/v3 schema fixtures.
 - Harness resource references need evidence policies; never pass a constant `revision=0` for a resource that has no authoritative revision.
 - Use `HARNESS_RESOURCE_EVIDENCE_POLICIES` before constructing v3 context or commit evidence. A Tavern Room revision covers metadata and run-admission CAS, not transcript drift; a Tavern Message is currently unsupported as a context subject until a room-scoped protected transcript snapshot can be resolved. One committed Tavern Message uses one room-scoped sequence point, never a range. Unsupported resources may appear as honest `not_committed` attempts but cannot claim committed or rolled-back proof.
-- Resource evidence policy validates generic proof shape, not operation truth. Do not emit production v3 commit evidence until the workflow/stage/payload contract is bound to an allowed resource set and a versioned committed-projection DTO proves all application-owned scope fields; this is tracked by `SCH-HRN-OP-COMMIT-001`.
-- `npm run lint:web` is currently invalid under Next.js 16 and is tracked as `QG-001`.
+- Resource evidence policy validates generic proof shape, not operation truth. Production v3 commit evidence must match a registered workflow/stage/output/payload key, an allowed resource set, and a versioned committed-projection DTO that proves all application-owned scope fields. The current Tavern actor policy proves one committed Message as `primary_output_only`, not every Room/Run/Step side effect.
+- Use `npm run check` for shared/Web reliability and type gates, and `npm run check:release` for the full backend test plus production Web build gate. `npm run lint:web` is only a compatibility alias.

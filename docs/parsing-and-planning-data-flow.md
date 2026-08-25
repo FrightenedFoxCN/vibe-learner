@@ -12,7 +12,7 @@ Use this when changing:
 - OpenAI tool-enabled plan generation
 - local debug or trace persistence
 
-This doc describes the actual runtime path from HTTP entrypoint to local JSON artifacts.
+This doc describes the actual runtime path from HTTP entrypoint to database-authoritative records plus local upload, stream, debug, and compatibility artifacts.
 
 ## 1. Document Parsing Chain
 
@@ -30,7 +30,7 @@ Code path:
 Writes:
 
 - uploaded PDF to `services/ai/data/uploads/{document_id}.pdf`
-- document shell row into `services/ai/data/documents.json`
+- database-authoritative document shell row; `documents.json` is only a compatibility mirror
 
 Initial record shape:
 
@@ -151,7 +151,7 @@ Returned payload:
 
 - built from raw `debug_report.sections`
 - preserves level-1 and level-2 structure
-- kept for `/debug` inspection and planner-input comparison
+- kept for global Debug Overlay inspection and planner-input comparison
 
 `study_units`:
 
@@ -187,7 +187,7 @@ Code path:
 
 ### Provider selection
 
-`services/ai/app/core/bootstrap.py` builds the provider from `services/ai/.env`.
+`services/ai/app/core/bootstrap.py` builds the provider from environment defaults, then database-authoritative runtime settings may replace the active provider without restarting the backend.
 
 Relevant env keys:
 
@@ -200,8 +200,9 @@ Relevant env keys:
 Behavior:
 
 - `mock` uses `MockModelProvider`
-- `openai` uses `OpenAIModelProvider`
-- missing API key while `openai` is requested falls back to `MockModelProvider`
+- `litellm` uses `OpenAIModelProvider` over the configured LiteLLM/OpenAI-compatible connection
+- legacy `openai` is normalized to `litellm`
+- missing API key while the real provider is requested falls back to `MockModelProvider`
 
 Transport stability notes for `OpenAIModelProvider`:
 
@@ -248,6 +249,8 @@ This heuristic result is then refined by the selected model provider.
 Planner tools:
 
 - `get_study_unit_detail`
+- `ask_planning_question`
+- `estimate_plan_completion`
 - `revise_study_units`
 - `read_page_range_content`
 - `read_page_range_images` (when multimodal is enabled)
@@ -257,35 +260,40 @@ Tool backing data:
 - `get_study_unit_detail` reads from `detail_map`
 - `read_page_range_content` reads from `debug_report.chunks`
 
-Model output is parsed into:
+Final model output is strictly decoded as `LearningPlanProposalV1` after at most one bounded schema repair. It proposes:
 
 - `course_title`
 - `overview`
 - `today_tasks`
 - `schedule` with nested `schedule_chapters`
 
+The proposal may refer only to supplied Study Unit and Section identities. It does not own plan, schedule, or chapter IDs, revision, state, timestamps, or persisted progress.
+
 ### Plan reconciliation
 
-`LearningPlanService.create_plan()` merges model output back into the heuristic plan.
+`LearningPlanService.create_plan()` validates and projects model output into application-owned committed records.
 
 Important reconciliation rules:
 
-- schedule rows are filtered to known `study_unit.id` values only
+- unknown or duplicate Study Unit references fail closed rather than being silently filtered
+- chapter anchors, content slices, Section references, and ordering must remain inside the referenced Study Unit scope
 - heuristic values remain as fallback when model fields are empty
 - persisted `study_units` come from the backend cleanup step, not from model invention
+- the application assigns committed plan, schedule, and chapter IDs
 
 This is the main guardrail that prevents schedule rows from referencing unknown units.
 
 ## 4. Plan Persistence And Traces
 
-When plan generation succeeds, the backend writes:
+Before model execution, `learning_plan_operations` admits the versioned request fingerprint, stable client request identity, expected Document watermark, and base Document/Debug digests. On success, one database transaction commits:
 
-1. `services/ai/data/plans.json`
-   Stores the final `LearningPlanRecord`.
-2. `services/ai/data/learning_plan_stream/{document_id}.json`
-   Stores progress and error/completion events.
-3. `services/ai/data/planning_trace/{document_id}.json`
-   Stores `PlanGenerationTraceRecord` only when the model provider produced a trace.
+1. the final `LearningPlanRecord`;
+2. the revised Document projection;
+3. the matching Debug projection;
+4. the optional `PlanGenerationTraceRecord`;
+5. the terminal operation receipt and versioned committed snapshot digest.
+
+Duplicate requests read back the original committed snapshot. Payload drift, an active sibling operation, stale Document state, missing Debug prerequisites, or read-back mismatch fail closed. `plans.json`, `document_debug/`, and `planning_trace/` are best-effort compatibility mirrors after the database commit. `services/ai/data/learning_plan_stream/{subject}.json` stores bounded progress/terminal stream evidence separately and is not the plan commit boundary.
 
 Trace contents:
 
@@ -299,22 +307,22 @@ The `/documents/{document_id}/planning-trace` endpoint now returns a wrapper pay
 
 ## 5. Stored Artifact Map
 
-Current local storage categories involved in this chain:
+Database tables are authoritative for Documents, Debug records, Learning Plans, Planning Traces, and their operation receipts. Local file categories involved in the chain are:
 
 - `services/ai/data/uploads/`
   raw uploaded PDFs
 - `services/ai/data/documents.json`
-  document shells and post-parse summaries
+  compatibility mirror for document shells and post-parse summaries
 - `services/ai/data/document_debug/`
   parser/debug payloads with pages, sections, chunks, warnings, and study units
 - `services/ai/data/document_process_stream/`
   parse progress stream records
 - `services/ai/data/plans.json`
-  persisted learning plans
+  compatibility mirror for learning plans
 - `services/ai/data/learning_plan_stream/`
   plan-generation progress stream records
 - `services/ai/data/planning_trace/`
-  per-document model trace for tool-enabled planning
+  compatibility/debug mirror for per-document model traces
 
 Some files are created lazily. If a document has never been planned with trace capture, `planning_trace/{document_id}.json` may not exist yet.
 
@@ -329,8 +337,9 @@ The chain is easiest to reason about by watching these object boundaries:
 5. planning context payload:
    `course_outline`, `study_units`, `detail_map`
 6. heuristic `LearningPlanRecord`
-7. model `PlanModelReply`
-8. final persisted `LearningPlanRecord`
+7. strict model `LearningPlanProposalV1`
+8. application-owned `LearningPlanCommittedProjectionV1`
+9. final database-authoritative `LearningPlanRecord`
 
 ## 7. Best Intervention Points
 
