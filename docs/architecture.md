@@ -66,9 +66,10 @@ Domain-owned fail-closed client boundaries now cover Document, Planning,
 Persona/Scene, Study, Tavern, and versioned Document/Planning streams. They bind
 response identity, enums, finite numbers, nullability, ordering, ranges,
 cross-record references, duplicate IDs, derived projections, and each domain's
-operation/recovery versions before rendering. Their independent live-wire
-closure gates and Tavern v2/v3 trace forwarding remain open; implemented strict
-decode does not itself prove Harness v3 adoption.
+operation/recovery versions before rendering. Remaining endpoint inventory,
+independent live-wire closure, Frontend Decoder component registration,
+`FRONTEND_REQUEST` evidence, and Tavern v2/v3 trace forwarding remain open;
+implemented strict decode does not itself prove Harness v3 adoption.
 
 ### AI service
 
@@ -240,7 +241,7 @@ The browser `Tavern Workspace` implements:
 - `Interaction Composer`;
 - `Reliability Details`.
 
-Tavern functional/state checks cover create/direct/facilitated/recovery paths, authoritative roster/retry derivation, structured recovery/error transport, composition-event fencing, keyboard focus return, and a 390px no-overflow inspection. Recovery lineage, provider-call fencing, mutation errors, badges, and real per-step states have passed a non-implementer live browser/wire matrix. `UX-001` remains open for the remaining no-Persona/no-Room viewport, device-level IME, focus-order, and 44px touch-target acceptance.
+Tavern functional/state checks cover create/direct/facilitated/recovery paths, authoritative roster/retry derivation, structured recovery/error transport, composition-event fencing, keyboard focus return, and a 390px no-overflow inspection. Recovery lineage, provider-call fencing, mutation errors, badges, and real per-step states have passed a non-implementer live browser/wire matrix. `UX-001` remains open for the no-Persona/no-Room viewport, device-level IME, full focus order, and a fresh 390×844 device-level visual/touch measurement; completed 44px static contracts do not substitute for that device measurement.
 
 ## Character layer
 

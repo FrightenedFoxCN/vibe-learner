@@ -242,8 +242,8 @@ This heuristic result is then refined by the selected model provider.
 2. builds planner messages with `build_learning_plan_messages()`, using cleaned `study_units` as the model-visible structural input
 3. runs `OpenAIPlanRunner`
 4. optionally exposes tool definitions when `detail_map` is available
-5. loops through up to 4 rounds of model responses
-6. executes tool calls locally
+5. loops through up to 24 model-response rounds
+6. executes tool calls locally; multiple tool calls returned by one response are currently processed sequentially in provider order
 7. extracts final strict JSON payload
 
 Planner tools:

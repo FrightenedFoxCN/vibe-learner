@@ -28,8 +28,9 @@ If embeddings are unavailable, the backend falls back to local hashed-vector ret
   through domain-owned fail-closed decoders before rendering. Document and
   Planning live NDJSON plus persisted v1 reports additionally pass the strict
   versioned stream state machine. Subject/draft-revision/field-target fences
-  reject stale async results; independent real-wire closure remains tracked by
-  the domain decoder and stream gates under `HRN-WEB-001`.
+  reject stale async results. Independent real-wire closure, remaining endpoint
+  inventory, Frontend Decoder component registration, and v2/v3 trace
+  forwarding/resource evidence remain tracked under `HRN-WEB-001`.
 
 ## Complete operation index
 
