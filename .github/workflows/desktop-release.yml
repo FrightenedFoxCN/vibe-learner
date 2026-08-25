@@ -29,7 +29,7 @@ jobs:
           GITHUB_REF_TYPE: ${{ github.ref_type }}
         run: |
           if [ "$GITHUB_REF_TYPE" != "tag" ]; then
-            echo "::error::Run this workflow from a tag ref like v0.1.0."
+            echo "::error::Run this workflow from a tag ref like vX.Y.Z."
             exit 1
           fi
 
@@ -48,6 +48,7 @@ jobs:
               "packages/shared/package.json": json.loads((repo_root / "packages/shared/package.json").read_text())["version"],
               "services/ai/pyproject.toml": tomllib.loads((repo_root / "services/ai/pyproject.toml").read_text())["project"]["version"],
               "apps/desktop/src-tauri/tauri.conf.json": json.loads((repo_root / "apps/desktop/src-tauri/tauri.conf.json").read_text())["version"],
+              "apps/desktop/src-tauri/Cargo.toml": tomllib.loads((repo_root / "apps/desktop/src-tauri/Cargo.toml").read_text())["package"]["version"],
           }
 
           mismatches = {name: value for name, value in version_sources.items() if value != expected_version}
@@ -135,8 +136,9 @@ jobs:
           merge-multiple: true
 
       - name: Generate checksums
+        working-directory: release-artifacts
         run: |
-          find release-artifacts -type f -print0 | sort -z | xargs -0 sha256sum > release-artifacts/SHA256SUMS.txt
+          find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2

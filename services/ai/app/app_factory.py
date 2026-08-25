@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
     settings = Settings.from_env()
     logger = get_logger("vibe_learner.api")
 
-    app = FastAPI(title="Vibe Learner AI Service", version="0.1.0")
+    app = FastAPI(title="Vibe Learner AI Service", version="0.2.0")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.allowed_origins),
