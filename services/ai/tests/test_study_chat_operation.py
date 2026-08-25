@@ -8,6 +8,10 @@ from app.models.study_chat_operation import (
     StudyChatOperationRequestPayload,
     StudyChatOperationStatus,
 )
+from app.models.study_question import (
+    StudyQuestionProposalV1,
+    project_study_question_proposal,
+)
 from app.persistence.database import Database
 from app.persistence.study_chat_operation_repository import (
     StudyChatOperationAlreadyActive,
@@ -23,7 +27,10 @@ from app.models.domain import (
     StudyChatResult,
     StudySessionRecord,
 )
-from app.models.api import StudyChatOperationReceiptResponse
+from app.models.api import (
+    StudyChatExchangeResponse,
+    StudyChatOperationReceiptResponse,
+)
 from app.models.study_chat_operation import StudyChatOperationRecord
 from app.services.study_chat_preflight import (
     StudyChatPreflightError,
@@ -335,6 +342,149 @@ class StudyChatOperationTests(unittest.TestCase):
             self.operations.receipt(committed).model_dump(mode="json")
         )
         self.assertEqual(response.result.session.id, "session-operation")
+
+    def test_committed_chat_receipt_survives_durable_question_attempt_patch(self) -> None:
+        operation = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-question-0001",
+            request_payload=self.payload(),
+        )
+        running, claimed = self.operations.claim(
+            operation_id=operation.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertTrue(claimed)
+        self.operations.mark_provider_started(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+        )
+        question = project_study_question_proposal(
+            StudyQuestionProposalV1(
+                question_type="multiple_choice",
+                prompt="Which vector set is a basis?",
+                options=[
+                    {"key": "A", "text": "Independent and spanning"},
+                    {"key": "B", "text": "Dependent and non-spanning"},
+                ],
+                answer_key="A",
+                explanation="A basis is independent and spanning.",
+            )
+        )
+        result = StudyChatResult(
+            reply="Choose the basis.",
+            citations=[],
+            character_events=[],
+            interactive_question=question,
+        )
+        committed_session, expected_payload = self.sessions.commit_chat_operation_turn(
+            operation_id=running.operation_id,
+            execution_token=running.execution_token,
+            learner_message="hello",
+            learner_message_kind="learner",
+            learner_attachments=[],
+            result=result,
+            prepared_study_unit_id=None,
+            completed_follow_up_id="",
+            cancel_pending_follow_ups=True,
+            prepared_effect_batch=None,
+            build_response_payload=lambda session: {
+                **result.model_dump(mode="json"),
+                "session": session.model_dump(mode="json"),
+            },
+        )
+        attempt = self.sessions.commit_question_attempt(
+            session_id=committed_session.id,
+            turn_id=committed_session.turns[-1].id,
+            expected_session_revision=committed_session.revision,
+            client_attempt_id="client-question-attempt-0001",
+            submitted_answer="A",
+        )
+
+        recovered = self.operations.require(
+            session_id="session-operation",
+            client_request_id="request-question-0001",
+        )
+
+        self.assertEqual(recovered.status, StudyChatOperationStatus.COMMITTED)
+        self.assertEqual(recovered.response_payload, expected_payload)
+        self.assertEqual(attempt.committed_revision, committed_session.revision + 1)
+        current_question = (
+            self.sessions.require("session-operation").turns[-1].interactive_question
+        )
+        self.assertIsNotNone(current_question)
+        assert current_question is not None
+        self.assertIsNotNone(current_question.result)
+        assert current_question.result is not None
+        self.assertEqual(current_question.result.attempt_id, attempt.attempt_id)
+        receipt_payload = self.operations.receipt(recovered).model_dump(mode="json")
+        receipt_payload["result"] = StudyChatExchangeResponse.model_validate(
+            receipt_payload["result"]
+        ).model_dump(mode="json")
+        public_receipt = StudyChatOperationReceiptResponse.model_validate(
+            receipt_payload
+        ).model_dump(mode="json")
+        public_question = public_receipt["result"]["session"]["turns"][-1][
+            "interactive_question"
+        ]
+        self.assertIsNone(public_question["result"])
+        self.assertNotIn("grading_spec", public_question)
+
+        follow_up_payload = self.payload("continue").model_copy(
+            update={"expected_session_revision": attempt.committed_revision}
+        )
+        follow_up = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-after-question-0001",
+            request_payload=follow_up_payload,
+        )
+        follow_up_running, claimed = self.operations.claim(
+            operation_id=follow_up.operation_id,
+            timeout_seconds=30,
+        )
+        self.assertTrue(claimed)
+        self.operations.mark_provider_started(
+            operation_id=follow_up_running.operation_id,
+            execution_token=follow_up_running.execution_token,
+        )
+        follow_up_result = StudyChatResult(
+            reply="Continue after the answer.",
+            citations=[],
+            character_events=[],
+        )
+        self.sessions.commit_chat_operation_turn(
+            operation_id=follow_up_running.operation_id,
+            execution_token=follow_up_running.execution_token,
+            learner_message="continue",
+            learner_message_kind="learner",
+            learner_attachments=[],
+            result=follow_up_result,
+            prepared_study_unit_id=None,
+            completed_follow_up_id="",
+            cancel_pending_follow_ups=True,
+            prepared_effect_batch=None,
+            build_response_payload=lambda session: {
+                **follow_up_result.model_dump(mode="json"),
+                "session": session.model_dump(mode="json"),
+            },
+        )
+        follow_up_receipt = self.operations.receipt(
+            self.operations.require(
+                session_id="session-operation",
+                client_request_id="request-after-question-0001",
+            )
+        ).model_dump(mode="json")
+        follow_up_receipt["result"] = StudyChatExchangeResponse.model_validate(
+            follow_up_receipt["result"]
+        ).model_dump(mode="json")
+        public_follow_up = StudyChatOperationReceiptResponse.model_validate(
+            follow_up_receipt
+        ).model_dump(mode="json")
+        answered_question = public_follow_up["result"]["session"]["turns"][-2][
+            "interactive_question"
+        ]
+        self.assertIsNotNone(answered_question["result"])
+        self.assertNotIn("normalized_answer", answered_question["result"])
+        self.assertNotIn("grading_spec", answered_question)
 
 
 if __name__ == "__main__":

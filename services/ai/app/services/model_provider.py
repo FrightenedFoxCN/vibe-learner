@@ -39,12 +39,16 @@ from app.models.scene import (
     decode_scene_tree_proposal,
     project_scene_tree_proposal,
 )
+from app.models.study_chat_reply import StudyChatReplyProposalV1
 from app.models.tavern import (
     TavernActorReply,
     TavernMessageRecord,
     TavernParticipantRecord,
 )
-from app.models.study_question import StudyQuestionProposalV1
+from app.models.study_question import (
+    STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS,
+    StudyQuestionProposalV1,
+)
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
 from app.services.persona_runtime import render_persona_runtime_instruction
@@ -84,6 +88,54 @@ logger = get_logger("vibe_learner.model_provider")
 MERMAID_BLOCK_RE = re.compile(
     r"```mermaid\s*\n(.*?)```|```\s*\nmermaid\s*\n(.*?)```",
     re.IGNORECASE | re.DOTALL,
+)
+
+CHAT_JSON_FENCE_RE = re.compile(
+    r"\A```(?P<language>[A-Za-z0-9_-]*)[ \t]*\r?\n"
+    r"(?P<body>.*?)\r?\n?```[ \t]*\Z",
+    re.DOTALL,
+)
+
+CHAT_JSON_KEY_RE = re.compile(
+    r'''(?ix)
+    (?:
+        ["'](?:
+            text|mood|action|speech_style|delivery_cue|state_commentary|
+            rich_blocks|interactive_question|question_type|prompt|difficulty|
+            topic|options|call_back|answer_key|accepted_answers|grading_spec|
+            correct_option_key|normalization_policy|submitted_answer|
+            normalized_answer|explanation|is_correct|feedback|feedback_text
+        )["']
+        |
+        \b(?:
+            answer_key|accepted_answers|grading_spec|correct_option_key|
+            normalization_policy|submitted_answer|normalized_answer|is_correct|
+            feedback_text
+        )\b
+    )\s*:
+    ''',
+)
+
+CHAT_PRIVATE_GRADING_KEY_RE = re.compile(
+    r'''(?ix)
+    (?:
+        ["'](?:
+            answer_key|accepted_answers|grading_spec|correct_option_key|
+            normalization_policy|submitted_answer|normalized_answer|is_correct|
+            explanation|feedback|feedback_text
+        )["']
+        |
+        \b(?:
+            answer_key|accepted_answers|grading_spec|correct_option_key|
+            normalization_policy|submitted_answer|normalized_answer|is_correct|
+            feedback_text
+        )\b
+    )\s*:
+    ''',
+)
+
+CHAT_BARE_REPLY_KEY_RE = re.compile(
+    r"(?ix)\b(?P<key>text|mood|action)\b\s*(?::|=)"
 )
 
 CHAT_IMAGE_GENERATION_MODEL_HINTS = (
@@ -476,48 +528,6 @@ def _normalize_reply_text_and_blocks(
     cleaned_text, inline_blocks = _extract_mermaid_blocks_from_text(text)
     merged = _dedupe_rich_blocks([*rich_blocks, *inline_blocks])
     return cleaned_text, merged
-
-
-def _recover_legacy_chat_payload(content: str) -> dict[str, object] | None:
-    text_key = '"text": "'
-    text_start = content.find(text_key)
-    if text_start == -1:
-        return None
-    raw_text_start = text_start + len(text_key)
-    raw_text_end = content.find('",\n  "mood"', raw_text_start)
-    if raw_text_end == -1:
-        raw_text = content[raw_text_start:]
-        raw_text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
-        raw_text = re.sub(r'"\s*}\s*```?\s*$', "", raw_text).rstrip("`").rstrip()
-    else:
-        raw_text = content[raw_text_start:raw_text_end]
-    repaired_source = (
-        raw_text
-        .replace(r"\"", "__ESCAPED_QUOTE__")
-        .replace('"', r"\"")
-        .replace("__ESCAPED_QUOTE__", r"\"")
-        .replace("\r\n", r"\n")
-        .replace("\n", r"\n")
-    )
-    try:
-        recovered_text = json.loads(f'"{repaired_source}"')
-    except json.JSONDecodeError:
-        return None
-    payload: dict[str, object] = {
-        "text": recovered_text,
-        "mood": str(re.search(r'"mood"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"mood"\s*:\s*"([^"]+)"', content) else "calm",
-        "action": str(re.search(r'"action"\s*:\s*"([^"]+)"', content).group(1)) if re.search(r'"action"\s*:\s*"([^"]+)"', content) else "point",
-    }
-    speech_style_match = re.search(r'"speech_style"\s*:\s*"([^"]+)"', content)
-    delivery_cue_match = re.search(r'"delivery_cue"\s*:\s*"([^"]+)"', content)
-    commentary_match = re.search(r'"state_commentary"\s*:\s*"([^"]+)"', content)
-    if speech_style_match:
-        payload["speech_style"] = speech_style_match.group(1)
-    if delivery_cue_match:
-        payload["delivery_cue"] = delivery_cue_match.group(1)
-    if commentary_match:
-        payload["state_commentary"] = commentary_match.group(1)
-    return payload
 
 
 def _build_persona_event_guidance(persona: PersonaProfile) -> str:
@@ -1474,7 +1484,9 @@ class OpenAIModelProvider(MockModelProvider):
                                 tool_call_id=execution["tool_call_id"],
                                 tool_name=execution["tool_name"],
                                 arguments_json=execution["arguments_json"],
-                                result=execution["result"],
+                                result=_public_chat_tool_trace_result(
+                                    execution["result"]
+                                ),
                             )
                         )
                     )
@@ -1521,16 +1533,24 @@ class OpenAIModelProvider(MockModelProvider):
             }:
                 raise
             logger.warning("model.chat.recovery retry_without_tools reason=%s", recovery_reason)
-            recovery_messages = [
-                *messages,
+            recovery_messages = list(current_messages)
+            try:
+                invalid_content = _extract_choice_content(raw_payload).strip()
+            except RuntimeError:
+                invalid_content = ""
+            if invalid_content:
+                recovery_messages.append(
+                    {"role": "assistant", "content": invalid_content}
+                )
+            recovery_messages.append(
                 {
                     "role": "user",
                     "content": _build_chat_recovery_instruction(
                         reason=recovery_reason,
                         prompt_sections=prompt_sections,
                     ).replace("{{CHAT_JSON_SCHEMA}}", CHAT_JSON_SCHEMA),
-                },
-            ]
+                }
+            )
             recovery_payload: dict[str, Any] = {
                 "model": self.chat_model,
                 "temperature": min(self.chat_temperature, 0.2),
@@ -1545,9 +1565,9 @@ class OpenAIModelProvider(MockModelProvider):
             )
             recovered = _parse_chat_model_reply(
                 raw_payload=recovery_raw_payload,
-                tool_results=[],
+                tool_results=last_tool_results,
                 fallback_memory_trace=memory_trace_hits or [],
-                tool_traces=[],
+                tool_traces=tool_call_traces,
             )
             record_model_recovery(
                 category="semantic_retry",
@@ -3692,6 +3712,114 @@ def _build_mock_scene_layers(
     return [build_layer(0)]
 
 
+def _decode_study_chat_reply_proposal(
+    content: str,
+) -> StudyChatReplyProposalV1 | None:
+    """Decode a complete structured reply or authorize genuine plain text."""
+
+    stripped = content.strip()
+    if not stripped:
+        return None
+
+    candidate = stripped
+    fence_match = CHAT_JSON_FENCE_RE.fullmatch(stripped)
+    fence_language = ""
+    if fence_match is not None:
+        fence_language = (fence_match.group("language") or "").lower()
+        if fence_language in {"", "json"}:
+            candidate = (fence_match.group("body") or "").strip()
+
+    try:
+        payload = json.loads(candidate)
+    except json.JSONDecodeError as exc:
+        if _looks_like_study_chat_json(
+            original=stripped,
+            candidate=candidate,
+            fence_language=fence_language,
+        ):
+            raise RuntimeError("chat_model_invalid_payload") from exc
+        return None
+
+    if not isinstance(payload, dict):
+        raise RuntimeError("chat_model_invalid_payload")
+    try:
+        proposal = StudyChatReplyProposalV1.model_validate(payload)
+    except ValidationError as exc:
+        raise RuntimeError("chat_model_invalid_payload") from exc
+    if any(
+        CHAT_PRIVATE_GRADING_KEY_RE.search(text)
+        for text in _study_chat_public_proposal_texts(proposal)
+    ):
+        raise RuntimeError("chat_model_invalid_payload")
+    return proposal
+
+
+def _study_chat_public_proposal_texts(
+    proposal: StudyChatReplyProposalV1,
+) -> list[str]:
+    texts = [
+        proposal.text,
+        proposal.mood,
+        proposal.action,
+        proposal.speech_style,
+        proposal.delivery_cue,
+        proposal.state_commentary,
+        *(block.kind for block in proposal.rich_blocks),
+        *(block.content for block in proposal.rich_blocks),
+    ]
+    if proposal.interactive_question is not None:
+        texts.extend(
+            [
+                proposal.interactive_question.prompt,
+                proposal.interactive_question.topic,
+                *(option.key for option in proposal.interactive_question.options),
+                *(option.text for option in proposal.interactive_question.options),
+            ]
+        )
+    return texts
+
+
+def _looks_like_study_chat_json(
+    *,
+    original: str,
+    candidate: str,
+    fence_language: str,
+) -> bool:
+    if fence_language == "json":
+        return True
+    left_stripped = candidate.lstrip()
+    if left_stripped.startswith("{"):
+        return True
+    if re.match(
+        r"\A\[\s*(?:\Z|[\[{\"\d-]|true\b|false\b|null\b)",
+        left_stripped,
+        re.IGNORECASE,
+    ):
+        return True
+    bare_reply_keys = {
+        match.group("key").lower()
+        for match in CHAT_BARE_REPLY_KEY_RE.finditer(original)
+    }
+    if len(bare_reply_keys) >= 2:
+        return True
+    return CHAT_JSON_KEY_RE.search(original) is not None
+
+
+def _public_chat_tool_trace_result(result: dict[str, Any]) -> dict[str, Any]:
+    """Remove server-only question grading material from public tool traces."""
+
+    if str(result.get("question_type") or "") not in {
+        "multiple_choice",
+        "fill_blank",
+    }:
+        return result
+    return {
+        key: value
+        for key, value in result.items()
+        if key not in STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS
+    }
+
+
 def _parse_chat_model_reply(
     *,
     raw_payload: dict[str, Any],
@@ -3707,26 +3835,18 @@ def _parse_chat_model_reply(
 
     parsed: dict[str, object] = {}
     if content.strip():
-        try:
-            parsed = _extract_json_payload(
-                content,
-                invalid_json_code="chat_model_invalid_payload",
-                invalid_payload_code="chat_model_invalid_payload",
+        proposal = _decode_study_chat_reply_proposal(content)
+        if proposal is not None:
+            parsed = proposal.model_dump(mode="json", exclude_none=True)
+        else:
+            finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
+            logger.info(
+                "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s content_preview=%s",
+                finish_reason,
+                reasoning_tokens,
+                completion_tokens,
+                content[:120],
             )
-        except RuntimeError:
-            legacy_payload = _recover_legacy_chat_payload(content)
-            if legacy_payload is not None:
-                parsed = legacy_payload
-                logger.info("model.chat.parse_recovered legacy_text_payload")
-            else:
-                finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
-                logger.info(
-                    "model.chat.parse_fallback using_plain_text finish_reason=%s reasoning_tokens=%s completion_tokens=%s content_preview=%s",
-                    finish_reason,
-                    reasoning_tokens,
-                    completion_tokens,
-                    content[:120],
-                )
 
     interactive_question = _extract_interactive_question_payload(
         parsed=parsed,
@@ -3743,9 +3863,7 @@ def _parse_chat_model_reply(
     text = str(parsed.get("text") or "").strip()
 
     if not text:
-        if interactive_question is not None:
-            text = "请先完成这道题，再告诉我你的思路，我会继续追问关键细节。"
-        elif content.strip():
+        if content.strip() and not parsed:
             text = content.strip()
         else:
             finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)

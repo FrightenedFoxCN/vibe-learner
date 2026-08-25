@@ -776,6 +776,20 @@ def process_document_stream(
         event = recorder.emit(stage, event_payload)
         event_queue.put(event.model_dump(mode="json"))
 
+    def emit_cancelled() -> None:
+        event = recorder.emit(
+            "stream_cancelled",
+            {
+                "document_id": document_id,
+                "detail": "stream_interrupted",
+            },
+            terminal_evidence=_stream_failure_evidence(
+                operation_id=domain_operation_id,
+                domain="document_process",
+            ),
+        )
+        event_queue.put(event.model_dump(mode="json"))
+
     def run() -> None:
         try:
             document = container.document_service.process_document(
@@ -785,46 +799,42 @@ def process_document_stream(
                 interrupt_check=interrupt_handle.raise_if_cancelled,
                 operation_admitted_callback=remember_operation,
             )
-            document_projection = document.model_dump(mode="json")
-            event = recorder.emit(
-                "stream_completed",
-                {
-                    "document_id": document.id,
-                    "status": document.status,
-                },
-                terminal_evidence=_document_stream_committed_evidence(
-                    operation_id=domain_operation_id,
-                    document_payload=document_projection,
-                ),
-                committed_projection=document_projection,
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            if interrupt_handle.claim_terminal():
+                emit_cancelled()
+            else:
+                document_projection = document.model_dump(mode="json")
+                event = recorder.emit(
+                    "stream_completed",
+                    {
+                        "document_id": document.id,
+                        "status": document.status,
+                    },
+                    terminal_evidence=_document_stream_committed_evidence(
+                        operation_id=domain_operation_id,
+                        document_payload=document_projection,
+                    ),
+                    committed_projection=document_projection,
+                )
+                event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
-            event = recorder.emit(
-                "stream_cancelled",
-                {
-                    "document_id": document_id,
-                    "detail": "stream_interrupted",
-                },
-                terminal_evidence=_stream_failure_evidence(
-                    operation_id=domain_operation_id,
-                    domain="document_process",
-                ),
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            interrupt_handle.claim_terminal()
+            emit_cancelled()
         except Exception as exc:
-            event = recorder.emit(
-                "stream_error",
-                {
-                    "document_id": document_id,
-                    "error": _stringify_error(exc),
-                },
-                terminal_evidence=_stream_failure_evidence(
-                    operation_id=domain_operation_id,
-                    domain="document_process",
-                ),
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            if interrupt_handle.claim_terminal():
+                emit_cancelled()
+            else:
+                event = recorder.emit(
+                    "stream_error",
+                    {
+                        "document_id": document_id,
+                        "error": _stringify_error(exc),
+                    },
+                    terminal_evidence=_stream_failure_evidence(
+                        operation_id=domain_operation_id,
+                        domain="document_process",
+                    ),
+                )
+                event_queue.put(event.model_dump(mode="json"))
         finally:
             interrupt_handle.mark_completed()
             event_queue.put(None)
@@ -2134,6 +2144,20 @@ def create_learning_plan_stream(
         event = recorder.emit(stage, event_payload)
         event_queue.put(event.model_dump(mode="json"))
 
+    def emit_cancelled() -> None:
+        event = recorder.emit(
+            "stream_cancelled",
+            {
+                "document_id": payload.document_id,
+                "detail": "stream_interrupted",
+            },
+            terminal_evidence=_stream_failure_evidence(
+                operation_id=domain_operation_id,
+                domain="learning_plan",
+            ),
+        )
+        event_queue.put(event.model_dump(mode="json"))
+
     def run() -> None:
         reset_model_recovery_state()
         try:
@@ -2155,64 +2179,63 @@ def create_learning_plan_stream(
                 interrupt_check=interrupt_handle.raise_if_cancelled,
                 operation_admitted_callback=remember_operation,
             )
-            plan_projection = plan.model_dump(mode="json")
-            event = recorder.emit(
-                "stream_completed",
-                {
-                    "document_id": payload.document_id,
-                    "plan_id": plan.id,
-                    "creation_mode": plan.creation_mode,
-                },
-                terminal_evidence=_learning_plan_stream_committed_evidence(
-                    operation_id=domain_operation_id,
-                    plan_payload=plan_projection,
-                ),
-                committed_projection=plan_projection,
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            if interrupt_handle.claim_terminal():
+                emit_cancelled()
+            else:
+                plan_projection = plan.model_dump(mode="json")
+                event = recorder.emit(
+                    "stream_completed",
+                    {
+                        "document_id": payload.document_id,
+                        "plan_id": plan.id,
+                        "creation_mode": plan.creation_mode,
+                    },
+                    terminal_evidence=_learning_plan_stream_committed_evidence(
+                        operation_id=domain_operation_id,
+                        plan_payload=plan_projection,
+                    ),
+                    committed_projection=plan_projection,
+                )
+                event_queue.put(event.model_dump(mode="json"))
         except StreamInterruptedError:
-            event = recorder.emit(
-                "stream_cancelled",
-                {
-                    "document_id": payload.document_id,
-                    "detail": "stream_interrupted",
-                },
-                terminal_evidence=_stream_failure_evidence(
-                    operation_id=domain_operation_id,
-                    domain="learning_plan",
-                ),
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            interrupt_handle.claim_terminal()
+            emit_cancelled()
         except RuntimeError as exc:
-            http_error = _map_plan_generation_error(exc)
-            event = recorder.emit(
-                "stream_error",
-                {
-                    "document_id": payload.document_id,
-                    "detail": http_error.detail,
-                    "status_code": http_error.status_code,
-                    "internal_error_code": str(exc),
-                    "retry_attempts": _runtime_error_retry_attempts(exc),
-                },
-                terminal_evidence=_stream_failure_evidence(
-                    operation_id=domain_operation_id,
-                    domain="learning_plan",
-                ),
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            if interrupt_handle.claim_terminal():
+                emit_cancelled()
+            else:
+                http_error = _map_plan_generation_error(exc)
+                event = recorder.emit(
+                    "stream_error",
+                    {
+                        "document_id": payload.document_id,
+                        "detail": http_error.detail,
+                        "status_code": http_error.status_code,
+                        "internal_error_code": str(exc),
+                        "retry_attempts": _runtime_error_retry_attempts(exc),
+                    },
+                    terminal_evidence=_stream_failure_evidence(
+                        operation_id=domain_operation_id,
+                        domain="learning_plan",
+                    ),
+                )
+                event_queue.put(event.model_dump(mode="json"))
         except Exception as exc:
-            event = recorder.emit(
-                "stream_error",
-                {
-                    "document_id": payload.document_id,
-                    "detail": str(exc),
-                },
-                terminal_evidence=_stream_failure_evidence(
-                    operation_id=domain_operation_id,
-                    domain="learning_plan",
-                ),
-            )
-            event_queue.put(event.model_dump(mode="json"))
+            if interrupt_handle.claim_terminal():
+                emit_cancelled()
+            else:
+                event = recorder.emit(
+                    "stream_error",
+                    {
+                        "document_id": payload.document_id,
+                        "detail": str(exc),
+                    },
+                    terminal_evidence=_stream_failure_evidence(
+                        operation_id=domain_operation_id,
+                        domain="learning_plan",
+                    ),
+                )
+                event_queue.put(event.model_dump(mode="json"))
         finally:
             interrupt_handle.mark_completed()
             event_queue.put(None)

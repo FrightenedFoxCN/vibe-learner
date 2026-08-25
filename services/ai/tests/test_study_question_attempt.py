@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -84,15 +85,38 @@ class StudyQuestionAttemptTests(unittest.TestCase):
 
     def test_unanswered_public_projection_never_exposes_grading_material(self) -> None:
         session = self._question_session(session_id="session-public-question")
-        public = StudySessionResponse.model_validate(
-            session.model_dump(mode="json")
-        ).model_dump(mode="json")
+        session_payload = session.model_dump(mode="json")
+        session_payload["turns"][0]["tool_calls"] = [
+            {
+                "tool_call_id": "historical-fill-blank-tool",
+                "tool_name": "ask_fill_blank_question",
+                "arguments_json": "{}",
+                "result_summary": "question",
+                "result_json": json.dumps(
+                    {
+                        "ok": True,
+                        "question_type": "fill_blank",
+                        "question": "Complete the definition.",
+                        "answer": "private expected answer",
+                        "explanation": "private grading explanation",
+                    }
+                ),
+            }
+        ]
+        public = StudySessionResponse.model_validate(session_payload).model_dump(
+            mode="json"
+        )
         question = public["turns"][0]["interactive_question"]
         self.assertIsNone(question["result"])
         self.assertNotIn("grading_spec", question)
         self.assertNotIn("answer_key", question)
         self.assertNotIn("accepted_answers", question)
         self.assertNotIn("explanation", question)
+        public_tool_result = json.loads(
+            public["turns"][0]["tool_calls"][0]["result_json"]
+        )
+        self.assertNotIn("answer", public_tool_result)
+        self.assertNotIn("explanation", public_tool_result)
 
     def test_public_turn_attachment_never_exposes_local_storage_path(self) -> None:
         session = self.service.create_session(
@@ -349,25 +373,30 @@ class StudyQuestionAttemptTests(unittest.TestCase):
             )
 
     def test_concurrent_same_request_commits_once(self) -> None:
-        session = self._question_session(session_id="session-concurrent-same")
-        turn_id = session.turns[0].id
+        for iteration in range(16):
+            with self.subTest(iteration=iteration):
+                session = self._question_session(
+                    session_id=f"session-concurrent-same-{iteration}"
+                )
+                turn_id = session.turns[0].id
+                client_attempt_id = f"client-attempt-concurrent-{iteration}"
 
-        def submit():
-            return self.service.record_question_attempt(
-                session_id=session.id,
-                turn_id=turn_id,
-                expected_session_revision=session.revision,
-                client_attempt_id="client-attempt-concurrent",
-                submitted_answer="A",
-            )
+                def submit():
+                    return self.service.record_question_attempt(
+                        session_id=session.id,
+                        turn_id=turn_id,
+                        expected_session_revision=session.revision,
+                        client_attempt_id=client_attempt_id,
+                        submitted_answer="A",
+                    )
 
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            results = list(executor.map(lambda _: submit(), range(2)))
-        self.assertEqual(results[0].attempt_id, results[1].attempt_id)
-        self.assertEqual(
-            self.service.require_session(session.id).revision,
-            session.revision + 1,
-        )
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    results = list(executor.map(lambda _: submit(), range(2)))
+                self.assertEqual(results[0].attempt_id, results[1].attempt_id)
+                self.assertEqual(
+                    self.service.require_session(session.id).revision,
+                    session.revision + 1,
+                )
 
     def test_concurrent_different_attempts_allow_one_commit(self) -> None:
         session = self._question_session(session_id="session-concurrent-different")

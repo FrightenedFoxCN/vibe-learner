@@ -17,6 +17,22 @@ STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION = "study-question-attempt-request-
 STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION = "study-question-attempt-fingerprint-v1"
 STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION = "study-question-attempt-response-v1"
 STUDY_QUESTION_NORMALIZATION_POLICY_VERSION = "unicode-nfkc-casefold-whitespace-v1"
+STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS = frozenset(
+    {
+        "answer",
+        "answer_key",
+        "accepted_answers",
+        "grading_spec",
+        "correct_option_key",
+        "normalization_policy",
+        "submitted_answer",
+        "normalized_answer",
+        "is_correct",
+        "explanation",
+        "feedback",
+        "feedback_text",
+    }
+)
 
 StudyQuestionType = Literal["multiple_choice", "fill_blank"]
 StudyQuestionDifficulty = Literal["easy", "medium", "hard"]

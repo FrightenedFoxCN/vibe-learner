@@ -7,7 +7,8 @@ from typing import Any, Callable, TypeVar
 from uuid import uuid4
 
 from pydantic import BaseModel
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, update
+from sqlalchemy.exc import IntegrityError
 
 from app.persistence.database import Database
 from app.persistence.models import (
@@ -451,25 +452,61 @@ class LocalJsonStore:
         if category not in {"scene_setup", "scene_library"}:
             raise ValueError("revisioned_category_unsupported")
         spec = CATEGORY_SPECS[category]
-        with self._db.session() as session:
-            row = session.get(spec.entity, item_id)
-            actual_revision = int(getattr(row, "revision", 0) or 0)
-            if actual_revision != expected_revision:
-                raise LocalStoreRevisionConflict(
-                    item_id,
-                    expected=expected_revision,
-                    actual=actual_revision,
+        payload = item.model_dump(mode="json")
+        payload["revision"] = expected_revision + 1
+        committed = model.model_validate(payload)
+        committed_payload = committed.model_dump(mode="json")
+        committed_metadata = spec.metadata_builder(committed_payload)
+        if str(committed_metadata[spec.key_attr]) != item_id:
+            raise ValueError("revisioned_item_identity_mismatch")
+        update_values = {
+            "payload": committed_payload,
+            **committed_metadata,
+        }
+        try:
+            with self._db.session() as session:
+                result = session.execute(
+                    update(spec.entity)
+                    .where(
+                        getattr(spec.entity, spec.key_attr) == item_id,
+                        spec.entity.revision == expected_revision,
+                    )
+                    .values(**update_values)
                 )
-            payload = item.model_dump(mode="json")
-            payload["revision"] = actual_revision + 1
-            committed = model.model_validate(payload)
-            target = row or spec.entity()
-            self._apply_payload(
-                target,
-                committed.model_dump(mode="json"),
-                spec,
-            )
-            session.add(target)
+                if result.rowcount != 1:
+                    actual_revision = session.scalar(
+                        select(spec.entity.revision).where(
+                            getattr(spec.entity, spec.key_attr) == item_id
+                        )
+                    )
+                    if actual_revision is not None or expected_revision != 0:
+                        raise LocalStoreRevisionConflict(
+                            item_id,
+                            expected=expected_revision,
+                            actual=int(actual_revision or 0),
+                        )
+                    target = spec.entity()
+                    self._apply_payload(target, committed_payload, spec)
+                    session.add(target)
+                    session.flush()
+        except IntegrityError as exc:
+            # A concurrent first-write can make both revision-0 UPDATEs miss,
+            # after which one INSERT wins and the other violates the primary
+            # key. The failed transaction has already rolled back here, so use
+            # a fresh snapshot to report the authoritative winning revision.
+            with self._db.session() as session:
+                actual_revision = session.scalar(
+                    select(spec.entity.revision).where(
+                        getattr(spec.entity, spec.key_attr) == item_id
+                    )
+                )
+            if actual_revision is None:
+                raise
+            raise LocalStoreRevisionConflict(
+                item_id,
+                expected=expected_revision,
+                actual=int(actual_revision),
+            ) from exc
         try:
             self._legacy.save_item(category, item_id, committed)
         except OSError:

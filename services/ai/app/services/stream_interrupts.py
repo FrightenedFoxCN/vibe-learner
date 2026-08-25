@@ -26,18 +26,22 @@ class StreamInterruptHandle:
 
     def cancel(self, *, reason: str = "user_requested") -> bool:
         with self._lock:
-            if self._cancel_event.is_set():
+            if self.completed_at or self._cancel_event.is_set():
                 return False
             self.cancel_reason = reason.strip() or "user_requested"
             self.cancelled_at = _now()
             self._cancel_event.set()
             return True
 
-    def mark_completed(self) -> None:
+    def claim_terminal(self) -> bool:
+        """Fence later cancellation and report whether cancellation already won."""
         with self._lock:
-            if self.completed_at:
-                return
-            self.completed_at = _now()
+            if not self.completed_at:
+                self.completed_at = _now()
+            return self._cancel_event.is_set()
+
+    def mark_completed(self) -> None:
+        self.claim_terminal()
 
     def cancelled(self) -> bool:
         return self._cancel_event.is_set()

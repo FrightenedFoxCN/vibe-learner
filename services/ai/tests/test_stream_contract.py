@@ -15,6 +15,7 @@ from app.models.stream import (
 )
 from app.services.stream_reports import (
     DOCUMENT_PROCESS_STREAM_CATEGORY,
+    LEARNING_PLAN_STREAM_CATEGORY,
     StreamReportRecorder,
 )
 
@@ -147,6 +148,28 @@ class StreamContractTests(unittest.TestCase):
         payload["payload"]["force_ocr"] = True
         with self.assertRaisesRegex(ValidationError, "stream_payload_digest_mismatch"):
             type(event).model_validate(payload)
+
+    def test_planning_question_progress_is_a_registered_plan_stream_event(self) -> None:
+        recorder = StreamReportRecorder(
+            store=self.store,  # type: ignore[arg-type]
+            category=LEARNING_PLAN_STREAM_CATEGORY,
+            document_id="doc-fixture",
+            stream_kind="learning_plan",
+            subject=self.subject,
+            operation_id="stream-plan-fixture",
+        )
+
+        event = recorder.emit(
+            "planning_question_asked",
+            {
+                "question_id": "planning-question-fixture",
+                "question": "Which outcome matters most?",
+                "reason": "Bind the plan objective.",
+                "assumptions": [],
+            },
+        )
+
+        self.assertEqual(event.stage, "planning_question_asked")
 
     def test_committed_terminal_binds_projection_and_fences_later_events(self) -> None:
         self.recorder.emit(

@@ -156,9 +156,9 @@ def update_tavern_room(
     room_id: str,
     payload: UpdateTavernRoomRequest,
 ) -> TavernRoomDetail:
-    if not (payload.model_fields_set - {"expected_revision"}):
-        raise HTTPException(status_code=400, detail="tavern_update_payload_empty")
     try:
+        if not (payload.model_fields_set - {"expected_revision"}):
+            raise HTTPException(status_code=400, detail="tavern_update_payload_empty")
         return container.tavern_service.update_room(room_id=room_id, payload=payload)
     except HTTPException as exc:
         raise _structured_tavern_error(exc, room_id=room_id) from exc

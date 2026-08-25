@@ -41,6 +41,7 @@ LEARNING_PLAN_STREAM_STAGES = frozenset(
         "study_units_ready",
         "heuristic_plan_built",
         "model_round_started",
+        "planning_question_asked",
         "model_tool_call",
         "model_round_completed",
         "model_round_failed",

@@ -1,3 +1,4 @@
+import json
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -34,6 +35,7 @@ from app.models.domain import (
 )
 from app.models.stream import StreamEventRecord, StreamReportRecord
 from app.models.study_question import (
+    STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS,
     StudyQuestionAttemptResponseV1,
     StudyQuestionPromptResponseV1,
 )
@@ -624,9 +626,49 @@ class LearnerAttachmentResponse(BaseModel):
     previewable: bool = False
 
 
+class ChatToolCallTraceResponse(ChatToolCallTraceRecord):
+    @model_validator(mode="before")
+    @classmethod
+    def redact_private_question_result(cls, value):
+        payload = (
+            value.model_dump(mode="json")
+            if isinstance(value, ChatToolCallTraceRecord)
+            else dict(value)
+            if isinstance(value, dict)
+            else None
+        )
+        if payload is None:
+            return value
+        tool_name = str(payload.get("tool_name") or "")
+        raw_result = payload.get("result_json")
+        if tool_name not in {
+            "ask_multiple_choice_question",
+            "ask_fill_blank_question",
+        } or not isinstance(raw_result, str):
+            return payload
+        try:
+            decoded = json.loads(raw_result)
+        except json.JSONDecodeError:
+            return payload
+        if not isinstance(decoded, dict):
+            return payload
+        public_result = {
+            key: item
+            for key, item in decoded.items()
+            if key not in STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS
+        }
+        payload["result_json"] = json.dumps(
+            public_result,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        return payload
+
+
 class DialogueTurnResponse(DialogueTurnRecord):
     learner_attachments: list[LearnerAttachmentResponse]
     interactive_question: StudyQuestionPromptResponseV1 | None = None
+    tool_calls: list[ChatToolCallTraceResponse] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -636,18 +678,14 @@ class DialogueTurnResponse(DialogueTurnRecord):
         ):
             return value
         payload = dict(value)
-        payload["interactive_question"] = InteractiveQuestion.model_validate(
+        payload["interactive_question"] = _project_public_question(
             payload["interactive_question"]
-        ).model_dump(mode="json")
+        )
         return payload
 
 
 class StudySessionResponse(StudySessionRecord):
     turns: list[DialogueTurnResponse]
-
-
-class ChatToolCallTraceResponse(ChatToolCallTraceRecord):
-    pass
 
 
 class StudySessionListResponse(BaseModel):
@@ -683,9 +721,9 @@ class StudyChatResponse(BaseModel):
         ):
             return value
         payload = dict(value)
-        payload["interactive_question"] = InteractiveQuestion.model_validate(
+        payload["interactive_question"] = _project_public_question(
             payload["interactive_question"]
-        ).model_dump(mode="json")
+        )
         return payload
 
 
@@ -740,6 +778,27 @@ class StudyQuestionAttemptRequest(BaseModel):
 
 class StudyQuestionAttemptResponse(StudyQuestionAttemptResponseV1):
     pass
+
+
+def _project_public_question(value: dict[str, object]) -> dict[str, object]:
+    """Redact private grading state while keeping public projection idempotent."""
+
+    result = value.get("result")
+    has_private_result = isinstance(result, dict) and "normalized_answer" in result
+    has_private_shape = (
+        "grading_spec" in value
+        or "answer_key" in value
+        or "accepted_answers" in value
+        or has_private_result
+    )
+    candidate = (
+        InteractiveQuestion.model_validate(value).model_dump(mode="json")
+        if has_private_shape or value.get("schema_version") is None
+        else value
+    )
+    return StudyQuestionPromptResponseV1.model_validate(candidate).model_dump(
+        mode="json"
+    )
 
 
 class ExerciseGenerateRequest(BaseModel):

@@ -262,6 +262,27 @@ class TavernApiTests(unittest.TestCase):
             "tavern_idempotency_key_reused",
         )
 
+    def test_empty_room_update_returns_structured_tavern_error(self) -> None:
+        created = self._create_room(creation_key="create-room-empty-update")
+        response = self.client.patch(
+            f"/tavern/rooms/{created['room']['id']}",
+            json={"expected_revision": 0},
+        )
+
+        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": {
+                    "code": "tavern_update_payload_empty",
+                    "run_id": "",
+                    "child_run_id": "",
+                    "current_revision": 0,
+                    "recovery_action": "none",
+                }
+            },
+        )
+
     def test_failed_harness_keeps_user_message_and_failed_run_only(self) -> None:
         created = self._create_room(creation_key="create-room-leak-1")
         room_id = created["room"]["id"]

@@ -22,11 +22,22 @@ from app.models.study_chat_effect import (
     StudyChatCommittedEffectBatchV1,
     StudySceneReplaceCommittedProjectionV1,
 )
+from app.models.study_question import (
+    STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION,
+    STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION,
+    STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION,
+    StudyQuestionAttemptRequestPayloadV1,
+    StudyQuestionAttemptResponseV1,
+    StudyQuestionResultRecordV1,
+    study_question_attempt_fingerprint,
+    study_question_attempt_response_digest,
+)
 from app.persistence.database import Database
-from app.models.domain import SessionSceneRecord, StudySessionRecord
+from app.models.domain import DialogueTurnRecord, SessionSceneRecord, StudySessionRecord
 from app.persistence.models import (
     SessionSceneRow,
     StudyChatOperationRow,
+    StudyQuestionAttemptRow,
     StudySessionRow,
 )
 from app.services.study_chat_effects import (
@@ -75,6 +86,10 @@ class StudyChatOperationRepository:
                         _validate_committed_read_back(
                             record,
                             session_row=session.get(StudySessionRow, session_id),
+                            question_attempt_row=_load_question_attempt_row(
+                                session,
+                                record,
+                            ),
                             scene_records=_load_operation_scene_records(
                                 session,
                                 record,
@@ -157,6 +172,7 @@ class StudyChatOperationRepository:
                 _validate_committed_read_back(
                     record,
                     session_row=session_row,
+                    question_attempt_row=_load_question_attempt_row(session, record),
                     scene_records=_load_operation_scene_records(session, record),
                     chat_attachment_root=self.chat_attachment_root,
                 )
@@ -407,6 +423,7 @@ def _validate_committed_read_back(
     record: StudyChatOperationRecord,
     *,
     session_row: StudySessionRow | None,
+    question_attempt_row: StudyQuestionAttemptRow | None,
     scene_records: dict[str, SessionSceneRecord],
     chat_attachment_root: Path | None,
 ) -> None:
@@ -471,8 +488,107 @@ def _validate_committed_read_back(
         if turn.id == record.committed_turn_id
         and turn.sequence == record.committed_turn_sequence
     ]
-    if len(matching_current_turns) != 1 or matching_current_turns[0] != matching_response_turns[0]:
+    if len(matching_current_turns) != 1:
         raise ValueError("study_chat_operation_committed_turn_read_back_mismatch")
+    current_turn = matching_current_turns[0]
+    response_turn = matching_response_turns[0]
+    if current_turn == response_turn:
+        return
+    if _turn_without_question_result(current_turn) != _turn_without_question_result(
+        response_turn
+    ):
+        raise ValueError("study_chat_operation_committed_turn_read_back_mismatch")
+    response_question = response_turn.interactive_question
+    current_question = current_turn.interactive_question
+    if (
+        response_question is None
+        or response_question.result is not None
+        or current_question is None
+        or current_question.result is None
+    ):
+        raise ValueError("study_chat_operation_committed_turn_read_back_mismatch")
+    _validate_question_attempt_patch(
+        record=record,
+        current_session=current_session,
+        current_result=current_question.result,
+        attempt_row=question_attempt_row,
+    )
+
+
+def _turn_without_question_result(turn: DialogueTurnRecord) -> dict[str, object]:
+    payload = turn.model_dump(mode="json")
+    question = payload.get("interactive_question")
+    if isinstance(question, dict):
+        question["result"] = None
+    return payload
+
+
+def _validate_question_attempt_patch(
+    *,
+    record: StudyChatOperationRecord,
+    current_session: StudySessionRecord,
+    current_result: StudyQuestionResultRecordV1,
+    attempt_row: StudyQuestionAttemptRow | None,
+) -> None:
+    if attempt_row is None:
+        raise ValueError("study_chat_operation_question_attempt_read_back_missing")
+    if (
+        attempt_row.request_schema_version
+        != STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION
+        or attempt_row.fingerprint_contract_version
+        != STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION
+        or attempt_row.response_schema_version
+        != STUDY_QUESTION_ATTEMPT_RESPONSE_SCHEMA_VERSION
+    ):
+        raise ValueError("study_chat_operation_question_attempt_schema_unsupported")
+    request_payload = StudyQuestionAttemptRequestPayloadV1.model_validate(
+        attempt_row.request_payload
+    )
+    response = StudyQuestionAttemptResponseV1.model_validate(
+        attempt_row.response_payload
+    )
+    if (
+        attempt_row.request_fingerprint
+        != study_question_attempt_fingerprint(request_payload)
+        or attempt_row.response_digest
+        != study_question_attempt_response_digest(response)
+        or attempt_row.session_id != record.session_id
+        or attempt_row.turn_id != record.committed_turn_id
+        or response.attempt_id != attempt_row.attempt_id
+        or response.client_attempt_id != attempt_row.client_attempt_id
+        or response.session_id != attempt_row.session_id
+        or response.turn_id != attempt_row.turn_id
+        or response.before_revision != attempt_row.before_session_revision
+        or response.committed_revision != attempt_row.committed_session_revision
+        or response.committed_at != attempt_row.committed_at
+        or response.before_revision < (record.committed_session_revision or 0)
+        or current_session.revision < response.committed_revision
+        or current_result.attempt_id != response.attempt_id
+        or current_result.client_attempt_id != response.client_attempt_id
+        or current_result.submitted_answer != response.submitted_answer
+        or current_result.normalized_answer != request_payload.normalized_answer
+        or current_result.is_correct != response.is_correct
+        or current_result.feedback_text != response.feedback_text
+        or current_result.explanation != response.explanation
+        or current_result.before_revision != response.before_revision
+        or current_result.committed_revision != response.committed_revision
+        or current_result.committed_at != response.committed_at
+    ):
+        raise ValueError("study_chat_operation_question_attempt_read_back_mismatch")
+
+
+def _load_question_attempt_row(
+    session,
+    record: StudyChatOperationRecord,
+) -> StudyQuestionAttemptRow | None:
+    if not record.committed_turn_id:
+        return None
+    return session.scalar(
+        select(StudyQuestionAttemptRow).where(
+            StudyQuestionAttemptRow.session_id == record.session_id,
+            StudyQuestionAttemptRow.turn_id == record.committed_turn_id,
+        )
+    )
 
 
 def _load_operation_scene_records(

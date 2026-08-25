@@ -39,7 +39,10 @@ from app.persistence.models import (
     SessionSceneRow,
     StudyChatOperationRow,
 )
-from app.persistence.study_session_repository import StudySessionRepository
+from app.persistence.study_session_repository import (
+    StudySessionRepository,
+    StudySessionSceneRevisionConflict,
+)
 from app.services.study_chat_effects import (
     StudyChatEffectCollector,
     commit_study_chat_effects,
@@ -641,6 +644,110 @@ class StudyChatEffectsTests(unittest.TestCase):
             client_request_id="request-effect-scene-0001",
         )
         self.assertEqual(replayed.status.value, "committed")
+
+    def test_concurrent_scene_write_fences_the_entire_chat_commit(self) -> None:
+        running = self._running_operation("request-effect-scene-race-0001")
+        collector = StudyChatEffectCollector(
+            operation_id=running.operation_id,
+            session_id="session-effect",
+            plan_id="plan-effect",
+            allowed_schedule_ids=set(),
+        )
+        runtime = self.scene_service.build_tool_runtime(
+            self.scene_record.scene_instance_id,
+            effect_collector=collector,
+        )
+        rejected = runtime.execute_tool(
+            "add_object",
+            {
+                "name": "Rejected chat object",
+                "description": "must not overwrite the concurrent Scene",
+            },
+        )
+        session_before = self.sessions.require("session-effect")
+        operation_before = self.operations.require(
+            session_id="session-effect",
+            client_request_id="request-effect-scene-race-0001",
+        )
+        original_commit_effects = commit_study_chat_effects
+        injected = 0
+
+        def inject_concurrent_scene_write(**kwargs):
+            nonlocal injected
+            if injected == 0:
+                injected += 1
+                self.scene_service.add_object(
+                    self.scene_record.scene_instance_id,
+                    scene_id="scene-root",
+                    name="Concurrent winner",
+                    description="committed after the chat transaction read the Scene",
+                    interaction="",
+                    tags="",
+                )
+            return original_commit_effects(**kwargs)
+
+        with patch(
+            "app.persistence.study_session_repository.commit_study_chat_effects",
+            side_effect=inject_concurrent_scene_write,
+        ):
+            with self.assertRaises(StudySessionSceneRevisionConflict):
+                result = StudyChatResult(
+                    reply="must roll back",
+                    citations=[],
+                    character_events=[],
+                    scene_profile=SceneProfileRecord.model_validate(
+                        rejected["scene_profile"]
+                    ),
+                )
+                self.sessions.commit_chat_operation_turn(
+                    operation_id=running.operation_id,
+                    execution_token=running.execution_token,
+                    learner_message="race the Scene",
+                    learner_message_kind="learner",
+                    learner_attachments=[],
+                    result=result,
+                    prepared_study_unit_id=None,
+                    completed_follow_up_id="",
+                    cancel_pending_follow_ups=False,
+                    prepared_effect_batch=collector.prepared_batch(),
+                    build_response_payload=lambda session: {
+                        **result.model_dump(mode="json"),
+                        "session": session.model_dump(mode="json"),
+                    },
+                )
+
+        self.assertEqual(injected, 1)
+        scene_after = self.scene_service.require_scene(
+            self.scene_record.scene_instance_id
+        )
+        object_names = [
+            item.name
+            for layer in scene_after.scene_layers
+            for item in layer.objects
+        ]
+        self.assertEqual(object_names, ["Concurrent winner"])
+        self.assertNotIn(rejected["object_id"], {
+            item.id
+            for layer in scene_after.scene_layers
+            for item in layer.objects
+        })
+        self.assertEqual(
+            self.sessions.require("session-effect").model_dump(mode="json"),
+            session_before.model_dump(mode="json"),
+        )
+        operation_after = self.operations.require(
+            session_id="session-effect",
+            client_request_id="request-effect-scene-race-0001",
+        )
+        self.assertEqual(
+            operation_after.model_dump(mode="json"),
+            operation_before.model_dump(mode="json"),
+        )
+        self.assertEqual(operation_after.status.value, "running")
+        self.assertIsNone(operation_after.response_payload)
+        receipt_after = self.operations.receipt(operation_after)
+        self.assertFalse(receipt_after.safe_to_retry)
+        self.assertIsNone(receipt_after.result)
 
     def test_scene_effect_rolls_back_and_receipt_tamper_fails_read_back(self) -> None:
         running = self._running_operation("request-effect-scene-0002")

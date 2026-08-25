@@ -227,6 +227,12 @@ class StudySessionRepository:
                         )
                     )
                     if prior_turn_attempt is not None:
+                        if prior_turn_attempt.client_attempt_id == client_attempt_id:
+                            return _read_question_attempt(
+                                prior_turn_attempt,
+                                expected_fingerprint=request_fingerprint,
+                                session_row=session.get(StudySessionRow, session_id),
+                            )
                         raise StudyQuestionAttemptTurnAlreadyAnswered(turn_id)
 
                     session_row = session.get(StudySessionRow, session_id)
@@ -399,6 +405,12 @@ class StudySessionRepository:
                 )
             )
             if prior_turn_attempt is not None:
+                if prior_turn_attempt.client_attempt_id == client_attempt_id:
+                    return _read_question_attempt(
+                        prior_turn_attempt,
+                        expected_fingerprint=request_fingerprint,
+                        session_row=session.get(StudySessionRow, session_id),
+                    )
                 raise StudyQuestionAttemptTurnAlreadyAnswered(turn_id)
         return None
 

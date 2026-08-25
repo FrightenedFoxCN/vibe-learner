@@ -1,10 +1,13 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 import unittest
 
 from fastapi import HTTPException
 from pydantic import ValidationError
+from sqlalchemy import event
 
 from app.models.api import SceneTreeGenerateRequest, UpsertSceneLibraryRequest
 from app.models.domain import ReusableSceneNodeRecord, SceneLibraryRecord
@@ -13,6 +16,7 @@ from app.models.scene import (
     decode_scene_tree_proposal,
     project_scene_tree_proposal,
 )
+from app.persistence.models import SceneLibraryRow
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider
 from app.services.scene_library import SceneLibraryService
@@ -192,6 +196,210 @@ class SceneSchemaOwnershipTests(unittest.TestCase):
                 )
                 self.assertEqual(persisted.revision, 2)
                 self.assertEqual(persisted.scene_name, "Updated room")
+            finally:
+                store.close()
+
+    def test_scene_library_concurrent_updates_allow_exactly_one_revision_winner(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store = LocalJsonStore(Path(temp_dir))
+            try:
+                service = SceneLibraryService(store)
+                result = MockModelProvider().generate_scene_tree_from_keywords(
+                    keywords="Room, Study",
+                    layer_count=1,
+                )
+                request = UpsertSceneLibraryRequest.model_validate(
+                    _save_payload(result)
+                )
+                created = service.upsert_scene(
+                    scene_id=None,
+                    scene_name=request.scene_name,
+                    scene_summary=request.scene_summary,
+                    scene_layers=request.to_domain_layers(),
+                    selected_layer_id=request.selected_layer_id,
+                    collapsed_layer_ids=request.collapsed_layer_ids,
+                    expected_revision=request.expected_revision,
+                )
+
+                update_barrier = Barrier(2)
+
+                def synchronize_scene_updates(
+                    _connection,
+                    _cursor,
+                    statement,
+                    _parameters,
+                    _context,
+                    _executemany,
+                ) -> None:
+                    if not statement.lstrip().upper().startswith("UPDATE"):
+                        return
+                    if "scene_library_entries" not in statement:
+                        return
+                    update_barrier.wait(timeout=5)
+
+                event.listen(
+                    store.database.engine,
+                    "before_cursor_execute",
+                    synchronize_scene_updates,
+                )
+
+                candidates = [
+                    ("Concurrent winner A", "Summary committed by A."),
+                    ("Concurrent winner B", "Summary committed by B."),
+                ]
+
+                def update_scene(candidate: tuple[str, str]):
+                    scene_name, scene_summary = candidate
+                    try:
+                        return service.upsert_scene(
+                            scene_id=created.scene_id,
+                            scene_name=scene_name,
+                            scene_summary=scene_summary,
+                            scene_layers=created.scene_layers,
+                            selected_layer_id=created.selected_layer_id,
+                            collapsed_layer_ids=created.collapsed_layer_ids,
+                            expected_revision=created.revision,
+                        )
+                    except HTTPException as exc:
+                        return exc
+
+                try:
+                    with ThreadPoolExecutor(max_workers=2) as executor:
+                        outcomes = list(
+                            executor.map(
+                                update_scene,
+                                candidates,
+                            )
+                        )
+                finally:
+                    event.remove(
+                        store.database.engine,
+                        "before_cursor_execute",
+                        synchronize_scene_updates,
+                    )
+
+                successes = [
+                    outcome
+                    for outcome in outcomes
+                    if isinstance(outcome, SceneLibraryRecord)
+                ]
+                conflicts = [
+                    outcome
+                    for outcome in outcomes
+                    if isinstance(outcome, HTTPException)
+                    and outcome.status_code == 409
+                    and outcome.detail == "scene_revision_conflict"
+                ]
+                self.assertEqual(len(successes), 1)
+                self.assertEqual(len(conflicts), 1)
+                self.assertEqual(successes[0].revision, created.revision + 1)
+                winning_candidate = next(
+                    candidate
+                    for candidate, outcome in zip(candidates, outcomes, strict=True)
+                    if isinstance(outcome, SceneLibraryRecord)
+                )
+                losing_candidate = next(
+                    candidate
+                    for candidate, outcome in zip(candidates, outcomes, strict=True)
+                    if isinstance(outcome, HTTPException)
+                )
+                persisted = service.require_scene(created.scene_id)
+                self.assertEqual(persisted.revision, created.revision + 1)
+                self.assertEqual(
+                    (persisted.scene_name, persisted.scene_summary),
+                    winning_candidate,
+                )
+                self.assertNotEqual(
+                    (persisted.scene_name, persisted.scene_summary),
+                    losing_candidate,
+                )
+                with store.database.session() as session:
+                    row = session.get(SceneLibraryRow, created.scene_id)
+                    self.assertIsNotNone(row)
+                    assert row is not None
+                    self.assertEqual(row.revision, persisted.revision)
+                    self.assertEqual(row.scene_name, persisted.scene_name)
+                    self.assertEqual(row.payload["revision"], persisted.revision)
+                    self.assertEqual(
+                        (row.payload["scene_name"], row.payload["scene_summary"]),
+                        winning_candidate,
+                    )
+            finally:
+                store.close()
+
+    def test_scene_library_cas_rolls_back_after_statement_failure(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store = LocalJsonStore(Path(temp_dir))
+            try:
+                service = SceneLibraryService(store)
+                result = MockModelProvider().generate_scene_tree_from_keywords(
+                    keywords="Room, Study",
+                    layer_count=1,
+                )
+                request = UpsertSceneLibraryRequest.model_validate(
+                    _save_payload(result)
+                )
+                created = service.upsert_scene(
+                    scene_id=None,
+                    scene_name=request.scene_name,
+                    scene_summary=request.scene_summary,
+                    scene_layers=request.to_domain_layers(),
+                    selected_layer_id=request.selected_layer_id,
+                    collapsed_layer_ids=request.collapsed_layer_ids,
+                    expected_revision=request.expected_revision,
+                )
+
+                def fail_after_scene_update(
+                    _connection,
+                    _cursor,
+                    statement,
+                    _parameters,
+                    _context,
+                    _executemany,
+                ) -> None:
+                    if not statement.lstrip().upper().startswith("UPDATE"):
+                        return
+                    if "scene_library_entries" in statement:
+                        raise RuntimeError("scene_cas_injected_failure")
+
+                event.listen(
+                    store.database.engine,
+                    "after_cursor_execute",
+                    fail_after_scene_update,
+                )
+                try:
+                    with self.assertRaisesRegex(
+                        RuntimeError,
+                        "scene_cas_injected_failure",
+                    ):
+                        service.upsert_scene(
+                            scene_id=created.scene_id,
+                            scene_name="Must roll back",
+                            scene_summary="This payload must not be partially visible.",
+                            scene_layers=created.scene_layers,
+                            selected_layer_id=created.selected_layer_id,
+                            collapsed_layer_ids=created.collapsed_layer_ids,
+                            expected_revision=created.revision,
+                        )
+                finally:
+                    event.remove(
+                        store.database.engine,
+                        "after_cursor_execute",
+                        fail_after_scene_update,
+                    )
+
+                persisted = service.require_scene(created.scene_id)
+                self.assertEqual(persisted.revision, created.revision)
+                self.assertEqual(persisted.scene_name, created.scene_name)
+                self.assertEqual(persisted.scene_summary, created.scene_summary)
+                with store.database.session() as session:
+                    row = session.get(SceneLibraryRow, created.scene_id)
+                    self.assertIsNotNone(row)
+                    assert row is not None
+                    self.assertEqual(row.revision, created.revision)
+                    self.assertEqual(row.scene_name, created.scene_name)
+                    self.assertEqual(row.payload["revision"], created.revision)
+                    self.assertEqual(row.payload["scene_name"], created.scene_name)
             finally:
                 store.close()
 
