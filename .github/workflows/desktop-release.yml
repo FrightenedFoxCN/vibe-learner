@@ -135,6 +135,20 @@ jobs:
           pattern: vibe-learner-*-release
           merge-multiple: true
 
+      - name: Normalize release asset filenames
+        working-directory: release-artifacts
+        shell: bash
+        run: |
+          find . -maxdepth 1 -type f -name '* *' -print0 |
+            while IFS= read -r -d '' asset; do
+              normalized="${asset// /.}"
+              if [ -e "$normalized" ]; then
+                echo "::error::Cannot normalize $asset because $normalized already exists."
+                exit 1
+              fi
+              mv -- "$asset" "$normalized"
+            done
+
       - name: Generate checksums
         working-directory: release-artifacts
         run: |
