@@ -40,6 +40,9 @@ from app.models.tavern import (
     UpdateTavernRoomRequest,
 )
 from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
+from app.persistence.harness_operation_repository import (
+    HarnessOperationLegacyUnbound,
+)
 from app.persistence.tavern_repository import (
     TavernIdempotencyConflict,
     TavernRepository,
@@ -443,6 +446,13 @@ class TavernService:
             raise HTTPException(status_code=404, detail="tavern_run_not_found")
         if source.status not in {TavernRunStatus.PARTIAL, TavernRunStatus.FAILED}:
             raise HTTPException(status_code=409, detail="tavern_run_not_retryable")
+        try:
+            self.repository.require_harness_operation(source.id)
+        except HarnessOperationLegacyUnbound as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"tavern_harness_operation_legacy_unbound:{source.id}",
+            ) from exc
         existing_child = self.repository.get_retry_child(source.id)
         if existing_child is not None:
             raise HTTPException(
@@ -583,6 +593,7 @@ class TavernService:
             TavernRunInProgress,
             TavernIdempotencyConflict,
             TavernRetryAlreadyCreated,
+            HarnessOperationLegacyUnbound,
         ) as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return (persisted if not created else run), created
@@ -598,6 +609,17 @@ class TavernService:
         if persisted is None:
             raise HTTPException(status_code=404, detail="tavern_run_not_found")
         run = persisted
+        try:
+            operation_binding = self.repository.require_harness_operation(run.id)
+        except HarnessOperationLegacyUnbound as exc:
+            self.repository.fail_legacy_unbound_run(
+                run_id=run.id,
+                completed_at=_now(),
+            )
+            raise HTTPException(
+                status_code=409,
+                detail=f"tavern_harness_operation_legacy_unbound:{run.id}",
+            ) from exc
         participant_map = {item.persona_id: item for item in detail.participants}
         generated_messages: list[TavernMessageRecord] = []
         reply_anchor_id = run.anchor_message_id
@@ -669,7 +691,7 @@ class TavernService:
                     heartbeat.ensure_active()
                     execution_stage = "atomic_commit"
                     generated.commit_metadata = TavernPersonaMessageCommitMetadataV1(
-                        operation_id=f"harness-operation-{uuid4().hex}",
+                        operation_id=operation_binding.harness_operation_id,
                         effect_batch_id=f"effect-{generated.id}",
                     )
                     completed_run = self.repository.complete_step(

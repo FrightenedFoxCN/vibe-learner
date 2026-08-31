@@ -1,0 +1,37 @@
+{
+  "schema_name": "HarnessArtifactAccessContractRegistry",
+  "schema_version": "harness-artifact-access-contract-registry-v1",
+  "authoritative_boundary": {
+    "principal_kind": "local_installation",
+    "authorization_mode": "server_resolved_principal",
+    "grant_is_bearer_secret": false,
+    "grant_is_operation_scoped": true,
+    "missing_principal_outcome": "principal_required"
+  },
+  "contracts": {
+    "principal": {
+      "name": "HarnessArtifactPrincipal",
+      "version": "harness-artifact-principal-v1"
+    },
+    "grant": {
+      "name": "HarnessArtifactGrant",
+      "version": "harness-artifact-grant-v1"
+    },
+    "audit": {
+      "name": "HarnessArtifactAccessAudit",
+      "version": "harness-artifact-access-audit-v1"
+    }
+  },
+  "permissions": [
+    "read",
+    "verify_digest"
+  ],
+  "outcomes": [
+    "allowed",
+    "principal_required",
+    "forbidden",
+    "grant_not_active",
+    "expired",
+    "revoked"
+  ]
+}

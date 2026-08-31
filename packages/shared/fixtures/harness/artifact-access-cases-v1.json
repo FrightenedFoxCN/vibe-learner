@@ -1,0 +1,77 @@
+{
+  "schema_name": "HarnessArtifactAccessCases",
+  "schema_version": "harness-artifact-access-cases-v1",
+  "grant_harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "cases": [
+    {
+      "case_id": "cross-principal-read",
+      "presented_principal_id": "local-installation-11111111111111111111111111111111",
+      "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "artifact_id": "transcript-1",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:05:00Z",
+      "grant_revoked_at": null,
+      "expected_outcome": "forbidden"
+    },
+    {
+      "case_id": "expired-grant-read",
+      "presented_principal_id": "local-installation-00000000000000000000000000000000",
+      "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "artifact_id": "transcript-1",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:00:00Z",
+      "grant_revoked_at": null,
+      "expected_outcome": "expired"
+    },
+    {
+      "case_id": "missing-principal-read",
+      "presented_principal_id": null,
+      "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "artifact_id": "transcript-1",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:05:00Z",
+      "grant_revoked_at": null,
+      "expected_outcome": "principal_required"
+    },
+    {
+      "case_id": "operation-rebinding-read",
+      "presented_principal_id": "local-installation-00000000000000000000000000000000",
+      "harness_operation_id": "harness-operation-cccccccccccccccccccccccccccccccc",
+      "artifact_id": "transcript-1",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:05:00Z",
+      "grant_revoked_at": null,
+      "expected_outcome": "forbidden"
+    },
+    {
+      "case_id": "revoked-grant-read",
+      "presented_principal_id": "local-installation-00000000000000000000000000000000",
+      "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "artifact_id": "transcript-1",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:05:00Z",
+      "grant_revoked_at": "2026-08-25T02:59:00Z",
+      "expected_outcome": "revoked"
+    },
+    {
+      "case_id": "same-principal-read",
+      "presented_principal_id": "local-installation-00000000000000000000000000000000",
+      "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "artifact_id": "transcript-1",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:05:00Z",
+      "grant_revoked_at": null,
+      "expected_outcome": "allowed"
+    },
+    {
+      "case_id": "scope-rebinding-read",
+      "presented_principal_id": "local-installation-00000000000000000000000000000000",
+      "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "artifact_id": "transcript-2",
+      "evaluated_at": "2026-08-25T03:00:00Z",
+      "grant_expires_at": "2026-08-25T03:05:00Z",
+      "grant_revoked_at": null,
+      "expected_outcome": "forbidden"
+    }
+  ]
+}

@@ -33,7 +33,7 @@ Model and heuristic proposal schemas must not create or control:
 
 Those values are assigned while projecting a validated proposal into committed records or applying validated effect proposals.
 
-An upstream provider's `tool_call_id` is a transport correlation reference, not an application resource ID. It may be retained in debug evidence exactly as received, but it must not be reused as a database identity, effect target, idempotency key, or authorization decision. Planning and Study Chat still need strict tool-name, argument, and effect validation under their workflow tasks.
+An upstream provider's `tool_call_id` is a transport correlation reference, not an application resource ID. It may be retained in debug evidence exactly as received, but it must not be reused as a database identity, effect target, idempotency key, authorization decision, or Harness operation identity. Planning and Study tool names, arguments, results, effects, and provider projections are owned by the shared Tool Manifest; workflow adoption still needs its own trace and commit boundary.
 
 ## Workflow ownership registry
 
@@ -81,6 +81,41 @@ The context stores sorted resource/snapshot references, named component versions
 
 `HarnessTraceV3` retains the v2 lifecycle and commit semantics while replacing the context field with `HarnessContextEnvelopeV3`. V3 closes workflow/stage/resource/artifact vocabularies, requires a server-owned operation identity, binds input/context/digest contracts, fills the exact component set from a central `(workflow, stage)` registry, and recomputes the context digest from trace-visible evidence. The operation ID is validated and bound by the trace, but intentionally excluded from context identity so identical context can be compared across separate operations.
 
+`HarnessWorkflowManifestV1` is the executable ownership and routing registry for
+each workflow/stage boundary. Every entry binds its owner adapter, input,
+proposal and output contracts, component/prompt/policy/toolset registrations,
+attempt and budget ceilings, allowed artifact/effect types, commit policy, and
+decoder/eval routes. A slot is explicitly `registered`, `not_applicable`, or
+`unregistered`; unknown, placeholder, missing, or inconsistent values fail
+closed. The manifest is configuration evidence, not workflow-adoption evidence.
+
+`HarnessOperationBindingV1` owns the immutable one-to-one relationship between
+one admitted Harness operation and one domain operation. The binding is created
+in the same database transaction as Document processing, Learning Plan
+generation, Study Chat, or Tavern Run admission, before provider execution.
+Context, terminal state, parent/child lineage, artifact grants, effects, and eval
+samples must resolve through that admitted identity. Legacy domain rows remain
+typed `legacy_unbound`; they are never assigned invented history. Product
+retention may delete a domain row, but the append-only binding remains as the
+admission tombstone.
+
+Artifact authorization is a separate server-owned contract. The current
+principal is a versioned single-user local-installation subject resolved by the
+server, not a bearer credential supplied by the caller. An operation-scoped
+grant binds one principal to exact artifact type, artifact ID, contract,
+permissions, issue/expiry, and revocation state. Audit evidence binds both the
+requested and granted principal/operation identities. This contract does not
+itself provide storage, retention, or content resolution.
+
+Evaluation records have their own ownership boundary. Cases own suite routing,
+provenance, sensitivity, split, expected invariants, and grader references;
+runs own the complete tested-system configuration and budgets; samples own one
+admitted Harness operation plus ordered content-free evidence; reports own
+aggregate metrics and infrastructure/candidate failure separation. Python is
+the canonical identity/digest authority, while TypeScript strictly decodes and
+cross-links the wire. These contracts do not imply that a runner, grader
+registry, baseline, or production suite exists.
+
 `HarnessSafeManifest` is an explicit review marker, not a generic serialization escape hatch. Each concrete manifest uses `extra="forbid"` and declares an exact allowlist equal to its fields. Trace-visible manifests reject open objects, `Any`, unordered collections, formatted/path-like types and sensitive field names. Protected user/document/prompt/transcript content must be retained behind the future artifact resolver; a snapshot digest alone is an integrity reference and never a replay-complete claim.
 
 `HARNESS_RESOURCE_EVIDENCE_POLICIES` separates four questions for every closed resource type: storage semantics, admissible context freshness proof, successful commit proof, and rollback proof. The shared golden registry is the cross-language authority. Attempted references in `not_committed` evidence identify intended targets and therefore may name resources whose successful commit proof is not migrated; they must not carry invented revisions. `committed` accepts only registered proof shapes, and v3 `rolled_back` rejects every resource until a read-back or compensation proof contract is implemented. This is stricter than v2 by design and does not reinterpret persisted v2 evidence.
@@ -108,6 +143,17 @@ owns stable request identity, Document/Debug base digests, provider-start state,
 and the atomic Document/Debug/Trace/Plan committed snapshot. That atomicity and
 read-back boundary has also passed independent revalidation; v3 operation
 evidence remains under `HRN-PLAN-001`.
+
+`ToolManifestRegistry/tool-manifest-v1` is the single catalog for all six
+Planning tools and thirty-one Study tools. Each stage-qualified entry binds
+ownership, strict input/result/runtime and provider contracts, effect class,
+sensitivity and projection policy, budgets, serial/parallel policy,
+dependencies, capabilities, aliases, and retirement replacement. Provider
+schemas and runtime adapters are derived from the registry and checked against
+the shared golden projection. Provider-visible protected content is permitted
+only through the registered provider projection; trace/public projections stay
+redacted or content-free. This boundary does not make Planning or Study Chat
+v3-adopted.
 
 Scene generation uses `SceneTreeProposalV1`, a strict content-only tree with a
 zero-based selected path and optional `reusable_node_ref`. It forbids committed

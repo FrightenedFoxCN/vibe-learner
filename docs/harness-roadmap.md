@@ -33,15 +33,27 @@ fully v3-adopted:
 - Python and TypeScript expose compatible v1/v2/v3 evidence contracts;
 - the closed workflow/stage/component registries and shared golden fixtures are
   enforced in tests;
+- the executable workflow manifest closes stage ownership, contract, budget,
+  effect/artifact, commit-policy, decoder, and eval routing registrations;
+- Document processing, Learning Plan generation, Study Chat, and Tavern Run
+  allocate one immutable Harness/domain operation binding at durable admission;
+- artifact authorization uses a server-resolved local-installation principal,
+  exact operation/artifact/contract scopes, expiry/revocation, and content-free
+  audit evidence;
+- the shared Tool Manifest owns all six Planning and thirty-one Study tool
+  contracts, provider projections, effects, sensitivity, and call budgets;
+- strict eval case/run/sample/report and failure-taxonomy contracts bind tested
+  system configuration and admitted Harness operations;
 - v3 safe-manifest canonicalization and context digest validation exist;
 - resource and operation commit policies fail closed, with the first narrow
   Tavern Message policy registered;
-- Document and Planning have durable operation admission plus atomic committed
-  projections;
+- Document and Planning have atomic committed projections in addition to the
+  shared admission identity;
 - Study has durable admission, transactional database effects, recoverable file
   staging, and truthful provider uncertainty;
 - Tavern production still emits legacy v1 traces;
-- `build_harness_context` has no production caller;
+- `build_harness_context` requires an admitted operation binding and executable
+  manifest, but still has no production caller;
 - there is no shared operation runtime, protected artifact resolver, eval
   runner, grader registry, or versioned evaluation baseline.
 
@@ -59,27 +71,21 @@ The following IDs are tracking epics and are not directly claimable:
   complete.
 - `SCH-HRN-EFFECT-001`: closes through
   `SCH-HRN-EFFECT-JOURNAL-001` and `SCH-HRN-EFFECT-EVIDENCE-001`.
-- `HRN-EVAL-001`: closes through `HRN-EVAL-CONTRACT-001`,
-  `HRN-EVAL-RUNNER-001`, `HRN-EVAL-GRADER-001`, and
-  `HRN-EVAL-BASELINE-001`, after at least the Tavern identity and Planning tool
-  pilot suites use the shared core.
+- `HRN-EVAL-001`: closes through `HRN-EVAL-RUNNER-001`,
+  `HRN-EVAL-GRADER-001`, and `HRN-EVAL-BASELINE-001`, after at least the Tavern
+  identity and Planning tool pilot suites use the shared core. The wire and
+  failure-taxonomy contracts are already foundation facts, not active work.
 
 ## Dependency map
 
 ```mermaid
 flowchart TD
-    WM[HRN-WORKFLOW-MANIFEST-001] --> RT[HRN-CTX-RUNTIME-001]
-    OP[HRN-OP-ID-001] --> RT
-    SUB[HRN-SUBJECT-001] --> ART[HRN-CTX-ARTIFACT-001]
-    ART --> RT
+    ART[HRN-CTX-ARTIFACT-001] --> RT[HRN-CTX-RUNTIME-001]
     EJ[SCH-HRN-EFFECT-JOURNAL-001] --> EE[SCH-HRN-EFFECT-EVIDENCE-001]
     EE --> RT
 
-    EC[HRN-EVAL-CONTRACT-001] --> ER[HRN-EVAL-RUNNER-001]
-    WM --> ER
-    EC --> EG[HRN-EVAL-GRADER-001]
-    ER --> EB[HRN-EVAL-BASELINE-001]
-    EG --> EB
+    ER[HRN-EVAL-RUNNER-001] --> EB[HRN-EVAL-BASELINE-001]
+    EG[HRN-EVAL-GRADER-001] --> EB
 
     RT --> RM[HRN-RECOVERY-MIG-001]
     EB --> TAV_EVAL[HRN-TAV-002]
@@ -98,13 +104,16 @@ flowchart TD
 
 The graph shows hard ordering inside Harness. Product-line prerequisites owned
 by `../TODO.md` are listed separately below. Fixture/synthetic evals deliberately
-do not depend on the protected artifact resolver; production replay does.
+do not depend on the protected artifact resolver; production replay does. The
+completed workflow manifest, operation identity, artifact authorization, Tool
+Manifest, and eval wire contracts are durable prerequisites documented in
+`harness-engineering.md` and `harness-schema-ownership.md` rather than active
+nodes here.
 
 ## Delivery waves
 
 | Wave | Outcome | Claimable work |
 |---|---|---|
-| 0 — contracts | Freeze workflow, identity, subject, tool, and eval vocabularies | Manifest, operation ID, subject, tool catalog, eval contract |
 | 1 — durable core | Make artifacts and effects replayable and evaluation executable | Effect journal/evidence, artifact resolver, eval runner/grader |
 | 2 — shared runtime | Assemble truthful operations and establish baselines | Operation runtime, recovery migration, eval baseline, pilot suites |
 | 3 — high-risk adoption | Migrate the two most stateful model paths | Tavern v3 and Study Chat v3 |
@@ -113,65 +122,6 @@ do not depend on the protected artifact resolver; production replay does.
 
 Tasks in the same wave may proceed in parallel only when their listed
 dependencies and shared contract ownership do not overlap.
-
-## Wave 0 — contracts and governance
-
-- [ ] `HRN-WORKFLOW-MANIFEST-001` `[P1]` establish a versioned executable
-  workflow/stage manifest.
-  - Extend or supersede the current operation-stage registry with exact
-    input/proposal/output contracts, owner adapter, component contracts,
-    prompt/policy/toolset references, attempt ceiling, execution budgets,
-    allowed artifact/effect types, commit-policy key, and eval suites.
-  - Keep raw prompt, document, transcript, user guidance, paths, and secrets out
-    of the shared manifest; bind them through protected artifact references.
-  - Python, TypeScript, the shared golden fixture, decoder/eval routing, and
-    ownership documentation must change atomically.
-  - Missing, unknown, placeholder, or inconsistent registrations fail closed;
-    a manifest entry is not production-adoption evidence.
-
-- [ ] `HRN-OP-ID-001` `[P1]` define one durable Harness/domain operation
-  identity relationship.
-  - Allocate `harness_operation_id` at durable admission, before provider or
-    worker execution; retain a domain operation ID only through an immutable
-    one-to-one mapping where compatibility requires it.
-  - Context, traces, parent lineage, artifact grants, effect batches, terminal
-    evidence, and eval samples must resolve to the same admitted operation.
-  - Tavern must not allocate its Harness operation only at Message commit time.
-  - Duplicate admission, crash/restart, replay, cross-operation rebinding, and
-    legacy rows without fabricated identities need fixtures.
-
-- [ ] `HRN-SUBJECT-001` `[P1]` define the artifact principal and authorization
-  model.
-  - The current API has no authentication; choose and version the authoritative
-    boundary for a single-user local principal, scoped capability, or formal
-    authenticated principal.
-  - Define subject, grant, scope, expiry, revocation, and audit-result contracts
-    without putting secrets in trace-visible evidence.
-  - Fixtures must prove same-principal access, cross-principal `forbidden`,
-    revoked/expired access, and no-principal fail-closed behavior.
-
-- [ ] `TOOL-CATALOG-001` `[P1]` establish one versioned Tool Manifest for model
-  workflows.
-  - Register ownership, strict input/result contracts, effect class,
-    sensitivity, budget, parallel safety, dependencies, and provider
-    capabilities for every Planning and Study tool.
-  - Distinguish pure reads, database writes, file/staging effects, and external
-    calls; a provider `tool_call_id` remains transport correlation only.
-  - Duplicate, renamed, and retired tools require compatibility and retirement
-    rules, with Python/provider projections checked against one golden catalog.
-
-- [ ] `HRN-EVAL-CONTRACT-001` `[P1]` define versioned evaluation data and report
-  contracts.
-  - Add strict `EvalCase`, `EvalRun`, `EvalSample`, metric, grader-result, and
-    failure-taxonomy DTOs with stable case/run/sample identity.
-  - Cases register `eval_route`, suite/version, provenance, sensitivity,
-    fixture/protected-artifact mode, tags, split, expected invariants, and
-    grader references.
-  - Runs bind the tested system configuration: provider adapter/model,
-    reasoning/sampling settings, prompt/policy/tool/component contracts,
-    attempt/tool/token/time budgets, and Harness version.
-  - Reports expose sample count and raw content-free evidence; secrets and
-    protected source material never appear in CI artifacts.
 
 ## Wave 1 — durable artifacts, effects, and eval execution
 
@@ -197,7 +147,7 @@ dependencies and shared contract ownership do not overlap.
     timeout after start, and forged terminal evidence require fixtures.
 
 - [ ] `HRN-CTX-ARTIFACT-001` `[P1]` build the protected artifact resolver;
-  depends on `HRN-SUBJECT-001`.
+  builds on the completed subject/grant/audit contract.
   - Support opaque immutable IDs, artifact/contract registration,
     authorization-before-read, retention/expiry, digest read-back, revocation,
     and bounded batch resolution.
@@ -208,8 +158,8 @@ dependencies and shared contract ownership do not overlap.
   - `document_debug` and `planning_trace` remain removable caches and must not
     masquerade as durable replay artifacts.
 
-- [ ] `HRN-EVAL-RUNNER-001` `[P1]` implement the shared eval runner; depends on
-  `HRN-EVAL-CONTRACT-001` and `HRN-WORKFLOW-MANIFEST-001`.
+- [ ] `HRN-EVAL-RUNNER-001` `[P1]` implement the shared eval runner; builds on
+  the completed eval wire and executable workflow manifest contracts.
   - Route cases only through registered `eval_route` adapters and reject
     unknown suite, workflow, stage, contract, or configuration versions.
   - Provide deterministic fixture/synthetic mode without artifact or network
@@ -221,7 +171,7 @@ dependencies and shared contract ownership do not overlap.
     explicit manual/nightly live-provider execution.
 
 - [ ] `HRN-EVAL-GRADER-001` `[P1]` establish a versioned grader registry;
-  depends on `HRN-EVAL-CONTRACT-001`.
+  builds on the completed eval wire contract.
   - Prefer schema, invariant, commit/read-back, identity, citation, and tool
     checks implemented by deterministic code.
   - Model graders are allowed only for named subjective rubrics and must bind
@@ -236,8 +186,8 @@ dependencies and shared contract ownership do not overlap.
 ## Wave 2 — runtime, migration, and initial baselines
 
 - [ ] `HRN-CTX-RUNTIME-001` `[P1]` build the workflow-neutral operation runtime;
-  depends on `HRN-WORKFLOW-MANIFEST-001`, `HRN-OP-ID-001`,
-  `HRN-CTX-ARTIFACT-001`, and both effect-epic child tasks.
+  depends on `HRN-CTX-ARTIFACT-001`, both effect-epic child tasks, and the
+  completed workflow-manifest/operation-identity foundation.
   - Assemble durable operation, context, protected artifacts, ordered
     generate/decode/validate/repair attempts, checks, effects,
     commit/rollback, and terminal failure through registered adapters.
@@ -285,7 +235,7 @@ dependencies and shared contract ownership do not overlap.
     unit tests alone do not establish the baseline.
 
 - [ ] `PLAN-TOOLS-EVAL-001` `[P2]` establish the Planning tool baseline;
-  depends on the eval core and `TOOL-CATALOG-001`.
+  depends on the eval core and the completed Tool Manifest.
   - Report eligible batch size, actual call rate, invalid call rate, per-tool
     p50/p95, total wall-clock, grounding, tool correctness, retry, and provider
     call counts.

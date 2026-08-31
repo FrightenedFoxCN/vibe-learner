@@ -1,24 +1,20 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
-
-from pydantic import ValidationError
 
 from app.core.harness_component_versions import (
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
     PLANNING_TOOLSET_CONTRACT_VERSION,
 )
 from app.models.domain import DocumentDebugRecord, PlanningQuestionRecord, StudyUnitRecord
-from app.models.planning import (
-    PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION,
-    PLANNING_TOOL_ARGUMENT_MODELS,
-    PLANNING_TOOL_RESULT_CONTRACT_VERSION,
-    PLANNING_TOOL_RESULT_MODELS,
-    PlanningToolErrorResultV1,
+from app.models.harness import HarnessStage, HarnessWorkflow
+from app.models.tool_manifest import (
+    TOOL_MANIFEST_ENTRIES,
+    ToolManifestEntryV1,
+    resolve_tool_manifest_entry,
 )
 from app.services.model_tool_config import PLAN_STAGE, TOOL_CATALOG
 from app.services.plan_prompt import (
@@ -26,13 +22,22 @@ from app.services.plan_prompt import (
     read_page_range_content,
     read_page_range_images,
 )
+from app.services.tool_provider_projection import (
+    ProviderToolCallDecodeError,
+    ToolContractViolation,
+    ToolExecutionBudgetTracker,
+    adapt_tool_runtime_result,
+    build_versioned_tool_error,
+    decode_provider_tool_call,
+    project_tool_arguments_for_observability,
+    project_validated_tool_result,
+    provider_function_for_entry,
+)
 
 
 @dataclass(frozen=True)
 class PlanToolDefinition:
     name: str
-    description: str
-    parameters: dict[str, object]
     is_available: Callable[["PlanToolRuntimeContext"], bool]
     execute: Callable[[dict[str, Any], "PlanToolRuntimeContext"], "PlanToolResult"]
 
@@ -61,10 +66,12 @@ class PlanToolExecution:
     tool_name: str
     arguments_json: str
     result: dict[str, object]
+    provider_result: dict[str, object]
+    trace_result: dict[str, object]
     trace_summary: str
     follow_up_messages: list[dict[str, Any]]
-    argument_contract_version: str = PLANNING_TOOL_ARGUMENT_CONTRACT_VERSION
-    result_contract_version: str = PLANNING_TOOL_RESULT_CONTRACT_VERSION
+    argument_contract_version: str
+    result_contract_version: str
 
 
 class PlanToolRuntime:
@@ -76,6 +83,10 @@ class PlanToolRuntime:
             for definition in _registered_plan_tools()
             if definition.is_available(context) and definition.name not in disabled
         }
+        self._budget = ToolExecutionBudgetTracker()
+
+    def begin_round(self) -> None:
+        self._budget.begin_round()
 
     def has_tools(self) -> bool:
         return bool(self._definitions)
@@ -90,122 +101,91 @@ class PlanToolRuntime:
         return [
             {
                 "name": definition.name,
-                "description": definition.description,
+                "description": _planning_manifest_entry(definition.name).display.provider_description,
             }
             for definition in self._definitions.values()
         ]
 
     def openai_tools(self) -> list[dict[str, object]]:
         return [
-            {
-                "type": "function",
-                "function": {
-                    "name": definition.name,
-                    "description": definition.description,
-                    "parameters": definition.parameters,
-                },
-            }
+            provider_function_for_entry(
+                _planning_manifest_entry(definition.name)
+            ).model_dump(mode="json")
             for definition in self._definitions.values()
         ]
 
     def execute_tool_call(self, tool_call: dict[str, Any]) -> PlanToolExecution:
         tool_call_id = tool_call.get("id") if isinstance(tool_call.get("id"), str) else ""
-        function_payload = tool_call.get("function")
-        if not isinstance(function_payload, dict):
+        try:
+            decoded = decode_provider_tool_call(
+                tool_call,
+                workflow=HarnessWorkflow.PLANNING,
+                offered_in_stage=HarnessStage.PLAN_GENERATION,
+            )
+        except ProviderToolCallDecodeError as error:
+            function_payload = tool_call.get("function")
+            raw_name = function_payload.get("name") if isinstance(function_payload, dict) else ""
+            error_path = list(error.path)
+            if len(error_path) > 2 and error_path[:2] == [
+                "function",
+                "arguments",
+            ]:
+                error_path = error_path[2:]
             return _tool_argument_error_execution(
                 tool_call_id=tool_call_id,
-                tool_name="",
-                raw_arguments="",
-                error="invalid_tool_call",
-                path=["function"],
-                detail="tool function payload must be an object",
+                tool_name=raw_name if isinstance(raw_name, str) else "",
+                error=_planning_decode_error_code(error.code),
+                path=error_path,
+                detail=error.detail,
             )
-        raw_name = function_payload.get("name")
-        tool_name = raw_name if isinstance(raw_name, str) else ""
-        raw_arguments_value = function_payload.get("arguments")
-        raw_arguments = raw_arguments_value if isinstance(raw_arguments_value, str) else ""
+        tool_name = decoded.canonical_name
         definition = self._definitions.get(tool_name)
+        entry = TOOL_MANIFEST_ENTRIES[decoded.manifest_key]
         if definition is None:
-            error = PlanningToolErrorResultV1(
+            return _tool_argument_error_execution(
+                tool_call_id=tool_call_id,
                 tool_name=tool_name,
-                error="unknown_tool",
+                error="tool_unavailable",
                 path=["function", "name"],
-                detail="tool is not registered or available in this planning context",
-            )
-            return PlanToolExecution(
-                tool_call_id=tool_call_id,
-                tool_name=tool_name,
-                arguments_json=raw_arguments,
-                result=error.model_dump(mode="json"),
-                trace_summary=f"{tool_name}: 未知工具",
-                follow_up_messages=[],
-            )
-        if not isinstance(raw_arguments_value, str):
-            return _tool_argument_error_execution(
-                tool_call_id=tool_call_id,
-                tool_name=tool_name,
-                raw_arguments=raw_arguments,
-                error="tool_argument_decode_failed",
-                path=["function", "arguments"],
-                detail="tool arguments must be a JSON string",
+                detail="tool is not available in this planning context",
+                entry=entry,
             )
         try:
-            arguments = json.loads(raw_arguments)
-        except json.JSONDecodeError as exc:
+            self._budget.admit(entry)
+        except ToolContractViolation as error:
             return _tool_argument_error_execution(
                 tool_call_id=tool_call_id,
                 tool_name=tool_name,
-                raw_arguments=raw_arguments,
-                error="tool_argument_invalid_json",
-                path=["function", "arguments", exc.pos],
-                detail=exc.msg,
+                error=error.code,
+                path=[],
+                detail=error.detail,
+                entry=entry,
             )
-        argument_model = PLANNING_TOOL_ARGUMENT_MODELS[tool_name]
-        try:
-            decoded_arguments = argument_model.model_validate(arguments)
-        except ValidationError as exc:
-            first_error = exc.errors(include_url=False)[0]
-            return _tool_argument_error_execution(
-                tool_call_id=tool_call_id,
-                tool_name=tool_name,
-                raw_arguments=raw_arguments,
-                error="tool_argument_schema_invalid",
-                path=[*first_error.get("loc", ())],
-                detail=str(first_error.get("type") or "validation_error"),
-            )
-        result = definition.execute(decoded_arguments.model_dump(mode="python"), self.context)
-        result_model = PLANNING_TOOL_RESULT_MODELS[tool_name]
-        result_payload = {
-            "schema_name": "planning-tool-result",
-            "schema_version": PLANNING_TOOL_RESULT_CONTRACT_VERSION,
-            **result.payload,
-        }
-        if result_payload.get("ok") is False:
-            validated_result = PlanningToolErrorResultV1.model_validate(
-                {
-                    "tool_name": tool_name,
-                    "path": [],
-                    "detail": "",
-                    "study_unit_id": "",
-                    **result_payload,
-                }
-            )
-        else:
-            try:
-                validated_result = result_model.model_validate(result_payload)
-            except ValidationError as exc:
-                first_error = exc.errors(include_url=False)[0]
-                path = ".".join(str(item) for item in first_error.get("loc", ()))
-                raise RuntimeError(
-                    f"planning_tool_result_contract_violation:{tool_name}:{path}"
-                ) from exc
+        result = definition.execute(decoded.arguments.model_dump(mode="python"), self.context)
+        validated_result = adapt_tool_runtime_result(entry, result.payload)
+        canonical = validated_result.model_dump(mode="json")
         return PlanToolExecution(
             tool_call_id=tool_call_id,
             tool_name=tool_name,
-            arguments_json=raw_arguments,
-            result=validated_result.model_dump(mode="json"),
-            trace_summary=result.trace_summary,
+            arguments_json=project_tool_arguments_for_observability(
+                entry,
+                decoded.arguments,
+            ),
+            result=canonical,
+            provider_result=project_validated_tool_result(
+                entry,
+                validated_result,
+                audience="provider",
+            ),
+            trace_result=project_validated_tool_result(
+                entry,
+                validated_result,
+                audience="trace",
+            ),
+            trace_summary=f"{tool_name}: {'failed' if canonical.get('ok') is False else 'validated'}",
             follow_up_messages=result.follow_up_messages,
+            argument_contract_version=entry.input_contract.version,
+            result_contract_version=entry.result_contract.version,
         )
 
 
@@ -246,7 +226,9 @@ def get_learning_plan_tool_specs(
         return [
             {
                 "name": definition.name,
-                "description": definition.description,
+                "description": _planning_manifest_entry(
+                    definition.name
+                ).display.provider_description,
             }
             for definition in _registered_plan_tools()
         ]
@@ -261,171 +243,55 @@ def get_learning_plan_tool_specs(
 
 
 def _registered_plan_tools() -> list[PlanToolDefinition]:
-    return [
+    definitions = [
         PlanToolDefinition(
             name="get_study_unit_detail",
-            description=TOOL_CATALOG[PLAN_STAGE]["get_study_unit_detail"]["description"],
-            parameters={
-                "type": "object",
-                "properties": {
-                    "study_unit_id": {
-                        "type": "string",
-                        "description": "从当前学习单元列表中选择要查看的学习单元 ID。",
-                    },
-                    "focus": {
-                        "type": "string",
-                        "description": "可选。说明查看原因，例如核对子主题覆盖或例题分布。",
-                    },
-                },
-                "required": ["study_unit_id"],
-                "additionalProperties": False,
-            },
             is_available=lambda context: bool(context.detail_map),
             execute=_execute_get_study_unit_detail,
         ),
         PlanToolDefinition(
             name="ask_planning_question",
-            description=TOOL_CATALOG[PLAN_STAGE]["ask_planning_question"]["description"],
-            parameters={
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "需要向学习者确认的一个具体问题。",
-                    },
-                    "reason": {
-                        "type": "string",
-                        "description": "可选。说明为什么当前需要确认这个问题。",
-                    },
-                    "assumptions": {
-                        "type": "array",
-                        "description": "可选。若暂时无法等待回答，先采用的保守假设。",
-                        "items": {
-                            "type": "string",
-                        },
-                    },
-                },
-                "required": ["question"],
-                "additionalProperties": False,
-            },
             is_available=lambda context: True,
             execute=_execute_ask_planning_question,
         ),
         PlanToolDefinition(
             name="estimate_plan_completion",
-            description=TOOL_CATALOG[PLAN_STAGE]["estimate_plan_completion"]["description"],
-            parameters={
-                "type": "object",
-                "properties": {
-                    "focus": {
-                        "type": "string",
-                        "description": "可选。提示当前最需要检查的维度，例如目录细度、目标覆盖或行动可执行性。",
-                    },
-                },
-                "additionalProperties": False,
-            },
             is_available=lambda context: True,
             execute=_execute_estimate_plan_completion,
         ),
         PlanToolDefinition(
             name="revise_study_units",
-            description=TOOL_CATALOG[PLAN_STAGE]["revise_study_units"]["description"],
-            parameters={
-                "type": "object",
-                "properties": {
-                    "study_units": {
-                        "type": "array",
-                        "description": "当前学习单元切分的完整替换列表。",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "title": {
-                                    "type": "string",
-                                    "description": "面向学习者展示的章节或学习单元标题。",
-                                },
-                                "page_start": {
-                                    "type": "integer",
-                                    "description": "该学习单元的起始页码，包含本页。",
-                                },
-                                "page_end": {
-                                    "type": "integer",
-                                    "description": "该学习单元的结束页码，包含本页。",
-                                },
-                                "include_in_plan": {
-                                    "type": "boolean",
-                                    "description": "该学习单元是否应纳入学习计划。",
-                                },
-                                "summary": {
-                                    "type": "string",
-                                    "description": "可选。该学习单元的简短摘要。",
-                                },
-                            },
-                            "required": ["title", "page_start", "page_end"],
-                            "additionalProperties": False,
-                        },
-                    },
-                    "rationale": {
-                        "type": "string",
-                        "description": "可选。说明为何需要替换原有切分。",
-                    },
-                },
-                "required": ["study_units"],
-                "additionalProperties": False,
-            },
             is_available=lambda context: context.debug_report is not None and bool(context.study_units),
             execute=_execute_revise_study_units,
         ),
         PlanToolDefinition(
             name="read_page_range_content",
-            description=TOOL_CATALOG[PLAN_STAGE]["read_page_range_content"]["description"],
-            parameters={
-                "type": "object",
-                "properties": {
-                    "page_start": {
-                        "type": "integer",
-                        "description": "要查看文本的起始页码。",
-                    },
-                    "page_end": {
-                        "type": "integer",
-                        "description": "要查看文本的结束页码。",
-                    },
-                    "max_chars": {
-                        "type": "integer",
-                        "description": "可选。返回文本的最大字符预算。",
-                    },
-                },
-                "required": ["page_start", "page_end"],
-                "additionalProperties": False,
-            },
             is_available=lambda context: context.debug_report is not None,
             execute=_execute_read_page_range_content,
         ),
         PlanToolDefinition(
             name="read_page_range_images",
-            description=TOOL_CATALOG[PLAN_STAGE]["read_page_range_images"]["description"],
-            parameters={
-                "type": "object",
-                "properties": {
-                    "page_start": {
-                        "type": "integer",
-                        "description": "要渲染图像的起始页码。",
-                    },
-                    "page_end": {
-                        "type": "integer",
-                        "description": "要渲染图像的结束页码。",
-                    },
-                    "max_images": {
-                        "type": "integer",
-                        "description": "可选。最多返回的页图像数量。",
-                    },
-                },
-                "required": ["page_start", "page_end"],
-                "additionalProperties": False,
-            },
-            is_available=lambda context: context.multimodal_enabled and bool(context.document_path),
+            is_available=lambda context: bool(
+                context.multimodal_enabled and context.document_path
+            ),
             execute=_execute_read_page_range_images,
         ),
     ]
+    expected_names = {
+        entry.canonical_name
+        for entry in TOOL_MANIFEST_ENTRIES.values()
+        if entry.workflow == HarnessWorkflow.PLANNING
+    }
+    actual_names = {definition.name for definition in definitions}
+    if actual_names != expected_names:
+        raise RuntimeError("planning_tool_availability_manifest_mismatch")
+    for definition in definitions:
+        catalog_description = TOOL_CATALOG[PLAN_STAGE][definition.name]["description"]
+        if catalog_description != _planning_manifest_entry(
+            definition.name
+        ).display.provider_description:
+            raise RuntimeError("planning_tool_description_manifest_mismatch")
+    return definitions
 
 
 def _execute_get_study_unit_detail(
@@ -863,23 +729,85 @@ def _tool_argument_error_execution(
     *,
     tool_call_id: str,
     tool_name: str,
-    raw_arguments: str,
     error: str,
     path: list[str | int],
     detail: str,
+    entry: ToolManifestEntryV1 | None = None,
 ) -> PlanToolExecution:
-    result = PlanningToolErrorResultV1(
+    result = build_versioned_tool_error(
+        workflow=HarnessWorkflow.PLANNING,
         tool_name=tool_name,
         error=error,
         path=path,
         detail=detail,
     )
+    canonical = result.model_dump(mode="json")
+    if entry is None and tool_name:
+        try:
+            entry = _planning_manifest_entry(tool_name)
+        except ValueError:
+            entry = None
+    provider_result = (
+        project_validated_tool_result(entry, result, audience="provider")
+        if entry is not None
+        else {
+            "schema_version": canonical["schema_version"],
+            "ok": False,
+            "tool_name": canonical["tool_name"],
+            "error": canonical["error"],
+        }
+    )
+    trace_result = (
+        project_validated_tool_result(entry, result, audience="trace")
+        if entry is not None
+        else provider_result
+    )
     rendered_path = ".".join(str(item) for item in path) or "$"
     return PlanToolExecution(
         tool_call_id=tool_call_id,
-        tool_name=tool_name,
-        arguments_json=raw_arguments,
-        result=result.model_dump(mode="json"),
+        tool_name=entry.canonical_name if entry is not None else (tool_name or "unknown_tool"),
+        arguments_json=(
+            '{"contract_version":"planning-tool-arguments-v1","redacted":true}'
+        ),
+        result=canonical,
+        provider_result=provider_result,
+        trace_result=trace_result,
         trace_summary=f"{tool_name or 'tool'}: 参数拒绝（{rendered_path}）",
         follow_up_messages=[],
+        argument_contract_version=(
+            entry.input_contract.version
+            if entry is not None
+            else "planning-tool-arguments-v1"
+        ),
+        result_contract_version=(
+            entry.result_contract.version
+            if entry is not None
+            else "planning-tool-result-v1"
+        ),
     )
+
+
+def _planning_manifest_entry(name: str) -> ToolManifestEntryV1:
+    return resolve_tool_manifest_entry(
+        workflow=HarnessWorkflow.PLANNING,
+        offered_in_stage=HarnessStage.PLAN_GENERATION,
+        transport_name=name,
+    )
+
+
+def _planning_decode_error_code(code: str) -> str:
+    if code == "tool_arguments_json_invalid":
+        return "tool_argument_invalid_json"
+    if code in {
+        "tool_arguments_object_required",
+        "tool_arguments_json_string_required",
+        "tool_arguments_contract_invalid",
+        "tool_arguments_duplicate_key",
+        "tool_arguments_nonfinite",
+    }:
+        return "tool_argument_schema_invalid"
+    if code == "tool_arguments_budget_exceeded":
+        return "tool_argument_budget_exceeded"
+    if code == "tool_manifest_tool_unknown":
+        return "unknown_tool"
+    return code

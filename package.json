@@ -15,7 +15,7 @@
     "build:desktop": "npm --workspace @vibe-learner/desktop run build",
     "check:web": "npm --workspace @vibe-learner/web run check",
     "lint:web": "npm run check:web",
-    "test:contracts": "tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json && node packages/shared/tests/harness-policy-registry.mjs",
+    "test:contracts": "tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json && node packages/shared/tests/harness-policy-registry.mjs && node packages/shared/tests/harness-artifact-access.mjs && node packages/shared/tests/harness-eval-contract.mjs && node packages/shared/tests/harness-manifest.mjs && node packages/shared/tests/tool-manifest.mjs",
     "test:web:tavern": "npm --workspace @vibe-learner/web run test:tavern",
     "test:web:reliability": "npm --workspace @vibe-learner/web run test:reliability",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",

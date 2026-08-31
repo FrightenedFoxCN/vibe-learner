@@ -19,7 +19,14 @@ from app.models.document_process_operation import (
     document_process_request_fingerprint,
 )
 from app.models.domain import DocumentDebugRecord, DocumentRecord
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationBindingV1,
+)
 from app.persistence.database import Database
+from app.persistence.harness_operation_repository import (
+    HarnessOperationBindingRepository,
+)
 from app.persistence.models import (
     DocumentDebugRow,
     DocumentProcessOperationRow,
@@ -38,6 +45,7 @@ class DocumentProcessOperationRepository:
     ) -> None:
         self.database = database
         self.fault_injector = fault_injector
+        self.harness_operations = HarnessOperationBindingRepository(database)
 
     def admit(
         self,
@@ -91,6 +99,13 @@ class DocumentProcessOperationRepository:
                     completed_at="",
                 )
                 session.add(row)
+                self.harness_operations._admit_domain_in_session(
+                    session,
+                    domain_row=row,
+                    domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                    domain_operation_id=operation_id,
+                    admitted_at=now,
+                )
                 session.flush()
                 return _from_row(row), processing_document
         except IntegrityError as exc:
@@ -115,6 +130,11 @@ class DocumentProcessOperationRepository:
                 raise DocumentProcessOperationNotFound(operation_id)
             if operation.status != DocumentProcessOperationStatus.RUNNING.value:
                 raise DocumentProcessOperationNotRunning(operation_id, operation.status)
+            self.harness_operations.require_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                domain_operation_id=operation_id,
+            )
             if operation.document_id != document.id or debug_report.document_id != document.id:
                 raise DocumentProcessProjectionIdentityMismatch(operation_id)
             document_row = session.get(DocumentRow, document.id)
@@ -191,7 +211,16 @@ class DocumentProcessOperationRepository:
                 row.status = DocumentProcessOperationStatus.FAILED.value
                 row.active_slot = None
                 row.projection_state = DocumentProcessProjectionState.NOT_COMMITTED.value
-                row.error_code = "document_process_abandoned_on_startup"
+                resolution = self.harness_operations.resolve_domain_in_session(
+                    session,
+                    domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                    domain_operation_id=row.operation_id,
+                )
+                row.error_code = (
+                    "document_process_harness_operation_legacy_unbound"
+                    if resolution.binding is None
+                    else "document_process_abandoned_on_startup"
+                )
                 row.document_digest = ""
                 row.debug_digest = ""
                 row.commit_contract_version = ""
@@ -199,6 +228,15 @@ class DocumentProcessOperationRepository:
                 row.completed_at = now
                 recovered_ids.append(row.operation_id)
         return [self.require(operation_id=item) for item in recovered_ids]
+
+    def require_harness_operation(
+        self,
+        operation_id: str,
+    ) -> HarnessOperationBindingV1:
+        return self.harness_operations.require_domain(
+            domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+            domain_operation_id=operation_id,
+        )
 
     def get_active(self, *, document_id: str) -> DocumentProcessOperationRecord | None:
         with self.database.session() as session:
@@ -273,6 +311,11 @@ class DocumentProcessOperationRepository:
                 return _from_row(row)
             if row.status != DocumentProcessOperationStatus.RUNNING.value:
                 return _from_row(row)
+            resolution = self.harness_operations.resolve_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                domain_operation_id=operation_id,
+            )
             document_row = session.get(DocumentRow, row.document_id)
             if document_row is not None:
                 base = DocumentRecord.model_validate(row.base_document_payload or {})
@@ -289,7 +332,11 @@ class DocumentProcessOperationRepository:
             row.document_digest = ""
             row.debug_digest = ""
             row.commit_contract_version = ""
-            row.error_code = error_code[:128] or "document_process_failed"
+            row.error_code = (
+                "document_process_harness_operation_legacy_unbound"
+                if resolution.binding is None
+                else error_code[:128] or "document_process_failed"
+            )
             row.updated_at = now
             row.completed_at = now
         return self.require(operation_id=operation_id, validate_read_back=False)

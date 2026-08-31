@@ -14,9 +14,15 @@ from fastapi.testclient import TestClient
 
 from app.api import tavern_routes
 from app.models.api import CreatePersonaRequest
+from app.models.harness_operation import HarnessOperationResolutionStatus
 from app.models.tavern import RetryTavernRunRequest, TavernActorReply, TavernTurnRequest
 from app.persistence.database import Database
-from app.persistence.models import TavernMessageRow, TavernRoomRow
+from app.persistence.models import (
+    TavernMessageRow,
+    TavernRoomRow,
+    TavernRunRow,
+    TavernRunStepRow,
+)
 from app.persistence.storage import StorageManager
 from app.persistence.tavern_repository import TavernRepository
 from app.services.local_store import LocalJsonStore
@@ -161,6 +167,20 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             [2, 3, 4],
         )
         self.assertEqual([item["persona_id"] for item in self.provider.calls], roster_ids)
+        operation_binding = self.repository.require_harness_operation(
+            result["run"]["id"]
+        )
+        persisted_messages = self.repository.list_run_messages(result["run"]["id"])
+        self.assertEqual(len(persisted_messages), 3)
+        self.assertEqual(
+            {
+                item.commit_metadata.operation_id
+                for item in persisted_messages
+                if item.commit_metadata is not None
+            },
+            {operation_binding.harness_operation_id},
+        )
+        self.assertTrue(all(item.commit_metadata is not None for item in persisted_messages))
 
         replay = self.client.post(
             f"/tavern/rooms/{room_id}/turns",
@@ -349,6 +369,26 @@ class TavernFacilitatedApiTests(unittest.TestCase):
         self.assertIsNone(retried.json()["input_message"])
         self.assertEqual(child["parent_run_id"], source.id)
         self.assertEqual(child["root_run_id"], source.id)
+        source_binding = self.repository.require_harness_operation(source.id)
+        child_binding = self.repository.require_harness_operation(child["id"])
+        self.assertNotEqual(
+            child_binding.harness_operation_id,
+            source_binding.harness_operation_id,
+        )
+        self.assertEqual(
+            child_binding.parent_harness_operation_id,
+            source_binding.harness_operation_id,
+        )
+        child_messages = self.repository.list_run_messages(child["id"])
+        self.assertTrue(all(item.commit_metadata is not None for item in child_messages))
+        self.assertEqual(
+            {
+                item.commit_metadata.operation_id
+                for item in child_messages
+                if item.commit_metadata is not None
+            },
+            {child_binding.harness_operation_id},
+        )
         recent_window = self.client.get(f"/tavern/rooms/{room_id}/runs?limit=1")
         self.assertEqual(recent_window.status_code, 200, recent_window.text)
         self.assertEqual(
@@ -534,6 +574,7 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             idempotency_key=payload.idempotency_key,
         )
         assert abandoned is not None
+        admitted_binding = self.repository.require_harness_operation(abandoned.id)
         self.assertEqual(abandoned.status.value, "pending")
         self.assertEqual([step.status.value for step in abandoned.speaker_steps], ["pending"] * 3)
 
@@ -550,11 +591,108 @@ class TavernFacilitatedApiTests(unittest.TestCase):
         recovered = response.json()
         self.assertEqual(recovered["run"]["status"], "completed")
         self.assertEqual(len(recovered["generated_messages"]), 3)
+        restarted_binding = TavernRepository(
+            self.database
+        ).require_harness_operation(abandoned.id)
+        self.assertEqual(restarted_binding, admitted_binding)
+        self.assertEqual(
+            {
+                item.commit_metadata.operation_id
+                for item in self.repository.list_run_messages(abandoned.id)
+                if item.commit_metadata is not None
+            },
+            {admitted_binding.harness_operation_id},
+        )
         room = self.repository.require_room(room_id)
         self.assertEqual(
             [item.author_kind.value for item in room.messages],
             ["user", "persona", "persona", "persona"],
         )
+
+    def test_legacy_pending_run_fails_closed_without_provider_or_identity_fabrication(self) -> None:
+        created = self._create_room()
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            self._facilitated_payload(key="legacy-unbound-pending", revision=0)
+        )
+        with patch.object(self.service, "_execute_run", side_effect=SystemExit("crash")):
+            with self.assertRaises(SystemExit):
+                self.service.run_turn(room_id=room_id, payload=payload)
+
+        abandoned = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert abandoned is not None
+        legacy_run_id = "tavern-run-legacy-unbound-pending"
+        with self.database.session() as session:
+            source = session.get(TavernRunRow, abandoned.id)
+            assert source is not None
+            session.add(
+                TavernRunRow(
+                    id=legacy_run_id,
+                    harness_operation_id=None,
+                    room_id=source.room_id,
+                    idempotency_key="legacy-unbound-pending-fixture",
+                    parent_run_id=None,
+                    status=source.status,
+                    mode=source.mode,
+                    input_message_id=source.input_message_id,
+                    expected_room_revision=source.expected_room_revision,
+                    error_code=source.error_code,
+                    created_at=source.created_at,
+                    completed_at=source.completed_at,
+                    payload={**source.payload, "root_run_id": legacy_run_id},
+                )
+            )
+            session.flush()
+            for step in abandoned.speaker_steps:
+                session.add(
+                    TavernRunStepRow(
+                        run_id=legacy_run_id,
+                        step_index=step.step_index,
+                        persona_id=step.persona_id,
+                        participant_prompt_hash=step.participant_prompt_hash,
+                        status=step.status.value,
+                        message_id=None,
+                        reply_to_message_id=step.reply_to_message_id,
+                        error_code=step.error_code,
+                        started_at=step.started_at,
+                        completed_at=step.completed_at,
+                        lease_owner="",
+                        lease_expires_at="",
+                        claim_count=step.claim_count,
+                        payload={"harness_trace": None},
+                    )
+                )
+
+        provider_calls_before = len(self.provider.calls)
+        restarted = TavernService(
+            repository=TavernRepository(self.database),
+            persona_engine=self.persona_engine,
+            model_provider=self.provider,
+        )
+        tavern_routes.container.tavern_service = restarted
+        response = self.client.post(
+            f"/tavern/rooms/{room_id}/runs/{legacy_run_id}/resume"
+        )
+
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertIn("tavern_harness_operation_legacy_unbound", response.text)
+        self.assertEqual(len(self.provider.calls), provider_calls_before)
+        terminal = self.repository.get_run(legacy_run_id)
+        assert terminal is not None
+        self.assertEqual(terminal.status.value, "failed")
+        self.assertEqual(
+            [item.status.value for item in terminal.speaker_steps],
+            ["failed", "blocked", "blocked"],
+        )
+        resolution = self.repository.resolve_harness_operation(legacy_run_id)
+        self.assertEqual(
+            resolution.status,
+            HarnessOperationResolutionStatus.LEGACY_UNBOUND,
+        )
+        self.assertIsNone(resolution.binding)
 
     def test_expired_generating_step_takeover_skips_completed_messages(self) -> None:
         created = self._create_room()

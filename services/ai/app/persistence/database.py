@@ -36,6 +36,7 @@ class Database:
             with self.engine.begin() as connection:
                 self._ensure_sqlite_study_session_indexes(connection)
                 self._ensure_sqlite_tavern_room_indexes(connection)
+                self._ensure_sqlite_harness_operation_guards(connection)
 
     def dispose(self) -> None:
         self.engine.dispose()
@@ -108,6 +109,24 @@ class Database:
                     connection.exec_driver_sql(
                         "ALTER TABLE learning_plan_operations ADD COLUMN "
                         "base_debug_digest VARCHAR(64) NOT NULL DEFAULT ''"
+                    )
+
+            for operation_table in (
+                "document_process_operations",
+                "learning_plan_operations",
+                "study_chat_operations",
+                "tavern_runs",
+            ):
+                if operation_table not in table_names:
+                    continue
+                operation_columns = self._sqlite_column_names(
+                    connection,
+                    operation_table,
+                )
+                if "harness_operation_id" not in operation_columns:
+                    connection.exec_driver_sql(
+                        f"ALTER TABLE {operation_table} ADD COLUMN "
+                        "harness_operation_id VARCHAR(64)"
                     )
 
             for scene_table in ("scene_setup_states", "scene_library_entries"):
@@ -366,6 +385,110 @@ class Database:
             "CREATE INDEX IF NOT EXISTS ix_tavern_rooms_updated_at_id "
             "ON tavern_rooms (updated_at DESC, id DESC)"
         )
+
+    @staticmethod
+    def _ensure_sqlite_harness_operation_guards(connection) -> None:
+        domain_tables = (
+            (
+                "document_process_operations",
+                "uq_document_process_operation_harness_operation",
+                "document_process",
+                "operation_id",
+            ),
+            (
+                "learning_plan_operations",
+                "uq_learning_plan_operation_harness_operation",
+                "learning_plan_generation",
+                "operation_id",
+            ),
+            (
+                "study_chat_operations",
+                "uq_study_chat_operation_harness_operation",
+                "study_chat",
+                "operation_id",
+            ),
+            (
+                "tavern_runs",
+                "uq_tavern_run_harness_operation",
+                "tavern_run",
+                "id",
+            ),
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS trg_harness_operation_bindings_no_update
+            BEFORE UPDATE ON harness_operation_bindings
+            BEGIN
+                SELECT RAISE(ABORT, 'harness_operation_binding_update_forbidden');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS trg_harness_operation_bindings_no_delete
+            BEFORE DELETE ON harness_operation_bindings
+            BEGIN
+                SELECT RAISE(ABORT, 'harness_operation_binding_delete_forbidden');
+            END
+            """
+        )
+        for table_name, unique_name, domain_kind, identity_column in domain_tables:
+            # Fresh metadata/Alembic schemas already carry a table-level unique
+            # constraint. Only legacy SQLite tables upgraded by ADD COLUMN need
+            # a supplemental index; creating both makes runtime and Alembic
+            # schemas diverge and provides no additional invariant.
+            indexes = connection.exec_driver_sql(
+                f"PRAGMA index_list({table_name})"
+            ).all()
+            has_unique_harness_identity = False
+            for index in indexes:
+                if not bool(index[2]):
+                    continue
+                columns = connection.exec_driver_sql(
+                    f"PRAGMA index_info({index[1]})"
+                ).all()
+                if [str(column[2]) for column in columns] == [
+                    "harness_operation_id"
+                ]:
+                    has_unique_harness_identity = True
+                    break
+            if not has_unique_harness_identity:
+                connection.exec_driver_sql(
+                    f"CREATE UNIQUE INDEX IF NOT EXISTS {unique_name} "
+                    f"ON {table_name} (harness_operation_id)"
+                )
+            connection.exec_driver_sql(
+                f"""
+                CREATE TRIGGER IF NOT EXISTS
+                    trg_{table_name}_harness_operation_immutable
+                BEFORE UPDATE OF harness_operation_id ON {table_name}
+                WHEN NEW.harness_operation_id IS NOT OLD.harness_operation_id
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_operation_rebinding_forbidden');
+                END
+                """
+            )
+            connection.exec_driver_sql(
+                f"""
+                CREATE TRIGGER IF NOT EXISTS
+                    trg_{table_name}_harness_operation_validate_insert
+                BEFORE INSERT ON {table_name}
+                WHEN NEW.harness_operation_id IS NOT NULL
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM harness_operation_bindings AS binding
+                        WHERE binding.harness_operation_id = NEW.harness_operation_id
+                            AND binding.domain_operation_kind = '{domain_kind}'
+                            AND binding.domain_operation_id = NEW.{identity_column}
+                    )
+                BEGIN
+                    SELECT RAISE(
+                        ABORT,
+                        'harness_operation_domain_binding_mismatch'
+                    );
+                END
+                """
+            )
 
     def _rebuild_legacy_study_sessions_table(self, connection, *, source_table: str) -> None:
         legacy_table = "study_sessions_legacy_migration"

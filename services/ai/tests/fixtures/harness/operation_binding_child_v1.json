@@ -1,0 +1,11 @@
+{
+  "schema_name": "HarnessOperationBindingV1",
+  "schema_version": "harness-operation-binding-v1",
+  "harness_operation_id": "harness-operation-22222222222222222222222222222222",
+  "domain_operation_kind": "tavern_run",
+  "domain_operation_id": "tavern-run-child01",
+  "workflow": "tavern",
+  "entry_stage": "actor_reply",
+  "parent_harness_operation_id": "harness-operation-11111111111111111111111111111111",
+  "admitted_at": "2026-08-25T06:01:00Z"
+}

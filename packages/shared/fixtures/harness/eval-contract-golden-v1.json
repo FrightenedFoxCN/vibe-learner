@@ -1,0 +1,202 @@
+{
+  "schema_name": "HarnessEvalContractGolden",
+  "schema_version": "harness-eval-contract-golden-v1",
+  "case": {
+    "schema_name": "HarnessEvalCase",
+    "schema_version": "harness-eval-case-v1",
+    "case_id": "tavern-identity-basic-001",
+    "case_version": "tavern-identity-basic-v1",
+    "case_digest": "6386fcb34b55eae6b86f69bd5b493dfc7fe36f2dbd8c633a460219714e83b3f9",
+    "suite": {"name":"tavern_identity_eval","version":"tavern-identity-eval-v1"},
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "eval_route": "tavern.actor_reply",
+    "source": {
+      "source_mode": "fixture",
+      "fixture_id": "tavern-identity-fixture-001",
+      "payload_contract": {"name":"TavernIdentityFixture","version":"tavern-identity-fixture-v1"},
+      "payload_digest": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "provenance": {
+      "source_kind": "developer_authored",
+      "review_status": "developer_reviewed",
+      "review_contract": null,
+      "attestation_digest": null
+    },
+    "sensitivity": "internal",
+    "split": "regression",
+    "tags": ["deterministic","identity"],
+    "expected_invariants": [
+      {"invariant":{"name":"speaker_identity","version":"speaker-identity-v1"},"expected_outcome":"passed"}
+    ],
+    "grader_refs": [
+      {"name":"tavern_identity_grader","version":"tavern-identity-grader-v1"}
+    ]
+  },
+  "run": {
+    "schema_name": "HarnessEvalRun",
+    "schema_version": "harness-eval-run-v1",
+    "run_id": "harness-eval-run-0123456789abcdef0123456789abcdef",
+    "suite": {"name":"tavern_identity_eval","version":"tavern-identity-eval-v1"},
+    "suite_manifest_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+    "case_set_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+    "execution_mode": "fixture",
+    "splits": ["regression"],
+    "repetition_count": 1,
+    "seeds": [17],
+    "runner_contract": {"name":"HarnessEvalContractFixtureRunner","version":"harness-eval-contract-fixture-runner-v1"},
+    "failure_taxonomy_contract": {"name":"HarnessEvalFailureTaxonomy","version":"harness-eval-failure-taxonomy-v1"},
+    "grader_registry_contract": {"name":"HarnessEvalFixtureGraderRegistry","version":"harness-eval-fixture-grader-registry-v1"},
+    "tested_system": {
+      "schema_name": "HarnessEvalSystemConfig",
+      "schema_version": "harness-eval-system-config-v1",
+      "workflow_manifest_contract": {"name":"HarnessEvalFixtureWorkflowManifest","version":"harness-eval-fixture-workflow-manifest-v1"},
+      "harness_contract": {"name":"HarnessTraceV3","version":"harness-trace-v3"},
+      "provider_adapter_contract": {"name":"MockModelProvider","version":"mock-model-provider-v1"},
+      "provider_model_contract": {"name":"MockDeterministicModel","version":"mock-deterministic-model-v1"},
+      "input_contract": {"name":"TavernActorInput","version":"tavern-actor-input-v1"},
+      "output_contract": {"name":"TavernActorReply","version":"tavern-actor-reply-v2"},
+      "prompt_contract": {"name":"tavern_actor_prompt","version":"tavern-actor-v1"},
+      "policy_contract": {"name":"TavernHarnessPolicy","version":"tavern-harness-v1"},
+      "toolset_contract": null,
+      "component_contracts": [
+        {"name":"tavern_actor_prompt","version":"tavern-actor-v1"},
+        {"name":"tavern_persona_compiler","version":"tavern-persona-compiler-v1"},
+        {"name":"tavern_scheduler","version":"tavern-schedule-v1"}
+      ],
+      "reasoning": {"mode":"not_supported","budget_tokens":null},
+      "sampling": {"temperature":0.0,"top_p":1.0,"seed_strategy":"per_sample","fixed_seed":null},
+      "budgets": {
+        "max_attempts": 2,
+        "max_repairs": 1,
+        "max_tool_calls": 0,
+        "max_provider_calls": 1,
+        "max_input_tokens": 4096,
+        "max_output_tokens": 1024,
+        "max_wall_time_ms": 30000,
+        "per_call_timeout_ms": 10000,
+        "max_cost_micro_usd": 0
+      },
+      "source_revision": "fixture-revision-1",
+      "worktree_state": "clean",
+      "source_tree_digest": null
+    },
+    "tested_system_config_digest": "a0e6fa29d6716434931da043bf77aacda97de30d9762be09b2fd55dce1eda4d6",
+    "environment": {
+      "schema_name": "HarnessEvalEnvironment",
+      "schema_version": "harness-eval-environment-v1",
+      "environment_contract": {"name":"HarnessEvalPortableTestEnvironment","version":"harness-eval-portable-test-environment-v1"},
+      "platform": "test",
+      "architecture": "portable",
+      "python_version": "3.12",
+      "node_version": null,
+      "database_kind": "none",
+      "provider_mode": "mock"
+    },
+    "environment_digest": "53ff7c84ba2cf1b594e9d8b6f6005243898e449b8b81a003490e030f76ecc69c",
+    "admitted_at": "2026-08-25T00:00:00Z",
+    "run_digest": "95b0ced083478d97cfb6bbba0349b635840e80ad400c1a34c466f3bbabd36e33"
+  },
+  "sample": {
+    "schema_name": "HarnessEvalSample",
+    "schema_version": "harness-eval-sample-v1",
+    "sample_id": "harness-eval-sample-49366c3cd3ce29b553ab2b141b77ba5f",
+    "run_id": "harness-eval-run-0123456789abcdef0123456789abcdef",
+    "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "sample_index": 1,
+    "case_ref": {
+      "suite": {"name":"tavern_identity_eval","version":"tavern-identity-eval-v1"},
+      "case_id": "tavern-identity-basic-001",
+      "case_version": "tavern-identity-basic-v1",
+      "case_digest": "6386fcb34b55eae6b86f69bd5b493dfc7fe36f2dbd8c633a460219714e83b3f9"
+    },
+    "repetition_index": 1,
+    "seed": 17,
+    "status": "passed",
+    "candidate_outcome": "passed",
+    "raw_schema_valid": true,
+    "final_schema_valid": true,
+    "trace_contract": {"name":"HarnessTraceV3","version":"harness-trace-v3"},
+    "trace_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+    "metrics": [
+      {"schema_name":"HarnessEvalMetric","schema_version":"harness-eval-metric-v1","metric":{"name":"duration_ms","version":"duration-ms-v1"},"value_type":"integer","unit":"milliseconds","value":8,"evidence_digest":"8888888888888888888888888888888888888888888888888888888888888888"},
+      {"schema_name":"HarnessEvalMetric","schema_version":"harness-eval-metric-v1","metric":{"name":"schema_valid_final","version":"schema-valid-final-v1"},"value_type":"boolean","unit":"boolean","value":true,"evidence_digest":"9999999999999999999999999999999999999999999999999999999999999999"}
+    ],
+    "grader_results": [
+      {
+        "schema_name": "HarnessEvalGraderResult",
+        "schema_version": "harness-eval-grader-result-v1",
+        "grader_result_id": "grader-result-tavern-identity-001",
+        "grader": {"name":"tavern_identity_grader","version":"tavern-identity-grader-v1"},
+        "grader_kind": "deterministic",
+        "grader_config_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+        "execution_status": "completed",
+        "verdict": "passed",
+        "score": 1.0,
+        "metrics": [],
+        "failure_codes": [],
+        "evidence_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+        "duration_ms": 1
+      }
+    ],
+    "failures": [],
+    "evidence_digest": "7777777777777777777777777777777777777777777777777777777777777777",
+    "started_at": "2026-08-25T00:00:01Z",
+    "completed_at": "2026-08-25T00:00:01.008Z",
+    "duration_ms": 8,
+    "sample_digest": "b3ab17764151437d8859f4cf2f3e3d183f4b04095a8d756c020fe1b684edfda6"
+  },
+  "report": {
+    "schema_name": "HarnessEvalReport",
+    "schema_version": "harness-eval-report-v1",
+    "report_id": "harness-eval-report-9993b25b95a5bb712c7f827f52485c50",
+    "run_id": "harness-eval-run-0123456789abcdef0123456789abcdef",
+    "run_digest": "95b0ced083478d97cfb6bbba0349b635840e80ad400c1a34c466f3bbabd36e33",
+    "tested_system_config_digest": "a0e6fa29d6716434931da043bf77aacda97de30d9762be09b2fd55dce1eda4d6",
+    "status": "passed",
+    "expected_sample_count": 1,
+    "sample_count": 1,
+    "passed_count": 1,
+    "failed_count": 0,
+    "broken_count": 0,
+    "skipped_count": 0,
+    "sample_refs": [
+      {
+        "sample_id": "harness-eval-sample-49366c3cd3ce29b553ab2b141b77ba5f",
+        "sample_index": 1,
+        "case_ref": {
+          "suite": {"name":"tavern_identity_eval","version":"tavern-identity-eval-v1"},
+          "case_id": "tavern-identity-basic-001",
+          "case_version": "tavern-identity-basic-v1",
+          "case_digest": "6386fcb34b55eae6b86f69bd5b493dfc7fe36f2dbd8c633a460219714e83b3f9"
+        },
+        "sample_digest": "b3ab17764151437d8859f4cf2f3e3d183f4b04095a8d756c020fe1b684edfda6"
+      }
+    ],
+    "raw_samples_artifact": {
+      "artifact_id": "eval-raw-samples-fixture-001",
+      "artifact_contract": {"name":"HarnessEvalRawSamples","version":"harness-eval-raw-samples-v1"},
+      "payload_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sample_count": 1
+    },
+    "aggregate_metrics": [
+      {
+        "schema_name": "HarnessEvalMetricAggregate",
+        "schema_version": "harness-eval-metric-v1",
+        "metric": {"name":"schema_valid_final_rate","version":"schema-valid-final-rate-v1"},
+        "aggregation": "rate",
+        "unit": "ratio",
+        "value": 1.0,
+        "population_count": 1,
+        "excluded_count": 0,
+        "numerator": 1,
+        "denominator": 1,
+        "percentile_method": null
+      }
+    ],
+    "failure_counts": [],
+    "started_at": "2026-08-25T00:00:01Z",
+    "completed_at": "2026-08-25T00:00:01.008Z",
+    "report_digest": "359f85c8267a6e0277e27a9b14355857b0ac8fb0e48ebf39d593267522ae9e78"
+  }
+}

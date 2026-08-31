@@ -123,6 +123,11 @@ class LearningPlanService:
             ) from exc
 
         if duplicate:
+            if operation.status != LearningPlanOperationStatus.COMMITTED:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"learning_plan_operation_{operation.status.value}",
+                )
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
             projection = operation.committed_projection

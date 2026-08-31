@@ -17,6 +17,10 @@ from app.models.domain import (
     DocumentPageRecord,
     StudyUnitRecord,
 )
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationResolutionStatus,
+)
 from app.persistence.document_process_operation_repository import (
     DocumentProcessOperationRepository,
     DocumentProcessReadBackError,
@@ -89,6 +93,27 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.assertTrue(operation.document_digest)
         self.assertTrue(operation.debug_digest)
         self.assertTrue(operation.request_payload.force_ocr)
+
+    def test_admission_persists_harness_operation_identity_atomically(self) -> None:
+        service = self._service(parser=_FakeParser())
+        document = self._create_document(service, "identity.pdf")
+
+        operation, _ = service.process_repository.admit(
+            document_id=document.id,
+            force_ocr=False,
+        )
+        resolution = service.process_repository.harness_operations.resolve_domain(
+            domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+            domain_operation_id=operation.operation_id,
+        )
+
+        self.assertEqual(
+            resolution.status,
+            HarnessOperationResolutionStatus.RESOLVED,
+        )
+        assert resolution.binding is not None
+        self.assertEqual(resolution.binding.workflow.value, "document_parse")
+        self.assertEqual(resolution.binding.entry_stage.value, "document_parse")
 
     def test_cleanup_failure_reaches_failed_terminal_state_without_debug_projection(self) -> None:
         service = self._service(

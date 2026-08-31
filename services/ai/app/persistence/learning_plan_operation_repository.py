@@ -13,6 +13,11 @@ from app.models.domain import (
     LearningPlanRecord,
     PlanGenerationTraceRecord,
 )
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationBindingV1,
+    HarnessOperationResolutionStatus,
+)
 from app.models.planning import (
     LEARNING_PLAN_COMMIT_CONTRACT_VERSION,
     LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
@@ -22,11 +27,13 @@ from app.models.planning import (
     LearningPlanOperationRequestV1,
     LearningPlanOperationStatus,
     LearningPlanProjectionState,
-    LearningPlanProjectionState,
     learning_plan_request_fingerprint,
     planning_projection_digest,
 )
 from app.persistence.database import Database
+from app.persistence.harness_operation_repository import (
+    HarnessOperationBindingRepository,
+)
 from app.persistence.models import (
     DocumentDebugRow,
     DocumentRow,
@@ -47,6 +54,7 @@ class LearningPlanOperationRepository:
     ) -> None:
         self.database = database
         self.fault_injector = fault_injector
+        self.harness_operations = HarnessOperationBindingRepository(database)
 
     def admit(
         self,
@@ -66,6 +74,28 @@ class LearningPlanOperationRepository:
                 )
                 if existing is not None:
                     record = _from_row(existing)
+                    if record.request_fingerprint != fingerprint:
+                        raise LearningPlanRequestConflict(record.client_request_id)
+                    resolution = self.harness_operations.resolve_domain_in_session(
+                        session,
+                        domain_operation_kind=(
+                            HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+                        ),
+                        domain_operation_id=existing.operation_id,
+                    )
+                    if (
+                        resolution.status
+                        == HarnessOperationResolutionStatus.LEGACY_UNBOUND
+                        and existing.status == LearningPlanOperationStatus.RUNNING.value
+                    ):
+                        _terminalize_legacy_unbound_plan(existing, now=now)
+                        session.flush()
+                        return _from_row(existing), True
+                    if resolution.binding is None:
+                        raise LearningPlanOperationIdentityUnavailable(
+                            existing.operation_id,
+                            resolution.status.value,
+                        )
                     _validate_duplicate(record, fingerprint=fingerprint)
                     return record, True
 
@@ -142,6 +172,15 @@ class LearningPlanOperationRepository:
                     completed_at="",
                 )
                 session.add(row)
+                self.harness_operations._admit_domain_in_session(
+                    session,
+                    domain_row=row,
+                    domain_operation_kind=(
+                        HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+                    ),
+                    domain_operation_id=operation_id,
+                    admitted_at=now,
+                )
                 session.flush()
                 return _from_row(row), False
         except IntegrityError as exc:
@@ -161,6 +200,13 @@ class LearningPlanOperationRepository:
                 raise LearningPlanOperationNotFound(operation_id)
             if row.status != LearningPlanOperationStatus.RUNNING.value:
                 raise LearningPlanOperationNotRunning(operation_id, row.status)
+            self.harness_operations.require_domain_in_session(
+                session,
+                domain_operation_kind=(
+                    HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+                ),
+                domain_operation_id=operation_id,
+            )
             if not row.provider_started_at:
                 now = _now()
                 row.provider_started_at = now
@@ -183,6 +229,13 @@ class LearningPlanOperationRepository:
                 raise LearningPlanOperationNotFound(operation_id)
             if operation.status != LearningPlanOperationStatus.RUNNING.value:
                 raise LearningPlanOperationNotRunning(operation_id, operation.status)
+            self.harness_operations.require_domain_in_session(
+                session,
+                domain_operation_kind=(
+                    HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+                ),
+                domain_operation_id=operation_id,
+            )
             request = LearningPlanOperationRequestV1.model_validate(
                 operation.request_payload or {}
             )
@@ -352,6 +405,13 @@ class LearningPlanOperationRepository:
                 return _from_row(row)
             if row.status != LearningPlanOperationStatus.RUNNING.value:
                 return _from_row(row)
+            resolution = self.harness_operations.resolve_domain_in_session(
+                session,
+                domain_operation_kind=(
+                    HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+                ),
+                domain_operation_id=operation_id,
+            )
             row.status = status.value
             row.active_slot = None
             row.projection_state = LearningPlanProjectionState.NOT_COMMITTED.value
@@ -359,7 +419,11 @@ class LearningPlanOperationRepository:
             row.commit_contract_version = ""
             row.committed_projection_digest = ""
             row.committed_projection_payload = None
-            row.error_code = (error_code or "learning_plan_failed")[:128]
+            row.error_code = (
+                "learning_plan_harness_operation_legacy_unbound"
+                if resolution.binding is None
+                else (error_code or "learning_plan_failed")[:128]
+            )
             row.updated_at = now
             row.completed_at = now
         return self.require(operation_id=operation_id, validate_current=False)
@@ -376,7 +440,17 @@ class LearningPlanOperationRepository:
             ).all()
             for row in rows:
                 now = _now()
-                if row.provider_started_at:
+                resolution = self.harness_operations.resolve_domain_in_session(
+                    session,
+                    domain_operation_kind=(
+                        HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+                    ),
+                    domain_operation_id=row.operation_id,
+                )
+                if resolution.binding is None:
+                    row.status = LearningPlanOperationStatus.NOT_COMMITTED.value
+                    row.error_code = "learning_plan_harness_operation_legacy_unbound"
+                elif row.provider_started_at:
                     row.status = LearningPlanOperationStatus.UNCERTAIN.value
                     row.error_code = "learning_plan_abandoned_after_provider_start"
                 else:
@@ -395,6 +469,17 @@ class LearningPlanOperationRepository:
             self.require(operation_id=operation_id, validate_current=False)
             for operation_id in recovered_ids
         ]
+
+    def require_harness_operation(
+        self,
+        operation_id: str,
+    ) -> HarnessOperationBindingV1:
+        return self.harness_operations.require_domain(
+            domain_operation_kind=(
+                HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+            ),
+            domain_operation_id=operation_id,
+        )
 
     def get_by_client_request_id(
         self,
@@ -451,6 +536,23 @@ def _validate_duplicate(
             record.client_request_id,
             record.status.value,
         )
+
+
+def _terminalize_legacy_unbound_plan(
+    row: LearningPlanOperationRow,
+    *,
+    now: str,
+) -> None:
+    row.status = LearningPlanOperationStatus.NOT_COMMITTED.value
+    row.active_slot = None
+    row.projection_state = LearningPlanProjectionState.NOT_COMMITTED.value
+    row.plan_id = ""
+    row.commit_contract_version = ""
+    row.committed_projection_digest = ""
+    row.committed_projection_payload = None
+    row.error_code = "learning_plan_harness_operation_legacy_unbound"
+    row.updated_at = now
+    row.completed_at = now
 
 
 def _validate_committed_projection_snapshot(record: LearningPlanOperationRecord) -> None:
@@ -615,6 +717,15 @@ class LearningPlanTerminalReplayBlocked(LearningPlanOperationError):
 
 class LearningPlanAdmissionRace(LearningPlanOperationError):
     pass
+
+
+class LearningPlanOperationIdentityUnavailable(LearningPlanOperationError):
+    def __init__(self, operation_id: str, status: str) -> None:
+        self.operation_id = operation_id
+        self.status = status
+        super().__init__(
+            f"learning_plan_operation_identity_unavailable:{operation_id}:{status}"
+        )
 
 
 class LearningPlanOperationNotFound(LearningPlanOperationError):

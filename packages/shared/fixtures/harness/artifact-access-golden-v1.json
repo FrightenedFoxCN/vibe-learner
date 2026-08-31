@@ -1,0 +1,64 @@
+{
+  "schema_name": "HarnessArtifactAccessGolden",
+  "schema_version": "harness-artifact-access-golden-v1",
+  "principal": {
+    "schema_name": "HarnessArtifactPrincipal",
+    "schema_version": "harness-artifact-principal-v1",
+    "principal_kind": "local_installation",
+    "principal_id": "local-installation-00000000000000000000000000000000"
+  },
+  "grant": {
+    "schema_name": "HarnessArtifactGrant",
+    "schema_version": "harness-artifact-grant-v1",
+    "grant_id": "harness-artifact-grant-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "subject": {
+      "schema_name": "HarnessArtifactPrincipal",
+      "schema_version": "harness-artifact-principal-v1",
+      "principal_kind": "local_installation",
+      "principal_id": "local-installation-00000000000000000000000000000000"
+    },
+    "authorization_mode": "server_resolved_principal",
+    "scopes": [
+      {
+        "artifact_type": "tavern_transcript",
+        "artifact_id": "transcript-1",
+        "artifact_contract": {
+          "name": "TavernTranscriptSnapshot",
+          "version": "tavern-transcript-snapshot-v1"
+        },
+        "permission": "read"
+      },
+      {
+        "artifact_type": "tavern_transcript",
+        "artifact_id": "transcript-1",
+        "artifact_contract": {
+          "name": "TavernTranscriptSnapshot",
+          "version": "tavern-transcript-snapshot-v1"
+        },
+        "permission": "verify_digest"
+      }
+    ],
+    "issued_at": "2026-08-25T02:55:00Z",
+    "expires_at": "2026-08-25T03:05:00Z",
+    "revoked_at": null
+  },
+  "allowed_audit": {
+    "schema_name": "HarnessArtifactAccessAudit",
+    "schema_version": "harness-artifact-access-audit-v1",
+    "outcome": "allowed",
+    "evaluated_at": "2026-08-25T03:00:00Z",
+    "presented_principal_id": "local-installation-00000000000000000000000000000000",
+    "grant_id": "harness-artifact-grant-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "grant_harness_operation_id": "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "grant_subject_id": "local-installation-00000000000000000000000000000000",
+    "artifact_type": "tavern_transcript",
+    "artifact_id": "transcript-1",
+    "artifact_contract": {
+      "name": "TavernTranscriptSnapshot",
+      "version": "tavern-transcript-snapshot-v1"
+    },
+    "permission": "read"
+  }
+}

@@ -8,6 +8,10 @@ from app.models.study_chat_operation import (
     StudyChatOperationRequestPayload,
     StudyChatOperationStatus,
 )
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationResolutionStatus,
+)
 from app.models.study_question import (
     StudyQuestionProposalV1,
     project_study_question_proposal,
@@ -98,6 +102,31 @@ class StudyChatOperationTests(unittest.TestCase):
         )
         self.assertFalse(claimed_again)
         self.assertEqual(replayed.execution_token, running.execution_token)
+
+    def test_admission_and_replay_share_one_harness_operation_identity(self) -> None:
+        admitted = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-harness-identity-0001",
+            request_payload=self.payload(),
+        )
+        replay = self.operations.admit(
+            session_id="session-operation",
+            client_request_id="request-harness-identity-0001",
+            request_payload=self.payload(),
+        )
+        resolution = self.operations.harness_operations.resolve_domain(
+            domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+            domain_operation_id=admitted.operation_id,
+        )
+
+        self.assertEqual(replay.operation_id, admitted.operation_id)
+        self.assertEqual(
+            resolution.status,
+            HarnessOperationResolutionStatus.RESOLVED,
+        )
+        assert resolution.binding is not None
+        self.assertEqual(resolution.binding.workflow.value, "study_chat")
+        self.assertEqual(resolution.binding.entry_stage.value, "study_chat_reply")
 
     def test_same_key_different_payload_is_rejected(self) -> None:
         self.operations.admit(

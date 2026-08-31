@@ -19,6 +19,10 @@ from app.models.planning import (
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationResolutionStatus,
+)
 from app.persistence.learning_plan_operation_repository import (
     LearningPlanAlreadyActive,
     LearningPlanOperationRepository,
@@ -90,6 +94,32 @@ class LearningPlanOperationTests(unittest.TestCase):
         self.assertEqual(operation.committed_projection.plan.id, first.id)
         repository.require(operation_id=operation.operation_id, validate_current=True)
         self.assertEqual([item.id for item in service.list_plans()], [first.id])
+
+    def test_admission_persists_one_harness_operation_identity(self) -> None:
+        repository = LearningPlanOperationRepository(self.store.database)
+        request = LearningPlanOperationRequestV1(
+            client_request_id="plan-request-harness-identity",
+            document_id="",
+            persona_id=self.persona.id,
+            objective="Verify durable identity",
+        )
+
+        operation, duplicate = repository.admit(request=request)
+        resolution = repository.harness_operations.resolve_domain(
+            domain_operation_kind=(
+                HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+            ),
+            domain_operation_id=operation.operation_id,
+        )
+
+        self.assertFalse(duplicate)
+        self.assertEqual(
+            resolution.status,
+            HarnessOperationResolutionStatus.RESOLVED,
+        )
+        assert resolution.binding is not None
+        self.assertEqual(resolution.binding.workflow.value, "planning")
+        self.assertEqual(resolution.binding.entry_stage.value, "plan_generation")
 
     def test_every_commit_fault_rolls_back_all_projections(self) -> None:
         stages = (

@@ -28,6 +28,61 @@ class Base(DeclarativeBase):
     pass
 
 
+class HarnessOperationBindingRow(Base):
+    __tablename__ = "harness_operation_bindings"
+    __table_args__ = (
+        UniqueConstraint(
+            "domain_operation_kind",
+            "domain_operation_id",
+            name="uq_harness_operation_binding_domain_identity",
+        ),
+        CheckConstraint(
+            "schema_name = 'HarnessOperationBindingV1' AND "
+            "schema_version = 'harness-operation-binding-v1'",
+            name="ck_harness_operation_binding_schema",
+        ),
+        CheckConstraint(
+            "(domain_operation_kind = 'document_process' "
+            "AND workflow = 'document_parse' AND entry_stage = 'document_parse') OR "
+            "(domain_operation_kind = 'learning_plan_generation' "
+            "AND workflow = 'planning' AND entry_stage = 'plan_generation') OR "
+            "(domain_operation_kind = 'study_chat' "
+            "AND workflow = 'study_chat' AND entry_stage = 'study_chat_reply') OR "
+            "(domain_operation_kind = 'tavern_run' "
+            "AND workflow = 'tavern' AND entry_stage = 'actor_reply')",
+            name="ck_harness_operation_binding_route",
+        ),
+        CheckConstraint(
+            "parent_harness_operation_id IS NULL OR "
+            "parent_harness_operation_id <> harness_operation_id",
+            name="ck_harness_operation_binding_parent_not_self",
+        ),
+        CheckConstraint(
+            "parent_harness_operation_id IS NULL OR "
+            "domain_operation_kind = 'tavern_run'",
+            name="ck_harness_operation_binding_parent_kind",
+        ),
+    )
+
+    harness_operation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    domain_operation_kind: Mapped[str] = mapped_column(String(64))
+    domain_operation_id: Mapped[str] = mapped_column(String(160))
+    workflow: Mapped[str] = mapped_column(String(64))
+    entry_stage: Mapped[str] = mapped_column(String(64))
+    parent_harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+        index=True,
+    )
+    admitted_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
 class DocumentRow(Base):
     __tablename__ = "documents"
 
@@ -50,6 +105,10 @@ class DocumentProcessOperationRow(Base):
             "active_slot",
             name="uq_document_process_operation_active_slot",
         ),
+        UniqueConstraint(
+            "harness_operation_id",
+            name="uq_document_process_operation_harness_operation",
+        ),
         CheckConstraint(
             "(status = 'running' AND active_slot = 1 AND projection_state = 'pending' "
             "AND completed_at = '' AND error_code = '') OR "
@@ -64,6 +123,14 @@ class DocumentProcessOperationRow(Base):
     )
 
     operation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
     document_id: Mapped[str] = mapped_column(
         String(64),
         ForeignKey("documents.id", ondelete="RESTRICT"),
@@ -98,6 +165,10 @@ class LearningPlanOperationRow(Base):
             "active_slot",
             name="uq_learning_plan_operation_active_scope",
         ),
+        UniqueConstraint(
+            "harness_operation_id",
+            name="uq_learning_plan_operation_harness_operation",
+        ),
         CheckConstraint(
             "(status = 'running' AND active_slot = 1 AND projection_state = 'pending' "
             "AND completed_at = '' AND error_code = '' "
@@ -117,6 +188,14 @@ class LearningPlanOperationRow(Base):
     )
 
     operation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
     client_request_id: Mapped[str] = mapped_column(String(80))
     scope_key: Mapped[str] = mapped_column(String(160))
     document_id: Mapped[str | None] = mapped_column(
@@ -232,6 +311,10 @@ class StudyChatOperationRow(Base):
             name="uq_study_chat_operation_active_slot",
         ),
         UniqueConstraint("committed_turn_id", name="uq_study_chat_operation_turn"),
+        UniqueConstraint(
+            "harness_operation_id",
+            name="uq_study_chat_operation_harness_operation",
+        ),
         CheckConstraint("claim_count IN (0, 1)", name="ck_study_chat_operation_claim_count"),
         CheckConstraint(
             "(status IN ('admitted', 'running') AND active_slot = 1) OR "
@@ -269,6 +352,14 @@ class StudyChatOperationRow(Base):
     )
 
     operation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
     session_id: Mapped[str] = mapped_column(
         String(64),
         ForeignKey("study_sessions.id", ondelete="RESTRICT"),
@@ -345,9 +436,27 @@ class TavernParticipantRow(Base):
 
 class TavernRunRow(Base):
     __tablename__ = "tavern_runs"
-    __table_args__ = (UniqueConstraint("room_id", "idempotency_key", name="uq_tavern_run_idempotency"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "room_id",
+            "idempotency_key",
+            name="uq_tavern_run_idempotency",
+        ),
+        UniqueConstraint(
+            "harness_operation_id",
+            name="uq_tavern_run_harness_operation",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
     room_id: Mapped[str] = mapped_column(
         String(64),
         ForeignKey("tavern_rooms.id", ondelete="CASCADE"),

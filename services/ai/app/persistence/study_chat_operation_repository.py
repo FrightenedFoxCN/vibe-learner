@@ -22,6 +22,11 @@ from app.models.study_chat_effect import (
     StudyChatCommittedEffectBatchV1,
     StudySceneReplaceCommittedProjectionV1,
 )
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationBindingV1,
+    HarnessOperationResolutionStatus,
+)
 from app.models.study_question import (
     STUDY_QUESTION_ATTEMPT_FINGERPRINT_VERSION,
     STUDY_QUESTION_ATTEMPT_REQUEST_SCHEMA_VERSION,
@@ -33,6 +38,9 @@ from app.models.study_question import (
     study_question_attempt_response_digest,
 )
 from app.persistence.database import Database
+from app.persistence.harness_operation_repository import (
+    HarnessOperationBindingRepository,
+)
 from app.models.domain import DialogueTurnRecord, SessionSceneRecord, StudySessionRecord
 from app.persistence.models import (
     SessionSceneRow,
@@ -59,6 +67,7 @@ class StudyChatOperationRepository:
     ) -> None:
         self.database = database
         self.chat_attachment_root = chat_attachment_root
+        self.harness_operations = HarnessOperationBindingRepository(database)
 
     def admit(
         self,
@@ -96,6 +105,23 @@ class StudyChatOperationRepository:
                             ),
                             chat_attachment_root=self.chat_attachment_root,
                         )
+                    resolution = self.harness_operations.resolve_domain_in_session(
+                        session,
+                        domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                        domain_operation_id=existing.operation_id,
+                    )
+                    if (
+                        resolution.status
+                        == HarnessOperationResolutionStatus.LEGACY_UNBOUND
+                        and existing.status
+                        in {
+                            StudyChatOperationStatus.ADMITTED.value,
+                            StudyChatOperationStatus.RUNNING.value,
+                        }
+                    ):
+                        _terminalize_legacy_unbound_study_chat(existing, now=now)
+                        session.flush()
+                        return _from_row(existing)
                     return record
                 session_row = session.get(StudySessionRow, session_id)
                 if session_row is None:
@@ -134,6 +160,13 @@ class StudyChatOperationRepository:
                     completed_at="",
                 )
                 session.add(row)
+                self.harness_operations._admit_domain_in_session(
+                    session,
+                    domain_row=row,
+                    domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                    domain_operation_id=operation_id,
+                    admitted_at=now,
+                )
                 session.flush()
                 return _from_row(row)
         except IntegrityError:
@@ -240,6 +273,22 @@ class StudyChatOperationRepository:
             datetime.now(timezone.utc) + timedelta(seconds=max(1, min(timeout_seconds, 900)))
         ).isoformat()
         with self.database.session() as session:
+            row = session.get(StudyChatOperationRow, operation_id)
+            if row is None:
+                raise StudyChatOperationNotFound(operation_id)
+            resolution = self.harness_operations.resolve_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                domain_operation_id=operation_id,
+            )
+            if resolution.binding is None:
+                if row.status in {
+                    StudyChatOperationStatus.ADMITTED.value,
+                    StudyChatOperationStatus.RUNNING.value,
+                }:
+                    _terminalize_legacy_unbound_study_chat(row, now=now)
+                    session.flush()
+                return _from_row(row), False
             claimed = session.execute(
                 update(StudyChatOperationRow)
                 .where(
@@ -270,6 +319,11 @@ class StudyChatOperationRepository:
     def mark_provider_started(self, *, operation_id: str, execution_token: str) -> None:
         now = _now()
         with self.database.session() as session:
+            self.harness_operations.require_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                domain_operation_id=operation_id,
+            )
             marked = session.execute(
                 update(StudyChatOperationRow)
                 .where(
@@ -285,6 +339,18 @@ class StudyChatOperationRepository:
     def mark_not_committed(self, *, operation_id: str, error_code: str) -> StudyChatOperationRecord:
         now = _now()
         with self.database.session() as session:
+            row = session.get(StudyChatOperationRow, operation_id)
+            if row is None:
+                raise StudyChatOperationNotFound(operation_id)
+            resolution = self.harness_operations.resolve_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                domain_operation_id=operation_id,
+            )
+            if resolution.binding is None:
+                _terminalize_legacy_unbound_study_chat(row, now=now)
+                session.flush()
+                return _from_row(row)
             marked = session.execute(
                 update(StudyChatOperationRow)
                 .where(
@@ -309,6 +375,18 @@ class StudyChatOperationRepository:
     def mark_uncertain(self, *, operation_id: str, execution_token: str, error_code: str) -> StudyChatOperationRecord:
         now = _now()
         with self.database.session() as session:
+            row = session.get(StudyChatOperationRow, operation_id)
+            if row is None:
+                raise StudyChatOperationNotFound(operation_id)
+            resolution = self.harness_operations.resolve_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                domain_operation_id=operation_id,
+            )
+            if resolution.binding is None:
+                _terminalize_legacy_unbound_study_chat(row, now=now)
+                session.flush()
+                return _from_row(row)
             marked = session.execute(
                 update(StudyChatOperationRow)
                 .where(
@@ -351,6 +429,15 @@ class StudyChatOperationRepository:
             result=record.response_payload,
         )
 
+    def require_harness_operation(
+        self,
+        operation_id: str,
+    ) -> HarnessOperationBindingV1:
+        return self.harness_operations.require_domain(
+            domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+            domain_operation_id=operation_id,
+        )
+
 
 class StudyChatOperationRepositoryError(RuntimeError):
     pass
@@ -384,6 +471,23 @@ class StudyChatOperationAdmissionRace(StudyChatOperationRepositoryError):
 
 class StudyChatOperationExecutionFenced(StudyChatOperationRepositoryError):
     pass
+
+
+def _terminalize_legacy_unbound_study_chat(
+    row: StudyChatOperationRow,
+    *,
+    now: str,
+) -> None:
+    if row.status == StudyChatOperationStatus.ADMITTED.value:
+        row.status = StudyChatOperationStatus.NOT_COMMITTED.value
+    elif row.status == StudyChatOperationStatus.RUNNING.value:
+        row.status = StudyChatOperationStatus.UNCERTAIN.value
+    else:
+        return
+    row.active_slot = None
+    row.error_code = "study_chat_harness_operation_legacy_unbound"
+    row.updated_at = now
+    row.completed_at = now
 
 
 def _from_row(

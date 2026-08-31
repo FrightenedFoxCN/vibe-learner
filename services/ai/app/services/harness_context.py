@@ -5,7 +5,6 @@ from enum import Enum
 import math
 from types import UnionType
 from typing import Annotated, Literal, Union, get_args, get_origin
-from uuid import uuid4
 
 from pydantic import BaseModel
 
@@ -26,6 +25,14 @@ from app.models.harness import (
     canonical_harness_digest,
     registered_harness_stage_component_contracts,
     require_versioned_harness_contract,
+)
+from app.models.harness_operation import (
+    HarnessOperationBindingV1,
+    new_harness_operation_id,
+)
+from app.models.harness_manifest import (
+    require_executable_workflow_manifest_entry,
+    validate_harness_context_manifest_inputs,
 )
 
 
@@ -66,7 +73,7 @@ def build_harness_context(
     *,
     workflow: HarnessWorkflow,
     stage: HarnessStage,
-    operation_id: str,
+    operation_binding: HarnessOperationBindingV1,
     input_contract: HarnessContractRef,
     input_manifest: HarnessSafeManifest,
     subject_refs: Iterable[HarnessResourceRefV3],
@@ -74,8 +81,11 @@ def build_harness_context(
     policy_contract: HarnessContractRef | None = None,
     prompt_contract: HarnessContractRef | None = None,
 ) -> HarnessContextEnvelopeV3:
-    """Build a trace-safe context from registered stage components."""
+    """Build a trace-safe context from one admitted, immutable operation binding."""
 
+    manifest_entry = require_executable_workflow_manifest_entry(workflow, stage)
+    if operation_binding.workflow != workflow:
+        raise ValueError("harness_context_operation_workflow_mismatch")
     component_versions = list(
         registered_harness_stage_component_contracts(workflow, stage)
     )
@@ -90,6 +100,14 @@ def build_harness_context(
 
     sorted_subjects = _sorted_unique_subjects(subject_refs)
     sorted_snapshots = _sorted_unique_snapshots(snapshot_refs)
+    validate_harness_context_manifest_inputs(
+        entry=manifest_entry,
+        input_contract=input_contract,
+        prompt_contract=prompt_contract,
+        policy_contract=policy_contract,
+        component_contracts=tuple(component_versions),
+        artifact_types=tuple(item.artifact_type for item in sorted_snapshots),
+    )
     input_digest = digest_safe_manifest(
         contract=input_contract,
         payload=input_manifest,
@@ -101,7 +119,7 @@ def build_harness_context(
         ),
         "workflow": workflow.value,
         "stage": stage.value,
-        "operation_id": operation_id,
+        "operation_id": operation_binding.harness_operation_id,
         "input_contract": input_contract.model_dump(mode="json", exclude_none=False),
         "subject_refs": [
             item.model_dump(mode="json", exclude_none=False)
@@ -151,12 +169,6 @@ def component_registry_snapshot() -> tuple[tuple[str, str, str | None], ...]:
             key=lambda item: item[0].value,
         )
     )
-
-
-def new_harness_operation_id() -> str:
-    """Allocate a server-owned logical operation identity."""
-
-    return f"harness-operation-{uuid4().hex}"
 
 
 def _require_adopted_contract(contract: HarnessContractRef) -> None:

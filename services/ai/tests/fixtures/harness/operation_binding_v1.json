@@ -1,0 +1,11 @@
+{
+  "schema_name": "HarnessOperationBindingV1",
+  "schema_version": "harness-operation-binding-v1",
+  "harness_operation_id": "harness-operation-0123456789abcdef0123456789abcdef",
+  "domain_operation_kind": "document_process",
+  "domain_operation_id": "document-process-op-0123456789abcdef",
+  "workflow": "document_parse",
+  "entry_stage": "document_parse",
+  "parent_harness_operation_id": null,
+  "admitted_at": "2026-08-25T06:00:00Z"
+}

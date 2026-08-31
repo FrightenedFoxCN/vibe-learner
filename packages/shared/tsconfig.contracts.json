@@ -6,10 +6,18 @@
     "emitDeclarationOnly": false,
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "rewriteRelativeImportExtensions": true,
     "noEmit": false,
     "outDir": "./dist-test",
     "rootDir": "./src"
   },
-  "include": ["src/harness.ts", "src/harness-effect.ts"],
+  "include": [
+    "src/harness.ts",
+    "src/harness-effect.ts",
+    "src/harness-artifact-access.ts",
+    "src/harness-eval.ts",
+    "src/harness-manifest.ts",
+    "src/tool-manifest.ts"
+  ],
   "exclude": ["tests/**/*.ts"]
 }

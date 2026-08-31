@@ -1,0 +1,1230 @@
+{
+  "schema_name": "HarnessWorkflowManifest",
+  "schema_version": "harness-workflow-manifest-v1",
+  "stages": [
+    {
+      "key": "document_parse:chunk_building",
+      "workflow": "document_parse",
+      "stage": "chunk_building",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.document_parser",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "document_chunk_builder",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "document_chunk_builder",
+              "version": "document-chunk-builder-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_debug",
+          "document_upload"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "not_applicable",
+        "reason": "no_commit"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "document.chunk_building"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "document_parse:document_parse",
+      "workflow": "document_parse",
+      "stage": "document_parse",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.document_parser",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "document_parser",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_upload"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "document.parse"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "document_parse:page_extraction",
+      "workflow": "document_parse",
+      "stage": "page_extraction",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.document_parser",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "document_page_extractor",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "document_page_extractor",
+              "version": "document-page-extractor-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_upload"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "not_applicable",
+        "reason": "no_commit"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "document.page_extraction"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "document_parse:section_detection",
+      "workflow": "document_parse",
+      "stage": "section_detection",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.document_parser",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "document_section_detector",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "document_section_detector",
+              "version": "document-section-detector-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_debug"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "not_applicable",
+        "reason": "no_commit"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "document.section_detection"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "frontend_decode:response_decode",
+      "workflow": "frontend_decode",
+      "stage": "response_decode",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "apps.web.lib.api",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "frontend_decoder",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "frontend_response_fixture"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "not_applicable",
+        "reason": "no_commit"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "frontend.response_decode"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "ocr:ocr_page",
+      "workflow": "ocr",
+      "stage": "ocr_page",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.ocr_engine",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "ocr_engine",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_upload",
+          "ocr_page"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "document.ocr_page"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "persona:persona_generation",
+      "workflow": "persona",
+      "stage": "persona_generation",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.persona_cards",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "persona_compiler",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "persona_snapshot"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "persona.generation"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "planning:plan_generation",
+      "workflow": "planning",
+      "stage": "plan_generation",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.model_provider",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "planning_prompt",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        },
+        {
+          "component_name": "planning_toolset",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "planning_toolset",
+              "version": "planning-toolset-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "ToolManifestRegistry",
+          "version": "tool-manifest-v1"
+        }
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_debug",
+          "persona_snapshot",
+          "planning_context",
+          "scene_snapshot",
+          "study_unit_input"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "planning.plan_generation"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "planning:planning_tool_execution",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.plan_tool_runtime",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "planning_tool_runtime",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "planning_tool_runtime",
+              "version": "planning-tool-runtime-v1"
+            }
+          }
+        },
+        {
+          "component_name": "planning_toolset",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "planning_toolset",
+              "version": "planning-toolset-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "ToolManifestRegistry",
+          "version": "tool-manifest-v1"
+        }
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_debug",
+          "planning_context",
+          "study_unit_input"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "planning.tool_execution"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "scene:scene_generation",
+      "workflow": "scene",
+      "stage": "scene_generation",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.scene_setup",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "scene_compiler",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "persona_snapshot",
+          "scene_snapshot"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "scene.generation"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "study_chat:study_chat_reply",
+      "workflow": "study_chat",
+      "stage": "study_chat_reply",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.study_sessions",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "study_chat_prompt",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        },
+        {
+          "component_name": "study_chat_toolset",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "ToolManifestRegistry",
+          "version": "tool-manifest-v1"
+        }
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_upload",
+          "planning_context",
+          "scene_snapshot",
+          "study_session_snapshot"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "study_chat.reply"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "study_unit_cleanup:study_unit_cleanup",
+      "workflow": "study_unit_cleanup",
+      "stage": "study_unit_cleanup",
+      "registration": {
+        "status": "unregistered",
+        "reason": "workflow_not_audited"
+      },
+      "owner_module": "app.services.study_arrangement",
+      "owner_adapter": {
+        "status": "unregistered",
+        "reason": "adapter_not_registered"
+      },
+      "input_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "proposal_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "output_contract": {
+        "status": "unregistered",
+        "reason": "contract_not_registered"
+      },
+      "component_contracts": [
+        {
+          "component_name": "study_unit_cleaner",
+          "contract": {
+            "status": "unregistered",
+            "reason": "component_contract_not_registered"
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "not_applicable",
+        "reason": "no_prompt"
+      },
+      "policy_contract": {
+        "status": "unregistered",
+        "reason": "policy_not_registered"
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "document_debug",
+          "study_unit_input"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "unregistered",
+        "reason": "effect_adapter_not_registered"
+      },
+      "commit_policy": {
+        "status": "unregistered",
+        "reason": "commit_policy_not_registered"
+      },
+      "decoder_route": {
+        "status": "unregistered",
+        "reason": "decoder_not_registered"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "document.study_unit_cleanup"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    },
+    {
+      "key": "tavern:actor_reply",
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "registration": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernActorReplyWorkflowManifestEntry",
+          "version": "tavern-actor-reply-workflow-manifest-v1"
+        }
+      },
+      "owner_module": "app.services.tavern",
+      "owner_adapter": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernActorWorkflowAdapter",
+          "version": "tavern-actor-workflow-adapter-v1"
+        }
+      },
+      "input_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        }
+      },
+      "proposal_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernActorReply",
+          "version": "tavern-actor-reply-v1"
+        }
+      },
+      "output_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        }
+      },
+      "component_contracts": [
+        {
+          "component_name": "tavern_actor_prompt",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "tavern_actor_prompt",
+              "version": "tavern-actor-v1"
+            }
+          }
+        },
+        {
+          "component_name": "tavern_persona_compiler",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "tavern_persona_compiler",
+              "version": "tavern-persona-compiler-v1"
+            }
+          }
+        },
+        {
+          "component_name": "tavern_scheduler",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "tavern_scheduler",
+              "version": "tavern-schedule-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "policy_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        }
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 0,
+        "max_input_tokens": 24000,
+        "max_output_tokens": 4000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "persona_snapshot",
+          "scene_snapshot",
+          "tavern_room_snapshot",
+          "tavern_transcript"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "registered",
+        "key": {
+          "workflow": "tavern",
+          "stage": "actor_reply",
+          "trace_contract": {
+            "name": "TavernActorReply",
+            "version": "tavern-actor-reply-v2"
+          },
+          "payload_contract": {
+            "name": "TavernPersonaMessageCommittedProjection",
+            "version": "tavern-persona-message-committed-projection-v1"
+          }
+        }
+      },
+      "decoder_route": {
+        "status": "registered",
+        "value": "app.services.tavern_harness.TavernActorHarness"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "tavern.actor_reply"
+      },
+      "eval_suites": {
+        "status": "unregistered",
+        "reason": "eval_suite_not_registered"
+      }
+    }
+  ]
+}

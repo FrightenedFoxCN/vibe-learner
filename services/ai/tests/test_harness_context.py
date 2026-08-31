@@ -54,6 +54,10 @@ from app.models.harness import (
     validate_harness_resource_evidence_policy_registry,
     validate_harness_operation_stage_registry,
 )
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationBindingV1,
+)
 from app.services.harness_context import (
     build_harness_context,
     build_snapshot_ref,
@@ -88,6 +92,22 @@ COMMIT_POLICY_FIXTURE = (
     / "operation-commit-policies-v1.json"
 )
 OPERATION_ID = "harness-operation-0123456789abcdef0123456789abcdef"
+
+
+def _operation_binding(
+    operation_id: str = OPERATION_ID,
+    *,
+    workflow: HarnessWorkflow = HarnessWorkflow.TAVERN,
+    entry_stage: HarnessStage = HarnessStage.TAVERN_ACTOR_REPLY,
+) -> HarnessOperationBindingV1:
+    return HarnessOperationBindingV1(
+        harness_operation_id=operation_id,
+        domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+        domain_operation_id="tavern-run-context-fixture",
+        workflow=workflow,
+        entry_stage=entry_stage,
+        admitted_at="2026-08-25T00:00:00Z",
+    )
 
 
 class _NestedManifest(HarnessSafeManifest):
@@ -255,16 +275,17 @@ def _build(
     input_manifest: HarnessSafeManifest | None = None,
     subject_refs: list[HarnessResourceRefV3] | None = None,
     snapshot_refs: list | None = None,
+    input_version: str = "tavern-actor-input-manifest-v1",
     policy_version: str = "tavern-harness-v1",
     prompt_version: str = "tavern-actor-v1",
 ) -> HarnessContextEnvelopeV3:
     return build_harness_context(
         workflow=HarnessWorkflow.TAVERN,
         stage=HarnessStage.TAVERN_ACTOR_REPLY,
-        operation_id=operation_id,
+        operation_binding=_operation_binding(operation_id),
         input_contract=HarnessContractRef(
             name="TavernActorInputManifest",
-            version="tavern-actor-input-manifest-v1",
+            version=input_version,
         ),
         input_manifest=input_manifest or _input_manifest(),
         subject_refs=subject_refs
@@ -342,10 +363,31 @@ class HarnessContextV3Tests(unittest.TestCase):
         for changed in (
             _build(input_manifest=_input_manifest(room_revision=5)),
             _build(snapshot_refs=[_snapshot(last_sequence=10)]),
-            _build(policy_version="tavern-harness-v2"),
-            _build(prompt_version="tavern-actor-v2"),
         ):
             self.assertNotEqual(baseline.context_digest, changed.context_digest)
+
+        with self.assertRaisesRegex(ValueError, "policy_contract_drift"):
+            _build(policy_version="tavern-harness-v2")
+        with self.assertRaisesRegex(ValueError, "prompt_contract_drift"):
+            _build(prompt_version="tavern-actor-v2")
+        with self.assertRaisesRegex(ValueError, "input_contract_drift"):
+            _build(input_version="tavern-actor-input-manifest-v2")
+
+        forbidden_snapshot = build_snapshot_ref(
+            artifact_type=HarnessArtifactType.FRONTEND_RESPONSE_FIXTURE,
+            artifact_id="frontend-response-fixture-1",
+            contract=HarnessContractRef(
+                name="FrontendResponseFixtureManifest",
+                version="frontend-response-fixture-manifest-v1",
+            ),
+            payload=_RoomSnapshotManifest(
+                participant_ids=["persona-a"],
+                last_sequence=1,
+                prompt_hashes=["a" * 64],
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "artifact_not_allowed"):
+            _build(snapshot_refs=[forbidden_snapshot])
 
         tampered = baseline.model_dump(mode="json", exclude_none=False)
         tampered["policy_contract"]["version"] = "tavern-harness-v2"
@@ -384,11 +426,14 @@ class HarnessContextV3Tests(unittest.TestCase):
         ):
             HarnessContextEnvelopeV3.model_validate(context)
 
-        with self.assertRaisesRegex(ValueError, "harness_stage_not_registered"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_workflow_manifest_stage_unknown",
+        ):
             build_harness_context(
                 workflow=HarnessWorkflow.TAVERN,
                 stage=HarnessStage.PLAN_GENERATION,
-                operation_id=OPERATION_ID,
+                operation_binding=_operation_binding(),
                 input_contract=HarnessContractRef(name="Input", version="input-v1"),
                 input_manifest=_input_manifest(),
                 subject_refs=[],
@@ -486,15 +531,44 @@ class HarnessContextV3Tests(unittest.TestCase):
             _build(operation_id="caller-owned-operation")
         self.assertRegex(new_harness_operation_id(), r"^harness-operation-[0-9a-f]{32}$")
 
+    def test_context_rejects_binding_from_another_workflow(self) -> None:
+        planning_binding = HarnessOperationBindingV1(
+            harness_operation_id=(
+                "harness-operation-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ),
+            domain_operation_kind=(
+                HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+            ),
+            domain_operation_id="learning-plan-op-context-binding",
+            workflow=HarnessWorkflow.PLANNING,
+            entry_stage=HarnessStage.PLAN_GENERATION,
+            admitted_at="2026-08-25T00:00:00Z",
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            "harness_context_operation_workflow_mismatch",
+        ):
+            build_harness_context(
+                workflow=HarnessWorkflow.TAVERN,
+                stage=HarnessStage.TAVERN_ACTOR_REPLY,
+                operation_binding=planning_binding,
+                input_contract=HarnessContractRef(
+                    name="TavernActorInputManifest",
+                    version="tavern-actor-input-manifest-v1",
+                ),
+                input_manifest=_input_manifest(),
+                subject_refs=[],
+            )
+
     def test_pending_component_registry_blocks_unadopted_workflow(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "harness_stage_component_version_unregistered",
+            "harness_workflow_manifest_stage_unregistered",
         ):
             build_harness_context(
                 workflow=HarnessWorkflow.PLANNING,
                 stage=HarnessStage.PLAN_GENERATION,
-                operation_id=OPERATION_ID,
+                operation_binding=_operation_binding(),
                 input_contract=HarnessContractRef(
                     name="PlanningInputManifest",
                     version="planning-input-manifest-v1",

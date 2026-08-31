@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from app.core.logging import get_logger
+from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.domain import (
     ChatToolCallTraceRecord,
     DocumentDebugRecord,
@@ -50,10 +51,22 @@ from app.models.study_question import (
     STUDY_QUESTION_TOOL_TRACE_PRIVATE_FIELDS,
     StudyQuestionProposalV1,
 )
+from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
 from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.token_usage import TokenUsageService
+from app.services.tool_provider_projection import (
+    ProviderToolCallDecodeError,
+    ToolContractViolation,
+    ToolExecutionBudgetTracker,
+    adapt_tool_runtime_result,
+    build_versioned_tool_error,
+    decode_provider_tool_call,
+    project_tool_arguments_for_observability,
+    project_validated_tool_result,
+    provider_function_for_entry,
+)
 from app.services.tavern_prompt import (
     build_tavern_actor_messages,
     build_tavern_actor_recovery_message,
@@ -1448,7 +1461,9 @@ class OpenAIModelProvider(MockModelProvider):
         current_messages = list(messages)
         raw_payload: dict[str, Any] | None = None
         last_tool_results: list[dict[str, Any]] = []
+        last_application_tool_results: list[dict[str, Any]] = []
         tool_call_traces: list[ChatToolCallTraceRecord] = []
+        tool_budget_tracker = ToolExecutionBudgetTracker()
         limited_rounds_used = 0
         total_rounds = 0
         max_total_rounds = max(
@@ -1483,6 +1498,7 @@ class OpenAIModelProvider(MockModelProvider):
             if tool_specs:
                 payload["tools"] = tool_specs
                 payload["tool_choice"] = "auto"
+                payload["parallel_tool_calls"] = False
             else:
                 payload["response_format"] = {"type": "json_object"}
 
@@ -1495,6 +1511,11 @@ class OpenAIModelProvider(MockModelProvider):
             message_payload = choice["message"]
             tool_calls = message_payload.get("tool_calls") or []
             if tool_calls:
+                tool_budget_tracker.begin_round()
+                available_tool_names = {
+                    str((tool.get("function") or {}).get("name") or "")
+                    for tool in tool_specs
+                }
                 current_messages.append(
                     {
                         "role": "assistant",
@@ -1515,17 +1536,26 @@ class OpenAIModelProvider(MockModelProvider):
                         session_tool_runtime=session_tool_runtime,
                         scene_tool_runtime=scene_tool_runtime,
                         disabled_tools=round_disabled_tools,
+                        available_tool_names=available_tool_names,
+                        budget_tracker=tool_budget_tracker,
                     )
                     last_tool_results.append(execution["result"])
+                    last_application_tool_results.append(
+                        execution["application_result"]
+                    )
                     tool_call_traces.append(
                         ChatToolCallTraceRecord.model_validate(
                             serialize_chat_tool_trace_item(
                                 tool_call_id=execution["tool_call_id"],
                                 tool_name=execution["tool_name"],
                                 arguments_json=execution["arguments_json"],
-                                result=_public_chat_tool_trace_result(
-                                    execution["result"]
-                                ),
+                                result=execution["public_result"],
+                                argument_contract_version=execution[
+                                    "argument_contract_version"
+                                ],
+                                result_contract_version=execution[
+                                    "result_contract_version"
+                                ],
                             )
                         )
                     )
@@ -1534,7 +1564,10 @@ class OpenAIModelProvider(MockModelProvider):
                             "role": "tool",
                             "tool_call_id": execution["tool_call_id"],
                             "name": execution["tool_name"],
-                            "content": json.dumps(execution["result"], ensure_ascii=False),
+                            "content": json.dumps(
+                                execution["provider_result"],
+                                ensure_ascii=False,
+                            ),
                         }
                     )
                 exempt_only_round = _round_uses_only_exempt_chat_tools(tool_calls)
@@ -1561,6 +1594,7 @@ class OpenAIModelProvider(MockModelProvider):
             return _parse_chat_model_reply(
                 raw_payload=raw_payload,
                 tool_results=last_tool_results,
+                application_tool_results=last_application_tool_results,
                 fallback_memory_trace=memory_trace_hits or [],
                 tool_traces=tool_call_traces,
             )
@@ -1605,6 +1639,7 @@ class OpenAIModelProvider(MockModelProvider):
             recovered = _parse_chat_model_reply(
                 raw_payload=recovery_raw_payload,
                 tool_results=last_tool_results,
+                application_tool_results=last_application_tool_results,
                 fallback_memory_trace=memory_trace_hits or [],
                 tool_traces=tool_call_traces,
             )
@@ -2865,157 +2900,37 @@ def _chat_tools(
 ) -> list[dict[str, object]]:
     if not tools_enabled:
         return []
-
-    disabled = disabled_tools or set()
-
-    tools: list[dict[str, object]] = [
-        {
-            "type": "function",
-            "function": {
-                "name": "ask_multiple_choice_question",
-                "description": TOOL_CATALOG[CHAT_STAGE]["ask_multiple_choice_question"]["description"],
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "topic": {
-                            "type": "string",
-                            "description": "可选。指定题目聚焦的概念、术语或练习主题。",
-                        },
-                        "difficulty": {
-                            "type": "string",
-                            "enum": ["easy", "medium", "hard"],
-                            "description": "题目难度。",
-                        },
-                        "focus_mode": {
-                            "type": "string",
-                            "enum": ["detail", "deep_understanding"],
-                            "description": "偏向细节核对，或偏向深层理解。",
-                        },
-                        "option_count": {
-                            "type": "integer",
-                            "minimum": 3,
-                            "maximum": 5,
-                            "description": "选项数量。",
-                        },
-                    },
-                    "additionalProperties": False,
-                },
-            },
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "ask_fill_blank_question",
-                "description": TOOL_CATALOG[CHAT_STAGE]["ask_fill_blank_question"]["description"],
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "topic": {
-                            "type": "string",
-                            "description": "可选。指定题目聚焦的概念、术语或练习主题。",
-                        },
-                        "difficulty": {
-                            "type": "string",
-                            "enum": ["easy", "medium", "hard"],
-                            "description": "题目难度。",
-                        },
-                        "focus_mode": {
-                            "type": "string",
-                            "enum": ["detail", "deep_understanding"],
-                            "description": "偏向细节核对，或偏向深层理解。",
-                        },
-                        "blank_count": {
-                            "type": "integer",
-                            "minimum": 1,
-                            "maximum": 3,
-                            "description": "题干中需要填空的位置数量。",
-                        },
-                    },
-                    "additionalProperties": False,
-                },
-            },
-        },
-    ]
-
+    names = ["ask_multiple_choice_question", "ask_fill_blank_question"]
     if memory_tool_enabled and memory_hits:
-        tools.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": "retrieve_memory_context",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["retrieve_memory_context"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "top_k": {
-                                "type": "integer",
-                                "minimum": 1,
-                                "maximum": 8,
-                                "description": "返回的历史记忆条数。",
-                            }
-                        },
-                        "additionalProperties": False,
-                    },
-                },
-            }
-        )
-
+        names.append("retrieve_memory_context")
     if debug_report is not None:
-        tools.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": "read_page_range_content",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["read_page_range_content"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "page_start": {"type": "integer", "description": "要读取的起始页码。"},
-                            "page_end": {"type": "integer", "description": "要读取的结束页码。"},
-                            "max_chars": {"type": "integer", "description": "返回文本的最大字符预算。"},
-                        },
-                        "required": ["page_start", "page_end"],
-                        "additionalProperties": False,
-                    },
-                },
-            }
-        )
-
+        names.append("read_page_range_content")
     if multimodal_enabled and debug_report is not None and document_path:
-        tools.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": "read_page_range_images",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["read_page_range_images"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "page_start": {"type": "integer", "description": "要渲染图像的起始页码。"},
-                            "page_end": {"type": "integer", "description": "要渲染图像的结束页码。"},
-                            "max_images": {"type": "integer", "description": "最多返回的页图像数量。"},
-                        },
-                        "required": ["page_start", "page_end"],
-                        "additionalProperties": False,
-                    },
-                },
-            }
+        names.append("read_page_range_images")
+    for runtime in (plan_tool_runtime, session_tool_runtime, scene_tool_runtime):
+        if runtime is None:
+            continue
+        available_names = getattr(runtime, "available_tool_names", None)
+        if not callable(available_names):
+            raise RuntimeError("study_tool_runtime_availability_contract_missing")
+        names.extend(str(name) for name in available_names())
+    disabled = disabled_tools or set()
+    projected: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for name in names:
+        if name in disabled or name in seen:
+            continue
+        entry = resolve_tool_manifest_entry(
+            workflow=HarnessWorkflow.STUDY_CHAT,
+            offered_in_stage=HarnessStage.STUDY_CHAT_REPLY,
+            transport_name=name,
         )
-
-    if plan_tool_runtime is not None:
-        tools.extend(plan_tool_runtime.tool_specs())
-
-    if session_tool_runtime is not None:
-        tools.extend(session_tool_runtime.tool_specs())
-
-    if scene_tool_runtime is not None:
-        tools.extend(scene_tool_runtime.tool_specs())
-
-    return [
-        tool
-        for tool in tools
-        if str((tool.get("function") or {}).get("name") or "") not in disabled
-    ]
+        catalog_description = TOOL_CATALOG[CHAT_STAGE][entry.canonical_name]["description"]
+        if catalog_description != entry.display.provider_description:
+            raise RuntimeError("study_tool_description_manifest_mismatch")
+        projected.append(provider_function_for_entry(entry).model_dump(mode="json"))
+        seen.add(entry.canonical_name)
+    return projected
 
 
 def _reject_nonstandard_json_constant(value: str) -> None:
@@ -3035,158 +2950,293 @@ def _execute_chat_tool_call(
     session_tool_runtime: Any | None = None,
     scene_tool_runtime: Any | None = None,
     disabled_tools: set[str] | None = None,
+    available_tool_names: set[str] | None = None,
+    budget_tracker: ToolExecutionBudgetTracker | None = None,
 ) -> dict[str, Any]:
-    function_payload = tool_call.get("function") or {}
-    tool_name = str(function_payload.get("name") or "")
-    tool_call_id = str(tool_call.get("id") or "")
-    arguments_payload = function_payload.get("arguments")
-    if not isinstance(arguments_payload, str):
-        return {
-            "tool_call_id": tool_call_id,
-            "tool_name": tool_name,
-            "arguments_json": "",
-            "result": {
-                "ok": False,
-                "error": "tool_argument_schema_invalid",
-                "tool_name": tool_name,
-            },
-        }
-    raw_arguments = arguments_payload
+    transport_id = tool_call.get("id") if isinstance(tool_call.get("id"), str) else ""
+    function_payload = tool_call.get("function")
+    raw_name = (
+        function_payload.get("name")
+        if isinstance(function_payload, dict)
+        and isinstance(function_payload.get("name"), str)
+        else ""
+    )
     try:
-        arguments = json.loads(
-            raw_arguments,
-            parse_constant=_reject_nonstandard_json_constant,
+        decoded = decode_provider_tool_call(
+            tool_call,
+            workflow=HarnessWorkflow.STUDY_CHAT,
+            offered_in_stage=HarnessStage.STUDY_CHAT_REPLY,
         )
-    except json.JSONDecodeError:
-        return {
-            "tool_call_id": tool_call_id,
-            "tool_name": tool_name,
-            "arguments_json": raw_arguments,
-            "result": {
-                "ok": False,
-                "error": "tool_argument_invalid_json",
-                "tool_name": tool_name,
-            },
-        }
-    if not isinstance(arguments, dict):
-        return {
-            "tool_call_id": tool_call_id,
-            "tool_name": tool_name,
-            "arguments_json": raw_arguments,
-            "result": {
-                "ok": False,
-                "error": "tool_argument_schema_invalid",
-                "tool_name": tool_name,
-            },
-        }
-
-    if tool_name in (disabled_tools or set()):
-        result = {
-            "ok": False,
-            "error": "tool_disabled",
-            "tool_name": tool_name,
-        }
-        return {
-            "tool_call_id": tool_call_id,
-            "tool_name": tool_name,
-            "arguments_json": raw_arguments,
-            "result": result,
-        }
-
+    except ProviderToolCallDecodeError as error:
+        return _chat_tool_error_execution(
+            tool_call_id=transport_id,
+            tool_name=raw_name,
+            error=_study_decode_error_code(error.code),
+            path=list(error.path),
+            detail=error.detail,
+        )
+    entry = resolve_tool_manifest_entry(
+        workflow=HarnessWorkflow.STUDY_CHAT,
+        offered_in_stage=HarnessStage.STUDY_CHAT_REPLY,
+        transport_name=decoded.canonical_name,
+    )
+    tool_name = entry.canonical_name
+    if available_tool_names is None:
+        available_tool_names = _runtime_available_chat_tool_names(
+            memory_hits=memory_hits,
+            debug_report=debug_report,
+            document_path=document_path,
+            plan_tool_runtime=plan_tool_runtime,
+            session_tool_runtime=session_tool_runtime,
+            scene_tool_runtime=scene_tool_runtime,
+        )
+    if tool_name in (disabled_tools or set()) or tool_name not in available_tool_names:
+        return _chat_tool_error_execution(
+            tool_call_id=decoded.transport_correlation_id,
+            tool_name=tool_name,
+            error="tool_unavailable",
+            path=["function", "name"],
+            detail="tool is not available in this Study Chat context",
+            entry=entry,
+            arguments=decoded.arguments,
+        )
+    tracker = budget_tracker or ToolExecutionBudgetTracker()
+    try:
+        tracker.admit(entry)
+    except ToolContractViolation as error:
+        return _chat_tool_error_execution(
+            tool_call_id=decoded.transport_correlation_id,
+            tool_name=tool_name,
+            error=error.code,
+            path=[],
+            detail=error.detail,
+            entry=entry,
+            arguments=decoded.arguments,
+        )
+    arguments = decoded.arguments.model_dump(mode="python")
     if tool_name == "ask_multiple_choice_question":
-        result = _build_multiple_choice_question(
+        raw_result = _build_multiple_choice_question(
             section_id=section_id,
             section_context=section_context,
             learner_message=learner_message,
             arguments=arguments,
         )
     elif tool_name == "ask_fill_blank_question":
-        result = _build_fill_blank_question(
+        raw_result = _build_fill_blank_question(
             section_id=section_id,
             section_context=section_context,
             learner_message=learner_message,
             arguments=arguments,
         )
     elif tool_name == "read_page_range_content":
-        page_start = _coerce_int(arguments.get("page_start"), default=1)
-        page_end = _coerce_int(arguments.get("page_end"), default=page_start)
-        max_chars = _coerce_int(arguments.get("max_chars"), default=4000)
-        result = {
+        raw_result = {
             "ok": True,
             "tool_name": tool_name,
             "section_id": section_id,
             **read_page_range_content(
                 debug_report=debug_report,
-                page_start=max(1, page_start),
-                page_end=max(max(1, page_start), page_end),
-                max_chars=max(800, min(max_chars, 8000)),
+                page_start=arguments["page_start"],
+                page_end=arguments["page_end"],
+                max_chars=arguments["max_chars"],
             ),
         }
     elif tool_name == "read_page_range_images":
-        page_start = _coerce_int(arguments.get("page_start"), default=1)
-        page_end = _coerce_int(arguments.get("page_end"), default=page_start)
-        max_images = _coerce_int(arguments.get("max_images"), default=2)
-        result = {
+        raw_result = {
             "ok": True,
             "tool_name": tool_name,
             "section_id": section_id,
             **read_page_range_images(
                 document_path=document_path,
-                page_start=max(1, page_start),
-                page_end=max(max(1, page_start), page_end),
-                max_images=max(1, min(max_images, 4)),
+                page_start=arguments["page_start"],
+                page_end=arguments["page_end"],
+                max_images=arguments["max_images"],
             ),
         }
     elif tool_name == "retrieve_memory_context":
-        top_k = _coerce_int(arguments.get("top_k"), default=4)
-        top_k = max(1, min(top_k, 8))
-        result = {
+        top_k = arguments["top_k"]
+        raw_result = {
             "ok": True,
             "tool_name": tool_name,
             "section_id": section_id,
             "hit_count": min(len(memory_hits), top_k),
             "hits": memory_hits[:top_k],
         }
-    elif session_tool_runtime is not None and bool(getattr(session_tool_runtime, "has_tool", lambda _name: False)(tool_name)):
-        try:
-            result = session_tool_runtime.execute_tool(tool_name, arguments)
-        except HTTPException as exc:
-            result = {
-                "ok": False,
-                "error": str(exc.detail),
-                "tool_name": tool_name,
-            }
-    elif plan_tool_runtime is not None and bool(getattr(plan_tool_runtime, "has_tool", lambda _name: False)(tool_name)):
-        try:
-            result = plan_tool_runtime.execute_tool(tool_name, arguments)
-        except HTTPException as exc:
-            result = {
-                "ok": False,
-                "error": str(exc.detail),
-                "tool_name": tool_name,
-            }
-    elif scene_tool_runtime is not None:
-        try:
-            result = scene_tool_runtime.execute_tool(tool_name, arguments)
-        except HTTPException as exc:
-            result = {
-                "ok": False,
-                "error": str(exc.detail),
-                "tool_name": tool_name,
-            }
     else:
-        result = {
-            "ok": False,
-            "error": "unknown_tool",
-            "tool_name": tool_name,
-        }
+        runtime = _runtime_for_study_tool(
+            tool_name,
+            plan_tool_runtime=plan_tool_runtime,
+            session_tool_runtime=session_tool_runtime,
+            scene_tool_runtime=scene_tool_runtime,
+        )
+        try:
+            raw_result = runtime.execute_tool(tool_name, arguments)
+        except HTTPException as error:
+            raw_result = {
+                "ok": False,
+                "error": str(error.detail),
+                "tool_name": tool_name,
+            }
+    validated = adapt_tool_runtime_result(entry, raw_result)
+    canonical = validated.model_dump(mode="json")
+    return {
+        "tool_call_id": decoded.transport_correlation_id,
+        "tool_name": tool_name,
+        "arguments_json": project_tool_arguments_for_observability(
+            entry,
+            decoded.arguments,
+        ),
+        "argument_contract_version": entry.input_contract.version,
+        "result_contract_version": entry.result_contract.version,
+        "result": canonical,
+        "application_result": dict(raw_result),
+        "provider_result": project_validated_tool_result(
+            entry,
+            validated,
+            audience="provider",
+        ),
+        "trace_result": project_validated_tool_result(
+            entry,
+            validated,
+            audience="trace",
+        ),
+        "public_result": project_validated_tool_result(
+            entry,
+            validated,
+            audience="public",
+        ),
+    }
 
+
+def _runtime_available_chat_tool_names(
+    *,
+    memory_hits: list[dict[str, Any]],
+    debug_report: DocumentDebugRecord | None,
+    document_path: str | None,
+    plan_tool_runtime: Any | None,
+    session_tool_runtime: Any | None,
+    scene_tool_runtime: Any | None,
+) -> set[str]:
+    names = {"ask_multiple_choice_question", "ask_fill_blank_question"}
+    if memory_hits:
+        names.add("retrieve_memory_context")
+    if debug_report is not None:
+        names.add("read_page_range_content")
+    if debug_report is not None and document_path:
+        names.add("read_page_range_images")
+    for runtime in (plan_tool_runtime, session_tool_runtime, scene_tool_runtime):
+        if runtime is None:
+            continue
+        available_names = getattr(runtime, "available_tool_names", None)
+        if callable(available_names):
+            names.update(str(name) for name in available_names())
+    return names
+
+
+def _runtime_for_study_tool(
+    tool_name: str,
+    *,
+    plan_tool_runtime: Any | None,
+    session_tool_runtime: Any | None,
+    scene_tool_runtime: Any | None,
+) -> Any:
+    for runtime in (session_tool_runtime, plan_tool_runtime, scene_tool_runtime):
+        if runtime is not None and tool_name in set(runtime.available_tool_names()):
+            return runtime
+    raise RuntimeError("study_tool_runtime_missing")
+
+
+def _chat_tool_error_execution(
+    *,
+    tool_call_id: str,
+    tool_name: str,
+    error: str,
+    path: list[str | int],
+    detail: str,
+    entry: Any | None = None,
+    arguments: Any | None = None,
+) -> dict[str, Any]:
+    result = build_versioned_tool_error(
+        workflow=HarnessWorkflow.STUDY_CHAT,
+        tool_name=tool_name,
+        error=error,
+        path=path,
+        detail=detail,
+    )
+    canonical = result.model_dump(mode="json")
+    if entry is not None:
+        provider_result = project_validated_tool_result(
+            entry,
+            result,
+            audience="provider",
+        )
+        trace_result = project_validated_tool_result(
+            entry,
+            result,
+            audience="trace",
+        )
+        public_result = project_validated_tool_result(
+            entry,
+            result,
+            audience="public",
+        )
+        arguments_json = (
+            project_tool_arguments_for_observability(entry, arguments)
+            if arguments is not None
+            else json.dumps(
+                {"contract_version": entry.input_contract.version, "redacted": True},
+                separators=(",", ":"),
+            )
+        )
+        argument_version = entry.input_contract.version
+        result_version = entry.result_contract.version
+        canonical_name = entry.canonical_name
+    else:
+        safe_error = {
+            "schema_version": canonical["schema_version"],
+            "ok": False,
+            "tool_name": canonical["tool_name"],
+            "error": canonical["error"],
+        }
+        provider_result = safe_error
+        trace_result = safe_error
+        public_result = safe_error
+        arguments_json = (
+            '{"contract_version":"study-chat-tool-arguments-v1","redacted":true}'
+        )
+        argument_version = "study-chat-tool-arguments-v1"
+        result_version = "study-chat-tool-result-v1"
+        canonical_name = tool_name or "unknown_tool"
     return {
         "tool_call_id": tool_call_id,
-        "tool_name": tool_name,
-        "arguments_json": raw_arguments,
-        "result": result,
+        "tool_name": canonical_name,
+        "arguments_json": arguments_json,
+        "argument_contract_version": argument_version,
+        "result_contract_version": result_version,
+        "result": canonical,
+        "application_result": canonical,
+        "provider_result": provider_result,
+        "trace_result": trace_result,
+        "public_result": public_result,
     }
+
+
+def _study_decode_error_code(code: str) -> str:
+    if code == "tool_arguments_json_invalid":
+        return "tool_argument_invalid_json"
+    if code in {
+        "provider_function_call_shape_invalid",
+        "tool_arguments_object_required",
+        "tool_arguments_json_string_required",
+        "tool_arguments_contract_invalid",
+        "tool_arguments_duplicate_key",
+        "tool_arguments_nonfinite",
+    }:
+        return "tool_argument_schema_invalid"
+    if code == "tool_arguments_budget_exceeded":
+        return "tool_argument_budget_exceeded"
+    if code == "tool_manifest_tool_unknown":
+        return "unknown_tool"
+    return code
 
 
 def _build_multiple_choice_question(
@@ -3919,6 +3969,7 @@ def _parse_chat_model_reply(
     tool_results: list[dict[str, Any]],
     fallback_memory_trace: list[dict[str, Any]],
     tool_traces: list[ChatToolCallTraceRecord],
+    application_tool_results: list[dict[str, Any]] | None = None,
 ) -> ModelReply:
     content = ""
     try:
@@ -3946,7 +3997,9 @@ def _parse_chat_model_reply(
         tool_results=tool_results,
     )
     memory_trace = _extract_memory_trace_payload(tool_results, fallback_memory_trace)
-    scene_profile = extract_scene_profile_from_tool_results(tool_results)
+    scene_profile = extract_scene_profile_from_tool_results(
+        application_tool_results or tool_results
+    )
     rich_blocks = _extract_rich_blocks_payload(parsed)
     mood = str(parsed.get("mood") or "calm")
     action = str(parsed.get("action") or "point")

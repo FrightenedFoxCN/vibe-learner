@@ -1,0 +1,22 @@
+{
+  "schema_name": "HarnessEvalFailureTaxonomy",
+  "schema_version": "harness-eval-failure-taxonomy-v1",
+  "entries": [
+    {"code":"candidate_commit_failed","owner":"candidate","category":"commit","release_class":"candidate_failure","retryable":false,"counts_as_candidate_failure":true,"allowed_sample_statuses":["failed"]},
+    {"code":"candidate_decode_failed","owner":"candidate","category":"decode","release_class":"candidate_failure","retryable":false,"counts_as_candidate_failure":true,"allowed_sample_statuses":["failed","passed"]},
+    {"code":"candidate_effect_uncertain","owner":"candidate","category":"effect","release_class":"candidate_failure","retryable":false,"counts_as_candidate_failure":true,"allowed_sample_statuses":["failed"]},
+    {"code":"candidate_execution_failed","owner":"candidate","category":"execution","release_class":"candidate_failure","retryable":false,"counts_as_candidate_failure":true,"allowed_sample_statuses":["failed","passed"]},
+    {"code":"candidate_recovery_exhausted","owner":"candidate","category":"recovery","release_class":"candidate_failure","retryable":false,"counts_as_candidate_failure":true,"allowed_sample_statuses":["failed"]},
+    {"code":"candidate_validation_failed","owner":"candidate","category":"validation","release_class":"candidate_failure","retryable":false,"counts_as_candidate_failure":true,"allowed_sample_statuses":["failed","passed"]},
+    {"code":"case_contract_invalid","owner":"case","category":"contract","release_class":"data_failure","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"case_source_unresolved","owner":"case","category":"resolution","release_class":"data_failure","retryable":true,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"eval_route_unregistered","owner":"runner","category":"configuration","release_class":"infrastructure_failure","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"grader_execution_failed","owner":"grader","category":"grading","release_class":"infrastructure_failure","retryable":true,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"grader_output_invalid","owner":"grader","category":"grading","release_class":"infrastructure_failure","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"metric_computation_failed","owner":"metric","category":"measurement","release_class":"infrastructure_failure","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"protected_artifact_forbidden","owner":"case","category":"resolution","release_class":"data_failure","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"runner_configuration_invalid","owner":"runner","category":"configuration","release_class":"incomparable","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"runner_execution_failed","owner":"runner","category":"execution","release_class":"infrastructure_failure","retryable":true,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]},
+    {"code":"sensitive_material_detected","owner":"runner","category":"sensitivity","release_class":"infrastructure_failure","retryable":false,"counts_as_candidate_failure":false,"allowed_sample_statuses":["broken"]}
+  ]
+}

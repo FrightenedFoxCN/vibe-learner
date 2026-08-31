@@ -104,14 +104,19 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
             document_path=None,
         )
 
-        self.assertEqual(execution["arguments_json"], raw_arguments)
         self.assertEqual(
-            execution["result"],
-            {
-                "ok": False,
-                "error": "tool_argument_invalid_json",
-                "tool_name": "ask_multiple_choice_question",
-            },
+            execution["arguments_json"],
+            '{"contract_version":"study-chat-tool-arguments-v1","redacted":true}',
+        )
+        self.assertNotIn(raw_arguments, execution["arguments_json"])
+        self.assertFalse(execution["result"]["ok"])
+        self.assertEqual(
+            execution["result"]["error"],
+            "tool_argument_invalid_json",
+        )
+        self.assertEqual(
+            execution["result"]["tool_name"],
+            "ask_multiple_choice_question",
         )
         self.assertNotIn("question_type", execution["result"])
         self.assertNotIn("question", execution["result"])
@@ -124,6 +129,9 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
             def has_tool(self, _tool_name: str) -> bool:
                 return True
 
+            def available_tool_names(self) -> list[str]:
+                return ["read_session_memory"]
+
             def execute_tool(self, tool_name: str, arguments: dict[str, object]):
                 self.execution_count += 1
                 return {"ok": True, "tool_name": tool_name, "arguments": arguments}
@@ -131,9 +139,9 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
         runtime = CountingRuntime()
         cases = (
             ('{"broken":', "tool_argument_invalid_json"),
-            ('{"value":NaN}', "tool_argument_invalid_json"),
-            ('{"value":Infinity}', "tool_argument_invalid_json"),
-            ('{"value":-Infinity}', "tool_argument_invalid_json"),
+            ('{"value":NaN}', "tool_argument_schema_invalid"),
+            ('{"value":Infinity}', "tool_argument_schema_invalid"),
+            ('{"value":-Infinity}', "tool_argument_schema_invalid"),
             ("[]", "tool_argument_schema_invalid"),
             ('"not-an-object"', "tool_argument_schema_invalid"),
             ("null", "tool_argument_schema_invalid"),
@@ -144,7 +152,7 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
                     {
                         "id": "call-proxy",
                         "function": {
-                            "name": "proxy_tool",
+                            "name": "read_session_memory",
                             "arguments": raw_arguments,
                         },
                     },
@@ -158,15 +166,19 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
                     plan_tool_runtime=runtime,
                     scene_tool_runtime=runtime,
                 )
-                self.assertEqual(execution["arguments_json"], raw_arguments)
+                self.assertEqual(
+                    execution["arguments_json"],
+                    '{"contract_version":"study-chat-tool-arguments-v1","redacted":true}',
+                )
+                self.assertNotIn(raw_arguments, execution["arguments_json"])
                 self.assertEqual(execution["result"]["error"], expected_error)
                 self.assertFalse(execution["result"]["ok"])
 
         non_string_function_payloads = (
-            {"name": "proxy_tool"},
-            {"name": "proxy_tool", "arguments": None},
-            {"name": "proxy_tool", "arguments": {}},
-            {"name": "proxy_tool", "arguments": []},
+            {"name": "read_session_memory"},
+            {"name": "read_session_memory", "arguments": None},
+            {"name": "read_session_memory", "arguments": {}},
+            {"name": "read_session_memory", "arguments": []},
         )
         for function_payload in non_string_function_payloads:
             with self.subTest(function_payload=function_payload):
@@ -185,7 +197,10 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
                     plan_tool_runtime=runtime,
                     scene_tool_runtime=runtime,
                 )
-                self.assertEqual(execution["arguments_json"], "")
+                self.assertEqual(
+                    execution["arguments_json"],
+                    '{"contract_version":"study-chat-tool-arguments-v1","redacted":true}',
+                )
                 self.assertEqual(
                     execution["result"]["error"],
                     "tool_argument_schema_invalid",

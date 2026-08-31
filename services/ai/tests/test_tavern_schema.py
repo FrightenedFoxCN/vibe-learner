@@ -27,6 +27,7 @@ from app.models.tavern import (
     TavernTurnRequest,
     UpdateTavernRoomRequest,
 )
+from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
 from app.persistence.database import Database
 from app.persistence.models import TavernRoomRow, TavernRunRow
 from app.persistence.tavern_repository import TavernRepository, TavernStepClaimConflict
@@ -497,6 +498,14 @@ class TavernSchemaTests(unittest.TestCase):
             persona_id="persona-a",
             content="第一位回应。",
             created_at=NOW,
+            commit_metadata=TavernPersonaMessageCommitMetadataV1(
+                operation_id=(
+                    self.repository.require_harness_operation(
+                        run.id
+                    ).harness_operation_id
+                ),
+                effect_batch_id="effect-message-early-finalize-persona",
+            ),
         )
 
         with self.assertRaisesRegex(RuntimeError, "tavern_run_steps_incomplete"):

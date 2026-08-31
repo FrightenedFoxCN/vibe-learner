@@ -11,6 +11,11 @@ from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.models.harness import HarnessTraceRecord
+from app.models.harness_operation import (
+    HarnessDomainOperationKind,
+    HarnessOperationBindingV1,
+    HarnessOperationResolutionV1,
+)
 from app.models.tavern import (
     TavernAuthorKind,
     TavernHarnessPolicy,
@@ -27,6 +32,9 @@ from app.models.tavern import (
     TavernSpeakerStepStatus,
 )
 from app.persistence.database import Database
+from app.persistence.harness_operation_repository import (
+    HarnessOperationBindingRepository,
+)
 from app.persistence.models import (
     TavernMessageRow,
     TavernParticipantRow,
@@ -49,6 +57,7 @@ class TavernRepository:
 
     def __init__(self, database: Database) -> None:
         self.database = database
+        self.harness_operations = HarnessOperationBindingRepository(database)
 
     def create_room(
         self,
@@ -370,8 +379,26 @@ class TavernRepository:
                     user_message.run_id = run.id
                     run.input_message_id = user_message.id
                     run.anchor_message_id = user_message.id
-                session.add(_run_to_row(run))
-                session.flush()
+                run_row = _run_to_row(run)
+                session.add(run_row)
+                parent_harness_operation_id = None
+                if run.parent_run_id:
+                    parent_binding = self.harness_operations.require_domain_in_session(
+                        session,
+                        domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+                        domain_operation_id=run.parent_run_id,
+                    )
+                    parent_harness_operation_id = (
+                        parent_binding.harness_operation_id
+                    )
+                self.harness_operations._admit_domain_in_session(
+                    session,
+                    domain_row=run_row,
+                    domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+                    domain_operation_id=run.id,
+                    admitted_at=run.created_at,
+                    parent_harness_operation_id=parent_harness_operation_id,
+                )
                 session.add_all(_step_to_row(step) for step in run.speaker_steps)
                 if user_message is not None:
                     session.add(_message_to_row(user_message))
@@ -381,6 +408,101 @@ class TavernRepository:
                 return replay
             raise
         return run, user_message, True
+
+    def resolve_harness_operation(
+        self,
+        run_id: str,
+    ) -> HarnessOperationResolutionV1:
+        return self.harness_operations.resolve_domain(
+            domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+            domain_operation_id=run_id,
+        )
+
+    def require_harness_operation(
+        self,
+        run_id: str,
+    ) -> HarnessOperationBindingV1:
+        return self.harness_operations.require_domain(
+            domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+            domain_operation_id=run_id,
+        )
+
+    def fail_legacy_unbound_run(
+        self,
+        *,
+        run_id: str,
+        completed_at: str,
+    ) -> TavernRunRecord:
+        """Fence a pre-binding pending Run without fabricating admission identity."""
+
+        error_code = "tavern_harness_operation_legacy_unbound"
+        with self.database.session() as session:
+            resolution = self.harness_operations.resolve_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+                domain_operation_id=run_id,
+            )
+            if resolution.binding is not None:
+                raise ValueError("tavern_harness_operation_binding_exists")
+            claimed = session.execute(
+                update(TavernRunRow)
+                .where(
+                    TavernRunRow.id == run_id,
+                    TavernRunRow.status == TavernRunStatus.PENDING.value,
+                )
+                .values(status=TavernRunRow.status)
+            )
+            run_row = session.get(TavernRunRow, run_id)
+            if run_row is None:
+                raise LookupError("tavern_run_not_found")
+            if claimed.rowcount != 1:
+                return self._hydrate_run(session, run_row)
+
+            unfinished_rows = session.scalars(
+                select(TavernRunStepRow)
+                .where(
+                    TavernRunStepRow.run_id == run_id,
+                    TavernRunStepRow.status
+                    != TavernSpeakerStepStatus.COMPLETED.value,
+                )
+                .order_by(TavernRunStepRow.step_index)
+            ).all()
+            for index, step_row in enumerate(unfinished_rows):
+                step_row.status = (
+                    TavernSpeakerStepStatus.FAILED.value
+                    if index == 0
+                    else TavernSpeakerStepStatus.BLOCKED.value
+                )
+                step_row.error_code = error_code
+                step_row.completed_at = completed_at if index == 0 else ""
+                step_row.lease_owner = ""
+                step_row.lease_expires_at = ""
+
+            completed_count = int(
+                session.scalar(
+                    select(func.count(TavernRunStepRow.step_index)).where(
+                        TavernRunStepRow.run_id == run_id,
+                        TavernRunStepRow.status
+                        == TavernSpeakerStepStatus.COMPLETED.value,
+                    )
+                )
+                or 0
+            )
+            room_row = session.get(TavernRoomRow, run_row.room_id)
+            if room_row is None:
+                raise LookupError("tavern_room_not_found")
+            run_row.status = (
+                TavernRunStatus.PARTIAL.value
+                if completed_count
+                else TavernRunStatus.FAILED.value
+            )
+            run_row.error_code = error_code
+            run_row.completed_at = completed_at
+            payload = dict(run_row.payload or {})
+            payload["terminal_sequence"] = room_row.last_sequence
+            run_row.payload = payload
+            session.flush()
+            return self._hydrate_run(session, run_row)
 
     def _find_existing_run_replay(
         self,
@@ -733,6 +855,18 @@ class TavernRepository:
                 raise TavernStepClaimConflict(step_index, "fencing_epoch_lost")
             if step_row.lease_expires_at <= canonical_now:
                 raise TavernStepClaimConflict(step_index, "lease_expired")
+            operation_binding = self.harness_operations.require_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.TAVERN_RUN,
+                domain_operation_id=run_id,
+            )
+            if message.commit_metadata is None:
+                raise ValueError("tavern_commit_metadata_missing")
+            if (
+                message.commit_metadata.operation_id
+                != operation_binding.harness_operation_id
+            ):
+                raise ValueError("tavern_commit_operation_binding_mismatch")
 
             advanced = session.execute(
                 update(TavernRoomRow)

@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
+from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.domain import (
     SceneLayerStateRecord,
     SceneObjectStateRecord,
@@ -15,9 +16,10 @@ from app.models.domain import (
     SessionSceneRecord,
 )
 from app.models.study_chat_effect import StudySceneReplaceEffectProposalV1
+from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.local_store import LocalJsonStore
-from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.study_chat_effects import scene_state_digest
+from app.services.tool_provider_projection import provider_function_for_entry
 
 if TYPE_CHECKING:
     from app.services.study_chat_effects import StudyChatEffectCollector
@@ -69,112 +71,19 @@ class SessionSceneToolRuntime:
             f"根场景数量：{len(record.scene_layers)}"
         )
 
+    def available_tool_names(self) -> list[str]:
+        return list(SCENE_TOOL_NAMES)
+
     def tool_specs(self) -> list[dict[str, object]]:
         return [
-            {
-                "type": "function",
-                "function": {
-                    "name": "read_scene_overview",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["read_scene_overview"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "add_scene",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["add_scene"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "parent_scene_id": {
-                                "type": "string",
-                                "description": "可选。父场景 ID，默认使用当前选中的场景。",
-                            },
-                            "title": {"type": "string", "description": "新场景标题。"},
-                            "scope_label": {"type": "string", "description": "场景层级或范围标签，例如 room、zone。"},
-                            "summary": {"type": "string", "description": "新场景的简短摘要。"},
-                            "atmosphere": {"type": "string", "description": "场景氛围。"},
-                            "rules": {"type": "string", "description": "该场景下的重要规则或限制。"},
-                            "entrance": {"type": "string", "description": "进入该场景的入口描述。"},
-                        },
-                        "required": ["title", "scope_label"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "move_to_scene",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["move_to_scene"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "scene_id": {"type": "string", "description": "目标场景 ID。"},
-                        },
-                        "required": ["scene_id"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "add_object",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["add_object"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "scene_id": {
-                                "type": "string",
-                                "description": "可选。目标场景 ID，默认使用当前选中的场景。",
-                            },
-                            "name": {"type": "string", "description": "新物体名称。"},
-                            "description": {"type": "string", "description": "物体描述。"},
-                            "interaction": {"type": "string", "description": "该物体可触发的互动方式。"},
-                            "tags": {"type": "string", "description": "逗号分隔的标签字符串。"},
-                        },
-                        "required": ["name"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "update_object_description",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["update_object_description"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "object_id": {"type": "string", "description": "需要更新的物体 ID。"},
-                            "description": {"type": "string", "description": "新的物体描述。"},
-                        },
-                        "required": ["object_id", "description"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "delete_object",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["delete_object"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "object_id": {"type": "string", "description": "需要删除的物体 ID。"},
-                        },
-                        "required": ["object_id"],
-                        "additionalProperties": False,
-                    },
-                },
-            },
+            provider_function_for_entry(
+                resolve_tool_manifest_entry(
+                    workflow=HarnessWorkflow.STUDY_CHAT,
+                    offered_in_stage=HarnessStage.STUDY_CHAT_REPLY,
+                    transport_name=name,
+                )
+            ).model_dump(mode="json")
+            for name in self.available_tool_names()
         ]
 
     def execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -805,11 +714,15 @@ def serialize_chat_tool_trace_item(
     tool_name: str,
     arguments_json: str,
     result: dict[str, Any],
+    argument_contract_version: str = "",
+    result_contract_version: str = "",
 ) -> dict[str, str]:
     return {
         "tool_call_id": tool_call_id,
         "tool_name": tool_name,
         "arguments_json": arguments_json,
+        "argument_contract_version": argument_contract_version,
+        "result_contract_version": result_contract_version,
         "result_summary": summarize_chat_tool_result(result),
         "result_json": json.dumps(result, ensure_ascii=False),
     }

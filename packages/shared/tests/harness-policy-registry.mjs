@@ -14,6 +14,7 @@ import {
   HARNESS_EFFECT_ADAPTER_POLICIES,
   harnessEffectAdapterPolicyRegistrySnapshot,
 } from "../dist-test/harness-effect.js";
+import { harnessArtifactAccessContractRegistrySnapshot } from "../dist-test/harness-artifact-access.js";
 
 const fixtureUrl = new URL(
   "../fixtures/harness/resource-evidence-policies-v1.json",
@@ -79,3 +80,15 @@ for (const key of Object.keys(HARNESS_OPERATION_STAGE_REGISTRATIONS)) {
   assert.equal(HARNESS_STAGE_WORKFLOWS[stage], workflow);
 }
 assert.deepEqual(harnessOperationStageRegistrySnapshot(), expectedStages);
+
+const artifactAccessFixtureUrl = new URL(
+  "../fixtures/harness/artifact-access-contract-registry-v1.json",
+  import.meta.url,
+);
+const expectedArtifactAccess = JSON.parse(
+  await readFile(artifactAccessFixtureUrl, "utf8"),
+);
+assert.deepEqual(
+  harnessArtifactAccessContractRegistrySnapshot(),
+  expectedArtifactAccess,
+);

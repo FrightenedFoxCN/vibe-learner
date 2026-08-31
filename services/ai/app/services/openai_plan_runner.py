@@ -80,6 +80,7 @@ class OpenAIPlanRunner:
             if tool_runtime.has_tools():
                 payload["tools"] = tool_runtime.openai_tools()
                 payload["tool_choice"] = "auto"
+                payload["parallel_tool_calls"] = False
             else:
                 payload["response_format"] = {"type": "json_object"}
             raw_payload, elapsed_ms = self.request_chat_completion(payload)
@@ -93,6 +94,7 @@ class OpenAIPlanRunner:
             )
             tool_calls = message.get("tool_calls") or []
             if tool_calls:
+                tool_runtime.begin_round()
                 round_recoveries = _resolve_pending_plan_recoveries(
                     pending_recoveries=pending_recoveries,
                     round_recovery_start=round_recovery_start,
@@ -134,7 +136,7 @@ class OpenAIPlanRunner:
                             argument_contract_version=execution.argument_contract_version,
                             result_contract_version=execution.result_contract_version,
                             result_summary=execution.trace_summary,
-                            result_json=json.dumps(execution.result, ensure_ascii=False),
+                            result_json=json.dumps(execution.trace_result, ensure_ascii=False),
                         )
                     )
                     current_messages.append(
@@ -142,7 +144,7 @@ class OpenAIPlanRunner:
                             "role": "tool",
                             "tool_call_id": execution.tool_call_id,
                             "name": execution.tool_name,
-                            "content": json.dumps(execution.result, ensure_ascii=False),
+                            "content": json.dumps(execution.provider_result, ensure_ascii=False),
                         }
                     )
                     if execution.follow_up_messages:

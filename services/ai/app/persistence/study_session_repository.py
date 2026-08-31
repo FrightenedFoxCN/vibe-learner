@@ -21,6 +21,7 @@ from app.models.study_chat_operation import (
     StudyChatOperationStatus,
     study_chat_response_digest,
 )
+from app.models.harness_operation import HarnessDomainOperationKind
 from app.models.study_chat_effect import (
     StudyChatPreparedEffectBatchV1,
     StudyPlanConfirmationEffectProposalV1,
@@ -46,6 +47,9 @@ from app.persistence.models import (
     StudyQuestionAttemptRow,
     StudySessionRow,
 )
+from app.persistence.harness_operation_repository import (
+    HarnessOperationBindingRepository,
+)
 from app.services.study_chat_effects import commit_study_chat_effects
 
 
@@ -54,6 +58,7 @@ class StudySessionRepository:
 
     def __init__(self, database: Database) -> None:
         self.database = database
+        self.harness_operations = HarnessOperationBindingRepository(database)
 
     def create(self, record: StudySessionRecord) -> StudySessionRecord:
         payload = record.model_dump(mode="json")
@@ -440,6 +445,11 @@ class StudySessionRepository:
                 or operation.execution_token != execution_token
             ):
                 raise StudySessionOperationFenced(operation_id)
+            self.harness_operations.require_domain_in_session(
+                session,
+                domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
+                domain_operation_id=operation_id,
+            )
             row = session.get(StudySessionRow, operation.session_id)
             if row is None:
                 raise StudySessionNotFound(operation.session_id)

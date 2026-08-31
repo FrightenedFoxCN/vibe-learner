@@ -98,6 +98,7 @@ class DocumentService:
         except (DocumentProcessStateConflict, DocumentProcessAdmissionRace) as exc:
             raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
         try:
+            self.process_repository.require_harness_operation(operation.operation_id)
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
             _emit_progress(

@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from app.api import tavern_routes
+import app.services.tavern as tavern_service_module
 from app.models.api import CreatePersonaRequest
 from app.models.tavern import (
     CreateTavernRoomRequest,
@@ -21,6 +22,7 @@ from app.models.tavern import (
     TavernSpeakerStepRecord,
     TavernTurnRequest,
 )
+from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
 from app.persistence.database import Database
 from app.persistence.storage import StorageManager
 from app.persistence.tavern_repository import (
@@ -206,9 +208,16 @@ class TavernApiTests(unittest.TestCase):
         self.assertEqual(anchor.id, result["input_message"]["id"])
         self.assertEqual(participants[0].persona_id, self.persona.id)
         assert persisted_message.commit_metadata is not None
+        operation_binding = self.repository.require_harness_operation(
+            persisted_run.id
+        )
         self.assertRegex(
             persisted_message.commit_metadata.operation_id,
             r"^harness-operation-[0-9a-f]{32}$",
+        )
+        self.assertEqual(
+            persisted_message.commit_metadata.operation_id,
+            operation_binding.harness_operation_id,
         )
         self.assertEqual(
             persisted_message.commit_metadata.effect_batch_id,
@@ -264,6 +273,45 @@ class TavernApiTests(unittest.TestCase):
         )
         self.assertEqual(deleted.status_code, 200)
         self.assertEqual(self.client.get(f"/tavern/rooms/{room_id}").status_code, 404)
+
+    def test_actor_commit_rejects_forged_operation_identity_atomically(self) -> None:
+        created = self._create_room(creation_key="create-forgery-room-123456")
+        room_id = created["room"]["id"]
+        payload = TavernTurnRequest.model_validate(
+            {
+                "input": {"kind": "user_message", "content": "验证绑定边界。"},
+                "mode": "direct",
+                "target_persona_ids": [self.persona.id],
+                "guidance": "",
+                "idempotency_key": "turn-forged-binding-123456",
+                "expected_room_revision": 0,
+            }
+        )
+        forged = TavernPersonaMessageCommitMetadataV1(
+            operation_id="harness-operation-ffffffffffffffffffffffffffffffff",
+            effect_batch_id="effect-forged-message",
+        )
+
+        with patch.object(
+            tavern_service_module,
+            "TavernPersonaMessageCommitMetadataV1",
+            return_value=forged,
+        ):
+            with self.assertRaisesRegex(
+                ValueError,
+                "tavern_commit_operation_binding_mismatch",
+            ):
+                self.service.run_turn(room_id=room_id, payload=payload)
+
+        run = self.repository.get_run_by_idempotency_key(
+            room_id=room_id,
+            idempotency_key=payload.idempotency_key,
+        )
+        assert run is not None
+        self.assertEqual(run.status, TavernRunStatus.FAILED)
+        binding = self.repository.require_harness_operation(run.id)
+        self.assertNotEqual(binding.harness_operation_id, forged.operation_id)
+        self.assertEqual(self.repository.list_run_messages(run.id), [])
 
     def test_room_creation_key_rejects_a_different_payload(self) -> None:
         self._create_room(creation_key="create-room-conflict-1")

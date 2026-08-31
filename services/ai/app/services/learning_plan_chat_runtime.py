@@ -4,8 +4,10 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+from app.models.harness import HarnessStage, HarnessWorkflow
+from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.plans import LearningPlanService
+from app.services.tool_provider_projection import provider_function_for_entry
 
 
 PLAN_CHAT_TOOL_NAMES = (
@@ -58,19 +60,18 @@ class LearningPlanChatToolRuntime:
 
     def tool_specs(self) -> list[dict[str, object]]:
         return [
-            {
-                "type": "function",
-                "function": {
-                    "name": "read_learning_plan_progress",
-                    "description": TOOL_CATALOG[CHAT_STAGE]["read_learning_plan_progress"]["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "additionalProperties": False,
-                    },
-                },
-            },
+            provider_function_for_entry(
+                resolve_tool_manifest_entry(
+                    workflow=HarnessWorkflow.STUDY_CHAT,
+                    offered_in_stage=HarnessStage.STUDY_CHAT_REPLY,
+                    transport_name=name,
+                )
+            ).model_dump(mode="json")
+            for name in self.available_tool_names()
         ]
+
+    def available_tool_names(self) -> list[str]:
+        return list(PLAN_CHAT_TOOL_NAMES)
 
     def execute_tool(self, tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         if tool_name == "read_learning_plan_progress":
