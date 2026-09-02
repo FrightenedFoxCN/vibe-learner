@@ -6,7 +6,7 @@ import threading
 from typing import Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
@@ -994,8 +994,14 @@ def update_persona(persona_id: str, payload: UpdatePersonaRequest) -> PersonaRes
 
 
 @router.delete("/personas/{persona_id}")
-def delete_persona(persona_id: str) -> dict[str, str]:
-    container.persona_engine.delete_persona(persona_id)
+def delete_persona(
+    persona_id: str,
+    expected_revision: int = Query(ge=0),
+) -> dict[str, str]:
+    container.persona_engine.delete_persona(
+        persona_id,
+        expected_revision=expected_revision,
+    )
     return {"deleted_persona_id": persona_id}
 
 

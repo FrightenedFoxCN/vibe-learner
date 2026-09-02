@@ -441,7 +441,10 @@ class TavernApiTests(unittest.TestCase):
     def test_persona_delete_is_blocked_while_room_references_snapshot(self) -> None:
         self._create_room(creation_key="create-room-reference-1")
         with self.assertRaises(HTTPException) as context:
-            self.persona_engine.delete_persona(self.persona.id)
+            self.persona_engine.delete_persona(
+                self.persona.id,
+                expected_revision=self.persona.revision,
+            )
         self.assertEqual(context.exception.status_code, 409)
         self.assertIn("tavern_rooms=1", context.exception.detail)
 

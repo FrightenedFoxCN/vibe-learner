@@ -153,6 +153,9 @@ function decodePersona(raw: unknown, path: string): PersonaProfile {
   const value = record(raw, path);
   return {
     id: string(field(value, "id", path), `${path}.id`),
+    revision: value.revision === undefined
+      ? 0
+      : integer(field(value, "revision", path), `${path}.revision`),
     name: string(field(value, "name", path), `${path}.name`, true),
     source: enumeration(field(value, "source", path), ["builtin", "user"] as const, `${path}.source`),
     summary: string(field(value, "summary", path), `${path}.summary`, true),

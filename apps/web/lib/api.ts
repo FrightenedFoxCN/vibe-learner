@@ -30,6 +30,7 @@ import type {
   TavernTurnInput,
   TavernTurnResult,
   TokenUsageStats,
+  UpdatePersonaInput,
   UpdateTavernRoomInput
 } from "@vibe-learner/shared";
 
@@ -429,7 +430,7 @@ function serializePersonaCardInput(input: CreatePersonaCardInput) {
   };
 }
 
-function serializePersonaInput(input: CreatePersonaInput) {
+function serializePersonaInput(input: CreatePersonaInput | UpdatePersonaInput) {
   return {
     name: input.name,
     summary: input.summary,
@@ -440,7 +441,10 @@ function serializePersonaInput(input: CreatePersonaInput) {
     slots: input.slots.map(serializeSlot),
     available_emotions: input.availableEmotions,
     available_actions: input.availableActions,
-    default_speech_style: input.defaultSpeechStyle
+    default_speech_style: input.defaultSpeechStyle,
+    ...("expectedRevision" in input
+      ? { expected_revision: input.expectedRevision }
+      : {}),
   };
 }
 
@@ -859,10 +863,11 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaP
 
 export async function updatePersona(
   personaId: string,
-  input: CreatePersonaInput
+  input: UpdatePersonaInput
 ): Promise<PersonaProfile> {
+  const encodedPersonaId = encodeURIComponent(personaId);
   const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/${personaId}`, {
+    await request(`${AI_BASE_URL()}/personas/${encodedPersonaId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -876,11 +881,15 @@ export async function updatePersona(
   });
 }
 
-export async function deletePersona(personaId: string): Promise<void> {
+export async function deletePersona(personaId: string, expectedRevision: number): Promise<void> {
+  const encodedPersonaId = encodeURIComponent(personaId);
   const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/${personaId}`, {
+    await request(
+      `${AI_BASE_URL()}/personas/${encodedPersonaId}?expected_revision=${expectedRevision}`,
+      {
       method: "DELETE"
-    })
+      },
+    )
   );
   decodeDeletedIdentity(payload, {
     wireField: "deleted_persona_id",
@@ -890,8 +899,9 @@ export async function deletePersona(personaId: string): Promise<void> {
 }
 
 export async function getPersonaAssets(personaId: string): Promise<PersonaAssets> {
+  const encodedPersonaId = encodeURIComponent(personaId);
   const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/${personaId}/assets`)
+    await request(`${AI_BASE_URL()}/personas/${encodedPersonaId}/assets`)
   );
   return decodePersonaAssets(payload, personaId);
 }

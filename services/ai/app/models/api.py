@@ -1,7 +1,7 @@
 import json
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.domain import (
     CharacterStateEvent,
@@ -43,30 +43,76 @@ from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.scene import SceneCommittedSaveV1
 
 
-class CreatePersonaRequest(BaseModel):
-    name: str
-    summary: str
-    relationship: str = ""
-    learner_address: str = ""
-    system_prompt: str
-    reference_hints: list[str] = Field(default_factory=list)
-    slots: list[PersonaSlot] = Field(default_factory=list)
-    available_emotions: list[str] | None = None
-    available_actions: list[str] | None = None
-    default_speech_style: str | None = None
+class PersonaMutationSlot(PersonaSlot):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    kind: str = Field(min_length=1, max_length=64)
+    label: str = Field(max_length=256)
+    content: str = Field(max_length=100_000)
+    weight: float = Field(default=50.0, ge=0.0, le=100.0, allow_inf_nan=False)
+    locked: bool = False
+    sort_order: int = Field(default=0, ge=0)
 
 
-class UpdatePersonaRequest(BaseModel):
-    name: str
-    summary: str
-    relationship: str = ""
-    learner_address: str = ""
-    system_prompt: str
-    reference_hints: list[str] = Field(default_factory=list)
-    slots: list[PersonaSlot] = Field(default_factory=list)
-    available_emotions: list[str] | None = None
-    available_actions: list[str] | None = None
-    default_speech_style: str | None = None
+class _PersonaMutationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    name: str = Field(min_length=1, max_length=120)
+    summary: str = Field(max_length=100_000)
+    relationship: str = Field(default="", max_length=10_000)
+    learner_address: str = Field(default="", max_length=2_000)
+    system_prompt: str = Field(max_length=100_000)
+    reference_hints: list[str] = Field(default_factory=list, max_length=64)
+    slots: list[PersonaMutationSlot] = Field(default_factory=list, max_length=64)
+    available_emotions: list[str] | None = Field(default=None, max_length=64)
+    available_actions: list[str] | None = Field(default=None, max_length=64)
+    default_speech_style: str | None = Field(default=None, max_length=64)
+
+    @field_validator("slots", mode="before")
+    @classmethod
+    def normalize_domain_slot_instances(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        return [
+            item.model_dump(mode="python") if isinstance(item, PersonaSlot) else item
+            for item in value
+        ]
+
+    @field_validator("name")
+    @classmethod
+    def require_nonblank_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("persona_name_required")
+        return value
+
+    @field_validator("reference_hints")
+    @classmethod
+    def validate_reference_hints(cls, values: list[str]) -> list[str]:
+        if any(len(value) > 10_000 for value in values):
+            raise ValueError("persona_reference_hint_too_long")
+        return values
+
+    @field_validator("available_emotions", "available_actions")
+    @classmethod
+    def validate_runtime_tokens(cls, values: list[str] | None) -> list[str] | None:
+        if values is not None and any(not value.strip() or len(value) > 64 for value in values):
+            raise ValueError("persona_runtime_token_invalid")
+        return values
+
+    @field_validator("default_speech_style")
+    @classmethod
+    def validate_speech_style(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("persona_speech_style_invalid")
+        return value
+
+
+class CreatePersonaRequest(_PersonaMutationRequest):
+    pass
+
+
+class UpdatePersonaRequest(_PersonaMutationRequest):
+    expected_revision: int = Field(ge=0)
 
 
 class PersonaSettingAssistRequest(BaseModel):

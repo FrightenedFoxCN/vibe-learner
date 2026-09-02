@@ -212,14 +212,14 @@ class PersonaPipelineTests(unittest.TestCase):
                 ],
             )
         )
-        self.assertEqual(persona.id, "sora-guide")
+        self.assertRegex(persona.id, r"^persona-[0-9a-f]{32}$")
         self.assertEqual(persona.source, "user")
         self.assertEqual(persona.relationship, "mentor")
         self.assertEqual(persona.learner_address, "friend")
         self.assertIn("playful", persona.available_emotions)
 
     def test_user_persona_creation_persists_to_local_store(self) -> None:
-        self.persona_engine.create_persona(
+        created = self.persona_engine.create_persona(
             CreatePersonaRequest(
                 name="Persisted Mentor",
                 summary="Stored on disk.",
@@ -228,7 +228,7 @@ class PersonaPipelineTests(unittest.TestCase):
             )
         )
         reloaded = PersonaEngine(self.store)
-        persona = reloaded.require_persona("persisted-mentor")
+        persona = reloaded.require_persona(created.id)
         self.assertEqual(persona.summary, "Stored on disk.")
 
     def test_user_persona_delete_removes_from_local_store(self) -> None:
@@ -241,7 +241,10 @@ class PersonaPipelineTests(unittest.TestCase):
             )
         )
 
-        self.persona_engine.delete_persona(created.id)
+        self.persona_engine.delete_persona(
+            created.id,
+            expected_revision=created.revision,
+        )
 
         reloaded = PersonaEngine(self.store)
         with self.assertRaises(HTTPException) as ctx:
@@ -250,7 +253,10 @@ class PersonaPipelineTests(unittest.TestCase):
 
     def test_builtin_persona_delete_is_rejected(self) -> None:
         with self.assertRaises(HTTPException) as ctx:
-            self.persona_engine.delete_persona("mentor-aurora")
+            self.persona_engine.delete_persona(
+                "mentor-aurora",
+                expected_revision=0,
+            )
         self.assertEqual(ctx.exception.status_code, 403)
         self.assertEqual(ctx.exception.detail, "persona_readonly_builtin")
 
@@ -287,7 +293,10 @@ class PersonaPipelineTests(unittest.TestCase):
         )
 
         with self.assertRaises(HTTPException) as ctx:
-            self.persona_engine.delete_persona(created.id)
+            self.persona_engine.delete_persona(
+                created.id,
+                expected_revision=created.revision,
+            )
 
         self.assertEqual(ctx.exception.status_code, 409)
         self.assertIn("persona_in_use", ctx.exception.detail)

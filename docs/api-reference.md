@@ -172,9 +172,9 @@ Returns all builtin and user-created persona profiles.
 Response shape:
 
 - `items[]`
-- each item includes `id`, `name`, `source`, `summary`
-- each item also includes `background_story`
-- persona behavior fields such as `system_prompt`, `teaching_style`, `narrative_mode`
+- each item includes opaque `id`, non-negative `revision`, `name`, `source`, and `summary`
+- relationship fields are `relationship` and `learner_address`
+- behavior is represented by `system_prompt`, `reference_hints`, and ordered `slots[]`
 - render-related defaults such as `available_emotions`, `available_actions`, `default_speech_style`
 
 ### `POST /personas`
@@ -187,31 +187,57 @@ Request body:
 {
   "name": "string",
   "summary": "string",
-  "background_story": "string",
+  "relationship": "string",
+  "learner_address": "string",
   "system_prompt": "string",
-  "teaching_style": ["string"],
-  "narrative_mode": "grounded",
-  "encouragement_style": "string",
-  "correction_style": "string",
+  "reference_hints": ["string"],
+  "slots": [
+    {
+      "kind": "teaching_method",
+      "label": "教学方法",
+      "content": "string",
+      "weight": 50,
+      "locked": false,
+      "sort_order": 0
+    }
+  ],
   "available_emotions": ["calm", "encouraging"],
-  "available_actions": ["idle", "explain"],
+  "available_actions": ["idle", "point"],
   "default_speech_style": "warm"
 }
 ```
 
-Returns the created persona object.
+The server allocates an opaque `persona-<uuid>` identity; the name never enters
+the resource path. Unknown fields, blank names, coerced slot values, non-finite
+or out-of-range weights, and negative ordering are rejected. Returns the
+created persona at `revision=0`.
 
 ### `PATCH /personas/{persona_id}`
 
 Updates an existing persona.
 
-Request body uses the same shape as `POST /personas`.
+This is a full replacement despite the compatibility `PATCH` method name.
+Request body uses the same editable fields as `POST /personas` and also requires:
 
-Returns the updated persona object.
+```json
+{
+  "expected_revision": 0
+}
+```
+
+Returns the updated persona with `revision = expected_revision + 1`. A stale
+write returns `409` with `detail.code=persona_revision_conflict` and the current
+revision. Renaming does not change the opaque persona ID.
 
 Notes:
 
 - builtin personas are readonly and return `403` with `detail=persona_readonly_builtin` on update.
+
+### `DELETE /personas/{persona_id}?expected_revision={revision}`
+
+Deletes an unreferenced user persona at the exact expected revision. Stale
+deletes return the same `persona_revision_conflict`; referenced personas return
+`409 persona_in_use`, and builtin personas remain readonly.
 
 ### `POST /personas/assist-setting`
 

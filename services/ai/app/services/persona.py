@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from threading import RLock
+from uuid import uuid4
 
 from fastapi import HTTPException
 
@@ -28,6 +30,7 @@ class PersonaEngine:
     ) -> None:
         self._store = store
         self._tavern_reference_counter = tavern_reference_counter
+        self._lock = RLock()
         self._personas: dict[str, PersonaProfile] = {}
         for persona in self._builtin_personas():
             self._personas[persona.id] = persona
@@ -44,106 +47,128 @@ class PersonaEngine:
         return ["idle", "nod", "point", "lean_in", "smile", "pause", "write"]
 
     def list_personas(self) -> list[PersonaProfile]:
-        personas = list(self._personas.values())
+        with self._lock:
+            personas = list(self._personas.values())
         return sorted(personas, key=lambda item: (item.source != "builtin", item.name.lower()))
 
     def require_persona(self, persona_id: str) -> PersonaProfile:
-        persona = self._personas.get(persona_id)
+        with self._lock:
+            persona = self._personas.get(persona_id)
         if persona is None:
             raise HTTPException(status_code=404, detail="persona_not_found")
         return persona
 
     def create_persona(self, payload: CreatePersonaRequest) -> PersonaProfile:
-        persona_id = self._allocate_persona_id(payload.name)
-        available_emotions = [
-            emotion.strip()
-            for emotion in (payload.available_emotions or self._default_available_emotions())
-            if emotion.strip()
-        ]
-        available_actions = [
-            action.strip()
-            for action in (payload.available_actions or self._default_available_actions())
-            if action.strip()
-        ]
-        persona = PersonaProfile(
-            id=persona_id,
-            name=payload.name,
-            source="user",
-            summary=payload.summary,
-            relationship=payload.relationship.strip(),
-            learner_address=payload.learner_address.strip(),
-            system_prompt=payload.system_prompt,
-            reference_hints=[hint.strip() for hint in payload.reference_hints if hint.strip()],
-            slots=payload.slots,
-            available_emotions=available_emotions or self._default_available_emotions(),
-            available_actions=available_actions or self._default_available_actions(),
-            default_speech_style=(payload.default_speech_style or "warm").strip() or "warm",
-        )
-        self._personas[persona.id] = persona
-        self._save_persona(persona)
-        return persona
+        with self._lock:
+            persona_id = self._allocate_persona_id()
+            available_emotions = [
+                emotion.strip()
+                for emotion in (payload.available_emotions or self._default_available_emotions())
+                if emotion.strip()
+            ]
+            available_actions = [
+                action.strip()
+                for action in (payload.available_actions or self._default_available_actions())
+                if action.strip()
+            ]
+            persona = PersonaProfile(
+                id=persona_id,
+                revision=0,
+                name=payload.name.strip(),
+                source="user",
+                summary=payload.summary.strip(),
+                relationship=payload.relationship.strip(),
+                learner_address=payload.learner_address.strip(),
+                system_prompt=payload.system_prompt.strip(),
+                reference_hints=[hint.strip() for hint in payload.reference_hints if hint.strip()],
+                slots=payload.slots,
+                available_emotions=available_emotions or self._default_available_emotions(),
+                available_actions=available_actions or self._default_available_actions(),
+                default_speech_style=(payload.default_speech_style or "warm").strip() or "warm",
+            )
+            # Persist first so a failed database commit cannot leak into the
+            # process-authoritative view.
+            self._save_persona(persona)
+            self._personas[persona.id] = persona
+            return persona
 
     def update_persona(self, persona_id: str, payload: UpdatePersonaRequest) -> PersonaProfile:
-        current = self.require_persona(persona_id)
-        if current.source == "builtin":
-            raise HTTPException(status_code=403, detail="persona_readonly_builtin")
-        available_emotions = [
-            emotion.strip()
-            for emotion in (payload.available_emotions or current.available_emotions)
-            if emotion.strip()
-        ]
-        available_actions = [
-            action.strip()
-            for action in (payload.available_actions or current.available_actions)
-            if action.strip()
-        ]
-        updated = PersonaProfile(
-            id=current.id,
-            source=current.source,
-            name=payload.name,
-            summary=payload.summary,
-            relationship=payload.relationship.strip(),
-            learner_address=payload.learner_address.strip(),
-            system_prompt=payload.system_prompt,
-            reference_hints=[hint.strip() for hint in payload.reference_hints if hint.strip()],
-            slots=payload.slots,
-            available_emotions=available_emotions or self._default_available_emotions(),
-            available_actions=available_actions or self._default_available_actions(),
-            default_speech_style=(payload.default_speech_style or current.default_speech_style).strip()
-            or current.default_speech_style,
-        )
-        self._personas[current.id] = updated
-        self._save_persona(updated)
-        return updated
+        with self._lock:
+            current = self._personas.get(persona_id)
+            if current is None:
+                raise HTTPException(status_code=404, detail="persona_not_found")
+            if current.source == "builtin":
+                raise HTTPException(status_code=403, detail="persona_readonly_builtin")
+            self._require_expected_revision(current, payload.expected_revision)
+            available_emotions = [
+                emotion.strip()
+                for emotion in (payload.available_emotions or current.available_emotions)
+                if emotion.strip()
+            ]
+            available_actions = [
+                action.strip()
+                for action in (payload.available_actions or current.available_actions)
+                if action.strip()
+            ]
+            updated = PersonaProfile(
+                id=current.id,
+                revision=current.revision + 1,
+                source=current.source,
+                name=payload.name.strip(),
+                summary=payload.summary.strip(),
+                relationship=payload.relationship.strip(),
+                learner_address=payload.learner_address.strip(),
+                system_prompt=payload.system_prompt.strip(),
+                reference_hints=[hint.strip() for hint in payload.reference_hints if hint.strip()],
+                slots=payload.slots,
+                available_emotions=available_emotions or self._default_available_emotions(),
+                available_actions=available_actions or self._default_available_actions(),
+                default_speech_style=(payload.default_speech_style or current.default_speech_style).strip()
+                or current.default_speech_style,
+            )
+            self._save_persona(updated)
+            self._personas[current.id] = updated
+            return updated
 
-    def delete_persona(self, persona_id: str) -> None:
-        current = self.require_persona(persona_id)
-        if current.source == "builtin":
-            raise HTTPException(status_code=403, detail="persona_readonly_builtin")
+    def delete_persona(self, persona_id: str, *, expected_revision: int) -> None:
+        with self._lock:
+            current = self._personas.get(persona_id)
+            if current is None:
+                raise HTTPException(status_code=404, detail="persona_not_found")
+            if current.source == "builtin":
+                raise HTTPException(status_code=403, detail="persona_readonly_builtin")
+            self._require_expected_revision(current, expected_revision)
 
-        reference_counts = self._reference_counts(persona_id)
-        reference_parts = [
-            f"{key}={count}" for key, count in reference_counts.items() if count > 0
-        ]
-        if reference_parts:
+            reference_counts = self._reference_counts(persona_id)
+            reference_parts = [
+                f"{key}={count}" for key, count in reference_counts.items() if count > 0
+            ]
+            if reference_parts:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"persona_in_use:{':'.join(reference_parts)}",
+                )
+
+            if self._store is not None:
+                self._store.delete_item("personas", current.id)
+            self._personas.pop(current.id, None)
+
+    def _allocate_persona_id(self) -> str:
+        while True:
+            candidate = f"persona-{uuid4().hex}"
+            if candidate not in self._personas:
+                return candidate
+
+    @staticmethod
+    def _require_expected_revision(current: PersonaProfile, expected_revision: int) -> None:
+        if current.revision != expected_revision:
             raise HTTPException(
                 status_code=409,
-                detail=f"persona_in_use:{':'.join(reference_parts)}",
+                detail={
+                    "code": "persona_revision_conflict",
+                    "current_revision": current.revision,
+                },
             )
-
-        self._personas.pop(current.id, None)
-        if self._store is not None:
-            self._store.delete_item("personas", current.id)
-
-    def _allocate_persona_id(self, name: str) -> str:
-        base = name.strip().lower().replace(" ", "-")
-        base = base or "persona"
-        if base not in self._personas:
-            return base
-        suffix = 2
-        while f"{base}-{suffix}" in self._personas:
-            suffix += 1
-        return f"{base}-{suffix}"
 
     def _save_persona(self, persona: PersonaProfile) -> None:
         if self._store is None or persona.source == "builtin":

@@ -38,14 +38,18 @@ class PersonaSlot(BaseModel):
     kind: str
     label: str
     content: str
-    weight: float = 1.0
+    weight: float = Field(default=50.0, ge=0.0, le=100.0, allow_inf_nan=False)
     locked: bool = False
-    sort_order: int = 0
+    sort_order: int = Field(default=0, ge=0)
 
 
 class PersonaProfile(BaseModel):
-    id: str
+    id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+    revision: int = Field(default=0, ge=0)
     name: str
+    # Legacy/internal snapshots use additional provenance labels. Public
+    # PersonaEngine writes remain closed to builtin/user and the API decoder
+    # enforces that public vocabulary.
     source: str
     summary: str
     relationship: str = ""

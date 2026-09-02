@@ -194,6 +194,11 @@ export function decodePersonaProfile(
   const value = decoder.record(raw, path);
   const persona: PersonaProfile = {
     id: decoder.string(decoder.field(value, "id", path), `${path}.id`),
+    revision: decoder.integer(
+      decoder.field(value, "revision", path),
+      `${path}.revision`,
+      0,
+    ),
     name: decoder.string(decoder.field(value, "name", path), `${path}.name`, true),
     source: decoder.enumeration(
       decoder.field(value, "source", path),

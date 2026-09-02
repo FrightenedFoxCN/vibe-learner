@@ -95,6 +95,7 @@ function participant(personaId: string, displayOrder: number): TavernParticipant
     displayName: personaId,
     personaSnapshot: {
       id: personaId,
+      revision: 0,
       name: personaId,
       source: "user",
       summary: "summary",

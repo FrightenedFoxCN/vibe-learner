@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any, Callable, TypeVar
 from uuid import uuid4
 
@@ -30,6 +31,8 @@ from app.persistence.models import (
 from app.persistence.storage import StorageManager
 
 T = TypeVar("T", bound=BaseModel)
+
+_SAFE_STORAGE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$")
 
 
 class LocalStoreRevisionConflict(RuntimeError):
@@ -428,17 +431,24 @@ class LocalJsonStore:
             return model.model_validate(row.payload or {})
 
     def save_item(self, category: str, item_id: str, item: BaseModel) -> None:
+        self._legacy.validate_item_path(category, item_id)
         payload = item.model_dump(mode="json")
         if category in STREAM_CATEGORIES:
             self._save_stream_item(category, item_id, payload)
-            self._legacy.save_item(category, item_id, item)
+            try:
+                self._legacy.save_item(category, item_id, item)
+            except OSError:
+                pass
             return
         spec = CATEGORY_SPECS[category]
         with self._db.session() as session:
             row = session.get(spec.entity, item_id) or spec.entity()
             self._apply_payload(row, payload, spec)
             session.add(row)
-        self._legacy.save_item(category, item_id, item)
+        try:
+            self._legacy.save_item(category, item_id, item)
+        except OSError:
+            pass
 
     def save_item_cas(
         self,
@@ -452,6 +462,7 @@ class LocalJsonStore:
         if category not in {"scene_setup", "scene_library"}:
             raise ValueError("revisioned_category_unsupported")
         spec = CATEGORY_SPECS[category]
+        self._legacy.validate_item_path(category, item_id)
         payload = item.model_dump(mode="json")
         payload["revision"] = expected_revision + 1
         committed = model.model_validate(payload)
@@ -540,19 +551,26 @@ class LocalJsonStore:
         return legacy_items
 
     def delete_item(self, category: str, item_id: str) -> None:
+        self._legacy.validate_item_path(category, item_id)
         if category in STREAM_CATEGORIES:
             with self._db.session() as session:
                 row = session.get(StreamReportRow, self._stream_record_id(category, item_id))
                 if row is not None:
                     session.delete(row)
-            self._legacy.delete_item(category, item_id)
+            try:
+                self._legacy.delete_item(category, item_id)
+            except OSError:
+                pass
             return
         spec = CATEGORY_SPECS[category]
         with self._db.session() as session:
             row = session.get(spec.entity, item_id)
             if row is not None:
                 session.delete(row)
-        self._legacy.delete_item(category, item_id)
+        try:
+            self._legacy.delete_item(category, item_id)
+        except OSError:
+            pass
 
     def count_bucket(self, bucket: str) -> int:
         if bucket in LIST_SPECS:
@@ -659,20 +677,20 @@ class LegacyLocalJsonStore:
         self._write_json(path, payload)
 
     def load_item(self, category: str, item_id: str, model: type[T]) -> T | None:
-        path = self.root / category / f"{item_id}.json"
+        path = self.validate_item_path(category, item_id)
         if not path.exists():
             return None
         payload = json.loads(path.read_text(encoding="utf-8"))
         return model.model_validate(payload)
 
     def save_item(self, category: str, item_id: str, item: BaseModel) -> None:
-        category_root = self.root / category
+        path = self.validate_item_path(category, item_id)
+        category_root = path.parent
         category_root.mkdir(parents=True, exist_ok=True)
-        path = category_root / f"{item_id}.json"
         self._write_json(path, item.model_dump(mode="json"))
 
     def load_category_items(self, category: str, model: type[T]) -> list[T]:
-        category_root = self.root / category
+        category_root = self._category_root(category)
         if not category_root.exists():
             return []
         items: list[T] = []
@@ -682,7 +700,7 @@ class LegacyLocalJsonStore:
         return items
 
     def delete_item(self, category: str, item_id: str) -> None:
-        path = self.root / category / f"{item_id}.json"
+        path = self.validate_item_path(category, item_id)
         if path.exists():
             path.unlink()
 
@@ -712,11 +730,11 @@ class LegacyLocalJsonStore:
             self._write_json(path, filtered)
             return removed
 
-        category_root = self.root / bucket
+        category_root = self._category_root(bucket)
         if not category_root.exists():
             return 0
         if item_id is not None:
-            path = category_root / f"{item_id}.json"
+            path = self.validate_item_path(bucket, item_id)
             if path.exists():
                 path.unlink()
                 return 1
@@ -725,6 +743,24 @@ class LegacyLocalJsonStore:
             path.unlink()
             removed += 1
         return removed
+
+    def validate_item_path(self, category: str, item_id: str) -> Path:
+        if not _SAFE_STORAGE_SEGMENT.fullmatch(item_id):
+            raise ValueError("local_store_item_id_unsafe")
+        category_root = self._category_root(category)
+        path = (category_root / f"{item_id}.json").resolve()
+        if path.parent != category_root:
+            raise ValueError("local_store_item_path_escape")
+        return path
+
+    def _category_root(self, category: str) -> Path:
+        if not _SAFE_STORAGE_SEGMENT.fullmatch(category):
+            raise ValueError("local_store_category_unsafe")
+        root = self.root.resolve()
+        category_root = (root / category).resolve()
+        if category_root.parent != root:
+            raise ValueError("local_store_category_path_escape")
+        return category_root
 
     def _write_json(self, path: Path, payload: object) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

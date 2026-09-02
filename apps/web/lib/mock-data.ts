@@ -3,6 +3,7 @@ import type { LearningPlan, PersonaProfile } from "@vibe-learner/shared";
 export const mockPersonas: PersonaProfile[] = [
   {
     id: "mentor-aurora",
+    revision: 0,
     name: "Aurora",
     source: "builtin",
     summary: "温和而结构化的导学教师。",
@@ -23,6 +24,7 @@ export const mockPersonas: PersonaProfile[] = [
   },
   {
     id: "mentor-lyra",
+    revision: 0,
     name: "Lyra",
     source: "builtin",
     summary: "带轻度剧情化陪伴感的活力教师。",

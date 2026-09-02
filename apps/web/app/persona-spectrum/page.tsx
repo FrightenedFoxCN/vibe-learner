@@ -12,10 +12,6 @@ import {
 } from "react";
 import type { CSSProperties } from "react";
 import {
-  type CharacterAction,
-  type CharacterEmotion,
-  CHARACTER_ACTIONS,
-  CHARACTER_EMOTIONS,
   PERSONA_SLOT_KIND_LABELS,
   PERSONA_SLOT_KINDS,
   type CreatePersonaInput,
@@ -25,7 +21,6 @@ import {
   type PersonaSlot,
   type PersonaSlotKind,
   renderPersonaRuntimeInstruction,
-  type SpeechStyle
 } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
@@ -52,6 +47,20 @@ import {
   type AsyncResultScope,
 } from "../../lib/async-result-fence";
 import { isApiHttpError } from "../../lib/http-error";
+import {
+  clampPersonaWeight,
+  clearPersonaDraftForGeneratedBackfill,
+  createPersonaInputToDraft,
+  draftToCreatePersonaInput,
+  duplicatePersonaDraft,
+  EMPTY_PERSONA_DRAFT,
+  mergePersonaAssistSlots,
+  mergeReferenceHints,
+  normalizeImportedPersonaConfig,
+  personaDraftFingerprint,
+  personaToDraft,
+  type PersonaDraft,
+} from "../../lib/persona-draft";
 
 const SLOT_KIND_HINTS: Record<string, string> = {
   worldview: "描述人格对学习、知识、成长的基本信念，会长期影响讲解立场。",
@@ -64,19 +73,6 @@ const SLOT_KIND_HINTS: Record<string, string> = {
   custom: "自定义插槽，用于补充特殊设定。"
 };
 
-interface PersonaDraft {
-  name: string;
-  summary: string;
-  relationship: string;
-  learnerAddress: string;
-  systemPrompt: string;
-  referenceHints: string[];
-  slots: PersonaSlot[];
-  availableEmotionsText: string;
-  availableActionsText: string;
-  defaultSpeechStyle: SpeechStyle;
-}
-
 interface GeneratedPersonaMeta {
   summary: string;
   relationship: string;
@@ -84,24 +80,6 @@ interface GeneratedPersonaMeta {
 }
 
 type CardGenerationMode = "keywords" | "long_text";
-
-function clampWeight(value: number): number {
-  const n = Number.isFinite(value) ? Math.round(value) : 50;
-  return Math.max(0, Math.min(100, n));
-}
-
-const EMPTY_DRAFT: PersonaDraft = {
-  name: "",
-  summary: "",
-  relationship: "",
-  learnerAddress: "",
-  systemPrompt: "",
-  referenceHints: [],
-  slots: [],
-  availableEmotionsText: CHARACTER_EMOTIONS.join(", "),
-  availableActionsText: CHARACTER_ACTIONS.join(", "),
-  defaultSpeechStyle: "warm"
-};
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
@@ -133,8 +111,12 @@ export default function PersonaSpectrumPage() {
   const assistFenceRef = useRef(new AsyncResultFence());
   const cardGenerationFenceRef = useRef(new AsyncResultFence());
   const configImportFenceRef = useRef(new AsyncResultFence());
+  const saveFenceRef = useRef(new AsyncResultFence());
 
-  const [draft, setDraft] = useState<PersonaDraft>(EMPTY_DRAFT);
+  const [draft, setDraft] = useState<PersonaDraft>(EMPTY_PERSONA_DRAFT);
+  const [draftBaselineFingerprint, setDraftBaselineFingerprint] = useState(
+    personaDraftFingerprint(EMPTY_PERSONA_DRAFT),
+  );
   const [savingPersona, setSavingPersona] = useState(false);
 
   const [loadError, setLoadError] = useState("");
@@ -153,7 +135,7 @@ export default function PersonaSpectrumPage() {
   const [cardLongTextFile, setCardLongTextFile] = useState<File | null>(null);
   const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [cardGenerateCount, setCardGenerateCount] = useState("");
-  const [clearBeforeBackfill, setClearBeforeBackfill] = useState(true);
+  const [clearBeforeBackfill, setClearBeforeBackfill] = useState(false);
   const [cardActionPending, setCardActionPending] = useState<null | "generate_keywords" | "generate_long_text">(null);
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [cardMessage, setCardMessage] = useState("");
@@ -182,6 +164,10 @@ export default function PersonaSpectrumPage() {
   const [personaLibraryMessage, setPersonaLibraryMessage] = useState("");
   const [personaLibraryError, setPersonaLibraryError] = useState("");
   const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
+  const isDraftDirty = useMemo(
+    () => personaDraftFingerprint(draft) !== draftBaselineFingerprint,
+    [draft, draftBaselineFingerprint],
+  );
 
   function currentPersonaSubject(): string {
     return selectedPersonaIdRef.current || "persona-draft:new";
@@ -198,6 +184,13 @@ export default function PersonaSpectrumPage() {
   function updatePersonaDraft(next: SetStateAction<PersonaDraft>): void {
     draftRevisionRef.current += 1;
     setDraft(next);
+  }
+
+  function replacePersonaDraft(next: PersonaDraft, markClean: boolean): void {
+    updatePersonaDraft(next);
+    if (markClean) {
+      setDraftBaselineFingerprint(personaDraftFingerprint(next));
+    }
   }
 
   function selectPersonaDraft(personaId: string): void {
@@ -223,6 +216,29 @@ export default function PersonaSpectrumPage() {
     setSelectedPersonaId(normalizedPersonaId);
   }
 
+  function confirmDiscardPersonaDraft(action: string): boolean {
+    if (!isDraftDirty) {
+      return true;
+    }
+    return window.confirm(`当前人格有未保存修改。${action}会丢弃这些修改，是否继续？`);
+  }
+
+  function activatePersonaDraft(personaId: string, action = "切换人格"): boolean {
+    const normalizedPersonaId = personaId.trim();
+    if (normalizedPersonaId === selectedPersonaIdRef.current) {
+      return true;
+    }
+    if (!confirmDiscardPersonaDraft(action)) {
+      return false;
+    }
+    const nextPersona = personas.find((persona) => persona.id === normalizedPersonaId) ?? null;
+    const nextDraft = nextPersona ? personaToDraft(nextPersona) : { ...EMPTY_PERSONA_DRAFT };
+    selectPersonaDraft(normalizedPersonaId);
+    replacePersonaDraft(nextDraft, true);
+    dismissSystemPromptSuggestion();
+    return true;
+  }
+
   function updatePersonaAssistInput(update: () => void): void {
     draftRevisionRef.current += 1;
     update();
@@ -231,6 +247,45 @@ export default function PersonaSpectrumPage() {
   useEffect(() => {
     selectedPersonaIdRef.current = selectedPersonaId;
   }, [selectedPersonaId]);
+
+  useEffect(() => {
+    if (!isDraftDirty) {
+      return;
+    }
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    const guardLinkNavigation = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
+      }
+      const target = event.target;
+      const anchor = target instanceof Element ? target.closest("a[href]") : null;
+      if (!(anchor instanceof HTMLAnchorElement) || anchor.hasAttribute("download")) {
+        return;
+      }
+      const destination = new URL(anchor.href, window.location.href);
+      if (destination.href === window.location.href) {
+        return;
+      }
+      if (!window.confirm("当前人格有未保存修改。离开页面会丢弃这些修改，是否继续？")) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    document.addEventListener("click", guardLinkNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", warnBeforeUnload);
+      document.removeEventListener("click", guardLinkNavigation, true);
+    };
+  }, [isDraftDirty]);
 
   useEffect(() => {
     if (!movePulse) {
@@ -268,34 +323,33 @@ export default function PersonaSpectrumPage() {
     let cancelled = false;
     async function bootstrap() {
       setLoadError("");
-      try {
-        const [personaList, cardList] = await Promise.all([
-          listPersonas(),
-          listPersonaCards()
-        ]);
-        if (cancelled) return;
+      const [personaResult, cardResult] = await Promise.allSettled([
+        listPersonas(),
+        listPersonaCards(),
+      ]);
+      if (cancelled) {
+        return;
+      }
+      if (personaResult.status === "fulfilled") {
+        const personaList = personaResult.value;
         setPersonas(personaList);
-        setPersonaCards(cardList);
         const initialPersona = personaList[0];
         if (initialPersona && !selectedPersonaIdRef.current) {
           selectPersonaDraft(initialPersona.id);
-          updatePersonaDraft(personaToDraft(initialPersona));
+          replacePersonaDraft(personaToDraft(initialPersona), true);
         }
-      } catch (error) {
-        if (!cancelled) setLoadError(String(error));
+      } else {
+        setLoadError(String(personaResult.reason));
+      }
+      if (cardResult.status === "fulfilled") {
+        setPersonaCards(cardResult.value);
+      } else {
+        setCardError(`人格卡片库加载失败：${String(cardResult.reason)}`);
       }
     }
-    bootstrap();
+    void bootstrap();
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    const selectedPersona = personas.find((p) => p.id === selectedPersonaId);
-    if (!selectedPersona) return;
-    updatePersonaDraft(personaToDraft(selectedPersona));
-    setSystemPromptSuggestion("");
-    setSystemPromptSuggestionSource("");
-  }, [selectedPersonaId, personas]);
 
   const selectedPersona = useMemo(
     () => personas.find((p) => p.id === selectedPersonaId) ?? null,
@@ -348,14 +402,18 @@ export default function PersonaSpectrumPage() {
       return "正在从长文本提取人格卡片";
     }
     if (selectedPersona) {
+      const dirtySuffix = isDraftDirty ? " · 有未保存修改" : "";
       return isReadonlyPersona
-        ? `当前编辑 · ${selectedPersona.name} · 内置只读`
-        : `当前编辑 · ${selectedPersona.name}`;
+        ? `当前编辑 · ${selectedPersona.name} · 内置只读${dirtySuffix}`
+        : `当前编辑 · ${selectedPersona.name}${dirtySuffix}`;
     }
-    return "新建人格草稿 — 填写名称后保存即可创建";
+    return isDraftDirty
+      ? "新建人格草稿 · 有未保存修改"
+      : "新建人格草稿 — 填写名称后保存即可创建";
   }, [
     assistPending,
     cardActionPending,
+    isDraftDirty,
     isReadonlyPersona,
     savingPersona,
     selectedPersona,
@@ -371,6 +429,7 @@ export default function PersonaSpectrumPage() {
       summary: [
         { label: "加载状态", value: loadError ? "异常" : "就绪" },
         { label: "人格", value: selectedPersona?.name || "-" },
+        { label: "未保存修改", value: isDraftDirty ? "有" : "无" },
         { label: "槽位数", value: String(draft.slots.length) },
         { label: "生成卡片", value: String(generatedCards.length) },
         { label: "卡片库", value: String(personaCards.length) },
@@ -397,6 +456,7 @@ export default function PersonaSpectrumPage() {
       draft,
       generatedCards,
       generatedPersonaMeta,
+      isDraftDirty,
       loadError,
       clearBeforeBackfill,
       cardModelRecoveries,
@@ -480,7 +540,7 @@ export default function PersonaSpectrumPage() {
       const next = [...prev.slots];
       let nextValue = value;
       if (field === "weight") {
-        nextValue = clampWeight(Number(value));
+        nextValue = clampPersonaWeight(Number(value));
       }
       next[index] = { ...next[index], [field]: nextValue };
       if (field === "kind") next[index].label = PERSONA_SLOT_KIND_LABELS[value as PersonaSlotKind] ?? value;
@@ -660,18 +720,7 @@ export default function PersonaSpectrumPage() {
       updatePersonaDraft((prev) => ({
         ...prev,
         slots: result.slots.length
-          ? prev.slots.map((slot, index) => {
-              if (slot.locked) {
-                return slot;
-              }
-              const nextSlot = result.slots[index] ?? slot;
-              return {
-                ...nextSlot,
-                weight: slot.weight ?? nextSlot.weight ?? 1,
-                locked: slot.locked ?? nextSlot.locked ?? false,
-                sortOrder: slot.sortOrder ?? nextSlot.sortOrder ?? index * 10,
-              };
-            })
+          ? mergePersonaAssistSlots(prev.slots, result.slots)
           : prev.slots,
       }));
       setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
@@ -691,34 +740,93 @@ export default function PersonaSpectrumPage() {
     setConfigError(""); setConfigMessage(""); setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
     if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
+    const saveScope = currentPersonaAsyncScope("persona-save");
+    const ticket = saveFenceRef.current.begin(saveScope);
     setSavingPersona(true);
     try {
       const created = await createPersona(payload);
       mergePersonaIntoList(created);
-      const latest = await listPersonas();
-      setPersonas(latest);
       broadcastPersonaLibraryUpdated();
-      selectPersonaDraft(created.id);
-      updatePersonaDraft(personaToDraft(created));
-      dismissSystemPromptSuggestion();
+      const decision = saveFenceRef.current.decide(
+        ticket,
+        currentPersonaAsyncScope("persona-save"),
+      );
+      if (decision === "apply") {
+        selectPersonaDraft(created.id);
+        replacePersonaDraft(personaToDraft(created), true);
+        dismissSystemPromptSuggestion();
+      } else if (selectedPersonaIdRef.current === "") {
+        // The create committed, but the user kept editing the same new draft.
+        // Bind that draft to the new record without replacing the newer edits.
+        selectPersonaDraft(created.id);
+        setDraftBaselineFingerprint(personaDraftFingerprint(personaToDraft(created)));
+      }
       setPersonaLibraryMessage(`已创建人格「${created.name}」。`);
       setPersonaLibraryError("");
+      try {
+        setPersonas(await listPersonas());
+      } catch (refreshError) {
+        setPersonaLibraryMessage(
+          `已创建人格「${created.name}」，但人格库刷新失败：${String(refreshError)}`,
+        );
+      }
     } catch (error) {
-      setSaveError(String(error));
+      setSaveError(humanizePersonaSaveError(error));
     } finally {
+      saveFenceRef.current.settle(ticket);
       setSavingPersona(false);
     }
   }
 
   function handleNewPersonaDraft() {
+    if (!confirmDiscardPersonaDraft("新建空白人格")) {
+      return;
+    }
     setConfigError("");
     setConfigMessage("");
     setSaveError("");
     setPersonaLibraryError("");
     selectPersonaDraft("");
-    updatePersonaDraft({ ...EMPTY_DRAFT });
+    replacePersonaDraft({ ...EMPTY_PERSONA_DRAFT }, true);
     dismissSystemPromptSuggestion();
     setPersonaLibraryMessage("已新建人格草稿。填写名称后保存即可创建。");
+  }
+
+  function handleDuplicatePersonaDraft() {
+    const duplicated = duplicatePersonaDraft(draft);
+    setConfigError("");
+    setConfigMessage("");
+    setSaveError("");
+    setPersonaLibraryError("");
+    selectPersonaDraft("");
+    setDraftBaselineFingerprint(personaDraftFingerprint(EMPTY_PERSONA_DRAFT));
+    updatePersonaDraft(duplicated);
+    dismissSystemPromptSuggestion();
+    setPersonaLibraryMessage(`已复制为新草稿「${duplicated.name}」，保存后创建新人格。`);
+  }
+
+  async function handleReloadSelectedPersona() {
+    if (!selectedPersonaId) {
+      return;
+    }
+    if (!confirmDiscardPersonaDraft("重新载入人格")) {
+      return;
+    }
+    setLoadError("");
+    try {
+      const latest = await listPersonas();
+      const reloaded = latest.find((persona) => persona.id === selectedPersonaIdRef.current);
+      setPersonas(latest);
+      if (!reloaded) {
+        setLoadError("当前人格已不存在，请选择其他人格。");
+        return;
+      }
+      replacePersonaDraft(personaToDraft(reloaded), true);
+      dismissSystemPromptSuggestion();
+      setPersonaLibraryMessage(`已重新载入人格「${reloaded.name}」。`);
+    } catch (error) {
+      setLoadError(String(error));
+    }
   }
 
   async function handleUpdatePersona() {
@@ -728,21 +836,43 @@ export default function PersonaSpectrumPage() {
     setSaveError("");
     const payload = draftToCreatePersonaInput(draft);
     if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
+    if (!selectedPersona) { setSaveError("当前人格不存在，请刷新人格库后重试。"); return; }
+    const targetPersonaId = selectedPersona.id;
+    const saveScope = currentPersonaAsyncScope("persona-save");
+    const ticket = saveFenceRef.current.begin(saveScope);
     setSavingPersona(true);
     try {
-      const updated = await updatePersona(selectedPersonaId, payload);
+      const updated = await updatePersona(targetPersonaId, {
+        ...payload,
+        expectedRevision: selectedPersona.revision,
+      });
       mergePersonaIntoList(updated);
-      const latest = await listPersonas();
-      setPersonas(latest);
       broadcastPersonaLibraryUpdated();
-      selectPersonaDraft(updated.id);
-      updatePersonaDraft(personaToDraft(updated));
-      dismissSystemPromptSuggestion();
+      const decision = saveFenceRef.current.decide(
+        ticket,
+        currentPersonaAsyncScope("persona-save"),
+      );
+      if (decision === "apply") {
+        replacePersonaDraft(personaToDraft(updated), true);
+        dismissSystemPromptSuggestion();
+      } else if (selectedPersonaIdRef.current === updated.id) {
+        // Preserve edits made while PATCH was in flight, but advance the
+        // comparison baseline to the exact committed response.
+        setDraftBaselineFingerprint(personaDraftFingerprint(personaToDraft(updated)));
+      }
       setPersonaLibraryMessage(`已更新人格「${updated.name}」。`);
       setPersonaLibraryError("");
+      try {
+        setPersonas(await listPersonas());
+      } catch (refreshError) {
+        setPersonaLibraryMessage(
+          `已更新人格「${updated.name}」，但人格库刷新失败：${String(refreshError)}`,
+        );
+      }
     } catch (error) {
-      setSaveError(String(error));
+      setSaveError(humanizePersonaSaveError(error));
     } finally {
+      saveFenceRef.current.settle(ticket);
       setSavingPersona(false);
     }
   }
@@ -779,6 +909,13 @@ export default function PersonaSpectrumPage() {
     setConfigError(""); setConfigMessage("");
     const file = event.target.files?.[0];
     if (!file) return;
+    if (
+      isDraftDirty &&
+      !window.confirm("导入配置会覆盖当前未保存草稿。是否继续？")
+    ) {
+      event.target.value = "";
+      return;
+    }
     const fieldTarget = "persona-config-import";
     const ticket = configImportFenceRef.current.begin(
       currentPersonaAsyncScope(fieldTarget),
@@ -791,7 +928,7 @@ export default function PersonaSpectrumPage() {
         fence: configImportFenceRef.current,
         ticket,
         currentScope: currentPersonaAsyncScope(fieldTarget),
-        value: createInputToDraft(normalized),
+        value: createPersonaInputToDraft(normalized),
         apply: updatePersonaDraft,
       });
       if (decision !== "apply") {
@@ -836,9 +973,17 @@ export default function PersonaSpectrumPage() {
       setCardError("当前没有可回填的生成人格内容。");
       return;
     }
+    if (
+      clearBeforeBackfill &&
+      !window.confirm("应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。是否继续？")
+    ) {
+      return;
+    }
     setCardError("");
     setCardMessage("");
-    const baseDraft = clearBeforeBackfill ? clearDraftForGeneratedBackfill(draft) : draft;
+    const baseDraft = clearBeforeBackfill
+      ? clearPersonaDraftForGeneratedBackfill(draft)
+      : draft;
     const insertion = buildDraftWithInsertedCards(baseDraft, generatedCards);
     updatePersonaDraft({
       ...insertion.draft,
@@ -856,7 +1001,7 @@ export default function PersonaSpectrumPage() {
       generatedPersonaMeta.learnerAddress ? "称呼" : "",
     ].filter(Boolean);
     const summary = [
-      clearBeforeBackfill ? "已清空摘要、关系、称呼和卡片插槽" : "",
+      clearBeforeBackfill ? "已清空摘要、关系、称呼、参考提示和全部插槽" : "",
       metaParts.length ? `已回填${metaParts.join("、")}` : "",
       insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
     ].filter(Boolean).join("，");
@@ -998,26 +1143,42 @@ export default function PersonaSpectrumPage() {
     }
     setPersonaLibraryError("");
     setPersonaLibraryMessage("");
-    if (!window.confirm(`确认删除人格「${persona.name}」？该操作不会影响内置人格。`)) {
+    const dirtyWarning = selectedPersonaId === persona.id && isDraftDirty
+      ? " 当前草稿的未保存修改也会丢失。"
+      : "";
+    if (!window.confirm(`确认删除人格「${persona.name}」？${dirtyWarning}`)) {
       return;
     }
     setPersonaDeletePendingId(persona.id);
     try {
-      await deletePersona(persona.id);
-      const latest = await listPersonas();
+      await deletePersona(persona.id, persona.revision);
+      let latest = personas.filter((item) => item.id !== persona.id);
+      let refreshFailed = false;
+      try {
+        latest = await listPersonas();
+      } catch (refreshError) {
+        refreshFailed = true;
+        setPersonaLibraryMessage(
+          `已删除人格「${persona.name}」，但人格库刷新失败：${String(refreshError)}`,
+        );
+      }
       setPersonas(latest);
       broadcastPersonaLibraryUpdated();
-      const nextSelectedId =
-        selectedPersonaId === persona.id || !latest.some((item) => item.id === selectedPersonaId)
-          ? (latest[0]?.id ?? "")
-          : selectedPersonaId;
-      selectPersonaDraft(nextSelectedId);
-      const nextSelectedPersona = latest.find((item) => item.id === nextSelectedId) ?? null;
-      if (nextSelectedPersona) {
-        updatePersonaDraft(personaToDraft(nextSelectedPersona));
+      if (
+        selectedPersonaId === persona.id ||
+        !latest.some((item) => item.id === selectedPersonaId)
+      ) {
+        const nextSelectedPersona = latest[0] ?? null;
+        selectPersonaDraft(nextSelectedPersona?.id ?? "");
+        replacePersonaDraft(
+          nextSelectedPersona ? personaToDraft(nextSelectedPersona) : { ...EMPTY_PERSONA_DRAFT },
+          true,
+        );
+        dismissSystemPromptSuggestion();
       }
-      dismissSystemPromptSuggestion();
-      setPersonaLibraryMessage(`已删除人格「${persona.name}」。`);
+      if (!refreshFailed) {
+        setPersonaLibraryMessage(`已删除人格「${persona.name}」。`);
+      }
     } catch (error) {
       setPersonaLibraryError(humanizePersonaDeleteError(error));
     } finally {
@@ -1112,7 +1273,9 @@ export default function PersonaSpectrumPage() {
             type="button"
             style={isSelected ? { ...styles.sidebarIconButton, ...styles.sidebarIconButtonPrimary } : styles.sidebarIconButton}
             onClick={() => {
-              selectPersonaDraft(persona.id);
+              if (!activatePersonaDraft(persona.id, `载入人格「${persona.name}」`)) {
+                return;
+              }
               setPersonaLibraryError("");
               setPersonaLibraryMessage(`已载入人格「${persona.name}」。`);
             }}
@@ -1230,6 +1393,26 @@ export default function PersonaSpectrumPage() {
                   </button>
                   <button
                     type="button"
+                    style={{ ...styles.basicIconButton, ...(!selectedPersona || savingPersona ? styles.basicIconButtonDisabled : {}) }}
+                    disabled={!selectedPersona || savingPersona}
+                    onClick={handleDuplicatePersonaDraft}
+                    title={savingPersona ? "保存中" : "复制为新人格"}
+                    aria-label={savingPersona ? "保存中" : "复制为新人格"}
+                  >
+                    <MaterialIcon name="library_add" size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...styles.basicIconButton, ...(!selectedPersona || savingPersona ? styles.basicIconButtonDisabled : {}) }}
+                    disabled={!selectedPersona || savingPersona}
+                    onClick={() => { void handleReloadSelectedPersona(); }}
+                    title={savingPersona ? "保存中" : "重新载入人格"}
+                    aria-label={savingPersona ? "保存中" : "重新载入人格"}
+                  >
+                    <MaterialIcon name="refresh" size={16} />
+                  </button>
+                  <button
+                    type="button"
                     style={{ ...styles.basicIconButton, ...(savingPersona || isReadonlyPersona ? styles.basicIconButtonDisabled : {}) }}
                     disabled={savingPersona || isReadonlyPersona}
                     onClick={() => void (selectedPersonaId ? handleUpdatePersona() : handleCreatePersona())}
@@ -1244,7 +1427,13 @@ export default function PersonaSpectrumPage() {
                 <div style={styles.basicPanePrimarySection}>
                 <div style={styles.fieldGroup}>
                 <label style={styles.fieldLabel}>人格</label>
-                <select style={styles.select} value={selectedPersonaId} onChange={(e) => selectPersonaDraft(e.target.value)}>
+                <select
+                  style={styles.select}
+                  value={selectedPersonaId}
+                  onChange={(event) => {
+                    void activatePersonaDraft(event.target.value);
+                  }}
+                >
                   <option value="">新建人格（未保存）</option>
                   {personas.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}（{p.source === "builtin" ? "内置" : "用户"}）</option>
@@ -1342,7 +1531,7 @@ export default function PersonaSpectrumPage() {
                 </div>
                 {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
                 {isReadonlyPersona ? (
-                  <span style={styles.mutedText}>内置人格只读；点击加号可开始一个新的可保存草稿。</span>
+                  <span style={styles.mutedText}>内置人格只读；点击复制按钮可保留当前设定并另存为新人格。</span>
                 ) : null}
                 {configMessage ? <span style={styles.mutedText}>{configMessage}</span> : null}
                 {configError ? <span style={styles.errorInline}>{configError}</span> : null}
@@ -1589,7 +1778,7 @@ export default function PersonaSpectrumPage() {
                     checked={clearBeforeBackfill}
                     onChange={(event) => setClearBeforeBackfill(event.target.checked)}
                   />
-                  <span style={styles.checkboxLabel}>应用前清空已有摘要与插槽</span>
+                  <span style={styles.checkboxLabel}>应用前清空摘要、关系、称呼、参考提示和全部插槽</span>
                 </label>
                 <div style={styles.modeSwitchRow}>
                   <div style={styles.modeSwitch}>
@@ -1664,6 +1853,16 @@ export default function PersonaSpectrumPage() {
                       {generatedPersonaMeta.relationship ? ` · ${generatedPersonaMeta.relationship}` : ""}
                       {generatedPersonaMeta.learnerAddress ? ` · 称呼：${generatedPersonaMeta.learnerAddress}` : ""}
                     </p>
+                    {generatedCards.length ? (
+                      <ul style={styles.generatedCardPreviewList}>
+                        {generatedCards.map((card) => (
+                          <li key={card.id} style={styles.generatedCardPreviewItem}>
+                            <strong>{card.title}</strong>
+                            <span>{card.label}：{card.content}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <div style={styles.sidebarActionRow}>
                       <button
                         style={styles.sidebarIconButton}
@@ -1741,7 +1940,7 @@ export default function PersonaSpectrumPage() {
   );
 }
 
-/* ─── Helpers (unchanged) ─── */
+/* ─── Helpers ─── */
 
 function IconGlyphButton({
   icon,
@@ -1757,74 +1956,6 @@ function IconGlyphButton({
       <MaterialIcon name={icon} size={15} />
     </button>
   );
-}
-
-function personaToDraft(persona: PersonaProfile): PersonaDraft {
-  return {
-    name: persona.name,
-    summary: persona.summary,
-    relationship: persona.relationship,
-    learnerAddress: persona.learnerAddress,
-    systemPrompt: persona.systemPrompt,
-    referenceHints: persona.referenceHints ?? [],
-    slots: (persona.slots ?? []).map((slot, index) => ({
-      ...slot,
-      weight: slot.weight ?? 50,
-      locked: slot.locked ?? false,
-      sortOrder: slot.sortOrder ?? index * 10,
-    })),
-    availableEmotionsText: persona.availableEmotions.join(", "),
-    availableActionsText: persona.availableActions.join(", "),
-    defaultSpeechStyle: persona.defaultSpeechStyle
-  };
-}
-
-function draftToCreatePersonaInput(draft: PersonaDraft): CreatePersonaInput {
-  return {
-    name: draft.name.trim(),
-    summary: draft.summary.trim(),
-    relationship: draft.relationship.trim(),
-    learnerAddress: draft.learnerAddress.trim(),
-    systemPrompt: draft.systemPrompt.trim(),
-    referenceHints: mergeReferenceHints([], draft.referenceHints),
-    slots: [...draft.slots]
-      .sort((a, b) => {
-        const orderA = a.sortOrder ?? 0;
-        const orderB = b.sortOrder ?? 0;
-        if (orderA !== orderB) {
-          return orderA - orderB;
-        }
-        return (b.weight ?? 50) - (a.weight ?? 50);
-      })
-      .map((slot, index) => ({
-        ...slot,
-        weight: clampWeight(Number(slot.weight ?? 50)),
-        sortOrder: index * 10,
-      })),
-    availableEmotions: coerceEmotions(draft.availableEmotionsText),
-    availableActions: coerceActions(draft.availableActionsText),
-    defaultSpeechStyle: draft.defaultSpeechStyle
-  };
-}
-
-function createInputToDraft(snapshot: CreatePersonaInput): PersonaDraft {
-  return {
-    name: snapshot.name,
-    summary: snapshot.summary,
-    relationship: snapshot.relationship,
-    learnerAddress: snapshot.learnerAddress,
-    systemPrompt: snapshot.systemPrompt,
-    referenceHints: mergeReferenceHints([], snapshot.referenceHints ?? []),
-    slots: (snapshot.slots ?? []).map((slot, index) => ({
-      ...slot,
-      weight: clampWeight(Number(slot.weight ?? 50)),
-      locked: slot.locked ?? false,
-      sortOrder: slot.sortOrder ?? index * 10,
-    })),
-    availableEmotionsText: (snapshot.availableEmotions ?? CHARACTER_EMOTIONS).join(", "),
-    availableActionsText: (snapshot.availableActions ?? CHARACTER_ACTIONS).join(", "),
-    defaultSpeechStyle: snapshot.defaultSpeechStyle ?? "warm"
-  };
 }
 
 function buildDraftWithInsertedCards(
@@ -1864,17 +1995,6 @@ function buildDraftWithInsertedCards(
       slots: nextSlots.map((slot, index) => ({ ...slot, sortOrder: index * 10 })),
     },
     insertedCount: appended.length,
-  };
-}
-
-function clearDraftForGeneratedBackfill(draft: PersonaDraft): PersonaDraft {
-  return {
-    ...draft,
-    summary: "",
-    relationship: "",
-    learnerAddress: "",
-    referenceHints: [],
-    slots: [],
   };
 }
 
@@ -1922,21 +2042,6 @@ function collectReferenceHintsFromCards(cards: PersonaCard[]): string[] {
   );
 }
 
-function mergeReferenceHints(base: string[], incoming: string[]): string[] {
-  const seen = new Set<string>();
-  return [...base, ...incoming]
-    .map((hint) => hint.trim())
-    .filter(Boolean)
-    .filter((hint) => {
-      const key = hint.toLowerCase();
-      if (seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    });
-}
-
 function humanizePersonaDeleteError(error: unknown): string {
   const raw = String(error).replace(/^Error:\s*/, "");
   if (raw.includes("persona_readonly_builtin")) {
@@ -1950,6 +2055,7 @@ function humanizePersonaDeleteError(error: unknown): string {
     { key: "plans", label: "学习计划" },
     { key: "sessions", label: "学习会话" },
     { key: "scene_instances", label: "场景实例" },
+    { key: "tavern_rooms", label: "酒馆房间" },
   ];
   const parts = countSpecs.flatMap(({ key, label }) => {
     const match = raw.match(new RegExp(`${key}=(\\d+)`));
@@ -1962,6 +2068,16 @@ function humanizePersonaDeleteError(error: unknown): string {
   return parts.length
     ? `该人格仍被${parts.join("、")}引用，暂时不能删除。`
     : "该人格仍被现有数据引用，暂时不能删除。";
+}
+
+function humanizePersonaSaveError(error: unknown): string {
+  if (isApiHttpError(error) && error.code === "persona_revision_conflict") {
+    return "人格已在其他窗口更新。当前草稿已保留，请重新载入最新人格后再合并保存。";
+  }
+  if (isApiHttpError(error) && error.status === 422) {
+    return "人格内容未通过校验，请检查名称、插槽权重和排序。";
+  }
+  return String(error).replace(/^Error:\s*/, "");
 }
 
 function humanizePersonaCardGenerationError(error: unknown): string {
@@ -1979,75 +2095,6 @@ function humanizePersonaCardGenerationError(error: unknown): string {
     return "生成条件未通过校验，请检查关键词和精确卡片数量。";
   }
   return "人格卡片生成失败，请稍后重试。";
-}
-
-function splitCsv(value: string): string[] {
-  return value.split(",").map((item) => item.trim()).filter(Boolean);
-}
-
-function coerceEmotions(value: string): CharacterEmotion[] {
-  return dedupeCsvValues(splitCsv(value));
-}
-
-function coerceActions(value: string): CharacterAction[] {
-  return dedupeCsvValues(splitCsv(value));
-}
-
-function dedupeCsvValues<T extends string>(values: T[]): T[] {
-  const seen = new Set<string>();
-  const result: T[] = [];
-  values.forEach((value) => {
-    const key = value.toLowerCase();
-    if (seen.has(key)) {
-      return;
-    }
-    seen.add(key);
-    result.push(value);
-  });
-  return result;
-}
-
-function normalizeImportedPersonaConfig(parsed: Record<string, unknown>): CreatePersonaInput {
-  const name = String(parsed.name ?? "").trim();
-  const systemPrompt = String(parsed.systemPrompt ?? parsed.system_prompt ?? "").trim();
-  if (!name) throw new Error("缺少名称字段（name）");
-
-  let slots: PersonaSlot[] = [];
-  if (Array.isArray(parsed.slots)) {
-    slots = parsed.slots
-      .filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null)
-      .map((s, index) => ({
-        kind: String(s.kind ?? "custom"),
-        label: String(s.label ?? s.kind ?? ""),
-        content: String(s.content ?? ""),
-        weight: clampWeight(Number(s.weight ?? 50)),
-        locked: Boolean(s.locked),
-        sortOrder: Number(s.sortOrder ?? s.sort_order ?? index * 10),
-      }));
-  }
-
-  const availableEmotions = Array.isArray(parsed.availableEmotions)
-    ? coerceEmotions(parsed.availableEmotions.map((item) => String(item)).join(","))
-    : Array.isArray(parsed.available_emotions)
-      ? coerceEmotions(parsed.available_emotions.map((item) => String(item)).join(","))
-      : undefined;
-  const availableActions = Array.isArray(parsed.availableActions)
-    ? coerceActions(parsed.availableActions.map((item) => String(item)).join(","))
-    : Array.isArray(parsed.available_actions)
-      ? coerceActions(parsed.available_actions.map((item) => String(item)).join(","))
-      : undefined;
-
-  return {
-    name,
-    summary: String(parsed.summary ?? "").trim(),
-    relationship: String(parsed.relationship ?? parsed.relation ?? "").trim(),
-    learnerAddress: String(parsed.learnerAddress ?? parsed.learner_address ?? parsed.address ?? "").trim(),
-    systemPrompt,
-    slots,
-    availableEmotions,
-    availableActions,
-    defaultSpeechStyle: String(parsed.defaultSpeechStyle ?? parsed.default_speech_style ?? "warm") as SpeechStyle
-  };
 }
 
 /* ─── Styles ─── */
@@ -3006,6 +3053,21 @@ const styles: Record<string, CSSProperties> = {
     margin: 0,
     fontSize: 11,
     lineHeight: 1.4,
+    color: "var(--muted)",
+  },
+  generatedCardPreviewList: {
+    margin: 0,
+    padding: "4px 0 0 18px",
+    display: "grid",
+    gap: 6,
+    maxHeight: 180,
+    overflowY: "auto",
+  },
+  generatedCardPreviewItem: {
+    display: "grid",
+    gap: 2,
+    fontSize: 11,
+    lineHeight: 1.45,
     color: "var(--muted)",
   },
   assetRow: {

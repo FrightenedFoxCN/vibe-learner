@@ -41,6 +41,7 @@ function wireSlot(overrides: Record<string, unknown> = {}) {
 function wirePersona(overrides: Record<string, unknown> = {}) {
   return {
     id: "persona-1",
+    revision: 0,
     name: "Mentor",
     source: "user",
     summary: "A mentor",
@@ -201,7 +202,13 @@ test("Persona decoder accepts custom slot vocabulary and duplicate sort orders",
 });
 
 test("Persona decoder rejects coercion, illegal source, URL drift, and non-finite slots", () => {
+  const missingRevision = wirePersona() as Record<string, unknown>;
+  delete missingRevision.revision;
   for (const attack of [
+    missingRevision,
+    wirePersona({ revision: "0" }),
+    wirePersona({ revision: -1 }),
+    wirePersona({ revision: 1.5 }),
     wirePersona({ source: "generated" }),
     wirePersona({ relationship: null }),
     wirePersona({ available_actions: "idle" }),

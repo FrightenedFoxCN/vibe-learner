@@ -64,6 +64,7 @@ export interface CreatePersonaCardInput {
 
 export interface PersonaProfile {
   id: string;
+  revision: number;
   name: string;
   source: "builtin" | "user";
   summary: string;
@@ -96,6 +97,10 @@ export interface CreatePersonaInput {
   availableEmotions?: CharacterEmotion[];
   availableActions?: CharacterAction[];
   defaultSpeechStyle?: SpeechStyle;
+}
+
+export interface UpdatePersonaInput extends CreatePersonaInput {
+  expectedRevision: number;
 }
 
 export interface PersonaRuntimeInstructionInput {
