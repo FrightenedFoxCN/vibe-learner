@@ -4,6 +4,8 @@ from app.services.document_parser import DocumentParser
 from app.core.logging import get_logger
 from app.core.settings import Settings
 from app.persistence.database import Database
+from app.persistence.harness_artifact_repository import HarnessArtifactRepository
+from app.persistence.harness_effect_repository import HarnessEffectJournalRepository
 from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
@@ -42,6 +44,8 @@ class Container:
         self.storage = StorageManager(data_root)
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()
+        self.harness_artifact_repository = HarnessArtifactRepository(self.database)
+        self.harness_effect_journal = HarnessEffectJournalRepository(self.database)
         self.tavern_repository = TavernRepository(self.database)
         self.store = LocalJsonStore(self.database, self.storage)
         self.document_parser = DocumentParser(
@@ -84,7 +88,10 @@ class Container:
             self.model_provider,
         )
         self.plan_service.recover_abandoned_operations()
-        self.study_session_repository = StudySessionRepository(self.database)
+        self.study_session_repository = StudySessionRepository(
+            self.database,
+            effect_journal=self.harness_effect_journal,
+        )
         self.study_chat_operation_repository = StudyChatOperationRepository(
             self.database,
             chat_attachment_root=self.storage.chat_attachment_root,

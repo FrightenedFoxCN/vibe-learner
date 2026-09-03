@@ -2,7 +2,7 @@
 
 ## Repo Scan Snapshot
 
-This repository was last materially updated on 2026-08-31. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
+This repository was last materially updated on 2026-09-03. The codebase is a monorepo with four active product/runtime surfaces and one docs area:
 
 - `apps/web`: Next.js 16 app-router frontend for upload, global debug, planning, study, persona/scene editing, and Tavern interaction.
 - `services/ai`: FastAPI backend for document ingestion, OCR parsing, Study Unit cleanup, planning, persona/scene APIs, Study Chat, Tavern orchestration, and Harness evidence.
@@ -26,8 +26,10 @@ This repository was last materially updated on 2026-08-31. The codebase is a mon
 - Harness workflow manifest: `services/ai/app/models/harness_manifest.py`, `packages/shared/src/harness-manifest.ts`, and `packages/shared/fixtures/harness/workflow-manifest-v1.json`.
 - Harness operation identity: `services/ai/app/models/harness_operation.py`, `services/ai/app/persistence/harness_operation_repository.py`, and `services/ai/alembic/versions/20260825_0013_harness_operation_bindings.py`.
 - Harness artifact authorization: `services/ai/app/models/harness_artifact_access.py`, `packages/shared/src/harness-artifact-access.ts`, and the artifact-access fixtures under `packages/shared/fixtures/harness/`.
+- Harness protected artifacts and effects: `services/ai/app/persistence/harness_artifact_repository.py`, `services/ai/app/persistence/harness_effect_repository.py`, `services/ai/app/models/harness_effect.py`, and `packages/shared/src/harness-effect.ts`.
 - Tool Manifest: `services/ai/app/models/tool_manifest.py`, `services/ai/app/services/tool_provider_projection.py`, `packages/shared/src/tool-manifest.ts`, and `packages/shared/fixtures/harness/tool-manifest-v1.json`.
 - Harness eval contracts: `services/ai/app/models/harness_eval.py`, `packages/shared/src/harness-eval.ts`, and the eval contract/taxonomy fixtures under `packages/shared/fixtures/harness/`.
+- Harness eval execution: `services/ai/app/services/harness_eval_runner.py`; use `npm run eval:harness` with an explicit registry and selected suite, or its `:pr`, `:manual`, and `:nightly` profile aliases.
 - Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
 - Harness schema ownership: `docs/harness-schema-ownership.md`
 - Harness active roadmap: `docs/harness-roadmap.md`
@@ -165,7 +167,8 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - All new workflows and migrated existing model/heuristic workflows must follow the shared Harness lifecycle: typed input, versioned context, strict decode, invariant validation, bounded recovery, atomic commit, and trace/eval coverage.
 - Construct v3 context only from an admitted `HarnessOperationBindingV1` and an executable `HarnessWorkflowManifestV1` entry. A manifest registration or context fixture is routing/configuration evidence, not production adoption.
 - Allocate Harness identity in the same database transaction as domain operation admission. Never derive it from a provider `tool_call_id`, never fabricate it for legacy rows, and retain the immutable binding as an admission tombstone if product retention removes the domain row.
-- Artifact grants use the server-resolved local-installation principal and exact operation/artifact/contract/permission scope; they are not bearer tokens. Future resolvers must authorize before reading protected content and return typed retention/digest failures.
+- Artifact grants use the server-resolved local-installation principal and exact operation/artifact/contract/permission scope; they are not bearer tokens. The resolver authorizes before reading protected content and returns typed retention/digest failures.
+- Durable effects use one admitted Harness operation plus a global slot for stable journal identity. Keep adapter/contract/target bindings immutable, use database-clock claim fencing, and require exact read-back or compensation evidence before emitting a terminal outcome; unsupported provider read-back remains `uncertain`.
 - The versioned Tool Manifest is the single catalog for all six Planning and thirty-one Study tools. Provider schemas, runtime input/result adapters, redacted trace projections, call ceilings, and provider ID correlation must remain consistent with its shared golden fixture.
 - Eval samples bind one admitted Harness operation and complete tested-system configuration. Python owns canonical eval identities/digests; infrastructure, case-data, grader, and metric failures must remain distinct from candidate failures and cannot count as candidate success.
 - V3 commit claims must match a registered full operation key and versioned committed projection. Generic resource evidence is insufficient; the Tavern actor Message policy is `primary_output_only`, not proof of all Room/Run/Step effects in its transaction.

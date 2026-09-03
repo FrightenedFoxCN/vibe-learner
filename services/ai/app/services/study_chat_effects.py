@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from app.models.domain import (
     SessionAffinityEventRecord,
@@ -17,6 +18,7 @@ from app.models.domain import (
     StudySessionRecord,
 )
 from app.models.harness import HarnessResourceType
+from app.models.harness_operation import HarnessOperationBindingV1
 from app.models.harness_effect import HarnessEffectTargetRefV1
 from app.models.study_chat_effect import (
     STUDY_AFFINITY_DELTA_ADAPTER,
@@ -57,6 +59,9 @@ from app.models.study_chat_effect import (
 
 MAX_STUDY_CHAT_EFFECTS_PER_OPERATION = 12
 
+if TYPE_CHECKING:
+    from app.persistence.harness_effect_repository import HarnessEffectJournalRepository
+
 
 class StudyChatEffectCollector:
     """In-process prepare boundary; no business state is written here."""
@@ -68,11 +73,22 @@ class StudyChatEffectCollector:
         session_id: str,
         plan_id: str | None,
         allowed_schedule_ids: set[str] | frozenset[str],
+        operation_binding: HarnessOperationBindingV1 | None = None,
+        effect_journal: "HarnessEffectJournalRepository | None" = None,
     ) -> None:
         self.operation_id = operation_id
         self.session_id = session_id
         self.plan_id = (plan_id or "").strip()
         self.allowed_schedule_ids = frozenset(allowed_schedule_ids)
+        if (operation_binding is None) != (effect_journal is None):
+            raise ValueError("study_chat_effect_journal_binding_incomplete")
+        if (
+            operation_binding is not None
+            and operation_binding.domain_operation_id != operation_id
+        ):
+            raise ValueError("study_chat_effect_operation_binding_mismatch")
+        self.operation_binding = operation_binding
+        self.effect_journal = effect_journal
         self.effect_batch_id = _stable_id("study-effect-batch", operation_id)
         self._effects: list[StudyChatPreparedEffectV1] = []
 
@@ -340,6 +356,15 @@ class StudyChatEffectCollector:
             target_refs=target_refs,
             proposal=proposal,
         )
+        if self.operation_binding is not None and self.effect_journal is not None:
+            self.effect_journal.prepare_effect(
+                operation_binding=self.operation_binding,
+                slot=slot,
+                adapter=adapter,
+                proposal_contract=proposal_contract,
+                target_refs=target_refs,
+                proposal=proposal,
+            )
         self._effects.append(effect)
         return effect
 

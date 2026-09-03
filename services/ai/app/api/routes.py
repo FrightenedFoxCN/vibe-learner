@@ -1488,6 +1488,9 @@ def _run_study_chat(
         StudyFollowUpEffectProposalV1,
     )
 
+    effect_operation_binding = (
+        container.study_chat_operation_repository.require_harness_operation(operation_id)
+    )
     effect_collector = StudyChatEffectCollector(
         operation_id=operation_id,
         session_id=session_id,
@@ -1495,6 +1498,8 @@ def _run_study_chat(
         allowed_schedule_ids={
             item.id for item in bound_session_plan.schedule
         } if bound_session_plan is not None else set(),
+        operation_binding=effect_operation_binding,
+        effect_journal=container.study_session_repository.effect_journal,
     )
     scene_tool_runtime = (
         container.session_scene_service.build_tool_runtime(

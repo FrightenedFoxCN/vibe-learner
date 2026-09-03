@@ -5,9 +5,11 @@ from typing import Any
 from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     JSON,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -81,6 +83,293 @@ class HarnessOperationBindingRow(Base):
         index=True,
     )
     admitted_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class HarnessArtifactPrincipalRow(Base):
+    """The one server-owned principal for a local installation."""
+
+    __tablename__ = "harness_artifact_principals"
+    __table_args__ = (
+        UniqueConstraint("principal_id", name="uq_harness_artifact_principal_id"),
+        CheckConstraint(
+            "schema_name = 'HarnessArtifactPrincipal' AND "
+            "schema_version = 'harness-artifact-principal-v1'",
+            name="ck_harness_artifact_principal_schema",
+        ),
+    )
+
+    installation_slot: Mapped[str] = mapped_column(String(64), primary_key=True)
+    principal_id: Mapped[str] = mapped_column(String(64), index=True)
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[str] = mapped_column(String(64))
+
+
+class HarnessArtifactContractRow(Base):
+    __tablename__ = "harness_artifact_contracts"
+    __table_args__ = (
+        CheckConstraint(
+            "schema_name = 'HarnessArtifactContractRegistrationV1' AND "
+            "schema_version = 'harness-artifact-contract-registration-v1'",
+            name="ck_harness_artifact_contract_schema",
+        ),
+    )
+
+    contract_name: Mapped[str] = mapped_column(String(160), primary_key=True)
+    contract_version: Mapped[str] = mapped_column(String(160), primary_key=True)
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    registered_at: Mapped[str] = mapped_column(String(64))
+
+
+class HarnessArtifactRow(Base):
+    __tablename__ = "harness_artifacts"
+    __table_args__ = (
+        CheckConstraint(
+            "schema_name = 'HarnessArtifactRegistrationV1' AND "
+            "schema_version = 'harness-artifact-registration-v1'",
+            name="ck_harness_artifact_schema",
+        ),
+        ForeignKeyConstraint(
+            ["contract_name", "contract_version"],
+            [
+                "harness_artifact_contracts.contract_name",
+                "harness_artifact_contracts.contract_version",
+            ],
+            name="fk_harness_artifact_contract",
+            ondelete="RESTRICT",
+        ),
+    )
+
+    artifact_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    artifact_type: Mapped[str] = mapped_column(String(64), index=True)
+    contract_name: Mapped[str] = mapped_column(String(160))
+    contract_version: Mapped[str] = mapped_column(String(160))
+    digest_algorithm: Mapped[str] = mapped_column(String(32))
+    payload_digest: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[bytes] = mapped_column(LargeBinary)
+    expires_at: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    deleted_at: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    registered_principal_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("harness_artifact_principals.principal_id", ondelete="RESTRICT")
+    )
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    registered_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class HarnessArtifactGrantRow(Base):
+    __tablename__ = "harness_artifact_grants"
+    __table_args__ = (
+        CheckConstraint(
+            "schema_name = 'HarnessArtifactGrant' AND "
+            "schema_version = 'harness-artifact-grant-v1'",
+            name="ck_harness_artifact_grant_schema",
+        ),
+    )
+
+    grant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    harness_operation_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("harness_operation_bindings.harness_operation_id", ondelete="RESTRICT"), index=True
+    )
+    principal_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("harness_artifact_principals.principal_id", ondelete="RESTRICT"), index=True
+    )
+    issued_at: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[str] = mapped_column(String(64), index=True)
+    revoked_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+
+
+class HarnessArtifactGrantScopeRow(Base):
+    __tablename__ = "harness_artifact_grant_scopes"
+    __table_args__ = (
+        UniqueConstraint("grant_id", "artifact_id", "permission", name="uq_harness_artifact_grant_scope"),
+    )
+
+    scope_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    grant_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("harness_artifact_grants.grant_id", ondelete="RESTRICT"), index=True
+    )
+    # Keep a durable scope/audit reference after retention deletes content.
+    artifact_id: Mapped[str] = mapped_column(String(64), index=True)
+    artifact_type: Mapped[str] = mapped_column(String(64))
+    contract_name: Mapped[str] = mapped_column(String(160))
+    contract_version: Mapped[str] = mapped_column(String(160))
+    permission: Mapped[str] = mapped_column(String(32))
+
+
+class HarnessArtifactAccessAuditRow(Base):
+    __tablename__ = "harness_artifact_access_audits"
+
+    __table_args__ = (
+        CheckConstraint(
+            "schema_name = 'HarnessArtifactResolutionAuditV1' AND "
+            "schema_version = 'harness-artifact-resolution-audit-v1'",
+            name="ck_harness_artifact_resolution_audit_schema",
+        ),
+    )
+
+    audit_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    grant_id: Mapped[str] = mapped_column(String(64), index=True)
+    harness_operation_id: Mapped[str] = mapped_column(String(64), index=True)
+    grant_harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+    presented_principal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    grant_subject_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    artifact_id: Mapped[str] = mapped_column(String(64), index=True)
+    artifact_type: Mapped[str] = mapped_column(String(64))
+    contract_name: Mapped[str] = mapped_column(String(160))
+    contract_version: Mapped[str] = mapped_column(String(160))
+    permission: Mapped[str] = mapped_column(String(32))
+    authorization_outcome: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        index=True,
+    )
+    resolution_status: Mapped[str] = mapped_column(String(32), index=True)
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    evaluated_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class HarnessEffectBatchRow(Base):
+    __tablename__ = "harness_effect_batches"
+    __table_args__ = (
+        UniqueConstraint(
+            "harness_operation_id",
+            name="uq_harness_effect_batch_operation",
+        ),
+        UniqueConstraint(
+            "effect_batch_id",
+            "harness_operation_id",
+            name="uq_harness_effect_batch_identity",
+        ),
+        CheckConstraint(
+            "schema_name = 'HarnessEffectBatchV1' AND "
+            "schema_version = 'harness-effect-batch-v1'",
+            name="ck_harness_effect_batch_schema",
+        ),
+        CheckConstraint(
+            "max_slots >= 1 AND max_slots <= 128",
+            name="ck_harness_effect_batch_max_slots",
+        ),
+    )
+
+    effect_batch_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    harness_operation_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+    max_slots: Mapped[int] = mapped_column(Integer, default=128)
+    sealed_at: Mapped[str] = mapped_column(String(64), default="")
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class HarnessEffectJournalRow(Base):
+    __tablename__ = "harness_effect_journal"
+    __table_args__ = (
+        UniqueConstraint(
+            "effect_batch_id",
+            "slot",
+            name="uq_harness_effect_journal_batch_slot",
+        ),
+        UniqueConstraint(
+            "harness_operation_id",
+            "slot",
+            name="uq_harness_effect_journal_operation_slot",
+        ),
+        ForeignKeyConstraint(
+            ["effect_batch_id", "harness_operation_id"],
+            [
+                "harness_effect_batches.effect_batch_id",
+                "harness_effect_batches.harness_operation_id",
+            ],
+            name="fk_harness_effect_journal_batch_identity",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "schema_name = 'HarnessEffectJournalEntryV1' AND "
+            "schema_version = 'harness-effect-journal-entry-v1'",
+            name="ck_harness_effect_journal_schema",
+        ),
+        CheckConstraint(
+            "slot >= 0 AND slot <= 127",
+            name="ck_harness_effect_journal_slot",
+        ),
+        CheckConstraint(
+            "claim_count >= 0 AND claim_count <= 3",
+            name="ck_harness_effect_journal_claim_count",
+        ),
+        CheckConstraint(
+            "state IN ('prepared', 'claimed', 'terminal')",
+            name="ck_harness_effect_journal_state",
+        ),
+        CheckConstraint(
+            "terminal_outcome IS NULL OR "
+            "terminal_outcome IN ('not_committed', 'committed', 'uncertain')",
+            name="ck_harness_effect_journal_terminal_outcome",
+        ),
+        CheckConstraint(
+            "(state = 'prepared' AND claim_owner = '' AND lease_expires_at = '' "
+            "AND terminal_outcome IS NULL AND terminal_evidence IS NULL) OR "
+            "(state = 'claimed' AND claim_owner <> '' AND lease_expires_at <> '' "
+            "AND claim_count >= 1 AND terminal_outcome IS NULL AND terminal_evidence IS NULL) OR "
+            "(state = 'terminal' AND claim_owner = '' AND lease_expires_at = '' "
+            "AND terminal_outcome IS NOT NULL AND terminal_evidence IS NOT NULL)",
+            name="ck_harness_effect_journal_state_shape",
+        ),
+    )
+
+    effect_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    effect_batch_id: Mapped[str] = mapped_column(String(64), index=True)
+    harness_operation_id: Mapped[str] = mapped_column(String(64), index=True)
+    slot: Mapped[int] = mapped_column(Integer)
+    adapter_name: Mapped[str] = mapped_column(String(160))
+    adapter_version: Mapped[str] = mapped_column(String(160))
+    boundary_kind: Mapped[str] = mapped_column(String(32))
+    prepare_policy: Mapped[str] = mapped_column(String(64))
+    commit_policy: Mapped[str] = mapped_column(String(64))
+    compensation_policy: Mapped[str] = mapped_column(String(64))
+    read_back_policy: Mapped[str] = mapped_column(String(64))
+    proposal_contract_name: Mapped[str] = mapped_column(String(160))
+    proposal_contract_version: Mapped[str] = mapped_column(String(160))
+    proposal_digest: Mapped[str] = mapped_column(String(64))
+    target_refs: Mapped[list[dict[str, Any]]] = mapped_column(JSON_PAYLOAD)
+    state: Mapped[str] = mapped_column(String(32), index=True)
+    claim_owner: Mapped[str] = mapped_column(String(160), default="")
+    claim_count: Mapped[int] = mapped_column(Integer, default=0)
+    lease_expires_at: Mapped[str] = mapped_column(String(64), default="", index=True)
+    commit_started_at: Mapped[str] = mapped_column(String(64), default="")
+    read_back_started_at: Mapped[str] = mapped_column(String(64), default="")
+    compensation_started_at: Mapped[str] = mapped_column(String(64), default="")
+    provider_effect_identity: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD,
+        nullable=True,
+    )
+    terminal_outcome: Mapped[str | None] = mapped_column(
+        String(32),
+        nullable=True,
+        index=True,
+    )
+    terminal_evidence: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD,
+        nullable=True,
+    )
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    prepared_at: Mapped[str] = mapped_column(String(64), index=True)
+    updated_at: Mapped[str] = mapped_column(String(64), index=True)
+    terminal_at: Mapped[str] = mapped_column(String(64), default="", index=True)
 
 
 class DocumentRow(Base):

@@ -15,6 +15,7 @@ from app.models.harness_effect import (
     HarnessEffectPreparePolicy,
     HarnessEffectReadBackPolicy,
     HarnessEffectTargetRefV1,
+    HarnessEffectTerminalEvidenceV1,
     HarnessPreparedEffectBatchV1,
     HarnessPreparedEffectV1,
     harness_effect_adapter_policy_registry_snapshot,
@@ -36,6 +37,26 @@ class HarnessEffectSchemaTests(unittest.TestCase):
             ).read_text(encoding="utf-8")
         )
         self.assertEqual(harness_effect_adapter_policy_registry_snapshot(), fixture)
+
+    def test_terminal_evidence_fixtures_cover_effect_boundaries(self) -> None:
+        fixture = json.loads(
+            (
+                Path(__file__).parents[3]
+                / "packages/shared/fixtures/harness/effect-terminal-evidence-v1.json"
+            ).read_text(encoding="utf-8")
+        )
+        cases = [
+            HarnessEffectTerminalEvidenceV1.model_validate(item)
+            for item in fixture["valid_cases"]
+        ]
+        self.assertEqual(
+            [item.outcome.value for item in cases],
+            ["committed", "not_committed", "uncertain", "uncertain"],
+        )
+        self.assertEqual(cases[-1].read_back_outcome.value, "unsupported")
+        for invalid in fixture["invalid_cases"]:
+            with self.assertRaisesRegex(ValidationError, invalid["expected_error"]):
+                HarnessEffectTerminalEvidenceV1.model_validate(invalid["payload"])
 
     def test_domain_proposal_rejects_application_owned_fields(self) -> None:
         with self.assertRaises(ValidationError):

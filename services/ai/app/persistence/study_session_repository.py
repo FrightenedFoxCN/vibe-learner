@@ -50,15 +50,22 @@ from app.persistence.models import (
 from app.persistence.harness_operation_repository import (
     HarnessOperationBindingRepository,
 )
+from app.persistence.harness_effect_repository import HarnessEffectJournalRepository
 from app.services.study_chat_effects import commit_study_chat_effects
 
 
 class StudySessionRepository:
     """Database-authoritative CAS boundary for the Study Session aggregate."""
 
-    def __init__(self, database: Database) -> None:
+    def __init__(
+        self,
+        database: Database,
+        *,
+        effect_journal: HarnessEffectJournalRepository | None = None,
+    ) -> None:
         self.database = database
         self.harness_operations = HarnessOperationBindingRepository(database)
+        self.effect_journal = effect_journal or HarnessEffectJournalRepository(database)
 
     def create(self, record: StudySessionRecord) -> StudySessionRecord:
         payload = record.model_dump(mode="json")
@@ -445,7 +452,7 @@ class StudySessionRepository:
                 or operation.execution_token != execution_token
             ):
                 raise StudySessionOperationFenced(operation_id)
-            self.harness_operations.require_domain_in_session(
+            harness_operation_binding = self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
                 domain_operation_id=operation_id,
@@ -539,6 +546,14 @@ class StudySessionRepository:
                 scene_records=scene_records,
                 committed_at=committed_at,
             )
+            if committed_effect_batch is not None:
+                self.effect_journal.commit_batch_read_back_in_session(
+                    session,
+                    harness_operation_id=(
+                        harness_operation_binding.harness_operation_id
+                    ),
+                    projections=committed_effect_batch.effects,
+                )
             record.updated_at = committed_at
             record.revision = expected_revision + 1
             record = StudySessionRecord.model_validate(record.model_dump(mode="json"))

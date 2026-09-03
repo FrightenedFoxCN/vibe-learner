@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from enum import StrEnum
+import hashlib
 import re
 from typing import Literal
 
@@ -21,10 +22,22 @@ HARNESS_ARTIFACT_ACCESS_AUDIT_SCHEMA_VERSION = "harness-artifact-access-audit-v1
 HARNESS_ARTIFACT_ACCESS_CONTRACT_REGISTRY_VERSION = (
     "harness-artifact-access-contract-registry-v1"
 )
+HARNESS_ARTIFACT_CONTRACT_REGISTRATION_SCHEMA_VERSION = (
+    "harness-artifact-contract-registration-v1"
+)
+HARNESS_ARTIFACT_REGISTRATION_SCHEMA_VERSION = "harness-artifact-registration-v1"
+HARNESS_ARTIFACT_RESOLUTION_SCHEMA_VERSION = "harness-artifact-resolution-v1"
+HARNESS_ARTIFACT_BATCH_RESOLUTION_SCHEMA_VERSION = (
+    "harness-artifact-batch-resolution-v1"
+)
+HARNESS_ARTIFACT_RESOLUTION_AUDIT_SCHEMA_VERSION = (
+    "harness-artifact-resolution-audit-v1"
+)
 
 _PRINCIPAL_ID_PATTERN = r"^local-installation-[0-9a-f]{32}$"
 _GRANT_ID_PATTERN = r"^harness-artifact-grant-[0-9a-f]{32}$"
 _ARTIFACT_ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$"
+_OPAQUE_ARTIFACT_ID_PATTERN = r"^harness-artifact-[0-9a-f]{32}$"
 _UTC_TIMESTAMP_PATTERN = (
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$"
 )
@@ -67,6 +80,207 @@ class HarnessArtifactAccessOutcome(StrEnum):
     GRANT_NOT_ACTIVE = "grant_not_active"
     EXPIRED = "expired"
     REVOKED = "revoked"
+
+
+class HarnessArtifactResolutionStatus(StrEnum):
+    RESOLVED = "resolved"
+    NOT_FOUND = "not_found"
+    EXPIRED = "expired"
+    FORBIDDEN = "forbidden"
+    DIGEST_MISMATCH = "digest_mismatch"
+    SCHEMA_UNSUPPORTED = "schema_unsupported"
+
+
+class HarnessArtifactContractRegistrationV1(_StrictModel):
+    schema_name: Literal["HarnessArtifactContractRegistrationV1"] = (
+        "HarnessArtifactContractRegistrationV1"
+    )
+    schema_version: Literal[HARNESS_ARTIFACT_CONTRACT_REGISTRATION_SCHEMA_VERSION] = (
+        HARNESS_ARTIFACT_CONTRACT_REGISTRATION_SCHEMA_VERSION
+    )
+    artifact_contract: HarnessContractRef
+    registered_at: AwareDatetime
+
+    @field_validator("registered_at", mode="before")
+    @classmethod
+    def require_canonical_utc_wire(cls, value: object) -> object:
+        return _require_canonical_utc_wire(value)
+
+    @model_validator(mode="after")
+    def require_contract(self) -> "HarnessArtifactContractRegistrationV1":
+        require_versioned_harness_contract(self.artifact_contract)
+        if self.registered_at.utcoffset() != timedelta(0):
+            raise ValueError("harness_artifact_contract_timestamp_must_be_utc")
+        return self
+
+
+class HarnessArtifactRegistrationV1(_StrictModel):
+    schema_name: Literal["HarnessArtifactRegistrationV1"] = "HarnessArtifactRegistrationV1"
+    schema_version: Literal[HARNESS_ARTIFACT_REGISTRATION_SCHEMA_VERSION] = (
+        HARNESS_ARTIFACT_REGISTRATION_SCHEMA_VERSION
+    )
+    artifact_type: HarnessArtifactType
+    artifact_id: str = Field(pattern=_OPAQUE_ARTIFACT_ID_PATTERN)
+    artifact_contract: HarnessContractRef
+    payload_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    registered_at: AwareDatetime
+    expires_at: AwareDatetime | None = None
+
+    @field_validator("registered_at", "expires_at", mode="before")
+    @classmethod
+    def require_canonical_utc_wire(cls, value: object) -> object:
+        return _require_canonical_utc_wire(value)
+
+    @model_validator(mode="after")
+    def validate_registration(self) -> "HarnessArtifactRegistrationV1":
+        require_versioned_harness_contract(self.artifact_contract)
+        if self.registered_at.utcoffset() != timedelta(0) or (
+            self.expires_at is not None and self.expires_at.utcoffset() != timedelta(0)
+        ):
+            raise ValueError("harness_artifact_registration_timestamp_must_be_utc")
+        if self.expires_at is not None and self.expires_at <= self.registered_at:
+            raise ValueError("harness_artifact_retention_invalid")
+        if self.artifact_type == HarnessArtifactType.DOCUMENT_DEBUG:
+            raise ValueError("harness_artifact_removable_cache_unsupported")
+        return self
+
+
+class HarnessArtifactResolveRequestV1(_StrictModel):
+    grant_id: str = Field(pattern=_GRANT_ID_PATTERN)
+    harness_operation_id: str = Field(pattern=HARNESS_OPERATION_ID_PATTERN)
+    artifact_id: str = Field(pattern=_OPAQUE_ARTIFACT_ID_PATTERN)
+    artifact_type: HarnessArtifactType
+    artifact_contract: HarnessContractRef
+    permission: HarnessArtifactPermission = HarnessArtifactPermission.READ
+
+    @model_validator(mode="after")
+    def require_contract(self) -> "HarnessArtifactResolveRequestV1":
+        require_versioned_harness_contract(self.artifact_contract)
+        return self
+
+
+class HarnessArtifactResolutionV1(_StrictModel):
+    schema_name: Literal["HarnessArtifactResolutionV1"] = "HarnessArtifactResolutionV1"
+    schema_version: Literal[HARNESS_ARTIFACT_RESOLUTION_SCHEMA_VERSION] = (
+        HARNESS_ARTIFACT_RESOLUTION_SCHEMA_VERSION
+    )
+    status: HarnessArtifactResolutionStatus
+    artifact_id: str = Field(pattern=_OPAQUE_ARTIFACT_ID_PATTERN)
+    artifact_type: HarnessArtifactType
+    artifact_contract: HarnessContractRef
+    permission: HarnessArtifactPermission
+    payload_digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    resolved_at: AwareDatetime
+    content: bytes | None = None
+
+    @field_validator("resolved_at", mode="before")
+    @classmethod
+    def require_canonical_utc_wire(cls, value: object) -> object:
+        return _require_canonical_utc_wire(value)
+
+    @model_validator(mode="after")
+    def validate_result(self) -> "HarnessArtifactResolutionV1":
+        require_versioned_harness_contract(self.artifact_contract)
+        if self.resolved_at.utcoffset() != timedelta(0):
+            raise ValueError("harness_artifact_resolution_timestamp_must_be_utc")
+        if self.status == HarnessArtifactResolutionStatus.RESOLVED:
+            if self.payload_digest is None:
+                raise ValueError("harness_artifact_resolution_digest_required")
+            if self.permission == HarnessArtifactPermission.READ and self.content is None:
+                raise ValueError("harness_artifact_resolution_content_required")
+            if (
+                self.permission == HarnessArtifactPermission.VERIFY_DIGEST
+                and self.content is not None
+            ):
+                raise ValueError("harness_artifact_resolution_content_forbidden")
+            if (
+                self.content is not None
+                and hashlib.sha256(self.content).hexdigest() != self.payload_digest
+            ):
+                raise ValueError("harness_artifact_resolution_content_digest_mismatch")
+        elif self.content is not None or self.payload_digest is not None:
+            raise ValueError("harness_artifact_resolution_protected_fields_forbidden")
+        return self
+
+
+class HarnessArtifactBatchResolutionV1(_StrictModel):
+    schema_name: Literal["HarnessArtifactBatchResolutionV1"] = (
+        "HarnessArtifactBatchResolutionV1"
+    )
+    schema_version: Literal[HARNESS_ARTIFACT_BATCH_RESOLUTION_SCHEMA_VERSION] = (
+        HARNESS_ARTIFACT_BATCH_RESOLUTION_SCHEMA_VERSION
+    )
+    results: tuple[HarnessArtifactResolutionV1, ...] = Field(min_length=1, max_length=64)
+
+
+class HarnessArtifactResolutionAuditV1(_StrictModel):
+    """Content-free durable evidence for one resolver decision.
+
+    ``authorization_outcome`` is deliberately distinct from ``resolution_status``:
+    an authorized read can still discover a missing, expired, corrupt, or unsupported
+    artifact.  ``None`` is reserved for corrupt authorization metadata that could not
+    be decoded safely enough to produce an access-contract outcome.
+    """
+
+    schema_name: Literal["HarnessArtifactResolutionAuditV1"] = (
+        "HarnessArtifactResolutionAuditV1"
+    )
+    schema_version: Literal[HARNESS_ARTIFACT_RESOLUTION_AUDIT_SCHEMA_VERSION] = (
+        HARNESS_ARTIFACT_RESOLUTION_AUDIT_SCHEMA_VERSION
+    )
+    audit_id: str = Field(pattern=r"^harness-artifact-audit-[0-9a-f]{32}$")
+    grant_id: str = Field(pattern=_GRANT_ID_PATTERN)
+    harness_operation_id: str = Field(pattern=HARNESS_OPERATION_ID_PATTERN)
+    grant_harness_operation_id: str | None = Field(
+        default=None,
+        pattern=HARNESS_OPERATION_ID_PATTERN,
+    )
+    presented_principal_id: str | None = Field(
+        default=None,
+        pattern=_PRINCIPAL_ID_PATTERN,
+    )
+    grant_subject_id: str | None = Field(
+        default=None,
+        pattern=_PRINCIPAL_ID_PATTERN,
+    )
+    artifact_id: str = Field(pattern=_OPAQUE_ARTIFACT_ID_PATTERN)
+    artifact_type: HarnessArtifactType
+    artifact_contract: HarnessContractRef
+    permission: HarnessArtifactPermission
+    authorization_outcome: HarnessArtifactAccessOutcome | None
+    resolution_status: HarnessArtifactResolutionStatus
+    evaluated_at: AwareDatetime
+
+    @field_validator("evaluated_at", mode="before")
+    @classmethod
+    def require_canonical_utc_wire(cls, value: object) -> object:
+        return _require_canonical_utc_wire(value)
+
+    @model_validator(mode="after")
+    def validate_decision(self) -> "HarnessArtifactResolutionAuditV1":
+        require_versioned_harness_contract(self.artifact_contract)
+        if self.evaluated_at.utcoffset() != timedelta(0):
+            raise ValueError("harness_artifact_resolution_audit_timestamp_must_be_utc")
+        if self.authorization_outcome is None:
+            if self.resolution_status != HarnessArtifactResolutionStatus.SCHEMA_UNSUPPORTED:
+                raise ValueError("harness_artifact_resolution_audit_decision_mismatch")
+            return self
+        if self.authorization_outcome == HarnessArtifactAccessOutcome.ALLOWED:
+            if (
+                self.grant_harness_operation_id != self.harness_operation_id
+                or self.presented_principal_id is None
+                or self.presented_principal_id != self.grant_subject_id
+                or self.resolution_status == HarnessArtifactResolutionStatus.FORBIDDEN
+            ):
+                raise ValueError("harness_artifact_resolution_audit_allowed_mismatch")
+            return self
+        if self.authorization_outcome == HarnessArtifactAccessOutcome.EXPIRED:
+            if self.resolution_status != HarnessArtifactResolutionStatus.EXPIRED:
+                raise ValueError("harness_artifact_resolution_audit_expiry_mismatch")
+            return self
+        if self.resolution_status != HarnessArtifactResolutionStatus.FORBIDDEN:
+            raise ValueError("harness_artifact_resolution_audit_forbidden_mismatch")
+        return self
 
 
 class HarnessArtifactPrincipalV1(_StrictModel):

@@ -1,0 +1,252 @@
+{
+  "schema_name": "HarnessEffectTerminalEvidenceFixtureSetV1",
+  "schema_version": "harness-effect-terminal-evidence-fixtures-v1",
+  "valid_cases": [
+    {
+      "schema_name": "HarnessEffectTerminalEvidenceV1",
+      "schema_version": "harness-effect-terminal-evidence-v1",
+      "harness_operation_id": "harness-operation-22222222222222222222222222222222",
+      "effect_batch_id": "harness-effect-batch-e538620ae6b5664b72efa0e458ae2194",
+      "effect_id": "harness-effect-23f3558292f5ff8cf3f03b509ef7f8dd",
+      "slot": 0,
+      "adapter": {
+        "name": "study_memory_upsert",
+        "version": "study-memory-upsert-v1",
+        "boundary_kind": "database_write",
+        "prepare_policy": "validate_and_assign_identity",
+        "commit_policy": "database_transaction",
+        "compensation_policy": "not_applicable",
+        "read_back_policy": "exact_projection"
+      },
+      "proposal_contract": {
+        "name": "FixtureEffectProposalV1",
+        "version": "fixture-effect-proposal-v1"
+      },
+      "proposal_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "target_refs": [
+        {
+          "resource_type": "study_session",
+          "resource_id": "session-fixture-1"
+        }
+      ],
+      "outcome": "committed",
+      "provider_effect_identity": null,
+      "read_back_outcome": "verified",
+      "committed_projection_contract": {
+        "name": "FixtureCommittedProjectionV1",
+        "version": "fixture-committed-projection-v1"
+      },
+      "committed_projection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "compensation_outcome": "not_applicable",
+      "compensation_contract": null,
+      "compensation_evidence_digest": null,
+      "prepared_at": "2026-09-03T01:00:00Z",
+      "commit_started_at": "2026-09-03T01:00:01Z",
+      "read_back_started_at": "2026-09-03T01:00:02Z",
+      "compensation_started_at": null,
+      "read_back_at": "2026-09-03T01:00:02Z",
+      "compensated_at": null,
+      "terminal_at": "2026-09-03T01:00:03Z",
+      "failure_code": ""
+    },
+    {
+      "schema_name": "HarnessEffectTerminalEvidenceV1",
+      "schema_version": "harness-effect-terminal-evidence-v1",
+      "harness_operation_id": "harness-operation-22222222222222222222222222222222",
+      "effect_batch_id": "harness-effect-batch-e538620ae6b5664b72efa0e458ae2194",
+      "effect_id": "harness-effect-57d70531b34c82a8421d5d2ef7f4904a",
+      "slot": 1,
+      "adapter": {
+        "name": "study_attachment_stage",
+        "version": "study-attachment-stage-v1",
+        "boundary_kind": "file_write",
+        "prepare_policy": "validate_and_assign_identity",
+        "commit_policy": "staging_outbox",
+        "compensation_policy": "cleanup",
+        "read_back_policy": "exact_projection"
+      },
+      "proposal_contract": {
+        "name": "FixtureEffectProposalV1",
+        "version": "fixture-effect-proposal-v1"
+      },
+      "proposal_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "target_refs": [
+        {
+          "resource_type": "study_session",
+          "resource_id": "session-fixture-1"
+        }
+      ],
+      "outcome": "not_committed",
+      "provider_effect_identity": null,
+      "read_back_outcome": "not_attempted",
+      "committed_projection_contract": null,
+      "committed_projection_digest": null,
+      "compensation_outcome": "succeeded",
+      "compensation_contract": {
+        "name": "FixtureCompensationEvidenceV1",
+        "version": "fixture-compensation-evidence-v1"
+      },
+      "compensation_evidence_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "prepared_at": "2026-09-03T01:00:00Z",
+      "commit_started_at": "2026-09-03T01:00:01Z",
+      "read_back_started_at": null,
+      "compensation_started_at": "2026-09-03T01:00:02Z",
+      "read_back_at": null,
+      "compensated_at": "2026-09-03T01:00:02Z",
+      "terminal_at": "2026-09-03T01:00:03Z",
+      "failure_code": ""
+    },
+    {
+      "schema_name": "HarnessEffectTerminalEvidenceV1",
+      "schema_version": "harness-effect-terminal-evidence-v1",
+      "harness_operation_id": "harness-operation-22222222222222222222222222222222",
+      "effect_batch_id": "harness-effect-batch-e538620ae6b5664b72efa0e458ae2194",
+      "effect_id": "harness-effect-258a65a745daa4fd9e1d203ce11a06b5",
+      "slot": 2,
+      "adapter": {
+        "name": "study_attachment_stage",
+        "version": "study-attachment-stage-v1",
+        "boundary_kind": "file_write",
+        "prepare_policy": "validate_and_assign_identity",
+        "commit_policy": "staging_outbox",
+        "compensation_policy": "cleanup",
+        "read_back_policy": "exact_projection"
+      },
+      "proposal_contract": {
+        "name": "FixtureEffectProposalV1",
+        "version": "fixture-effect-proposal-v1"
+      },
+      "proposal_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+      "target_refs": [
+        {
+          "resource_type": "study_session",
+          "resource_id": "session-fixture-1"
+        }
+      ],
+      "outcome": "uncertain",
+      "provider_effect_identity": null,
+      "read_back_outcome": "failed",
+      "committed_projection_contract": null,
+      "committed_projection_digest": null,
+      "compensation_outcome": "failed",
+      "compensation_contract": {
+        "name": "FixtureCompensationEvidenceV1",
+        "version": "fixture-compensation-evidence-v1"
+      },
+      "compensation_evidence_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "prepared_at": "2026-09-03T01:00:00Z",
+      "commit_started_at": "2026-09-03T01:00:01Z",
+      "read_back_started_at": "2026-09-03T01:00:02Z",
+      "compensation_started_at": "2026-09-03T01:00:02Z",
+      "read_back_at": "2026-09-03T01:00:02Z",
+      "compensated_at": "2026-09-03T01:00:02Z",
+      "terminal_at": "2026-09-03T01:00:03Z",
+      "failure_code": "compensation_failed"
+    },
+    {
+      "schema_name": "HarnessEffectTerminalEvidenceV1",
+      "schema_version": "harness-effect-terminal-evidence-v1",
+      "harness_operation_id": "harness-operation-22222222222222222222222222222222",
+      "effect_batch_id": "harness-effect-batch-e538620ae6b5664b72efa0e458ae2194",
+      "effect_id": "harness-effect-15d6fa155904030c291fb44918c1e2f7",
+      "slot": 3,
+      "adapter": {
+        "name": "study_provider_execution",
+        "version": "study-provider-execution-v1",
+        "boundary_kind": "external_call",
+        "prepare_policy": "validate_and_assign_identity",
+        "commit_policy": "external_idempotency_or_read_back",
+        "compensation_policy": "not_applicable",
+        "read_back_policy": "unsupported"
+      },
+      "proposal_contract": {
+        "name": "FixtureEffectProposalV1",
+        "version": "fixture-effect-proposal-v1"
+      },
+      "proposal_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+      "target_refs": [
+        {
+          "resource_type": "study_session",
+          "resource_id": "session-fixture-1"
+        }
+      ],
+      "outcome": "uncertain",
+      "provider_effect_identity": {
+        "provider_name": "fixture-provider",
+        "request_id": "provider-request-fixture",
+        "provider_effect_id": "",
+        "idempotency_key": "",
+        "request_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "idempotency_supported": false,
+        "read_back_supported": false
+      },
+      "read_back_outcome": "unsupported",
+      "committed_projection_contract": null,
+      "committed_projection_digest": null,
+      "compensation_outcome": "not_applicable",
+      "compensation_contract": null,
+      "compensation_evidence_digest": null,
+      "prepared_at": "2026-09-03T01:00:00Z",
+      "commit_started_at": "2026-09-03T01:00:01Z",
+      "read_back_started_at": null,
+      "compensation_started_at": null,
+      "read_back_at": null,
+      "compensated_at": null,
+      "terminal_at": "2026-09-03T01:00:03Z",
+      "failure_code": "provider_timeout_after_start"
+    }
+  ],
+  "invalid_cases": [
+    {
+      "case_id": "forged_effect_identity",
+      "expected_error": "harness_effect_identity_mismatch",
+      "payload": {
+        "schema_name": "HarnessEffectTerminalEvidenceV1",
+        "schema_version": "harness-effect-terminal-evidence-v1",
+        "harness_operation_id": "harness-operation-22222222222222222222222222222222",
+        "effect_batch_id": "harness-effect-batch-e538620ae6b5664b72efa0e458ae2194",
+        "effect_id": "harness-effect-ffffffffffffffffffffffffffffffff",
+        "slot": 0,
+        "adapter": {
+          "name": "study_memory_upsert",
+          "version": "study-memory-upsert-v1",
+          "boundary_kind": "database_write",
+          "prepare_policy": "validate_and_assign_identity",
+          "commit_policy": "database_transaction",
+          "compensation_policy": "not_applicable",
+          "read_back_policy": "exact_projection"
+        },
+        "proposal_contract": {
+          "name": "FixtureEffectProposalV1",
+          "version": "fixture-effect-proposal-v1"
+        },
+        "proposal_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "target_refs": [
+          {
+            "resource_type": "study_session",
+            "resource_id": "session-fixture-1"
+          }
+        ],
+        "outcome": "committed",
+        "provider_effect_identity": null,
+        "read_back_outcome": "verified",
+        "committed_projection_contract": {
+          "name": "FixtureCommittedProjectionV1",
+          "version": "fixture-committed-projection-v1"
+        },
+        "committed_projection_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "compensation_outcome": "not_applicable",
+        "compensation_contract": null,
+        "compensation_evidence_digest": null,
+        "prepared_at": "2026-09-03T01:00:00Z",
+        "commit_started_at": "2026-09-03T01:00:01Z",
+        "read_back_started_at": "2026-09-03T01:00:02Z",
+        "compensation_started_at": null,
+        "read_back_at": "2026-09-03T01:00:02Z",
+        "compensated_at": null,
+        "terminal_at": "2026-09-03T01:00:03Z",
+        "failure_code": ""
+      }
+    }
+  ]
+}

@@ -37,6 +37,8 @@ class Database:
                 self._ensure_sqlite_study_session_indexes(connection)
                 self._ensure_sqlite_tavern_room_indexes(connection)
                 self._ensure_sqlite_harness_operation_guards(connection)
+                self._ensure_sqlite_harness_artifact_guards(connection)
+                self._ensure_sqlite_harness_effect_guards(connection)
 
     def dispose(self) -> None:
         self.engine.dispose()
@@ -486,6 +488,181 @@ class Database:
                         ABORT,
                         'harness_operation_domain_binding_mismatch'
                     );
+                END
+                """
+            )
+
+    @staticmethod
+    def _ensure_sqlite_harness_artifact_guards(connection) -> None:
+        table_names = {
+            str(row[0])
+            for row in connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+        if "harness_artifacts" in table_names:
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_artifacts_immutable_update
+                BEFORE UPDATE ON harness_artifacts
+                WHEN NOT (
+                    OLD.deleted_at IS NULL
+                    AND NEW.deleted_at IS NOT NULL
+                    AND length(NEW.payload) = 0
+                    AND NEW.artifact_id IS OLD.artifact_id
+                    AND NEW.artifact_type IS OLD.artifact_type
+                    AND NEW.contract_name IS OLD.contract_name
+                    AND NEW.contract_version IS OLD.contract_version
+                    AND NEW.digest_algorithm IS OLD.digest_algorithm
+                    AND NEW.payload_digest IS OLD.payload_digest
+                    AND NEW.expires_at IS OLD.expires_at
+                    AND NEW.registered_principal_id IS OLD.registered_principal_id
+                    AND NEW.schema_name IS OLD.schema_name
+                    AND NEW.schema_version IS OLD.schema_version
+                    AND NEW.registered_at IS OLD.registered_at
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_artifact_mutation_forbidden');
+                END
+                """
+            )
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_artifacts_no_delete
+                BEFORE DELETE ON harness_artifacts
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_artifact_harness_artifacts_delete_forbidden');
+                END
+                """
+            )
+        for table_name in (
+            "harness_artifact_principals",
+            "harness_artifact_contracts",
+            "harness_artifact_grant_scopes",
+            "harness_artifact_access_audits",
+        ):
+            if table_name not in table_names:
+                continue
+            for operation in ("UPDATE", "DELETE"):
+                connection.exec_driver_sql(
+                    f"""
+                    CREATE TRIGGER IF NOT EXISTS trg_{table_name}_no_{operation.lower()}
+                    BEFORE {operation} ON {table_name}
+                    BEGIN
+                        SELECT RAISE(
+                            ABORT,
+                            'harness_artifact_{table_name}_{operation.lower()}_forbidden'
+                        );
+                    END
+                    """
+                )
+        if "harness_artifact_grants" in table_names:
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_artifact_grants_revocation_only
+                BEFORE UPDATE ON harness_artifact_grants
+                WHEN NOT (
+                    OLD.revoked_at IS NULL
+                    AND NEW.revoked_at IS NOT NULL
+                    AND NEW.grant_id IS OLD.grant_id
+                    AND NEW.harness_operation_id IS OLD.harness_operation_id
+                    AND NEW.principal_id IS OLD.principal_id
+                    AND NEW.issued_at IS OLD.issued_at
+                    AND NEW.expires_at IS OLD.expires_at
+                    AND NEW.schema_name IS OLD.schema_name
+                    AND NEW.schema_version IS OLD.schema_version
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_artifact_grant_mutation_forbidden');
+                END
+                """
+            )
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_artifact_grants_no_delete
+                BEFORE DELETE ON harness_artifact_grants
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_artifact_harness_artifact_grants_delete_forbidden');
+                END
+                """
+            )
+
+    @staticmethod
+    def _ensure_sqlite_harness_effect_guards(connection) -> None:
+        table_names = {
+            str(row[0])
+            for row in connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+        if "harness_effect_batches" in table_names:
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_effect_batches_identity_immutable
+                BEFORE UPDATE ON harness_effect_batches
+                WHEN NOT (
+                    NEW.effect_batch_id IS OLD.effect_batch_id
+                    AND NEW.harness_operation_id IS OLD.harness_operation_id
+                    AND NEW.max_slots IS OLD.max_slots
+                    AND NEW.schema_name IS OLD.schema_name
+                    AND NEW.schema_version IS OLD.schema_version
+                    AND NEW.created_at IS OLD.created_at
+                    AND (
+                        NEW.sealed_at IS OLD.sealed_at
+                        OR (OLD.sealed_at = '' AND NEW.sealed_at <> '')
+                    )
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_effect_batch_mutation_forbidden');
+                END
+                """
+            )
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_effect_batches_no_delete
+                BEFORE DELETE ON harness_effect_batches
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_effect_batch_delete_forbidden');
+                END
+                """
+            )
+        if "harness_effect_journal" in table_names:
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_effect_journal_identity_immutable
+                BEFORE UPDATE ON harness_effect_journal
+                WHEN NOT (
+                    NEW.effect_id IS OLD.effect_id
+                    AND NEW.effect_batch_id IS OLD.effect_batch_id
+                    AND NEW.harness_operation_id IS OLD.harness_operation_id
+                    AND NEW.slot IS OLD.slot
+                    AND NEW.adapter_name IS OLD.adapter_name
+                    AND NEW.adapter_version IS OLD.adapter_version
+                    AND NEW.boundary_kind IS OLD.boundary_kind
+                    AND NEW.prepare_policy IS OLD.prepare_policy
+                    AND NEW.commit_policy IS OLD.commit_policy
+                    AND NEW.compensation_policy IS OLD.compensation_policy
+                    AND NEW.read_back_policy IS OLD.read_back_policy
+                    AND NEW.proposal_contract_name IS OLD.proposal_contract_name
+                    AND NEW.proposal_contract_version IS OLD.proposal_contract_version
+                    AND NEW.proposal_digest IS OLD.proposal_digest
+                    AND NEW.target_refs IS OLD.target_refs
+                    AND NEW.schema_name IS OLD.schema_name
+                    AND NEW.schema_version IS OLD.schema_version
+                    AND NEW.prepared_at IS OLD.prepared_at
+                    AND OLD.state <> 'terminal'
+                )
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_effect_journal_mutation_forbidden');
+                END
+                """
+            )
+            connection.exec_driver_sql(
+                """
+                CREATE TRIGGER IF NOT EXISTS trg_harness_effect_journal_no_delete
+                BEFORE DELETE ON harness_effect_journal
+                BEGIN
+                    SELECT RAISE(ABORT, 'harness_effect_journal_delete_forbidden');
                 END
                 """
             )

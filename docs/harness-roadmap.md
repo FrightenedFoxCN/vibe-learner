@@ -40,10 +40,23 @@ fully v3-adopted:
 - artifact authorization uses a server-resolved local-installation principal,
   exact operation/artifact/contract scopes, expiry/revocation, and content-free
   audit evidence;
+- protected artifacts now have opaque immutable storage, authorization-before-
+  read resolution, retention/deletion tombstones, digest verification, typed
+  batch results, and restart-safe replay;
+- the durable effect journal owns stable admitted-operation/global-slot
+  identity, database-clock claims, immutable adapter/contract/target bindings,
+  crash-safe terminalization, and strict per-effect read-back/compensation
+  evidence; the Study database-effect collector writes through this journal and
+  terminalizes in the final Session/Scene transaction;
 - the shared Tool Manifest owns all six Planning and thirty-one Study tool
   contracts, provider projections, effects, sensitivity, and call budgets;
 - strict eval case/run/sample/report and failure-taxonomy contracts bind tested
   system configuration and admitted Harness operations;
+- the shared eval runner routes only registered suites/adapters, supports
+  deterministic fixture/synthetic and authorized protected-replay inputs, emits
+  ordered raw/aggregate JSON, and separates candidate from runner/data/grader
+  failures; its versioned grader registry fences self-grading and requires
+  held-out human calibration before a model grader can gate a release;
 - v3 safe-manifest canonicalization and context digest validation exist;
 - resource and operation commit policies fail closed, with the first narrow
   Tavern Message policy registered;
@@ -54,8 +67,7 @@ fully v3-adopted:
 - Tavern production still emits legacy v1 traces;
 - `build_harness_context` requires an admitted operation binding and executable
   manifest, but still has no production caller;
-- there is no shared operation runtime, protected artifact resolver, eval
-  runner, grader registry, or versioned evaluation baseline.
+- there is no shared operation runtime or versioned evaluation baseline.
 
 These are baseline facts, not completion claims. A strict decoder, component
 version, fixture, operation journal, CAS boundary, or effect adapter does not by
@@ -69,26 +81,16 @@ The following IDs are tracking epics and are not directly claimable:
   protected artifacts, durable effects, shared runtime, recovery migration,
   every production-domain adoption item, and Harness performance gates are
   complete.
-- `SCH-HRN-EFFECT-001`: closes through
-  `SCH-HRN-EFFECT-JOURNAL-001` and `SCH-HRN-EFFECT-EVIDENCE-001`.
-- `HRN-EVAL-001`: closes through `HRN-EVAL-RUNNER-001`,
-  `HRN-EVAL-GRADER-001`, and `HRN-EVAL-BASELINE-001`, after at least the Tavern
-  identity and Planning tool pilot suites use the shared core. The wire and
-  failure-taxonomy contracts are already foundation facts, not active work.
+- `HRN-EVAL-001`: closes through `HRN-EVAL-BASELINE-001`, after at least the
+  Tavern identity and Planning tool pilot suites use the shared runner and
+  grader registry.
 
 ## Dependency map
 
 ```mermaid
 flowchart TD
-    ART[HRN-CTX-ARTIFACT-001] --> RT[HRN-CTX-RUNTIME-001]
-    EJ[SCH-HRN-EFFECT-JOURNAL-001] --> EE[SCH-HRN-EFFECT-EVIDENCE-001]
-    EE --> RT
-
-    ER[HRN-EVAL-RUNNER-001] --> EB[HRN-EVAL-BASELINE-001]
-    EG[HRN-EVAL-GRADER-001] --> EB
-
-    RT --> RM[HRN-RECOVERY-MIG-001]
-    EB --> TAV_EVAL[HRN-TAV-002]
+    RT[HRN-CTX-RUNTIME-001] --> RM[HRN-RECOVERY-MIG-001]
+    EB[HRN-EVAL-BASELINE-001] --> TAV_EVAL[HRN-TAV-002]
     EB --> PLAN_TOOL[PLAN-TOOLS-EVAL-001]
 
     RT --> TAV3[HRN-TAV-V3-001]
@@ -105,8 +107,9 @@ flowchart TD
 The graph shows hard ordering inside Harness. Product-line prerequisites owned
 by `../TODO.md` are listed separately below. Fixture/synthetic evals deliberately
 do not depend on the protected artifact resolver; production replay does. The
-completed workflow manifest, operation identity, artifact authorization, Tool
-Manifest, and eval wire contracts are durable prerequisites documented in
+completed workflow manifest, operation identity, protected artifact resolver,
+effect journal/evidence, Tool Manifest, eval wire, runner, and grader registry
+are durable prerequisites documented in
 `harness-engineering.md` and `harness-schema-ownership.md` rather than active
 nodes here.
 
@@ -114,7 +117,6 @@ nodes here.
 
 | Wave | Outcome | Claimable work |
 |---|---|---|
-| 1 — durable core | Make artifacts and effects replayable and evaluation executable | Effect journal/evidence, artifact resolver, eval runner/grader |
 | 2 — shared runtime | Assemble truthful operations and establish baselines | Operation runtime, recovery migration, eval baseline, pilot suites |
 | 3 — high-risk adoption | Migrate the two most stateful model paths | Tavern v3 and Study Chat v3 |
 | 4 — broad adoption | Cover remaining model, heuristic, and frontend workflows | Planning, Document/OCR/Study Unit, Persona, Scene, Frontend Decode |
@@ -123,71 +125,11 @@ nodes here.
 Tasks in the same wave may proceed in parallel only when their listed
 dependencies and shared contract ownership do not overlap.
 
-## Wave 1 — durable artifacts, effects, and eval execution
-
-- [ ] `SCH-HRN-EFFECT-JOURNAL-001` `[P1]` create the reusable durable effect
-  journal.
-  - Persist versioned prepare/commit/compensate/read-back state for database,
-    file/staging/outbox, and external adapters.
-  - Allocate stable batch/effect identity by admitted Harness operation and
-    global slot; retries must not renumber effects or change ordering.
-  - Enforce adapter/contract/target identity, bounded slots, database-clock
-    ownership, and crash-safe terminalization in SQLite and PostgreSQL.
-  - Migrate or adapt the current Study in-process collector without weakening
-    its final Session/Scene transaction or attachment compensation semantics.
-
-- [ ] `SCH-HRN-EFFECT-EVIDENCE-001` `[P1]` add terminal per-effect evidence;
-  depends on `SCH-HRN-EFFECT-JOURNAL-001`.
-  - Define a strict terminal projection for `committed`, `not_committed`, and
-    `uncertain`, including provider-effect identity, read-back capability,
-    exact projection or compensation evidence, and timestamps.
-  - A database commit must not prove provider execution; unsupported external
-    read-back remains `uncertain` and never authorizes blind replay.
-  - Commit/read-back, partial file writes, compensation failure, provider
-    timeout after start, and forged terminal evidence require fixtures.
-
-- [ ] `HRN-CTX-ARTIFACT-001` `[P1]` build the protected artifact resolver;
-  builds on the completed subject/grant/audit contract.
-  - Support opaque immutable IDs, artifact/contract registration,
-    authorization-before-read, retention/expiry, digest read-back, revocation,
-    and bounded batch resolution.
-  - Return typed `resolved`, `not_found`, `expired`, `forbidden`,
-    `digest_mismatch`, and `schema_unsupported` results.
-  - Cover deletion, corruption, cross-principal access, expired grants, partial
-    batch resolution, and replay after restart.
-  - `document_debug` and `planning_trace` remain removable caches and must not
-    masquerade as durable replay artifacts.
-
-- [ ] `HRN-EVAL-RUNNER-001` `[P1]` implement the shared eval runner; builds on
-  the completed eval wire and executable workflow manifest contracts.
-  - Route cases only through registered `eval_route` adapters and reject
-    unknown suite, workflow, stage, contract, or configuration versions.
-  - Provide deterministic fixture/synthetic mode without artifact or network
-    dependencies and protected replay mode that requires authorized resolver
-    results.
-  - Emit stable ordered raw samples plus aggregate JSON; runner/grader failures
-    are reported separately from workflow failures.
-  - Add a repository command for selected suites, deterministic PR gates, and
-    explicit manual/nightly live-provider execution.
-
-- [ ] `HRN-EVAL-GRADER-001` `[P1]` establish a versioned grader registry;
-  builds on the completed eval wire contract.
-  - Prefer schema, invariant, commit/read-back, identity, citation, and tool
-    checks implemented by deterministic code.
-  - Model graders are allowed only for named subjective rubrics and must bind
-    grader model/config, prompt contract, rubric version, output schema, and
-    failure policy.
-  - Calibrate model graders against a held-out human-reviewed set and report
-    agreement plus false-positive/false-negative rates before using them as a
-    release gate.
-  - Do not let the candidate silently grade itself or turn grader failure into
-    candidate success.
-
 ## Wave 2 — runtime, migration, and initial baselines
 
 - [ ] `HRN-CTX-RUNTIME-001` `[P1]` build the workflow-neutral operation runtime;
-  depends on `HRN-CTX-ARTIFACT-001`, both effect-epic child tasks, and the
-  completed workflow-manifest/operation-identity foundation.
+  builds on the completed artifact resolver, effect journal/evidence, workflow
+  manifest, and operation-identity foundation.
   - Assemble durable operation, context, protected artifacts, ordered
     generate/decode/validate/repair attempts, checks, effects,
     commit/rollback, and terminal failure through registered adapters.
@@ -201,7 +143,7 @@ dependencies and shared contract ownership do not overlap.
     lifecycle implementation.
 
 - [ ] `HRN-EVAL-BASELINE-001` `[P1]` establish versioned baselines and release
-  gates; depends on the eval runner and grader registry.
+  gates; builds on the completed eval runner and grader registry.
   - Report raw/final schema-valid rate, repair success/rate, failure rate,
     uncertain-effect rate, commit consistency, p50/p95 duration, token/cost and
     tool/provider-call counts, plus suite-specific quality metrics.

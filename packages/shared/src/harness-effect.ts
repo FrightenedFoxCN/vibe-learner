@@ -11,6 +11,18 @@ export type HarnessEffectTerminalOutcome =
   | "committed"
   | "uncertain";
 
+export type HarnessEffectJournalState = "prepared" | "claimed" | "terminal";
+export type HarnessEffectCompensationOutcome =
+  | "not_applicable"
+  | "succeeded"
+  | "failed"
+  | "incomplete";
+export type HarnessEffectReadBackOutcome =
+  | "not_attempted"
+  | "verified"
+  | "failed"
+  | "unsupported";
+
 export type HarnessEffectPreparePolicy = "validate_and_assign_identity";
 export type HarnessEffectCommitPolicy =
   | "database_transaction"
@@ -38,6 +50,69 @@ export interface HarnessEffectAdapterRefV1 {
 export interface HarnessEffectTargetRefV1 {
   resource_type: HarnessResourceType;
   resource_id: string;
+}
+
+export interface HarnessProviderEffectIdentityV1 {
+  provider_name: string;
+  request_id: string;
+  provider_effect_id: string;
+  idempotency_key: string;
+  request_digest: string;
+  idempotency_supported: boolean;
+  read_back_supported: boolean;
+}
+
+export interface HarnessEffectTerminalEvidenceV1 {
+  schema_name: "HarnessEffectTerminalEvidenceV1";
+  schema_version: "harness-effect-terminal-evidence-v1";
+  harness_operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  adapter: HarnessEffectAdapterRefV1;
+  proposal_contract: HarnessContractRef;
+  proposal_digest: string;
+  target_refs: HarnessEffectTargetRefV1[];
+  outcome: HarnessEffectTerminalOutcome;
+  provider_effect_identity: HarnessProviderEffectIdentityV1 | null;
+  read_back_outcome: HarnessEffectReadBackOutcome;
+  committed_projection_contract: HarnessContractRef | null;
+  committed_projection_digest: string | null;
+  compensation_outcome: HarnessEffectCompensationOutcome;
+  compensation_contract: HarnessContractRef | null;
+  compensation_evidence_digest: string | null;
+  prepared_at: string;
+  commit_started_at: string | null;
+  read_back_started_at: string | null;
+  compensation_started_at: string | null;
+  read_back_at: string | null;
+  compensated_at: string | null;
+  terminal_at: string;
+  failure_code: string;
+}
+
+export interface HarnessEffectJournalEntryV1 {
+  schema_name: "HarnessEffectJournalEntryV1";
+  schema_version: "harness-effect-journal-entry-v1";
+  harness_operation_id: string;
+  effect_batch_id: string;
+  effect_id: string;
+  slot: number;
+  adapter: HarnessEffectAdapterRefV1;
+  proposal_contract: HarnessContractRef;
+  proposal_digest: string;
+  target_refs: HarnessEffectTargetRefV1[];
+  state: HarnessEffectJournalState;
+  claim_owner: string;
+  claim_count: number;
+  lease_expires_at: string | null;
+  commit_started_at: string | null;
+  read_back_started_at: string | null;
+  compensation_started_at: string | null;
+  provider_effect_identity: HarnessProviderEffectIdentityV1 | null;
+  prepared_at: string;
+  updated_at: string;
+  terminal_evidence: HarnessEffectTerminalEvidenceV1 | null;
 }
 
 export interface HarnessPreparedEffectV1<Proposal> {
