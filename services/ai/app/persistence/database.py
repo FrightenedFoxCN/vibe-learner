@@ -39,6 +39,7 @@ class Database:
                 self._ensure_sqlite_harness_operation_guards(connection)
                 self._ensure_sqlite_harness_artifact_guards(connection)
                 self._ensure_sqlite_harness_effect_guards(connection)
+                self._ensure_sqlite_harness_runtime_guards(connection)
 
     def dispose(self) -> None:
         self.engine.dispose()
@@ -617,6 +618,7 @@ class Database:
                 END
                 """
             )
+
             connection.exec_driver_sql(
                 """
                 CREATE TRIGGER IF NOT EXISTS trg_harness_effect_batches_no_delete
@@ -666,6 +668,51 @@ class Database:
                 END
                 """
             )
+
+    @staticmethod
+    def _ensure_sqlite_harness_runtime_guards(connection) -> None:
+        """Keep runtime identity immutable and terminal executions append-only."""
+        table_names = {
+            str(row[0]) for row in connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+        if "harness_runtime_executions" not in table_names:
+            return
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS trg_harness_runtime_identity_immutable
+            BEFORE UPDATE ON harness_runtime_executions
+            WHEN NOT (
+                NEW.trace_id IS OLD.trace_id AND NEW.trace_slot IS OLD.trace_slot
+                AND NEW.harness_operation_id IS OLD.harness_operation_id
+                AND NEW.parent_trace_id IS OLD.parent_trace_id
+                AND NEW.workflow IS OLD.workflow AND NEW.stage IS OLD.stage
+                AND NEW.adapter_contract_name IS OLD.adapter_contract_name
+                AND NEW.adapter_contract_version IS OLD.adapter_contract_version
+                AND NEW.trace_contract_name IS OLD.trace_contract_name
+                AND NEW.trace_contract_version IS OLD.trace_contract_version
+                AND NEW.context_payload IS OLD.context_payload
+                AND NEW.context_digest IS OLD.context_digest
+                AND NEW.schema_name IS OLD.schema_name
+                AND NEW.schema_version IS OLD.schema_version
+                AND NEW.created_at IS OLD.created_at
+                AND OLD.state <> 'terminal'
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'harness_runtime_identity_mutation_forbidden');
+            END
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE TRIGGER IF NOT EXISTS trg_harness_runtime_no_delete
+            BEFORE DELETE ON harness_runtime_executions
+            BEGIN
+                SELECT RAISE(ABORT, 'harness_runtime_delete_forbidden');
+            END
+            """
+        )
 
     def _rebuild_legacy_study_sessions_table(self, connection, *, source_table: str) -> None:
         legacy_table = "study_sessions_legacy_migration"

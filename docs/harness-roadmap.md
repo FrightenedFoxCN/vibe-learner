@@ -64,10 +64,18 @@ fully v3-adopted:
   shared admission identity;
 - Study has durable admission, transactional database effects, recoverable file
   staging, and truthful provider uncertainty;
+- the shared operation runtime persists immutable stage identity, context,
+  parent/child lineage, ordered attempts and checks, database-clock claims,
+  terminal v3 traces, rollback delegation, and authoritative restart recovery;
+- the versioned eval baseline gate binds complete tested-system configuration,
+  fixtures, samples, environment and raw evidence; the checked-in Tavern
+  identity and Planning tool suites include held-out cases and deterministic
+  PR/release gates;
+- legacy model recovery has one fail-closed mapping into existing v3
+  attempts/checks, with a final write cutoff and read-only compatibility path;
 - Tavern production still emits legacy v1 traces;
 - `build_harness_context` requires an admitted operation binding and executable
-  manifest, but still has no production caller;
-- there is no shared operation runtime or versioned evaluation baseline.
+  manifest; production adoption remains tracked in the waves below.
 
 These are baseline facts, not completion claims. A strict decoder, component
 version, fixture, operation journal, CAS boundary, or effect adapter does not by
@@ -81,109 +89,43 @@ The following IDs are tracking epics and are not directly claimable:
   protected artifacts, durable effects, shared runtime, recovery migration,
   every production-domain adoption item, and Harness performance gates are
   complete.
-- `HRN-EVAL-001`: closes through `HRN-EVAL-BASELINE-001`, after at least the
-  Tavern identity and Planning tool pilot suites use the shared runner and
-  grader registry.
 
 ## Dependency map
 
 ```mermaid
 flowchart TD
-    RT[HRN-CTX-RUNTIME-001] --> RM[HRN-RECOVERY-MIG-001]
-    EB[HRN-EVAL-BASELINE-001] --> TAV_EVAL[HRN-TAV-002]
-    EB --> PLAN_TOOL[PLAN-TOOLS-EVAL-001]
-
-    RT --> TAV3[HRN-TAV-V3-001]
-    RM --> TAV3
-    TAV_EVAL --> TAV3
-    RT --> STUDY[HRN-STUDY-001]
-    EB --> STUDY
-    RT --> PLAN[HRN-PLAN-001]
-    EB --> PLAN
-    RT --> OTHER[Document / Persona / Scene / Frontend adoption]
-    EB --> OTHER
+    TAV3[HRN-TAV-V3-001] --> TAV_PERF[HRN-TAV-PERF-001]
+    STUDY[HRN-STUDY-001]
+    PLAN[HRN-PLAN-001] --> PLAN_PERF[PLAN-TOOLS-PERF-001]
+    DOC[HRN-DOC-001]
+    SCENE[HRN-SCENE-001]
+    PERSONA[HRN-PERSONA-001]
+    WEB[HRN-WEB-001]
+    TAV3 --> CTX_PERF[HRN-CTX-PERF-001]
+    STUDY --> CTX_PERF
+    PLAN --> CTX_PERF
+    DOC --> CTX_PERF
+    SCENE --> CTX_PERF
+    PERSONA --> CTX_PERF
 ```
 
-The graph shows hard ordering inside Harness. Product-line prerequisites owned
-by `../TODO.md` are listed separately below. Fixture/synthetic evals deliberately
-do not depend on the protected artifact resolver; production replay does. The
-completed workflow manifest, operation identity, protected artifact resolver,
-effect journal/evidence, Tool Manifest, eval wire, runner, and grader registry
-are durable prerequisites documented in
-`harness-engineering.md` and `harness-schema-ownership.md` rather than active
-nodes here.
+The graph shows active ordering inside Harness. Product-line prerequisites
+owned by `../TODO.md` are listed separately below. The completed workflow
+manifest, operation identity, protected artifact resolver, effect journal,
+shared runtime, recovery migration, Tool Manifest, eval wire/runner/grader,
+versioned baseline and pilot suites are durable prerequisites documented in
+`harness-engineering.md` and `harness-schema-ownership.md`.
 
 ## Delivery waves
 
 | Wave | Outcome | Claimable work |
 |---|---|---|
-| 2 — shared runtime | Assemble truthful operations and establish baselines | Operation runtime, recovery migration, eval baseline, pilot suites |
 | 3 — high-risk adoption | Migrate the two most stateful model paths | Tavern v3 and Study Chat v3 |
 | 4 — broad adoption | Cover remaining model, heuristic, and frontend workflows | Planning, Document/OCR/Study Unit, Persona, Scene, Frontend Decode |
 | 5 — performance | Gate cost and latency without weakening correctness | Context, Tavern prompt, and Planning tool performance |
 
 Tasks in the same wave may proceed in parallel only when their listed
 dependencies and shared contract ownership do not overlap.
-
-## Wave 2 — runtime, migration, and initial baselines
-
-- [ ] `HRN-CTX-RUNTIME-001` `[P1]` build the workflow-neutral operation runtime;
-  builds on the completed artifact resolver, effect journal/evidence, workflow
-  manifest, and operation-identity foundation.
-  - Assemble durable operation, context, protected artifacts, ordered
-    generate/decode/validate/repair attempts, checks, effects,
-    commit/rollback, and terminal failure through registered adapters.
-  - Persist parent/child trace lineage and make duplicate admission, resume,
-    adapter failure, commit failure, rollback/compensation, and read-back
-    decidable after restart.
-  - Keep domain proposal/invariant/projector logic in domain adapters; the
-    shared runtime must not become a permissive generic proposal schema.
-  - Production callers may bypass the runtime only while their explicit
-    migration task remains open; new adopted workflows cannot add a second
-    lifecycle implementation.
-
-- [ ] `HRN-EVAL-BASELINE-001` `[P1]` establish versioned baselines and release
-  gates; builds on the completed eval runner and grader registry.
-  - Report raw/final schema-valid rate, repair success/rate, failure rate,
-    uncertain-effect rate, commit consistency, p50/p95 duration, token/cost and
-    tool/provider-call counts, plus suite-specific quality metrics.
-  - Bind every baseline and candidate to the complete tested-system config
-    digest, fixture/split version, sample count, repetitions/seeds, environment,
-    and raw-sample artifact.
-  - Use absolute minimums and regression thresholds; insufficient samples,
-    broken cases, grader drift, or incomparable configuration must block a
-    comparative claim rather than produce a misleading pass.
-  - Keep deterministic suites in PR/release CI and live-provider suites
-    manual/nightly until their cost and variance budgets are explicit.
-
-- [ ] `HRN-RECOVERY-MIG-001` `[P2]` map legacy recovery to v3 attempts/checks;
-  depends on `HRN-CTX-RUNTIME-001`.
-  - Bind legacy recoveries to the admitted operation and stage with one
-    versioned mapping from domain categories/reasons/strategies to attempt and
-    check evidence.
-  - Preserve compatible API/debug projections, avoid double-counting metrics,
-    and define the final write cutoff and read-only retention path.
-  - Never invent historical trace IDs, operation IDs, timestamps, attempts, or
-    commit claims.
-
-- [ ] `HRN-TAV-002` `[P1]` establish the Tavern identity and prompt-injection
-  eval matrix; depends on the eval core, not Tavern v3.
-  - Convert the existing identity/prompt-safety tests into versioned positive,
-    negative, boundary, confusable-Unicode, target, impersonation, guidance
-    leak, and prompt-injection cases.
-  - Report raw/final schema-valid rate, repair, false-positive,
-    false-negative, identity-consistency, and prompt-leak rates.
-  - Include independent reviewed cases and a held-out split; developer-authored
-    unit tests alone do not establish the baseline.
-
-- [ ] `PLAN-TOOLS-EVAL-001` `[P2]` establish the Planning tool baseline;
-  depends on the eval core and the completed Tool Manifest.
-  - Report eligible batch size, actual call rate, invalid call rate, per-tool
-    p50/p95, total wall-clock, grounding, tool correctness, retry, and provider
-    call counts.
-  - Include malformed JSON, strict argument/result failures, unknown/disabled
-    tools, coarse-unit refinement, duplicate calls, and source-anchor drift.
-  - Prompt encouragement is not evidence that a tool was called correctly.
 
 ## Wave 3 — Tavern and Study production adoption
 

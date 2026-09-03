@@ -24,6 +24,14 @@ from app.models.tool_manifest import TOOL_MANIFEST_SCHEMA_VERSION
 
 HARNESS_WORKFLOW_MANIFEST_SCHEMA_VERSION = "harness-workflow-manifest-v1"
 HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION = HARNESS_EVAL_CASE_SCHEMA_VERSION
+TAVERN_IDENTITY_EVAL_SUITE = HarnessContractRef(
+    name="tavern_identity_eval",
+    version="tavern-identity-eval-v1",
+)
+PLANNING_TOOL_EVAL_SUITE = HarnessContractRef(
+    name="planning_tool_eval",
+    version="planning-tool-eval-v1",
+)
 
 
 class HarnessManifestModel(BaseModel):
@@ -388,6 +396,7 @@ def _unregistered_entry(
     toolset: HarnessManifestContractSlotV1 | None = None,
     no_effects: bool = False,
     no_commit: bool = False,
+    eval_suites: tuple[HarnessContractRef, ...] = (),
 ) -> HarnessWorkflowManifestEntryV1:
     vocabulary = HARNESS_OPERATION_STAGE_REGISTRATIONS[(workflow, stage)]
     return HarnessWorkflowManifestEntryV1(
@@ -439,8 +448,14 @@ def _unregistered_entry(
             HarnessManifestUnregisteredReason.DECODER_NOT_REGISTERED
         ),
         eval_route=_registered_string(vocabulary.eval_route),
-        eval_suites=_unregistered(
-            HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED
+        eval_suites=(
+            _registered_contracts(
+                *((item.name, item.version) for item in eval_suites)
+            )
+            if eval_suites
+            else _unregistered(
+                HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED
+            )
         ),
     )
 
@@ -528,8 +543,8 @@ _TAVERN_ENTRY = HarnessWorkflowManifestEntryV1(
         "app.services.tavern_harness.TavernActorHarness"
     ),
     eval_route=_registered_string("tavern.actor_reply"),
-    eval_suites=_unregistered(
-        HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED
+    eval_suites=_registered_contracts(
+        (TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version),
     ),
 )
 
@@ -604,6 +619,7 @@ _ENTRIES = (
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
         toolset=_TOOL_MANIFEST_SLOT,
+        eval_suites=(PLANNING_TOOL_EVAL_SUITE,),
     ),
     _unregistered_entry(
         HarnessWorkflow.PERSONA,

@@ -145,7 +145,18 @@ The shared evaluation wire foundation is `HarnessEvalCaseV1`, `HarnessEvalRunV1`
 
 `HarnessEvalRunner` executes only versioned suite registrations and exact manifest `eval_route` adapters. Fixture and synthetic cases have no artifact or network dependency; protected replay must pass through an authorized resolver and match the case digest. Samples are stable and ordered, aggregate JSON preserves failure ownership, PR mode accepts only deterministic mock execution, and live-provider execution requires an explicit manual/nightly profile plus flag. `npm run eval:harness` accepts a registry factory and selected suites; the profile-specific aliases are `eval:harness:pr`, `eval:harness:manual`, and `eval:harness:nightly`.
 
-`HarnessEvalGraderRegistry` binds every grader contract to an implementation contract and configuration digest. Deterministic graders are the release default. A model grader is permitted only for a named subjective rubric and binds its model/configuration, prompt, rubric, output, and failure-policy contracts. It cannot gate a release until held-out human-reviewed calibration reports agreement, false-positive, and false-negative rates, and candidate model/adapter identity cannot equal the grader. Versioned baselines and the first product suites remain Wave 2 work.
+`HarnessEvalGraderRegistry` binds every grader contract to an implementation contract and configuration digest. Deterministic graders are the release default. A model grader is permitted only for a named subjective rubric and binds its model/configuration, prompt, rubric, output, and failure-policy contracts. It cannot gate a release until held-out human-reviewed calibration reports agreement, false-positive, and false-negative rates, and candidate model/adapter identity cannot equal the grader. Wave 2 now has checked-in versioned baselines and deterministic Tavern identity and Planning tool pilot suites; baseline refresh is explicit and never part of the ordinary PR gate.
+
+`HarnessOperationRuntime` is the shared v3 lifecycle boundary. It persists one
+immutable operation/stage identity, protected context, ordered
+generate/decode/validate/repair/commit/rollback attempts, checks, and terminal
+trace, with database-clock leases, owner/claim fencing, parent lineage, and
+bounded restart recovery. Domain adapters still own proposal schemas,
+invariants, projectors, and commit read-back. A legacy recovery can be mapped
+only when its admitted operation and an existing v3 trace/attempt are present;
+the versioned migration registry never invents historical identity, timing,
+attempt, or commit evidence. Records after the migration write cutoff remain
+read-only compatibility data.
 
 Each workflow must add fixtures for malformed schemas, boundary violations, retry exhaustion, duplicate requests, concurrency, and state-commit failure. CI should report at least:
 

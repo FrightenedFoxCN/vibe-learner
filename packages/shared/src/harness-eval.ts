@@ -24,6 +24,10 @@ export const HARNESS_EVAL_RAW_SAMPLES_SCHEMA_VERSION =
   "harness-eval-raw-samples-v1" as const;
 export const HARNESS_EVAL_CONTRACT_GOLDEN_SCHEMA_VERSION =
   "harness-eval-contract-golden-v1" as const;
+export const HARNESS_EVAL_BASELINE_SCHEMA_VERSION =
+  "harness-eval-baseline-v1" as const;
+export const HARNESS_EVAL_GATE_DECISION_SCHEMA_VERSION =
+  "harness-eval-gate-decision-v1" as const;
 
 export type HarnessEvalSensitivity = "public" | "internal" | "protected";
 export type HarnessEvalSplit =
@@ -378,6 +382,59 @@ export interface HarnessEvalReportV1 {
   started_at: string;
   completed_at: string;
   report_digest: string;
+}
+
+export interface HarnessEvalMetricThresholdV1 {
+  metric: HarnessContractRef;
+  direction: "minimum" | "maximum";
+  absolute_value: number;
+  max_regression_ratio: number | null;
+}
+
+export interface HarnessEvalBaselineV1 {
+  schema_name: "HarnessEvalBaseline";
+  schema_version: typeof HARNESS_EVAL_BASELINE_SCHEMA_VERSION;
+  baseline_id: string;
+  baseline_version: string;
+  suite: HarnessContractRef;
+  suite_manifest_digest: string;
+  case_set_digest: string;
+  tested_system_config_digest: string;
+  environment_digest: string;
+  execution_mode: "fixture" | "synthetic" | "protected_replay";
+  splits: HarnessEvalSplit[];
+  repetition_count: number;
+  seeds: number[];
+  minimum_sample_count: number;
+  report_contract: HarnessContractRef;
+  report_id: string;
+  report_digest: string;
+  raw_samples_artifact: NonNullable<HarnessEvalReportV1["raw_samples_artifact"]>;
+  metrics: HarnessEvalMetricAggregateV1[];
+  thresholds: HarnessEvalMetricThresholdV1[];
+  review_contract: HarnessContractRef;
+  review_attestation_digest: string;
+  baseline_digest: string;
+}
+
+export interface HarnessEvalGateMetricResultV1 {
+  metric: HarnessContractRef;
+  baseline_value: number;
+  candidate_value: number;
+  passed: boolean;
+  failure_code: string | null;
+}
+
+export interface HarnessEvalGateDecisionV1 {
+  schema_name: "HarnessEvalGateDecision";
+  schema_version: typeof HARNESS_EVAL_GATE_DECISION_SCHEMA_VERSION;
+  baseline_id: string;
+  candidate_report_id: string;
+  status: "passed" | "failed" | "blocked";
+  comparable: boolean;
+  failure_codes: string[];
+  metric_results: HarnessEvalGateMetricResultV1[];
+  decision_digest: string;
 }
 
 export interface HarnessEvalContractGoldenV1 {
@@ -1010,6 +1067,46 @@ function decodeSampleRef(raw: unknown, path: string): HarnessEvalSampleRefV1 {
     case_ref: decodeCaseRef(field(value, "case_ref"), `${path}.case_ref`),
     sample_digest: digest(field(value, "sample_digest"), `${path}.sample_digest`),
   };
+}
+
+function decodeBaseline(raw: unknown, path: string): HarnessEvalBaselineV1 {
+  const value = record(raw, path, ["schema_name", "schema_version", "baseline_id", "baseline_version", "suite", "suite_manifest_digest", "case_set_digest", "tested_system_config_digest", "environment_digest", "execution_mode", "splits", "repetition_count", "seeds", "minimum_sample_count", "report_contract", "report_id", "report_digest", "raw_samples_artifact", "metrics", "thresholds", "review_contract", "review_attestation_digest", "baseline_digest"]);
+  literal(field(value, "schema_name"), "HarnessEvalBaseline", `${path}.schema_name`);
+  literal(field(value, "schema_version"), HARNESS_EVAL_BASELINE_SCHEMA_VERSION, `${path}.schema_version`);
+  const splits = array(field(value, "splits"), `${path}.splits`, (v, p) => enumeration(v, ["development", "validation", "held_out", "calibration", "regression"] as const, p), 1, 8);
+  assertSortedUnique(splits, `${path}.splits`);
+  const repetitionCount = integer(field(value, "repetition_count"), `${path}.repetition_count`, 1, 1000);
+  const seeds = array(field(value, "seeds"), `${path}.seeds`, integer, 1, 1000);
+  if (seeds.length !== repetitionCount || new Set(seeds).size !== seeds.length) fail(`${path}.seeds`, "seed_count_or_identity_mismatch");
+  const artifactRaw = record(field(value, "raw_samples_artifact"), `${path}.raw_samples_artifact`, ["artifact_id", "artifact_contract", "payload_digest", "sample_count"]);
+  const artifactContract = contract(field(artifactRaw, "artifact_contract"), `${path}.raw_samples_artifact.artifact_contract`);
+  if (artifactContract.name !== "HarnessEvalRawSamples" || artifactContract.version !== HARNESS_EVAL_RAW_SAMPLES_SCHEMA_VERSION) fail(`${path}.raw_samples_artifact.artifact_contract`, "raw_samples_contract_mismatch");
+  const reportContract = contract(field(value, "report_contract"), `${path}.report_contract`);
+  if (reportContract.name !== "HarnessEvalReport" || reportContract.version !== HARNESS_EVAL_REPORT_SCHEMA_VERSION) fail(`${path}.report_contract`, "report_contract_mismatch");
+  const thresholds = array(field(value, "thresholds"), `${path}.thresholds`, (v, p) => {
+    const item = record(v, p, ["metric", "direction", "absolute_value", "max_regression_ratio"]);
+    return { metric: contract(field(item, "metric"), `${p}.metric`), direction: enumeration(field(item, "direction"), ["minimum", "maximum"] as const, `${p}.direction`), absolute_value: number(field(item, "absolute_value"), `${p}.absolute_value`), max_regression_ratio: nullable(field(item, "max_regression_ratio"), `${p}.max_regression_ratio`, (x, q) => number(x, q, 0, 1)) };
+  }, 1, 256);
+  assertSortedUnique(thresholds.map(x => contractIdentity(x.metric)), `${path}.thresholds`);
+  const metrics = array(field(value, "metrics"), `${path}.metrics`, decodeMetricAggregate, 1, 256);
+  assertSortedUnique(metrics.map(x => contractIdentity(x.metric)), `${path}.metrics`);
+  if (!thresholds.every(t => metrics.some(m => contractIdentity(m.metric) === contractIdentity(t.metric)))) fail(path, "threshold_metric_missing");
+  const sampleCount = integer(field(artifactRaw, "sample_count"), `${path}.raw_samples_artifact.sample_count`, 1, 10000000);
+  const minimumSampleCount = integer(field(value, "minimum_sample_count"), `${path}.minimum_sample_count`, 1, 10000000);
+  if (sampleCount < minimumSampleCount) fail(path, "sample_count_insufficient");
+  return { schema_name: "HarnessEvalBaseline", schema_version: HARNESS_EVAL_BASELINE_SCHEMA_VERSION, baseline_id: string(field(value, "baseline_id"), `${path}.baseline_id`, /^harness-eval-baseline-[0-9a-f]{32}$/), baseline_version: string(field(value, "baseline_version"), `${path}.baseline_version`, TOKEN), suite: contract(field(value, "suite"), `${path}.suite`), suite_manifest_digest: digest(field(value, "suite_manifest_digest"), `${path}.suite_manifest_digest`), case_set_digest: digest(field(value, "case_set_digest"), `${path}.case_set_digest`), tested_system_config_digest: digest(field(value, "tested_system_config_digest"), `${path}.tested_system_config_digest`), environment_digest: digest(field(value, "environment_digest"), `${path}.environment_digest`), execution_mode: enumeration(field(value, "execution_mode"), ["fixture", "synthetic", "protected_replay"] as const, `${path}.execution_mode`), splits, repetition_count: repetitionCount, seeds, minimum_sample_count: minimumSampleCount, report_contract: reportContract, report_id: string(field(value, "report_id"), `${path}.report_id`, REPORT_ID), report_digest: digest(field(value, "report_digest"), `${path}.report_digest`), raw_samples_artifact: { artifact_id: string(field(artifactRaw, "artifact_id"), `${path}.raw_samples_artifact.artifact_id`, TOKEN), artifact_contract: artifactContract, payload_digest: digest(field(artifactRaw, "payload_digest"), `${path}.raw_samples_artifact.payload_digest`), sample_count: sampleCount }, metrics, thresholds, review_contract: contract(field(value, "review_contract"), `${path}.review_contract`), review_attestation_digest: digest(field(value, "review_attestation_digest"), `${path}.review_attestation_digest`), baseline_digest: digest(field(value, "baseline_digest"), `${path}.baseline_digest`) };
+}
+
+export function decodeHarnessEvalBaseline(raw: unknown, path = "eval_baseline"): HarnessEvalBaselineV1 { return decodeBaseline(raw, path); }
+
+export function decodeHarnessEvalGateDecision(raw: unknown, path = "eval_gate_decision"): HarnessEvalGateDecisionV1 {
+  const value = record(raw, path, ["schema_name", "schema_version", "baseline_id", "candidate_report_id", "status", "comparable", "failure_codes", "metric_results", "decision_digest"]);
+  literal(field(value, "schema_name"), "HarnessEvalGateDecision", `${path}.schema_name`); literal(field(value, "schema_version"), HARNESS_EVAL_GATE_DECISION_SCHEMA_VERSION, `${path}.schema_version`);
+  const comparable = boolean(field(value, "comparable"), `${path}.comparable`); const failures = array(field(value, "failure_codes"), `${path}.failure_codes`, (v,p) => string(v,p,TOKEN), 0, 64); assertSortedUnique(failures, `${path}.failure_codes`);
+  const results = array(field(value, "metric_results"), `${path}.metric_results`, (v,p) => { const item = record(v,p,["metric","baseline_value","candidate_value","passed","failure_code"]); const passed=boolean(field(item,"passed"),`${p}.passed`); const code=nullable(field(item,"failure_code"),`${p}.failure_code`,(x,q)=>string(x,q,TOKEN)); if (passed === (code !== null)) fail(p,"metric_failure_shape_invalid"); return {metric:contract(field(item,"metric"),`${p}.metric`),baseline_value:number(field(item,"baseline_value"),`${p}.baseline_value`),candidate_value:number(field(item,"candidate_value"),`${p}.candidate_value`),passed,failure_code:code}; },0,256);
+  assertSortedUnique(results.map(x=>contractIdentity(x.metric)), `${path}.metric_results`);
+  const status=enumeration(field(value,"status"),["passed","failed","blocked"] as const,`${path}.status`); if (status !== (comparable ? (failures.length ? "failed" : "passed") : "blocked")) fail(path,"status_mismatch");
+  return {schema_name:"HarnessEvalGateDecision",schema_version:HARNESS_EVAL_GATE_DECISION_SCHEMA_VERSION,baseline_id:string(field(value,"baseline_id"),`${path}.baseline_id`,/^harness-eval-baseline-[0-9a-f]{32}$/),candidate_report_id:string(field(value,"candidate_report_id"),`${path}.candidate_report_id`,REPORT_ID),status,comparable,failure_codes:failures,metric_results:results,decision_digest:digest(field(value,"decision_digest"),`${path}.decision_digest`)};
 }
 
 export function decodeHarnessEvalReport(raw: unknown, path = "eval_report"): HarnessEvalReportV1 {

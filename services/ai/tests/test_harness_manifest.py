@@ -19,10 +19,11 @@ from app.models.harness_manifest import (
     HARNESS_WORKFLOW_MANIFEST,
     HARNESS_WORKFLOW_MANIFEST_ENTRIES,
     HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION,
+    PLANNING_TOOL_EVAL_SUITE,
+    TAVERN_IDENTITY_EVAL_SUITE,
+    HarnessManifestRegisteredContractListSlotV1,
     HarnessManifestRegisteredContractSlotV1,
     HarnessManifestSlotStatus,
-    HarnessManifestUnregisteredReason,
-    HarnessManifestUnregisteredSlotV1,
     HarnessWorkflowManifestV1,
     harness_workflow_manifest_snapshot,
     require_executable_workflow_manifest_entry,
@@ -94,10 +95,17 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
             tavern.registration,
             HarnessManifestRegisteredContractSlotV1,
         )
-        self.assertIsInstance(tavern.eval_suites, HarnessManifestUnregisteredSlotV1)
+        self.assertIsInstance(
+            tavern.eval_suites,
+            HarnessManifestRegisteredContractListSlotV1,
+        )
+        assert isinstance(
+            tavern.eval_suites,
+            HarnessManifestRegisteredContractListSlotV1,
+        )
         self.assertEqual(
-            tavern.eval_suites.reason,
-            HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED,
+            tuple(item.to_harness_ref() for item in tavern.eval_suites.contracts),
+            (TAVERN_IDENTITY_EVAL_SUITE,),
         )
         for workflow, stage in HARNESS_OPERATION_STAGE_REGISTRATIONS:
             if (workflow, stage) == (
@@ -130,11 +138,17 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
             HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION,
             HARNESS_EVAL_CASE_SCHEMA_VERSION,
         )
-        self.assertTrue(
-            all(
-                isinstance(entry.eval_suites, HarnessManifestUnregisteredSlotV1)
-                for entry in HARNESS_WORKFLOW_MANIFEST.stages
-            )
+        self.assertIsInstance(
+            entry.eval_suites,
+            HarnessManifestRegisteredContractListSlotV1,
+        )
+        assert isinstance(
+            entry.eval_suites,
+            HarnessManifestRegisteredContractListSlotV1,
+        )
+        self.assertEqual(
+            tuple(item.to_harness_ref() for item in entry.eval_suites.contracts),
+            (PLANNING_TOOL_EVAL_SUITE,),
         )
 
     def test_manifest_rejects_extra_fields_bad_discriminators_order_and_drift(self) -> None:

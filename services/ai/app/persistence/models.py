@@ -372,6 +372,87 @@ class HarnessEffectJournalRow(Base):
     terminal_at: Mapped[str] = mapped_column(String(64), default="", index=True)
 
 
+class HarnessRuntimeExecutionRow(Base):
+    __tablename__ = "harness_runtime_executions"
+    __table_args__ = (
+        UniqueConstraint(
+            "harness_operation_id",
+            "stage",
+            "trace_slot",
+            name="uq_harness_runtime_operation_stage_slot",
+        ),
+        CheckConstraint(
+            "schema_name = 'HarnessRuntimeExecution' AND "
+            "schema_version = 'harness-runtime-execution-v1'",
+            name="ck_harness_runtime_schema",
+        ),
+        CheckConstraint(
+            "trace_slot >= 0 AND trace_slot <= 127",
+            name="ck_harness_runtime_trace_slot",
+        ),
+        CheckConstraint(
+            "claim_count >= 0 AND claim_count <= 3",
+            name="ck_harness_runtime_claim_count",
+        ),
+        CheckConstraint(
+            "state IN ('prepared', 'claimed', 'terminal')",
+            name="ck_harness_runtime_state",
+        ),
+        CheckConstraint(
+            "(state = 'prepared' AND claim_owner = '' AND claim_token = '' "
+            "AND lease_expires_at = '' AND terminal_trace IS NULL) OR "
+            "(state = 'claimed' AND claim_owner <> '' AND claim_token <> '' "
+            "AND lease_expires_at <> '' AND claim_count >= 1 "
+            "AND terminal_trace IS NULL) OR "
+            "(state = 'terminal' AND claim_owner = '' AND claim_token = '' "
+            "AND lease_expires_at = '' AND terminal_trace IS NOT NULL)",
+            name="ck_harness_runtime_state_shape",
+        ),
+    )
+
+    trace_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    trace_slot: Mapped[int] = mapped_column(Integer)
+    harness_operation_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+    parent_trace_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("harness_runtime_executions.trace_id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    workflow: Mapped[str] = mapped_column(String(64))
+    stage: Mapped[str] = mapped_column(String(64), index=True)
+    adapter_contract_name: Mapped[str] = mapped_column(String(160))
+    adapter_contract_version: Mapped[str] = mapped_column(String(160))
+    trace_contract_name: Mapped[str] = mapped_column(String(160))
+    trace_contract_version: Mapped[str] = mapped_column(String(160))
+    context_payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
+    context_digest: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(32), index=True)
+    claim_owner: Mapped[str] = mapped_column(String(160), default="")
+    claim_token: Mapped[str] = mapped_column(String(64), default="")
+    claim_count: Mapped[int] = mapped_column(Integer, default=0)
+    lease_expires_at: Mapped[str] = mapped_column(String(64), default="", index=True)
+    execution_started_at: Mapped[str] = mapped_column(String(64), default="")
+    attempt_records: Mapped[list[dict[str, Any]]] = mapped_column(JSON_PAYLOAD)
+    checks: Mapped[list[dict[str, Any]]] = mapped_column(JSON_PAYLOAD)
+    terminal_trace: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD,
+        nullable=True,
+    )
+    terminal_trace_digest: Mapped[str] = mapped_column(String(64), default="")
+    schema_name: Mapped[str] = mapped_column(String(64))
+    schema_version: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[str] = mapped_column(String(64), index=True)
+    updated_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
 class DocumentRow(Base):
     __tablename__ = "documents"
 

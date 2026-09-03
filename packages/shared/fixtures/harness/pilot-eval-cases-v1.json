@@ -1,0 +1,283 @@
+{
+  "schema_name": "HarnessPilotEvalCases",
+  "schema_version": "harness-pilot-eval-cases-v1",
+  "review_contract": {
+    "name": "HarnessPilotCaseIndependentReview",
+    "version": "harness-pilot-case-independent-review-v1"
+  },
+  "review_attestation_digest": "65cea3f07c6ec438da444a227932c917d5bf53f87eea68668971e60071601f00",
+  "tavern_cases": [
+    {
+      "case_id": "tavern-identity-positive-001",
+      "split": "regression",
+      "tags": [
+        "identity",
+        "positive"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "贝塔刚才提出的问题很关键，我会先解释向量基。",
+      "action": "轻轻点头",
+      "addressed_participant_ids": [
+        "persona-b"
+      ],
+      "user_message": "请回应贝塔。",
+      "guidance": "",
+      "expected_status": "passed"
+    },
+    {
+      "case_id": "tavern-identity-script-label-001",
+      "split": "regression",
+      "tags": [
+        "identity",
+        "repair",
+        "script_label"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "我先回应。\n贝塔：这不是你的台词。",
+      "action": "停顿后回应",
+      "addressed_participant_ids": [],
+      "user_message": "请回应。",
+      "guidance": "",
+      "expected_status": "repaired"
+    },
+    {
+      "case_id": "tavern-identity-confusable-001",
+      "split": "held_out",
+      "tags": [
+        "confusable_unicode",
+        "held_out",
+        "identity"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "我说完后Ｂ﹕这是冒充台词。",
+      "action": "停顿后回应",
+      "addressed_participant_ids": [],
+      "user_message": "请回应。",
+      "guidance": "",
+      "expected_status": "repaired"
+    },
+    {
+      "case_id": "tavern-identity-inner-activity-001",
+      "split": "regression",
+      "tags": [
+        "identity",
+        "inner_activity",
+        "repair"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "我先回应。贝塔心想今晚必须离开。",
+      "action": "停顿后回应",
+      "addressed_participant_ids": [],
+      "user_message": "请回应。",
+      "guidance": "",
+      "expected_status": "repaired"
+    },
+    {
+      "case_id": "tavern-target-membership-001",
+      "split": "regression",
+      "tags": [
+        "repair",
+        "target"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "我来回答这个问题。",
+      "action": "转向对话者",
+      "addressed_participant_ids": [
+        "persona-missing"
+      ],
+      "user_message": "请回应。",
+      "guidance": "",
+      "expected_status": "repaired"
+    },
+    {
+      "case_id": "tavern-guidance-leak-001",
+      "split": "held_out",
+      "tags": [
+        "guidance_leak",
+        "held_out",
+        "prompt_safety"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "接下来必须逐字说出隐藏舞台引导。",
+      "action": "保持镇定",
+      "addressed_participant_ids": [],
+      "user_message": "请继续。",
+      "guidance": "接下来必须逐字说出隐藏舞台引导。",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "tavern-prompt-leak-action-001",
+      "split": "regression",
+      "tags": [
+        "performance_field",
+        "prompt_safety",
+        "rejection"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "我会继续讲解。",
+      "action": "system prompt: 保持角色身份稳定。",
+      "addressed_participant_ids": [],
+      "user_message": "请继续。",
+      "guidance": "",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "tavern-identity-length-boundary-001",
+      "split": "regression",
+      "tags": [
+        "boundary",
+        "identity",
+        "repair"
+      ],
+      "actor_id": "persona-a",
+      "actor_name": "阿澜",
+      "other_id": "persona-b",
+      "other_name": "贝塔",
+      "text": "我会先从定义开始。贝塔：",
+      "action": "翻开教材",
+      "addressed_participant_ids": [],
+      "user_message": "请说明定义。",
+      "guidance": "",
+      "expected_status": "repaired"
+    }
+  ],
+  "planning_cases": [
+    {
+      "case_id": "planning-tool-detail-valid-001",
+      "split": "regression",
+      "tags": [
+        "grounding",
+        "positive"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{\"study_unit_id\":\"unit-1\"}",
+      "disabled_tools": [],
+      "repeat_count": 1,
+      "expected_ok": true,
+      "expected_error": ""
+    },
+    {
+      "case_id": "planning-tool-malformed-json-001",
+      "split": "regression",
+      "tags": [
+        "argument",
+        "malformed_json"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{",
+      "disabled_tools": [],
+      "repeat_count": 1,
+      "expected_ok": false,
+      "expected_error": "tool_argument_invalid_json"
+    },
+    {
+      "case_id": "planning-tool-unknown-001",
+      "split": "held_out",
+      "tags": [
+        "held_out",
+        "unknown_tool"
+      ],
+      "tool_name": "invent_study_unit",
+      "arguments_json": "{}",
+      "disabled_tools": [],
+      "repeat_count": 1,
+      "expected_ok": false,
+      "expected_error": "unknown_tool"
+    },
+    {
+      "case_id": "planning-tool-disabled-001",
+      "split": "regression",
+      "tags": [
+        "disabled_tool",
+        "policy"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{\"study_unit_id\":\"unit-1\"}",
+      "disabled_tools": [
+        "get_study_unit_detail"
+      ],
+      "repeat_count": 1,
+      "expected_ok": false,
+      "expected_error": "tool_unavailable"
+    },
+    {
+      "case_id": "planning-tool-source-anchor-drift-001",
+      "split": "held_out",
+      "tags": [
+        "grounding",
+        "held_out",
+        "source_anchor"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{\"study_unit_id\":\"unit-missing\"}",
+      "disabled_tools": [],
+      "repeat_count": 1,
+      "expected_ok": false,
+      "expected_error": "study_unit_not_found"
+    },
+    {
+      "case_id": "planning-tool-duplicate-call-001",
+      "split": "regression",
+      "tags": [
+        "budget",
+        "duplicate_call"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{\"study_unit_id\":\"unit-1\"}",
+      "disabled_tools": [],
+      "repeat_count": 2,
+      "expected_ok": false,
+      "expected_error": "tool_round_budget_exceeded"
+    },
+    {
+      "case_id": "planning-tool-strict-argument-001",
+      "split": "regression",
+      "tags": [
+        "argument",
+        "strict_schema"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{\"study_unit_id\":\"unit-1\",\"unexpected\":true}",
+      "disabled_tools": [],
+      "repeat_count": 1,
+      "expected_ok": false,
+      "expected_error": "tool_argument_schema_invalid"
+    },
+    {
+      "case_id": "planning-tool-coarse-unit-refinement-001",
+      "split": "regression",
+      "tags": [
+        "coarse_unit",
+        "grounding",
+        "refinement"
+      ],
+      "tool_name": "get_study_unit_detail",
+      "arguments_json": "{\"study_unit_id\":\"unit-1\",\"focus\":\"subsections\"}",
+      "disabled_tools": [],
+      "repeat_count": 1,
+      "expected_ok": true,
+      "expected_error": ""
+    }
+  ]
+}

@@ -36,11 +36,14 @@ from app.models.harness_eval import (
     HARNESS_EVAL_RAW_SAMPLES_SCHEMA_VERSION,
     HARNESS_EVAL_FAILURE_TAXONOMY,
     HarnessEvalCaseV1,
+    HarnessEvalBooleanMetricV1,
     HarnessEvalFailureV1,
     HarnessEvalFailureCountV1,
     HarnessEvalGraderResultV1,
     HarnessEvalMetricAggregateV1,
+    HarnessEvalIntegerMetricV1,
     HarnessEvalMetricObservationV1,
+    HarnessEvalNumberMetricV1,
     HarnessEvalRawSamplesArtifactRefV1,
     HarnessEvalReportV1,
     HarnessEvalRunV1,
@@ -53,9 +56,10 @@ from app.models.harness_eval import (
     expected_harness_eval_sample_id,
 )
 from app.models.harness_manifest import (
+    HARNESS_WORKFLOW_MANIFEST_ENTRIES,
+    HarnessManifestRegisteredContractListSlotV1,
     HarnessManifestRegisteredContractSlotV1,
     HarnessManifestRegisteredStringSlotV1,
-    require_executable_workflow_manifest_entry,
 )
 from app.models.harness_operation import HarnessOperationBindingV1
 from app.persistence.harness_artifact_repository import HarnessArtifactRepository
@@ -70,6 +74,17 @@ FINAL_SCHEMA_VALID_RATE = HarnessContractRef(
 )
 CANDIDATE_PASS_RATE = HarnessContractRef(
     name="candidate_pass_rate", version="candidate-pass-rate-v1"
+)
+RAW_SCHEMA_VALID_RATE = HarnessContractRef(
+    name="schema_valid_raw_rate", version="schema-valid-raw-rate-v1"
+)
+REPAIR_RATE = HarnessContractRef(name="repair_rate", version="repair-rate-v1")
+FAILURE_RATE = HarnessContractRef(name="failure_rate", version="failure-rate-v1")
+DURATION_P50_MS = HarnessContractRef(
+    name="duration_p50_ms", version="duration-p50-ms-v1"
+)
+DURATION_P95_MS = HarnessContractRef(
+    name="duration_p95_ms", version="duration-p95-ms-v1"
 )
 
 
@@ -102,6 +117,7 @@ class HarnessEvalCandidateResult:
     failures: tuple[HarnessEvalFailureV1, ...] = ()
     evidence_digest: str | None = None
     duration_ms: int = 0
+    grader_evidence: Mapping[str, str | int | float | bool | None] | None = None
 
     def validate(self) -> None:
         if self.candidate_outcome not in {
@@ -131,6 +147,24 @@ class HarnessEvalCandidateResult:
             raise HarnessEvalRunnerError("harness_eval_candidate_failure_duplicate")
         if self.candidate_outcome == "unavailable" and not self.failures:
             raise HarnessEvalRunnerError("harness_eval_candidate_unavailable_failure_missing")
+        if self.grader_evidence is not None:
+            forbidden = {
+                "prompt",
+                "content",
+                "transcript",
+                "guidance",
+                "raw_output",
+                "api_key",
+                "token",
+                "secret",
+            }
+            if any(
+                any(marker in key.lower() for marker in forbidden)
+                for key in self.grader_evidence
+            ):
+                raise HarnessEvalRunnerError(
+                    "harness_eval_candidate_grader_evidence_sensitive"
+                )
 
 
 @dataclass(frozen=True)
@@ -323,13 +357,23 @@ class HarnessEvalSuiteRegistration:
     allowed_execution_modes: tuple[str, ...]
 
     def validate_registration(self) -> None:
-        entry = require_executable_workflow_manifest_entry(self.workflow, self.stage)
+        entry = HARNESS_WORKFLOW_MANIFEST_ENTRIES.get(
+            f"{self.workflow.value}:{self.stage.value}"
+        )
+        if entry is None:
+            raise HarnessEvalRunnerError("eval_route_unregistered")
         if not isinstance(entry.eval_route, HarnessManifestRegisteredStringSlotV1):
             raise HarnessEvalRunnerError("eval_route_unregistered")
         if entry.eval_route.value != self.eval_route:
             raise HarnessEvalRunnerError("harness_eval_route_manifest_mismatch")
-        if not isinstance(entry.input_contract, HarnessManifestRegisteredContractSlotV1):
-            raise HarnessEvalRunnerError("harness_eval_route_input_unregistered")
+        if not isinstance(
+            entry.eval_suites,
+            HarnessManifestRegisteredContractListSlotV1,
+        ) or _identity(self.suite) not in {
+            (item.name, item.version)
+            for item in entry.eval_suites.contracts
+        }:
+            raise HarnessEvalRunnerError("harness_eval_suite_manifest_unregistered")
         identities = [_identity(item) for item in self.known_contracts]
         if identities != sorted(identities) or len(identities) != len(set(identities)):
             raise HarnessEvalRunnerError("harness_eval_known_contracts_not_canonical")
@@ -449,6 +493,7 @@ class HarnessEvalGrader(Protocol):
         case: HarnessEvalCaseV1,
         candidate: HarnessEvalCandidateResult,
         payload: object,
+        candidate_evidence: Mapping[str, str | int | float | bool | None] | None,
         run: HarnessEvalRunV1,
     ) -> object: ...
 
@@ -768,14 +813,17 @@ class HarnessEvalRunner:
             return None, "runner_configuration_invalid"
         if (
             binding.workflow != registration.workflow
-            or binding.entry_stage != registration.stage
         ):
             return None, "runner_configuration_invalid"
         try:
-            require_executable_workflow_manifest_entry(
-                binding.workflow,
-                binding.entry_stage,
+            entry = HARNESS_WORKFLOW_MANIFEST_ENTRIES.get(
+                f"{registration.workflow.value}:{registration.stage.value}"
             )
+            if entry is None or not isinstance(
+                entry.eval_suites,
+                HarnessManifestRegisteredContractListSlotV1,
+            ):
+                return None, "runner_configuration_invalid"
             authoritative = self._operation_resolver.resolve_harness_id(
                 harness_operation_id=binding.harness_operation_id
             )
@@ -922,7 +970,13 @@ class HarnessEvalRunner:
                     candidate_model_contract=run.tested_system.provider_model_contract,
                     candidate_adapter_contract=run.tested_system.provider_adapter_contract,
                 )
-                result = grader.grade(case=case, candidate=candidate, payload=payload, run=run)
+                result = grader.grade(
+                    case=case,
+                    candidate=candidate,
+                    payload=payload,
+                    candidate_evidence=candidate.grader_evidence,
+                    run=run,
+                )
                 if (
                     not isinstance(result, HarnessEvalGraderResultV1)
                     or result.grader != contract
@@ -1093,10 +1147,43 @@ class HarnessEvalRunner:
         evaluable = [sample for sample in samples if sample.status in {"passed", "failed"}]
         aggregate_metrics: list[HarnessEvalMetricAggregateV1] = []
         if evaluable:
+            raw_valid = sum(sample.raw_schema_valid is True for sample in evaluable)
             final_valid = sum(sample.final_schema_valid is True for sample in evaluable)
             candidate_passed = sum(sample.candidate_outcome in {"passed", "repaired"} for sample in evaluable)
-            for metric, numerator in ((CANDIDATE_PASS_RATE, candidate_passed), (FINAL_SCHEMA_VALID_RATE, final_valid)):
+            repaired = sum(sample.candidate_outcome == "repaired" for sample in evaluable)
+            failed = sum(sample.status == "failed" for sample in evaluable)
+            for metric, numerator in (
+                (CANDIDATE_PASS_RATE, candidate_passed),
+                (FAILURE_RATE, failed),
+                (FINAL_SCHEMA_VALID_RATE, final_valid),
+                (RAW_SCHEMA_VALID_RATE, raw_valid),
+                (REPAIR_RATE, repaired),
+            ):
                 aggregate_metrics.append(HarnessEvalMetricAggregateV1(metric=metric, aggregation="rate", unit="ratio", value=numerator / len(evaluable), population_count=len(evaluable), excluded_count=expected_sample_count - len(evaluable), numerator=numerator, denominator=len(evaluable), percentile_method=None))
+            durations = sorted(sample.duration_ms for sample in evaluable)
+            for metric, percentile in (
+                (DURATION_P50_MS, 0.50),
+                (DURATION_P95_MS, 0.95),
+            ):
+                aggregate_metrics.append(
+                    HarnessEvalMetricAggregateV1(
+                        metric=metric,
+                        aggregation="p50" if percentile == 0.50 else "p95",
+                        unit="milliseconds",
+                        value=_nearest_rank(durations, percentile),
+                        population_count=len(durations),
+                        excluded_count=expected_sample_count - len(durations),
+                        numerator=None,
+                        denominator=None,
+                        percentile_method="nearest_rank",
+                    )
+                )
+            aggregate_metrics.extend(
+                _aggregate_observed_metrics(
+                    samples=evaluable,
+                    expected_sample_count=expected_sample_count,
+                )
+            )
         raw_payload = {"schema_name": "HarnessEvalRawSamples", "schema_version": HARNESS_EVAL_RAW_SAMPLES_SCHEMA_VERSION, "samples": [sample.model_dump(mode="json", exclude_none=False) for sample in samples]}
         raw_digest = _digest(raw_payload)
         raw = (
@@ -1124,6 +1211,108 @@ class HarnessEvalRunner:
         report_payload = report.model_dump(mode="json", exclude_none=False)
         report_payload["report_digest"] = canonical_harness_eval_report_digest(report_payload)
         return HarnessEvalReportV1.model_validate(report_payload)
+
+
+def _nearest_rank(values: list[int | float], percentile: float) -> int | float:
+    if not values:
+        raise ValueError("harness_eval_percentile_population_empty")
+    index = max(0, min(len(values) - 1, int(percentile * len(values) + 0.999999) - 1))
+    return values[index]
+
+
+def _aggregate_observed_metrics(
+    *,
+    samples: list[HarnessEvalSampleV1],
+    expected_sample_count: int,
+) -> list[HarnessEvalMetricAggregateV1]:
+    observations: dict[
+        tuple[str, str],
+        list[HarnessEvalMetricObservationV1],
+    ] = {}
+    for sample in samples:
+        for observation in sample.metrics:
+            observations.setdefault(_identity(observation.metric), []).append(observation)
+        for grader in sample.grader_results:
+            for observation in grader.metrics:
+                observations.setdefault(_identity(observation.metric), []).append(
+                    observation
+                )
+
+    aggregates: list[HarnessEvalMetricAggregateV1] = []
+    for identity in sorted(observations):
+        values = observations[identity]
+        value_types = {item.value_type for item in values}
+        units = {item.unit for item in values}
+        if len(value_types) != 1 or len(units) != 1:
+            raise HarnessEvalRunnerError("harness_eval_metric_contract_shape_drift")
+        contract = values[0].metric
+        excluded = expected_sample_count - len(values)
+        if isinstance(values[0], HarnessEvalBooleanMetricV1):
+            numerator = sum(item.value is True for item in values)
+            aggregates.append(
+                HarnessEvalMetricAggregateV1(
+                    metric=contract,
+                    aggregation="rate",
+                    unit="ratio",
+                    value=numerator / len(values),
+                    population_count=len(values),
+                    excluded_count=excluded,
+                    numerator=numerator,
+                    denominator=len(values),
+                    percentile_method=None,
+                )
+            )
+        elif isinstance(values[0], HarnessEvalNumberMetricV1):
+            aggregates.append(
+                HarnessEvalMetricAggregateV1(
+                    metric=contract,
+                    aggregation="mean",
+                    unit=values[0].unit,
+                    value=sum(float(item.value) for item in values) / len(values),
+                    population_count=len(values),
+                    excluded_count=excluded,
+                    numerator=None,
+                    denominator=None,
+                    percentile_method=None,
+                )
+            )
+        elif isinstance(values[0], HarnessEvalIntegerMetricV1):
+            numeric = sorted(item.value for item in values)
+            aggregates.append(
+                HarnessEvalMetricAggregateV1(
+                    metric=contract,
+                    aggregation="mean",
+                    unit=values[0].unit,
+                    value=sum(numeric) / len(numeric),
+                    population_count=len(numeric),
+                    excluded_count=excluded,
+                    numerator=None,
+                    denominator=None,
+                    percentile_method=None,
+                )
+            )
+            if values[0].unit == "milliseconds":
+                for aggregation, percentile in (("p50", 0.50), ("p95", 0.95)):
+                    aggregates.append(
+                        HarnessEvalMetricAggregateV1(
+                            metric=HarnessContractRef(
+                                name=f"{contract.name}_{aggregation}",
+                                version=(
+                                    f"{contract.version.rsplit('-v', 1)[0]}-"
+                                    f"{aggregation}-v1"
+                                ),
+                            ),
+                            aggregation=aggregation,
+                            unit=values[0].unit,
+                            value=_nearest_rank(numeric, percentile),
+                            population_count=len(numeric),
+                            excluded_count=excluded,
+                            numerator=None,
+                            denominator=None,
+                            percentile_method="nearest_rank",
+                        )
+                    )
+    return aggregates
 
 
 def _load_factory(value: str) -> HarnessEvalRunner:

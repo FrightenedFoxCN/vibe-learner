@@ -809,8 +809,13 @@
         "value": "planning.tool_execution"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "planning_tool_eval",
+            "version": "planning-tool-eval-v1"
+          }
+        ]
       }
     },
     {
@@ -1222,8 +1227,13 @@
         "value": "tavern.actor_reply"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "tavern_identity_eval",
+            "version": "tavern-identity-eval-v1"
+          }
+        ]
       }
     }
   ]

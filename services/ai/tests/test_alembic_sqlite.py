@@ -16,7 +16,7 @@ from app.persistence.database import Database
 
 
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD = "20260903_0015"
+ALEMBIC_HEAD = "20260903_0016"
 
 
 def _alembic_config(database_url: str) -> Config:
@@ -144,6 +144,11 @@ class AlembicSqliteTests(unittest.TestCase):
         self.assertIn("CREATE TABLE harness_artifact_grants", ddl)
         self.assertIn("CREATE TABLE harness_effect_batches", ddl)
         self.assertIn("CREATE TABLE harness_effect_journal", ddl)
+        self.assertIn("CREATE TABLE harness_runtime_executions", ddl)
+        self.assertIn("uq_harness_runtime_operation_stage_slot", ddl)
+        self.assertIn("ck_harness_runtime_state_shape", ddl)
+        self.assertIn("validate_harness_runtime_update", ddl)
+        self.assertIn("reject_harness_runtime_delete", ddl)
 
 
 if __name__ == "__main__":

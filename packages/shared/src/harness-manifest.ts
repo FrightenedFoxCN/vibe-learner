@@ -12,6 +12,14 @@ export const HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION =
   "harness-eval-case-v1" as const;
 export const HARNESS_WORKFLOW_MANIFEST_TOOL_MANIFEST_VERSION =
   "tool-manifest-v1" as const;
+export const TAVERN_IDENTITY_EVAL_SUITE = {
+  name: "tavern_identity_eval",
+  version: "tavern-identity-eval-v1",
+} as const satisfies HarnessContractRef;
+export const PLANNING_TOOL_EVAL_SUITE = {
+  name: "planning_tool_eval",
+  version: "planning-tool-eval-v1",
+} as const satisfies HarnessContractRef;
 
 export type HarnessManifestSlotStatus =
   | "registered"
@@ -345,6 +353,14 @@ const artifactAllowlist = (
   status: "registered",
   artifact_types: [...artifactTypes].sort(),
 });
+const registeredContracts = (
+  ...contracts: HarnessContractRef[]
+): HarnessManifestRegisteredContractListSlotV1 => ({
+  status: "registered",
+  contracts: [...contracts].sort((left, right) =>
+    `${left.name}@${left.version}`.localeCompare(`${right.name}@${right.version}`),
+  ),
+});
 
 const DEFAULT_ATTEMPTS: HarnessManifestAttemptCeilingV1 = {
   max_attempts: 3,
@@ -398,6 +414,7 @@ const unregisteredEntry = (
     toolset?: HarnessManifestContractSlotV1;
     noEffects?: boolean;
     noCommit?: boolean;
+    evalSuites?: HarnessContractRef[];
   },
 ): HarnessWorkflowManifestEntryV1 => {
   const vocabulary = vocabularyFor(workflow, stage);
@@ -426,7 +443,9 @@ const unregisteredEntry = (
       : unregistered("commit_policy_not_registered"),
     decoder_route: unregistered("decoder_not_registered"),
     eval_route: registeredString(vocabulary.evalRoute),
-    eval_suites: unregistered("eval_suite_not_registered"),
+    eval_suites: options.evalSuites?.length
+      ? registeredContracts(...options.evalSuites)
+      : unregistered("eval_suite_not_registered"),
   };
 };
 
@@ -491,7 +510,7 @@ const TAVERN_ENTRY: HarnessWorkflowManifestEntryV1 = {
     "app.services.tavern_harness.TavernActorHarness",
   ),
   eval_route: registeredString("tavern.actor_reply"),
-  eval_suites: unregistered("eval_suite_not_registered"),
+  eval_suites: registeredContracts(TAVERN_IDENTITY_EVAL_SUITE),
 };
 
 const entries: HarnessWorkflowManifestEntryV1[] = [
@@ -533,6 +552,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
   unregisteredEntry("planning", "planning_tool_execution", {
     artifactTypes: ["document_debug", "planning_context", "study_unit_input"],
     toolset: TOOL_MANIFEST_SLOT,
+    evalSuites: [PLANNING_TOOL_EVAL_SUITE],
   }),
   unregisteredEntry("persona", "persona_generation", {
     artifactTypes: ["persona_snapshot"],

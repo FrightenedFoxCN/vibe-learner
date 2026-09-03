@@ -5,6 +5,8 @@ import {
   HARNESS_EVAL_FAILURE_TAXONOMY,
   HarnessEvalDecodeError,
   decodeHarnessEvalCase,
+  decodeHarnessEvalBaseline,
+  decodeHarnessEvalGateDecision,
   decodeHarnessEvalContractGolden,
   decodeHarnessEvalFailureTaxonomy,
   decodeHarnessEvalReport,
@@ -24,6 +26,13 @@ const taxonomyUrl = new URL(
 );
 const golden = JSON.parse(await readFile(goldenUrl, "utf8"));
 const taxonomy = JSON.parse(await readFile(taxonomyUrl, "utf8"));
+const pilotRoot = new URL("../fixtures/harness/eval-pilots/", import.meta.url);
+for (const suite of ["planning_tool_eval", "tavern_identity_eval"]) {
+  const baseline = JSON.parse(await readFile(new URL(`${suite}/baseline.json`, pilotRoot), "utf8"));
+  const gate = JSON.parse(await readFile(new URL(`${suite}/gate-decision.json`, pilotRoot), "utf8"));
+  assert.deepEqual(decodeHarnessEvalBaseline(baseline), baseline);
+  assert.deepEqual(decodeHarnessEvalGateDecision(gate), gate);
+}
 
 assert.deepEqual(decodeHarnessEvalContractGolden(golden), golden);
 assert.deepEqual(decodeHarnessEvalFailureTaxonomy(taxonomy), taxonomy);
@@ -45,6 +54,19 @@ assert.throws(
   },
   TypeError,
 );
+
+{
+  const baseline = JSON.parse(await readFile(new URL("planning_tool_eval/baseline.json", pilotRoot), "utf8"));
+  baseline.thresholds[0].absolute_value = "1";
+  assertDecodeFailure(() => decodeHarnessEvalBaseline(baseline), "expected_finite_number");
+}
+
+{
+  const gate = JSON.parse(await readFile(new URL("planning_tool_eval/gate-decision.json", pilotRoot), "utf8"));
+  gate.status = "passed";
+  gate.comparable = false;
+  assertDecodeFailure(() => decodeHarnessEvalGateDecision(gate), "status_mismatch");
+}
 
 function cloned(value) {
   return structuredClone(value);

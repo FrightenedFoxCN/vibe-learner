@@ -19,12 +19,12 @@
     "test:web:tavern": "npm --workspace @vibe-learner/web run test:tavern",
     "test:web:reliability": "npm --workspace @vibe-learner/web run test:reliability",
     "eval:harness": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_runner",
-    "eval:harness:pr": "npm run eval:harness -- --profile pr",
+    "eval:harness:pr": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr",
     "eval:harness:manual": "npm run eval:harness -- --profile manual",
     "eval:harness:nightly": "npm run eval:harness -- --profile nightly",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai",
-    "check": "npm run test:contracts && npm run check:web && npm run test:web:reliability",
+    "check": "npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr",
     "check:release": "npm run check && npm run test:ai && npm run build:web"
   },
   "dependencies": {

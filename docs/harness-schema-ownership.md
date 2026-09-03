@@ -211,6 +211,16 @@ Do not add `plan_projection`, `actor_decode`, `atomic_commit`, or similar stages
 
 ## Persistence migration rule
 
+Wave 2 recovery migration uses the versioned
+`HarnessLegacyRecoveryMappingV1` registry. It binds legacy Model/Planning/
+Tavern recovery category, reason, and strategy values to a typed v3 check and
+an attempt already present in the admitted operation's v3 trace. Unbound
+legacy rows, unknown mappings, duplicate recovery IDs, missing attempts, and
+records at or beyond the write cutoff remain read-only compatibility data and
+cannot create Harness identity or commit claims. The migration is evidence
+projection only; it does not mutate historical traces or count a recovery
+twice.
+
 Most legacy aggregate JSON payloads lack `schema_name`, `schema_version`, and migration provenance, and many Pydantic domain records currently ignore extra fields. Do not turn on `extra="forbid"` across all legacy records at once. Migrate one aggregate at a time:
 
 1. inventory existing stored shapes;
