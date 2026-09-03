@@ -1,0 +1,67 @@
+{
+  "schema_name": "StudyChatEvalCases",
+  "schema_version": "study-chat-eval-cases-v1",
+  "review_contract": {
+    "name": "StudyChatEvalIndependentReview",
+    "version": "study-chat-eval-independent-review-v1"
+  },
+  "review_attestation_digest": "293cefdada3a499116944c298bc0cbca2f051212431042a7ca0107747ac3d240",
+  "study_cases": [
+    {
+      "case_id": "study-reply-valid-001",
+      "split": "regression",
+      "tags": ["character_event", "citation", "positive", "tool"],
+      "scenario": "valid",
+      "expected_status": "accepted"
+    },
+    {
+      "case_id": "study-reply-empty-001",
+      "split": "regression",
+      "tags": ["reply", "schema"],
+      "scenario": "empty_reply",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "study-citation-source-001",
+      "split": "held_out",
+      "tags": ["citation", "held_out", "source"],
+      "scenario": "citation_source",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "study-character-event-001",
+      "split": "regression",
+      "tags": ["character_event", "shape"],
+      "scenario": "character_event",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "study-tool-identity-001",
+      "split": "held_out",
+      "tags": ["held_out", "identity", "tool"],
+      "scenario": "tool_identity",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "study-tool-contract-001",
+      "split": "regression",
+      "tags": ["contract", "tool"],
+      "scenario": "tool_contract",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "study-tool-json-001",
+      "split": "held_out",
+      "tags": ["held_out", "json", "tool"],
+      "scenario": "tool_json",
+      "expected_status": "rejected"
+    },
+    {
+      "case_id": "study-reply-extra-field-001",
+      "split": "regression",
+      "tags": ["ownership", "schema"],
+      "scenario": "extra_field",
+      "expected_status": "rejected"
+    }
+  ]
+}

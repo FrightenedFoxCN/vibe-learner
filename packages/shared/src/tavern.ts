@@ -1,6 +1,6 @@
 import type { PersonaProfile } from "./persona";
 import type { SceneProfile } from "./learning";
-import type { HarnessTrace } from "./harness";
+import type { HarnessTraceWire } from "./harness";
 
 export type TavernRoomStatus = "active" | "archived";
 export type TavernAuthorKind = "user" | "persona" | "director" | "system";
@@ -83,7 +83,7 @@ export interface TavernMessage {
   replyToMessageId?: string;
   clientRequestId?: string;
   createdAt: string;
-  harnessTrace?: HarnessTrace;
+  harnessTrace?: HarnessTraceWire;
 }
 
 /** Complete app-owned digest projection; store content only in protected artifacts. */
@@ -128,7 +128,7 @@ export interface TavernRun {
   status: TavernRunStatus;
   expectedRoomRevision: number;
   generatedMessageIds: string[];
-  harnessTrace: HarnessTrace[];
+  harnessTrace: HarnessTraceWire[];
   errorCode?: string;
   terminalSequence: number;
   createdAt: string;
@@ -163,7 +163,7 @@ export interface TavernSpeakerStep {
   messageId?: string;
   replyToMessageId?: string;
   errorCode?: string;
-  harnessTrace?: HarnessTrace;
+  harnessTrace?: HarnessTraceWire;
   claimCount: number;
   startedAt?: string;
   completedAt?: string;

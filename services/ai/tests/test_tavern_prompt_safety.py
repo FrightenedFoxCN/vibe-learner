@@ -363,10 +363,18 @@ class TavernPromptBudgetTests(unittest.TestCase):
                     idempotency_key="turn-prompt-budget-failure",
                 )
                 assert run is not None
-                self.assertEqual(run.harness_trace[0].stage, "prompt_preflight")
                 self.assertEqual(
-                    run.harness_trace[0].checks[0].code,
+                    run.harness_trace[0].trace_schema_version,
+                    "harness-trace-v3",
+                )
+                self.assertEqual(run.harness_trace[0].stage.value, "actor_reply")
+                self.assertEqual(
+                    run.harness_trace[0].attempt_records[-1].error_code,
                     "tavern_prompt_persona_instruction_bytes_exceeded",
+                )
+                self.assertEqual(
+                    run.harness_trace[0].commit_evidence.status.value,
+                    "not_committed",
                 )
                 budget_check = next(
                     item

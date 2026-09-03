@@ -440,6 +440,7 @@ class StudySessionRepository:
         cancel_pending_follow_ups: bool,
         prepared_effect_batch: StudyChatPreparedEffectBatchV1 | None = None,
         build_response_payload: Callable[[StudySessionRecord], dict[str, object]],
+        runtime_commit_callback: Callable[[object, StudySessionRecord, str, int], None] | None = None,
     ) -> tuple[StudySessionRecord, dict[str, object]]:
         """Append one Turn and publish its durable receipt in one transaction."""
         committed_at = datetime.now(timezone.utc).isoformat()
@@ -592,6 +593,8 @@ class StudySessionRepository:
             )
             if claimed_session.rowcount != 1:
                 raise StudySessionRevisionConflict(operation.session_id)
+            if runtime_commit_callback is not None:
+                runtime_commit_callback(session, record, turn_id, next_sequence)
             claimed_operation = session.execute(
                 update(StudyChatOperationRow)
                 .where(
@@ -616,6 +619,28 @@ class StudySessionRepository:
             if claimed_operation.rowcount != 1:
                 raise StudySessionOperationFenced(operation_id)
             return record, response_payload
+
+    def get_chat_commit_read_back_in_session(
+        self,
+        session,
+        *,
+        session_id: str,
+        turn_id: str,
+    ) -> tuple[StudySessionRecord, DialogueTurnRecord]:
+        """Read the just-written Session and Turn from the caller's DB snapshot."""
+
+        row = session.scalar(
+            select(StudySessionRow)
+            .where(StudySessionRow.id == session_id)
+            .execution_options(populate_existing=True)
+        )
+        if row is None:
+            raise StudySessionNotFound(session_id)
+        record = _from_row(row)
+        matching = [turn for turn in record.turns if turn.id == turn_id]
+        if len(matching) != 1:
+            raise ValueError("study_chat_committed_turn_read_back_missing")
+        return record, matching[0]
 
 
 class StudySessionRepositoryError(RuntimeError):

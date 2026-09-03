@@ -18,10 +18,6 @@
   - 补齐初始焦点、focus trap、Escape、背景 inert，以及取消/确认后的焦点恢复。
   - 验收：键盘无法逃逸到背景，关闭后焦点回到发起控件。
 
-- [ ] `SCH-TAV-001` `[P1]` 收口 Tavern Run/Message/Step 软引用策略。
-  - 覆盖 Message `run_id`、Run 输入/锚点 Message、Step 输出/回复 Message 等引用。
-  - 验收：要么使用可迁移 FK 与明确插入顺序，要么由统一 invariant scanner 检测并阻断破损图；SQLite/PostgreSQL 均有故障 fixture。
-
 - [ ] `TAV-UX-COPY-001` `[P2]` 完成 Tavern 状态文案的关闭验收。
   - 增加表驱动 copy contract，覆盖 run/step、partial、failed、blocked、retry、stale、archived、cancel 与 raw-code 隔离。
   - `blocked` 不得显示为角色失败，raw code 只进入 Reliability Details / Debug Overlay。
@@ -74,8 +70,6 @@
 
 ### Study operation hardening
 
-- [ ] `STUDY-OP-CLOCK-001` `[P2]` 使用 canonical database clock 判定 admission abandonment、claim/heartbeat 和 execution deadline，并保持 SQLite/PostgreSQL DDL/JSON/状态约束一致。
-- [ ] `STUDY-OP-SCANNER-001` `[P2]` 增加 journal corruption、未知版本和 digest drift scanner，输出 typed read-back 结论。
 - [ ] `STUDY-OP-RECOVERY-UX-001` `[P2]` 覆盖超长轮询、终态刷新、断网和页面恢复文案，不放宽 same-key mismatch 或 `uncertain` 禁止重放。
 
 ## Harness roadmap
@@ -104,7 +98,7 @@ Tool Manifest、Planning tool eval 和 parallel-safety 性能门属于 Harness r
 - `UX-A11Y-001`：由 Study Question、Scene Dialog、Async/Touch 三个子项关闭。
 - `UX-EDITOR-DENSITY-001`：由 Sensory、Persona、Scene 三个子项关闭。
 - `PERF-001`：由 Provider ownership、Request dedupe、Bundle budget 三个子项关闭。
-- `STUDY-OP-HARDEN-001`：由 Clock、Scanner、Recovery UX 三个子项关闭。
+- `STUDY-OP-HARDEN-001`：Clock 与 Scanner 已完成，剩余 Recovery UX 关闭本项。
 - `PLAN-ITER-001`：由 Plan CAS、Patch Operation、Revision UX 三个子项关闭。
 
 ## Research parking lot（未排期）

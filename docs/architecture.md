@@ -59,7 +59,7 @@ The root layout still mounts `LearningWorkspaceProvider` on every route. Moving 
 Tavern uses a separate client boundary:
 
 - `apps/web/components/tavern-workspace.tsx`: page orchestration and the seven standard Workspace blocks;
-- `apps/web/lib/tavern-decode.ts`: fail-closed legacy-v1 Tavern wire decoder;
+- `apps/web/lib/tavern-decode.ts`: fail-closed Tavern wire decoder with legacy v1/v2 compatibility and strict v3 evidence support;
 - `apps/web/lib/tavern-workspace-state.ts`: message/run reconciliation and monotonic state helpers.
 
 Domain-owned fail-closed client boundaries now cover Document, Planning,
@@ -68,7 +68,7 @@ response identity, enums, finite numbers, nullability, ordering, ranges,
 cross-record references, duplicate IDs, derived projections, and each domain's
 operation/recovery versions before rendering. Remaining endpoint inventory,
 independent live-wire closure, Frontend Decoder component registration,
-`FRONTEND_REQUEST` evidence, and Tavern v2/v3 trace forwarding remain open;
+`FRONTEND_REQUEST` evidence, and complete cross-endpoint v2/v3 trace forwarding remain open;
 implemented strict decode does not itself prove Harness v3 adoption.
 
 ### AI service
@@ -101,7 +101,7 @@ Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 7. atomically commit validated effects or persist terminal failure evidence;
 8. emit trace/eval evidence.
 
-V2/v3 evidence schemas and the v3 context builder are foundations only. No production workflow currently calls `build_harness_context`; non-Tavern component versions intentionally remain placeholders, and Tavern production evidence remains legacy v1 pending a separately tested migration. See `harness-engineering.md` and `harness-schema-ownership.md`.
+Tavern actor generation and Study Chat use the production v3 context/runtime boundary, authorized protected snapshots, strict proposal validation, terminal trace persistence, committed primary-output projections, and deterministic eval suites. Document/OCR/Study Unit, Planning, Persona, Scene, and Frontend Decode remain separate adoption work. See `harness-engineering.md` and `harness-schema-ownership.md`.
 
 Learning-plan text uses a stable cross-layer contract:
 
@@ -216,7 +216,7 @@ Study Chat adds a separate durable operation-admission boundary above the Sessio
 
 The typed database-effect slice now covers memory, affinity, follow-up create/complete/cancel, projected-document/image set/focus/overlay/clear, and the two plan-confirmation tools. One discriminated proposal union feeds a single append-only operation batch, so every Session database effect shares global slots and `(operation, slot)`-derived identities. Memory, affinity, follow-up, and projected-state reads overlay the authoritative Session with all earlier prepared slots, giving the model read-your-writes without changing persisted state. Tool results explicitly report `effect_state=prepared` and `committed=false`; learner-message cancellation is prepared before model tools, so a newly scheduled follow-up is not accidentally canceled by the same request.
 
-Before commit the server revalidates the complete batch identity, slots, adapter/contract versions, Session/Plan/Scene targets, schedule membership, and attachment projection source membership. It then applies Session slots with the final validated Turn, Session revision, operation receipt, and a server-only committed-effect projection in one database transaction; Scene replacement adds row CAS plus an exact committed Scene snapshot/read-back in that boundary. Any adapter, validation, CAS, or response-build failure rolls the transaction back. Replayed committed operations read the original receipt rather than applying effects again. Attachment files use operation-owned staging, bounded cleanup/compensation, and committed digest read-back. Provider-generated artifacts retain a separate external failure boundary, and a generated-image tool result is explicitly `completed_uncommitted` until the final Session commit. These safe-retry boundaries have passed independent DB/Scene/file/provider-failure revalidation. The prepared batch remains in-process, not a reusable durable prepare journal or public effect receipt; provider-call exactly-once, Study v3 trace/replay/eval, and the public effect-evidence boundary remain open. None of Session CAS, operation admission, or these effect slices is v3 Harness adoption.
+Before commit the server revalidates the complete batch identity, slots, adapter/contract versions, Session/Plan/Scene targets, schedule membership, and attachment projection source membership. It then applies Session slots with the final validated Turn, Session revision, operation receipt, durable effect-journal terminalization, and terminal v3 trace in one database transaction; Scene replacement adds row CAS plus an exact committed Scene snapshot/read-back in that boundary. Any adapter, validation, CAS, or response-build failure rolls the transaction back. Replayed committed operations read the original receipt rather than applying effects again. Attachment files use operation-owned staging, bounded cleanup/compensation, and committed digest read-back. Provider-generated artifacts retain a separate external failure boundary, and a generated-image tool result is explicitly `completed_uncommitted` until the final Session commit. The operation-scoped protected snapshot is authorized and resolved before the single provider call, and the complete reply, citations, Character Events, and nested tool payloads pass the strict v3 adapter. The operation commit policy proves only the Session/Turn primary output; it does not claim every Scene, file, or provider effect. Provider ambiguity remains `uncertain`.
 
 ### 5. Tavern interaction
 
@@ -288,7 +288,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - OCR cleanup remains heuristic-heavy;
 - tool-enabled model calls increase provider latency and timeout pressure;
 - Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, but its extraction/OCR/cleanup stages are not yet v3-adopted;
-- Study Chat has durable request admission, a mixed transactional batch for all current Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty and full v3 protected replay/eval remain open;
-- production Harness v3 adoption is incomplete outside schema/context foundations;
+- Study Chat has production v3 context, trace, protected replay, deterministic eval, durable request admission, transactional Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty remains explicit;
+- production Harness v3 adoption is complete for Tavern actor generation and Study Chat and remains open for Document/OCR/Study Unit, Planning, Persona, Scene, and Frontend Decode;
 - Tavern prompt/token/scene-depth budgets and eval metrics remain open;
 - `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` is only a compatibility alias.

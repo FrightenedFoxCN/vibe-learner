@@ -49,6 +49,18 @@ class Database:
         session = self._session_factory()
         try:
             yield session
+            # Tavern keeps several nullable legacy-compatible references rather
+            # than hard FKs because append order spans one transaction. Validate
+            # the complete graph at the transaction boundary on every backend.
+            if session.new or session.dirty or session.deleted:
+                from app.persistence.tavern_invariant_scanner import (
+                    require_tavern_reference_integrity,
+                )
+
+                # Repositories commonly use autoflush=False while assembling
+                # a Run and its Message/Steps in one transaction.
+                session.flush()
+                require_tavern_reference_integrity(session)
             session.commit()
         except Exception:
             session.rollback()
@@ -130,6 +142,10 @@ class Database:
                     connection.exec_driver_sql(
                         f"ALTER TABLE {operation_table} ADD COLUMN "
                         "harness_operation_id VARCHAR(64)"
+                    )
+                if operation_table == "study_chat_operations" and "harness_trace" not in operation_columns:
+                    connection.exec_driver_sql(
+                        "ALTER TABLE study_chat_operations ADD COLUMN harness_trace JSON"
                     )
 
             for scene_table in ("scene_setup_states", "scene_library_entries"):

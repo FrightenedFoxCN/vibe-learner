@@ -18,6 +18,7 @@ from app.models.study_chat_operation import (
     study_chat_request_fingerprint,
     study_chat_response_digest,
 )
+from app.models.harness import HarnessTraceV3
 from app.models.study_chat_effect import (
     StudyChatCommittedEffectBatchV1,
     StudySceneReplaceCommittedProjectionV1,
@@ -38,6 +39,7 @@ from app.models.study_question import (
     study_question_attempt_response_digest,
 )
 from app.persistence.database import Database
+from app.persistence.database_clock import database_utc_wire
 from app.persistence.harness_operation_repository import (
     HarnessOperationBindingRepository,
 )
@@ -77,10 +79,10 @@ class StudyChatOperationRepository:
         request_payload: StudyChatOperationRequestPayload,
     ) -> StudyChatOperationRecord:
         operation_id = f"study-chat-op-{uuid4().hex[:16]}"
-        now = _now()
         fingerprint = study_chat_request_fingerprint(request_payload)
         try:
             with self.database.session() as session:
+                now = database_utc_wire(session)
                 existing = session.scalar(
                     select(StudyChatOperationRow).where(
                         StudyChatOperationRow.session_id == session_id,
@@ -153,6 +155,7 @@ class StudyChatOperationRepository:
                     committed_turn_sequence=None,
                     response_schema_version="",
                     response_payload=None,
+                    harness_trace=None,
                     response_digest="",
                     error_code="",
                     created_at=now,
@@ -187,6 +190,7 @@ class StudyChatOperationRepository:
         client_request_id: str,
     ) -> StudyChatOperationRecord | None:
         with self.database.session() as session:
+            database_now = database_utc_wire(session)
             row = session.scalar(
                 select(StudyChatOperationRow).where(
                     StudyChatOperationRow.session_id == session_id,
@@ -211,7 +215,7 @@ class StudyChatOperationRepository:
                 )
         if (
             record.status == StudyChatOperationStatus.RUNNING
-            and _timestamp_expired(record.execution_deadline_at)
+            and _timestamp_expired(record.execution_deadline_at, now=database_now)
         ):
             return self.mark_uncertain(
                 operation_id=record.operation_id,
@@ -220,7 +224,7 @@ class StudyChatOperationRepository:
             )
         if (
             record.status == StudyChatOperationStatus.ADMITTED
-            and _timestamp_older_than(record.created_at, seconds=30)
+            and _timestamp_older_than(record.created_at, seconds=30, now=database_now)
         ):
             return self.mark_not_committed(
                 operation_id=record.operation_id,
@@ -241,6 +245,7 @@ class StudyChatOperationRepository:
 
     def get_active(self, *, session_id: str) -> StudyChatOperationRecord | None:
         with self.database.session() as session:
+            database_now = database_utc_wire(session)
             row = session.scalar(
                 select(StudyChatOperationRow).where(
                     StudyChatOperationRow.session_id == session_id,
@@ -252,7 +257,7 @@ class StudyChatOperationRepository:
             record = _from_row(row)
         if (
             record.status == StudyChatOperationStatus.RUNNING
-            and _timestamp_expired(record.execution_deadline_at)
+            and _timestamp_expired(record.execution_deadline_at, now=database_now)
         ):
             return self.mark_uncertain(
                 operation_id=record.operation_id,
@@ -267,12 +272,10 @@ class StudyChatOperationRepository:
         operation_id: str,
         timeout_seconds: int,
     ) -> tuple[StudyChatOperationRecord, bool]:
-        now = _now()
         token = f"study-chat-exec-{uuid4().hex}"
-        deadline = (
-            datetime.now(timezone.utc) + timedelta(seconds=max(1, min(timeout_seconds, 900)))
-        ).isoformat()
         with self.database.session() as session:
+            now = database_utc_wire(session)
+            deadline = (datetime.fromisoformat(now) + timedelta(seconds=max(1, min(timeout_seconds, 900)))).isoformat(timespec="microseconds")
             row = session.get(StudyChatOperationRow, operation_id)
             if row is None:
                 raise StudyChatOperationNotFound(operation_id)
@@ -317,8 +320,8 @@ class StudyChatOperationRepository:
             return _from_row(row), True
 
     def mark_provider_started(self, *, operation_id: str, execution_token: str) -> None:
-        now = _now()
         with self.database.session() as session:
+            now = database_utc_wire(session)
             self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=HarnessDomainOperationKind.STUDY_CHAT,
@@ -337,8 +340,8 @@ class StudyChatOperationRepository:
                 raise StudyChatOperationExecutionFenced(operation_id)
 
     def mark_not_committed(self, *, operation_id: str, error_code: str) -> StudyChatOperationRecord:
-        now = _now()
         with self.database.session() as session:
+            now = database_utc_wire(session)
             row = session.get(StudyChatOperationRow, operation_id)
             if row is None:
                 raise StudyChatOperationNotFound(operation_id)
@@ -372,9 +375,16 @@ class StudyChatOperationRepository:
             assert row is not None
             return _from_row(row)
 
-    def mark_uncertain(self, *, operation_id: str, execution_token: str, error_code: str) -> StudyChatOperationRecord:
-        now = _now()
+    def mark_uncertain(
+        self,
+        *,
+        operation_id: str,
+        execution_token: str,
+        error_code: str,
+        harness_trace: HarnessTraceV3 | None = None,
+    ) -> StudyChatOperationRecord:
         with self.database.session() as session:
+            now = database_utc_wire(session)
             row = session.get(StudyChatOperationRow, operation_id)
             if row is None:
                 raise StudyChatOperationNotFound(operation_id)
@@ -387,6 +397,15 @@ class StudyChatOperationRepository:
                 _terminalize_legacy_unbound_study_chat(row, now=now)
                 session.flush()
                 return _from_row(row)
+            values: dict[str, object] = {
+                "status": StudyChatOperationStatus.UNCERTAIN.value,
+                "active_slot": None,
+                "error_code": error_code,
+                "completed_at": now,
+                "updated_at": now,
+            }
+            if harness_trace is not None:
+                values["harness_trace"] = harness_trace.model_dump(mode="json")
             marked = session.execute(
                 update(StudyChatOperationRow)
                 .where(
@@ -394,13 +413,7 @@ class StudyChatOperationRepository:
                     StudyChatOperationRow.status == StudyChatOperationStatus.RUNNING.value,
                     StudyChatOperationRow.execution_token == execution_token,
                 )
-                .values(
-                    status=StudyChatOperationStatus.UNCERTAIN.value,
-                    active_slot=None,
-                    error_code=error_code,
-                    completed_at=now,
-                    updated_at=now,
-                )
+                .values(**values)
             )
             if marked.rowcount != 1:
                 row = session.get(StudyChatOperationRow, operation_id)
@@ -514,6 +527,7 @@ def _from_row(
         committed_turn_sequence=row.committed_turn_sequence,
         response_schema_version=row.response_schema_version,
         response_payload=row.response_payload,
+        harness_trace=row.harness_trace,
         response_digest=row.response_digest,
         error_code=row.error_code,
         created_at=row.created_at,
@@ -733,16 +747,16 @@ def _load_operation_scene_records(
     return result
 
 
-def _timestamp_expired(value: str) -> bool:
+def _timestamp_expired(value: str, *, now: str) -> bool:
     try:
-        return datetime.fromisoformat(value) <= datetime.now(timezone.utc)
+        return datetime.fromisoformat(value) <= datetime.fromisoformat(now)
     except ValueError:
         return True
 
 
-def _timestamp_older_than(value: str, *, seconds: int) -> bool:
+def _timestamp_older_than(value: str, *, seconds: int, now: str) -> bool:
     try:
-        return datetime.fromisoformat(value) + timedelta(seconds=seconds) <= datetime.now(timezone.utc)
+        return datetime.fromisoformat(value) + timedelta(seconds=seconds) <= datetime.fromisoformat(now)
     except ValueError:
         return True
 

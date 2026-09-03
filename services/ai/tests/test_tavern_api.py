@@ -12,6 +12,10 @@ from fastapi.testclient import TestClient
 from app.api import tavern_routes
 import app.services.tavern as tavern_service_module
 from app.models.api import CreatePersonaRequest
+from app.models.harness import (
+    build_tavern_persona_message_commit_binding,
+    validate_harness_operation_commit,
+)
 from app.models.tavern import (
     CreateTavernRoomRequest,
     TavernActorReply,
@@ -21,6 +25,7 @@ from app.models.tavern import (
     TavernRunStatus,
     TavernSpeakerStepRecord,
     TavernTurnRequest,
+    build_tavern_persona_message_committed_projection,
 )
 from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
 from app.persistence.database import Database
@@ -194,8 +199,18 @@ class TavernApiTests(unittest.TestCase):
             ["user", "persona"],
         )
         trace = result["generated_messages"][0]["harness_trace"]
+        self.assertEqual(trace["trace_schema_version"], "harness-trace-v3")
         self.assertEqual(trace["workflow"], "tavern")
         self.assertEqual(trace["status"], "passed")
+        self.assertEqual(trace["commit_evidence"]["status"], "committed")
+        self.assertEqual(
+            trace["commit_evidence"]["attempted_resource_refs"][0]["resource_id"],
+            result["generated_messages"][0]["id"],
+        )
+        self.assertEqual(trace["context"]["subject_refs"][0]["revision"], 1)
+        serialized_trace = str(trace)
+        self.assertNotIn(turn_payload["input"]["content"], serialized_trace)
+        self.assertNotIn(turn_payload["guidance"], serialized_trace)
         self.assertNotIn("commit_metadata", result["generated_messages"][0])
         read_back = self.repository.get_actor_commit_read_back(
             message_id=result["generated_messages"][0]["id"],
@@ -223,6 +238,28 @@ class TavernApiTests(unittest.TestCase):
             persisted_message.commit_metadata.effect_batch_id,
             f"effect-{persisted_message.id}",
         )
+        projection = build_tavern_persona_message_committed_projection(
+            message=persisted_message,
+            run=persisted_run,
+            step=persisted_step,
+            participants=participants,
+            reply_anchor=anchor,
+        )
+        validated_projection = validate_harness_operation_commit(
+            persisted_message.harness_trace,
+            build_tavern_persona_message_commit_binding(projection),
+            message=persisted_message,
+            run=persisted_run,
+            step=persisted_step,
+            participants=participants,
+            reply_anchor=anchor,
+        )
+        self.assertEqual(validated_projection, projection)
+        runtime_traces = self.service.harness_runtime_repository.list_operation_traces(
+            operation_binding.harness_operation_id
+        )
+        self.assertEqual(len(runtime_traces), 1)
+        self.assertEqual(runtime_traces[0].terminal_trace, persisted_message.harness_trace)
 
         replay = self.client.post(f"/tavern/rooms/{room_id}/turns", json=turn_payload)
         self.assertEqual(replay.status_code, 200, replay.text)
@@ -809,8 +846,12 @@ class TavernApiTests(unittest.TestCase):
             )
         self.assertEqual(response.status_code, 200, response.text)
         trace = response.json()["generated_messages"][0]["harness_trace"]
+        self.assertEqual(trace["trace_schema_version"], "harness-trace-v3")
         self.assertEqual(trace["status"], "repaired")
-        self.assertEqual(trace["attempts"], 2)
+        self.assertEqual(
+            [item["phase"] for item in trace["attempt_records"]],
+            ["generate", "decode", "repair", "validate", "commit"],
+        )
         self.assertIn("retry_strict_actor_reply", trace["recovery_strategy"])
 
     def test_model_schema_recovery_exhaustion_persists_failed_decode_trace(self) -> None:
@@ -843,12 +884,12 @@ class TavernApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 502)
         runs = self.client.get(f"/tavern/rooms/{created['room']['id']}/runs").json()["items"]
         self.assertEqual(runs[0]["status"], "failed")
-        self.assertEqual(runs[0]["harness_trace"][0]["stage"], "actor_decode")
-        self.assertEqual(runs[0]["harness_trace"][0]["attempts"], 2)
-        self.assertIn(
-            "retry_strict_actor_reply",
-            runs[0]["harness_trace"][0]["recovery_strategy"],
-        )
+        trace = runs[0]["harness_trace"][0]
+        self.assertEqual(trace["trace_schema_version"], "harness-trace-v3")
+        self.assertEqual(trace["stage"], "actor_reply")
+        self.assertEqual(trace["attempt_records"][-1]["phase"], "generate")
+        self.assertEqual(trace["attempt_records"][-1]["status"], "failed")
+        self.assertEqual(trace["commit_evidence"]["status"], "not_committed")
 
 
 if __name__ == "__main__":

@@ -6,11 +6,12 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import json
+from typing import Any, Callable
 
 from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.models.harness import HarnessTraceRecord
+from app.models.harness import HarnessTraceRecord, validate_harness_trace
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
     HarnessOperationBindingV1,
@@ -828,6 +829,7 @@ class TavernRepository:
         finalize_run: bool,
         lease_owner: str,
         claim_count: int,
+        runtime_commit: Callable[[Any, TavernMessageRecord, TavernRunRecord, TavernSpeakerStepRecord], None] | None = None,
     ) -> TavernRunRecord:
         with self.database.session() as session:
             canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
@@ -913,6 +915,42 @@ class TavernRepository:
             )
             if completed_step.rowcount != 1:
                 raise TavernStepClaimConflict(step_index, step_row.status)
+            if runtime_commit is not None:
+                # The callback receives the live transaction and the freshly
+                # persisted graph, so runtime terminalization can be fenced in
+                # the same commit as Message/Step/Run.
+                session.flush()
+                hydrated = self._hydrate_run(session, run_row)
+                current_step = next(
+                    item for item in hydrated.speaker_steps
+                    if item.step_index == step_index
+                )
+                anchor_row = session.get(
+                    TavernMessageRow, step_row.reply_to_message_id
+                )
+                if anchor_row is None:
+                    raise LookupError("tavern_actor_commit_reply_anchor_not_found")
+                runtime_commit(
+                    session,
+                    message,
+                    hydrated,
+                    current_step,
+                )
+                if message.harness_trace is None:
+                    raise ValueError("tavern_runtime_commit_trace_missing")
+                message_row = session.get(TavernMessageRow, message.id)
+                if message_row is None:
+                    raise LookupError("tavern_message_not_found")
+                message_payload = dict(message_row.payload or {})
+                message_payload["harness_trace"] = (
+                    message.harness_trace.model_dump(mode="json", exclude_none=False)
+                )
+                message_row.payload = message_payload
+                step_payload = dict(step_row.payload or {})
+                step_payload["harness_trace"] = (
+                    message.harness_trace.model_dump(mode="json", exclude_none=False)
+                )
+                step_row.payload = step_payload
             if finalize_run:
                 incomplete_count = int(
                     session.scalar(
@@ -946,6 +984,7 @@ class TavernRepository:
         harness_trace: HarnessTraceRecord,
         lease_owner: str,
         claim_count: int,
+        runtime_failure: Callable[[Any], HarnessTraceRecord] | None = None,
     ) -> TavernRunRecord:
         with self.database.session() as session:
             canonical_now = _canonical_utc_timestamp(_database_utc_now(session))
@@ -974,6 +1013,8 @@ class TavernRepository:
                 raise TavernStepClaimConflict(step_index, "fencing_epoch_lost")
             if step_row.lease_expires_at <= canonical_now:
                 raise TavernStepClaimConflict(step_index, "lease_expired")
+            if runtime_failure is not None:
+                harness_trace = runtime_failure(session)
             failed_step = session.execute(
                 update(TavernRunStepRow)
                 .where(
@@ -1030,6 +1071,31 @@ class TavernRepository:
         if failed is None:
             raise LookupError("tavern_run_not_found")
         return failed
+
+    def record_terminal_step_trace(
+        self,
+        *,
+        run_id: str,
+        step_index: int,
+        harness_trace,
+    ) -> None:
+        """Attach late fenced evidence to a canceled step without reviving it."""
+
+        strict_trace = validate_harness_trace(
+            harness_trace.model_dump(mode="json", exclude_none=False)
+        )
+        with self.database.session() as session:
+            row = session.get(TavernRunStepRow, (run_id, step_index))
+            if row is None:
+                raise LookupError("tavern_run_step_not_found")
+            if row.status != TavernSpeakerStepStatus.CANCELED.value:
+                return
+            payload = dict(row.payload or {})
+            payload["harness_trace"] = strict_trace.model_dump(
+                mode="json",
+                exclude_none=False,
+            )
+            row.payload = payload
 
     def cancel_run(
         self,
@@ -1122,41 +1188,60 @@ class TavernRepository:
         """Read one actor commit graph from a single consistent DB snapshot."""
 
         with self.database.session() as session:
-            message_row = session.get(TavernMessageRow, message_id)
-            if message_row is None:
-                raise LookupError("tavern_message_not_found")
-            message = _message_from_row(message_row)
-            if message.author_kind != TavernAuthorKind.PERSONA:
-                raise ValueError("tavern_actor_commit_message_required")
-            run_row = session.get(TavernRunRow, message.run_id)
-            if run_row is None or run_row.room_id != message.room_id:
-                raise LookupError("tavern_run_not_found")
-            step_rows = session.scalars(
-                select(TavernRunStepRow)
-                .where(TavernRunStepRow.run_id == run_row.id)
-                .order_by(TavernRunStepRow.step_index)
-            ).all()
-            run = _run_from_row(run_row, step_rows)
-            matching_steps = [
-                item for item in run.speaker_steps if item.message_id == message.id
-            ]
-            if len(matching_steps) != 1:
-                raise ValueError("tavern_actor_commit_step_mismatch")
-            participant_rows = session.scalars(
-                select(TavernParticipantRow)
-                .where(TavernParticipantRow.room_id == message.room_id)
-                .order_by(TavernParticipantRow.display_order)
-            ).all()
-            anchor_row = session.get(TavernMessageRow, message.reply_to_message_id)
-            if anchor_row is None:
-                raise LookupError("tavern_actor_commit_reply_anchor_not_found")
-            return (
-                message,
-                run,
-                matching_steps[0],
-                [_participant_from_row(row) for row in participant_rows],
-                _message_from_row(anchor_row),
+            return self.get_actor_commit_read_back_in_session(
+                session,
+                message_id=message_id,
             )
+
+    def get_actor_commit_read_back_in_session(
+        self,
+        session,
+        *,
+        message_id: str,
+    ) -> tuple[
+        TavernMessageRecord,
+        TavernRunRecord,
+        TavernSpeakerStepRecord,
+        list[TavernParticipantRecord],
+        TavernMessageRecord,
+    ]:
+        """Read an actor commit graph from the caller's transaction snapshot."""
+
+        message_row = session.get(TavernMessageRow, message_id)
+        if message_row is None:
+            raise LookupError("tavern_message_not_found")
+        message = _message_from_row(message_row)
+        if message.author_kind != TavernAuthorKind.PERSONA:
+            raise ValueError("tavern_actor_commit_message_required")
+        run_row = session.get(TavernRunRow, message.run_id)
+        if run_row is None or run_row.room_id != message.room_id:
+            raise LookupError("tavern_run_not_found")
+        step_rows = session.scalars(
+            select(TavernRunStepRow)
+            .where(TavernRunStepRow.run_id == run_row.id)
+            .order_by(TavernRunStepRow.step_index)
+        ).all()
+        run = _run_from_row(run_row, step_rows)
+        matching_steps = [
+            item for item in run.speaker_steps if item.message_id == message.id
+        ]
+        if len(matching_steps) != 1:
+            raise ValueError("tavern_actor_commit_step_mismatch")
+        participant_rows = session.scalars(
+            select(TavernParticipantRow)
+            .where(TavernParticipantRow.room_id == message.room_id)
+            .order_by(TavernParticipantRow.display_order)
+        ).all()
+        anchor_row = session.get(TavernMessageRow, message.reply_to_message_id)
+        if anchor_row is None:
+            raise LookupError("tavern_actor_commit_reply_anchor_not_found")
+        return (
+            message,
+            run,
+            matching_steps[0],
+            [_participant_from_row(row) for row in participant_rows],
+            _message_from_row(anchor_row),
+        )
 
     def get_latest_message(self, room_id: str) -> TavernMessageRecord | None:
         with self.database.session() as session:
@@ -1421,7 +1506,7 @@ def _message_from_row(row: TavernMessageRow) -> TavernMessageRecord:
         client_request_id=row.client_request_id,
         created_at=row.created_at,
         harness_trace=(
-            HarnessTraceRecord.model_validate(harness_payload) if harness_payload else None
+            validate_harness_trace(harness_payload) if harness_payload else None
         ),
         commit_metadata=commit_metadata_payload,
     )
@@ -1474,7 +1559,7 @@ def _run_from_row(
             harness_trace
             if speaker_steps
             else [
-                HarnessTraceRecord.model_validate(item)
+                validate_harness_trace(item)
                 for item in (payload.get("harness_trace") or [])
             ]
         ),
@@ -1551,7 +1636,7 @@ def _step_from_row(row: TavernRunStepRow) -> TavernSpeakerStepRecord:
         reply_to_message_id=row.reply_to_message_id,
         error_code=row.error_code,
         harness_trace=(
-            HarnessTraceRecord.model_validate(trace_payload) if trace_payload else None
+            validate_harness_trace(trace_payload) if trace_payload else None
         ),
         claim_count=row.claim_count,
         started_at=row.started_at,

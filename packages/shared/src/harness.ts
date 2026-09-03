@@ -145,10 +145,10 @@ export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
   },
   persona_compiler: { ownerModule: "app.services.persona_cards", contract: null },
   scene_compiler: { ownerModule: "app.services.scene_setup", contract: null },
-  study_chat_prompt: { ownerModule: "app.services.study_session_prompt", contract: null },
+  study_chat_prompt: { ownerModule: "app.services.study_session_prompt", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v1" } },
   study_chat_toolset: {
     ownerModule: "app.services.study_session_chat_runtime",
-    contract: null,
+    contract: { name: "study_chat_toolset", version: "study-chat-toolset-v1" },
   },
   tavern_persona_compiler: {
     ownerModule: "app.services.persona_runtime",
@@ -332,7 +332,7 @@ export type HarnessCommitEvidencePolicy =
   | "revision"
   | "sequence"
   | "unsupported";
-export type HarnessOperationEvidenceScope = "primary_output_only";
+export type HarnessOperationEvidenceScope = "primary_output_only" | "complete_transaction";
 export type HarnessRollbackEvidencePolicy =
   | "read_back"
   | "compensation"
@@ -395,9 +395,9 @@ export const HARNESS_RESOURCE_EVIDENCE_POLICIES = {
     rollbackEvidence: "unsupported",
   },
   study_session: {
-    semantics: "unversioned_mutable",
-    contextEvidence: "unsupported",
-    commitEvidence: "unsupported",
+    semantics: "revisioned_control_aggregate",
+    contextEvidence: "authoritative_revision",
+    commitEvidence: "revision",
     rollbackEvidence: "unsupported",
   },
   tavern_room: {
@@ -517,6 +517,24 @@ export const HARNESS_OPERATION_COMMIT_POLICIES = deepFreeze({
       },
     ],
   },
+  "study_chat:study_chat_reply:StudyChatReply:study-chat-reply-trace-v1:StudySessionTurnCommittedProjection:study-chat-turn-committed-projection-v1": {
+    workflow: "study_chat",
+    stage: "study_chat_reply",
+    traceContract: { name: "StudyChatReply", version: "study-chat-reply-trace-v1" },
+    payloadContract: { name: "StudySessionTurnCommittedProjection", version: "study-chat-turn-committed-projection-v1" },
+    projectionContract: { name: "StudySessionTurnCommittedProjection", version: "study-chat-turn-committed-projection-v1" },
+    bindingContract: { name: "StudyChatOperationBinding", version: "study-chat-operation-binding-v1" },
+    digestScope: "committed_projection",
+    evidenceScope: "primary_output_only",
+    subjectResourceType: "study_session",
+    subjectResourceCount: 1,
+    statusRules: [
+      { traceStatus: "failed", commitStatus: "not_committed" },
+      { traceStatus: "passed", commitStatus: "committed" },
+      { traceStatus: "repaired", commitStatus: "committed" },
+    ],
+    resourceRules: [{ resourceType: "study_session", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
+  },
 } as const satisfies Record<string, HarnessOperationCommitPolicy>);
 
 export interface HarnessOperationCommitPolicyRegistrySnapshot {
@@ -551,7 +569,13 @@ export function harnessOperationCommitPolicyRegistrySnapshot(): HarnessOperation
   return {
     schema_name: "HarnessOperationCommitPolicyRegistry",
     schema_version: "harness-operation-commit-policies-v1",
-    policies: Object.values(HARNESS_OPERATION_COMMIT_POLICIES).map((policy) => ({
+    policies: [...Object.values(HARNESS_OPERATION_COMMIT_POLICIES)]
+      .sort((left, right) => {
+        const leftKey = `${left.workflow}:${left.stage}:${left.traceContract.name}:${left.traceContract.version}:${left.payloadContract.name}:${left.payloadContract.version}`;
+        const rightKey = `${right.workflow}:${right.stage}:${right.traceContract.name}:${right.traceContract.version}:${right.payloadContract.name}:${right.payloadContract.version}`;
+        return leftKey.localeCompare(rightKey);
+      })
+      .map((policy) => ({
       workflow: policy.workflow,
       stage: policy.stage,
       trace_contract: policy.traceContract,
@@ -573,7 +597,7 @@ export function harnessOperationCommitPolicyRegistrySnapshot(): HarnessOperation
         not_committed_attempted_min: item.notCommittedAttemptedMin,
         not_committed_attempted_max: item.notCommittedAttemptedMax,
       })),
-    })),
+      })),
   };
 }
 

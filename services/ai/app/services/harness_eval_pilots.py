@@ -45,6 +45,7 @@ from app.models.harness_eval_baseline import (
 from app.models.harness_manifest import (
     HARNESS_WORKFLOW_MANIFEST_SCHEMA_VERSION,
     PLANNING_TOOL_EVAL_SUITE,
+    STUDY_CHAT_EVAL_SUITE,
     TAVERN_IDENTITY_EVAL_SUITE,
 )
 from app.models.harness_operation import (
@@ -76,6 +77,7 @@ from app.services.harness_eval_runner import (
 from app.services.plan_prompt import build_study_unit_detail_map
 from app.services.plan_tool_runtime import build_plan_tool_runtime
 from app.services.tavern_harness import TavernActorHarness, TavernHarnessViolation
+from app.services.study_v3 import StudyV3ReplyAdapter
 
 
 FIXTURE_PATH = (
@@ -86,6 +88,7 @@ FIXTURE_PATH = (
     / "harness"
     / "pilot-eval-cases-v1.json"
 )
+STUDY_FIXTURE_PATH = FIXTURE_PATH.parent / "study-chat-eval-cases-v1.json"
 BASELINE_ROOT = FIXTURE_PATH.parent / "eval-pilots"
 PILOT_RUNNER_CONTRACT = HarnessContractRef(
     name="HarnessPilotEvalRunner",
@@ -119,6 +122,10 @@ PLANNING_GRADER_CONTRACT = HarnessContractRef(
     name="planning_tool_grader",
     version="planning-tool-grader-v1",
 )
+STUDY_GRADER_CONTRACT = HarnessContractRef(
+    name="study_chat_reply_grader",
+    version="study-chat-reply-grader-v1",
+)
 TAVERN_OUTCOME_INVARIANT = HarnessContractRef(
     name="tavern_identity_and_prompt_safety",
     version="tavern-identity-and-prompt-safety-v1",
@@ -126,6 +133,10 @@ TAVERN_OUTCOME_INVARIANT = HarnessContractRef(
 PLANNING_OUTCOME_INVARIANT = HarnessContractRef(
     name="planning_tool_contract_and_grounding",
     version="planning-tool-contract-and-grounding-v1",
+)
+STUDY_OUTCOME_INVARIANT = HarnessContractRef(
+    name="study_chat_reply_citation_event_tool_correctness",
+    version="study-chat-reply-citation-event-tool-correctness-v1",
 )
 
 TAVERN_CORRECT_RATE = HarnessContractRef(
@@ -164,6 +175,10 @@ PLANNING_PROVIDER_CALL_COUNT = HarnessContractRef(
     name="planning_provider_call_count",
     version="planning-provider-call-count-v1",
 )
+STUDY_CORRECT_RATE = HarnessContractRef(
+    name="study_chat_reply_correct_rate",
+    version="study-chat-reply-correct-rate-v1",
+)
 
 
 class _FixtureModel(BaseModel):
@@ -201,6 +216,53 @@ class PlanningPilotCase(_FixtureModel):
     def validate_expected_result(self) -> "PlanningPilotCase":
         if self.expected_ok == bool(self.expected_error):
             raise ValueError("planning_pilot_expected_result_invalid")
+        return self
+
+
+class StudyPilotCase(_FixtureModel):
+    case_id: str
+    split: Literal["regression", "held_out"]
+    tags: list[str]
+    scenario: Literal[
+        "valid",
+        "empty_reply",
+        "citation_source",
+        "character_event",
+        "tool_identity",
+        "tool_contract",
+        "tool_json",
+        "extra_field",
+    ]
+    expected_status: Literal["accepted", "rejected"]
+
+
+class StudyPilotEvalCasesV1(_FixtureModel):
+    schema_name: Literal["StudyChatEvalCases"]
+    schema_version: Literal["study-chat-eval-cases-v1"]
+    review_contract: HarnessContractRef
+    review_attestation_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    study_cases: list[StudyPilotCase] = Field(min_length=8, max_length=64)
+
+    @model_validator(mode="after")
+    def validate_cases(self) -> "StudyPilotEvalCasesV1":
+        ids = [item.case_id for item in self.study_cases]
+        if len(ids) != len(set(ids)):
+            raise ValueError("study_chat_eval_case_id_duplicate")
+        if not any(item.split == "held_out" for item in self.study_cases):
+            raise ValueError("study_chat_eval_held_out_split_missing")
+        for item in self.study_cases:
+            if item.tags != sorted(set(item.tags)):
+                raise ValueError("study_chat_eval_case_tags_not_canonical")
+        expected = canonical_harness_digest(
+            {
+                "contract": self.review_contract.model_dump(mode="json"),
+                "study_cases": [
+                    item.model_dump(mode="json") for item in self.study_cases
+                ],
+            }
+        )
+        if self.review_attestation_digest != expected:
+            raise ValueError("study_chat_eval_review_attestation_digest_mismatch")
         return self
 
 
@@ -262,11 +324,12 @@ class _PilotOperationAuthority:
                 "seed": seed,
             }
         )
-        kind = (
-            HarnessDomainOperationKind.TAVERN_RUN
-            if case.workflow == HarnessWorkflow.TAVERN.value
-            else HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
-        )
+        if case.workflow == HarnessWorkflow.TAVERN.value:
+            kind = HarnessDomainOperationKind.TAVERN_RUN
+        elif case.workflow == HarnessWorkflow.STUDY_CHAT.value:
+            kind = HarnessDomainOperationKind.STUDY_CHAT
+        else:
+            kind = HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
         workflow, entry_stage = HARNESS_DOMAIN_OPERATION_ROUTES[kind]
         binding = HarnessOperationBindingV1(
             harness_operation_id=f"harness-operation-{identity[:32]}",
@@ -384,6 +447,30 @@ class _PlanningPilotGrader:
                 "expected_error": expected_error,
                 "actual_error": actual_error,
             },
+        )
+
+
+class _StudyPilotGrader:
+    contract = STUDY_GRADER_CONTRACT
+    implementation_contract = HarnessContractRef(
+        name="StudyChatReplyDeterministicGrader",
+        version="study-chat-reply-deterministic-grader-v1",
+    )
+    configuration_digest = canonical_harness_digest(
+        {"statuses": ["accepted", "rejected"]}
+    )
+    kind = "deterministic"
+
+    def grade(self, *, case, candidate_evidence, payload, **_):
+        expected = str(payload["expected_status"])
+        actual = str((candidate_evidence or {}).get("actual_status", "missing"))
+        correct = actual == expected
+        return _grader_result(
+            grader=self,
+            case=case,
+            passed=correct,
+            metrics=[_boolean_metric(STUDY_CORRECT_RATE, correct, case.case_digest)],
+            evidence={"expected": expected, "actual": actual},
         )
 
 
@@ -598,9 +685,89 @@ def _execute_planning(*, payload, run, **_):
     )
 
 
+def _study_candidate_payload(scenario: str) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "reply": "A basis is linearly independent and spans the space.",
+        "citations": [
+            {
+                "section_id": "unit-1",
+                "title": "Vector Spaces",
+                "page_start": 1,
+                "page_end": 2,
+                "source_kind": "document",
+                "source_id": "section-1",
+            }
+        ],
+        "character_events": [
+            {
+                "emotion": "calm",
+                "action": "point",
+                "speech_style": "steady",
+                "scene_hint": "",
+                "line_segment_id": "session-eval:chat:0",
+                "timing_hint": "normal",
+            }
+        ],
+        "tool_calls": [
+            {
+                "tool_call_id": "tool-call-1",
+                "tool_name": "read_session_memory",
+                "arguments_json": "{}",
+                "argument_contract_version": "study-tool-arguments-v1",
+                "result_contract_version": "study-tool-result-v1",
+                "result_summary": "memory read",
+                "result_json": "{}",
+            }
+        ],
+    }
+    if scenario == "empty_reply":
+        payload["reply"] = ""
+    elif scenario == "citation_source":
+        payload["citations"][0]["source_kind"] = ""  # type: ignore[index]
+    elif scenario == "character_event":
+        payload["character_events"][0]["action"] = ""  # type: ignore[index]
+    elif scenario == "tool_identity":
+        payload["tool_calls"][0]["tool_call_id"] = ""  # type: ignore[index]
+    elif scenario == "tool_contract":
+        payload["tool_calls"][0]["result_contract_version"] = ""  # type: ignore[index]
+    elif scenario == "tool_json":
+        payload["tool_calls"][0]["result_json"] = "[1,2]"  # type: ignore[index]
+    elif scenario == "extra_field":
+        payload["server_owned_revision"] = 99
+    return payload
+
+
+def _execute_study(*, payload, run, **_):
+    case = StudyPilotCase.model_validate(payload)
+    started = time.perf_counter()
+    try:
+        StudyV3ReplyAdapter().decode(_study_candidate_payload(case.scenario))
+        actual = "accepted"
+    except (TypeError, ValueError):
+        actual = "rejected"
+    duration_ms = max(0, int((time.perf_counter() - started) * 1000))
+    evidence = {"scenario": case.scenario, "actual_status": actual}
+    return HarnessEvalCandidateResult(
+        candidate_outcome="passed",
+        raw_schema_valid=True,
+        final_schema_valid=True,
+        trace_contract=run.tested_system.harness_contract,
+        trace_digest=canonical_harness_digest(evidence),
+        evidence_digest=canonical_harness_digest(evidence),
+        duration_ms=duration_ms,
+        grader_evidence={"actual_status": actual},
+    )
+
+
 def _load_fixtures() -> HarnessPilotEvalCasesV1:
     return HarnessPilotEvalCasesV1.model_validate_json(
         FIXTURE_PATH.read_text(encoding="utf-8")
+    )
+
+
+def _load_study_fixtures() -> StudyPilotEvalCasesV1:
+    return StudyPilotEvalCasesV1.model_validate_json(
+        STUDY_FIXTURE_PATH.read_text(encoding="utf-8")
     )
 
 
@@ -610,7 +777,7 @@ def _case(
     workflow: HarnessWorkflow,
     stage: HarnessStage,
     eval_route: str,
-    payload: TavernPilotCase | PlanningPilotCase,
+    payload: TavernPilotCase | PlanningPilotCase | StudyPilotCase,
     invariant: HarnessContractRef,
     grader: HarnessContractRef,
     review_contract: HarnessContractRef,
@@ -699,7 +866,7 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             ],
             "max_tool_calls": 0,
         }
-    else:
+    elif suite == PLANNING_TOOL_EVAL_SUITE:
         values = {
             "harness_contract": HarnessContractRef(
                 name="PlanningToolExecutionProjection",
@@ -739,6 +906,49 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             ],
             "max_tool_calls": 3,
         }
+    else:
+        values = {
+            "harness_contract": HarnessContractRef(
+                name="StudyChatReply",
+                version="study-chat-reply-trace-v1",
+            ),
+            "provider_adapter_contract": HarnessContractRef(
+                name="StudyChatWorkflowAdapter",
+                version="study-chat-workflow-adapter-v1",
+            ),
+            "provider_model_contract": HarnessContractRef(
+                name="DeterministicStudyReplyFixture",
+                version="deterministic-study-reply-fixture-v1",
+            ),
+            "input_contract": PILOT_FIXTURE_CONTRACT,
+            "output_contract": HarnessContractRef(
+                name="StudyChatRuntimeOutput",
+                version="study-chat-runtime-output-v1",
+            ),
+            "prompt_contract": HarnessContractRef(
+                name="StudyChatPrompt",
+                version="study-chat-prompt-v1",
+            ),
+            "policy_contract": HarnessContractRef(
+                name="StudyChatHarnessPolicy",
+                version="study-chat-harness-v1",
+            ),
+            "toolset_contract": HarnessContractRef(
+                name="ToolManifestRegistry",
+                version="tool-manifest-v1",
+            ),
+            "component_contracts": [
+                HarnessContractRef(
+                    name="study_chat_prompt",
+                    version="study-chat-prompt-v1",
+                ),
+                HarnessContractRef(
+                    name="study_chat_toolset",
+                    version="study-chat-toolset-v1",
+                ),
+            ],
+            "max_tool_calls": 1,
+        }
     return HarnessEvalSystemConfigV1(
         workflow_manifest_contract=PILOT_WORKFLOW_MANIFEST_CONTRACT,
         harness_contract=values["harness_contract"],
@@ -771,7 +981,11 @@ def _system_config(*, suite: HarnessContractRef) -> HarnessEvalSystemConfigV1:
             per_call_timeout_ms=10_000,
             max_cost_micro_usd=0,
         ),
-        source_revision="harness-wave-2-pilot-v1",
+        source_revision=(
+            "harness-wave-3-study-eval-v1"
+            if suite == STUDY_CHAT_EVAL_SUITE
+            else "harness-wave-2-pilot-v1"
+        ),
         worktree_state="clean",
         source_tree_digest=None,
     )
@@ -877,6 +1091,7 @@ def _registration(
 
 def build_harness_pilot_runner() -> HarnessEvalRunner:
     fixture = _load_fixtures()
+    study_fixture = _load_study_fixtures()
     tavern_cases = tuple(sorted((
         _case(
             suite=TAVERN_IDENTITY_EVAL_SUITE,
@@ -905,6 +1120,27 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
         )
         for item in fixture.planning_cases
     ), key=lambda item: (item.case_id, item.case_version)))
+    study_cases = tuple(
+        sorted(
+            (
+                _case(
+                    suite=STUDY_CHAT_EVAL_SUITE,
+                    workflow=HarnessWorkflow.STUDY_CHAT,
+                    stage=HarnessStage.STUDY_CHAT_REPLY,
+                    eval_route="study_chat.reply",
+                    payload=item,
+                    invariant=STUDY_OUTCOME_INVARIANT,
+                    grader=STUDY_GRADER_CONTRACT,
+                    review_contract=study_fixture.review_contract,
+                    review_attestation_digest=(
+                        study_fixture.review_attestation_digest
+                    ),
+                )
+                for item in study_fixture.study_cases
+            ),
+            key=lambda item: (item.case_id, item.case_version),
+        )
+    )
     runs = {
         (TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version): _run(
             suite=TAVERN_IDENTITY_EVAL_SUITE,
@@ -913,6 +1149,10 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
         (PLANNING_TOOL_EVAL_SUITE.name, PLANNING_TOOL_EVAL_SUITE.version): _run(
             suite=PLANNING_TOOL_EVAL_SUITE,
             cases=planning_cases,
+        ),
+        (STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version): _run(
+            suite=STUDY_CHAT_EVAL_SUITE,
+            cases=study_cases,
         ),
     }
     suites = HarnessEvalSuiteRegistry(PILOT_SUITE_REGISTRY_CONTRACT)
@@ -928,6 +1168,18 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
     )
     suites.register(
         _registration(
+            suite=STUDY_CHAT_EVAL_SUITE,
+            workflow=HarnessWorkflow.STUDY_CHAT,
+            stage=HarnessStage.STUDY_CHAT_REPLY,
+            route="study_chat.reply",
+            run=runs[
+                (STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version)
+            ],
+            cases=study_cases,
+        )
+    )
+    suites.register(
+        _registration(
             suite=PLANNING_TOOL_EVAL_SUITE,
             workflow=HarnessWorkflow.PLANNING,
             stage=HarnessStage.PLANNING_TOOL_EXECUTION,
@@ -939,13 +1191,18 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
     graders = HarnessEvalGraderRegistry(PILOT_GRADER_REGISTRY_CONTRACT)
     graders.register(_TavernPilotGrader())
     graders.register(_PlanningPilotGrader())
+    graders.register(_StudyPilotGrader())
     temporary = TemporaryDirectory()
     database = Database(f"sqlite:///{Path(temporary.name) / 'pilots.sqlite3'}")
     database.create_schema()
     authority = _PilotOperationAuthority(database)
     payloads = {
         item.case_id: item.model_dump(mode="json")
-        for item in (*fixture.tavern_cases, *fixture.planning_cases)
+        for item in (
+            *fixture.tavern_cases,
+            *fixture.planning_cases,
+            *study_fixture.study_cases,
+        )
     }
 
     def resolve(case: HarnessEvalCaseV1) -> HarnessEvalFixturePayload:
@@ -974,11 +1231,28 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
                 synthetic_resolver=None,
                 execute=_execute_planning,
             ),
+            HarnessEvalRouteAdapter(
+                suite=STUDY_CHAT_EVAL_SUITE,
+                eval_route="study_chat.reply",
+                operation_admitter=authority.admit,
+                fixture_resolver=resolve,
+                synthetic_resolver=None,
+                execute=_execute_study,
+            ),
         ),
         graders=graders,
         operation_resolver=authority,
     )
-    runner._pilot_resources = (temporary, database, fixture, runs, tavern_cases, planning_cases)
+    runner._pilot_resources = (
+        temporary,
+        database,
+        fixture,
+        study_fixture,
+        runs,
+        tavern_cases,
+        planning_cases,
+        study_cases,
+    )
     return runner
 
 
@@ -987,15 +1261,29 @@ def execute_harness_pilot_bundle(
     refresh_baselines: bool = False,
 ) -> HarnessPilotEvalBundle:
     runner = build_harness_pilot_runner()
-    _, _, fixture, runs, tavern_cases, planning_cases = runner._pilot_resources
+    (
+        _,
+        _,
+        fixture,
+        study_fixture,
+        runs,
+        tavern_cases,
+        planning_cases,
+        study_cases,
+    ) = runner._pilot_resources
     cases = {
         (TAVERN_IDENTITY_EVAL_SUITE.name, TAVERN_IDENTITY_EVAL_SUITE.version): tavern_cases,
         (PLANNING_TOOL_EVAL_SUITE.name, PLANNING_TOOL_EVAL_SUITE.version): planning_cases,
+        (STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version): study_cases,
     }
     executions = {}
     baselines = {}
     decisions = {}
-    for suite in (TAVERN_IDENTITY_EVAL_SUITE, PLANNING_TOOL_EVAL_SUITE):
+    for suite in (
+        TAVERN_IDENTITY_EVAL_SUITE,
+        PLANNING_TOOL_EVAL_SUITE,
+        STUDY_CHAT_EVAL_SUITE,
+    ):
         key = (suite.name, suite.version)
         execution = runner.run(
             runs[key],
@@ -1005,11 +1293,12 @@ def execute_harness_pilot_bundle(
             deterministic_gate=True,
         )
         executions[key] = execution
-        suite_threshold = (
-            TAVERN_CORRECT_RATE
-            if suite == TAVERN_IDENTITY_EVAL_SUITE
-            else PLANNING_CORRECT_RATE
-        )
+        if suite == TAVERN_IDENTITY_EVAL_SUITE:
+            suite_threshold = TAVERN_CORRECT_RATE
+        elif suite == PLANNING_TOOL_EVAL_SUITE:
+            suite_threshold = PLANNING_CORRECT_RATE
+        else:
+            suite_threshold = STUDY_CORRECT_RATE
         thresholds = [
             HarnessEvalMetricThresholdV1(
                 metric=CANDIDATE_PASS_RATE,
@@ -1040,8 +1329,16 @@ def execute_harness_pilot_bundle(
                     thresholds,
                     key=lambda item: (item.metric.name, item.metric.version),
                 ),
-                review_contract=fixture.review_contract,
-                review_attestation_digest=fixture.review_attestation_digest,
+                review_contract=(
+                    study_fixture.review_contract
+                    if suite == STUDY_CHAT_EVAL_SUITE
+                    else fixture.review_contract
+                ),
+                review_attestation_digest=(
+                    study_fixture.review_attestation_digest
+                    if suite == STUDY_CHAT_EVAL_SUITE
+                    else fixture.review_attestation_digest
+                ),
             )
         else:
             baseline = HarnessEvalBaselineV1.model_validate_json(

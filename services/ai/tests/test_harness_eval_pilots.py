@@ -10,7 +10,7 @@ class HarnessEvalPilotTests(unittest.TestCase):
         bundle = execute_harness_pilot_bundle(refresh_baselines=False)
         self.assertEqual(
             {key[0] for key in bundle.executions},
-            {"planning_tool_eval", "tavern_identity_eval"},
+            {"planning_tool_eval", "study_chat_eval", "tavern_identity_eval"},
         )
         for execution in bundle.executions.values():
             self.assertEqual(execution.report.status, "passed")

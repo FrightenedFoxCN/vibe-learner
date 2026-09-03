@@ -60,9 +60,9 @@
     },
     {
       "resource_type": "study_session",
-      "semantics": "unversioned_mutable",
-      "context_evidence": "unsupported",
-      "commit_evidence": "unsupported",
+      "semantics": "revisioned_control_aggregate",
+      "context_evidence": "authoritative_revision",
+      "commit_evidence": "revision",
       "rollback_evidence": "unsupported"
     },
     {

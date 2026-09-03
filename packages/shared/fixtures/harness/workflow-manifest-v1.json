@@ -909,49 +909,76 @@
       "workflow": "study_chat",
       "stage": "study_chat_reply",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "StudyChatReplyWorkflowManifestEntry",
+          "version": "study-chat-reply-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.study_sessions",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "StudyChatWorkflowAdapter",
+          "version": "study-chat-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "StudyChatInputManifest",
+          "version": "study-chat-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "StudyChatReplyProposal",
+          "version": "study-chat-reply-proposal-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "StudySessionTurnCommittedProjection",
+          "version": "study-chat-turn-committed-projection-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "study_chat_prompt",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "study_chat_prompt",
+              "version": "study-chat-prompt-v1"
+            }
           }
         },
         {
           "component_name": "study_chat_toolset",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "study_chat_toolset",
+              "version": "study-chat-toolset-v1"
+            }
           }
         }
       ],
       "prompt_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "StudyChatPrompt",
+          "version": "study-chat-prompt-v1"
+        }
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "StudyChatHarnessPolicy",
+          "version": "study-chat-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "registered",
@@ -982,24 +1009,45 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "StudyChatEffectBatch",
+            "version": "study-chat-effect-batch-v1"
+          }
+        ]
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "registered",
+        "key": {
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "trace_contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "payload_contract": {
+            "name": "StudySessionTurnCommittedProjection",
+            "version": "study-chat-turn-committed-projection-v1"
+          }
+        }
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.study_v3.StudyV3ReplyAdapter"
       },
       "eval_route": {
         "status": "registered",
         "value": "study_chat.reply"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "study_chat_eval",
+            "version": "study-chat-eval-v1"
+          }
+        ]
       }
     },
     {

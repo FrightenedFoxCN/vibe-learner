@@ -290,8 +290,8 @@ const STAGE_VOCABULARY: StageVocabulary[] = [
     stage: "study_chat_reply",
     ownerModule: "app.services.study_sessions",
     components: [
-      { name: "study_chat_prompt", contract: null },
-      { name: "study_chat_toolset", contract: null },
+      { name: "study_chat_prompt", contract: { name: "study_chat_prompt", version: "study-chat-prompt-v1" } },
+      { name: "study_chat_toolset", contract: { name: "study_chat_toolset", version: "study-chat-toolset-v1" } },
     ],
     evalRoute: "study_chat.reply",
   },
@@ -513,6 +513,28 @@ const TAVERN_ENTRY: HarnessWorkflowManifestEntryV1 = {
   eval_suites: registeredContracts(TAVERN_IDENTITY_EVAL_SUITE),
 };
 
+const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
+  key: "study_chat:study_chat_reply", workflow: "study_chat", stage: "study_chat_reply",
+  registration: registeredContract("StudyChatReplyWorkflowManifestEntry", "study-chat-reply-workflow-manifest-v1"),
+  owner_module: "app.services.study_sessions",
+  owner_adapter: registeredContract("StudyChatWorkflowAdapter", "study-chat-workflow-adapter-v1"),
+  input_contract: registeredContract("StudyChatInputManifest", "study-chat-input-manifest-v1"),
+  proposal_contract: registeredContract("StudyChatReplyProposal", "study-chat-reply-proposal-v1"),
+  output_contract: registeredContract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1"),
+  component_contracts: componentContracts("study_chat", "study_chat_reply"),
+  prompt_contract: registeredContract("StudyChatPrompt", "study-chat-prompt-v1"),
+  policy_contract: registeredContract("StudyChatHarnessPolicy", "study-chat-harness-v1"),
+  toolset_contract: registeredContract("ToolManifestRegistry", HARNESS_WORKFLOW_MANIFEST_TOOL_MANIFEST_VERSION),
+  attempt_ceiling: { max_attempts: 3, max_repair_attempts: 2 },
+  execution_budget: { ...DEFAULT_BUDGET },
+  allowed_artifact_types: artifactAllowlist("document_upload", "planning_context", "scene_snapshot", "study_session_snapshot"),
+  allowed_effect_adapters: registeredContracts(contract("StudyChatEffectBatch", "study-chat-effect-batch-v1")),
+  commit_policy: { status: "registered", key: { workflow: "study_chat", stage: "study_chat_reply", trace_contract: contract("StudyChatReply", "study-chat-reply-trace-v1"), payload_contract: contract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1") } },
+  decoder_route: registeredString("app.services.study_v3.StudyV3ReplyAdapter"),
+  eval_route: registeredString("study_chat.reply"),
+  eval_suites: registeredContracts(contract("study_chat_eval", "study-chat-eval-v1")),
+};
+
 const entries: HarnessWorkflowManifestEntryV1[] = [
   unregisteredEntry("document_parse", "document_parse", {
     artifactTypes: ["document_upload"],
@@ -560,16 +582,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
   unregisteredEntry("scene", "scene_generation", {
     artifactTypes: ["persona_snapshot", "scene_snapshot"],
   }),
-  unregisteredEntry("study_chat", "study_chat_reply", {
-    artifactTypes: [
-      "document_upload",
-      "planning_context",
-      "scene_snapshot",
-      "study_session_snapshot",
-    ],
-    prompt: unregistered("contract_not_registered"),
-    toolset: TOOL_MANIFEST_SLOT,
-  }),
+  STUDY_ENTRY,
   TAVERN_ENTRY,
   unregisteredEntry("frontend_decode", "response_decode", {
     artifactTypes: ["frontend_response_fixture"],

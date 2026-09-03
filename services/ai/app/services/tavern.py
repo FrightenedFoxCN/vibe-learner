@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from threading import Event, RLock, Thread
 import time
@@ -10,8 +11,34 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
-from app.core.harness_component_versions import TAVERN_SCHEDULER_CONTRACT_VERSION
-from app.models.harness import HarnessTraceRecord
+from app.core.harness_component_versions import (
+    TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
+    TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
+    TAVERN_SCHEDULER_CONTRACT_VERSION,
+)
+from app.models.harness import (
+    HarnessArtifactType,
+    HarnessCommitEvidenceV3,
+    HarnessCommittedResourceRefV3,
+    HarnessCommitStatus,
+    HarnessCheckStatus,
+    HarnessCheckV2,
+    HarnessContractRef,
+    HarnessDigestAlgorithm,
+    HarnessDigestScope,
+    HarnessResourceRefV3,
+    HarnessResourceType,
+    HarnessStage,
+    HarnessTraceRecord,
+    HarnessTraceV3,
+    build_tavern_persona_message_commit_binding,
+    canonical_harness_digest,
+    validate_harness_operation_commit,
+)
+from app.models.harness_artifact_access import (
+    HarnessArtifactGrantScopeV1,
+    HarnessArtifactPermission,
+)
 from app.models.tavern import (
     CreateTavernRoomRequest,
     TavernAuthorKind,
@@ -38,6 +65,7 @@ from app.models.tavern import (
     TavernUserMessageInput,
     RetryTavernRunRequest,
     UpdateTavernRoomRequest,
+    build_tavern_persona_message_committed_projection,
 )
 from app.models.tavern_commit import TavernPersonaMessageCommitMetadataV1
 from app.persistence.harness_operation_repository import (
@@ -54,6 +82,14 @@ from app.persistence.tavern_repository import (
     TavernStepClaimConflict,
     TavernStepClaimsExhausted,
 )
+from app.persistence.harness_artifact_repository import HarnessArtifactRepository
+from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
+from app.services.harness_runtime import (
+    HarnessOperationRuntime,
+    HarnessRuntimeGenerationError,
+    HarnessRuntimePreparedOutput,
+    HarnessRuntimeRequest,
+)
 from app.services.model_recovery import (
     consume_model_recovery_state,
     reset_model_recovery_state,
@@ -67,8 +103,17 @@ from app.services.tavern_harness import (
     tavern_payload_digest,
 )
 from app.services.tavern_prompt import (
+    TAVERN_PROMPT_BUDGET_VERSION,
     TavernPromptBudgetError,
     preflight_tavern_actor_prompt,
+)
+from app.services.tavern_v3 import (
+    TAVERN_PROTECTED_SNAPSHOT_CONTRACT,
+    TavernHarnessArtifactResolver,
+    build_tavern_actor_context,
+    build_tavern_actor_stage_adapter,
+    serialize_tavern_protected_snapshot,
+    snapshot_ref_from_registration,
 )
 
 
@@ -87,6 +132,11 @@ class TavernService:
         max_step_claims: int = TAVERN_MAX_STEP_CLAIMS,
     ) -> None:
         self.repository = repository
+        self.harness_artifacts = HarnessArtifactRepository(repository.database)
+        self.harness_runtime_repository = HarnessRuntimeRepository(repository.database)
+        self.harness_runtime = HarnessOperationRuntime(
+            repository=self.harness_runtime_repository,
+        )
         self.persona_engine = persona_engine
         self.model_provider = model_provider
         self.actor_harness = TavernActorHarness()
@@ -620,6 +670,10 @@ class TavernService:
                 status_code=409,
                 detail=f"tavern_harness_operation_legacy_unbound:{run.id}",
             ) from exc
+        # Run admission advances the Room revision. Re-read the frozen room
+        # metadata/roster so every v3 subject reference names that authoritative
+        # revision rather than the caller's pre-admission projection.
+        detail = self.require_room(run.room_id)
         participant_map = {item.persona_id: item for item in detail.participants}
         generated_messages: list[TavernMessageRecord] = []
         reply_anchor_id = run.anchor_message_id
@@ -639,6 +693,9 @@ class TavernService:
             actor = participant_map[actor_id]
             recent_messages: list[TavernMessageRecord] = []
             step_claimed = False
+            generated: TavernMessageRecord | None = None
+            prepared_runtime: HarnessRuntimePreparedOutput | None = None
+            step_runtime: HarnessOperationRuntime | None = None
             execution_stage = "step_claim"
             try:
                 step = self.repository.claim_step(
@@ -679,21 +736,99 @@ class TavernService:
                         else ""
                     )
                     execution_stage = "actor_generation"
-                    generated = self._generate_actor_message(
+                    generated, prepared_runtime, step_runtime = (
+                        self._prepare_actor_v3_message(
                         run=run,
+                        step_index=index,
+                        trace_slot=(
+                            index * self.max_step_claims + step.claim_count - 1
+                        ),
+                        operation_binding=operation_binding,
                         actor=actor,
                         detail=detail,
                         recent_messages=recent_messages,
                         input_content=input_content,
                         required_target_id=required_target_id,
                         should_continue=heartbeat.should_continue,
+                        )
                     )
                     heartbeat.ensure_active()
                     execution_stage = "atomic_commit"
-                    generated.commit_metadata = TavernPersonaMessageCommitMetadataV1(
-                        operation_id=operation_binding.harness_operation_id,
-                        effect_batch_id=f"effect-{generated.id}",
-                    )
+
+                    def commit_runtime(
+                        session,
+                        committed_message: TavernMessageRecord,
+                        _run_projection: TavernRunRecord,
+                        _step_projection: TavernSpeakerStepRecord,
+                    ) -> None:
+                        (
+                            authoritative_message,
+                            authoritative_run,
+                            authoritative_step,
+                            authoritative_participants,
+                            authoritative_anchor,
+                        ) = self.repository.get_actor_commit_read_back_in_session(
+                            session,
+                            message_id=committed_message.id,
+                        )
+                        projection = build_tavern_persona_message_committed_projection(
+                            message=authoritative_message,
+                            run=authoritative_run,
+                            step=authoritative_step,
+                            participants=authoritative_participants,
+                            reply_anchor=authoritative_anchor,
+                        )
+                        digest = canonical_harness_digest(projection)
+                        evidence = HarnessCommitEvidenceV3(
+                            status=HarnessCommitStatus.COMMITTED,
+                            effect_batch_id=projection.effect_batch_id,
+                            payload_contract=HarnessContractRef(
+                                name=TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
+                                version=TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
+                            ),
+                            digest_algorithm=HarnessDigestAlgorithm.SHA256,
+                            digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+                            attempted_resource_refs=[
+                                HarnessResourceRefV3(
+                                    resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                                    resource_id=projection.message_id,
+                                    revision=None,
+                                )
+                            ],
+                            committed_resources=[
+                                HarnessCommittedResourceRefV3(
+                                    resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                                    resource_id=projection.message_id,
+                                    expected_revision=None,
+                                    committed_revision=None,
+                                    first_sequence=projection.sequence,
+                                    last_sequence=projection.sequence,
+                                    payload_digest=digest,
+                                )
+                            ],
+                            payload_digest=digest,
+                            committed_at=datetime.now(timezone.utc),
+                            rollback_reason_code="",
+                        )
+                        finalized = step_runtime.finalize_prepared_in_session(
+                            session,
+                            prepared=prepared_runtime,
+                            commit_evidence=evidence,
+                        )
+                        binding = build_tavern_persona_message_commit_binding(
+                            projection
+                        )
+                        validate_harness_operation_commit(
+                            finalized.trace,
+                            binding,
+                            message=authoritative_message,
+                            run=authoritative_run,
+                            step=authoritative_step,
+                            participants=authoritative_participants,
+                            reply_anchor=authoritative_anchor,
+                        )
+                        committed_message.harness_trace = finalized.trace
+
                     completed_run = self.repository.complete_step(
                         run_id=run.id,
                         step_index=index,
@@ -702,6 +837,7 @@ class TavernService:
                         finalize_run=index == len(run.scheduled_participant_ids) - 1,
                         lease_owner=execution_owner,
                         claim_count=step.claim_count,
+                        runtime_commit=commit_runtime,
                     )
             except TavernActorExecutionError as exc:
                 try:
@@ -736,6 +872,28 @@ class TavernService:
             except TavernStepClaimsExhausted as exc:
                 return self._replay_run(exc.run)
             except TavernStepClaimConflict as exc:
+                if (
+                    generated is not None
+                    and prepared_runtime is not None
+                    and step_runtime is not None
+                ):
+                    self._terminalize_actor_non_commit(
+                        runtime=step_runtime,
+                        prepared=prepared_runtime,
+                        message=generated,
+                        error_code="tavern_step_claim_fenced",
+                    )
+                    current = self.repository.get_run(run.id)
+                    if current is not None and current.status == TavernRunStatus.CANCELED:
+                        terminal = self.harness_runtime_repository.get(
+                            prepared_runtime.execution.trace_id
+                        )
+                        if terminal is not None and terminal.terminal_trace is not None:
+                            self.repository.record_terminal_step_trace(
+                                run_id=run.id,
+                                step_index=index,
+                                harness_trace=terminal.terminal_trace,
+                            )
                 raise self._step_conflict_response(run.id, exc) from exc
             except TavernRunTerminalConflict as exc:
                 if exc.status == TavernRunStatus.CANCELED.value:
@@ -761,6 +919,21 @@ class TavernService:
                     policy=detail.room.harness_policy,
                     recoveries=[],
                 )
+                runtime_failure = None
+                if (
+                    generated is not None
+                    and prepared_runtime is not None
+                    and step_runtime is not None
+                ):
+                    non_commit_evidence = self._actor_non_commit_evidence(generated)
+
+                    def runtime_failure(session):
+                        return step_runtime.fail_prepared_in_session(
+                            session,
+                            prepared=prepared_runtime,
+                            commit_evidence=non_commit_evidence,
+                            error_code=_error_code(exc),
+                        ).trace
                 try:
                     failed_run = self.repository.fail_step(
                         run_id=run.id,
@@ -770,6 +943,7 @@ class TavernService:
                         harness_trace=failure_trace,
                         lease_owner=execution_owner,
                         claim_count=step.claim_count,
+                        runtime_failure=runtime_failure,
                     )
                 except TavernStepClaimConflict as conflict:
                     raise self._step_conflict_response(run.id, conflict) from conflict
@@ -802,6 +976,341 @@ class TavernService:
             generated_messages=generated_messages,
             room_state=_to_room_state(self.require_room(run.room_id, limit=1).room),
         )
+
+    def _prepare_actor_v3_message(
+        self,
+        *,
+        run: TavernRunRecord,
+        step_index: int,
+        trace_slot: int,
+        operation_binding,
+        actor: TavernParticipantRecord,
+        detail: TavernRoomDetail,
+        recent_messages: list[TavernMessageRecord],
+        input_content: str,
+        required_target_id: str,
+        should_continue: Callable[[], bool] | None = None,
+    ) -> tuple[TavernMessageRecord, HarnessRuntimePreparedOutput, HarnessOperationRuntime]:
+        """Resolve protected context and validate one actor output before commit."""
+
+        # The protected snapshot is the complete deterministic stage input.
+        # Prompt preflight runs inside the runtime's generate phase, so a
+        # budget rejection also receives durable v3 failure evidence while
+        # still making zero provider calls.
+        bounded_messages = list(recent_messages)
+        protected_content = serialize_tavern_protected_snapshot(
+            detail=detail,
+            actor=actor,
+            recent_messages=recent_messages,
+            user_message=input_content,
+            guidance=run.guidance,
+        )
+        registration = self.harness_artifacts.register_artifact(
+            artifact_type=HarnessArtifactType.TAVERN_ROOM_SNAPSHOT,
+            artifact_contract=TAVERN_PROTECTED_SNAPSHOT_CONTRACT,
+            content=protected_content,
+        )
+        grant = self.harness_artifacts.issue_grant(
+            harness_operation_id=operation_binding.harness_operation_id,
+            scopes=(
+                HarnessArtifactGrantScopeV1(
+                    artifact_type=registration.artifact_type,
+                    artifact_id=registration.artifact_id,
+                    artifact_contract=registration.artifact_contract,
+                    permission=HarnessArtifactPermission.READ,
+                ),
+            ),
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+        )
+        context = build_tavern_actor_context(
+            operation_binding=operation_binding,
+            detail=detail,
+            mode=run.mode.value,
+            target_ids=run.scheduled_participant_ids,
+            anchor_present=bool(run.anchor_message_id),
+            context_digest=run.context_digest,
+            snapshot_ref=snapshot_ref_from_registration(registration),
+        )
+        resolver = TavernHarnessArtifactResolver(
+            self.harness_artifacts,
+            {registration.artifact_id: grant.grant_id},
+        )
+        runtime = HarnessOperationRuntime(
+            repository=self.harness_runtime_repository,
+            artifact_resolver=resolver,
+        )
+        reset_model_recovery_state()
+        model_recoveries = []
+
+        def generate_from_authorized_snapshot():
+            try:
+                prompt_preflight = preflight_tavern_actor_prompt(
+                    persona=actor.persona_snapshot,
+                    participants=detail.participants,
+                    scene_profile=detail.room.scene_profile,
+                    recent_messages=recent_messages,
+                    user_message=input_content,
+                    guidance=run.guidance,
+                    allowed_target_ids=[
+                        item.persona_id for item in detail.participants
+                    ],
+                    actor_reply_schema=json.dumps(
+                        TavernActorReply.transport_json_schema(),
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
+                    turn_kind=run.trigger_kind.value,
+                    required_target_id=required_target_id,
+                )
+                bounded_messages[:] = prompt_preflight.recent_messages
+                reply = self._generate_actor_reply(
+                    run=run,
+                    actor=actor,
+                    detail=detail,
+                    recent_messages=bounded_messages,
+                    input_content=input_content,
+                    required_target_id=required_target_id,
+                    should_continue=should_continue,
+                )
+                model_recoveries.extend(consume_model_recovery_state())
+                return reply
+            except TavernPromptBudgetError as exc:
+                consume_model_recovery_state()
+                raise HarnessRuntimeGenerationError(
+                    exc.code,
+                    (
+                        HarnessCheckV2(
+                            name="prompt_budget",
+                            status=HarnessCheckStatus.FAILED,
+                            code=exc.code,
+                            message=(
+                                f"{TAVERN_PROMPT_BUDGET_VERSION}: "
+                                f"partition={exc.partition}; actual={exc.actual}; "
+                                f"limit={exc.limit}."
+                            ),
+                        ),
+                    ),
+                ) from exc
+            except Exception as exc:
+                model_recoveries.extend(consume_model_recovery_state())
+                if not model_recoveries:
+                    raise
+                checks = tuple(
+                    HarnessCheckV2(
+                        name="model_recovery",
+                        status=HarnessCheckStatus.WARNING,
+                        code=f"{item.category}:{item.reason}"[:160],
+                        message=item.strategy[:320],
+                    )
+                    for item in model_recoveries
+                )
+                strategy = "+".join(
+                    dict.fromkeys(item.strategy for item in model_recoveries)
+                )[:320]
+                raise HarnessRuntimeGenerationError(
+                    _error_code(exc),
+                    checks,
+                    strategy,
+                ) from exc
+
+        adapter = build_tavern_actor_stage_adapter(
+            actor=actor,
+            participants=detail.participants,
+            recent_messages=bounded_messages,
+            user_message=input_content,
+            guidance=run.guidance,
+            required_target_id=required_target_id,
+            allowed_target_ids=[item.persona_id for item in detail.participants],
+            policy=detail.room.harness_policy,
+            generate=generate_from_authorized_snapshot,
+            commit=lambda _output: (_ for _ in ()).throw(
+                RuntimeError("tavern_commit_owned_by_repository_transaction")
+            ),
+            model_recoveries=lambda: list(model_recoveries),
+        )
+        parent_trace_id = self._parent_actor_trace_id(
+            run=run,
+            step_index=step_index,
+            trace_slot=trace_slot,
+            actor_id=actor.persona_id,
+            operation_binding=operation_binding,
+        )
+        request = HarnessRuntimeRequest(
+            operation_binding=operation_binding,
+            stage=HarnessStage.TAVERN_ACTOR_REPLY,
+            trace_slot=trace_slot,
+            context=context,
+            parent_trace_id=parent_trace_id,
+        )
+        try:
+            prepared = runtime.prepare_output(
+                request=request,
+                adapter=adapter,
+                claim_owner=f"{self._worker_id}-runtime-{trace_slot}",
+            )
+        except Exception as exc:
+            execution = next(
+                (
+                    item
+                    for item in self.harness_runtime_repository.list_operation_traces(
+                        operation_binding.harness_operation_id
+                    )
+                    if item.trace_slot == trace_slot
+                    and item.stage == HarnessStage.TAVERN_ACTOR_REPLY
+                ),
+                None,
+            )
+            if execution is not None and execution.terminal_trace is not None:
+                raise TavernActorExecutionError(
+                    execution.terminal_trace.error_code,
+                    execution.terminal_trace,
+                    exc,
+                ) from exc
+            raise
+        finally:
+            # The v3 runtime owns attempts/checks. Clear legacy context-local
+            # recovery state so a later request cannot inherit it.
+            consume_model_recovery_state()
+        if not isinstance(prepared.output, TavernActorReply):
+            raise RuntimeError("tavern_actor_runtime_output_invalid")
+        message_id = _tavern_actor_message_id(
+            operation_binding.harness_operation_id,
+            trace_slot,
+        )
+        message = TavernMessageRecord(
+            id=message_id,
+            room_id=run.room_id,
+            sequence=1,
+            run_id=run.id,
+            author_kind=TavernAuthorKind.PERSONA,
+            persona_id=actor.persona_id,
+            persona_name=actor.display_name,
+            content=prepared.output.text,
+            emotion=prepared.output.mood,
+            action=prepared.output.action,
+            speech_style=prepared.output.speech_style,
+            addressed_participant_ids=prepared.output.addressed_participant_ids,
+            client_request_id=run.idempotency_key,
+            created_at=_now(),
+            harness_trace=None,
+            commit_metadata=TavernPersonaMessageCommitMetadataV1(
+                operation_id=operation_binding.harness_operation_id,
+                effect_batch_id=f"effect-{message_id}",
+            ),
+        )
+        return message, prepared, runtime
+
+    def _parent_actor_trace_id(
+        self,
+        *,
+        run: TavernRunRecord,
+        step_index: int,
+        trace_slot: int,
+        actor_id: str,
+        operation_binding,
+    ) -> str | None:
+        if trace_slot > step_index * self.max_step_claims:
+            retry_parent = next(
+                (
+                    item
+                    for item in self.harness_runtime_repository.list_operation_traces(
+                        operation_binding.harness_operation_id
+                    )
+                    if item.trace_slot == trace_slot - 1
+                ),
+                None,
+            )
+            if retry_parent is not None:
+                return retry_parent.trace_id
+        if step_index > 0:
+            prior_slots = range(
+                (step_index - 1) * self.max_step_claims,
+                step_index * self.max_step_claims,
+            )
+            previous = next(
+                (
+                    item
+                    for item in reversed(
+                        self.harness_runtime_repository.list_operation_traces(
+                            operation_binding.harness_operation_id
+                        )
+                    )
+                    if item.trace_slot in prior_slots
+                    and item.stage == HarnessStage.TAVERN_ACTOR_REPLY
+                ),
+                None,
+            )
+            if previous is not None:
+                return previous.trace_id
+        if not run.parent_run_id or not operation_binding.parent_harness_operation_id:
+            return None
+        parent_run = self.repository.get_run(run.parent_run_id)
+        if parent_run is None:
+            return None
+        parent_step = next(
+            (item for item in parent_run.speaker_steps if item.persona_id == actor_id),
+            None,
+        )
+        if parent_step is None:
+            return None
+        source_slots = range(
+            parent_step.step_index * self.max_step_claims,
+            (parent_step.step_index + 1) * self.max_step_claims,
+        )
+        parent_trace = next(
+            (
+                item
+                for item in reversed(
+                    self.harness_runtime_repository.list_operation_traces(
+                        operation_binding.parent_harness_operation_id
+                    )
+                )
+                if item.trace_slot in source_slots
+                and item.stage == HarnessStage.TAVERN_ACTOR_REPLY
+            ),
+            None,
+        )
+        return parent_trace.trace_id if parent_trace is not None else None
+
+    @staticmethod
+    def _actor_non_commit_evidence(
+        message: TavernMessageRecord,
+    ) -> HarnessCommitEvidenceV3:
+        metadata = message.commit_metadata
+        if metadata is None:
+            raise ValueError("tavern_commit_metadata_missing")
+        return HarnessCommitEvidenceV3(
+            status=HarnessCommitStatus.NOT_COMMITTED,
+            effect_batch_id=metadata.effect_batch_id,
+            payload_contract=HarnessContractRef(
+                name=TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_NAME,
+                version=TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
+            ),
+            digest_algorithm=HarnessDigestAlgorithm.SHA256,
+            digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+            attempted_resource_refs=[
+                HarnessResourceRefV3(
+                    resource_type=HarnessResourceType.TAVERN_MESSAGE,
+                    resource_id=message.id,
+                    revision=None,
+                )
+            ],
+            rollback_reason_code="",
+        )
+
+    def _terminalize_actor_non_commit(
+        self,
+        *,
+        runtime: HarnessOperationRuntime,
+        prepared: HarnessRuntimePreparedOutput,
+        message: TavernMessageRecord,
+        error_code: str,
+    ) -> HarnessTraceV3:
+        return runtime.fail_prepared(
+            prepared=prepared,
+            commit_evidence=self._actor_non_commit_evidence(message),
+            error_code=error_code,
+        ).trace
 
     def _generate_actor_message(
         self,
@@ -836,20 +1345,13 @@ class TavernService:
                 required_target_id=required_target_id,
             )
             recent_messages = prompt_preflight.recent_messages
-            raw_reply = self.model_provider.generate_tavern_actor_reply(
-                persona=actor.persona_snapshot,
-                participants=detail.participants,
-                scene_profile=detail.room.scene_profile,
-                recent_messages=recent_messages,
-                user_message=input_content,
-                guidance=run.guidance,
-                allowed_target_ids=[item.persona_id for item in detail.participants],
-                turn_kind=run.trigger_kind.value,
-                required_target_id=required_target_id,
+            raw_reply = self._generate_actor_reply(
+                run=run, actor=actor, detail=detail, recent_messages=recent_messages,
+                input_content=input_content, required_target_id=required_target_id,
                 should_continue=should_continue,
             )
             model_recoveries = consume_model_recovery_state()
-            reply, trace = self.actor_harness.validate_and_repair(
+            reply, trace = self._validate_actor_reply(
                 reply=raw_reply,
                 actor=actor,
                 participants=detail.participants,
@@ -928,6 +1430,30 @@ class TavernService:
             created_at=_now(),
             harness_trace=trace,
         )
+
+    def _generate_actor_reply(
+        self, *, run: TavernRunRecord, actor: TavernParticipantRecord,
+        detail: TavernRoomDetail, recent_messages: list[TavernMessageRecord],
+        input_content: str, required_target_id: str,
+        should_continue: Callable[[], bool] | None = None,
+    ) -> TavernActorReply:
+        """Single provider boundary, kept separate from semantic validation."""
+        return self.model_provider.generate_tavern_actor_reply(
+            persona=actor.persona_snapshot,
+            participants=detail.participants,
+            scene_profile=detail.room.scene_profile,
+            recent_messages=recent_messages,
+            user_message=input_content,
+            guidance=run.guidance,
+            allowed_target_ids=[item.persona_id for item in detail.participants],
+            turn_kind=run.trigger_kind.value,
+            required_target_id=required_target_id,
+            should_continue=should_continue,
+        )
+
+    def _validate_actor_reply(self, **kwargs):
+        """Pure decode/semantic repair boundary for runtime adapters."""
+        return self.actor_harness.validate_and_repair(**kwargs)
 
     def _replay_run(self, run: TavernRunRecord) -> TavernTurnResponse:
         if run.status == TavernRunStatus.PENDING:
@@ -1134,6 +1660,13 @@ class _StepLeaseHeartbeat:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+
+
+def _tavern_actor_message_id(harness_operation_id: str, trace_slot: int) -> str:
+    digest = hashlib.sha256(
+        f"{harness_operation_id}:actor-message:{trace_slot}".encode("utf-8")
+    ).hexdigest()[:12]
+    return f"tavern-message-{digest}"
 
 
 def _error_code(exc: Exception) -> str:

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 import queue
 import threading
@@ -87,7 +87,20 @@ from app.models.api import (
     TokenUsageDailyBucket,
 )
 from app.models.domain import Citation, PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
-from app.models.harness import canonical_harness_digest
+from app.models.harness import (
+    HarnessCommitEvidenceV3,
+    HarnessCommitStatus,
+    HarnessCheckStatus,
+    HarnessCheckV2,
+    HarnessCommittedResourceRefV3,
+    HarnessContractRef,
+    HarnessDigestAlgorithm,
+    HarnessDigestScope,
+    HarnessResourceRefV3,
+    HarnessResourceType,
+    HarnessStage,
+    canonical_harness_digest,
+)
 from app.models.stream import (
     DOCUMENT_STREAM_PROJECTION_CONTRACT,
     LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
@@ -107,6 +120,8 @@ from app.persistence.study_chat_operation_repository import (
     StudyChatOperationRevisionConflict,
     StudyChatOperationSessionNotFound,
 )
+from app.persistence.harness_artifact_repository import HarnessArtifactRepository
+from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
 from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
 from app.services.model_provider import OpenAIModelProvider
@@ -133,6 +148,27 @@ from app.services.plan_prompt import build_learning_plan_context
 from app.services.plan_tool_runtime import get_learning_plan_tool_specs
 from app.services.runtime_model_probe import probe_openai_models
 from app.services.study_session_prompt import build_study_session_system_prompt
+from app.services.study_v3 import (
+    StudyChatInputManifest,
+    StudyChatRuntimeOutputV1,
+    StudyHarnessArtifactResolver,
+    StudyV3ReplyAdapter,
+    build_study_context,
+    decode_study_snapshot,
+    StudyV3SnapshotService,
+)
+from app.services.harness_runtime import (
+    HarnessOperationRuntime,
+    HarnessRuntimeGenerationError,
+    HarnessRuntimeRequest,
+    HarnessRuntimeStageAdapter,
+)
+from app.models.study_chat_commit import (
+    build_study_chat_operation_binding,
+    build_study_session_turn_committed_projection,
+    validate_study_chat_operation_commit,
+)
+from app.persistence.models import StudyChatOperationRow
 
 router = APIRouter()
 logger = get_logger("vibe_learner.routes")
@@ -1345,10 +1381,12 @@ def _admit_and_run_study_chat(
         return _study_chat_operation_response(committed)
     except Exception as exc:
         error_code = _study_chat_uncertain_error_code(exc)
+        harness_trace = _study_chat_terminal_harness_trace(operation.operation_id)
         terminal = container.study_chat_operation_repository.mark_uncertain(
             operation_id=operation.operation_id,
             execution_token=operation.execution_token,
             error_code=error_code,
+            harness_trace=harness_trace,
         )
         if terminal.status != StudyChatOperationStatus.COMMITTED:
             try:
@@ -1407,6 +1445,29 @@ def _study_chat_uncertain_error_code(exc: Exception) -> str:
         detail = exc.detail if isinstance(exc.detail, str) else "http_error"
         return f"study_chat_uncertain_{detail}"[:128]
     return "study_chat_execution_uncertain"
+
+
+def _study_chat_terminal_harness_trace(operation_id: str):
+    """Return the terminal reply trace without exposing it on the public receipt."""
+
+    try:
+        binding = container.study_chat_operation_repository.require_harness_operation(
+            operation_id
+        )
+    except Exception:
+        return None
+    runtime_repository = HarnessRuntimeRepository(
+        container.study_chat_operation_repository.database
+    )
+    traces = runtime_repository.list_operation_traces(binding.harness_operation_id)
+    terminal = [
+        item.terminal_trace
+        for item in traces
+        if item.stage == HarnessStage.STUDY_CHAT_REPLY
+        and item.trace_slot == 0
+        and item.terminal_trace is not None
+    ]
+    return terminal[-1] if terminal else None
 
 
 @router.post("/study-sessions/{session_id}/follow-ups/cancel", response_model=StudySessionResponse)
@@ -1491,6 +1552,14 @@ def _run_study_chat(
     effect_operation_binding = (
         container.study_chat_operation_repository.require_harness_operation(operation_id)
     )
+    study_input_manifest = StudyChatInputManifest(
+        session_id=session_id,
+        document_id=session.document_id,
+        plan_id=session.plan_id,
+        scene_id=session.scene_instance_id,
+        session_revision=session.revision,
+        attachment_count=len(learner_attachments or []),
+    )
     effect_collector = StudyChatEffectCollector(
         operation_id=operation_id,
         session_id=session_id,
@@ -1544,37 +1613,190 @@ def _run_study_chat(
         message=message,
         hidden_message_prefix=hidden_message_prefix,
     )
-    try:
+    active_plan_context = plan_tool_runtime.plan_context() if plan_tool_runtime else ""
+    active_scene_summary = _scene_profile_summary(session)
+    active_scene_context = (
+        scene_tool_runtime.scene_context() if scene_tool_runtime else ""
+    )
+    protected_snapshot_payload = {
+        "schema_name": "StudyChatProtectedSnapshot",
+        "schema_version": "study-chat-protected-snapshot-v1",
+        "dependencies": {
+            "input": {
+                **study_input_manifest.model_dump(mode="json"),
+                "message_kind": normalized_message_kind,
+                "follow_up_id": normalized_follow_up_id,
+            },
+            "session": session.model_dump(mode="json", exclude_none=False),
+            "persona": persona.model_dump(mode="json", exclude_none=False),
+            "bound_plan": (
+                bound_session_plan.model_dump(mode="json", exclude_none=False)
+                if bound_session_plan is not None
+                else None
+            ),
+            "active_plan": (
+                active_plan.model_dump(mode="json", exclude_none=False)
+                if active_plan is not None
+                else None
+            ),
+            "document": (
+                document.model_dump(mode="json", exclude_none=False)
+                if document is not None
+                else None
+            ),
+            "document_debug": (
+                debug_report.model_dump(mode="json", exclude_none=False)
+                if debug_report is not None
+                else None
+            ),
+            "memory_sessions": [
+                item.model_dump(mode="json", exclude_none=False)
+                for item in memory_sessions
+            ],
+            "session_prompt": session_prompt,
+            "model_message": model_message,
+            "active_plan_context": active_plan_context,
+            "attachment_context": attachment_context,
+            "learner_multimodal_parts": learner_multimodal_parts or [],
+            "session_state_context": session_state_context,
+            "active_scene_summary": active_scene_summary,
+            "active_scene_context": active_scene_context,
+            "learner_attachments": [
+                item.model_dump(mode="json", exclude_none=False)
+                for item in (learner_attachments or [])
+            ],
+        },
+    }
+    study_database = container.study_chat_operation_repository.database
+    study_artifacts = HarnessArtifactRepository(study_database)
+    study_snapshot_service = StudyV3SnapshotService(study_artifacts)
+    study_runtime_repository = HarnessRuntimeRepository(study_database)
+    study_snapshot, study_grant_id = (
+        study_snapshot_service.register_session_snapshot(
+            operation_binding=effect_operation_binding,
+            payload=protected_snapshot_payload,
+        )
+    )
+    study_harness_context = build_study_context(
+        operation_binding=effect_operation_binding,
+        manifest=study_input_manifest,
+        snapshots=(study_snapshot,),
+    )
+    study_runtime = HarnessOperationRuntime(
+        repository=study_runtime_repository,
+        artifact_resolver=StudyHarnessArtifactResolver(
+            study_artifacts,
+            {study_snapshot.artifact_id: study_grant_id},
+        ),
+    )
+    reply_adapter = StudyV3ReplyAdapter()
+
+    def generate_study_reply(_context, artifacts):
+        if set(artifacts) != {study_snapshot.artifact_id}:
+            raise ValueError("study_snapshot_artifact_set_mismatch")
+        decode_study_snapshot(artifacts[study_snapshot.artifact_id])
         container.study_chat_operation_repository.mark_provider_started(
             operation_id=operation_id,
             execution_token=execution_token,
         )
-        response = container.pedagogy_orchestrator.generate_chat_reply(
-            session_id=session_id,
-            persona=persona,
-            message=model_message,
-            message_kind=normalized_message_kind,
-            study_unit_id=session.study_unit_id,
-            study_unit_title=session.study_unit_title,
-            theme_hint=session.theme_hint,
-            active_plan=active_plan,
-            session_system_prompt=session_prompt,
-            debug_report=debug_report,
-            document_path=document.stored_path if document is not None else None,
-            previous_turns=session.turns,
-            memory_sessions=memory_sessions,
-            active_plan_context=plan_tool_runtime.plan_context() if plan_tool_runtime else "",
-            attachment_context=attachment_context,
-            learner_multimodal_parts=learner_multimodal_parts or [],
-            session_state_context=session_state_context,
-            active_scene_summary=_scene_profile_summary(session),
-            active_scene_context=scene_tool_runtime.scene_context() if scene_tool_runtime else "",
-            session_tool_runtime=session_tool_runtime,
-            plan_tool_runtime=plan_tool_runtime,
-            scene_tool_runtime=scene_tool_runtime,
+        try:
+            result = container.pedagogy_orchestrator.generate_chat_reply(
+                session_id=session_id,
+                persona=persona,
+                message=model_message,
+                message_kind=normalized_message_kind,
+                study_unit_id=session.study_unit_id,
+                study_unit_title=session.study_unit_title,
+                theme_hint=session.theme_hint,
+                active_plan=active_plan,
+                session_system_prompt=session_prompt,
+                debug_report=debug_report,
+                document_path=(
+                    document.stored_path if document is not None else None
+                ),
+                previous_turns=session.turns,
+                memory_sessions=memory_sessions,
+                active_plan_context=active_plan_context,
+                attachment_context=attachment_context,
+                learner_multimodal_parts=learner_multimodal_parts or [],
+                session_state_context=session_state_context,
+                active_scene_summary=active_scene_summary,
+                active_scene_context=active_scene_context,
+                session_tool_runtime=session_tool_runtime,
+                plan_tool_runtime=plan_tool_runtime,
+                scene_tool_runtime=scene_tool_runtime,
+            )
+        except Exception as exc:
+            recoveries = consume_model_recovery_state()
+            if not recoveries:
+                raise
+            strategy = "+".join(
+                dict.fromkeys(item.strategy for item in recoveries)
+            )[:320]
+            checks = tuple(
+                HarnessCheckV2(
+                    name="study_chat_model_recovery",
+                    status=HarnessCheckStatus.WARNING,
+                    code=f"{item.category}:{item.reason}"[:160],
+                    message=item.strategy[:320],
+                )
+                for item in recoveries
+            )
+            raise HarnessRuntimeGenerationError(
+                str(exc),
+                checks,
+                strategy or "provider_bounded_recovery",
+            ) from exc
+        result.citations = _merge_chat_citations(
+            result.citations,
+            session_tool_runtime.response_citations(),
+        )
+        result.model_recoveries = consume_model_recovery_state()
+        return StudyChatRuntimeOutputV1(result=result)
+
+    try:
+        runtime_adapter = HarnessRuntimeStageAdapter(
+            adapter_contract=HarnessContractRef(
+                name="StudyChatWorkflowAdapter",
+                version="study-chat-workflow-adapter-v1",
+            ),
+            trace_contract=HarnessContractRef(
+                name="StudyChatReply",
+                version="study-chat-reply-trace-v1",
+            ),
+            generate=generate_study_reply,
+            decode=reply_adapter.decode,
+            validate=reply_adapter.validate,
+        )
+        runtime_prepared = study_runtime.prepare_output(
+            request=HarnessRuntimeRequest(
+                operation_binding=effect_operation_binding,
+                stage=HarnessStage.STUDY_CHAT_REPLY,
+                trace_slot=0,
+                context=study_harness_context,
+            ),
+            adapter=runtime_adapter,
+            claim_owner=f"study-chat-{operation_id}",
         )
     except RuntimeError as exc:
-        http_error = _map_chat_generation_error(exc)
+        terminal = next(
+            (
+                item.terminal_trace
+                for item in reversed(
+                    study_runtime_repository.list_operation_traces(
+                        effect_operation_binding.harness_operation_id
+                    )
+                )
+                if item.trace_slot == 0 and item.terminal_trace is not None
+            ),
+            None,
+        )
+        mapped_error = (
+            RuntimeError(terminal.error_code)
+            if terminal is not None and terminal.error_code
+            else exc
+        )
+        http_error = _map_chat_generation_error(mapped_error)
         logger.exception(
             "study_chat.error session_id=%s public_detail=%s internal_error_code=%s retry_attempts=%s",
             session_id,
@@ -1583,11 +1805,10 @@ def _run_study_chat(
             _runtime_error_retry_attempts(exc),
         )
         raise http_error from exc
-    response.citations = _merge_chat_citations(
-        response.citations,
-        session_tool_runtime.response_citations(),
-    )
-    response.model_recoveries = consume_model_recovery_state()
+    if not isinstance(runtime_prepared.output, StudyChatRuntimeOutputV1):
+        raise RuntimeError("study_chat_runtime_output_invalid")
+    response = runtime_prepared.output.result.model_copy(deep=True)
+
     def build_exchange_payload(committed_session):
         # This is a server-only committed projection used for durable operation
         # read-back. Public receipts independently project it through
@@ -1598,21 +1819,126 @@ def _run_study_chat(
             "session": committed_session.model_dump(mode="json"),
         }
 
-    session, response_payload = container.study_session_repository.commit_chat_operation_turn(
-        operation_id=operation_id,
-        execution_token=execution_token,
-        learner_message=message,
-        learner_message_kind=normalized_message_kind,
-        learner_attachments=learner_attachments or [],
-        result=response,
-        prepared_study_unit_id=(
-            session.study_unit_id if normalized_message_kind == "session_prelude" else None
-        ),
-        completed_follow_up_id="",
-        cancel_pending_follow_ups=False,
-        prepared_effect_batch=effect_collector.prepared_batch(),
-        build_response_payload=build_exchange_payload,
-    )
+    def finalize_study_runtime(
+        db_session,
+        committed_session,
+        committed_turn_id,
+        committed_sequence,
+    ):
+        read_back_session, _read_back_turn = (
+            container.study_session_repository.get_chat_commit_read_back_in_session(
+                db_session,
+                session_id=session_id,
+                turn_id=committed_turn_id,
+            )
+        )
+        projection = build_study_session_turn_committed_projection(
+            operation_id=effect_operation_binding.harness_operation_id,
+            session=read_back_session,
+            expected_session_revision=study_input_manifest.session_revision,
+            turn_id=committed_turn_id,
+            turn_sequence=committed_sequence,
+        )
+        digest = canonical_harness_digest(projection)
+        effect_batch_id = f"study-turn-{committed_turn_id}"
+        evidence = HarnessCommitEvidenceV3(
+            status=HarnessCommitStatus.COMMITTED,
+            effect_batch_id=effect_batch_id,
+            payload_contract=HarnessContractRef(
+                name="StudySessionTurnCommittedProjection",
+                version="study-chat-turn-committed-projection-v1",
+            ),
+            digest_algorithm=HarnessDigestAlgorithm.SHA256,
+            digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+            attempted_resource_refs=[
+                HarnessResourceRefV3(
+                    resource_type=HarnessResourceType.STUDY_SESSION,
+                    resource_id=session_id,
+                    revision=study_input_manifest.session_revision,
+                )
+            ],
+            committed_resources=[
+                HarnessCommittedResourceRefV3(
+                    resource_type=HarnessResourceType.STUDY_SESSION,
+                    resource_id=session_id,
+                    expected_revision=study_input_manifest.session_revision,
+                    committed_revision=read_back_session.revision,
+                    payload_digest=digest,
+                )
+            ],
+            payload_digest=digest,
+            committed_at=datetime.now(UTC),
+            rollback_reason_code="",
+        )
+        finalized = study_runtime.finalize_prepared_in_session(
+            db_session,
+            prepared=runtime_prepared,
+            commit_evidence=evidence,
+        )
+        validate_study_chat_operation_commit(
+            trace=finalized.trace,
+            binding=build_study_chat_operation_binding(projection),
+            projection=projection,
+        )
+        operation_row = db_session.get(StudyChatOperationRow, operation_id)
+        if operation_row is not None:
+            operation_row.harness_trace = finalized.trace.model_dump(mode="json")
+
+    try:
+        session, response_payload = (
+            container.study_session_repository.commit_chat_operation_turn(
+                operation_id=operation_id,
+                execution_token=execution_token,
+                learner_message=message,
+                learner_message_kind=normalized_message_kind,
+                learner_attachments=learner_attachments or [],
+                result=response,
+                prepared_study_unit_id=(
+                    session.study_unit_id
+                    if normalized_message_kind == "session_prelude"
+                    else None
+                ),
+                completed_follow_up_id="",
+                cancel_pending_follow_ups=False,
+                prepared_effect_batch=effect_collector.prepared_batch(),
+                build_response_payload=build_exchange_payload,
+                runtime_commit_callback=finalize_study_runtime,
+            )
+        )
+    except Exception as exc:
+        error_code = (str(exc).split(":", 1)[0] or type(exc).__name__)[:160]
+        not_committed = HarnessCommitEvidenceV3(
+            status=HarnessCommitStatus.NOT_COMMITTED,
+            effect_batch_id=f"study-turn-{operation_id}",
+            payload_contract=HarnessContractRef(
+                name="StudySessionTurnCommittedProjection",
+                version="study-chat-turn-committed-projection-v1",
+            ),
+            digest_algorithm=HarnessDigestAlgorithm.SHA256,
+            digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+            attempted_resource_refs=[
+                HarnessResourceRefV3(
+                    resource_type=HarnessResourceType.STUDY_SESSION,
+                    resource_id=session_id,
+                    revision=study_input_manifest.session_revision,
+                )
+            ],
+            rollback_reason_code="",
+        )
+        try:
+            study_runtime.fail_prepared(
+                prepared=runtime_prepared,
+                commit_evidence=not_committed,
+                error_code=error_code,
+            )
+        except Exception:
+            logger.exception(
+                "study_chat.runtime_commit_failure_terminalization_failed "
+                "session_id=%s operation_id=%s",
+                session_id,
+                operation_id,
+            )
+        raise
     return response_payload
 
 

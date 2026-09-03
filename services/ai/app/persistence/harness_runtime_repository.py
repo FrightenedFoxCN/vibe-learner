@@ -151,6 +151,12 @@ class HarnessRuntimeRepository:
             row = session.get(HarnessRuntimeExecutionRow, trace_id)
             return _from_row(row) if row is not None else None
 
+    def get_in_session(
+        self, session: Session, trace_id: str
+    ) -> HarnessRuntimeExecutionV1 | None:
+        row = session.get(HarnessRuntimeExecutionRow, trace_id)
+        return _from_row(row) if row is not None else None
+
     def list_operation_traces(
         self,
         harness_operation_id: str,
@@ -292,6 +298,18 @@ class HarnessRuntimeRepository:
             row.updated_at = _wire(now)
             session.flush()
             return check
+
+    def append_check_in_session(
+        self, session: Session, *, claim: HarnessRuntimeClaimV1,
+        check: HarnessCheckV2,
+    ) -> HarnessCheckV2:
+        row, now = self._require_active_claim(session, claim)
+        if len(row.checks) >= 256:
+            raise HarnessRuntimeError("harness_runtime_check_limit_exceeded")
+        row.checks = [*row.checks, check.model_dump(mode="json")]
+        row.updated_at = _wire(now)
+        session.flush()
+        return check
 
     def terminalize(
         self,

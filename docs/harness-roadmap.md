@@ -27,8 +27,8 @@ constraints are moved into `AGENTS.md` or the relevant architecture document.
 
 ## Current baseline
 
-The repository already has useful foundations, but no production workflow is
-fully v3-adopted:
+The repository has the shared foundations plus production v3 adoption for
+Tavern actor generation and Study Chat:
 
 - Python and TypeScript expose compatible v1/v2/v3 evidence contracts;
 - the closed workflow/stage/component registries and shared golden fixtures are
@@ -62,20 +62,27 @@ fully v3-adopted:
   Tavern Message policy registered;
 - Document and Planning have atomic committed projections in addition to the
   shared admission identity;
-- Study has durable admission, transactional database effects, recoverable file
-  staging, and truthful provider uncertainty;
+- Study resolves a complete protected prompt/context snapshot before its single
+  provider call, validates the complete reply/citation/Character Event/tool
+  projection, and commits the Session/Turn/effects/operation/terminal trace in
+  one database transaction; provider ambiguity remains `uncertain`;
 - the shared operation runtime persists immutable stage identity, context,
   parent/child lineage, ordered attempts and checks, database-clock claims,
   terminal v3 traces, rollback delegation, and authoritative restart recovery;
 - the versioned eval baseline gate binds complete tested-system configuration,
   fixtures, samples, environment and raw evidence; the checked-in Tavern
-  identity and Planning tool suites include held-out cases and deterministic
-  PR/release gates;
+  identity, Planning tool, and Study reply suites include held-out cases and
+  deterministic PR/release gates;
 - legacy model recovery has one fail-closed mapping into existing v3
   attempts/checks, with a final write cutoff and read-only compatibility path;
-- Tavern production still emits legacy v1 traces;
+- Tavern actor generation resolves an operation-scoped protected snapshot,
+  emits v3 attempts/checks, and finalizes one Message projection with its
+  Step/Run state in one transaction; the commit policy remains
+  `primary_output_only`;
+- the Tavern soft-reference scanner and Study database clock/effect scanner
+  fail closed on the completed Wave 3 persistence boundaries;
 - `build_harness_context` requires an admitted operation binding and executable
-  manifest; production adoption remains tracked in the waves below.
+  manifest; remaining production adoption is tracked in Waves 4 and 5 below.
 
 These are baseline facts, not completion claims. A strict decoder, component
 version, fixture, operation journal, CAS boundary, or effect adapter does not by
@@ -94,15 +101,13 @@ The following IDs are tracking epics and are not directly claimable:
 
 ```mermaid
 flowchart TD
-    TAV3[HRN-TAV-V3-001] --> TAV_PERF[HRN-TAV-PERF-001]
-    STUDY[HRN-STUDY-001]
     PLAN[HRN-PLAN-001] --> PLAN_PERF[PLAN-TOOLS-PERF-001]
     DOC[HRN-DOC-001]
     SCENE[HRN-SCENE-001]
     PERSONA[HRN-PERSONA-001]
     WEB[HRN-WEB-001]
-    TAV3 --> CTX_PERF[HRN-CTX-PERF-001]
-    STUDY --> CTX_PERF
+    TAV_PERF[HRN-TAV-PERF-001]
+    CTX_PERF[HRN-CTX-PERF-001]
     PLAN --> CTX_PERF
     DOC --> CTX_PERF
     SCENE --> CTX_PERF
@@ -120,50 +125,11 @@ versioned baseline and pilot suites are durable prerequisites documented in
 
 | Wave | Outcome | Claimable work |
 |---|---|---|
-| 3 — high-risk adoption | Migrate the two most stateful model paths | Tavern v3 and Study Chat v3 |
 | 4 — broad adoption | Cover remaining model, heuristic, and frontend workflows | Planning, Document/OCR/Study Unit, Persona, Scene, Frontend Decode |
 | 5 — performance | Gate cost and latency without weakening correctness | Context, Tavern prompt, and Planning tool performance |
 
 Tasks in the same wave may proceed in parallel only when their listed
 dependencies and shared contract ownership do not overlap.
-
-## Wave 3 — Tavern and Study production adoption
-
-Every production adoption task shares this close contract:
-
-- the real path uses the protected artifact resolver and shared operation
-  runtime;
-- each stage has ordered attempts/checks and terminal trace evidence;
-- malformed output, invariant failure, repair exhaustion, duplicate request,
-  relevant concurrency, commit failure, and protected replay are covered;
-- successful commit evidence proves only registered operation/resource scope;
-- sensitive content stays in authorized artifacts, not trace-visible evidence;
-- legacy records remain readable without fabricated history;
-- the domain's versioned eval and regression gates pass independently.
-
-- [ ] `HRN-TAV-V3-001` `[P1]` migrate Tavern production evidence from legacy v1
-  to v3.
-  - Depends on root-backlog `SCH-TAV-001`, the shared runtime, recovery
-    migration, protected artifacts, and `HRN-TAV-002`.
-  - Allocate Harness operation identity before actor generation and cover
-    parent lineage, partial/failed/not-committed steps, per-step commits, child
-    retry, cancel fencing, and truthful Message/Run/Step/Room evidence scope.
-  - Expand operation policies only with versioned committed projections and
-    authoritative one-snapshot read-back; do not upgrade `primary_output_only`
-    Message evidence into a claim about all transaction effects.
-  - Legacy v1/v2 and new v3 frontend fixtures must all pass; migration cannot
-    rewrite historical evidence.
-
-- [ ] `HRN-STUDY-001` `[P1]` adopt Study Chat into v3.
-  - Depends on the shared runtime, protected artifacts, effect epic, eval core,
-    and the root-backlog Study operation clock/scanner hardening needed for
-    authoritative recovery evidence.
-  - Cover prompt/context, strict reply, citations, Character Events, nested
-    tools, mixed database/Scene/file/provider effects, commit/rollback,
-    provider `uncertain`, and exact committed Session/Turn read-back.
-  - Keep grading material and server-only effect receipts out of the public
-    projection; the browser renders only persisted Session read-back.
-  - Close citation/effect correctness and independent live-wire decode gates.
 
 ## Wave 4 — remaining production adoption
 
@@ -243,9 +209,6 @@ be duplicated as Harness checkboxes:
 
 | Root task | Harness relationship |
 |---|---|
-| `SCH-TAV-001` | hard prerequisite for `HRN-TAV-V3-001` truthful Room/Run/Step/Message evidence |
-| `STUDY-OP-CLOCK-001` | canonical lease/deadline time for Study terminal evidence |
-| `STUDY-OP-SCANNER-001` | corruption/version/digest conclusions consumed by Study read-back and eval |
 | `STUDY-OP-RECOVERY-UX-001` | public recovery behavior after truthful operation conclusions |
 | `TAV-CANCEL-TRANSPORT-001` | provider transport cancellation capability; does not replace commit fencing |
 | `SCH-PLAN-CAS-001` | required for future Plan patch/update operations, not for claiming current Plan creation evidence |

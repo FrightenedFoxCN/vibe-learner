@@ -3,6 +3,53 @@
   "schema_version": "harness-operation-commit-policies-v1",
   "policies": [
     {
+      "workflow": "study_chat",
+      "stage": "study_chat_reply",
+      "trace_contract": {
+        "name": "StudyChatReply",
+        "version": "study-chat-reply-trace-v1"
+      },
+      "payload_contract": {
+        "name": "StudySessionTurnCommittedProjection",
+        "version": "study-chat-turn-committed-projection-v1"
+      },
+      "projection_contract": {
+        "name": "StudySessionTurnCommittedProjection",
+        "version": "study-chat-turn-committed-projection-v1"
+      },
+      "binding_contract": {
+        "name": "StudyChatOperationBinding",
+        "version": "study-chat-operation-binding-v1"
+      },
+      "digest_scope": "committed_projection",
+      "evidence_scope": "primary_output_only",
+      "subject_resource_type": "study_session",
+      "subject_resource_count": 1,
+      "status_rules": [
+        {
+          "trace_status": "failed",
+          "commit_status": "not_committed"
+        },
+        {
+          "trace_status": "passed",
+          "commit_status": "committed"
+        },
+        {
+          "trace_status": "repaired",
+          "commit_status": "committed"
+        }
+      ],
+      "resource_rules": [
+        {
+          "resource_type": "study_session",
+          "committed_attempted_count": 1,
+          "committed_resource_count": 1,
+          "not_committed_attempted_min": 1,
+          "not_committed_attempted_max": 1
+        }
+      ]
+    },
+    {
       "workflow": "tavern",
       "stage": "actor_reply",
       "trace_contract": {

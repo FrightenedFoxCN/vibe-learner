@@ -35,6 +35,11 @@ from app.core.harness_component_versions import (
     TAVERN_MESSAGE_COMMITTED_PROJECTION_CONTRACT_VERSION,
     TAVERN_PERSONA_COMPILER_CONTRACT_VERSION,
     TAVERN_SCHEDULER_CONTRACT_VERSION,
+    STUDY_CHAT_PROMPT_CONTRACT_VERSION,
+    STUDY_CHAT_TOOLSET_CONTRACT_VERSION,
+    STUDY_CHAT_TRACE_CONTRACT_VERSION,
+    STUDY_CHAT_COMMIT_CONTRACT_VERSION,
+    STUDY_CHAT_COMMITTED_PROJECTION_CONTRACT_VERSION,
 )
 from app.models.tavern_commit import (
     TavernPersonaMessageCommitBindingV1,
@@ -249,6 +254,7 @@ class HarnessOperationEvidenceScope(StrEnum):
     """How much of a real transaction a registered policy proves."""
 
     PRIMARY_OUTPUT_ONLY = "primary_output_only"
+    COMPLETE_TRANSACTION = "complete_transaction"
 
 
 class HarnessOperationCommitPolicyKey(NamedTuple):
@@ -405,12 +411,16 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.STUDY_CHAT_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.STUDY_CHAT_PROMPT,
             "app.services.study_session_prompt",
-            None,
+            HarnessRegisteredContract(
+                name="study_chat_prompt", version=STUDY_CHAT_PROMPT_CONTRACT_VERSION
+            ),
         ),
         HarnessComponentName.STUDY_CHAT_TOOLSET: HarnessComponentRegistration(
             HarnessComponentName.STUDY_CHAT_TOOLSET,
             "app.services.study_session_chat_runtime",
-            None,
+            HarnessRegisteredContract(
+                name="study_chat_toolset", version=STUDY_CHAT_TOOLSET_CONTRACT_VERSION
+            ),
         ),
         HarnessComponentName.TAVERN_PERSONA_COMPILER: HarnessComponentRegistration(
             HarnessComponentName.TAVERN_PERSONA_COMPILER,
@@ -881,9 +891,9 @@ HARNESS_RESOURCE_EVIDENCE_POLICIES = MappingProxyType(
             rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
         ),
         HarnessResourceType.STUDY_SESSION: HarnessResourceEvidencePolicy(
-            semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
-            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
-            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            semantics=HarnessResourceSemantics.REVISIONED_CONTROL_AGGREGATE,
+            context_evidence=HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION,
+            commit_evidence=HarnessCommitEvidencePolicy.REVISION,
             rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
         ),
         HarnessResourceType.TAVERN_ROOM: HarnessResourceEvidencePolicy(
@@ -1029,12 +1039,42 @@ _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY = HarnessOperationCommitPolicy(
     ),
 )
 
+_STUDY_CHAT_TURN_COMMIT_POLICY_KEY = HarnessOperationCommitPolicyKey(
+    workflow=HarnessWorkflow.STUDY_CHAT,
+    stage=HarnessStage.STUDY_CHAT_REPLY,
+    trace_contract_name="StudyChatReply",
+    trace_contract_version=STUDY_CHAT_TRACE_CONTRACT_VERSION,
+    payload_contract_name="StudySessionTurnCommittedProjection",
+    payload_contract_version=STUDY_CHAT_COMMITTED_PROJECTION_CONTRACT_VERSION,
+)
+_STUDY_CHAT_TURN_COMMIT_POLICY = HarnessOperationCommitPolicy(
+    key=_STUDY_CHAT_TURN_COMMIT_POLICY_KEY,
+    projection_contract=HarnessRegisteredContract(
+        "StudySessionTurnCommittedProjection",
+        STUDY_CHAT_COMMITTED_PROJECTION_CONTRACT_VERSION,
+    ),
+    binding_contract=HarnessRegisteredContract(
+        "StudyChatOperationBinding", "study-chat-operation-binding-v1"
+    ),
+    digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+    evidence_scope=HarnessOperationEvidenceScope.PRIMARY_OUTPUT_ONLY,
+    subject_resource_type=HarnessResourceType.STUDY_SESSION,
+    subject_resource_count=1,
+    status_rules=(
+        HarnessOperationCommitStatusRule(HarnessStatus.FAILED, HarnessCommitStatus.NOT_COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.PASSED, HarnessCommitStatus.COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.REPAIRED, HarnessCommitStatus.COMMITTED),
+    ),
+    resource_rules=(HarnessOperationCommitResourceRule(HarnessResourceType.STUDY_SESSION, 1, 1, 1, 1),),
+)
+
 
 HARNESS_OPERATION_COMMIT_POLICIES = MappingProxyType(
     {
         _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY_KEY: (
             _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY
         ),
+        _STUDY_CHAT_TURN_COMMIT_POLICY_KEY: _STUDY_CHAT_TURN_COMMIT_POLICY,
     }
 )
 
@@ -1075,7 +1115,10 @@ def validate_harness_operation_commit_policy_registry(
             raise ValueError("harness_operation_commit_projection_contract_mismatch")
         if policy.digest_scope != HarnessDigestScope.COMMITTED_PROJECTION:
             raise ValueError("harness_operation_commit_digest_scope_invalid")
-        if policy.evidence_scope != HarnessOperationEvidenceScope.PRIMARY_OUTPUT_ONLY:
+        if policy.evidence_scope not in {
+            HarnessOperationEvidenceScope.PRIMARY_OUTPUT_ONLY,
+            HarnessOperationEvidenceScope.COMPLETE_TRANSACTION,
+        }:
             raise ValueError("harness_operation_commit_evidence_scope_invalid")
         if policy.subject_resource_count < 1:
             raise ValueError("harness_operation_commit_subject_count_invalid")
@@ -1286,7 +1329,7 @@ class HarnessSnapshotRefV3(HarnessV2Model):
 
 
 class HarnessContextEnvelopeV3(HarnessV2Model):
-    """Trace-safe, self-validating context identity for future workflow adoption."""
+    """Trace-safe, self-validating context identity for adopted workflows."""
 
     context_contract: HarnessContractRef
     workflow: HarnessWorkflow
@@ -1917,6 +1960,15 @@ class HarnessTraceV3(HarnessTraceV2):
                 raise ValueError("harness_operation_commit_policy_unregistered")
             return
         if evidence.payload_contract is None:
+            if (
+                self.status == HarnessStatus.FAILED
+                and evidence.status == HarnessCommitStatus.NOT_COMMITTED
+                and not has_operation_claim
+            ):
+                # Decode/generate/validate can fail before a concrete resource
+                # or effect batch exists. The empty not-committed envelope is
+                # the truthful claim for that pre-commit boundary.
+                return
             raise ValueError("harness_operation_commit_payload_contract_required")
         key = HarnessOperationCommitPolicyKey(
             self.workflow,

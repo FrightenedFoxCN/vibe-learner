@@ -32,6 +32,9 @@ PLANNING_TOOL_EVAL_SUITE = HarnessContractRef(
     name="planning_tool_eval",
     version="planning-tool-eval-v1",
 )
+STUDY_CHAT_EVAL_SUITE = HarnessContractRef(
+    name="study_chat_eval", version="study-chat-eval-v1"
+)
 
 
 class HarnessManifestModel(BaseModel):
@@ -548,6 +551,30 @@ _TAVERN_ENTRY = HarnessWorkflowManifestEntryV1(
     ),
 )
 
+_STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
+    key="study_chat:study_chat_reply",
+    workflow=HarnessWorkflow.STUDY_CHAT,
+    stage=HarnessStage.STUDY_CHAT_REPLY,
+    registration=_registered_contract("StudyChatReplyWorkflowManifestEntry", "study-chat-reply-workflow-manifest-v1"),
+    owner_module="app.services.study_sessions",
+    owner_adapter=_registered_contract("StudyChatWorkflowAdapter", "study-chat-workflow-adapter-v1"),
+    input_contract=_registered_contract("StudyChatInputManifest", "study-chat-input-manifest-v1"),
+    proposal_contract=_registered_contract("StudyChatReplyProposal", "study-chat-reply-proposal-v1"),
+    output_contract=_registered_contract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1"),
+    component_contracts=_component_contracts(HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY),
+    prompt_contract=_registered_contract("StudyChatPrompt", "study-chat-prompt-v1"),
+    policy_contract=_registered_contract("StudyChatHarnessPolicy", "study-chat-harness-v1"),
+    toolset_contract=_registered_contract("ToolManifestRegistry", TOOL_MANIFEST_SCHEMA_VERSION),
+    attempt_ceiling=HarnessManifestAttemptCeilingV1(max_attempts=3, max_repair_attempts=2),
+    execution_budget=_DEFAULT_BUDGET,
+    allowed_artifact_types=_artifact_allowlist(HarnessArtifactType.DOCUMENT_UPLOAD, HarnessArtifactType.PLANNING_CONTEXT, HarnessArtifactType.SCENE_SNAPSHOT, HarnessArtifactType.STUDY_SESSION_SNAPSHOT),
+    allowed_effect_adapters=_registered_contracts(("StudyChatEffectBatch", "study-chat-effect-batch-v1"),),
+    commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(key=HarnessManifestCommitPolicyKeyV1(workflow=HarnessWorkflow.STUDY_CHAT, stage=HarnessStage.STUDY_CHAT_REPLY, trace_contract=_contract("StudyChatReply", "study-chat-reply-trace-v1"), payload_contract=_contract("StudySessionTurnCommittedProjection", "study-chat-turn-committed-projection-v1"))),
+    decoder_route=_registered_string("app.services.study_v3.StudyV3ReplyAdapter"),
+    eval_route=_registered_string("study_chat.reply"),
+    eval_suites=_registered_contracts((STUDY_CHAT_EVAL_SUITE.name, STUDY_CHAT_EVAL_SUITE.version)),
+)
+
 
 _ENTRIES = (
     _unregistered_entry(
@@ -634,20 +661,7 @@ _ENTRIES = (
             HarnessArtifactType.SCENE_SNAPSHOT,
         ),
     ),
-    _unregistered_entry(
-        HarnessWorkflow.STUDY_CHAT,
-        HarnessStage.STUDY_CHAT_REPLY,
-        artifact_types=(
-            HarnessArtifactType.DOCUMENT_UPLOAD,
-            HarnessArtifactType.PLANNING_CONTEXT,
-            HarnessArtifactType.SCENE_SNAPSHOT,
-            HarnessArtifactType.STUDY_SESSION_SNAPSHOT,
-        ),
-        prompt=_unregistered(
-            HarnessManifestUnregisteredReason.CONTRACT_NOT_REGISTERED
-        ),
-        toolset=_TOOL_MANIFEST_SLOT,
-    ),
+    _STUDY_ENTRY,
     _TAVERN_ENTRY,
     _unregistered_entry(
         HarnessWorkflow.FRONTEND_DECODE,

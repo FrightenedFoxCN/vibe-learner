@@ -865,7 +865,7 @@ Attachment limits are enforced before provider execution:
 - at most 12 MiB per file;
 - at most 24 MiB across the request.
 
-The request manifest is durably admitted before files are written. Attachment/file-effect identity, public attachment ID, and staging directory are derived from the operation and input slot; failed partial writes and terminal `not_committed`/`uncertain` operations are cleaned within the Session-scoped staging root. A committed read-back verifies the manifest, Turn attachment projection, bounded path, file existence, and SHA-256 digest. It returns the same `StudyChatOperationReceipt`; retry and query rules are identical. This file boundary does not make an upstream provider call exactly once and is not Harness v3 evidence.
+The request manifest is durably admitted before files are written. Attachment/file-effect identity, public attachment ID, and staging directory are derived from the operation and input slot; failed partial writes and terminal `not_committed`/`uncertain` operations are cleaned within the Session-scoped staging root. A committed read-back verifies the manifest, Turn attachment projection, bounded path, file existence, and SHA-256 digest. It returns the same `StudyChatOperationReceipt`; retry and query rules are identical. Study Chat emits production v3 evidence for its Session/Turn primary output, while this file boundary does not make an upstream provider call exactly once or extend that claim to every attachment effect.
 
 ### `GET /study-sessions/{session_id}/chat-operations/{client_request_id}`
 
@@ -879,7 +879,7 @@ Operation status semantics:
 - `not_committed`: terminal; retry is allowed only when `safe_to_retry=true`
 - `uncertain`: terminal ambiguity after execution may have started; never automatically replay
 
-This receipt proves admission identity and final Study Turn/result read-back. Memory, affinity, follow-up create/complete/cancel, projected-state set/focus/overlay/clear, plan confirmation, and Study Scene replacement use typed proposals and server-only committed projections; database effects share the final Turn/Session transaction, while Scene rows add their own CAS and exact snapshot read-back. Attachments use the separate operation-owned staging/cleanup/digest boundary described above. The public response intentionally omits the internal batch. Generated-image and upstream provider calls remain external effects: without provider idempotency or authoritative read-back, a started ambiguous call is `uncertain` and is never automatically replayed. None of these receipts is a v3 Harness trace.
+This receipt proves admission identity and final Study Turn/result read-back. Memory, affinity, follow-up create/complete/cancel, projected-state set/focus/overlay/clear, plan confirmation, and Study Scene replacement use typed proposals and server-only committed projections; database effects share the final Turn/Session transaction, while Scene rows add their own CAS and exact snapshot read-back. Attachments use the separate operation-owned staging/cleanup/digest boundary described above. The public response intentionally omits the internal effect batch and Harness trace; both remain server-side. Generated-image and upstream provider calls remain external effects: without provider idempotency or authoritative read-back, a started ambiguous call is `uncertain` and is never automatically replayed. The v3 commit policy proves only the Session/Turn primary output.
 
 ### `GET /study-sessions/{session_id}`
 

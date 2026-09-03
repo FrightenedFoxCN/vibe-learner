@@ -20,6 +20,7 @@ from app.models.harness_manifest import (
     HARNESS_WORKFLOW_MANIFEST_ENTRIES,
     HARNESS_WORKFLOW_MANIFEST_EVAL_CASE_VERSION,
     PLANNING_TOOL_EVAL_SUITE,
+    STUDY_CHAT_EVAL_SUITE,
     TAVERN_IDENTITY_EVAL_SUITE,
     HarnessManifestRegisteredContractListSlotV1,
     HarnessManifestRegisteredContractSlotV1,
@@ -107,10 +108,27 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
             tuple(item.to_harness_ref() for item in tavern.eval_suites.contracts),
             (TAVERN_IDENTITY_EVAL_SUITE,),
         )
+        study = require_executable_workflow_manifest_entry(
+            HarnessWorkflow.STUDY_CHAT,
+            HarnessStage.STUDY_CHAT_REPLY,
+        )
+        assert isinstance(
+            study.eval_suites,
+            HarnessManifestRegisteredContractListSlotV1,
+        )
+        self.assertEqual(
+            tuple(item.to_harness_ref() for item in study.eval_suites.contracts),
+            (STUDY_CHAT_EVAL_SUITE,),
+        )
         for workflow, stage in HARNESS_OPERATION_STAGE_REGISTRATIONS:
             if (workflow, stage) == (
                 HarnessWorkflow.TAVERN,
                 HarnessStage.TAVERN_ACTOR_REPLY,
+            ):
+                continue
+            if (workflow, stage) == (
+                HarnessWorkflow.STUDY_CHAT,
+                HarnessStage.STUDY_CHAT_REPLY,
             ):
                 continue
             with self.subTest(workflow=workflow.value, stage=stage.value):

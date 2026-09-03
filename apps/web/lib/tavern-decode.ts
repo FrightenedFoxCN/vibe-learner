@@ -1,4 +1,7 @@
 import type {
+  HarnessTraceV2,
+  HarnessTraceV3,
+  HarnessTraceWire,
   HarnessTraceV1,
   PersonaProfile,
   SceneObjectSnapshot,
@@ -215,9 +218,13 @@ function decodeScene(raw: unknown, path: string): SceneProfile {
   };
 }
 
-function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceV1 {
+function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceWire {
   const value = record(raw, path);
   if (Object.prototype.hasOwnProperty.call(value, "trace_schema_version")) {
+    const schema = string(value.trace_schema_version, `${path}.trace_schema_version`);
+    if (schema === "harness-trace-v2" || schema === "harness-trace-v3") {
+      return decodeHarnessTraceV2OrV3(value, path, schema);
+    }
     throw new TavernDecodeError(
       `${path}.trace_schema_version`,
       `unsupported_harness_trace_schema_version_${String(value.trace_schema_version)}`
@@ -259,6 +266,46 @@ function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceV1 {
     recoveryStrategy: string(field(value, "recovery_strategy", path), `${path}.recovery_strategy`),
     durationMs: integer(field(value, "duration_ms", path), `${path}.duration_ms`),
   };
+}
+
+function decodeHarnessTraceV2OrV3(
+  value: Record<string, unknown>,
+  path: string,
+  schema: "harness-trace-v2" | "harness-trace-v3",
+): HarnessTraceV2 | HarnessTraceV3 {
+  const traceId = string(field(value, "trace_id", path), `${path}.trace_id`);
+  const operationId = string(field(value, "operation_id", path), `${path}.operation_id`);
+  if (!/^harness-trace-[0-9a-f]{32}$/.test(traceId)) throw new TavernDecodeError(`${path}.trace_id`, "invalid_harness_trace_id");
+  if (!/^harness-operation-[0-9a-f]{32}$/.test(operationId)) throw new TavernDecodeError(`${path}.operation_id`, "invalid_harness_operation_id");
+  const workflow = string(field(value, "workflow", path), `${path}.workflow`);
+  const stage = string(field(value, "stage", path), `${path}.stage`);
+  const context = record(field(value, "context", path), `${path}.context`);
+  if (schema === "harness-trace-v3") {
+    if (context.operation_id !== operationId || context.workflow !== workflow || context.stage !== stage) {
+      throw new TavernDecodeError(`${path}.context`, "harness_trace_context_identity_mismatch");
+    }
+    const commit = record(field(value, "commit_evidence", path), `${path}.commit_evidence`);
+    const commitStatus = enumeration(commit.status, ["not_applicable", "not_committed", "committed", "rolled_back"] as const, `${path}.commit_evidence.status`);
+    if (commitStatus === "committed" && (!Array.isArray(commit.committed_resources) || typeof commit.payload_digest !== "string" || typeof commit.committed_at !== "string")) {
+      throw new TavernDecodeError(`${path}.commit_evidence`, "committed_evidence_incomplete");
+    }
+    if (commitStatus === "rolled_back" && (typeof commit.rollback_reason_code !== "string" || !commit.rollback_reason_code || typeof commit.rolled_back_at !== "string")) {
+      throw new TavernDecodeError(`${path}.commit_evidence`, "rollback_evidence_incomplete");
+    }
+  }
+  const checks = array(field(value, "checks", path), `${path}.checks`, (item, itemPath) => {
+    const check = record(item, itemPath);
+    return { name: string(field(check, "name", itemPath), `${itemPath}.name`), status: enumeration(field(check, "status", itemPath), ["passed", "failed", "warning", "skipped"] as const, `${itemPath}.status`), code: string(field(check, "code", itemPath), `${itemPath}.code`, true), message: string(field(check, "message", itemPath), `${itemPath}.message`, true) };
+  });
+  const rawAttempts = array(field(value, "attempt_records", path), `${path}.attempt_records`, (item, itemPath) => record(item, itemPath));
+  rawAttempts.forEach((item, index) => {
+    if (item.attempt_index !== index + 1 || typeof item.attempt_id !== "string" || !/^harness-attempt-[0-9a-f]{32}$/.test(item.attempt_id)) {
+      throw new TavernDecodeError(`${path}.attempt_records[${index}]`, "invalid_attempt_ordering");
+    }
+  });
+  const attempts = rawAttempts as never;
+  const base = { traceSchemaVersion: schema, traceId, operationId, parentTraceId: nullableField(value, "parent_trace_id", path, (item, itemPath) => string(item, itemPath, true)), workflow: workflow as HarnessTraceV2["workflow"], stage: stage as HarnessTraceV2["stage"], status: enumeration(field(value, "status", path), ["passed", "repaired", "failed", "skipped"] as const, `${path}.status`), contract: value.contract as never, context: context as never, outputDigest: typeof value.output_digest === "string" ? value.output_digest : null, checks: checks as never, attemptRecords: attempts, recoveryStrategy: string(field(value, "recovery_strategy", path), `${path}.recovery_strategy`), errorCode: string(field(value, "error_code", path), `${path}.error_code`, true), durationMs: integer(field(value, "duration_ms", path), `${path}.duration_ms`), commitEvidence: value.commit_evidence as never, startedAt: string(field(value, "started_at", path), `${path}.started_at`), completedAt: string(field(value, "completed_at", path), `${path}.completed_at`) };
+  return base as unknown as HarnessTraceV2 | HarnessTraceV3;
 }
 
 function decodePolicy(raw: unknown, path: string): TavernHarnessPolicy {

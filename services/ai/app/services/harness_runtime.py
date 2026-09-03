@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-import time
 from typing import Callable, Mapping, Protocol
+from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
 
@@ -55,12 +55,41 @@ class HarnessRuntimeArtifactResolver(Protocol):
 class HarnessRuntimeValidationResult:
     output: BaseModel
     checks: tuple[HarnessCheckV2, ...]
+    status: HarnessStatus = HarnessStatus.PASSED
+    recovery_strategy: str = "none"
 
     def validate(self) -> None:
         if self.output.model_config.get("extra") != "forbid":
             raise HarnessRuntimeError("harness_runtime_output_extra_forbid_required")
         if not self.checks:
             raise HarnessRuntimeError("harness_runtime_validation_checks_required")
+        if self.status not in {HarnessStatus.PASSED, HarnessStatus.REPAIRED}:
+            raise HarnessRuntimeError("harness_runtime_validation_status_invalid")
+        if (self.status == HarnessStatus.REPAIRED) != (
+            self.recovery_strategy != "none"
+        ):
+            raise HarnessRuntimeError("harness_runtime_validation_recovery_mismatch")
+
+
+@dataclass(frozen=True)
+class HarnessRuntimePreparedOutput:
+    """Validated, content-owned output awaiting a domain transaction commit."""
+
+    execution: HarnessRuntimeExecutionV1
+    claim: HarnessRuntimeClaimV1
+    output: BaseModel
+    output_digest: str
+    checks: tuple[HarnessCheckV2, ...]
+    started_at: datetime
+    prepared_at: datetime
+    status: HarnessStatus
+    recovery_strategy: str
+
+
+@dataclass(frozen=True)
+class HarnessRuntimeFinalizeResult:
+    execution: HarnessRuntimeExecutionV1
+    trace: HarnessTraceV3
 
 
 GenerateCallback = Callable[
@@ -118,7 +147,8 @@ class HarnessOperationRuntime:
         request: HarnessRuntimeRequest,
         adapter: HarnessRuntimeStageAdapter,
         claim_owner: str,
-    ) -> HarnessRuntimeExecutionV1:
+        _prepare_only: bool = False,
+    ) -> HarnessRuntimeExecutionV1 | HarnessRuntimePreparedOutput:
         manifest = require_executable_workflow_manifest_entry(
             request.operation_binding.workflow,
             request.stage,
@@ -150,6 +180,10 @@ class HarnessOperationRuntime:
         claim = self.repository.claim(
             trace_id=execution.trace_id,
             claim_owner=claim_owner,
+            lease_seconds=max(
+                1,
+                min(300, (manifest.execution_budget.max_wall_time_ms + 999) // 1000),
+            ),
         )
         if claim is None:
             raise HarnessRuntimeError("harness_runtime_claim_unavailable")
@@ -169,6 +203,11 @@ class HarnessOperationRuntime:
                 output=raw,
             )
         except Exception as error:
+            recovery_strategy = "none"
+            if isinstance(error, HarnessRuntimeGenerationError):
+                for check in error.checks:
+                    self.repository.append_check(claim=claim, check=check)
+                recovery_strategy = error.recovery_strategy
             self._record_attempt(
                 claim,
                 HarnessAttemptPhase.GENERATE,
@@ -181,7 +220,7 @@ class HarnessOperationRuntime:
                 execution=self._require_execution(execution.trace_id),
                 error_code=_error_code(error),
                 started_at=started_at,
-                recovery_strategy="none",
+                recovery_strategy=recovery_strategy,
             )
 
         repair_count = 0
@@ -248,6 +287,15 @@ class HarnessOperationRuntime:
                 output_digest = canonical_harness_digest(
                     validated.output.model_dump(mode="json", exclude_none=False)
                 )
+                if validated.status == HarnessStatus.REPAIRED:
+                    self._record_attempt(
+                        claim,
+                        HarnessAttemptPhase.REPAIR,
+                        HarnessAttemptStatus.PASSED,
+                        validate_started,
+                        output=validated.output,
+                    )
+                    repaired = True
                 self._record_attempt(
                     claim,
                     HarnessAttemptPhase.VALIDATE,
@@ -257,6 +305,9 @@ class HarnessOperationRuntime:
                 )
             except Exception as error:
                 code = _error_code(error)
+                if isinstance(error, HarnessRuntimeDomainValidationError):
+                    for check in error.checks:
+                        self.repository.append_check(claim=claim, check=check)
                 self._record_attempt(
                     claim,
                     HarnessAttemptPhase.VALIDATE,
@@ -283,6 +334,26 @@ class HarnessOperationRuntime:
                 repaired = True
                 continue
             break
+
+        if _prepare_only:
+            current = self._require_execution(execution.trace_id)
+            return HarnessRuntimePreparedOutput(
+                execution=current,
+                claim=claim,
+                output=validated.output,
+                output_digest=output_digest,
+                checks=tuple(current.checks),
+                started_at=started_at,
+                prepared_at=self.clock(),
+                status=HarnessStatus.REPAIRED if repaired else HarnessStatus.PASSED,
+                recovery_strategy=(
+                    validated.recovery_strategy
+                    if validated.status == HarnessStatus.REPAIRED
+                    else adapter.recovery_strategy
+                    if repaired
+                    else "none"
+                ),
+            )
 
         commit_evidence = HarnessCommitEvidenceV3(
             status=HarnessCommitStatus.NOT_APPLICABLE,
@@ -380,8 +451,157 @@ class HarnessOperationRuntime:
         )
         return self.repository.terminalize(claim=claim, trace=trace)
 
+    def prepare_output(
+        self,
+        *,
+        request: HarnessRuntimeRequest,
+        adapter: HarnessRuntimeStageAdapter,
+        claim_owner: str,
+    ) -> HarnessRuntimePreparedOutput:
+        """Run through validation and leave commit to the caller's transaction."""
+        result = self.execute(
+            request=request,
+            adapter=adapter,
+            claim_owner=claim_owner,
+            _prepare_only=True,
+        )
+        if not isinstance(result, HarnessRuntimePreparedOutput):
+            raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+        return result
+
     def inspect_recovery(self, trace_id: str) -> HarnessRuntimeRecoveryDecisionV1:
         return self.repository.inspect_recovery(trace_id)
+
+    def finalize_prepared_in_session(
+        self,
+        session: Session,
+        *,
+        prepared: HarnessRuntimePreparedOutput,
+        commit_evidence: HarnessCommitEvidenceV3,
+        status: HarnessStatus | None = None,
+        error_code: str = "",
+        recovery_strategy: str = "none",
+    ) -> HarnessRuntimeFinalizeResult:
+        """Commit a validated output and its Harness terminal trace atomically.
+
+        The caller owns ``session`` and may apply domain effects before this
+        method. Any exception rolls back the caller's transaction.
+        """
+        if commit_evidence.status != HarnessCommitStatus.COMMITTED:
+            raise HarnessRuntimeError("harness_runtime_finalize_requires_committed_evidence")
+        self.repository.append_attempt_in_session(
+            session,
+            claim=prepared.claim,
+            phase=HarnessAttemptPhase.COMMIT,
+            status=HarnessAttemptStatus.PASSED,
+            duration_ms=max(0, int((self.clock() - prepared.prepared_at).total_seconds() * 1000)),
+            output_digest=commit_evidence.payload_digest,
+        )
+        current = self.repository.get_in_session(session, prepared.execution.trace_id)
+        if current is None:
+            raise HarnessRuntimeError("harness_runtime_trace_not_found")
+        completed_at = self.clock()
+        trace = HarnessTraceV3(
+            trace_schema_version="harness-trace-v3",
+            trace_id=current.trace_id,
+            operation_id=current.harness_operation_id,
+            parent_trace_id=current.parent_trace_id,
+            workflow=current.workflow,
+            stage=current.stage,
+            status=status or prepared.status,
+            contract=current.trace_contract,
+            context=current.context,
+            output_digest=prepared.output_digest,
+            checks=current.checks,
+            attempt_records=current.attempt_records,
+            recovery_strategy=recovery_strategy if recovery_strategy != "none" else prepared.recovery_strategy,
+            error_code=error_code,
+            duration_ms=_duration_ms(prepared.started_at, completed_at),
+            commit_evidence=commit_evidence,
+            started_at=prepared.started_at,
+            completed_at=completed_at,
+        )
+        execution = self.repository.terminalize_in_session(
+            session, claim=prepared.claim, trace=trace
+        )
+        return HarnessRuntimeFinalizeResult(execution=execution, trace=trace)
+
+    def fail_prepared_in_session(
+        self,
+        session: Session,
+        *,
+        prepared: HarnessRuntimePreparedOutput,
+        commit_evidence: HarnessCommitEvidenceV3,
+        error_code: str,
+    ) -> HarnessRuntimeFinalizeResult:
+        """Record a known transaction non-commit with the domain failure."""
+
+        if commit_evidence.status != HarnessCommitStatus.NOT_COMMITTED:
+            raise HarnessRuntimeError(
+                "harness_runtime_failure_requires_not_committed_evidence"
+            )
+        code = error_code.strip()[:160]
+        if not code:
+            raise HarnessRuntimeError("harness_runtime_failure_error_required")
+        self.repository.append_attempt_in_session(
+            session,
+            claim=prepared.claim,
+            phase=HarnessAttemptPhase.COMMIT,
+            status=HarnessAttemptStatus.FAILED,
+            duration_ms=max(
+                0,
+                int((self.clock() - prepared.prepared_at).total_seconds() * 1000),
+            ),
+            error_code=code,
+        )
+        current = self.repository.get_in_session(
+            session,
+            prepared.execution.trace_id,
+        )
+        if current is None:
+            raise HarnessRuntimeError("harness_runtime_trace_not_found")
+        completed_at = self.clock()
+        trace = HarnessTraceV3(
+            trace_schema_version="harness-trace-v3",
+            trace_id=current.trace_id,
+            operation_id=current.harness_operation_id,
+            parent_trace_id=current.parent_trace_id,
+            workflow=current.workflow,
+            stage=current.stage,
+            status=HarnessStatus.FAILED,
+            contract=current.trace_contract,
+            context=current.context,
+            output_digest=prepared.output_digest,
+            checks=current.checks,
+            attempt_records=current.attempt_records,
+            recovery_strategy=prepared.recovery_strategy,
+            error_code=code,
+            duration_ms=_duration_ms(prepared.started_at, completed_at),
+            commit_evidence=commit_evidence,
+            started_at=prepared.started_at,
+            completed_at=completed_at,
+        )
+        execution = self.repository.terminalize_in_session(
+            session,
+            claim=prepared.claim,
+            trace=trace,
+        )
+        return HarnessRuntimeFinalizeResult(execution=execution, trace=trace)
+
+    def fail_prepared(
+        self,
+        *,
+        prepared: HarnessRuntimePreparedOutput,
+        commit_evidence: HarnessCommitEvidenceV3,
+        error_code: str,
+    ) -> HarnessRuntimeFinalizeResult:
+        with self.repository.database.session() as session:
+            return self.fail_prepared_in_session(
+                session,
+                prepared=prepared,
+                commit_evidence=commit_evidence,
+                error_code=error_code,
+            )
 
     def _recover_with_read_back(
         self,
@@ -502,6 +722,10 @@ class HarnessOperationRuntime:
         recovery_strategy: str,
     ) -> HarnessRuntimeExecutionV1:
         completed = self.clock()
+        commit_evidence = HarnessCommitEvidenceV3(
+            status=HarnessCommitStatus.NOT_COMMITTED,
+            rollback_reason_code="",
+        )
         trace = HarnessTraceV3(
             trace_schema_version="harness-trace-v3",
             trace_id=execution.trace_id,
@@ -518,10 +742,7 @@ class HarnessOperationRuntime:
             recovery_strategy=recovery_strategy,
             error_code=error_code,
             duration_ms=_duration_ms(started_at, completed),
-            commit_evidence=HarnessCommitEvidenceV3(
-                status=HarnessCommitStatus.NOT_COMMITTED,
-                rollback_reason_code=""
-            ),
+            commit_evidence=commit_evidence,
             started_at=started_at,
             completed_at=completed,
         )
@@ -537,6 +758,28 @@ class HarnessOperationRuntime:
 class HarnessRuntimeValidationFailure(HarnessRuntimeError):
     def __init__(self, code: str) -> None:
         super().__init__(code or "harness_runtime_validation_failed")
+
+
+class HarnessRuntimeDomainValidationError(HarnessRuntimeValidationFailure):
+    """Domain validator failure with content-free checks safe for the trace."""
+
+    def __init__(self, code: str, checks: tuple[HarnessCheckV2, ...]) -> None:
+        super().__init__(code)
+        self.checks = checks
+
+
+class HarnessRuntimeGenerationError(HarnessRuntimeError):
+    """Generate/preflight failure with content-free nested recovery evidence."""
+
+    def __init__(
+        self,
+        code: str,
+        checks: tuple[HarnessCheckV2, ...],
+        recovery_strategy: str = "none",
+    ) -> None:
+        super().__init__(code or "harness_runtime_generation_failed")
+        self.checks = checks
+        self.recovery_strategy = recovery_strategy or "none"
 
 
 class HarnessRuntimeCommitOutcomeUnknown(HarnessRuntimeError):

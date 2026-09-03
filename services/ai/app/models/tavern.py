@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from pydantic.json_schema import SkipJsonSchema
 
 from app.models.domain import PersonaProfile, SceneProfileRecord
-from app.models.harness import HarnessTraceRecord
+from app.models.harness import HarnessTraceRecord, HarnessTraceV3
 from app.models.tavern_commit import (
     TavernPersonaMessageCommitMetadataV1,
     TavernPersonaMessageCommittedProjectionV1,
@@ -130,7 +130,7 @@ class TavernMessageRecord(BaseModel):
     reply_to_message_id: str = ""
     client_request_id: str = ""
     created_at: str
-    harness_trace: HarnessTraceRecord | None = None
+    harness_trace: HarnessTraceRecord | HarnessTraceV3 | None = None
     commit_metadata: SkipJsonSchema[
         TavernPersonaMessageCommitMetadataV1 | None
     ] = Field(
@@ -149,7 +149,7 @@ class TavernSpeakerStepRecord(BaseModel):
     message_id: str = ""
     reply_to_message_id: str = ""
     error_code: str = ""
-    harness_trace: HarnessTraceRecord | None = None
+    harness_trace: HarnessTraceRecord | HarnessTraceV3 | None = None
     claim_count: int = Field(default=0, ge=0, le=5)
     started_at: str = ""
     completed_at: str = ""
@@ -173,7 +173,7 @@ class TavernRunRecord(BaseModel):
     status: TavernRunStatus = TavernRunStatus.PENDING
     expected_room_revision: int = Field(ge=0)
     generated_message_ids: list[str] = Field(default_factory=list)
-    harness_trace: list[HarnessTraceRecord] = Field(default_factory=list)
+    harness_trace: list[HarnessTraceRecord | HarnessTraceV3] = Field(default_factory=list)
     error_code: str = ""
     terminal_sequence: int = Field(default=0, ge=0)
     created_at: str

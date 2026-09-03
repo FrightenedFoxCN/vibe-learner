@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.models.harness import HarnessTraceV3
 
 
 STUDY_CHAT_REQUEST_SCHEMA_VERSION = "study-chat-request-v2"
@@ -97,6 +98,7 @@ class StudyChatOperationRecord(BaseModel):
     committed_turn_sequence: int | None = Field(default=None, ge=1)
     response_schema_version: str = ""
     response_payload: dict[str, Any] | None = None
+    harness_trace: HarnessTraceV3 | None = None
     response_digest: str = ""
     error_code: str = ""
     created_at: str

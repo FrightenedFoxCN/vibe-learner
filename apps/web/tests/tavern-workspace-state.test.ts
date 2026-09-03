@@ -1066,3 +1066,50 @@ test("strict Tavern decoder rejects non-finite and out-of-range evidence", () =>
   disguisedV3.run.harness_trace[0].version = "harness-trace-v3";
   assert.throws(() => normalizeTavernTurnResult(disguisedV3), TavernDecodeError);
 });
+
+test("Tavern decoder accepts backend-compatible v2 and committed v3 traces", () => {
+  const v2 = rawTurnResult() as Record<string, any>;
+  v2.run.harness_trace[0] = {
+    trace_schema_version: "harness-trace-v2",
+    trace_id: "harness-trace-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    operation_id: "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    parent_trace_id: null,
+    workflow: "tavern",
+    stage: "actor_reply",
+    status: "passed",
+    contract: { name: "TavernActorReply", version: "tavern-actor-reply-v2" },
+    context: {}, output_digest: null, checks: [], attempt_records: [],
+    recovery_strategy: "none", error_code: "", duration_ms: 1,
+    commit_evidence: { status: "not_applicable" },
+    started_at: "2026-08-12T00:00:00Z", completed_at: "2026-08-12T00:00:01Z",
+  };
+  assert.doesNotThrow(() => normalizeTavernTurnResult(v2));
+
+  const v3 = rawTurnResult() as Record<string, any>;
+  v3.run.harness_trace[0] = {
+    ...v2.run.harness_trace[0],
+    trace_schema_version: "harness-trace-v3",
+    context: { operation_id: "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", workflow: "tavern", stage: "actor_reply" },
+    commit_evidence: { status: "committed", committed_resources: [{}], payload_digest: "a".repeat(64), committed_at: "2026-08-12T00:00:01Z" },
+  };
+  assert.doesNotThrow(() => normalizeTavernTurnResult(v3));
+  const unknown = rawTurnResult() as Record<string, any>;
+  unknown.run.harness_trace[0] = { ...v2.run.harness_trace[0], trace_schema_version: "harness-trace-v9" };
+  assert.throws(() => normalizeTavernTurnResult(unknown), TavernDecodeError);
+});
+
+test("Tavern v3 trace decoder rejects forged identity, ordering, and commit evidence", () => {
+  const forged = rawTurnResult() as Record<string, any>;
+  forged.run.harness_trace[0] = {
+    trace_schema_version: "harness-trace-v3", trace_id: "harness-trace-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    operation_id: "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", parent_trace_id: null,
+    workflow: "tavern", stage: "actor_reply", status: "passed", contract: {},
+    context: { operation_id: "harness-operation-cccccccccccccccccccccccccccccccc", workflow: "tavern", stage: "actor_reply" },
+    output_digest: null, checks: [], attempt_records: [], recovery_strategy: "none", error_code: "", duration_ms: 1,
+    commit_evidence: { status: "committed" }, started_at: "2026-08-12T00:00:00Z", completed_at: "2026-08-12T00:00:01Z",
+  };
+  assert.throws(() => normalizeTavernTurnResult(forged), TavernDecodeError);
+  const ordering = rawTurnResult() as Record<string, any>;
+  ordering.run.harness_trace[0] = { ...forged.run.harness_trace[0], context: { operation_id: forged.run.harness_trace[0].operation_id, workflow: "tavern", stage: "actor_reply" }, commit_evidence: { status: "not_applicable" }, attempt_records: [{ attempt_id: "harness-attempt-dddddddddddddddddddddddddddddddd", attempt_index: 2 }] };
+  assert.throws(() => normalizeTavernTurnResult(ordering), TavernDecodeError);
+});

@@ -56,7 +56,8 @@ for (const entry of HARNESS_WORKFLOW_MANIFEST.stages) {
   assert.equal(entry.eval_route.value, vocabulary.evalRoute);
   const pilotSuite =
     entry.key === "tavern:actor_reply" ||
-    entry.key === "planning:planning_tool_execution";
+    entry.key === "planning:planning_tool_execution" ||
+    entry.key === "study_chat:study_chat_reply";
   assert.equal(
     entry.eval_suites.status,
     pilotSuite ? "registered" : "unregistered",

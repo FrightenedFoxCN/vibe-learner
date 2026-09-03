@@ -6,6 +6,10 @@ from app.core.settings import Settings
 from app.persistence.database import Database
 from app.persistence.harness_artifact_repository import HarnessArtifactRepository
 from app.persistence.harness_effect_repository import HarnessEffectJournalRepository
+from app.services.harness_effect_scanner import scan_harness_effect_journal
+from app.services.study_v3 import StudyV3SnapshotService
+from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
+from app.services.harness_runtime import HarnessOperationRuntime
 from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
@@ -45,7 +49,12 @@ class Container:
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()
         self.harness_artifact_repository = HarnessArtifactRepository(self.database)
+        self.study_v3_snapshot_service = StudyV3SnapshotService(self.harness_artifact_repository)
+        self.harness_runtime = HarnessOperationRuntime(
+            repository=HarnessRuntimeRepository(self.database)
+        )
         self.harness_effect_journal = HarnessEffectJournalRepository(self.database)
+        self.harness_effect_scanner = lambda: scan_harness_effect_journal(self.database)
         self.tavern_repository = TavernRepository(self.database)
         self.store = LocalJsonStore(self.database, self.storage)
         self.document_parser = DocumentParser(

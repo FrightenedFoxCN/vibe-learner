@@ -757,6 +757,9 @@ class StudyChatOperationRow(Base):
         NULLABLE_JSON_PAYLOAD,
         nullable=True,
     )
+    harness_trace: Mapped[dict[str, Any] | None] = mapped_column(
+        NULLABLE_JSON_PAYLOAD, nullable=True
+    )
     response_digest: Mapped[str] = mapped_column(String(64), default="")
     error_code: Mapped[str] = mapped_column(String(128), default="")
     created_at: Mapped[str] = mapped_column(String(64))

@@ -389,6 +389,17 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             },
             {child_binding.harness_operation_id},
         )
+        source_after_retry = self.repository.get_run(source.id)
+        assert source_after_retry is not None
+        failed_parent_trace = next(
+            item
+            for item in source_after_retry.harness_trace
+            if item.status.value == "failed"
+        )
+        self.assertEqual(
+            child_messages[0].harness_trace.parent_trace_id,
+            failed_parent_trace.trace_id,
+        )
         recent_window = self.client.get(f"/tavern/rooms/{room_id}/runs?limit=1")
         self.assertEqual(recent_window.status_code, 200, recent_window.text)
         self.assertEqual(
@@ -881,6 +892,17 @@ class TavernFacilitatedApiTests(unittest.TestCase):
         self.assertEqual(
             [item.author_kind.value for item in persisted.messages],
             ["user"],
+        )
+        canceled_run = self.repository.get_run(run.id)
+        assert canceled_run is not None
+        canceled_trace = canceled_run.speaker_steps[0].harness_trace
+        self.assertIsNotNone(canceled_trace)
+        assert canceled_trace is not None
+        self.assertEqual(canceled_trace.trace_schema_version, "harness-trace-v3")
+        self.assertEqual(canceled_trace.status.value, "failed")
+        self.assertEqual(
+            canceled_trace.commit_evidence.status.value,
+            "not_committed",
         )
 
         repeated = self.client.post(

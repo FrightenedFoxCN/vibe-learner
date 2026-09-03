@@ -43,14 +43,14 @@
 
 These docs describe the repository as it exists now, not the aspirational long-term platform. When implementation changes, update the docs in the same change if the API, runtime flow, or data layout moved.
 
-## Current implementation notes (2026-08-25)
+## Current implementation notes (2026-09-03)
 
 - Debug is a global overlay; the old standalone `/debug` route no longer exists.
 - Structured persistence defaults to local SQLite and can use PostgreSQL through `DATABASE_URL`; uploads, attachments, cache, and compatibility debug files remain local.
 - `/tavern` is active in both frontend and backend. It supports durable 1–6 persona rooms, direct and facilitated turns, append-only transcript paging, partial failure, scoped child retry, resume, and cancel fencing.
 - Domain-owned strict decoders now cover Tavern, Document, Planning, Persona/Scene, Study, and versioned Document/Planning streams. Independent live-wire closure, remaining endpoint inventory, Frontend Decoder component registration, and v2/v3 trace forwarding/resource evidence remain open; decoder coverage alone does not complete repository-wide Harness adoption.
-- Harness Engineering is repository-wide. V2/v3 contracts and the v3 context builder are schema foundations; no production workflow currently calls `build_harness_context`, and Tavern production evidence remains legacy v1 until `HRN-TAV-V3-001` is complete.
+- Harness Engineering is repository-wide. Tavern actor generation and Study Chat now call the shared v3 context/runtime boundary with authorized protected snapshots, terminal traces, committed primary-output projections, and deterministic eval suites. Historical v1/v2 evidence remains readable without being upgraded.
 - Snapshot digests are integrity references only. Protected replay uses the authorized artifact resolver, resource evidence policies, retention, and read-back verification; production workflow adoption remains tracked in `harness-roadmap.md`.
-- Study Chat now has independently revalidated safe-retry across durable admission/read-back, transactional Session/Scene effects, operation-owned attachment staging, and explicit provider uncertainty. Full v3 protected replay/eval, a reusable cross-workflow durable effect primitive, and the nested decoder's remaining live-wire samples stay open.
+- Study Chat now has independently revalidated production v3 execution across durable admission/read-back, protected replay, transactional Session/Scene effects, operation-owned attachment staging, the shared durable effect journal, and explicit provider uncertainty. Its commit evidence proves the Session/Turn primary output; independent live-wire samples remain optional frontend coverage.
 - Interactive questions now use private server-owned grading, a narrow idempotent Attempt journal, and persisted Session read-back; the two schema tickets remain open only for required independent revalidation.
 - Document processing uses a durable operation journal and commits Document/Debug projections atomically with digest read-back and startup recovery. Planning likewise admits stable operations and atomically commits Document/Debug/Planning Trace/Learning Plan projections plus a versioned terminal snapshot; both still require their separate v3 trace/replay/eval adoption work.
