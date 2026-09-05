@@ -41,6 +41,7 @@ from app.models.study_question import (
 )
 from app.models.study_chat_operation import StudyChatMessageKind
 from app.models.scene import SceneCommittedSaveV1
+from app.models.harness import HarnessTraceV3
 
 
 class PersonaMutationSlot(PersonaSlot):
@@ -126,6 +127,7 @@ class PersonaSettingAssistResponse(BaseModel):
     slots: list[PersonaSlot]
     system_prompt_suggestion: str
     model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
+    harness_trace: HarnessTraceV3
 
 
 class PersonaSlotAssistRequest(BaseModel):
@@ -138,6 +140,7 @@ class PersonaSlotAssistRequest(BaseModel):
 class PersonaSlotAssistResponse(BaseModel):
     slot: PersonaSlot
     model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
+    harness_trace: HarnessTraceV3
 
 
 class PersonaResponse(PersonaProfile):
@@ -192,6 +195,7 @@ class PersonaCardGenerateResponse(BaseModel):
     learner_address: str = ""
     items: list[PersonaCardResponse]
     model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
+    harness_trace: HarnessTraceV3
 
 
 class SceneTreeGenerateRequest(BaseModel):
@@ -212,10 +216,15 @@ class SceneTreeGenerateResponse(BaseModel):
     selected_layer_id: str = ""
     scene_layers: list[SceneLayerStateRecord] = Field(default_factory=list)
     model_recoveries: list[ModelRecoveryRecord] = Field(default_factory=list)
+    harness_trace: HarnessTraceV3
 
 
 class DocumentResponse(DocumentRecord):
     pass
+
+
+class DocumentProcessResponse(DocumentResponse):
+    harness_trace: HarnessTraceV3
 
 
 class DocumentListResponse(BaseModel):
@@ -555,6 +564,10 @@ class DocumentStudyUnitUpdateResponse(BaseModel):
 
 class LearningPlanResponse(LearningPlanRecord):
     pass
+
+
+class LearningPlanCreateResponse(LearningPlanResponse):
+    harness_trace: HarnessTraceV3
 
 
 class LearningPlanListResponse(BaseModel):

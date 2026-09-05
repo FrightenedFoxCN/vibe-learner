@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 from typing import Callable
 from uuid import uuid4
 
@@ -23,7 +24,9 @@ from app.models.domain import (
     StudyUnitProgressRecord,
     StudyUnitRecord,
 )
+from app.models.harness import canonical_harness_digest
 from app.models.planning import PlanScheduleChapterProposalV1
+from app.models.harness_operation import HarnessDomainOperationKind
 from app.models.planning import (
     LearningPlanOperationRecord,
     LearningPlanOperationRequestV1,
@@ -46,6 +49,14 @@ from app.services.local_store import LocalJsonStore
 from app.services.model_provider import ModelProvider
 from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
+from app.services.harness_broad_adoption import (
+    HarnessProposalRuntimeService,
+    LearningPlanInputManifest,
+    LearningPlanRuntimeOutputV1,
+    PlanningToolExecutionEvidenceV1,
+    PlanningToolExecutionInputManifest,
+)
+from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
 
 
 class LearningPlanService:
@@ -55,11 +66,15 @@ class LearningPlanService:
         arrangement_service: StudyArrangementService,
         model_provider: ModelProvider,
         operation_repository: LearningPlanOperationRepository | None = None,
+        harness_service: HarnessProposalRuntimeService | None = None,
     ) -> None:
         self.store = store
         self.arrangement_service = arrangement_service
         self.model_provider = model_provider
         self.operation_repository = operation_repository or LearningPlanOperationRepository(
+            store.database
+        )
+        self.harness_service = harness_service or HarnessProposalRuntimeService.from_database(
             store.database
         )
 
@@ -137,6 +152,8 @@ class LearningPlanService:
 
         provider_started = False
         candidate_built = False
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None
+        harness_runtime: HarnessOperationRuntime | None = None
 
         def mark_provider_started() -> None:
             nonlocal provider_started
@@ -162,31 +179,137 @@ class LearningPlanService:
                     operation.operation_id,
                     "input_debug_snapshot",
                 )
-            plan, projected_document, projected_debug, trace = (
-                self._build_plan_candidate(
-                    goal=goal,
-                    document=document,
-                    persona_name=persona_name,
-                    persona=persona,
-                    debug_report=debug_report,
+            operation_binding = self.operation_repository.harness_operations.require_domain(
+                domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
+                domain_operation_id=operation.operation_id,
+            )
+
+            def generate_plan(
+                protected: dict[str, object],
+            ) -> LearningPlanRuntimeOutputV1:
+                protected_goal = LearningGoalInput.model_validate(protected["goal"])
+                protected_document = (
+                    DocumentRecord.model_validate(protected["document"])
+                    if protected.get("document") is not None
+                    else None
+                )
+                protected_debug = (
+                    DocumentDebugRecord.model_validate(protected["debug_report"])
+                    if protected.get("debug_report") is not None
+                    else None
+                )
+                protected_persona = PersonaProfile.model_validate(protected["persona"])
+                result = self._build_plan_candidate(
+                    goal=protected_goal,
+                    document=protected_document,
+                    persona_name=str(protected["persona_name"]),
+                    persona=protected_persona,
+                    debug_report=protected_debug,
                     progress_callback=progress_callback,
                     interrupt_check=interrupt_check,
                     provider_start_callback=mark_provider_started,
                 )
+                return LearningPlanRuntimeOutputV1(
+                    plan=result[0],
+                    document=result[1],
+                    debug_report=result[2],
+                    trace=result[3],
+                )
+
+            runtime_prepared, harness_runtime = self.harness_service.prepare_plan(
+                operation_binding=operation_binding,
+                manifest=LearningPlanInputManifest(
+                    client_request_id=client_request_id,
+                    document_id=document.id if document is not None else "",
+                    persona_id=persona.id,
+                    creation_mode="document" if document is not None else "goal_only",
+                ),
+                protected_input={
+                    "goal": goal.model_dump(mode="json", exclude_none=False),
+                    "document": (
+                        document.model_dump(mode="json", exclude_none=False)
+                        if document is not None
+                        else None
+                    ),
+                    "debug_report": (
+                        debug_report.model_dump(mode="json", exclude_none=False)
+                        if debug_report is not None
+                        else None
+                    ),
+                    "persona_name": persona_name,
+                    "persona": persona.model_dump(mode="json", exclude_none=False),
+                },
+                generate=generate_plan,
+            )
+            runtime_output = LearningPlanRuntimeOutputV1.model_validate(
+                runtime_prepared.output
+            )
+            plan, projected_document, projected_debug, trace = (
+                runtime_output.plan,
+                runtime_output.document,
+                runtime_output.debug_report,
+                runtime_output.trace,
             )
             candidate_built = True
+            if trace is not None:
+                tool_calls = [
+                    item
+                    for round_record in trace.rounds
+                    for item in round_record.tool_calls
+                ]
+                for tool_index, tool_call in enumerate(tool_calls, start=1):
+                    tool_call_id = tool_call.tool_call_id or "unattributed"
+                    try:
+                        result_payload = json.loads(tool_call.result_json)
+                    except (TypeError, json.JSONDecodeError):
+                        result_payload = {"raw": tool_call.result_json}
+                    result_contract_version = (
+                        tool_call.result_contract_version or "planning-tool-error-v1"
+                    )
+                    evidence = PlanningToolExecutionEvidenceV1(
+                        tool_name=tool_call.tool_name or "unattributed",
+                        tool_call_id=tool_call_id,
+                        result_contract_version=result_contract_version,
+                        arguments_digest=canonical_harness_digest(tool_call.arguments_json),
+                        result_digest=canonical_harness_digest(result_payload),
+                        outcome=(
+                            "failed"
+                            if isinstance(result_payload, dict)
+                            and result_payload.get("ok") is False
+                            else "validated"
+                        ),
+                    )
+                    self.harness_service.emit_planning_tool_evidence(
+                        operation_binding=operation_binding,
+                        parent_trace_id=runtime_prepared.execution.trace_id,
+                        trace_slot=tool_index,
+                        input_manifest=PlanningToolExecutionInputManifest(
+                            document_id=plan.document_id,
+                            tool_name=tool_call.tool_name or "unattributed",
+                            tool_call_id=tool_call_id,
+                        ),
+                        evidence=evidence,
+                        protected_input={
+                            "arguments_json": tool_call.arguments_json,
+                            "result_json": tool_call.result_json,
+                        },
+                    )
             self.operation_repository.commit_success(
                 operation_id=operation.operation_id,
                 plan=plan,
                 document=projected_document,
                 debug_report=projected_debug,
                 trace=trace,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
         except StreamInterruptedError:
             self.operation_repository.mark_terminal(
                 operation_id=operation.operation_id,
                 status=LearningPlanOperationStatus.INTERRUPTED,
                 error_code="learning_plan_interrupted",
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
             raise
         except Exception as exc:
@@ -198,6 +321,8 @@ class LearningPlanService:
                     candidate_built=candidate_built,
                 ),
                 error_code=_learning_plan_error_code(exc),
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
             raise
 

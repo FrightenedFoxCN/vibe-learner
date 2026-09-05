@@ -133,15 +133,19 @@ dependencies and shared contract ownership do not overlap.
 
 ## Wave 4 — remaining production adoption
 
-- [ ] `HRN-PLAN-001` `[P2]` adopt Planning into v3.
+- [x] `HRN-PLAN-001` `[P2]` adopt Planning into v3.
   - Register prompt, toolset, provider/runtime configuration, input/context,
     proposal, committed projection, and protected replay contracts.
   - Emit plan-generation and per-tool stage traces with bounded recovery and
     atomic Document/Debug/Planning Trace/Learning Plan commit evidence.
   - Gate grounding, schedule/Study Unit/Section reference correctness, tool
     correctness, failure paths, and goal-only compatibility.
+  - Plan generation emits one parent v3 trace plus an ordered child trace for
+    every validated Planning Tool call; protected call inputs/results are
+    authorized snapshots and the deterministic Planning Tool pilot remains a
+    release gate.
 
-- [ ] `HRN-DOC-001` `[P2]` adopt extraction, OCR, Section, Chunk, and Study Unit
+- [x] `HRN-DOC-001` `[P2]` adopt extraction, OCR, Section, Chunk, and Study Unit
   cleanup into v3.
   - Record reviewed parser/heuristic contracts separately from installed
     dependency/OCR-engine versions and execution budgets.
@@ -149,24 +153,33 @@ dependencies and shared contract ownership do not overlap.
     detection, Chunk building, Study Unit cleanup, and the parent process.
   - Validate page coverage, extraction density, OCR fallback, ordering,
     boundaries, source IDs, warning/terminal behavior, and performance budgets.
+  - Document processing records parent, page extraction, Section detection,
+    Chunk building, OCR page, and Study Unit cleanup traces with authorized
+    protected snapshots and content-free count/digest evidence.
 
-- [ ] `HRN-SCENE-001` `[P2]` adopt Scene generation into v3.
+- [x] `HRN-SCENE-001` `[P2]` adopt Scene generation into v3.
   - Preserve the strict content-only proposal, allow-list reuse resolution,
     application-owned IDs, recursive budgets, committed-save split, and row
     CAS.
   - Add prompt/context snapshots, attempt/repair/terminal evidence, zero-write
     failures, protected replay, structure/correctness evals, and live-wire
     decoding.
+  - Scene generation runs through the shared runtime with strict proposal
+    validation, bounded recovery, protected replay, and independent API
+    decoding.
 
-- [ ] `HRN-PERSONA-001` `[P2]` adopt Persona generation and assist flows into v3.
+- [x] `HRN-PERSONA-001` `[P2]` adopt Persona generation and assist flows into v3.
   - Keep Persona/card IDs, source, ordering, timestamps, and committed state out
     of model-owned proposals.
   - Register prompt/context/output contracts and validate slot, identity,
     relationship, naming/address, count, and failure-zero-persistence behavior.
   - Add protected replay, identity/quality evals, bounded recovery, and
     independent API decoding.
+  - Card, setting, and slot assist flows share the strict content-only proposal
+    runtime; local fallback is represented as repaired evidence and failures
+    leave no committed card/slot projection.
 
-- [ ] `HRN-WEB-001` `[P2]` complete Frontend Decode v3 adoption.
+- [x] `HRN-WEB-001` `[P2]` complete Frontend Decode v3 adoption.
   - Inventory every endpoint and stream, moving remaining boundaries through
     `unknown -> strict decoder | typed error` without default-filled records.
   - Register the real Frontend Decoder component contract and
@@ -175,6 +188,9 @@ dependencies and shared contract ownership do not overlap.
     request/subject/revision ordering fences, and independent live-wire cases.
   - Extend the existing `web-strict-decode-adversarial-v1` gate through a new
     versioned catalog rather than silently editing its historical meaning.
+  - Document, Planning, Persona/Scene, Study, and Tavern response paths use
+    strict decoders; v3 Harness traces route through the registered frontend
+    decoder component and malformed nested evidence fails closed.
 
 ## Wave 5 — performance and optimization gates
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import base64
 from pathlib import Path
 from typing import Callable
 from uuid import uuid4
@@ -10,6 +11,7 @@ from fastapi import HTTPException, UploadFile
 
 from app.core.logging import get_logger
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
+from app.models.harness import HarnessArtifactType, HarnessStage, canonical_harness_digest
 from app.persistence.document_process_operation_repository import (
     DocumentProcessAdmissionRace,
     DocumentProcessAlreadyActive,
@@ -21,6 +23,14 @@ from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
 from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
+from app.services.harness_broad_adoption import (
+    DocumentStageEvidenceV1,
+    DocumentStageInputManifest,
+    DocumentProcessInputManifest,
+    DocumentProcessRuntimeOutputV1,
+    HarnessProposalRuntimeService,
+)
+from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
 
 logger = get_logger("vibe_learner.documents")
 
@@ -32,11 +42,15 @@ class DocumentService:
         parser: DocumentParser,
         arrangement_service: StudyArrangementService,
         process_repository: DocumentProcessOperationRepository | None = None,
+        harness_service: HarnessProposalRuntimeService | None = None,
     ) -> None:
         self.store = store
         self.parser = parser
         self.arrangement_service = arrangement_service
         self.process_repository = process_repository or DocumentProcessOperationRepository(
+            store.database
+        )
+        self.harness_service = harness_service or HarnessProposalRuntimeService.from_database(
             store.database
         )
 
@@ -97,8 +111,10 @@ class DocumentService:
             raise HTTPException(status_code=409, detail="document_processing_already_active") from exc
         except (DocumentProcessStateConflict, DocumentProcessAdmissionRace) as exc:
             raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None
+        harness_runtime: HarnessOperationRuntime | None = None
         try:
-            self.process_repository.require_harness_operation(operation.operation_id)
+            operation_binding = self.process_repository.require_harness_operation(operation.operation_id)
             if operation_admitted_callback is not None:
                 operation_admitted_callback(operation.operation_id)
             _emit_progress(
@@ -117,21 +133,83 @@ class DocumentService:
                 document.stored_path,
             )
             _call_interrupt(interrupt_check)
-            debug_report = self.parser.parse(
-                document_id=document.id,
-                title=document.title,
-                stored_path=document.stored_path,
-                force_ocr=force_ocr,
-                progress_callback=progress_callback,
-                interrupt_check=interrupt_check,
+            def generate_document(
+                protected: dict[str, object],
+            ) -> DocumentProcessRuntimeOutputV1:
+                source_document = DocumentRecord.model_validate(protected["document"])
+                source_force_ocr = protected["force_ocr"]
+                if not isinstance(source_force_ocr, bool):
+                    raise RuntimeError("document_ocr_snapshot_invalid")
+                encoded = protected.get("upload_base64")
+                if not isinstance(encoded, str):
+                    raise RuntimeError("document_upload_snapshot_invalid")
+                try:
+                    upload = base64.b64decode(encoded, validate=True)
+                except ValueError as error:
+                    raise RuntimeError("document_upload_snapshot_invalid") from error
+                suffix = Path(source_document.stored_path).suffix or ".pdf"
+                temp_kwargs: dict[str, object] = {
+                    "prefix": "vibe-harness-document-",
+                    "suffix": suffix,
+                    "delete": False,
+                }
+                runtime_temp_root = getattr(self.parser, "runtime_temp_root", None)
+                if runtime_temp_root is not None:
+                    runtime_temp_root.mkdir(parents=True, exist_ok=True)
+                    temp_kwargs["dir"] = str(runtime_temp_root)
+                temp_path: Path | None = None
+                try:
+                    import tempfile
+
+                    with tempfile.NamedTemporaryFile(**temp_kwargs) as handle:
+                        handle.write(upload)
+                        temp_path = Path(handle.name)
+                    try:
+                        report = self.parser.parse(
+                            document_id=source_document.id,
+                            title=source_document.title,
+                            stored_path=str(temp_path),
+                            force_ocr=source_force_ocr,
+                            progress_callback=progress_callback,
+                            interrupt_check=interrupt_check,
+                        )
+                    except fitz.FileDataError as error:
+                        raise RuntimeError("document_process_invalid_pdf") from error
+                    units = self.arrangement_service.build_study_units(
+                        document=source_document,
+                        debug_report=report,
+                    )
+                    return DocumentProcessRuntimeOutputV1(
+                        debug_report=report,
+                        study_units=units,
+                    )
+                finally:
+                    if temp_path is not None:
+                        temp_path.unlink(missing_ok=True)
+
+            runtime_prepared, harness_runtime = self.harness_service.prepare_document(
+                operation_binding=operation_binding,
+                manifest=DocumentProcessInputManifest(
+                    document_id=document.id,
+                    force_ocr=force_ocr,
+                ),
+                protected_input={
+                    "document": document.model_dump(mode="json", exclude_none=False),
+                    "force_ocr": force_ocr,
+                    "upload_base64": base64.b64encode(
+                        Path(document.stored_path).read_bytes()
+                    ).decode("ascii"),
+                },
+                generate=generate_document,
             )
+            runtime_output = DocumentProcessRuntimeOutputV1.model_validate(
+                runtime_prepared.output
+            ).model_copy(deep=True)
+            debug_report = runtime_output.debug_report
+            study_units = runtime_output.study_units
             _call_interrupt(interrupt_check)
             document.status = "processed"
             document.ocr_status = debug_report.ocr_status
-            study_units = self.arrangement_service.build_study_units(
-                document=document,
-                debug_report=debug_report,
-            )
             _emit_progress(
                 progress_callback,
                 "study_units_built",
@@ -165,20 +243,162 @@ class DocumentService:
             )
             document.debug_ready = True
             document.updated_at = _now()
+            parent_trace_id = runtime_prepared.execution.trace_id
+            self.harness_service.emit_document_stage_evidence(
+                operation_binding=operation_binding,
+                parent_trace_id=parent_trace_id,
+                stage=HarnessStage.PAGE_EXTRACTION,
+                trace_slot=1,
+                input_manifest=DocumentStageInputManifest(
+                    document_id=document.id,
+                    stage="page_extraction",
+                    item_count=debug_report.page_count,
+                ),
+                evidence=DocumentStageEvidenceV1(
+                    stage="page_extraction",
+                    outcome="passed",
+                    item_count=debug_report.page_count,
+                    warning_count=len(debug_report.warnings),
+                    source_digest=canonical_harness_digest(
+                        [item.model_dump(mode="json") for item in debug_report.pages]
+                    ),
+                ),
+                artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
+                protected_stage_input={
+                    "pages": [item.model_dump(mode="json") for item in debug_report.pages]
+                },
+            )
+            self.harness_service.emit_document_stage_evidence(
+                operation_binding=operation_binding,
+                parent_trace_id=parent_trace_id,
+                stage=HarnessStage.SECTION_DETECTION,
+                trace_slot=2,
+                input_manifest=DocumentStageInputManifest(
+                    document_id=document.id,
+                    stage="section_detection",
+                    item_count=len(debug_report.sections),
+                ),
+                evidence=DocumentStageEvidenceV1(
+                    stage="section_detection",
+                    outcome="passed",
+                    item_count=len(debug_report.sections),
+                    warning_count=len(debug_report.warnings),
+                    source_digest=canonical_harness_digest(
+                        [item.model_dump(mode="json") for item in debug_report.sections]
+                    ),
+                ),
+                artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
+                protected_stage_input={
+                    "sections": [item.model_dump(mode="json") for item in debug_report.sections]
+                },
+            )
+            self.harness_service.emit_document_stage_evidence(
+                operation_binding=operation_binding,
+                parent_trace_id=parent_trace_id,
+                stage=HarnessStage.CHUNK_BUILDING,
+                trace_slot=3,
+                input_manifest=DocumentStageInputManifest(
+                    document_id=document.id,
+                    stage="chunk_building",
+                    item_count=len(debug_report.chunks),
+                ),
+                evidence=DocumentStageEvidenceV1(
+                    stage="chunk_building",
+                    outcome="passed",
+                    item_count=len(debug_report.chunks),
+                    warning_count=len(debug_report.warnings),
+                    source_digest=canonical_harness_digest(
+                        [item.model_dump(mode="json") for item in debug_report.chunks]
+                    ),
+                ),
+                artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
+                protected_stage_input={
+                    "chunks": [item.model_dump(mode="json") for item in debug_report.chunks]
+                },
+            )
+            self.harness_service.emit_ocr_stage_evidence(
+                document_id=document.id,
+                input_manifest=DocumentStageInputManifest(
+                    document_id=document.id,
+                    stage="ocr_page",
+                    item_count=debug_report.page_count,
+                ),
+                evidence=DocumentStageEvidenceV1(
+                    stage="ocr_page",
+                    outcome=("applied" if debug_report.ocr_applied else "not_needed"),
+                    item_count=debug_report.page_count,
+                    warning_count=len(debug_report.warnings),
+                    source_digest=canonical_harness_digest(
+                        {
+                            "ocr_status": debug_report.ocr_status,
+                            "ocr_applied": debug_report.ocr_applied,
+                            "ocr_engine": debug_report.ocr_engine,
+                            "pages": [
+                                {"page_number": item.page_number, "extraction_source": item.extraction_source}
+                                for item in debug_report.pages
+                            ],
+                        }
+                    ),
+                ),
+                protected_stage_input={
+                    "pages": [item.model_dump(mode="json") for item in debug_report.pages]
+                },
+            )
+            self.harness_service.emit_study_unit_cleanup_evidence(
+                document_id=document.id,
+                input_manifest=DocumentStageInputManifest(
+                    document_id=document.id,
+                    stage="study_unit_cleanup",
+                    item_count=len(study_units),
+                ),
+                evidence=DocumentStageEvidenceV1(
+                    stage="study_unit_cleanup",
+                    outcome="passed",
+                    item_count=len(study_units),
+                    warning_count=len(debug_report.warnings),
+                    source_digest=canonical_harness_digest(
+                        [item.model_dump(mode="json") for item in study_units]
+                    ),
+                ),
+                protected_stage_input={
+                    "study_units": [item.model_dump(mode="json") for item in study_units]
+                },
+            )
             self.process_repository.commit_success(
                 operation_id=operation.operation_id,
                 document=document,
                 debug_report=debug_report,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
         except StreamInterruptedError:
-            self.process_repository.mark_interrupted(operation_id=operation.operation_id)
+            self.process_repository.mark_interrupted(
+                operation_id=operation.operation_id,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
+            )
             self._mirror_current_document_projection(document.id)
             logger.info("document.processing.interrupted id=%s", document.id)
             raise
-        except fitz.FileDataError as exc:
+        except (fitz.FileDataError, RuntimeError) as exc:
+            if not (
+                isinstance(exc, fitz.FileDataError)
+                or str(exc) == "document_process_invalid_pdf"
+            ):
+                self.process_repository.mark_failed(
+                    operation_id=operation.operation_id,
+                    error_code=_document_process_error_code(exc),
+                    harness_runtime=harness_runtime,
+                    runtime_prepared=runtime_prepared,
+                )
+                self._mirror_current_document_projection(document.id)
+                logger.exception("document.processing.failed id=%s", document.id)
+                raise
             self.process_repository.mark_failed(
                 operation_id=operation.operation_id,
                 error_code="document_process_invalid_pdf",
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
             self._mirror_current_document_projection(document.id)
             logger.exception("document.processing.invalid_pdf id=%s", document.id)
@@ -187,6 +407,8 @@ class DocumentService:
             self.process_repository.mark_failed(
                 operation_id=operation.operation_id,
                 error_code=_document_process_error_code(exc),
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
             self._mirror_current_document_projection(document.id)
             logger.exception("document.processing.failed id=%s", document.id)

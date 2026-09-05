@@ -218,7 +218,7 @@ function decodeScene(raw: unknown, path: string): SceneProfile {
   };
 }
 
-function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceWire {
+export function decodeHarnessTrace(raw: unknown, path: string): HarnessTraceWire {
   const value = record(raw, path);
   if (Object.prototype.hasOwnProperty.call(value, "trace_schema_version")) {
     const schema = string(value.trace_schema_version, `${path}.trace_schema_version`);

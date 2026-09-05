@@ -1,6 +1,7 @@
 import unittest
 
 from app.models.api import SceneTreeGenerateRequest, SceneTreeGenerateResponse
+from app.models.domain import SceneLayerStateRecord
 from app.services.model_provider import MockModelProvider, _normalize_generated_scene_result
 from app.services.prompt_loader import load_prompt_template
 
@@ -9,6 +10,22 @@ def _walk_layers(layers):
     for layer in layers:
         yield layer
         yield from _walk_layers(layer.children)
+
+
+def _project_without_wire_trace(result, *, mode):
+    return SceneTreeGenerateResponse.model_construct(
+        mode=mode,
+        used_model=str(result.get("used_model") or ""),
+        used_web_search=bool(result.get("used_web_search")),
+        scene_name=str(result.get("scene_name") or ""),
+        scene_summary=str(result.get("scene_summary") or ""),
+        selected_layer_id=str(result.get("selected_layer_id") or ""),
+        scene_layers=[
+            SceneLayerStateRecord.model_validate(item)
+            for item in result.get("scene_layers") or []
+        ],
+        harness_trace=None,
+    )
 
 
 class SceneGenerationTests(unittest.TestCase):
@@ -20,15 +37,7 @@ class SceneGenerationTests(unittest.TestCase):
             keywords="赛博校园, 物理实验, 夜间自习",
             layer_count=5,
         )
-        payload = SceneTreeGenerateResponse(
-            mode="keywords",
-            used_model=str(result.get("used_model") or ""),
-            used_web_search=bool(result.get("used_web_search")),
-            scene_name=str(result.get("scene_name") or ""),
-            scene_summary=str(result.get("scene_summary") or ""),
-            selected_layer_id=str(result.get("selected_layer_id") or ""),
-            scene_layers=result.get("scene_layers") or [],
-        )
+        payload = _project_without_wire_trace(result, mode="keywords")
 
         self.assertTrue(payload.scene_name)
         self.assertEqual(len(payload.scene_layers), 1)
@@ -54,15 +63,7 @@ class SceneGenerationTests(unittest.TestCase):
             ),
             layer_count=4,
         )
-        payload = SceneTreeGenerateResponse(
-            mode="long_text",
-            used_model=str(result.get("used_model") or ""),
-            used_web_search=bool(result.get("used_web_search")),
-            scene_name=str(result.get("scene_name") or ""),
-            scene_summary=str(result.get("scene_summary") or ""),
-            selected_layer_id=str(result.get("selected_layer_id") or ""),
-            scene_layers=result.get("scene_layers") or [],
-        )
+        payload = _project_without_wire_trace(result, mode="long_text")
 
         flattened = list(_walk_layers(payload.scene_layers))
         self.assertGreaterEqual(len(flattened), 4)
@@ -80,15 +81,7 @@ class SceneGenerationTests(unittest.TestCase):
             keywords="单层空间, 观察点",
             layer_count=1,
         )
-        payload = SceneTreeGenerateResponse(
-            mode="keywords",
-            used_model=str(result.get("used_model") or ""),
-            used_web_search=bool(result.get("used_web_search")),
-            scene_name=str(result.get("scene_name") or ""),
-            scene_summary=str(result.get("scene_summary") or ""),
-            selected_layer_id=str(result.get("selected_layer_id") or ""),
-            scene_layers=result.get("scene_layers") or [],
-        )
+        payload = _project_without_wire_trace(result, mode="keywords")
 
         flattened = list(_walk_layers(payload.scene_layers))
         self.assertEqual(len(flattened), 1)

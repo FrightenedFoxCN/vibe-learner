@@ -18,10 +18,12 @@ import type {
   StudyScheduleItem,
   StudyUnit,
   StudyUnitPlanningDetail,
+  HarnessTraceV3,
 } from "@vibe-learner/shared";
 
 import { StrictResponseDecoder } from "./strict-response-decode.ts";
 import { decodeDocumentRecord } from "./document-decode.ts";
+import { decodeHarnessTraceV3 } from "./harness-trace-decode.ts";
 
 const STUDY_UNIT_KINDS = [
   "chapter",
@@ -795,6 +797,7 @@ export interface LearningPlanDecodeOptions {
   expectedPlanId?: string;
   expectedDocumentId?: string;
   path?: string;
+  requireHarnessTrace?: boolean;
 }
 
 export function decodeLearningPlan(
@@ -803,6 +806,25 @@ export function decodeLearningPlan(
 ): LearningPlan {
   const path = options.path ?? "learning_plan";
   const value = decoder.record(raw, path);
+  let harnessTrace: HarnessTraceV3 | undefined;
+  const rawHarnessTrace = value.harness_trace;
+  if (
+    options.requireHarnessTrace ||
+    (rawHarnessTrace !== undefined && rawHarnessTrace !== null)
+  ) {
+    const decodedTrace = decodeHarnessTraceV3(
+      decoder.field(value, "harness_trace", path),
+      `${path}.harness_trace`,
+      (tracePath, reason) => { throw new PlanningDecodeError(tracePath, reason); },
+    );
+    if (decodedTrace.workflow !== "planning" || decodedTrace.stage !== "plan_generation" || !["passed", "repaired"].includes(decodedTrace.status) || decodedTrace.commitEvidence.status !== "committed") {
+      throw new PlanningDecodeError(
+        `${path}.harness_trace`,
+        "learning_plan_harness_trace_invalid",
+      );
+    }
+    harnessTrace = decodedTrace;
+  }
   const id = decoder.string(decoder.field(value, "id", path), `${path}.id`);
   if (options.expectedPlanId !== undefined) {
     decoder.equal(id, options.expectedPlanId, `${path}.id`);
@@ -1142,6 +1164,7 @@ export function decodeLearningPlan(
       decoder.field(value, "created_at", path),
       `${path}.created_at`,
     ),
+    ...(harnessTrace ? { harnessTrace } : {}),
   };
 }
 

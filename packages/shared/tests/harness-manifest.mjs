@@ -54,17 +54,13 @@ for (const entry of HARNESS_WORKFLOW_MANIFEST.stages) {
   );
   assert.equal(entry.eval_route.status, "registered");
   assert.equal(entry.eval_route.value, vocabulary.evalRoute);
-  const pilotSuite =
-    entry.key === "tavern:actor_reply" ||
-    entry.key === "planning:planning_tool_execution" ||
-    entry.key === "study_chat:study_chat_reply";
-  assert.equal(
-    entry.eval_suites.status,
-    pilotSuite ? "registered" : "unregistered",
-  );
-  if (entry.eval_suites.status === "unregistered") {
-    assert.equal(entry.eval_suites.reason, "eval_suite_not_registered");
+  const implemented = true;
+  assert.equal(entry.registration.status, implemented ? "registered" : "unregistered");
+  if (!implemented) {
+    assert.throws(() => requireExecutableWorkflowManifestEntry(entry.workflow, entry.stage), /stage_unregistered/);
   }
+  const pilotSuite = ["tavern:actor_reply", "planning:planning_tool_execution", "study_chat:study_chat_reply"].includes(entry.key);
+  assert.equal(entry.eval_suites.status, pilotSuite ? "registered" : "unregistered");
   if (entry.allowed_artifact_types.status === "registered") {
     assert.deepEqual(
       entry.allowed_artifact_types.artifact_types,
@@ -108,10 +104,9 @@ assert.deepEqual(tavern.eval_suites.contracts, [
     version: "tavern-identity-eval-v1",
   },
 ]);
-assert.throws(
-  () => requireExecutableWorkflowManifestEntry("planning", "plan_generation"),
-  /stage_unregistered/,
-);
+const planning = requireExecutableWorkflowManifestEntry("planning", "plan_generation");
+assert.equal(planning.registration.status, "registered");
+assert.deepEqual(planning.eval_suites, { status: "unregistered", reason: "eval_suite_not_registered" });
 assert.throws(
   () => requireExecutableWorkflowManifestEntry("tavern", "plan_generation"),
   /stage_unknown/,

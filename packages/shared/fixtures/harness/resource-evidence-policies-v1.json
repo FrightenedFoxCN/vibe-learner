@@ -6,7 +6,7 @@
       "resource_type": "document",
       "semantics": "unversioned_mutable",
       "context_evidence": "unsupported",
-      "commit_evidence": "unsupported",
+      "commit_evidence": "digest",
       "rollback_evidence": "unsupported"
     },
     {
@@ -26,7 +26,7 @@
     {
       "resource_type": "frontend_request",
       "semantics": "operation_identity",
-      "context_evidence": "unsupported",
+      "context_evidence": "operation_identity",
       "commit_evidence": "unsupported",
       "rollback_evidence": "unsupported"
     },
@@ -34,7 +34,7 @@
       "resource_type": "learning_plan",
       "semantics": "unversioned_mutable",
       "context_evidence": "unsupported",
-      "commit_evidence": "unsupported",
+      "commit_evidence": "digest",
       "rollback_evidence": "unsupported"
     },
     {

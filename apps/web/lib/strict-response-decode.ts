@@ -109,7 +109,7 @@ export class StrictResponseDecoder {
     }
   }
 
-  equal(actual: string | number, expected: string | number, path: string): void {
+  equal(actual: unknown, expected: string | number, path: string): void {
     if (actual !== expected) {
       this.fail(path, `identity_mismatch_expected_${expected}`);
     }

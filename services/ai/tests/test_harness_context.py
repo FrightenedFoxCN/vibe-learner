@@ -560,10 +560,10 @@ class HarnessContextV3Tests(unittest.TestCase):
                 subject_refs=[],
             )
 
-    def test_pending_component_registry_blocks_unadopted_workflow(self) -> None:
+    def test_registered_workflow_still_rejects_a_foreign_operation_binding(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "harness_workflow_manifest_stage_unregistered",
+            "harness_context_operation_workflow_mismatch",
         ):
             build_harness_context(
                 workflow=HarnessWorkflow.PLANNING,
@@ -864,10 +864,10 @@ class HarnessContextV3Tests(unittest.TestCase):
         )
         for resource_type in (
             HarnessResourceType.DOCUMENT,
+            HarnessResourceType.DOCUMENT_PAGE,
             HarnessResourceType.STUDY_UNIT,
             HarnessResourceType.TAVERN_RUN,
             HarnessResourceType.TAVERN_MESSAGE,
-            HarnessResourceType.FRONTEND_REQUEST,
         ):
             for revision in (None, 0):
                 resource = HarnessResourceRefV3(
@@ -880,6 +880,22 @@ class HarnessContextV3Tests(unittest.TestCase):
                     "harness_context_resource_policy_unsupported",
                 ):
                     _build(subject_refs=[resource])
+
+        frontend_request = HarnessResourceRefV3(
+            resource_type=HarnessResourceType.FRONTEND_REQUEST,
+            resource_id="frontend-request-1",
+            revision=None,
+        )
+        self.assertEqual(frontend_request.revision, None)
+        with self.assertRaisesRegex(
+            (ValidationError, ValueError),
+            "harness_context_operation_identity_revision_forbidden",
+        ):
+            _build(
+                subject_refs=[
+                    frontend_request.model_copy(update={"revision": 0})
+                ]
+            )
 
     def test_v3_revision_commit_requires_complete_revision_evidence(self) -> None:
         payload = {
@@ -1035,7 +1051,7 @@ class HarnessContextV3Tests(unittest.TestCase):
         self,
     ) -> None:
         for resource_type in (
-            HarnessResourceType.DOCUMENT,
+            HarnessResourceType.DOCUMENT_DEBUG,
             HarnessResourceType.DOCUMENT_PAGE,
             HarnessResourceType.STUDY_UNIT,
             HarnessResourceType.TAVERN_RUN,
@@ -1081,8 +1097,8 @@ class HarnessContextV3Tests(unittest.TestCase):
                 HarnessCommitEvidenceV3.model_validate(rolled_back)
 
         unsupported_committed = HarnessCommittedResourceRefV3(
-            resource_type=HarnessResourceType.DOCUMENT,
-            resource_id="document-1",
+            resource_type=HarnessResourceType.DOCUMENT_DEBUG,
+            resource_id="document-debug-1",
             expected_revision=None,
             committed_revision=None,
             first_sequence=None,
@@ -1115,8 +1131,8 @@ class HarnessContextV3Tests(unittest.TestCase):
             "status": "committed",
             "committed_resources": [
                 {
-                    "resource_type": HarnessResourceType.DOCUMENT.value,
-                    "resource_id": "document-1",
+                    "resource_type": HarnessResourceType.DOCUMENT_DEBUG.value,
+                    "resource_id": "document-debug-1",
                     "expected_revision": None,
                     "committed_revision": None,
                     "first_sequence": None,
@@ -1147,7 +1163,7 @@ class HarnessContextV3Tests(unittest.TestCase):
         for attempted, error in (
             (
                 unsupported_with_fake_revision,
-                "harness_unsupported_commit_attempt_revision_forbidden",
+                "harness_digest_commit_attempt_revision_forbidden",
             ),
             (
                 message_with_fake_revision,

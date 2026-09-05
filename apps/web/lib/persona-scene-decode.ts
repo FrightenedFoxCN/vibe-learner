@@ -7,9 +7,11 @@ import type {
   SceneObjectSnapshot,
   SceneProfile,
   SceneTreeNode,
+  HarnessTraceV3,
 } from "@vibe-learner/shared";
 
 import { StrictResponseDecoder } from "./strict-response-decode.ts";
+import { decodeHarnessTraceV3 } from "./harness-trace-decode.ts";
 
 const PERSONA_SOURCES = ["builtin", "user"] as const;
 const PERSONA_CARD_SOURCES = [
@@ -58,17 +60,20 @@ export interface DecodedPersonaCardGenerateResult {
   learnerAddress: string;
   items: PersonaCard[];
   modelRecoveries: ModelRecovery[];
+  harnessTrace: HarnessTraceV3;
 }
 
 export interface DecodedPersonaSettingAssistOutput {
   slots: PersonaSlot[];
   systemPromptSuggestion: string;
   modelRecoveries: ModelRecovery[];
+  harnessTrace: HarnessTraceV3;
 }
 
 export interface DecodedPersonaSlotAssistOutput {
   slot: PersonaSlot;
   modelRecoveries: ModelRecovery[];
+  harnessTrace: HarnessTraceV3;
 }
 
 export interface DecodedSceneTreeGenerateResult {
@@ -80,6 +85,23 @@ export interface DecodedSceneTreeGenerateResult {
   selectedLayerId: string;
   sceneLayers: SceneTreeNode[];
   modelRecoveries: ModelRecovery[];
+  harnessTrace: HarnessTraceV3;
+}
+
+function decodeWave4HarnessTrace(
+  value: Record<string, unknown>,
+  path: string,
+  workflow: "persona" | "scene",
+  stage: "persona_generation" | "scene_generation",
+): HarnessTraceV3 {
+  const trace = decodeHarnessTraceV3(
+    decoder.field(value, "harness_trace", path),
+    `${path}.harness_trace`,
+    (tracePath, reason) => { throw new PersonaSceneDecodeError(tracePath, reason); },
+  );
+  decoder.equal(trace.workflow, workflow, `${path}.harness_trace.workflow`);
+  decoder.equal(trace.stage, stage, `${path}.harness_trace.stage`);
+  return trace;
 }
 
 export interface DecodedSceneSetupState {
@@ -381,6 +403,7 @@ export function decodePersonaCardGenerateResult(
       decoder.field(value, "model_recoveries", path),
       `${path}.model_recoveries`,
     ),
+    harnessTrace: decodeWave4HarnessTrace(value, path, "persona", "persona_generation"),
   };
 }
 
@@ -403,6 +426,7 @@ export function decodePersonaSettingAssistOutput(
       decoder.field(value, "model_recoveries", path),
       `${path}.model_recoveries`,
     ),
+    harnessTrace: decodeWave4HarnessTrace(value, path, "persona", "persona_generation"),
   };
 }
 
@@ -423,6 +447,7 @@ export function decodePersonaSlotAssistOutput(
       decoder.field(value, "model_recoveries", path),
       `${path}.model_recoveries`,
     ),
+    harnessTrace: decodeWave4HarnessTrace(value, path, "persona", "persona_generation"),
   };
 }
 
@@ -877,6 +902,7 @@ export function decodeSceneTreeGenerateResult(
       decoder.field(value, "model_recoveries", path),
       `${path}.model_recoveries`,
     ),
+    harnessTrace: decodeWave4HarnessTrace(value, path, "scene", "scene_generation"),
   };
 }
 

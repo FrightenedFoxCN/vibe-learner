@@ -7,25 +7,40 @@
       "workflow": "document_parse",
       "stage": "chunk_building",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentChunkBuildingWorkflowManifestEntry",
+          "version": "document-chunk-building-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.document_parser",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageWorkflowAdapter",
+          "version": "document-stage-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "component_contracts": [
         {
@@ -44,8 +59,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -79,8 +97,8 @@
         "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence"
       },
       "eval_route": {
         "status": "registered",
@@ -96,32 +114,50 @@
       "workflow": "document_parse",
       "stage": "document_parse",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentProcessWorkflowManifestEntry",
+          "version": "document-process-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.document_parser",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentProcessWorkflowAdapter",
+          "version": "document-process-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentProcessInputManifest",
+          "version": "document-process-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentProcessRuntimeOutput",
+          "version": "document-process-runtime-output-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentProcessCommittedProjection",
+          "version": "document-process-committed-projection-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "document_parser",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "document_parser",
+              "version": "document-parser-v1"
+            }
           }
         }
       ],
@@ -130,8 +166,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentProcessHarnessPolicy",
+          "version": "document-process-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -156,16 +195,27 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "registered",
+        "key": {
+          "workflow": "document_parse",
+          "stage": "document_parse",
+          "trace_contract": {
+            "name": "DocumentProcessRuntimeOutput",
+            "version": "document-process-runtime-output-v1"
+          },
+          "payload_contract": {
+            "name": "DocumentProcessCommittedProjection",
+            "version": "document-process-committed-projection-v1"
+          }
+        }
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.DocumentProcessWorkflowAdapter"
       },
       "eval_route": {
         "status": "registered",
@@ -181,25 +231,40 @@
       "workflow": "document_parse",
       "stage": "page_extraction",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentPageExtractionWorkflowManifestEntry",
+          "version": "document-page-extraction-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.document_parser",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageWorkflowAdapter",
+          "version": "document-stage-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "component_contracts": [
         {
@@ -218,8 +283,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -252,8 +320,8 @@
         "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence"
       },
       "eval_route": {
         "status": "registered",
@@ -269,25 +337,40 @@
       "workflow": "document_parse",
       "stage": "section_detection",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentSectionDetectionWorkflowManifestEntry",
+          "version": "document-section-detection-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.document_parser",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageWorkflowAdapter",
+          "version": "document-stage-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "component_contracts": [
         {
@@ -306,8 +389,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -328,7 +414,8 @@
       "allowed_artifact_types": {
         "status": "registered",
         "artifact_types": [
-          "document_debug"
+          "document_debug",
+          "document_upload"
         ]
       },
       "allowed_effect_adapters": {
@@ -340,8 +427,8 @@
         "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence"
       },
       "eval_route": {
         "status": "registered",
@@ -357,32 +444,50 @@
       "workflow": "frontend_decode",
       "stage": "response_decode",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "FrontendDecodeWorkflowManifestEntry",
+          "version": "frontend-decode-workflow-manifest-v1"
+        }
       },
       "owner_module": "apps.web.lib.api",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "FrontendDecodeWorkflowAdapter",
+          "version": "frontend-decode-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "FrontendDecodeInputManifest",
+          "version": "frontend-decode-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "FrontendDecodeResponse",
+          "version": "frontend-decode-response-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "FrontendDecodeResponse",
+          "version": "frontend-decode-response-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "frontend_decoder",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "frontend_decoder",
+              "version": "frontend-decoder-v1"
+            }
           }
         }
       ],
@@ -391,8 +496,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "FrontendDecodeHarnessPolicy",
+          "version": "frontend-decode-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -425,8 +533,8 @@
         "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "apps.web.lib.harness-trace-decode.decodeHarnessTraceV3"
       },
       "eval_route": {
         "status": "registered",
@@ -442,32 +550,50 @@
       "workflow": "ocr",
       "stage": "ocr_page",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "OcrPageWorkflowManifestEntry",
+          "version": "ocr-page-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.ocr_engine",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageWorkflowAdapter",
+          "version": "document-stage-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "ocr_engine",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "ocr_engine",
+              "version": "ocr-engine-v1"
+            }
           }
         }
       ],
@@ -476,8 +602,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -503,16 +632,16 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "not_applicable",
+        "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_ocr_stage_evidence"
       },
       "eval_route": {
         "status": "registered",
@@ -528,42 +657,66 @@
       "workflow": "persona",
       "stage": "persona_generation",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationWorkflowManifestEntry",
+          "version": "persona-generation-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.persona_cards",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationWorkflowAdapter",
+          "version": "persona-generation-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationInputManifest",
+          "version": "persona-generation-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationProposal",
+          "version": "persona-generation-proposal-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationProposal",
+          "version": "persona-generation-proposal-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "persona_compiler",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "persona_compiler",
+              "version": "persona-compiler-v1"
+            }
           }
         }
       ],
       "prompt_contract": {
-        "status": "not_applicable",
-        "reason": "no_prompt"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationPrompt",
+          "version": "persona-generation-prompt-v1"
+        }
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PersonaGenerationHarnessPolicy",
+          "version": "persona-generation-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -588,16 +741,16 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "not_applicable",
+        "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.PersonaGenerationWorkflowAdapter"
       },
       "eval_route": {
         "status": "registered",
@@ -613,32 +766,50 @@
       "workflow": "planning",
       "stage": "plan_generation",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanWorkflowManifestEntry",
+          "version": "learning-plan-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.model_provider",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanWorkflowAdapter",
+          "version": "learning-plan-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanInputManifest",
+          "version": "learning-plan-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanRuntimeOutput",
+          "version": "learning-plan-runtime-output-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanCommittedProjection",
+          "version": "learning-plan-committed-projection-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "planning_prompt",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "planning_prompt",
+              "version": "planning-prompt-v1"
+            }
           }
         },
         {
@@ -653,12 +824,18 @@
         }
       ],
       "prompt_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanPrompt",
+          "version": "planning-prompt-v1"
+        }
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "LearningPlanHarnessPolicy",
+          "version": "learning-plan-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "registered",
@@ -690,16 +867,27 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "registered",
+        "key": {
+          "workflow": "planning",
+          "stage": "plan_generation",
+          "trace_contract": {
+            "name": "LearningPlanRuntimeOutput",
+            "version": "learning-plan-runtime-output-v1"
+          },
+          "payload_contract": {
+            "name": "LearningPlanCommittedProjection",
+            "version": "learning-plan-committed-projection-v1"
+          }
+        }
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.LearningPlanWorkflowAdapter"
       },
       "eval_route": {
         "status": "registered",
@@ -715,25 +903,40 @@
       "workflow": "planning",
       "stage": "planning_tool_execution",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "PlanningToolExecutionWorkflowManifestEntry",
+          "version": "planning-tool-execution-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.plan_tool_runtime",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PlanningToolExecutionWorkflowAdapter",
+          "version": "planning-tool-execution-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PlanningToolExecutionEvidence",
+          "version": "planning-tool-execution-evidence-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PlanningToolExecutionEvidence",
+          "version": "planning-tool-execution-evidence-v1"
+        }
       },
       "component_contracts": [
         {
@@ -762,8 +965,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "registered",
@@ -793,16 +999,16 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "not_applicable",
+        "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_planning_tool_evidence"
       },
       "eval_route": {
         "status": "registered",
@@ -823,42 +1029,66 @@
       "workflow": "scene",
       "stage": "scene_generation",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "SceneGenerationWorkflowManifestEntry",
+          "version": "scene-generation-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.scene_setup",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "SceneGenerationWorkflowAdapter",
+          "version": "scene-generation-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "SceneGenerationInputManifest",
+          "version": "scene-generation-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "SceneTreeProposal",
+          "version": "scene-tree-proposal-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "SceneTreeGeneratedProjection",
+          "version": "scene-tree-generated-projection-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "scene_compiler",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "scene_compiler",
+              "version": "scene-compiler-v1"
+            }
           }
         }
       ],
       "prompt_contract": {
-        "status": "not_applicable",
-        "reason": "no_prompt"
+        "status": "registered",
+        "contract": {
+          "name": "SceneGenerationPrompt",
+          "version": "scene-generation-prompt-v1"
+        }
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "SceneGenerationHarnessPolicy",
+          "version": "scene-generation-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -884,16 +1114,16 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "not_applicable",
+        "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.SceneGenerationWorkflowAdapter"
       },
       "eval_route": {
         "status": "registered",
@@ -1055,32 +1285,50 @@
       "workflow": "study_unit_cleanup",
       "stage": "study_unit_cleanup",
       "registration": {
-        "status": "unregistered",
-        "reason": "workflow_not_audited"
+        "status": "registered",
+        "contract": {
+          "name": "StudyUnitCleanupWorkflowManifestEntry",
+          "version": "study-unit-cleanup-workflow-manifest-v1"
+        }
       },
       "owner_module": "app.services.study_arrangement",
       "owner_adapter": {
-        "status": "unregistered",
-        "reason": "adapter_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageWorkflowAdapter",
+          "version": "document-stage-workflow-adapter-v1"
+        }
       },
       "input_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        }
       },
       "proposal_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "output_contract": {
-        "status": "unregistered",
-        "reason": "contract_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageEvidence",
+          "version": "document-stage-evidence-v1"
+        }
       },
       "component_contracts": [
         {
           "component_name": "study_unit_cleaner",
           "contract": {
-            "status": "unregistered",
-            "reason": "component_contract_not_registered"
+            "status": "registered",
+            "contract": {
+              "name": "study_unit_cleaner",
+              "version": "study-unit-cleaner-v1"
+            }
           }
         }
       ],
@@ -1089,8 +1337,11 @@
         "reason": "no_prompt"
       },
       "policy_contract": {
-        "status": "unregistered",
-        "reason": "policy_not_registered"
+        "status": "registered",
+        "contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        }
       },
       "toolset_contract": {
         "status": "not_applicable",
@@ -1116,16 +1367,16 @@
         ]
       },
       "allowed_effect_adapters": {
-        "status": "unregistered",
-        "reason": "effect_adapter_not_registered"
+        "status": "not_applicable",
+        "reason": "no_effects"
       },
       "commit_policy": {
-        "status": "unregistered",
-        "reason": "commit_policy_not_registered"
+        "status": "not_applicable",
+        "reason": "no_commit"
       },
       "decoder_route": {
-        "status": "unregistered",
-        "reason": "decoder_not_registered"
+        "status": "registered",
+        "value": "app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_study_unit_cleanup_evidence"
       },
       "eval_route": {
         "status": "registered",

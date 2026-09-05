@@ -247,6 +247,40 @@ class HarnessRuntimeRepository:
                 session.flush()
             return _from_row(row)
 
+    def renew(
+        self,
+        *,
+        claim: HarnessRuntimeClaimV1,
+        lease_seconds: int = 30,
+    ) -> HarnessRuntimeClaimV1:
+        """Extend an active claim using the database clock and its fence."""
+        if lease_seconds < 1 or lease_seconds > 300:
+            raise HarnessRuntimeError("harness_runtime_lease_seconds_invalid")
+        with self.database.session() as session:
+            row, now = self._require_active_claim(session, claim)
+            expires = now + timedelta(seconds=lease_seconds)
+            changed = session.execute(
+                update(HarnessRuntimeExecutionRow)
+                .where(
+                    HarnessRuntimeExecutionRow.trace_id == row.trace_id,
+                    HarnessRuntimeExecutionRow.state == HarnessRuntimeState.CLAIMED.value,
+                    HarnessRuntimeExecutionRow.claim_owner == claim.claim_owner,
+                    HarnessRuntimeExecutionRow.claim_token == claim.claim_token,
+                    HarnessRuntimeExecutionRow.claim_count == claim.claim_count,
+                    HarnessRuntimeExecutionRow.lease_expires_at == row.lease_expires_at,
+                )
+                .values(lease_expires_at=_wire(expires), updated_at=_wire(now))
+            )
+            if changed.rowcount != 1:
+                raise HarnessRuntimeFenced("harness_runtime_claim_fenced")
+            return HarnessRuntimeClaimV1(
+                trace_id=claim.trace_id,
+                claim_owner=claim.claim_owner,
+                claim_token=claim.claim_token,
+                claim_count=claim.claim_count,
+                lease_expires_at=expires,
+            )
+
     def append_attempt(
         self,
         *,

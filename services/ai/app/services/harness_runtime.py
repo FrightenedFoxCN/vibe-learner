@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from threading import Event, Thread
 from typing import Callable, Mapping, Protocol
 from sqlalchemy.orm import Session
 
@@ -127,6 +128,51 @@ class HarnessRuntimeRequest:
     parent_trace_id: str | None = None
 
 
+class _HarnessLeaseHeartbeat:
+    """Renew a runtime claim while synchronous provider/worker code is running."""
+
+    def __init__(
+        self,
+        repository: HarnessRuntimeRepository,
+        claim: HarnessRuntimeClaimV1,
+        lease_seconds: int,
+    ) -> None:
+        self.repository = repository
+        self.claim = claim
+        self.lease_seconds = lease_seconds
+        self._stop = Event()
+        self._failure: Exception | None = None
+        self._thread: Thread | None = None
+
+    def __enter__(self) -> "_HarnessLeaseHeartbeat":
+        interval = max(0.25, min(30.0, self.lease_seconds / 3))
+
+        def run() -> None:
+            while not self._stop.wait(interval):
+                try:
+                    self.claim = self.repository.renew(
+                        claim=self.claim,
+                        lease_seconds=self.lease_seconds,
+                    )
+                except Exception as error:  # pragma: no cover - timing dependent
+                    self._failure = error
+                    self._stop.set()
+                    return
+
+        self._thread = Thread(target=run, name="harness-runtime-heartbeat", daemon=True)
+        self._thread.start()
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1.0)
+
+    def raise_if_failed(self) -> None:
+        if self._failure is not None:
+            raise HarnessRuntimeError("harness_runtime_claim_renewal_failed") from self._failure
+
+
 class HarnessOperationRuntime:
     """Shared v3 generate/decode/validate/repair/commit orchestration boundary."""
 
@@ -177,24 +223,35 @@ class HarnessOperationRuntime:
             raise HarnessRuntimeError(
                 f"harness_runtime_not_executable:{recovery.disposition.value}"
             )
+        lease_seconds = _lease_seconds(manifest.execution_budget.max_wall_time_ms)
         claim = self.repository.claim(
             trace_id=execution.trace_id,
             claim_owner=claim_owner,
-            lease_seconds=max(
-                1,
-                min(300, (manifest.execution_budget.max_wall_time_ms + 999) // 1000),
-            ),
+            lease_seconds=lease_seconds,
         )
         if claim is None:
             raise HarnessRuntimeError("harness_runtime_claim_unavailable")
         self.repository.mark_execution_started(claim)
         started_at = self.clock()
+        deadline = started_at + timedelta(
+            milliseconds=manifest.execution_budget.max_wall_time_ms
+        )
         repaired = False
         raw: object | None = None
         artifacts: Mapping[str, object] = {}
         try:
-            artifacts = self._resolve_artifacts(request)
-            raw = adapter.generate(request.context, artifacts)
+            artifacts = self._call_with_heartbeat(
+                claim,
+                lease_seconds,
+                lambda: self._resolve_artifacts(request),
+                deadline=deadline,
+            )
+            raw = self._call_with_heartbeat(
+                claim,
+                lease_seconds,
+                lambda: adapter.generate(request.context, artifacts),
+                deadline=deadline,
+            )
             self._record_attempt(
                 claim,
                 HarnessAttemptPhase.GENERATE,
@@ -259,13 +316,17 @@ class HarnessOperationRuntime:
                     raw=raw,
                     error_code=code,
                     repair_index=repair_count,
+                    lease_seconds=lease_seconds,
+                    deadline=deadline,
                 )
                 repaired = True
                 continue
 
             validate_started = self.clock()
             try:
+                self._ensure_within_budget(deadline)
                 validated = adapter.validate(decoded)
+                self._ensure_within_budget(deadline)
                 if not isinstance(validated, HarnessRuntimeValidationResult):
                     raise HarnessRuntimeError("harness_runtime_validation_result_invalid")
                 validated.validate()
@@ -330,6 +391,8 @@ class HarnessOperationRuntime:
                     raw=raw,
                     error_code=code,
                     repair_index=repair_count,
+                    lease_seconds=lease_seconds,
+                    deadline=deadline,
                 )
                 repaired = True
                 continue
@@ -362,7 +425,12 @@ class HarnessOperationRuntime:
         if adapter.commit is not None:
             commit_started = self.clock()
             try:
-                commit_evidence = adapter.commit(validated.output)
+                commit_evidence = self._call_with_heartbeat(
+                    claim,
+                    lease_seconds,
+                    lambda: adapter.commit(validated.output),
+                    deadline=deadline,
+                )
                 if commit_evidence.status != HarnessCommitStatus.COMMITTED:
                     raise HarnessRuntimeError("harness_runtime_commit_not_terminal")
                 self._record_attempt(
@@ -660,11 +728,18 @@ class HarnessOperationRuntime:
         raw: object,
         error_code: str,
         repair_index: int,
+        lease_seconds: int,
+        deadline: datetime,
     ) -> object:
         started = self.clock()
         assert adapter.repair is not None
         try:
-            repaired = adapter.repair(raw, error_code, repair_index)
+            repaired = self._call_with_heartbeat(
+                claim,
+                lease_seconds,
+                lambda: adapter.repair(raw, error_code, repair_index),
+                deadline=deadline,
+            )
             self._record_attempt(
                 claim,
                 HarnessAttemptPhase.REPAIR,
@@ -682,6 +757,24 @@ class HarnessOperationRuntime:
                 error_code=_error_code(error),
             )
             raise
+
+    def _call_with_heartbeat(
+        self,
+        claim: HarnessRuntimeClaimV1,
+        lease_seconds: int,
+        callback: Callable[[], object],
+        deadline: datetime | None = None,
+    ) -> object:
+        with _HarnessLeaseHeartbeat(self.repository, claim, lease_seconds) as heartbeat:
+            result = callback()
+        heartbeat.raise_if_failed()
+        if deadline is not None:
+            self._ensure_within_budget(deadline)
+        return result
+
+    def _ensure_within_budget(self, deadline: datetime) -> None:
+        if self.clock() > deadline:
+            raise HarnessRuntimeError("harness_runtime_wall_time_budget_exceeded")
 
     def _record_attempt(
         self,
@@ -784,6 +877,10 @@ class HarnessRuntimeGenerationError(HarnessRuntimeError):
 
 class HarnessRuntimeCommitOutcomeUnknown(HarnessRuntimeError):
     pass
+
+
+def _lease_seconds(max_wall_time_ms: int) -> int:
+    return max(1, min(300, (max_wall_time_ms + 999) // 1000))
 
 
 def _duration_ms(started_at: datetime, completed_at: datetime) -> int:

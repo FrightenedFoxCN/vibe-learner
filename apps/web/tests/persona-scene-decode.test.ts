@@ -88,6 +88,92 @@ function wireRecovery(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function wireHarnessTrace(
+  workflow: "persona" | "scene",
+  stage: "persona_generation" | "scene_generation",
+  overrides: Record<string, unknown> = {},
+) {
+  const operationId = "harness-operation-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  const artifactType = workflow === "persona" ? "persona_snapshot" : "scene_snapshot";
+  const inputContract = workflow === "persona"
+    ? { name: "PersonaGenerationInputManifest", version: "persona-generation-input-manifest-v1" }
+    : { name: "SceneGenerationInputManifest", version: "scene-generation-input-manifest-v1" };
+  const artifactContract = workflow === "persona"
+    ? { name: "PersonaGenerationProtectedInput", version: "persona-generation-protected-input-v1" }
+    : { name: "SceneGenerationProtectedInput", version: "scene-generation-protected-input-v1" };
+  const promptContract = workflow === "persona"
+    ? { name: "PersonaGenerationPrompt", version: "persona-generation-prompt-v1" }
+    : { name: "SceneGenerationPrompt", version: "scene-generation-prompt-v1" };
+  const policyContract = workflow === "persona"
+    ? { name: "PersonaGenerationHarnessPolicy", version: "persona-generation-harness-v1" }
+    : { name: "SceneGenerationHarnessPolicy", version: "scene-generation-harness-v1" };
+  const traceContract = workflow === "persona"
+    ? { name: "PersonaGenerationProposal", version: "persona-generation-proposal-v1" }
+    : { name: "SceneTreeProposal", version: "scene-tree-proposal-v1" };
+  const componentContract = workflow === "persona"
+    ? { name: "persona_compiler", version: "persona-compiler-v1" }
+    : { name: "scene_compiler", version: "scene-compiler-v1" };
+  const outputDigest = "a".repeat(64);
+  return {
+    trace_schema_version: "harness-trace-v3",
+    trace_id: "harness-trace-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    operation_id: operationId,
+    parent_trace_id: null,
+    workflow,
+    stage,
+    status: "passed",
+    contract: traceContract,
+    context: {
+      context_contract: { name: "HarnessContextEnvelopeV3", version: "harness-context-v3" },
+      workflow,
+      stage,
+      operation_id: operationId,
+      input_contract: inputContract,
+      subject_refs: [{ resource_type: "frontend_request", resource_id: `${workflow}-request-1`, revision: null }],
+      component_versions: [componentContract],
+      snapshot_refs: [{
+        artifact_type: artifactType,
+        artifact_id: `${workflow}-snapshot-1`,
+        contract: artifactContract,
+        digest_algorithm: "sha256",
+        payload_digest: "b".repeat(64),
+      }],
+      digest_algorithm: "sha256",
+      digest_contract: { name: "HarnessContextManifestDigest", version: "harness-context-manifest-digest-v1" },
+      input_digest: "c".repeat(64),
+      context_digest: "d".repeat(64),
+      policy_contract: policyContract,
+      prompt_contract: promptContract,
+    },
+    output_digest: outputDigest,
+    checks: [{ name: "proposal_schema_and_invariants", status: "passed", code: "proposal_valid", message: "Proposal is valid." }],
+    attempt_records: [
+      { attempt_id: "harness-attempt-cccccccccccccccccccccccccccccccc", attempt_index: 1, phase: "generate", status: "passed", output_digest: outputDigest, error_code: "", duration_ms: 1 },
+      { attempt_id: "harness-attempt-dddddddddddddddddddddddddddddddd", attempt_index: 2, phase: "decode", status: "passed", output_digest: outputDigest, error_code: "", duration_ms: 1 },
+      { attempt_id: "harness-attempt-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", attempt_index: 3, phase: "validate", status: "passed", output_digest: outputDigest, error_code: "", duration_ms: 1 },
+    ],
+    recovery_strategy: "none",
+    error_code: "",
+    duration_ms: 1,
+    commit_evidence: {
+      status: "not_applicable",
+      effect_batch_id: null,
+      payload_contract: null,
+      digest_algorithm: null,
+      digest_scope: null,
+      attempted_resource_refs: [],
+      committed_resources: [],
+      payload_digest: null,
+      committed_at: null,
+      rollback_reason_code: "",
+      rolled_back_at: null,
+    },
+    started_at: "2026-08-24T00:00:00Z",
+    completed_at: "2026-08-24T00:00:01Z",
+    ...overrides,
+  };
+}
+
 function wireObject(index = 1, overrides: Record<string, unknown> = {}) {
   return {
     id: `object-${index}`,
@@ -179,6 +265,7 @@ function wireSceneGenerate(overrides: Record<string, unknown> = {}) {
     selected_layer_id: "layer-1",
     scene_layers: [wireLayer()],
     model_recoveries: [wireRecovery()],
+    harness_trace: wireHarnessTrace("scene", "scene_generation"),
     ...overrides,
   };
 }
@@ -251,6 +338,7 @@ test("Persona generation binds mode, generated source, booleans, and recovery sc
     learner_address: "Learner",
     items: [wireCard({ source: "generated_keywords" })],
     model_recoveries: [wireRecovery()],
+    harness_trace: wireHarnessTrace("persona", "persona_generation"),
   };
   assert.equal(
     decodePersonaCardGenerateResult(payload, { expectedMode: "keywords" }).items[0]?.source,
@@ -282,16 +370,25 @@ test("Persona assist decoders require typed slots and preserve assisted slot ide
     slots: [wireSlot()],
     system_prompt_suggestion: "Suggestion",
     model_recoveries: [],
+    harness_trace: wireHarnessTrace("persona", "persona_generation"),
   });
   assert.equal(setting.slots[0]?.weight, 1);
   const slot = decodePersonaSlotAssistOutput(
-    { slot: wireSlot({ content: "Rewritten" }), model_recoveries: [] },
+    {
+      slot: wireSlot({ content: "Rewritten" }),
+      model_recoveries: [],
+      harness_trace: wireHarnessTrace("persona", "persona_generation"),
+    },
     { kind: "custom-tone", label: "Tone", content: "Before", weight: 1, locked: false, sortOrder: 0 },
   );
   assert.equal(slot.slot.content, "Rewritten");
   assert.throws(
     () => decodePersonaSlotAssistOutput(
-      { slot: wireSlot({ kind: "other" }), model_recoveries: [] },
+      {
+        slot: wireSlot({ kind: "other" }),
+        model_recoveries: [],
+        harness_trace: wireHarnessTrace("persona", "persona_generation"),
+      },
       { kind: "custom-tone", label: "Tone", content: "Before", locked: false, sortOrder: 0 },
     ),
     PersonaSceneDecodeError,
@@ -301,6 +398,7 @@ test("Persona assist decoders require typed slots and preserve assisted slot ide
       slots: [wireSlot()],
       system_prompt_suggestion: "",
       model_recoveries: [],
+      harness_trace: wireHarnessTrace("persona", "persona_generation"),
     }),
     PersonaSceneDecodeError,
   );
@@ -370,6 +468,32 @@ test("Scene generation rejects contract, mode, selection, depth, child, and iden
     decodeSceneTreeGenerateResult(sharedReuse, { expectedMode: "keywords" }).sceneLayers.length,
     2,
   );
+});
+
+test("Wave 4 decoders fail closed on malformed nested v3 Harness evidence", () => {
+  const attacks = [
+    wireSceneGenerate({
+      harness_trace: wireHarnessTrace("scene", "scene_generation", {
+        contract: 42,
+      }),
+    }),
+    wireSceneGenerate({
+      harness_trace: wireHarnessTrace("scene", "scene_generation", {
+        output_digest: "not-a-digest",
+      }),
+    }),
+    wireSceneGenerate({
+      harness_trace: wireHarnessTrace("scene", "scene_generation", {
+        started_at: "yesterday",
+      }),
+    }),
+  ];
+  for (const attack of attacks) {
+    assert.throws(
+      () => decodeSceneTreeGenerateResult(attack, { expectedMode: "keywords" }),
+      PersonaSceneDecodeError,
+    );
+  }
 });
 
 test("Scene Setup accepts only the exact empty initial state or a coherent committed state", () => {

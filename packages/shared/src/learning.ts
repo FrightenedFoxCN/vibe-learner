@@ -1,4 +1,5 @@
 import type { CharacterStateEvent } from "./character";
+import type { HarnessTraceV3 } from "./harness";
 
 export interface PersonaSlotTraceEntry {
   kind: string;
@@ -196,6 +197,7 @@ export interface LearningPlan {
   progressEvents: LearningPlanProgressEvent[];
   planningQuestions: PlanningQuestion[];
   createdAt: string;
+  harnessTrace?: HarnessTraceV3;
 }
 
 export interface LearningPlanProgressSummary {
@@ -731,6 +733,7 @@ export interface DocumentRecord {
   chunkCount: number;
   previewExcerpt: string;
   debugReady: boolean;
+  harnessTrace?: HarnessTraceV3;
 }
 
 export interface StudySessionRecord {

@@ -46,8 +46,16 @@ class HarnessOperationBindingRow(Base):
         CheckConstraint(
             "(domain_operation_kind = 'document_process' "
             "AND workflow = 'document_parse' AND entry_stage = 'document_parse') OR "
+            "(domain_operation_kind = 'document_ocr' "
+            "AND workflow = 'ocr' AND entry_stage = 'ocr_page') OR "
+            "(domain_operation_kind = 'study_unit_cleanup' "
+            "AND workflow = 'study_unit_cleanup' AND entry_stage = 'study_unit_cleanup') OR "
             "(domain_operation_kind = 'learning_plan_generation' "
             "AND workflow = 'planning' AND entry_stage = 'plan_generation') OR "
+            "(domain_operation_kind = 'persona_generation' "
+            "AND workflow = 'persona' AND entry_stage = 'persona_generation') OR "
+            "(domain_operation_kind = 'scene_generation' "
+            "AND workflow = 'scene' AND entry_stage = 'scene_generation') OR "
             "(domain_operation_kind = 'study_chat' "
             "AND workflow = 'study_chat' AND entry_stage = 'study_chat_reply') OR "
             "(domain_operation_kind = 'tavern_run' "
@@ -83,6 +91,43 @@ class HarnessOperationBindingRow(Base):
         index=True,
     )
     admitted_at: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class HarnessWorkflowOperationRow(Base):
+    """Durable admission for Harness workflows without a domain commit row."""
+
+    __tablename__ = "harness_workflow_operations"
+    __table_args__ = (
+        UniqueConstraint(
+            "harness_operation_id",
+            name="uq_harness_workflow_operation_harness_operation",
+        ),
+        CheckConstraint(
+            "domain_operation_kind IN ('document_ocr', 'study_unit_cleanup', "
+            "'persona_generation', 'scene_generation')",
+            name="ck_harness_workflow_operation_kind",
+        ),
+        CheckConstraint(
+            "status IN ('running', 'completed', 'failed')",
+            name="ck_harness_workflow_operation_status",
+        ),
+    )
+
+    operation_id: Mapped[str] = mapped_column(String(160), primary_key=True)
+    harness_operation_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey(
+            "harness_operation_bindings.harness_operation_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+    )
+    domain_operation_kind: Mapped[str] = mapped_column(String(64), index=True)
+    request_digest: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    error_code: Mapped[str] = mapped_column(String(160), default="")
+    created_at: Mapped[str] = mapped_column(String(64), index=True)
+    completed_at: Mapped[str] = mapped_column(String(64), default="")
 
 
 class HarnessArtifactPrincipalRow(Base):

@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models.document_process_operation import (
     DOCUMENT_PROCESS_COMMIT_CONTRACT_VERSION,
@@ -15,10 +16,27 @@ from app.models.document_process_operation import (
     DocumentProcessOperationStatus,
     DocumentProcessProjectionState,
     DocumentProcessRequestPayload,
+    DocumentProcessCommittedProjectionV1,
     document_process_projection_digest,
     document_process_request_fingerprint,
 )
-from app.models.domain import DocumentDebugRecord, DocumentRecord
+from app.models.harness import (
+    HarnessAttemptPhase,
+    HarnessAttemptStatus,
+    HarnessCommitEvidenceV3,
+    HarnessCommitStatus,
+    HarnessCommittedResourceRefV3,
+    HarnessContractRef,
+    HarnessDigestAlgorithm,
+    HarnessDigestScope,
+    HarnessResourceRefV3,
+    HarnessResourceType,
+    HarnessStage,
+    HarnessWorkflow,
+    canonical_harness_digest,
+)
+from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
     HarnessOperationBindingV1,
@@ -120,6 +138,8 @@ class DocumentProcessOperationRepository:
         operation_id: str,
         document: DocumentRecord,
         debug_report: DocumentDebugRecord,
+        harness_runtime: HarnessOperationRuntime | None = None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         document_payload = document.model_dump(mode="json")
         debug_payload = debug_report.model_dump(mode="json")
@@ -130,13 +150,26 @@ class DocumentProcessOperationRepository:
                 raise DocumentProcessOperationNotFound(operation_id)
             if operation.status != DocumentProcessOperationStatus.RUNNING.value:
                 raise DocumentProcessOperationNotRunning(operation_id, operation.status)
-            self.harness_operations.require_domain_in_session(
+            binding = self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
                 domain_operation_id=operation_id,
             )
+            self._validate_runtime_prepared_in_session(
+                session,
+                binding=binding,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
+            )
             if operation.document_id != document.id or debug_report.document_id != document.id:
                 raise DocumentProcessProjectionIdentityMismatch(operation_id)
+            if runtime_prepared is not None:
+                _validate_runtime_document_projection(
+                    runtime_prepared=runtime_prepared,
+                    base=DocumentRecord.model_validate(operation.base_document_payload or {}),
+                    document=document,
+                    debug_report=debug_report,
+                )
             document_row = session.get(DocumentRow, document.id)
             if document_row is None:
                 raise DocumentProcessDocumentNotFound(document.id)
@@ -162,6 +195,48 @@ class DocumentProcessOperationRepository:
             operation.updated_at = now
             operation.completed_at = now
             session.flush()
+            if (harness_runtime is None) != (runtime_prepared is None):
+                raise ValueError("document_process_runtime_commit_pair_required")
+            if harness_runtime is not None and runtime_prepared is not None:
+                projection = DocumentProcessCommittedProjectionV1(
+                    operation_id=operation_id,
+                    document_id=document.id,
+                    document=document,
+                    debug_report=debug_report,
+                    document_digest=operation.document_digest,
+                    debug_digest=operation.debug_digest,
+                )
+                projection_digest = canonical_harness_digest(projection)
+                harness_runtime.finalize_prepared_in_session(
+                    session,
+                    prepared=runtime_prepared,
+                    commit_evidence=HarnessCommitEvidenceV3(
+                        status=HarnessCommitStatus.COMMITTED,
+                        effect_batch_id=f"document-commit-{operation_id}",
+                        payload_contract=HarnessContractRef(
+                            name="DocumentProcessCommittedProjection",
+                            version="document-process-committed-projection-v1",
+                        ),
+                        digest_algorithm=HarnessDigestAlgorithm.SHA256,
+                        digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+                        attempted_resource_refs=[
+                            HarnessResourceRefV3(
+                                resource_type=HarnessResourceType.DOCUMENT,
+                                resource_id=document.id,
+                            )
+                        ],
+                        committed_resources=[
+                            HarnessCommittedResourceRefV3(
+                                resource_type=HarnessResourceType.DOCUMENT,
+                                resource_id=document.id,
+                                payload_digest=projection_digest,
+                            )
+                        ],
+                        payload_digest=projection_digest,
+                        committed_at=datetime.now(timezone.utc),
+                        rollback_reason_code="",
+                    ),
+                )
             self._inject("before_terminal_commit")
 
         return self.require(operation_id=operation_id, validate_read_back=True)
@@ -171,12 +246,16 @@ class DocumentProcessOperationRepository:
         *,
         operation_id: str,
         error_code: str,
+        harness_runtime: HarnessOperationRuntime | None = None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         return self._mark_not_committed(
             operation_id=operation_id,
             status=DocumentProcessOperationStatus.FAILED,
             error_code=error_code,
             restore_base=False,
+            harness_runtime=harness_runtime,
+            runtime_prepared=runtime_prepared,
         )
 
     def mark_interrupted(
@@ -184,12 +263,16 @@ class DocumentProcessOperationRepository:
         *,
         operation_id: str,
         error_code: str = "document_process_interrupted",
+        harness_runtime: HarnessOperationRuntime | None = None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         return self._mark_not_committed(
             operation_id=operation_id,
             status=DocumentProcessOperationStatus.INTERRUPTED,
             error_code=error_code,
             restore_base=True,
+            harness_runtime=harness_runtime,
+            runtime_prepared=runtime_prepared,
         )
 
     def recover_abandoned(self) -> list[DocumentProcessOperationRecord]:
@@ -301,6 +384,8 @@ class DocumentProcessOperationRepository:
         status: DocumentProcessOperationStatus,
         error_code: str,
         restore_base: bool,
+        harness_runtime: HarnessOperationRuntime | None = None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         now = _now()
         with self.database.session() as session:
@@ -315,6 +400,12 @@ class DocumentProcessOperationRepository:
                 session,
                 domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
                 domain_operation_id=operation_id,
+            )
+            self._validate_runtime_prepared_in_session(
+                session,
+                binding=resolution.binding,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
             )
             document_row = session.get(DocumentRow, row.document_id)
             if document_row is not None:
@@ -339,11 +430,123 @@ class DocumentProcessOperationRepository:
             )
             row.updated_at = now
             row.completed_at = now
+            if (harness_runtime is None) != (runtime_prepared is None):
+                raise ValueError("document_process_runtime_failure_pair_required")
+            if harness_runtime is not None and runtime_prepared is not None:
+                harness_runtime.fail_prepared_in_session(
+                    session,
+                    prepared=runtime_prepared,
+                    commit_evidence=HarnessCommitEvidenceV3(
+                        status=HarnessCommitStatus.NOT_COMMITTED,
+                        effect_batch_id=f"document-commit-{operation_id}",
+                        payload_contract=HarnessContractRef(
+                            name="DocumentProcessCommittedProjection",
+                            version="document-process-committed-projection-v1",
+                        ),
+                        digest_algorithm=HarnessDigestAlgorithm.SHA256,
+                        digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+                        attempted_resource_refs=[
+                            HarnessResourceRefV3(
+                                resource_type=HarnessResourceType.DOCUMENT,
+                                resource_id=row.document_id,
+                            )
+                        ],
+                        rollback_reason_code="",
+                    ),
+                    error_code=row.error_code,
+                )
         return self.require(operation_id=operation_id, validate_read_back=False)
+
+    def _validate_runtime_prepared_in_session(
+        self,
+        session: Session,
+        *,
+        binding: HarnessOperationBindingV1 | None,
+        harness_runtime: HarnessOperationRuntime | None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None,
+    ) -> None:
+        if (harness_runtime is None) != (runtime_prepared is None):
+            raise ValueError("document_process_runtime_pair_required")
+        if harness_runtime is None or runtime_prepared is None:
+            return
+        from app.services.harness_broad_adoption import DocumentProcessRuntimeOutputV1
+
+        current = harness_runtime.repository.get_in_session(
+            session, runtime_prepared.claim.trace_id
+        )
+        if (
+            binding is None
+            or binding.domain_operation_kind != HarnessDomainOperationKind.DOCUMENT_PROCESS
+            or current is None
+            or current.trace_id != runtime_prepared.execution.trace_id
+            or current.harness_operation_id != binding.harness_operation_id
+            or current.workflow != HarnessWorkflow.DOCUMENT_PARSE
+            or current.stage != HarnessStage.DOCUMENT_PARSE
+            or current.trace_slot != 0
+            or current.parent_trace_id is not None
+            or current.trace_contract != HarnessContractRef(
+                name="DocumentProcessRuntimeOutput",
+                version="document-process-runtime-output-v1",
+            )
+            or runtime_prepared.execution.harness_operation_id != binding.harness_operation_id
+        ):
+            raise ValueError("document_process_runtime_binding_mismatch")
+        attempts = current.attempt_records
+        if (
+            not isinstance(runtime_prepared.output, DocumentProcessRuntimeOutputV1)
+            or not attempts
+            or attempts[-1].phase != HarnessAttemptPhase.VALIDATE
+            or attempts[-1].status != HarnessAttemptStatus.PASSED
+            or attempts[-1].output_digest != runtime_prepared.output_digest
+            or canonical_harness_digest(runtime_prepared.output) != runtime_prepared.output_digest
+        ):
+            raise ValueError("document_process_runtime_output_mismatch")
 
     def _inject(self, stage: str) -> None:
         if self.fault_injector is not None:
             self.fault_injector(stage)
+
+
+def _validate_runtime_document_projection(
+    *,
+    runtime_prepared: HarnessRuntimePreparedOutput,
+    base: DocumentRecord,
+    document: DocumentRecord,
+    debug_report: DocumentDebugRecord,
+) -> None:
+    output = runtime_prepared.output
+    report = output.debug_report.model_copy(deep=True)
+    units = output.study_units
+    report.study_units = units
+    expected = base.model_copy(deep=True)
+    expected.status = "processed"
+    expected.ocr_status = report.ocr_status
+    expected.study_units = units
+    expected.study_unit_count = len(units)
+    expected.sections = [
+        DocumentSection(
+            id=unit.id,
+            document_id=unit.document_id,
+            title=unit.title,
+            page_start=unit.page_start,
+            page_end=unit.page_end,
+            level=1,
+        )
+        for unit in units
+        if unit.include_in_plan
+    ]
+    expected.page_count = report.page_count
+    expected.chunk_count = len(report.chunks)
+    expected.preview_excerpt = next(
+        (page.text_preview for page in report.pages if page.text_preview), ""
+    )
+    expected.debug_ready = True
+    expected.updated_at = document.updated_at
+    if (
+        canonical_harness_digest(document) != canonical_harness_digest(expected)
+        or canonical_harness_digest(debug_report) != canonical_harness_digest(report)
+    ):
+        raise ValueError("document_process_runtime_projection_mismatch")
 
 
 def _apply_document_row(row: DocumentRow, document: DocumentRecord) -> None:

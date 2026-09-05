@@ -19,6 +19,7 @@ from app.persistence.database import Database
 from app.persistence.models import (
     DocumentProcessOperationRow,
     HarnessOperationBindingRow,
+    HarnessWorkflowOperationRow,
     LearningPlanOperationRow,
     StudyChatOperationRow,
     TavernRunRow,
@@ -27,7 +28,11 @@ from app.persistence.models import (
 
 _DOMAIN_ROW_TYPES = {
     HarnessDomainOperationKind.DOCUMENT_PROCESS: DocumentProcessOperationRow,
+    HarnessDomainOperationKind.DOCUMENT_OCR: HarnessWorkflowOperationRow,
+    HarnessDomainOperationKind.STUDY_UNIT_CLEANUP: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.LEARNING_PLAN_GENERATION: LearningPlanOperationRow,
+    HarnessDomainOperationKind.PERSONA_GENERATION: HarnessWorkflowOperationRow,
+    HarnessDomainOperationKind.SCENE_GENERATION: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.STUDY_CHAT: StudyChatOperationRow,
     HarnessDomainOperationKind.TAVERN_RUN: TavernRunRow,
 }
@@ -412,5 +417,9 @@ def _domain_row_identity(
     expected_type = _DOMAIN_ROW_TYPES[kind]
     if not isinstance(row, expected_type):
         return kind, ""
+    if isinstance(row, HarnessWorkflowOperationRow):
+        if row.domain_operation_kind != kind.value:
+            return kind, ""
+        return kind, str(row.operation_id)
     operation_id = row.id if kind == HarnessDomainOperationKind.TAVERN_RUN else row.operation_id
     return kind, str(operation_id)

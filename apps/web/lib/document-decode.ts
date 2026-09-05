@@ -7,9 +7,11 @@ import type {
   OcrStatus,
   ParseWarning,
   StudyUnit,
+  HarnessTraceV3,
 } from "@vibe-learner/shared";
 
 import { StrictResponseDecoder } from "./strict-response-decode.ts";
+import { decodeHarnessTraceV3 } from "./harness-trace-decode.ts";
 
 const DOCUMENT_STATUSES = ["uploaded", "processing", "processed", "failed"] as const;
 const OCR_STATUSES = [
@@ -207,6 +209,7 @@ export function decodeDocumentRecord(
   raw: unknown,
   expectedDocumentId?: string,
   path = "document",
+  requireHarnessTrace = false,
 ): DocumentRecord {
   const value = decoder.record(raw, path);
   const id = decoder.string(decoder.field(value, "id", path), `${path}.id`);
@@ -231,6 +234,23 @@ export function decodeDocumentRecord(
     `${path}.study_unit_count`,
   );
   decoder.equal(studyUnitCount, studyUnits.length, `${path}.study_unit_count`);
+
+  let harnessTrace: HarnessTraceV3 | undefined;
+  const rawTrace = value.harness_trace;
+  if (requireHarnessTrace || (rawTrace !== undefined && rawTrace !== null)) {
+    const decodedTrace = decodeHarnessTraceV3(
+      decoder.field(value, "harness_trace", path),
+      `${path}.harness_trace`,
+      (tracePath, reason) => { throw new DocumentDecodeError(tracePath, reason); },
+    );
+    if (decodedTrace.workflow !== "document_parse" || decodedTrace.stage !== "document_parse" || !["passed", "repaired"].includes(decodedTrace.status) || decodedTrace.commitEvidence.status !== "committed") {
+      throw new DocumentDecodeError(
+        `${path}.harness_trace`,
+        "document_process_harness_trace_invalid",
+      );
+    }
+    harnessTrace = decodedTrace;
+  }
 
   return {
     id,
@@ -278,6 +298,7 @@ export function decodeDocumentRecord(
       decoder.field(value, "debug_ready", path),
       `${path}.debug_ready`,
     ),
+    ...(harnessTrace ? { harnessTrace } : {}),
   };
 }
 

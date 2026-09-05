@@ -3,14 +3,51 @@ from __future__ import annotations
 import hashlib
 import json
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.models.domain import DocumentDebugRecord, DocumentRecord
 
 
 DOCUMENT_PROCESS_REQUEST_SCHEMA_VERSION = "document-process-request-v1"
 DOCUMENT_PROCESS_FINGERPRINT_CONTRACT_VERSION = "document-process-fingerprint-v1"
 DOCUMENT_PROCESS_COMMIT_CONTRACT_VERSION = "document-process-commit-v1"
+DOCUMENT_PROCESS_COMMITTED_PROJECTION_VERSION = (
+    "document-process-committed-projection-v1"
+)
+
+
+class DocumentProcessCommittedProjectionV1(BaseModel):
+    """Exact Document + debug projection committed by one process operation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["document-process-committed-projection-v1"] = (
+        DOCUMENT_PROCESS_COMMITTED_PROJECTION_VERSION
+    )
+    operation_id: str
+    document_id: str
+    document: DocumentRecord
+    debug_report: DocumentDebugRecord
+    document_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    debug_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_projection(self) -> "DocumentProcessCommittedProjectionV1":
+        if self.document.id != self.document_id:
+            raise ValueError("document_process_projection_document_identity_mismatch")
+        if self.debug_report.document_id != self.document_id:
+            raise ValueError("document_process_projection_debug_identity_mismatch")
+        if document_process_projection_digest(
+            self.document.model_dump(mode="json")
+        ) != self.document_digest:
+            raise ValueError("document_process_projection_document_digest_mismatch")
+        if document_process_projection_digest(
+            self.debug_report.model_dump(mode="json")
+        ) != self.debug_digest:
+            raise ValueError("document_process_projection_debug_digest_mismatch")
+        return self
 
 
 class DocumentProcessOperationStatus(str, Enum):

@@ -70,7 +70,11 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
         }
         self.assertEqual(
             statuses,
-            {item.value for item in HarnessManifestSlotStatus},
+            {
+                HarnessManifestSlotStatus.REGISTERED.value,
+                HarnessManifestSlotStatus.NOT_APPLICABLE.value,
+                HarnessManifestSlotStatus.UNREGISTERED.value,
+            },
         )
         serialized = json.dumps(payload, sort_keys=True).lower()
         for placeholder in ('"pending-', '"latest"', '"unknown"'):
@@ -87,7 +91,7 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
                     sorted(set(artifacts["artifact_types"])),
                 )
 
-    def test_unregistered_domains_fail_closed_but_tavern_foundation_is_executable(self) -> None:
+    def test_only_implemented_adapters_are_executable_and_pilots_have_evals(self) -> None:
         tavern = require_executable_workflow_manifest_entry(
             HarnessWorkflow.TAVERN,
             HarnessStage.TAVERN_ACTOR_REPLY,
@@ -120,20 +124,37 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
             tuple(item.to_harness_ref() for item in study.eval_suites.contracts),
             (STUDY_CHAT_EVAL_SUITE,),
         )
+        implemented = {
+            (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.DOCUMENT_PARSE),
+            (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.PAGE_EXTRACTION),
+            (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.SECTION_DETECTION),
+            (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.CHUNK_BUILDING),
+            (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE),
+            (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP),
+            (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION),
+            (HarnessWorkflow.PLANNING, HarnessStage.PLANNING_TOOL_EXECUTION),
+            (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION),
+            (HarnessWorkflow.SCENE, HarnessStage.SCENE_GENERATION),
+            (HarnessWorkflow.FRONTEND_DECODE, HarnessStage.FRONTEND_RESPONSE_DECODE),
+            (HarnessWorkflow.TAVERN, HarnessStage.TAVERN_ACTOR_REPLY),
+            (HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY),
+        }
         for workflow, stage in HARNESS_OPERATION_STAGE_REGISTRATIONS:
-            if (workflow, stage) == (
-                HarnessWorkflow.TAVERN,
-                HarnessStage.TAVERN_ACTOR_REPLY,
-            ):
-                continue
-            if (workflow, stage) == (
-                HarnessWorkflow.STUDY_CHAT,
-                HarnessStage.STUDY_CHAT_REPLY,
-            ):
-                continue
             with self.subTest(workflow=workflow.value, stage=stage.value):
-                with self.assertRaisesRegex(ValueError, "stage_unregistered"):
-                    require_executable_workflow_manifest_entry(workflow, stage)
+                if (workflow, stage) not in implemented:
+                    with self.assertRaisesRegex(ValueError, "stage_unregistered"):
+                        require_executable_workflow_manifest_entry(workflow, stage)
+                    continue
+                entry = require_executable_workflow_manifest_entry(workflow, stage)
+                self.assertIsInstance(
+                    entry.registration,
+                    HarnessManifestRegisteredContractSlotV1,
+                )
+                if (
+                    workflow not in {HarnessWorkflow.TAVERN, HarnessWorkflow.STUDY_CHAT}
+                    and stage != HarnessStage.PLANNING_TOOL_EXECUTION
+                ):
+                    self.assertEqual(entry.eval_suites.status, HarnessManifestSlotStatus.UNREGISTERED)
 
     def test_planning_tool_execution_references_the_tool_manifest(self) -> None:
         entry = HARNESS_WORKFLOW_MANIFEST_ENTRIES[

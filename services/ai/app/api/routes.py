@@ -24,6 +24,7 @@ from app.models.api import (
     DocumentPlanningContextResponse,
     DocumentPlanningTraceResponse,
     DocumentResponse,
+    DocumentProcessResponse,
     DocumentStudyUnitUpdateResponse,
     StreamReportResponse,
     DocumentStatusResponse,
@@ -34,6 +35,7 @@ from app.models.api import (
     LearningPlanOperationResponse,
     LearningPlanProgressUpdateRequest,
     LearningPlanResponse,
+    LearningPlanCreateResponse,
     LearningPlanUpdateRequest,
     ModelToolConfigResponse,
     PlanningQuestionAnswerRequest,
@@ -86,7 +88,7 @@ from app.models.api import (
     TokenUsageStatsResponse,
     TokenUsageDailyBucket,
 )
-from app.models.domain import Citation, PersonaCardRecord, PlanGenerationTraceRecord, SceneLayerStateRecord
+from app.models.domain import Citation, PersonaCardRecord, PersonaSlot, PlanGenerationTraceRecord, SceneLayerStateRecord
 from app.models.harness import (
     HarnessCommitEvidenceV3,
     HarnessCommitStatus,
@@ -101,6 +103,7 @@ from app.models.harness import (
     HarnessStage,
     canonical_harness_digest,
 )
+from app.models.harness_operation import HarnessDomainOperationKind
 from app.models.stream import (
     DOCUMENT_STREAM_PROJECTION_CONTRACT,
     LEARNING_PLAN_STREAM_PROJECTION_CONTRACT,
@@ -163,6 +166,15 @@ from app.services.harness_runtime import (
     HarnessRuntimeRequest,
     HarnessRuntimeStageAdapter,
 )
+from app.services.harness_broad_adoption import (
+    PersonaCardContentProposalV1,
+    PersonaGenerationInputManifest,
+    PersonaGenerationProposalV1,
+    PersonaSlotContentProposalV1,
+    SceneGenerationInputManifest,
+    SceneGenerationProposalV1,
+)
+from app.models.scene import SceneTreeProposalV1, project_scene_tree_proposal
 from app.models.study_chat_commit import (
     build_study_chat_operation_binding,
     build_study_session_turn_committed_projection,
@@ -188,6 +200,36 @@ def _into_response_with_model_recoveries(
     if recoveries and "model_recoveries" not in payload:
         payload["model_recoveries"] = [item.model_dump(mode="json") for item in recoveries]
     return response_model.model_validate(payload)
+
+
+def _require_domain_harness_trace(
+    *,
+    domain_operation_kind: HarnessDomainOperationKind,
+    domain_operation_id: str,
+    stage: HarnessStage,
+):
+    if not domain_operation_id:
+        raise RuntimeError("harness_domain_operation_identity_missing")
+    domain_repository = (
+        container.document_service.process_repository
+        if domain_operation_kind == HarnessDomainOperationKind.DOCUMENT_PROCESS
+        else container.plan_service.operation_repository
+    )
+    binding = domain_repository.harness_operations.require_domain(
+        domain_operation_kind=domain_operation_kind,
+        domain_operation_id=domain_operation_id,
+    )
+    traces = HarnessRuntimeRepository(domain_repository.database).list_operation_traces(
+        binding.harness_operation_id
+    )
+    terminal = [
+        item.terminal_trace
+        for item in traces
+        if item.stage == stage and item.trace_slot == 0 and item.terminal_trace is not None
+    ]
+    if len(terminal) != 1:
+        raise RuntimeError("harness_domain_terminal_trace_missing")
+    return terminal[0]
 
 
 def _document_stream_subject(document_id: str) -> StreamSubjectRefV1:
@@ -218,10 +260,14 @@ def _document_stream_committed_evidence(
         validate_read_back=True,
     )
     projection_digest = canonical_harness_digest(document_payload)
+    committed_document_payload = {
+        key: value for key, value in document_payload.items() if key != "harness_trace"
+    }
     if (
         operation.status.value != "committed"
-        or operation.document_id != document_payload.get("id")
-        or operation.document_digest != projection_digest
+        or operation.document_id != committed_document_payload.get("id")
+        or operation.document_digest
+        != canonical_harness_digest(committed_document_payload)
     ):
         raise RuntimeError("document_stream_commit_read_back_mismatch")
     return StreamTerminalEvidenceV1(
@@ -247,11 +293,14 @@ def _learning_plan_stream_committed_evidence(
     )
     projection = operation.committed_projection
     projection_digest = canonical_harness_digest(plan_payload)
+    committed_plan_payload = {
+        key: value for key, value in plan_payload.items() if key != "harness_trace"
+    }
     if (
         operation.status.value != "committed"
         or projection is None
-        or operation.plan_id != plan_payload.get("id")
-        or projection.plan_digest != projection_digest
+        or operation.plan_id != committed_plan_payload.get("id")
+        or projection.plan_digest != canonical_harness_digest(committed_plan_payload)
     ):
         raise RuntimeError("learning_plan_stream_commit_read_back_mismatch")
     return StreamTerminalEvidenceV1(
@@ -622,32 +671,48 @@ def delete_reusable_scene_node(node_id: str) -> dict[str, str]:
 def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateResponse:
     reset_model_recovery_state()
     try:
-        if payload.mode == "keywords":
-            result = container.model_provider.generate_scene_tree_from_keywords(
-                keywords=payload.input_text,
-                layer_count=payload.layer_count,
+        def generate_scene(protected: dict[str, object]) -> SceneGenerationProposalV1:
+            mode = str(protected["mode"])
+            input_text = str(protected["input_text"])
+            layer_count = protected.get("layer_count")
+            if mode == "keywords":
+                result = container.model_provider.generate_scene_tree_from_keywords(
+                    keywords=input_text,
+                    layer_count=layer_count if isinstance(layer_count, int) else None,
+                )
+            else:
+                result = container.model_provider.generate_scene_tree_from_text(
+                    text=input_text,
+                    layer_count=layer_count if isinstance(layer_count, int) else None,
+                )
+            return SceneGenerationProposalV1(
+                used_model=str(result.get("used_model") or ""),
+                used_web_search=bool(result.get("used_web_search")),
+                proposal=SceneTreeProposalV1.model_validate(result.get("proposal")),
             )
-        elif payload.mode == "long_text":
-            result = container.model_provider.generate_scene_tree_from_text(
-                text=payload.input_text,
-                layer_count=payload.layer_count,
-            )
-        else:
-            raise HTTPException(status_code=400, detail="invalid_scene_tree_generation_mode")
+
+        generated, harness_trace = container.harness_proposal_runtime.run_scene(
+            manifest=SceneGenerationInputManifest(
+                mode=payload.mode,
+                requested_layer_count=payload.layer_count or 0,
+                input_char_count=len(payload.input_text),
+            ),
+            protected_input=payload.model_dump(mode="json", exclude_none=False),
+            generate=generate_scene,
+        )
+        projection = project_scene_tree_proposal(generated.proposal)
     except RuntimeError as exc:
         raise _map_setting_generation_error(exc) from exc
 
     return _into_response_with_model_recoveries(SceneTreeGenerateResponse, SceneTreeGenerateResponse(
         mode=payload.mode,
-        used_model=str(result.get("used_model") or ""),
-        used_web_search=bool(result.get("used_web_search")),
-        scene_name=str(result.get("scene_name") or ""),
-        scene_summary=str(result.get("scene_summary") or ""),
-        selected_layer_id=str(result.get("selected_layer_id") or ""),
-        scene_layers=[
-            SceneLayerStateRecord.model_validate(item)
-            for item in (result.get("scene_layers") or [])
-        ],
+        used_model=generated.used_model,
+        used_web_search=generated.used_web_search,
+        scene_name=projection.scene_name,
+        scene_summary=projection.scene_summary,
+        selected_layer_id=projection.selected_layer_id,
+        scene_layers=projection.scene_layers,
+        harness_trace=harness_trace,
     ))
 
 
@@ -703,10 +768,10 @@ def create_document(file: UploadFile = File(...)) -> DocumentResponse:
     return _into_response(DocumentResponse, document)
 
 
-@router.post("/documents/{document_id}/process", response_model=DocumentResponse)
+@router.post("/documents/{document_id}/process", response_model=DocumentProcessResponse)
 def process_document(
     document_id: str, payload: ProcessDocumentRequest | None = None
-) -> DocumentResponse:
+) -> DocumentProcessResponse:
     domain_operation_id = ""
 
     def remember_operation(operation_id: str) -> None:
@@ -745,7 +810,16 @@ def process_document(
             ),
         )
         raise
-    document_projection = document.model_dump(mode="json")
+    harness_trace = _require_domain_harness_trace(
+        domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+        domain_operation_id=domain_operation_id,
+        stage=HarnessStage.DOCUMENT_PARSE,
+    )
+    document_commit_projection = document.model_dump(mode="json")
+    document_projection = {
+        **document_commit_projection,
+        "harness_trace": harness_trace.model_dump(mode="json", exclude_none=False),
+    }
     recorder.emit(
         "stream_completed",
         {
@@ -758,7 +832,7 @@ def process_document(
         ),
         committed_projection=document_projection,
     )
-    return _into_response(DocumentResponse, document)
+    return DocumentProcessResponse.model_validate(document_projection)
 
 
 @router.patch(
@@ -841,7 +915,16 @@ def process_document_stream(
             if interrupt_handle.claim_terminal():
                 emit_cancelled()
             else:
-                document_projection = document.model_dump(mode="json")
+                harness_trace = _require_domain_harness_trace(
+                    domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
+                    domain_operation_id=domain_operation_id,
+                    stage=HarnessStage.DOCUMENT_PARSE,
+                )
+                document_commit_projection = document.model_dump(mode="json")
+                document_projection = {
+                    **document_commit_projection,
+                    "harness_trace": harness_trace.model_dump(mode="json", exclude_none=False),
+                }
                 event = recorder.emit(
                     "stream_completed",
                     {
@@ -1087,47 +1170,71 @@ def delete_persona_card(card_id: str) -> dict[str, str]:
 def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGenerateResponse:
     reset_model_recovery_state()
     try:
-        if payload.mode == "keywords":
-            result = container.model_provider.generate_persona_cards_from_keywords(
-                keywords=payload.input_text,
-                count=payload.count,
+        def generate_cards(protected: dict[str, object]) -> PersonaGenerationProposalV1:
+            mode = str(protected["mode"])
+            input_text = str(protected["input_text"])
+            count = protected.get("count")
+            if mode == "keywords":
+                result = container.model_provider.generate_persona_cards_from_keywords(
+                    keywords=input_text,
+                    count=count if isinstance(count, int) else None,
+                )
+            elif mode == "long_text":
+                result = container.model_provider.generate_persona_cards_from_text(
+                    text=input_text,
+                    count=count if isinstance(count, int) else None,
+                )
+            else:
+                raise RuntimeError("invalid_persona_card_generation_mode")
+            return PersonaGenerationProposalV1(
+                request_kind="card_batch",
+                used_model=str(result.get("used_model") or ""),
+                used_web_search=bool(result.get("used_web_search")),
+                summary=str(result.get("summary") or ""),
+                relationship=str(result.get("relationship") or ""),
+                learner_address=str(result.get("learner_address") or ""),
+                cards=[PersonaCardContentProposalV1.model_validate(item) for item in result.get("cards") or []],
             )
-            source = "generated_keywords"
-        elif payload.mode == "long_text":
-            result = container.model_provider.generate_persona_cards_from_text(
-                text=payload.input_text,
-                count=payload.count,
-            )
-            source = "generated_text"
-        else:
-            raise HTTPException(status_code=400, detail="invalid_persona_card_generation_mode")
+
+        generated, harness_trace = container.harness_proposal_runtime.run_persona(
+            manifest=PersonaGenerationInputManifest(
+                request_kind="card_batch",
+                mode=payload.mode,
+                requested_count=payload.count or 0,
+                input_char_count=len(payload.input_text),
+            ),
+            protected_input=payload.model_dump(mode="json", exclude_none=False),
+            generate=generate_cards,
+        )
+        source = "generated_keywords" if payload.mode == "keywords" else "generated_text"
     except RuntimeError as exc:
         raise _map_persona_card_generation_error(exc) from exc
 
     cards = [
         PersonaCardRecord(
             id=f"generated-{uuid4().hex[:10]}",
-            title=str(item.get("title") or ""),
-            kind=str(item.get("kind") or "custom"),
-            label=str(item.get("label") or item.get("kind") or "自定义"),
-            content=str(item.get("content") or ""),
-            tags=[str(tag) for tag in (item.get("tags") or []) if str(tag).strip()],
+            title=item.title,
+            kind=item.kind,
+            label=item.label,
+            content=item.content,
+            tags=list(item.tags),
             search_keywords=payload.input_text.strip() if payload.mode == "keywords" else "自定义",
             source=source,
-            source_note=str(item.get("source_note") or ""),
+            source_note=item.source_note,
             created_at=datetime.now(timezone.utc).isoformat(),
             updated_at=datetime.now(timezone.utc).isoformat(),
         )
-        for item in result.get("cards") or []
+        for item in generated.cards
     ]
     return _into_response_with_model_recoveries(PersonaCardGenerateResponse, PersonaCardGenerateResponse(
         mode=payload.mode,
-        used_model=str(result.get("used_model") or ""),
-        used_web_search=bool(result.get("used_web_search")),
-        summary=str(result.get("summary") or ""),
-        relationship=str(result.get("relationship") or ""),
-        learner_address=str(result.get("learner_address") or ""),
+        used_model=generated.used_model,
+        used_web_search=generated.used_web_search,
+        summary=generated.summary,
+        relationship=generated.relationship,
+        learner_address=generated.learner_address,
         items=[_into_response(PersonaCardResponse, item) for item in cards],
+        harness_trace=harness_trace,
     ))
 
 
@@ -1135,55 +1242,117 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGe
 def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSettingAssistResponse:
     reset_model_recovery_state()
     try:
-        result = container.model_provider.assist_persona_setting(
-            name=payload.name,
-            summary=payload.summary,
-            slots=payload.slots,
-            rewrite_strength=payload.rewrite_strength,
+        def generate_setting(protected: dict[str, object]) -> PersonaGenerationProposalV1:
+            recovery_strategy = "none"
+            protected_slots = [
+                PersonaSlot.model_validate(item) for item in protected["slots"]
+            ]
+            try:
+                result = container.model_provider.assist_persona_setting(
+                    name=str(protected["name"]),
+                    summary=str(protected["summary"]),
+                    slots=protected_slots,
+                    rewrite_strength=float(protected["rewrite_strength"]),
+                )
+                used_model = str(getattr(container.model_provider, "setting_model", "mock"))
+            except RuntimeError as exc:
+                logger.warning("persona.assist_setting.model_failed internal_error_code=%s fallback=local", str(exc))
+                reset_model_recovery_state()
+                result = container.persona_engine.assist_setting(
+                    name=str(protected["name"]),
+                    summary=str(protected["summary"]),
+                    slots=protected_slots,
+                )
+                recovery_strategy = "local_fallback"
+                used_model = "local"
+            return PersonaGenerationProposalV1(
+                request_kind="setting_assist",
+                used_model=used_model,
+                slots=[
+                    PersonaSlotContentProposalV1.model_validate(
+                        item.model_dump(mode="python") if isinstance(item, BaseModel) else item
+                    )
+                    for item in result["slots"]
+                ],
+                system_prompt_suggestion=str(result["system_prompt_suggestion"]),
+                recovery_strategy=recovery_strategy,
+            )
+
+        generated, harness_trace = container.harness_proposal_runtime.run_persona(
+            manifest=PersonaGenerationInputManifest(
+                request_kind="setting_assist",
+                mode="assist",
+                requested_count=len(payload.slots),
+                input_char_count=len(payload.name) + len(payload.summary) + sum(len(item.content) for item in payload.slots),
+            ),
+            protected_input=payload.model_dump(mode="json", exclude_none=False),
+            generate=generate_setting,
         )
     except RuntimeError as exc:
-        http_error = _map_setting_generation_error(exc)
-        logger.warning(
-            "persona.assist_setting.model_failed detail=%s internal_error_code=%s fallback=local",
-            http_error.detail,
-            str(exc),
-        )
-        reset_model_recovery_state()
-        result = container.persona_engine.assist_setting(
-            name=payload.name,
-            summary=payload.summary,
-            slots=payload.slots,
-        )
-    return _into_response_with_model_recoveries(PersonaSettingAssistResponse, result)
+        raise _map_setting_generation_error(exc) from exc
+    return _into_response_with_model_recoveries(
+        PersonaSettingAssistResponse,
+        PersonaSettingAssistResponse(
+            slots=[item.model_dump(mode="json") for item in generated.slots],
+            system_prompt_suggestion=generated.system_prompt_suggestion,
+            harness_trace=harness_trace,
+        ),
+    )
 
 
 @router.post("/personas/assist-slot", response_model=PersonaSlotAssistResponse)
 def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistResponse:
     reset_model_recovery_state()
     try:
-        result = container.model_provider.assist_persona_slot(
-            name=payload.name,
-            summary=payload.summary,
-            slot=payload.slot,
-            rewrite_strength=payload.rewrite_strength,
+        def generate_slot(protected: dict[str, object]) -> PersonaGenerationProposalV1:
+            recovery_strategy = "none"
+            protected_slot = PersonaSlot.model_validate(protected["slot"])
+            try:
+                result = container.model_provider.assist_persona_slot(
+                    name=str(protected["name"]),
+                    summary=str(protected["summary"]),
+                    slot=protected_slot,
+                    rewrite_strength=float(protected["rewrite_strength"]),
+                )
+                used_model = str(getattr(container.model_provider, "setting_model", "mock"))
+            except RuntimeError as exc:
+                logger.warning("persona.assist_slot.model_failed internal_error_code=%s fallback=local", str(exc))
+                reset_model_recovery_state()
+                result = {"slot": container.persona_engine.assist_slot(
+                    name=str(protected["name"]),
+                    summary=str(protected["summary"]),
+                    slot=protected_slot,
+                    rewrite_strength=float(protected["rewrite_strength"]),
+                ).model_dump(mode="json")}
+                recovery_strategy = "local_fallback"
+                used_model = "local"
+            return PersonaGenerationProposalV1(
+                request_kind="slot_assist",
+                used_model=used_model,
+                slot=PersonaSlotContentProposalV1.model_validate(result["slot"]),
+                recovery_strategy=recovery_strategy,
+            )
+
+        generated, harness_trace = container.harness_proposal_runtime.run_persona(
+            manifest=PersonaGenerationInputManifest(
+                request_kind="slot_assist",
+                mode="assist",
+                requested_count=1,
+                input_char_count=len(payload.name) + len(payload.summary) + len(payload.slot.content),
+            ),
+            protected_input=payload.model_dump(mode="json", exclude_none=False),
+            generate=generate_slot,
         )
     except RuntimeError as exc:
-        http_error = _map_setting_generation_error(exc)
-        logger.warning(
-            "persona.assist_slot.model_failed detail=%s internal_error_code=%s fallback=local",
-            http_error.detail,
-            str(exc),
-        )
-        reset_model_recovery_state()
-        result = {
-            "slot": container.persona_engine.assist_slot(
-                name=payload.name,
-                summary=payload.summary,
-                slot=payload.slot,
-                rewrite_strength=payload.rewrite_strength,
-            ).model_dump()
-        }
-    return _into_response_with_model_recoveries(PersonaSlotAssistResponse, result)
+        raise _map_setting_generation_error(exc) from exc
+    assert generated.slot is not None
+    return _into_response_with_model_recoveries(
+        PersonaSlotAssistResponse,
+        PersonaSlotAssistResponse(
+            slot=generated.slot.model_dump(mode="json"),
+            harness_trace=harness_trace,
+        ),
+    )
 
 
 @router.get("/study-sessions/{session_id}/attachments/{attachment_id}/file")
@@ -2300,8 +2469,8 @@ def _ensure_session_scene_binding(session):
     )
 
 
-@router.post("/learning-plans", response_model=LearningPlanResponse)
-def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResponse:
+@router.post("/learning-plans", response_model=LearningPlanCreateResponse)
+def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCreateResponse:
     reset_model_recovery_state()
     stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
     domain_operation_id = ""
@@ -2389,7 +2558,16 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
             ),
         )
         raise
-    plan_projection = plan.model_dump(mode="json")
+    harness_trace = _require_domain_harness_trace(
+        domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
+        domain_operation_id=domain_operation_id,
+        stage=HarnessStage.PLAN_GENERATION,
+    )
+    plan_commit_projection = plan.model_dump(mode="json")
+    plan_projection = {
+        **plan_commit_projection,
+        "harness_trace": harness_trace.model_dump(mode="json", exclude_none=False),
+    }
     recorder.emit(
         "stream_completed",
         {
@@ -2403,7 +2581,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanResp
         ),
         committed_projection=plan_projection,
     )
-    return _into_response(LearningPlanResponse, plan)
+    return LearningPlanCreateResponse.model_validate(plan_projection)
 
 
 @router.get("/learning-plans", response_model=LearningPlanListResponse)
@@ -2523,7 +2701,16 @@ def create_learning_plan_stream(
             if interrupt_handle.claim_terminal():
                 emit_cancelled()
             else:
-                plan_projection = plan.model_dump(mode="json")
+                harness_trace = _require_domain_harness_trace(
+                    domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
+                    domain_operation_id=domain_operation_id,
+                    stage=HarnessStage.PLAN_GENERATION,
+                )
+                plan_commit_projection = plan.model_dump(mode="json")
+                plan_projection = {
+                    **plan_commit_projection,
+                    "harness_trace": harness_trace.model_dump(mode="json", exclude_none=False),
+                }
                 event = recorder.emit(
                     "stream_completed",
                     {

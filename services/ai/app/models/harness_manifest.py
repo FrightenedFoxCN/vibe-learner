@@ -463,6 +463,66 @@ def _unregistered_entry(
     )
 
 
+def _executable_entry(
+    workflow: HarnessWorkflow,
+    stage: HarnessStage,
+    *,
+    registration: tuple[str, str],
+    adapter: tuple[str, str],
+    input_contract: tuple[str, str],
+    proposal_contract: tuple[str, str],
+    output_contract: tuple[str, str],
+    artifact_types: tuple[HarnessArtifactType, ...],
+    decoder_route: str,
+    prompt: tuple[str, str] | None = None,
+    policy: tuple[str, str] | None = None,
+    toolset: HarnessManifestContractSlotV1 | None = None,
+    commit_policy: HarnessManifestRegisteredCommitPolicySlotV1 | None = None,
+    budget: HarnessManifestExecutionBudgetV1 = _DEFAULT_BUDGET,
+    eval_suites: tuple[HarnessContractRef, ...] = (),
+) -> HarnessWorkflowManifestEntryV1:
+    vocabulary = HARNESS_OPERATION_STAGE_REGISTRATIONS[(workflow, stage)]
+    return HarnessWorkflowManifestEntryV1(
+        key=f"{workflow.value}:{stage.value}",
+        workflow=workflow,
+        stage=stage,
+        registration=_registered_contract(*registration),
+        owner_module=vocabulary.owner_module,
+        owner_adapter=_registered_contract(*adapter),
+        input_contract=_registered_contract(*input_contract),
+        proposal_contract=_registered_contract(*proposal_contract),
+        output_contract=_registered_contract(*output_contract),
+        component_contracts=_component_contracts(workflow, stage),
+        prompt_contract=(
+            _registered_contract(*prompt)
+            if prompt is not None
+            else _not_applicable(HarnessManifestNotApplicableReason.NO_PROMPT)
+        ),
+        policy_contract=(
+            _registered_contract(*policy)
+            if policy is not None
+            else _not_applicable(HarnessManifestNotApplicableReason.NO_POLICY)
+        ),
+        toolset_contract=toolset
+        or _not_applicable(HarnessManifestNotApplicableReason.NO_TOOLS),
+        attempt_ceiling=_DEFAULT_ATTEMPTS,
+        execution_budget=budget,
+        allowed_artifact_types=_artifact_allowlist(*artifact_types),
+        allowed_effect_adapters=_not_applicable(
+            HarnessManifestNotApplicableReason.NO_EFFECTS
+        ),
+        commit_policy=commit_policy
+        or _not_applicable(HarnessManifestNotApplicableReason.NO_COMMIT),
+        decoder_route=_registered_string(decoder_route),
+        eval_route=_registered_string(vocabulary.eval_route),
+        eval_suites=(
+            _registered_contracts(*((item.name, item.version) for item in eval_suites))
+            if eval_suites
+            else _unregistered(HarnessManifestUnregisteredReason.EVAL_SUITE_NOT_REGISTERED)
+        ),
+    )
+
+
 _TOOL_MANIFEST_SLOT = _registered_contract(
     "ToolManifestRegistry",
     TOOL_MANIFEST_SCHEMA_VERSION,
@@ -577,54 +637,103 @@ _STUDY_ENTRY = HarnessWorkflowManifestEntryV1(
 
 
 _ENTRIES = (
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.DOCUMENT_PARSE,
         HarnessStage.DOCUMENT_PARSE,
+        registration=("DocumentProcessWorkflowManifestEntry", "document-process-workflow-manifest-v1"),
+        adapter=("DocumentProcessWorkflowAdapter", "document-process-workflow-adapter-v1"),
+        input_contract=("DocumentProcessInputManifest", "document-process-input-manifest-v1"),
+        proposal_contract=("DocumentProcessRuntimeOutput", "document-process-runtime-output-v1"),
+        output_contract=("DocumentProcessCommittedProjection", "document-process-committed-projection-v1"),
         artifact_types=(HarnessArtifactType.DOCUMENT_UPLOAD,),
+        decoder_route="app.services.harness_broad_adoption.DocumentProcessWorkflowAdapter",
+        policy=("DocumentProcessHarnessPolicy", "document-process-harness-v1"),
+        commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
+            key=HarnessManifestCommitPolicyKeyV1(
+                workflow=HarnessWorkflow.DOCUMENT_PARSE,
+                stage=HarnessStage.DOCUMENT_PARSE,
+                trace_contract=_contract("DocumentProcessRuntimeOutput", "document-process-runtime-output-v1"),
+                payload_contract=_contract("DocumentProcessCommittedProjection", "document-process-committed-projection-v1"),
+            )
+        ),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.DOCUMENT_PARSE,
         HarnessStage.PAGE_EXTRACTION,
+        registration=("DocumentPageExtractionWorkflowManifestEntry", "document-page-extraction-workflow-manifest-v1"),
+        adapter=("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+        input_contract=("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
+        proposal_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
+        output_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
         artifact_types=(HarnessArtifactType.DOCUMENT_UPLOAD,),
-        no_effects=True,
-        no_commit=True,
+        decoder_route="app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
+        policy=("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.DOCUMENT_PARSE,
         HarnessStage.SECTION_DETECTION,
-        artifact_types=(HarnessArtifactType.DOCUMENT_DEBUG,),
-        no_effects=True,
-        no_commit=True,
+        registration=("DocumentSectionDetectionWorkflowManifestEntry", "document-section-detection-workflow-manifest-v1"),
+        adapter=("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+        input_contract=("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
+        proposal_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
+        output_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
+        artifact_types=(HarnessArtifactType.DOCUMENT_DEBUG, HarnessArtifactType.DOCUMENT_UPLOAD),
+        decoder_route="app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
+        policy=("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.DOCUMENT_PARSE,
         HarnessStage.CHUNK_BUILDING,
+        registration=("DocumentChunkBuildingWorkflowManifestEntry", "document-chunk-building-workflow-manifest-v1"),
+        adapter=("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+        input_contract=("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
+        proposal_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
+        output_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
         artifact_types=(
             HarnessArtifactType.DOCUMENT_DEBUG,
             HarnessArtifactType.DOCUMENT_UPLOAD,
         ),
-        no_effects=True,
-        no_commit=True,
+        decoder_route="app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_document_stage_evidence",
+        policy=("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.OCR,
         HarnessStage.OCR_PAGE,
+        registration=("OcrPageWorkflowManifestEntry", "ocr-page-workflow-manifest-v1"),
+        adapter=("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+        input_contract=("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
+        proposal_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
+        output_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
         artifact_types=(
             HarnessArtifactType.DOCUMENT_UPLOAD,
             HarnessArtifactType.OCR_PAGE,
         ),
+        decoder_route="app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_ocr_stage_evidence",
+        policy=("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.STUDY_UNIT_CLEANUP,
         HarnessStage.STUDY_UNIT_CLEANUP,
+        registration=("StudyUnitCleanupWorkflowManifestEntry", "study-unit-cleanup-workflow-manifest-v1"),
+        adapter=("DocumentStageWorkflowAdapter", "document-stage-workflow-adapter-v1"),
+        input_contract=("DocumentStageInputManifest", "document-stage-input-manifest-v1"),
+        proposal_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
+        output_contract=("DocumentStageEvidence", "document-stage-evidence-v1"),
         artifact_types=(
             HarnessArtifactType.DOCUMENT_DEBUG,
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
+        decoder_route="app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_study_unit_cleanup_evidence",
+        policy=("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.PLANNING,
         HarnessStage.PLAN_GENERATION,
+        registration=("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v1"),
+        adapter=("LearningPlanWorkflowAdapter", "learning-plan-workflow-adapter-v1"),
+        input_contract=("LearningPlanInputManifest", "learning-plan-input-manifest-v1"),
+        proposal_contract=("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"),
+        output_contract=("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
         artifact_types=(
             HarnessArtifactType.DOCUMENT_DEBUG,
             HarnessArtifactType.PERSONA_SNAPSHOT,
@@ -632,43 +741,79 @@ _ENTRIES = (
             HarnessArtifactType.SCENE_SNAPSHOT,
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
-        prompt=_unregistered(
-            HarnessManifestUnregisteredReason.CONTRACT_NOT_REGISTERED
-        ),
+        decoder_route="app.services.harness_broad_adoption.LearningPlanWorkflowAdapter",
+        prompt=("LearningPlanPrompt", "planning-prompt-v1"),
+        policy=("LearningPlanHarnessPolicy", "learning-plan-harness-v1"),
         toolset=_TOOL_MANIFEST_SLOT,
+        commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
+            key=HarnessManifestCommitPolicyKeyV1(
+                workflow=HarnessWorkflow.PLANNING,
+                stage=HarnessStage.PLAN_GENERATION,
+                trace_contract=_contract("LearningPlanRuntimeOutput", "learning-plan-runtime-output-v1"),
+                payload_contract=_contract("LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"),
+            )
+        ),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.PLANNING,
         HarnessStage.PLANNING_TOOL_EXECUTION,
+        registration=("PlanningToolExecutionWorkflowManifestEntry", "planning-tool-execution-workflow-manifest-v1"),
+        adapter=("PlanningToolExecutionWorkflowAdapter", "planning-tool-execution-workflow-adapter-v1"),
+        input_contract=("PlanningToolExecutionInputManifest", "planning-tool-execution-input-manifest-v1"),
+        proposal_contract=("PlanningToolExecutionEvidence", "planning-tool-execution-evidence-v1"),
+        output_contract=("PlanningToolExecutionEvidence", "planning-tool-execution-evidence-v1"),
         artifact_types=(
             HarnessArtifactType.DOCUMENT_DEBUG,
             HarnessArtifactType.PLANNING_CONTEXT,
             HarnessArtifactType.STUDY_UNIT_INPUT,
         ),
+        decoder_route="app.services.harness_broad_adoption.HarnessProposalRuntimeService.emit_planning_tool_evidence",
+        policy=("PlanningToolExecutionHarnessPolicy", "planning-tool-execution-harness-v1"),
         toolset=_TOOL_MANIFEST_SLOT,
         eval_suites=(PLANNING_TOOL_EVAL_SUITE,),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.PERSONA,
         HarnessStage.PERSONA_GENERATION,
+        registration=("PersonaGenerationWorkflowManifestEntry", "persona-generation-workflow-manifest-v1"),
+        adapter=("PersonaGenerationWorkflowAdapter", "persona-generation-workflow-adapter-v1"),
+        input_contract=("PersonaGenerationInputManifest", "persona-generation-input-manifest-v1"),
+        proposal_contract=("PersonaGenerationProposal", "persona-generation-proposal-v1"),
+        output_contract=("PersonaGenerationProposal", "persona-generation-proposal-v1"),
         artifact_types=(HarnessArtifactType.PERSONA_SNAPSHOT,),
+        decoder_route="app.services.harness_broad_adoption.PersonaGenerationWorkflowAdapter",
+        prompt=("PersonaGenerationPrompt", "persona-generation-prompt-v1"),
+        policy=("PersonaGenerationHarnessPolicy", "persona-generation-harness-v1"),
     ),
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.SCENE,
         HarnessStage.SCENE_GENERATION,
+        registration=("SceneGenerationWorkflowManifestEntry", "scene-generation-workflow-manifest-v1"),
+        adapter=("SceneGenerationWorkflowAdapter", "scene-generation-workflow-adapter-v1"),
+        input_contract=("SceneGenerationInputManifest", "scene-generation-input-manifest-v1"),
+        proposal_contract=("SceneTreeProposal", "scene-tree-proposal-v1"),
+        output_contract=("SceneTreeGeneratedProjection", "scene-tree-generated-projection-v1"),
         artifact_types=(
             HarnessArtifactType.PERSONA_SNAPSHOT,
             HarnessArtifactType.SCENE_SNAPSHOT,
         ),
+        decoder_route="app.services.harness_broad_adoption.SceneGenerationWorkflowAdapter",
+        prompt=("SceneGenerationPrompt", "scene-generation-prompt-v1"),
+        policy=("SceneGenerationHarnessPolicy", "scene-generation-harness-v1"),
     ),
     _STUDY_ENTRY,
     _TAVERN_ENTRY,
-    _unregistered_entry(
+    _executable_entry(
         HarnessWorkflow.FRONTEND_DECODE,
         HarnessStage.FRONTEND_RESPONSE_DECODE,
+        registration=("FrontendDecodeWorkflowManifestEntry", "frontend-decode-workflow-manifest-v1"),
+        adapter=("FrontendDecodeWorkflowAdapter", "frontend-decode-workflow-adapter-v1"),
+        input_contract=("FrontendDecodeInputManifest", "frontend-decode-input-manifest-v1"),
+        proposal_contract=("FrontendDecodeResponse", "frontend-decode-response-v1"),
+        output_contract=("FrontendDecodeResponse", "frontend-decode-response-v1"),
         artifact_types=(HarnessArtifactType.FRONTEND_RESPONSE_FIXTURE,),
-        no_effects=True,
-        no_commit=True,
+        decoder_route="apps.web.lib.harness-trace-decode.decodeHarnessTraceV3",
+        policy=("FrontendDecodeHarnessPolicy", "frontend-decode-harness-v1"),
     ),
 )
 

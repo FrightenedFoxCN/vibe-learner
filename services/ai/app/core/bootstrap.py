@@ -9,7 +9,9 @@ from app.persistence.harness_effect_repository import HarnessEffectJournalReposi
 from app.services.harness_effect_scanner import scan_harness_effect_journal
 from app.services.study_v3 import StudyV3SnapshotService
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
+from app.persistence.harness_workflow_operation_repository import HarnessWorkflowOperationRepository
 from app.services.harness_runtime import HarnessOperationRuntime
+from app.services.harness_broad_adoption import HarnessProposalRuntimeService
 from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository
@@ -49,6 +51,18 @@ class Container:
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()
         self.harness_artifact_repository = HarnessArtifactRepository(self.database)
+        self.harness_workflow_operations = HarnessWorkflowOperationRepository(self.database)
+        recovered_workflow_operations = self.harness_workflow_operations.recover_abandoned_operations()
+        if recovered_workflow_operations:
+            logger.warning(
+                "bootstrap.harness_workflow_operations recovered=%s",
+                recovered_workflow_operations,
+            )
+        self.harness_proposal_runtime = HarnessProposalRuntimeService(
+            self.database,
+            self.harness_artifact_repository,
+            self.harness_workflow_operations,
+        )
         self.study_v3_snapshot_service = StudyV3SnapshotService(self.harness_artifact_repository)
         self.harness_runtime = HarnessOperationRuntime(
             repository=HarnessRuntimeRepository(self.database)
@@ -89,12 +103,14 @@ class Container:
             self.store,
             self.document_parser,
             self.study_arrangement_service,
+            harness_service=self.harness_proposal_runtime,
         )
         self.document_service.recover_abandoned_operations()
         self.plan_service = LearningPlanService(
             self.store,
             self.study_arrangement_service,
             self.model_provider,
+            harness_service=self.harness_proposal_runtime,
         )
         self.plan_service.recover_abandoned_operations()
         self.study_session_repository = StudySessionRepository(

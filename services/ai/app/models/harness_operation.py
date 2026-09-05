@@ -19,7 +19,11 @@ DOMAIN_OPERATION_ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$"
 
 class HarnessDomainOperationKind(StrEnum):
     DOCUMENT_PROCESS = "document_process"
+    DOCUMENT_OCR = "document_ocr"
+    STUDY_UNIT_CLEANUP = "study_unit_cleanup"
     LEARNING_PLAN_GENERATION = "learning_plan_generation"
+    PERSONA_GENERATION = "persona_generation"
+    SCENE_GENERATION = "scene_generation"
     STUDY_CHAT = "study_chat"
     TAVERN_RUN = "tavern_run"
 
@@ -30,9 +34,25 @@ HARNESS_DOMAIN_OPERATION_ROUTES = MappingProxyType(
             HarnessWorkflow.DOCUMENT_PARSE,
             HarnessStage.DOCUMENT_PARSE,
         ),
+        HarnessDomainOperationKind.DOCUMENT_OCR: (
+            HarnessWorkflow.OCR,
+            HarnessStage.OCR_PAGE,
+        ),
+        HarnessDomainOperationKind.STUDY_UNIT_CLEANUP: (
+            HarnessWorkflow.STUDY_UNIT_CLEANUP,
+            HarnessStage.STUDY_UNIT_CLEANUP,
+        ),
         HarnessDomainOperationKind.LEARNING_PLAN_GENERATION: (
             HarnessWorkflow.PLANNING,
             HarnessStage.PLAN_GENERATION,
+        ),
+        HarnessDomainOperationKind.PERSONA_GENERATION: (
+            HarnessWorkflow.PERSONA,
+            HarnessStage.PERSONA_GENERATION,
+        ),
+        HarnessDomainOperationKind.SCENE_GENERATION: (
+            HarnessWorkflow.SCENE,
+            HarnessStage.SCENE_GENERATION,
         ),
         HarnessDomainOperationKind.STUDY_CHAT: (
             HarnessWorkflow.STUDY_CHAT,

@@ -22,9 +22,16 @@ from pydantic import (
 from app.core.harness_component_versions import (
     DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION,
     DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION,
+    DOCUMENT_PARSER_CONTRACT_VERSION,
     DOCUMENT_SECTION_DETECTOR_CONTRACT_VERSION,
+    FRONTEND_DECODER_CONTRACT_VERSION,
+    OCR_ENGINE_CONTRACT_VERSION,
+    PERSONA_COMPILER_CONTRACT_VERSION,
+    PLANNING_PROMPT_CONTRACT_VERSION,
     PLANNING_TOOL_RUNTIME_CONTRACT_VERSION,
     PLANNING_TOOLSET_CONTRACT_VERSION,
+    SCENE_COMPILER_CONTRACT_VERSION,
+    STUDY_UNIT_CLEANER_CONTRACT_VERSION,
     TAVERN_ACTOR_PROMPT_CONTRACT_VERSION,
     TAVERN_ACTOR_REPLY_COMMIT_CONTRACT_VERSION,
     TAVERN_ACTOR_REPLY_CONTRACT_NAME,
@@ -235,12 +242,14 @@ class HarnessResourceSemantics(StrEnum):
 class HarnessContextEvidencePolicy(StrEnum):
     AUTHORITATIVE_REVISION = "authoritative_revision"
     PROTECTED_SNAPSHOT = "protected_snapshot"
+    OPERATION_IDENTITY = "operation_identity"
     UNSUPPORTED = "unsupported"
 
 
 class HarnessCommitEvidencePolicy(StrEnum):
     REVISION = "revision"
     SEQUENCE = "sequence"
+    DIGEST = "digest"
     UNSUPPORTED = "unsupported"
 
 
@@ -341,7 +350,10 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.DOCUMENT_PARSER: HarnessComponentRegistration(
             HarnessComponentName.DOCUMENT_PARSER,
             "app.services.document_parser",
-            None,
+            HarnessRegisteredContract(
+                name="document_parser",
+                version=DOCUMENT_PARSER_CONTRACT_VERSION,
+            ),
         ),
         HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR: HarnessComponentRegistration(
             HarnessComponentName.DOCUMENT_PAGE_EXTRACTOR,
@@ -370,17 +382,26 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.OCR_ENGINE: HarnessComponentRegistration(
             HarnessComponentName.OCR_ENGINE,
             "app.services.ocr_engine",
-            None,
+            HarnessRegisteredContract(
+                name="ocr_engine",
+                version=OCR_ENGINE_CONTRACT_VERSION,
+            ),
         ),
         HarnessComponentName.STUDY_UNIT_CLEANER: HarnessComponentRegistration(
             HarnessComponentName.STUDY_UNIT_CLEANER,
             "app.services.study_arrangement",
-            None,
+            HarnessRegisteredContract(
+                name="study_unit_cleaner",
+                version=STUDY_UNIT_CLEANER_CONTRACT_VERSION,
+            ),
         ),
         HarnessComponentName.PLANNING_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.PLANNING_PROMPT,
             "app.services.plan_prompt",
-            None,
+            HarnessRegisteredContract(
+                name="planning_prompt",
+                version=PLANNING_PROMPT_CONTRACT_VERSION,
+            ),
         ),
         HarnessComponentName.PLANNING_TOOLSET: HarnessComponentRegistration(
             HarnessComponentName.PLANNING_TOOLSET,
@@ -401,12 +422,18 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.PERSONA_COMPILER: HarnessComponentRegistration(
             HarnessComponentName.PERSONA_COMPILER,
             "app.services.persona_cards",
-            None,
+            HarnessRegisteredContract(
+                name="persona_compiler",
+                version=PERSONA_COMPILER_CONTRACT_VERSION,
+            ),
         ),
         HarnessComponentName.SCENE_COMPILER: HarnessComponentRegistration(
             HarnessComponentName.SCENE_COMPILER,
             "app.services.scene_setup",
-            None,
+            HarnessRegisteredContract(
+                name="scene_compiler",
+                version=SCENE_COMPILER_CONTRACT_VERSION,
+            ),
         ),
         HarnessComponentName.STUDY_CHAT_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.STUDY_CHAT_PROMPT,
@@ -449,7 +476,10 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
         HarnessComponentName.FRONTEND_DECODER: HarnessComponentRegistration(
             HarnessComponentName.FRONTEND_DECODER,
             "apps.web.lib.api",
-            None,
+            HarnessRegisteredContract(
+                name="frontend_decoder",
+                version=FRONTEND_DECODER_CONTRACT_VERSION,
+            ),
         ),
     }
 )
@@ -845,7 +875,7 @@ HARNESS_RESOURCE_EVIDENCE_POLICIES = MappingProxyType(
         HarnessResourceType.DOCUMENT: HarnessResourceEvidencePolicy(
             semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
             context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
-            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.DIGEST,
             rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
         ),
         HarnessResourceType.DOCUMENT_PAGE: HarnessResourceEvidencePolicy(
@@ -869,7 +899,7 @@ HARNESS_RESOURCE_EVIDENCE_POLICIES = MappingProxyType(
         HarnessResourceType.LEARNING_PLAN: HarnessResourceEvidencePolicy(
             semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
             context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
-            commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
+            commit_evidence=HarnessCommitEvidencePolicy.DIGEST,
             rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
         ),
         HarnessResourceType.PLANNING_TRACE: HarnessResourceEvidencePolicy(
@@ -916,7 +946,7 @@ HARNESS_RESOURCE_EVIDENCE_POLICIES = MappingProxyType(
         ),
         HarnessResourceType.FRONTEND_REQUEST: HarnessResourceEvidencePolicy(
             semantics=HarnessResourceSemantics.OPERATION_IDENTITY,
-            context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
+            context_evidence=HarnessContextEvidencePolicy.OPERATION_IDENTITY,
             commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
             rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
         ),
@@ -977,8 +1007,20 @@ def validate_harness_resource_evidence_policy_registry(
                 HarnessRollbackEvidencePolicy.UNSUPPORTED,
             ),
             (
+                HarnessResourceSemantics.UNVERSIONED_MUTABLE,
+                HarnessContextEvidencePolicy.UNSUPPORTED,
+                HarnessCommitEvidencePolicy.DIGEST,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
                 HarnessResourceSemantics.OPERATION_IDENTITY,
                 HarnessContextEvidencePolicy.UNSUPPORTED,
+                HarnessCommitEvidencePolicy.UNSUPPORTED,
+                HarnessRollbackEvidencePolicy.UNSUPPORTED,
+            ),
+            (
+                HarnessResourceSemantics.OPERATION_IDENTITY,
+                HarnessContextEvidencePolicy.OPERATION_IDENTITY,
                 HarnessCommitEvidencePolicy.UNSUPPORTED,
                 HarnessRollbackEvidencePolicy.UNSUPPORTED,
             ),
@@ -1068,9 +1110,72 @@ _STUDY_CHAT_TURN_COMMIT_POLICY = HarnessOperationCommitPolicy(
     resource_rules=(HarnessOperationCommitResourceRule(HarnessResourceType.STUDY_SESSION, 1, 1, 1, 1),),
 )
 
+_DOCUMENT_PROCESS_COMMIT_POLICY_KEY = HarnessOperationCommitPolicyKey(
+    workflow=HarnessWorkflow.DOCUMENT_PARSE,
+    stage=HarnessStage.DOCUMENT_PARSE,
+    trace_contract_name="DocumentProcessRuntimeOutput",
+    trace_contract_version="document-process-runtime-output-v1",
+    payload_contract_name="DocumentProcessCommittedProjection",
+    payload_contract_version="document-process-committed-projection-v1",
+)
+_DOCUMENT_PROCESS_COMMIT_POLICY = HarnessOperationCommitPolicy(
+    key=_DOCUMENT_PROCESS_COMMIT_POLICY_KEY,
+    projection_contract=HarnessRegisteredContract(
+        "DocumentProcessCommittedProjection",
+        "document-process-committed-projection-v1",
+    ),
+    binding_contract=HarnessRegisteredContract(
+        "DocumentProcessOperationBinding", "document-process-operation-binding-v1"
+    ),
+    digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+    evidence_scope=HarnessOperationEvidenceScope.COMPLETE_TRANSACTION,
+    subject_resource_type=HarnessResourceType.FRONTEND_REQUEST,
+    subject_resource_count=1,
+    status_rules=(
+        HarnessOperationCommitStatusRule(HarnessStatus.FAILED, HarnessCommitStatus.NOT_COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.PASSED, HarnessCommitStatus.COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.REPAIRED, HarnessCommitStatus.COMMITTED),
+    ),
+    resource_rules=(
+        HarnessOperationCommitResourceRule(HarnessResourceType.DOCUMENT, 1, 1, 1, 1),
+    ),
+)
+
+_LEARNING_PLAN_COMMIT_POLICY_KEY = HarnessOperationCommitPolicyKey(
+    workflow=HarnessWorkflow.PLANNING,
+    stage=HarnessStage.PLAN_GENERATION,
+    trace_contract_name="LearningPlanRuntimeOutput",
+    trace_contract_version="learning-plan-runtime-output-v1",
+    payload_contract_name="LearningPlanCommittedProjection",
+    payload_contract_version="learning-plan-committed-projection-v1",
+)
+_LEARNING_PLAN_COMMIT_POLICY = HarnessOperationCommitPolicy(
+    key=_LEARNING_PLAN_COMMIT_POLICY_KEY,
+    projection_contract=HarnessRegisteredContract(
+        "LearningPlanCommittedProjection", "learning-plan-committed-projection-v1"
+    ),
+    binding_contract=HarnessRegisteredContract(
+        "LearningPlanOperationBinding", "learning-plan-operation-binding-v1"
+    ),
+    digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+    evidence_scope=HarnessOperationEvidenceScope.COMPLETE_TRANSACTION,
+    subject_resource_type=HarnessResourceType.FRONTEND_REQUEST,
+    subject_resource_count=1,
+    status_rules=(
+        HarnessOperationCommitStatusRule(HarnessStatus.FAILED, HarnessCommitStatus.NOT_COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.PASSED, HarnessCommitStatus.COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.REPAIRED, HarnessCommitStatus.COMMITTED),
+    ),
+    resource_rules=(
+        HarnessOperationCommitResourceRule(HarnessResourceType.LEARNING_PLAN, 1, 1, 1, 1),
+    ),
+)
+
 
 HARNESS_OPERATION_COMMIT_POLICIES = MappingProxyType(
     {
+        _DOCUMENT_PROCESS_COMMIT_POLICY_KEY: _DOCUMENT_PROCESS_COMMIT_POLICY,
+        _LEARNING_PLAN_COMMIT_POLICY_KEY: _LEARNING_PLAN_COMMIT_POLICY,
         _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY_KEY: (
             _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY
         ),
@@ -1229,6 +1334,11 @@ def validate_harness_context_resource_evidence(
         raise ValueError("harness_context_resource_revision_required")
     if policy.context_evidence == HarnessContextEvidencePolicy.PROTECTED_SNAPSHOT:
         raise ValueError("harness_context_resource_snapshot_binding_required")
+    if (
+        policy.context_evidence == HarnessContextEvidencePolicy.OPERATION_IDENTITY
+        and resource.revision is not None
+    ):
+        raise ValueError("harness_context_operation_identity_revision_forbidden")
     if policy.context_evidence == HarnessContextEvidencePolicy.UNSUPPORTED:
         raise ValueError("harness_context_resource_policy_unsupported")
 
@@ -1255,6 +1365,11 @@ def validate_harness_attempted_resource_shape(
         and resource.revision is not None
     ):
         raise ValueError("harness_unsupported_commit_attempt_revision_forbidden")
+    if (
+        policy.commit_evidence == HarnessCommitEvidencePolicy.DIGEST
+        and resource.revision is not None
+    ):
+        raise ValueError("harness_digest_commit_attempt_revision_forbidden")
 
 
 def validate_harness_committed_resource_commit_evidence(
@@ -1277,6 +1392,14 @@ def validate_harness_committed_resource_commit_evidence(
             raise ValueError("harness_sequence_commit_evidence_required")
         if resource.first_sequence != resource.last_sequence:
             raise ValueError("harness_message_commit_sequence_must_be_single")
+    elif policy.commit_evidence == HarnessCommitEvidencePolicy.DIGEST:
+        if (
+            resource.expected_revision is not None
+            or resource.committed_revision is not None
+            or resource.first_sequence is not None
+            or resource.last_sequence is not None
+        ):
+            raise ValueError("harness_digest_commit_position_forbidden")
 
 
 def validate_harness_rollback_resource_evidence(

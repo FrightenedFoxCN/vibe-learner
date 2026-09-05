@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -275,6 +275,60 @@ class HarnessRuntimeTests(unittest.TestCase):
             self._expire(prepared.trace_id)
         self.assertEqual(self.repository.inspect_recovery(prepared.trace_id).disposition, HarnessRuntimeRecoveryDisposition.ATTEMPTS_EXHAUSTED)
         self.assertIsNone(self.repository.claim(trace_id=prepared.trace_id, claim_owner="worker-final", recovery=True))
+
+    def test_claim_renewal_extends_database_lease_and_preserves_fence(self) -> None:
+        prepared = self.repository.prepare(
+            operation_binding=self.binding,
+            stage=HarnessStage.TAVERN_ACTOR_REPLY,
+            trace_slot=0,
+            adapter_contract=ADAPTER_CONTRACT,
+            trace_contract=TRACE_CONTRACT,
+            context=self.context,
+        )
+        claim = self.repository.claim(
+            trace_id=prepared.trace_id,
+            claim_owner="worker-a",
+            lease_seconds=1,
+        )
+        assert claim is not None
+        renewed = self.repository.renew(claim=claim, lease_seconds=30)
+        self.assertGreater(renewed.lease_expires_at, claim.lease_expires_at)
+        self.assertEqual(renewed.claim_token, claim.claim_token)
+        self._expire(prepared.trace_id)
+        with self.assertRaises(HarnessRuntimeError):
+            self.repository.renew(claim=renewed, lease_seconds=30)
+
+    def test_wall_time_budget_fails_closed_after_long_callback(self) -> None:
+        current = [datetime(2026, 9, 3, tzinfo=UTC)]
+
+        def clock() -> datetime:
+            return current[0]
+
+        def generate(_context, _artifacts):
+            current[0] += timedelta(minutes=4)
+            return {"value": "valid"}
+
+        base = self._adapter()
+        result = HarnessOperationRuntime(
+            repository=self.repository,
+            clock=clock,
+        ).execute(
+            request=self.request,
+            adapter=HarnessRuntimeStageAdapter(
+                adapter_contract=base.adapter_contract,
+                trace_contract=base.trace_contract,
+                generate=generate,
+                decode=base.decode,
+                validate=base.validate,
+            ),
+            claim_owner="worker-a",
+        )
+        assert result.terminal_trace is not None
+        self.assertEqual(result.terminal_trace.status, HarnessStatus.FAILED)
+        self.assertEqual(
+            result.terminal_trace.error_code,
+            "harness_runtime_wall_time_budget_exceeded",
+        )
 
     def test_forged_terminal_trace_is_rejected(self) -> None:
         prepared = self.repository.prepare(operation_binding=self.binding, stage=HarnessStage.TAVERN_ACTOR_REPLY, trace_slot=0, adapter_contract=ADAPTER_CONTRACT, trace_contract=TRACE_CONTRACT, context=self.context)

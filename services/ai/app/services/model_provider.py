@@ -3690,6 +3690,7 @@ def _normalize_generated_scene_result(
             f"setting_scene_proposal_invalid:$:{reason}"
         ) from exc
     return {
+        "proposal": proposal.model_dump(mode="json", exclude_none=False),
         "scene_name": projection.scene_name,
         "scene_summary": projection.scene_summary,
         "selected_layer_id": projection.selected_layer_id,

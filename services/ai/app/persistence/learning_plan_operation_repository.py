@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models.domain import (
     DocumentDebugRecord,
@@ -18,6 +19,22 @@ from app.models.harness_operation import (
     HarnessOperationBindingV1,
     HarnessOperationResolutionStatus,
 )
+from app.models.harness import (
+    HarnessAttemptPhase,
+    HarnessAttemptStatus,
+    HarnessCommitEvidenceV3,
+    HarnessCommitStatus,
+    HarnessCommittedResourceRefV3,
+    HarnessContractRef,
+    HarnessDigestAlgorithm,
+    HarnessDigestScope,
+    HarnessResourceRefV3,
+    HarnessResourceType,
+    HarnessStage,
+    HarnessWorkflow,
+    canonical_harness_digest,
+)
+from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
 from app.models.planning import (
     LEARNING_PLAN_COMMIT_CONTRACT_VERSION,
     LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
@@ -221,6 +238,8 @@ class LearningPlanOperationRepository:
         document: DocumentRecord | None,
         debug_report: DocumentDebugRecord | None,
         trace: PlanGenerationTraceRecord | None,
+        harness_runtime: HarnessOperationRuntime | None = None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> LearningPlanOperationRecord:
         now = _now()
         with self.database.session() as session:
@@ -229,13 +248,31 @@ class LearningPlanOperationRepository:
                 raise LearningPlanOperationNotFound(operation_id)
             if operation.status != LearningPlanOperationStatus.RUNNING.value:
                 raise LearningPlanOperationNotRunning(operation_id, operation.status)
-            self.harness_operations.require_domain_in_session(
+            binding = self.harness_operations.require_domain_in_session(
                 session,
                 domain_operation_kind=(
                     HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
                 ),
                 domain_operation_id=operation_id,
             )
+            self._validate_runtime_prepared_in_session(
+                session,
+                binding=binding,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
+            )
+            if runtime_prepared is not None:
+                output = runtime_prepared.output
+                if any(
+                    canonical_harness_digest(actual) != canonical_harness_digest(validated)
+                    for actual, validated in (
+                        (plan, output.plan),
+                        (document, output.document),
+                        (debug_report, output.debug_report),
+                        (trace, output.trace),
+                    )
+                ):
+                    raise ValueError("learning_plan_runtime_projection_mismatch")
             request = LearningPlanOperationRequestV1.model_validate(
                 operation.request_payload or {}
             )
@@ -379,6 +416,40 @@ class LearningPlanOperationRepository:
             operation.updated_at = now
             operation.completed_at = now
             session.flush()
+            if (harness_runtime is None) != (runtime_prepared is None):
+                raise ValueError("learning_plan_runtime_commit_pair_required")
+            if harness_runtime is not None and runtime_prepared is not None:
+                projection_digest = canonical_harness_digest(projection)
+                harness_runtime.finalize_prepared_in_session(
+                    session,
+                    prepared=runtime_prepared,
+                    commit_evidence=HarnessCommitEvidenceV3(
+                        status=HarnessCommitStatus.COMMITTED,
+                        effect_batch_id=f"learning-plan-commit-{operation_id}",
+                        payload_contract=HarnessContractRef(
+                            name="LearningPlanCommittedProjection",
+                            version="learning-plan-committed-projection-v1",
+                        ),
+                        digest_algorithm=HarnessDigestAlgorithm.SHA256,
+                        digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+                        attempted_resource_refs=[
+                            HarnessResourceRefV3(
+                                resource_type=HarnessResourceType.LEARNING_PLAN,
+                                resource_id=plan.id,
+                            )
+                        ],
+                        committed_resources=[
+                            HarnessCommittedResourceRefV3(
+                                resource_type=HarnessResourceType.LEARNING_PLAN,
+                                resource_id=plan.id,
+                                payload_digest=projection_digest,
+                            )
+                        ],
+                        payload_digest=projection_digest,
+                        committed_at=datetime.now(timezone.utc),
+                        rollback_reason_code="",
+                    ),
+                )
             self._inject("before_terminal_commit")
 
         return self.require(operation_id=operation_id, validate_current=True)
@@ -389,6 +460,8 @@ class LearningPlanOperationRepository:
         operation_id: str,
         status: LearningPlanOperationStatus,
         error_code: str,
+        harness_runtime: HarnessOperationRuntime | None = None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> LearningPlanOperationRecord:
         if status not in {
             LearningPlanOperationStatus.NOT_COMMITTED,
@@ -412,6 +485,12 @@ class LearningPlanOperationRepository:
                 ),
                 domain_operation_id=operation_id,
             )
+            self._validate_runtime_prepared_in_session(
+                session,
+                binding=resolution.binding,
+                harness_runtime=harness_runtime,
+                runtime_prepared=runtime_prepared,
+            )
             row.status = status.value
             row.active_slot = None
             row.projection_state = LearningPlanProjectionState.NOT_COMMITTED.value
@@ -426,7 +505,84 @@ class LearningPlanOperationRepository:
             )
             row.updated_at = now
             row.completed_at = now
+            if (harness_runtime is None) != (runtime_prepared is None):
+                raise ValueError("learning_plan_runtime_failure_pair_required")
+            if harness_runtime is not None and runtime_prepared is not None:
+                runtime_output = runtime_prepared.output
+                plan_id = str(getattr(getattr(runtime_output, "plan", None), "id", ""))
+                attempted = (
+                    [
+                        HarnessResourceRefV3(
+                            resource_type=HarnessResourceType.LEARNING_PLAN,
+                            resource_id=plan_id,
+                        )
+                    ]
+                    if plan_id
+                    else []
+                )
+                harness_runtime.fail_prepared_in_session(
+                    session,
+                    prepared=runtime_prepared,
+                    commit_evidence=HarnessCommitEvidenceV3(
+                        status=HarnessCommitStatus.NOT_COMMITTED,
+                        effect_batch_id=f"learning-plan-commit-{operation_id}",
+                        payload_contract=HarnessContractRef(
+                            name="LearningPlanCommittedProjection",
+                            version="learning-plan-committed-projection-v1",
+                        ),
+                        digest_algorithm=HarnessDigestAlgorithm.SHA256,
+                        digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+                        attempted_resource_refs=attempted,
+                        rollback_reason_code="",
+                    ),
+                    error_code=row.error_code,
+                )
         return self.require(operation_id=operation_id, validate_current=False)
+
+    def _validate_runtime_prepared_in_session(
+        self,
+        session: Session,
+        *,
+        binding: HarnessOperationBindingV1 | None,
+        harness_runtime: HarnessOperationRuntime | None,
+        runtime_prepared: HarnessRuntimePreparedOutput | None,
+    ) -> None:
+        if (harness_runtime is None) != (runtime_prepared is None):
+            raise ValueError("learning_plan_runtime_pair_required")
+        if harness_runtime is None or runtime_prepared is None:
+            return
+        from app.services.harness_broad_adoption import LearningPlanRuntimeOutputV1
+
+        current = harness_runtime.repository.get_in_session(
+            session, runtime_prepared.claim.trace_id
+        )
+        if (
+            binding is None
+            or binding.domain_operation_kind != HarnessDomainOperationKind.LEARNING_PLAN_GENERATION
+            or current is None
+            or current.trace_id != runtime_prepared.execution.trace_id
+            or current.harness_operation_id != binding.harness_operation_id
+            or current.workflow != HarnessWorkflow.PLANNING
+            or current.stage != HarnessStage.PLAN_GENERATION
+            or current.trace_slot != 0
+            or current.parent_trace_id is not None
+            or current.trace_contract != HarnessContractRef(
+                name="LearningPlanRuntimeOutput",
+                version="learning-plan-runtime-output-v1",
+            )
+            or runtime_prepared.execution.harness_operation_id != binding.harness_operation_id
+        ):
+            raise ValueError("learning_plan_runtime_binding_mismatch")
+        attempts = current.attempt_records
+        if (
+            not isinstance(runtime_prepared.output, LearningPlanRuntimeOutputV1)
+            or not attempts
+            or attempts[-1].phase != HarnessAttemptPhase.VALIDATE
+            or attempts[-1].status != HarnessAttemptStatus.PASSED
+            or attempts[-1].output_digest != runtime_prepared.output_digest
+            or canonical_harness_digest(runtime_prepared.output) != runtime_prepared.output_digest
+        ):
+            raise ValueError("learning_plan_runtime_output_mismatch")
 
     def recover_abandoned(self) -> list[LearningPlanOperationRecord]:
         recovered_ids: list[str] = []

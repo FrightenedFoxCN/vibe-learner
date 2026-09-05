@@ -638,7 +638,12 @@ function normalizeStreamReport(
 
 function normalizePlan(
   plan: unknown,
-  options: { expectedPlanId?: string; expectedDocumentId?: string; path?: string } = {},
+  options: {
+    expectedPlanId?: string;
+    expectedDocumentId?: string;
+    path?: string;
+    requireHarnessTrace?: boolean;
+  } = {},
 ): LearningPlan {
   return decodeLearningPlan(plan, options);
 }
@@ -1491,7 +1496,11 @@ export async function processDocument(
       })
     })
   );
-  return normalizeDocument(payload, documentId);
+  const decoded = decodeDocumentRecord(payload, documentId, "document", true);
+  return {
+    ...decoded,
+    previewExcerpt: compactPreviewString(decoded.previewExcerpt, 240),
+  };
 }
 
 export async function processDocumentStream(
@@ -1524,7 +1533,16 @@ export async function processDocumentStream(
   });
   const terminal = await consumeVersionedStream(response.body, machine, (event) => {
     if (event.stage === "stream_completed") {
-      finalDocument = normalizeDocument(event.committedProjection, documentId);
+      const decoded = decodeDocumentRecord(
+        event.committedProjection,
+        documentId,
+        "stream.document",
+        true,
+      );
+      finalDocument = {
+        ...decoded,
+        previewExcerpt: compactPreviewString(decoded.previewExcerpt, 240),
+      };
     }
     onEvent(event);
   });
@@ -1567,7 +1585,10 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
       })
     })
   );
-  return normalizePlan(payload, { expectedDocumentId: goal.documentId ?? "" });
+  return normalizePlan(payload, {
+    expectedDocumentId: goal.documentId ?? "",
+    requireHarnessTrace: true,
+  });
 }
 
 export async function listLearningPlans(): Promise<LearningPlan[]> {
@@ -1715,6 +1736,7 @@ export async function createLearningPlanStream(
         expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
         expectedDocumentId,
         path: "stream.committed_projection",
+        requireHarnessTrace: true,
       });
     }
     onEvent(event);
