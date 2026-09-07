@@ -167,10 +167,8 @@ from app.services.harness_runtime import (
     HarnessRuntimeStageAdapter,
 )
 from app.services.harness_broad_adoption import (
-    PersonaCardContentProposalV1,
     PersonaGenerationInputManifest,
     PersonaGenerationProposalV1,
-    PersonaSlotContentProposalV1,
     SceneGenerationInputManifest,
     SceneGenerationProposalV1,
 )
@@ -248,6 +246,17 @@ def _learning_plan_stream_subject(
         subject_type="learning_plan_request",
         subject_id=payload.client_request_id,
     )
+
+
+def _learning_plan_stream_storage_id(payload: LearningPlanCreateRequest) -> str:
+    """Return a filesystem-safe report key without changing domain identity."""
+
+    if payload.document_id:
+        return payload.document_id
+    request_digest = canonical_harness_digest(
+        {"client_request_id": payload.client_request_id}
+    )
+    return f"learning-plan-request-{request_digest[:24]}"
 
 
 def _document_stream_committed_evidence(
@@ -1186,15 +1195,24 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGe
                 )
             else:
                 raise RuntimeError("invalid_persona_card_generation_mode")
-            return PersonaGenerationProposalV1(
-                request_kind="card_batch",
-                used_model=str(result.get("used_model") or ""),
-                used_web_search=bool(result.get("used_web_search")),
-                summary=str(result.get("summary") or ""),
-                relationship=str(result.get("relationship") or ""),
-                learner_address=str(result.get("learner_address") or ""),
-                cards=[PersonaCardContentProposalV1.model_validate(item) for item in result.get("cards") or []],
-            )
+            raw_cards = result.get("cards")
+            if not isinstance(raw_cards, list):
+                raise RuntimeError("setting_model_invalid_payload")
+            try:
+                return PersonaGenerationProposalV1.model_validate(
+                    {
+                        "request_kind": "card_batch",
+                        "used_model": result.get("used_model", ""),
+                        "used_web_search": result.get("used_web_search", False),
+                        "summary": result.get("summary", ""),
+                        "relationship": result.get("relationship", ""),
+                        "learner_address": result.get("learner_address", ""),
+                        "cards": raw_cards,
+                    },
+                    strict=True,
+                )
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError("setting_model_invalid_payload") from exc
 
         generated, harness_trace = container.harness_proposal_runtime.run_persona(
             manifest=PersonaGenerationInputManifest(
@@ -1265,18 +1283,28 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
                 )
                 recovery_strategy = "local_fallback"
                 used_model = "local"
-            return PersonaGenerationProposalV1(
-                request_kind="setting_assist",
-                used_model=used_model,
-                slots=[
-                    PersonaSlotContentProposalV1.model_validate(
-                        item.model_dump(mode="python") if isinstance(item, BaseModel) else item
-                    )
-                    for item in result["slots"]
-                ],
-                system_prompt_suggestion=str(result["system_prompt_suggestion"]),
-                recovery_strategy=recovery_strategy,
-            )
+            raw_slots = result.get("slots")
+            system_prompt = result.get("system_prompt_suggestion")
+            if not isinstance(raw_slots, list) or not isinstance(system_prompt, str):
+                raise RuntimeError("setting_model_invalid_payload")
+            try:
+                return PersonaGenerationProposalV1.model_validate(
+                    {
+                        "request_kind": "setting_assist",
+                        "used_model": used_model,
+                        "slots": [
+                            item.model_dump(mode="python")
+                            if isinstance(item, BaseModel)
+                            else item
+                            for item in raw_slots
+                        ],
+                        "system_prompt_suggestion": system_prompt,
+                        "recovery_strategy": recovery_strategy,
+                    },
+                    strict=True,
+                )
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError("setting_model_invalid_payload") from exc
 
         generated, harness_trace = container.harness_proposal_runtime.run_persona(
             manifest=PersonaGenerationInputManifest(
@@ -1326,12 +1354,23 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
                 ).model_dump(mode="json")}
                 recovery_strategy = "local_fallback"
                 used_model = "local"
-            return PersonaGenerationProposalV1(
-                request_kind="slot_assist",
-                used_model=used_model,
-                slot=PersonaSlotContentProposalV1.model_validate(result["slot"]),
-                recovery_strategy=recovery_strategy,
-            )
+            raw_slot = result.get("slot")
+            if isinstance(raw_slot, BaseModel):
+                raw_slot = raw_slot.model_dump(mode="python")
+            if not isinstance(raw_slot, dict):
+                raise RuntimeError("setting_model_invalid_payload")
+            try:
+                return PersonaGenerationProposalV1.model_validate(
+                    {
+                        "request_kind": "slot_assist",
+                        "used_model": used_model,
+                        "slot": raw_slot,
+                        "recovery_strategy": recovery_strategy,
+                    },
+                    strict=True,
+                )
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError("setting_model_invalid_payload") from exc
 
         generated, harness_trace = container.harness_proposal_runtime.run_persona(
             manifest=PersonaGenerationInputManifest(
@@ -2472,7 +2511,7 @@ def _ensure_session_scene_binding(session):
 @router.post("/learning-plans", response_model=LearningPlanCreateResponse)
 def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCreateResponse:
     reset_model_recovery_state()
-    stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
+    stream_document_id = _learning_plan_stream_storage_id(payload)
     domain_operation_id = ""
 
     def remember_operation(operation_id: str) -> None:
@@ -2639,7 +2678,7 @@ def create_learning_plan_stream(
             else None
         )
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
-    stream_document_id = payload.document_id or f"goal-only:{uuid4().hex[:10]}"
+    stream_document_id = _learning_plan_stream_storage_id(payload)
     interrupt_handle = container.stream_interrupt_registry.create(
         stream_kind="learning_plan",
         target_id=stream_document_id,

@@ -54,6 +54,10 @@ from app.models.study_question import (
 from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
+from app.services.harness_broad_adoption import (
+    PersonaCardContentProposalV1,
+    PersonaSlotContentProposalV1,
+)
 from app.services.persona_runtime import render_persona_runtime_instruction
 from app.services.token_usage import TokenUsageService
 from app.services.tool_provider_projection import (
@@ -1804,23 +1808,34 @@ class OpenAIModelProvider(MockModelProvider):
             payload,
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，不要附加解释、代码块、注释或省略号。",
         )
-        returned_slots_raw = parsed.get("slots") or []
-        system_prompt_suggestion = str(parsed.get("system_prompt_suggestion") or "").strip()
+        returned_slots_raw = parsed.get("slots")
+        system_prompt_raw = parsed.get("system_prompt_suggestion")
+        if not isinstance(returned_slots_raw, list) or not isinstance(system_prompt_raw, str):
+            raise RuntimeError("setting_model_invalid_payload")
+        system_prompt_suggestion = system_prompt_raw.strip()
         if not system_prompt_suggestion:
             raise RuntimeError("setting_model_invalid_payload")
         returned_slots: list[PersonaSlot] = []
         for item in returned_slots_raw:
-            if isinstance(item, dict) and item.get("kind") and item.get("content"):
-                returned_slots.append(
-                    PersonaSlot(
-                        kind=str(item["kind"]),
-                        label=str(item.get("label") or item["kind"]),
-                        content=str(item["content"]),
-                        weight=float(item.get("weight") or 1),
-                        locked=bool(item.get("locked") or False),
-                        sort_order=int(item.get("sort_order") or 0),
-                    )
+            if not isinstance(item, dict):
+                raise RuntimeError("setting_model_invalid_payload")
+            try:
+                proposal = PersonaSlotContentProposalV1.model_validate(
+                    item,
+                    strict=True,
                 )
+            except ValidationError as exc:
+                raise RuntimeError("setting_model_invalid_payload") from exc
+            returned_slots.append(
+                PersonaSlot(
+                    kind=proposal.kind,
+                    label=proposal.label,
+                    content=proposal.content,
+                    weight=proposal.weight,
+                    locked=proposal.locked,
+                    sort_order=proposal.sort_order,
+                )
+            )
         if not returned_slots:
             raise RuntimeError("setting_model_invalid_payload")
         return {
@@ -1868,16 +1883,20 @@ class OpenAIModelProvider(MockModelProvider):
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，字段保持与 schema 一致，不要添加额外说明。",
         )
         slot_raw = parsed.get("slot")
-        if not isinstance(slot_raw, dict) or not slot_raw.get("kind") or not slot_raw.get("content"):
+        if not isinstance(slot_raw, dict):
             raise RuntimeError("setting_model_invalid_payload")
+        try:
+            proposal = PersonaSlotContentProposalV1.model_validate(slot_raw, strict=True)
+        except ValidationError as exc:
+            raise RuntimeError("setting_model_invalid_payload") from exc
         return {
             "slot": PersonaSlot(
-                kind=str(slot_raw.get("kind")),
-                label=str(slot_raw.get("label") or slot_raw.get("kind")),
-                content=str(slot_raw.get("content")),
-                weight=float(slot_raw.get("weight") or slot.weight),
-                locked=bool(slot_raw.get("locked") if slot_raw.get("locked") is not None else slot.locked),
-                sort_order=int(slot_raw.get("sort_order") if slot_raw.get("sort_order") is not None else slot.sort_order),
+                kind=proposal.kind,
+                label=proposal.label,
+                content=proposal.content,
+                weight=proposal.weight,
+                locked=proposal.locked,
+                sort_order=proposal.sort_order,
             ).model_dump()
         }
 
@@ -3633,25 +3652,12 @@ def _normalize_generated_persona_cards(parsed: dict[str, object]) -> list[dict[s
     cards: list[dict[str, object]] = []
     for item in raw_cards:
         if not isinstance(item, dict):
-            continue
-        title = str(item.get("title") or "").strip()
-        kind = str(item.get("kind") or "").strip() or "custom"
-        label = str(item.get("label") or kind).strip() or kind
-        content = str(item.get("content") or "").strip()
-        if not title or not content:
-            continue
-        tags_raw = item.get("tags")
-        tags = [str(tag).strip() for tag in tags_raw] if isinstance(tags_raw, list) else []
-        cards.append(
-            {
-                "title": title,
-                "kind": kind,
-                "label": label,
-                "content": content,
-                "tags": [tag for tag in tags if tag],
-                "source_note": str(item.get("source_note") or "").strip(),
-            }
-        )
+            raise RuntimeError("setting_model_invalid_payload")
+        try:
+            proposal = PersonaCardContentProposalV1.model_validate(item, strict=True)
+        except ValidationError as exc:
+            raise RuntimeError("setting_model_invalid_payload") from exc
+        cards.append(proposal.model_dump(mode="python", exclude_none=False))
     if not cards:
         raise RuntimeError("setting_model_invalid_payload")
     return cards

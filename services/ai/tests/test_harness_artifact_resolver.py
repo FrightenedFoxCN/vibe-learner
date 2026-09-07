@@ -263,6 +263,7 @@ class HarnessArtifactResolverTests(unittest.TestCase):
         resolver = HarnessArtifactEvalResolver(
             self.repository,
             lambda _case, _binding: grant.grant_id,
+            now=lambda: NOW,
         )
 
         replay = resolver.resolve(case, binding)

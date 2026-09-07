@@ -79,6 +79,8 @@ export function StudyDialogPage() {
   const [requestedPage, setRequestedPage] = useState(0);
   const [headingHeight, setHeadingHeight] = useState(112);
   const [isHydrated, setIsHydrated] = useState(false);
+  const handleSwitchSectionRef = useRef(handleSwitchSection);
+  handleSwitchSectionRef.current = handleSwitchSection;
 
   const scheduleOptions = activePlan?.schedule ?? [];
   const currentSchedule =
@@ -144,9 +146,21 @@ export function StudyDialogPage() {
 
   const handleScheduleChange = useCallback(
     (scheduleId: string) => {
+      setRequestedScheduleId("");
       void navigateToSchedule(scheduleId);
     },
     [navigateToSchedule]
+  );
+
+  const handlePlanSelection = useCallback(
+    (planId: string) => {
+      // A manual choice supersedes a deep-link request that may still be
+      // waiting for the plan history to load.
+      setRequestedPlanId("");
+      setRequestedScheduleId("");
+      selectPlan(planId, PLAN_SWITCH_NOTICE);
+    },
+    [selectPlan]
   );
 
   const handleOpenCitation = useCallback((citation: Citation) => {
@@ -240,9 +254,15 @@ export function StudyDialogPage() {
   }, []);
 
   useEffect(() => {
-    if (!requestedPlanId || requestedPlanId === activePlan?.id) return;
+    if (!requestedPlanId) return;
+    if (requestedPlanId === activePlan?.id) {
+      setRequestedPlanId("");
+      return;
+    }
+    if (!planHistoryItems.some((item) => item.id === requestedPlanId)) return;
     selectPlan(requestedPlanId, PLAN_SWITCH_NOTICE);
-  }, [activePlan?.id, requestedPlanId, selectPlan]);
+    setRequestedPlanId("");
+  }, [activePlan?.id, planHistoryItems, requestedPlanId, selectPlan]);
 
   useEffect(() => {
     if (!scheduleOptions.length) { setSelectedScheduleId(""); return; }
@@ -252,6 +272,7 @@ export function StudyDialogPage() {
       requestedScheduleId !== selectedScheduleId
     ) {
       setSelectedScheduleId(requestedScheduleId);
+      setRequestedScheduleId("");
       return;
     }
     if (!selectedScheduleId || !scheduleOptions.some((item) => item.id === selectedScheduleId)) {
@@ -339,11 +360,10 @@ export function StudyDialogPage() {
   useEffect(() => {
     if (!studySession || !currentStudyUnitId) return;
     if (currentStudyUnitId !== studySession.studyUnitId) {
-      void handleSwitchSection(currentStudyUnitId);
+      void handleSwitchSectionRef.current(currentStudyUnitId);
     }
   }, [
     currentStudyUnitId,
-    handleSwitchSection,
     studySession?.id,
     studySession?.studyUnitId,
   ]);
@@ -484,7 +504,7 @@ export function StudyDialogPage() {
               id: item.id,
               title: `${item.courseTitle} · ${item.documentTitle}`,
             }))}
-            onSelectPlan={(planId) => selectPlan(planId, PLAN_SWITCH_NOTICE)}
+            onSelectPlan={handlePlanSelection}
             onCreateSession={() => { void createSessionForActivePlan(); }}
             showCreateSession={!studySession && Boolean(activePlan)}
             onAsk={handleAskByCurrentChapter}

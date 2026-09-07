@@ -39,12 +39,18 @@ struct ManagedSidecar {
     child: Option<Child>,
 }
 
-impl Drop for ManagedSidecar {
-    fn drop(&mut self) {
-        if let Some(child) = self.child.as_mut() {
+impl ManagedSidecar {
+    fn shutdown(&mut self) {
+        if let Some(mut child) = self.child.take() {
             let _ = child.kill();
             let _ = child.wait();
         }
+    }
+}
+
+impl Drop for ManagedSidecar {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -55,6 +61,14 @@ struct DesktopAppState {
     vault_state: &'static str,
     startup_error: String,
     _sidecar: Mutex<ManagedSidecar>,
+}
+
+impl DesktopAppState {
+    fn shutdown_sidecar(&self) {
+        if let Ok(mut sidecar) = self._sidecar.lock() {
+            sidecar.shutdown();
+        }
+    }
 }
 
 #[tauri::command]
@@ -316,8 +330,7 @@ fn bundled_onnxtr_model_dir(app: &tauri::AppHandle) -> Option<PathBuf> {
 }
 
 fn stronghold_key_deriver(password: &str) -> Vec<u8> {
-    let params = Params::new(64 * 1024, 3, 1, Some(32))
-        .expect("argon2 params should be valid");
+    let params = Params::new(64 * 1024, 3, 1, Some(32)).expect("argon2 params should be valid");
     let mut output = [0_u8; 32];
     Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
         .hash_password_into(password.as_bytes(), b"vibe-learner-stronghold", &mut output)
@@ -413,9 +426,12 @@ fn emit_desktop_view_event<R: Runtime>(app: &tauri::AppHandle<R>, event_name: &s
 
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_stronghold::Builder::new(|password| {
-            stronghold_key_deriver(password.as_ref())
-        }).build())
+        .plugin(
+            tauri_plugin_stronghold::Builder::new(|password| {
+                stronghold_key_deriver(password.as_ref())
+            })
+            .build(),
+        )
         .invoke_handler(tauri::generate_handler![desktop_runtime_config])
         .setup(|app| {
             install_desktop_menu(&app.handle())?;
@@ -441,6 +457,14 @@ pub fn run() {
                 emit_desktop_view_event(app, DESKTOP_VIEW_TOGGLE_DEBUG_EVENT);
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running vibe learner desktop shell");
+        .build(tauri::generate_context!())
+        .expect("error while building vibe learner desktop shell")
+        .run(|app, event| match event {
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
+                if let Some(state) = app.try_state::<DesktopAppState>() {
+                    state.shutdown_sidecar();
+                }
+            }
+            _ => {}
+        });
 }

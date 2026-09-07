@@ -64,6 +64,18 @@ class _FakeArrangement:
         ]
 
 
+class _UnavailableOcrParser(_FakeParser):
+    def parse(self, **kwargs: object) -> DocumentDebugRecord:
+        self.force_ocr_calls.append(bool(kwargs["force_ocr"]))
+        return _debug_report(str(kwargs["document_id"])).model_copy(
+            update={
+                "ocr_status": "unavailable",
+                "ocr_applied": False,
+                "ocr_warnings": ["ocr_engine_unavailable"],
+            }
+        )
+
+
 class DocumentProcessOperationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
@@ -124,6 +136,15 @@ class DocumentProcessOperationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "cleanup_failed"):
             service.process_document(document.id)
+
+        self._assert_failed_without_debug(service, document.id)
+
+    def test_forced_ocr_unavailable_does_not_commit_a_synthetic_study_unit(self) -> None:
+        service = self._service(parser=_UnavailableOcrParser())
+        document = self._create_document(service, "ocr-unavailable.pdf")
+
+        with self.assertRaisesRegex(RuntimeError, "document_ocr_unavailable"):
+            service.process_document(document.id, force_ocr=True)
 
         self._assert_failed_without_debug(service, document.id)
 

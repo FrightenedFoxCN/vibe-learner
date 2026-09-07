@@ -1,0 +1,35 @@
+465: 2026-09-05 23:50:11,366 | INFO | vibe_learner.api | request.start id=a68c43f7 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+466: 2026-09-05 23:50:11,367 | INFO | vibe_learner.api | request.start id=eaae561b method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+467: 2026-09-05 23:50:11,381 | INFO | vibe_learner.api | request.end id=a68c43f7 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=15
+469: 2026-09-05 23:50:11,385 | INFO | vibe_learner.api | request.end id=eaae561b method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=18
+471: 2026-09-05 23:50:11,408 | INFO | vibe_learner.api | request.start id=4f2cb5b6 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+473: 2026-09-05 23:50:11,418 | INFO | vibe_learner.api | request.start id=1c3ab19e method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+474: 2026-09-05 23:50:11,424 | INFO | vibe_learner.api | request.start id=4d6c38e5 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+477: 2026-09-05 23:50:11,435 | INFO | vibe_learner.api | request.end id=4f2cb5b6 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=27
+480: 2026-09-05 23:50:11,486 | INFO | vibe_learner.api | request.end id=1c3ab19e method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=67
+483: 2026-09-05 23:50:11,501 | INFO | vibe_learner.api | request.end id=41ab9f68 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=75
+614: 2026-09-05 23:50:11,842 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-bb8c1558f4 operation_id=study-chat-op-d97f42b7b83e4204 error_code=study_chat_execution_uncertain
+615: Traceback (most recent call last):
+616:   File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1532, in _admit_and_run_study_chat
+617:     response_payload = _run_study_chat(
+618:                        ^^^^^^^^^^^^^^^^
+619:   File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2058, in _run_study_chat
+620:     container.study_session_repository.commit_chat_operation_turn(
+621:   File "/Users/ffox/vibe-learner/services/ai/app/persistence/study_session_repository.py", line 597, in commit_chat_operation_turn
+622:     runtime_commit_callback(session, record, turn_id, next_sequence)
+623:   File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2004, in finalize_study_runtime
+624:     projection = build_study_session_turn_committed_projection(
+625:                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+626:   File "/Users/ffox/vibe-learner/services/ai/app/models/study_chat_commit.py", line 78, in build_study_session_turn_committed_projection
+627:     raise ValueError("study_chat_committed_session_revision_mismatch")
+628: ValueError: study_chat_committed_session_revision_mismatch
+21849: 2026-09-05 23:50:56,561 | INFO | vibe_learner.api | request.start id=1a184110 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+21850: 2026-09-05 23:50:56,561 | INFO | vibe_learner.api | request.start id=34e04236 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+21851: 2026-09-05 23:50:56,565 | INFO | vibe_learner.api | request.start id=e8c5b63f method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+21852: 2026-09-05 23:50:56,565 | INFO | vibe_learner.api | request.start id=1b8fd5e7 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+21853: 2026-09-05 23:50:56,565 | INFO | vibe_learner.api | request.start id=5a0eb860 method=PATCH path=/study-sessions/session-bb8c1558f4 query=
+21884: 2026-09-05 23:50:56,648 | INFO | vibe_learner.api | request.end id=942444b6 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=87
+21885: 2026-09-05 23:50:56,648 | INFO | vibe_learner.api | request.end id=335aec2f method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=86
+21886: 2026-09-05 23:50:56,650 | INFO | vibe_learner.api | request.end id=fe1df880 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=90
+21887: 2026-09-05 23:50:56,658 | INFO | vibe_learner.api | request.end id=6e32e742 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=106
+21892: 2026-09-05 23:50:56,671 | INFO | vibe_learner.api | request.end id=34e04236 method=PATCH path=/study-sessions/session-bb8c1558f4 status=200 duration_ms=109

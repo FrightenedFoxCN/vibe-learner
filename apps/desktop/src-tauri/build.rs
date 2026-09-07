@@ -10,7 +10,8 @@ fn main() {
 }
 
 fn generate_desktop_icon() {
-    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("missing CARGO_MANIFEST_DIR"));
+    let manifest_dir =
+        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("missing CARGO_MANIFEST_DIR"));
     let icons_dir = manifest_dir.join("icons");
     let source_svg = icons_dir.join("icon-source.svg");
     let generator_script = manifest_dir

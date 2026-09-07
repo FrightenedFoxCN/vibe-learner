@@ -1290,6 +1290,37 @@ class TavernRepository:
         expected_revision: int,
     ) -> TavernRoomDetail:
         with self.database.session() as session:
+            current_persona_ids = set(
+                session.scalars(
+                    select(TavernParticipantRow.persona_id).where(
+                        TavernParticipantRow.room_id == room.id
+                    )
+                ).all()
+            )
+            next_persona_ids = {item.persona_id for item in participants}
+            removed_persona_ids = current_persona_ids - next_persona_ids
+            if removed_persona_ids:
+                referenced_message_persona = session.scalar(
+                    select(TavernMessageRow.persona_id)
+                    .where(
+                        TavernMessageRow.room_id == room.id,
+                        TavernMessageRow.persona_id.in_(removed_persona_ids),
+                    )
+                    .limit(1)
+                )
+                referenced_step_persona = session.scalar(
+                    select(TavernRunStepRow.persona_id)
+                    .join(TavernRunRow, TavernRunRow.id == TavernRunStepRow.run_id)
+                    .where(
+                        TavernRunRow.room_id == room.id,
+                        TavernRunStepRow.persona_id.in_(removed_persona_ids),
+                    )
+                    .limit(1)
+                )
+                if referenced_message_persona or referenced_step_persona:
+                    raise TavernParticipantHistoryConflict(
+                        sorted(removed_persona_ids)
+                    )
             pending_run_exists = select(TavernRunRow.id).where(
                 TavernRunRow.room_id == room.id,
                 TavernRunRow.status == TavernRunStatus.PENDING.value,
@@ -1765,6 +1796,13 @@ class TavernRunInProgress(RuntimeError):
     def __init__(self, run_id: str) -> None:
         super().__init__(f"tavern_run_in_progress:{run_id}")
         self.run_id = run_id
+
+
+class TavernParticipantHistoryConflict(RuntimeError):
+    def __init__(self, persona_ids: list[str]) -> None:
+        joined = ",".join(persona_ids)
+        super().__init__(f"tavern_participant_history_conflict:{joined}")
+        self.persona_ids = tuple(persona_ids)
 
 
 class TavernIdempotencyConflict(RuntimeError):

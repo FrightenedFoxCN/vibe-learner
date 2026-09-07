@@ -158,7 +158,7 @@ class StudyArrangementService:
             if (
                 page_start >= max(1, debug_report.page_count - 5)
                 and unit_kind == "chapter"
-                and not re.match(r"^\d+(?:\.\d+)*\.?\s+", title)
+                and not self._looks_like_primary_chapter_title(title)
             ):
                 unit_kind = "back_matter"
             include_in_plan = unit_kind == "chapter"
@@ -495,6 +495,15 @@ class StudyArrangementService:
         if any(token in lowered for token in ("references", "bibliography", "index")):
             return "back_matter"
         return "chapter"
+
+    def _looks_like_primary_chapter_title(self, title: str) -> bool:
+        return bool(
+            re.match(
+                r"^(?:\d+(?:\.\d+)*\.?\s+|chapter\s+|part\s+|appendix\s+)",
+                title,
+                re.IGNORECASE,
+            )
+        )
 
     def _build_unit_summary(
         self, *, title: str, unit_kind: str, page_start: int, page_end: int

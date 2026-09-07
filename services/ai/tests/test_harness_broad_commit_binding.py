@@ -12,6 +12,7 @@ from app.models.harness import HarnessArtifactType, HarnessStage, canonical_harn
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.models.planning import LearningPlanOperationRequestV1, LearningPlanOperationStatus
 from app.services.documents import DocumentService
+from app.models.domain import DocumentSection
 from app.services.harness_broad_adoption import (
     DocumentProcessInputManifest,
     DocumentProcessRuntimeOutputV1,
@@ -282,6 +283,48 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
             binding.harness_operation_id
         )
         self.assertEqual([item.stage for item in traces], [HarnessStage.DOCUMENT_PARSE, HarnessStage.PAGE_EXTRACTION])
+
+    def test_failed_child_stage_trace_is_terminally_failed(self):
+        operation, document, report, prepared, _runtime = self._prepare_document("child-stage-failed")
+        binding = self.documents.process_repository.require_harness_operation(operation.operation_id)
+        trace = self.documents.harness_service.emit_document_stage_evidence(
+            operation_binding=binding,
+            parent_trace_id=prepared.execution.trace_id,
+            stage=HarnessStage.PAGE_EXTRACTION,
+            trace_slot=1,
+            input_manifest=DocumentStageInputManifest(
+                document_id=document.id,
+                stage="page_extraction",
+                item_count=report.page_count,
+            ),
+            evidence=DocumentStageEvidenceV1(
+                stage="page_extraction",
+                outcome="failed",
+                item_count=report.page_count,
+                warning_count=0,
+                source_digest=canonical_harness_digest(
+                    [item.model_dump(mode="json") for item in report.pages]
+                ),
+            ),
+            artifact_type=HarnessArtifactType.DOCUMENT_UPLOAD,
+        )
+        self.assertEqual(trace.status.value, "failed")
+        self.assertTrue(any(item.status.value == "failed" for item in trace.checks))
+
+    def test_document_runtime_output_rejects_malformed_section_bounds(self):
+        report = _debug_report("doc-bounds")
+        report.sections = [
+            DocumentSection(
+                id="doc-bounds:section:1",
+                document_id="doc-bounds",
+                title="Chapter 1",
+                page_start=0,
+                page_end=1,
+                level=1,
+            )
+        ]
+        with self.assertRaises(ValueError):
+            DocumentProcessRuntimeOutputV1(debug_report=report, study_units=[])
 
     def test_planning_tool_stage_trace_records_validated_result_digest(self):
         operation, output, prepared, _runtime = self._prepare_plan("tool-stage")

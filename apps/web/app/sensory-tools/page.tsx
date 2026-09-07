@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ModelToolConfig, ModelToolConfigItem, ModelToolStageConfig } from "@vibe-learner/shared";
 
 import { TopNav } from "../../components/top-nav";
@@ -12,6 +12,9 @@ export default function SensoryToolsPage() {
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState("");
   const [error, setError] = useState("");
+  const configRef = useRef<ModelToolConfig | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSaveCountRef = useRef(0);
 
   const debugSnapshot = useMemo(
     () => ({
@@ -45,6 +48,7 @@ export default function SensoryToolsPage() {
       try {
         const payload = await getModelToolConfig();
         if (!cancelled) {
+          configRef.current = payload;
           setConfig(payload);
         }
       } catch (err) {
@@ -70,6 +74,9 @@ export default function SensoryToolsPage() {
     await handleBatchUpdate(
       {
         config,
+        configRef,
+        saveQueueRef,
+        pendingSaveCountRef,
         setConfig,
         setSavingKey,
         setError
@@ -97,6 +104,9 @@ export default function SensoryToolsPage() {
     await handleBatchUpdate(
       {
         config,
+        configRef,
+        saveQueueRef,
+        pendingSaveCountRef,
         setConfig,
         setSavingKey,
         setError
@@ -246,6 +256,9 @@ function StageBadge({ enabled, reason }: { enabled: boolean; reason: string }) {
 async function handleBatchUpdate(
   input: {
     config: ModelToolConfig;
+    configRef: { current: ModelToolConfig | null };
+    saveQueueRef: { current: Promise<void> };
+    pendingSaveCountRef: { current: number };
     setConfig: (next: ModelToolConfig) => void;
     setSavingKey: (next: string) => void;
     setError: (next: string) => void;
@@ -256,19 +269,36 @@ async function handleBatchUpdate(
   if (!toggles.length) {
     return;
   }
-  const snapshot = input.config;
+  input.pendingSaveCountRef.current += 1;
   input.setSavingKey(key);
-  input.setError("");
-  input.setConfig(applyToggles(snapshot, toggles));
-  try {
-    const nextConfig = await updateModelToolConfig(toggles);
-    input.setConfig(nextConfig);
-  } catch (err) {
-    input.setConfig(snapshot);
-    input.setError(String(err));
-  } finally {
-    input.setSavingKey("");
-  }
+
+  const run = async () => {
+    const snapshot = input.configRef.current ?? input.config;
+    const optimisticConfig = applyToggles(snapshot, toggles);
+    input.setError("");
+    input.configRef.current = optimisticConfig;
+    input.setConfig(optimisticConfig);
+    try {
+      const nextConfig = await updateModelToolConfig(toggles);
+      input.configRef.current = nextConfig;
+      input.setConfig(nextConfig);
+    } catch (err) {
+      // Requests are serialized so this rollback cannot erase a newer
+      // optimistic update or a newer server response.
+      input.configRef.current = snapshot;
+      input.setConfig(snapshot);
+      input.setError(String(err));
+    } finally {
+      input.pendingSaveCountRef.current -= 1;
+      if (input.pendingSaveCountRef.current === 0) {
+        input.setSavingKey("");
+      }
+    }
+  };
+
+  const queued = input.saveQueueRef.current.then(run, run);
+  input.saveQueueRef.current = queued.catch(() => undefined);
+  await queued;
 }
 
 function applyToggles(

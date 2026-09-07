@@ -112,6 +112,7 @@ export default function PersonaSpectrumPage() {
   const cardGenerationFenceRef = useRef(new AsyncResultFence());
   const configImportFenceRef = useRef(new AsyncResultFence());
   const saveFenceRef = useRef(new AsyncResultFence());
+  const reloadFenceRef = useRef(new AsyncResultFence());
 
   const [draft, setDraft] = useState<PersonaDraft>(EMPTY_PERSONA_DRAFT);
   const [draftBaselineFingerprint, setDraftBaselineFingerprint] = useState(
@@ -199,6 +200,7 @@ export default function PersonaSpectrumPage() {
       draftRevisionRef.current += 1;
       assistFenceRef.current.invalidate();
       cardGenerationFenceRef.current.invalidate();
+      reloadFenceRef.current.invalidate();
       setAssistPending(false);
       setSlotAssistIndex(null);
       setCardActionPending(null);
@@ -813,10 +815,21 @@ export default function PersonaSpectrumPage() {
       return;
     }
     setLoadError("");
+    const targetPersonaId = selectedPersonaIdRef.current;
+    const reloadScope = currentPersonaAsyncScope("persona-reload");
+    const ticket = reloadFenceRef.current.begin(reloadScope);
     try {
       const latest = await listPersonas();
-      const reloaded = latest.find((persona) => persona.id === selectedPersonaIdRef.current);
       setPersonas(latest);
+      const decision = reloadFenceRef.current.decide(
+        ticket,
+        currentPersonaAsyncScope("persona-reload"),
+      );
+      if (decision !== "apply") {
+        setPersonaLibraryMessage("人格库已刷新，期间的编辑已保留。");
+        return;
+      }
+      const reloaded = latest.find((persona) => persona.id === targetPersonaId);
       if (!reloaded) {
         setLoadError("当前人格已不存在，请选择其他人格。");
         return;
@@ -826,6 +839,8 @@ export default function PersonaSpectrumPage() {
       setPersonaLibraryMessage(`已重新载入人格「${reloaded.name}」。`);
     } catch (error) {
       setLoadError(String(error));
+    } finally {
+      reloadFenceRef.current.settle(ticket);
     }
   }
 

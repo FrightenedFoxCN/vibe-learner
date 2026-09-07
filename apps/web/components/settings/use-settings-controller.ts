@@ -87,6 +87,11 @@ interface CachedProbeResult {
   sourceScope: ProbeScope;
 }
 
+interface PendingSettingsSave {
+  snapshot: RuntimeSettings;
+  serialized: string;
+}
+
 export function useSettingsController(): SettingsController {
   const runtimeSettings = useRuntimeSettings();
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
@@ -128,6 +133,7 @@ export function useSettingsController(): SettingsController {
   const lastSavedSerializedRef = useRef("");
   const blockedSerializedRef = useRef("");
   const savingRef = useRef(false);
+  const pendingSaveRef = useRef<PendingSettingsSave | null>(null);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
 
   useEffect(() => {
@@ -222,6 +228,9 @@ export function useSettingsController(): SettingsController {
         : backendNext;
       const nextSerialized = serializeSettings(next);
       lastSavedSerializedRef.current = nextSerialized;
+      if (pendingSaveRef.current?.serialized === serialized) {
+        pendingSaveRef.current = null;
+      }
       blockedSerializedRef.current = "";
       setLastSavedAt(next.updatedAt);
       runtimeSettings.replaceSettings(next);
@@ -234,6 +243,9 @@ export function useSettingsController(): SettingsController {
 
       setSavePhase("saved");
     } catch (err) {
+      if (pendingSaveRef.current?.serialized === serialized) {
+        pendingSaveRef.current = null;
+      }
       blockedSerializedRef.current = serialized;
       setSaveError(String(err));
       setSavePhase("error");
@@ -243,6 +255,26 @@ export function useSettingsController(): SettingsController {
     }
   });
 
+  const flushPendingSave = useEffectEvent(() => {
+    const pending = pendingSaveRef.current;
+    if (!pending || savingRef.current) {
+      return;
+    }
+    pendingSaveRef.current = null;
+    void persistSnapshot(pending.snapshot, pending.serialized);
+  });
+
+  useEffect(() => {
+    const handlePageHide = () => flushPendingSave();
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("pagehide", handlePageHide);
+      // Route transitions unmount this controller before the 900ms debounce
+      // fires. Flush the latest snapshot so navigation cannot drop a change.
+      flushPendingSave();
+    };
+  }, [flushPendingSave]);
+
   useEffect(() => {
     if (!initializedRef.current || !settings || runtimeSettings.loading) {
       return;
@@ -250,6 +282,9 @@ export function useSettingsController(): SettingsController {
 
     const serialized = serializeSettings(settings);
     if (serialized === lastSavedSerializedRef.current) {
+      if (pendingSaveRef.current?.serialized === serialized) {
+        pendingSaveRef.current = null;
+      }
       if (!isSaving) {
         setSavePhase("saved");
       }
@@ -257,6 +292,9 @@ export function useSettingsController(): SettingsController {
     }
 
     if (serialized === blockedSerializedRef.current) {
+      if (pendingSaveRef.current?.serialized === serialized) {
+        pendingSaveRef.current = null;
+      }
       if (!isSaving) {
         setSavePhase("error");
       }
@@ -266,12 +304,18 @@ export function useSettingsController(): SettingsController {
     if (!isSaving) {
       setSavePhase("pending");
     }
+    pendingSaveRef.current = { snapshot: settings, serialized };
     if (isSaving) {
       return;
     }
 
     const timer = window.setTimeout(() => {
-      void persistSnapshot(settings, serialized);
+      const pending = pendingSaveRef.current;
+      if (!pending || pending.serialized !== serialized) {
+        return;
+      }
+      pendingSaveRef.current = null;
+      void persistSnapshot(pending.snapshot, pending.serialized);
     }, AUTO_SAVE_DELAY_MS);
 
     return () => {
@@ -538,6 +582,7 @@ export function useSettingsController(): SettingsController {
       return;
     }
     blockedSerializedRef.current = "";
+    pendingSaveRef.current = null;
     setSavePhase("pending");
     void persistSnapshot(settings, serializeSettings(settings));
   }

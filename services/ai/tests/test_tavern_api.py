@@ -372,7 +372,6 @@ class TavernApiTests(unittest.TestCase):
             f"/tavern/rooms/{created['room']['id']}",
             json={"expected_revision": 0},
         )
-
         self.assertEqual(response.status_code, 400, response.text)
         self.assertEqual(
             response.json(),
@@ -386,6 +385,71 @@ class TavernApiTests(unittest.TestCase):
                 }
             },
         )
+
+    def test_roster_update_cannot_remove_a_participant_with_history(self) -> None:
+        created = self._create_room(creation_key="create-room-roster-history")
+        room_id = created["room"]["id"]
+        turn = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {"kind": "user_message", "content": "请保留这段历史。"},
+                "mode": "direct",
+                "target_persona_ids": [self.persona.id],
+                "idempotency_key": "turn-roster-history-1",
+                "expected_room_revision": 0,
+            },
+        )
+        self.assertEqual(turn.status_code, 200, turn.text)
+        actor_message = turn.json()["generated_messages"][0]
+        replacement = self.persona_engine.create_persona(
+            CreatePersonaRequest(
+                name="后来者",
+                summary="用于验证名册替换边界。",
+                relationship="同行者",
+                learner_address="你",
+                system_prompt="保持历史完整。",
+                slots=[],
+            )
+        )
+
+        update_response = self.client.patch(
+            f"/tavern/rooms/{room_id}",
+            json={
+                "persona_ids": [replacement.id],
+                "expected_revision": 1,
+            },
+        )
+
+        self.assertEqual(update_response.status_code, 409, update_response.text)
+        detail = update_response.json()["detail"]
+        self.assertEqual(detail["code"], "tavern_participant_history_conflict")
+        self.assertEqual(detail["current_revision"], 1)
+        self.assertEqual(detail["recovery_action"], "reload_room")
+        persisted = self.repository.require_room(room_id)
+        self.assertEqual(
+            [item.persona_id for item in persisted.participants],
+            [self.persona.id],
+        )
+        read_back = self.repository.get_actor_commit_read_back(
+            message_id=actor_message["id"]
+        )
+        self.assertEqual(read_back[0].id, actor_message["id"])
+        self.assertEqual(read_back[3][0].persona_id, self.persona.id)
+
+        continued = self.client.post(
+            f"/tavern/rooms/{room_id}/turns",
+            json={
+                "input": {
+                    "kind": "continue",
+                    "anchor_message_id": actor_message["id"],
+                },
+                "mode": "direct",
+                "target_persona_ids": [self.persona.id],
+                "idempotency_key": "turn-roster-history-2",
+                "expected_room_revision": 1,
+            },
+        )
+        self.assertEqual(continued.status_code, 200, continued.text)
 
     def test_failed_harness_keeps_user_message_and_failed_run_only(self) -> None:
         created = self._create_room(creation_key="create-room-leak-1")

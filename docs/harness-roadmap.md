@@ -88,6 +88,11 @@ These are baseline facts, not completion claims. A strict decoder, component
 version, fixture, operation journal, CAS boundary, or effect adapter does not by
 itself make a workflow Harness-adopted.
 
+The 2026-09-06 audit found implementation defects across the Wave 4 slices;
+their remediation is recorded in `audit-2026-09-06-remediation.md`. The Wave 4
+checkboxes continue to describe implementation registration, while independent
+browser, desktop, live-wire, and unregistered-suite acceptance remains open.
+
 ## Program epics
 
 The following IDs are tracking epics and are not directly claimable:

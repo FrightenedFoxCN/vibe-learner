@@ -1,0 +1,22 @@
+21903: 2026-09-05 23:52:50,763 | INFO | vibe_learner.api | request.start id=fcbfae7a method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+21904: 2026-09-05 23:52:50,797 | INFO | vibe_learner.api | request.end id=fcbfae7a method=POST path=/study-sessions/session-5c6f98dd49/chat status=200 duration_ms=33
+21906: 2026-09-05 23:52:51,047 | INFO | vibe_learner.api | request.start id=2a50c967 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+21907: 2026-09-05 23:52:51,095 | INFO | vibe_learner.api | request.end id=2a50c967 method=POST path=/study-sessions/session-5c6f98dd49/chat status=200 duration_ms=47
+111245: 2026-09-05 23:56:29,081 | INFO | vibe_learner.api | request.start id=e076b593 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+111246: 2026-09-05 23:56:29,084 | INFO | vibe_learner.api | request.end id=e076b593 method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=2
+111248: 2026-09-05 23:56:29,088 | INFO | vibe_learner.api | request.start id=80fc0326 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+111252: 2026-09-05 23:56:29,092 | INFO | vibe_learner.api | request.end id=80fc0326 method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=4
+111254: 2026-09-05 23:56:29,096 | INFO | vibe_learner.api | request.start id=28cf63bf method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+111257: 2026-09-05 23:56:29,101 | INFO | vibe_learner.api | request.end id=28cf63bf method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=5
+111259: 2026-09-05 23:56:29,104 | INFO | vibe_learner.api | request.start id=3077b089 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+111260: 2026-09-05 23:56:29,107 | INFO | vibe_learner.api | request.end id=3077b089 method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=3
+111264: 2026-09-05 23:56:29,110 | INFO | vibe_learner.api | request.start id=cbd97542 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+111265: 2026-09-05 23:56:29,111 | INFO | vibe_learner.api | request.end id=cbd97542 method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=1
+172670: 2026-09-05 23:57:28,189 | INFO | vibe_learner.api | request.start id=85cc8697 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+172671: 2026-09-05 23:57:28,190 | INFO | vibe_learner.api | request.end id=85cc8697 method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=1
+172673: 2026-09-05 23:57:28,192 | INFO | vibe_learner.api | request.start id=90ed5a0d method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+172674: 2026-09-05 23:57:28,193 | INFO | vibe_learner.api | request.end id=90ed5a0d method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=0
+172676: 2026-09-05 23:57:28,195 | INFO | vibe_learner.api | request.start id=fb70e8dc method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+172677: 2026-09-05 23:57:28,196 | INFO | vibe_learner.api | request.end id=fb70e8dc method=POST path=/study-sessions/session-5c6f98dd49/chat status=409 duration_ms=1
+172698: 2026-09-05 23:57:55,818 | INFO | vibe_learner.api | request.start id=6521cbe7 method=POST path=/study-sessions/session-5c6f98dd49/chat query=
+172701: 2026-09-05 23:57:55,852 | INFO | vibe_learner.api | request.end id=6521cbe7 method=POST path=/study-sessions/session-5c6f98dd49/chat status=200 duration_ms=34

@@ -59,10 +59,39 @@ jobs:
               )
           PY
 
+  check-release:
+    name: Check Release Gate
+    runs-on: ubuntu-22.04
+    needs: validate-version
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: python -m pip install uv
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Run release gate
+        run: npm run check:release
+
   build-release:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    needs: validate-version
+    needs: check-release
     strategy:
       fail-fast: false
       matrix:
@@ -130,6 +159,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs:
       - validate-version
+      - check-release
       - build-release
 
     steps:

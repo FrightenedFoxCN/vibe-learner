@@ -258,6 +258,14 @@ class LearningPlanService:
                     for item in round_record.tool_calls
                 ]
                 for tool_index, tool_call in enumerate(tool_calls, start=1):
+                    tool_duration_ms = next(
+                        (
+                            round_record.elapsed_ms
+                            for round_record in trace.rounds
+                            if tool_call in round_record.tool_calls
+                        ),
+                        0,
+                    )
                     tool_call_id = tool_call.tool_call_id or "unattributed"
                     try:
                         result_payload = json.loads(tool_call.result_json)
@@ -278,6 +286,7 @@ class LearningPlanService:
                             and result_payload.get("ok") is False
                             else "validated"
                         ),
+                        duration_ms=tool_duration_ms,
                     )
                     self.harness_service.emit_planning_tool_evidence(
                         operation_binding=operation_binding,

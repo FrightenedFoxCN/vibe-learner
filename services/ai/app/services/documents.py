@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import base64
 from pathlib import Path
+import time
 from typing import Callable
 from uuid import uuid4
 
@@ -113,6 +114,7 @@ class DocumentService:
             raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
         runtime_prepared: HarnessRuntimePreparedOutput | None = None
         harness_runtime: HarnessOperationRuntime | None = None
+        stage_timings: dict[str, int] = {}
         try:
             operation_binding = self.process_repository.require_harness_operation(operation.operation_id)
             if operation_admitted_callback is not None:
@@ -165,6 +167,7 @@ class DocumentService:
                         handle.write(upload)
                         temp_path = Path(handle.name)
                     try:
+                        parser_started_at = time.perf_counter()
                         report = self.parser.parse(
                             document_id=source_document.id,
                             title=source_document.title,
@@ -173,11 +176,31 @@ class DocumentService:
                             progress_callback=progress_callback,
                             interrupt_check=interrupt_check,
                         )
+                        parser_duration_ms = max(
+                            0, int((time.perf_counter() - parser_started_at) * 1000)
+                        )
+                        stage_timings.update(
+                            {
+                                "page_extraction": parser_duration_ms,
+                                "section_detection": parser_duration_ms,
+                                "chunk_building": parser_duration_ms,
+                                "ocr_page": parser_duration_ms,
+                            }
+                        )
                     except fitz.FileDataError as error:
                         raise RuntimeError("document_process_invalid_pdf") from error
-                    units = self.arrangement_service.build_study_units(
-                        document=source_document,
-                        debug_report=report,
+                    cleanup_started_at = time.perf_counter()
+                    units = (
+                        []
+                        if source_force_ocr
+                        and report.ocr_status in {"unavailable", "failed"}
+                        else self.arrangement_service.build_study_units(
+                            document=source_document,
+                            debug_report=report,
+                        )
+                    )
+                    stage_timings["study_unit_cleanup"] = max(
+                        0, int((time.perf_counter() - cleanup_started_at) * 1000)
                     )
                     return DocumentProcessRuntimeOutputV1(
                         debug_report=report,
@@ -244,7 +267,7 @@ class DocumentService:
             document.debug_ready = True
             document.updated_at = _now()
             parent_trace_id = runtime_prepared.execution.trace_id
-            self.harness_service.emit_document_stage_evidence(
+            page_trace = self.harness_service.emit_document_stage_evidence(
                 operation_binding=operation_binding,
                 parent_trace_id=parent_trace_id,
                 stage=HarnessStage.PAGE_EXTRACTION,
@@ -259,6 +282,7 @@ class DocumentService:
                     outcome="passed",
                     item_count=debug_report.page_count,
                     warning_count=len(debug_report.warnings),
+                    duration_ms=stage_timings.get("page_extraction", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in debug_report.pages]
                     ),
@@ -268,7 +292,9 @@ class DocumentService:
                     "pages": [item.model_dump(mode="json") for item in debug_report.pages]
                 },
             )
-            self.harness_service.emit_document_stage_evidence(
+            if page_trace.status.value == "failed":
+                raise RuntimeError(page_trace.error_code or "document_page_extraction_stage_failed")
+            section_trace = self.harness_service.emit_document_stage_evidence(
                 operation_binding=operation_binding,
                 parent_trace_id=parent_trace_id,
                 stage=HarnessStage.SECTION_DETECTION,
@@ -283,6 +309,7 @@ class DocumentService:
                     outcome="passed",
                     item_count=len(debug_report.sections),
                     warning_count=len(debug_report.warnings),
+                    duration_ms=stage_timings.get("section_detection", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in debug_report.sections]
                     ),
@@ -292,7 +319,9 @@ class DocumentService:
                     "sections": [item.model_dump(mode="json") for item in debug_report.sections]
                 },
             )
-            self.harness_service.emit_document_stage_evidence(
+            if section_trace.status.value == "failed":
+                raise RuntimeError(section_trace.error_code or "document_section_detection_stage_failed")
+            chunk_trace = self.harness_service.emit_document_stage_evidence(
                 operation_binding=operation_binding,
                 parent_trace_id=parent_trace_id,
                 stage=HarnessStage.CHUNK_BUILDING,
@@ -307,6 +336,7 @@ class DocumentService:
                     outcome="passed",
                     item_count=len(debug_report.chunks),
                     warning_count=len(debug_report.warnings),
+                    duration_ms=stage_timings.get("chunk_building", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in debug_report.chunks]
                     ),
@@ -316,7 +346,9 @@ class DocumentService:
                     "chunks": [item.model_dump(mode="json") for item in debug_report.chunks]
                 },
             )
-            self.harness_service.emit_ocr_stage_evidence(
+            if chunk_trace.status.value == "failed":
+                raise RuntimeError(chunk_trace.error_code or "document_chunk_building_stage_failed")
+            ocr_trace = self.harness_service.emit_ocr_stage_evidence(
                 document_id=document.id,
                 input_manifest=DocumentStageInputManifest(
                     document_id=document.id,
@@ -325,9 +357,18 @@ class DocumentService:
                 ),
                 evidence=DocumentStageEvidenceV1(
                     stage="ocr_page",
-                    outcome=("applied" if debug_report.ocr_applied else "not_needed"),
+                    outcome=(
+                        "applied"
+                        if debug_report.ocr_applied
+                        else "unavailable"
+                        if debug_report.ocr_status == "unavailable"
+                        else "failed"
+                        if debug_report.ocr_status == "failed"
+                        else "not_needed"
+                    ),
                     item_count=debug_report.page_count,
                     warning_count=len(debug_report.warnings),
+                    duration_ms=stage_timings.get("ocr_page", 0),
                     source_digest=canonical_harness_digest(
                         {
                             "ocr_status": debug_report.ocr_status,
@@ -344,7 +385,7 @@ class DocumentService:
                     "pages": [item.model_dump(mode="json") for item in debug_report.pages]
                 },
             )
-            self.harness_service.emit_study_unit_cleanup_evidence(
+            cleanup_trace = self.harness_service.emit_study_unit_cleanup_evidence(
                 document_id=document.id,
                 input_manifest=DocumentStageInputManifest(
                     document_id=document.id,
@@ -356,6 +397,7 @@ class DocumentService:
                     outcome="passed",
                     item_count=len(study_units),
                     warning_count=len(debug_report.warnings),
+                    duration_ms=stage_timings.get("study_unit_cleanup", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in study_units]
                     ),
@@ -364,6 +406,10 @@ class DocumentService:
                     "study_units": [item.model_dump(mode="json") for item in study_units]
                 },
             )
+            if cleanup_trace.status.value == "failed":
+                raise RuntimeError(cleanup_trace.error_code or "document_study_unit_cleanup_stage_failed")
+            if force_ocr and debug_report.ocr_status in {"unavailable", "failed"}:
+                raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
             self.process_repository.commit_success(
                 operation_id=operation.operation_id,
                 document=document,

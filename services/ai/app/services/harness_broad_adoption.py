@@ -238,9 +238,9 @@ class PersonaSlotContentProposalV1(_StrictModel):
     kind: str = Field(min_length=1, max_length=160)
     label: str = Field(min_length=1, max_length=500)
     content: str = Field(min_length=1, max_length=8000)
-    weight: float = Field(ge=0, le=100)
-    locked: bool
-    sort_order: int = Field(ge=0, le=10000)
+    weight: float = Field(default=1.0, ge=0, le=100)
+    locked: bool = False
+    sort_order: int = Field(default=0, ge=0, le=10000)
 
 
 class PersonaGenerationProposalV1(_StrictModel):
@@ -295,16 +295,63 @@ class DocumentProcessRuntimeOutputV1(_StrictModel):
 
     @model_validator(mode="after")
     def validate_document_output(self) -> "DocumentProcessRuntimeOutputV1":
-        if self.debug_report.page_count != len(self.debug_report.pages):
+        page_count = self.debug_report.page_count
+        if page_count < 1 or self.debug_report.total_characters < 0:
+            raise ValueError("document_counts_invalid")
+        if page_count != len(self.debug_report.pages):
             raise ValueError("document_page_coverage_invalid")
         page_numbers = [item.page_number for item in self.debug_report.pages]
-        if page_numbers != list(range(1, self.debug_report.page_count + 1)):
+        if page_numbers != list(range(1, page_count + 1)):
             raise ValueError("document_page_order_invalid")
+        for page in self.debug_report.pages:
+            if page.char_count < 0 or page.word_count < 0:
+                raise ValueError("document_page_counts_invalid")
+            if page.char_count == 0 and page.word_count != 0:
+                raise ValueError("document_page_word_count_invalid")
+
+        sections = self.debug_report.sections
+        section_ids = {section.id for section in sections}
+        if len(section_ids) != len(sections):
+            raise ValueError("document_section_identity_invalid")
+        for section in sections:
+            if (
+                section.document_id != self.debug_report.document_id
+                or section.level < 1
+                or section.page_start < 1
+                or section.page_end < section.page_start
+                or section.page_end > page_count
+            ):
+                raise ValueError("document_section_boundary_invalid")
+
+        chunks = self.debug_report.chunks
+        chunk_ids = {chunk.id for chunk in chunks}
+        if len(chunk_ids) != len(chunks):
+            raise ValueError("document_chunk_identity_invalid")
+        for chunk in chunks:
+            if (
+                chunk.document_id != self.debug_report.document_id
+                or (sections and chunk.section_id not in section_ids)
+                or chunk.page_start < 1
+                or chunk.page_end < chunk.page_start
+                or chunk.page_end > page_count
+                or chunk.char_count < 0
+            ):
+                raise ValueError("document_chunk_boundary_invalid")
+
+        def is_synthetic_study_anchor(section_id: str) -> bool:
+            prefix = f"{self.debug_report.document_id}:study-anchor:"
+            return section_id.startswith(prefix) and len(section_id) > len(prefix)
+
         if any(
             unit.document_id != self.debug_report.document_id
             or unit.page_start < 1
             or unit.page_end < unit.page_start
-            or unit.page_end > max(1, self.debug_report.page_count)
+            or unit.page_end > page_count
+            or any(
+                section_id not in section_ids
+                and not is_synthetic_study_anchor(section_id)
+                for section_id in unit.source_section_ids
+            )
             for unit in self.study_units
         ):
             raise ValueError("study_unit_boundary_invalid")
@@ -369,6 +416,9 @@ class DocumentStageEvidenceV1(_StrictModel):
     item_count: int = Field(ge=0)
     warning_count: int = Field(ge=0)
     source_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    attempt_count: int = Field(default=1, ge=1, le=3)
+    duration_ms: int = Field(default=0, ge=0, le=86_400_000)
+    evidence_source: Literal["observed_runtime"] = "observed_runtime"
 
 
 class PlanningToolExecutionInputManifest(HarnessSafeManifest):
@@ -394,6 +444,9 @@ class PlanningToolExecutionEvidenceV1(_StrictModel):
     arguments_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     result_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     outcome: Literal["validated", "failed"]
+    attempt_count: int = Field(default=1, ge=1, le=3)
+    duration_ms: int = Field(default=0, ge=0, le=86_400_000)
+    evidence_source: Literal["observed_runtime"] = "observed_runtime"
 
 
 
@@ -554,12 +607,13 @@ class HarnessProposalRuntimeService:
         parent_trace_id: str | None = None,
         claim_owner: str = "wave4-stage",
     ) -> HarnessTraceV3:
-        """Persist one deterministic child-stage trace under an admitted operation.
+        """Persist one observed child-stage trace under an admitted operation.
 
-        Child evidence is generated from the already validated domain projection;
-        it carries counts and digests only, while protected snapshots retain the
-        source payload.  This keeps stage traces replayable without exposing
-        document, prompt, or transcript content.
+        The caller records the output of the stage that just ran.  The runtime
+        then strictly decodes and validates that observation under the admitted
+        operation; it never re-executes the parser, model, or tool from the
+        protected snapshot.  Protected snapshots retain source payloads while
+        trace-safe evidence carries only bounded counts and digests.
         """
         snapshot, grant_id = self._register_snapshot(
             binding=operation_binding,
@@ -592,18 +646,22 @@ class HarnessProposalRuntimeService:
                 output.model_dump(mode="python", exclude_none=False), strict=True
             )
             outcome = str(getattr(strict, "outcome", "passed"))
+            if outcome in {"failed", "unavailable"}:
+                check_status = HarnessCheckStatus.FAILED
+                check_code = f"stage_evidence_{outcome}"
+                check_message = f"The observed stage reported outcome={outcome}."
+            else:
+                check_status = HarnessCheckStatus.PASSED
+                check_code = "stage_evidence_valid"
+                check_message = "Stage output evidence passed strict validation."
             return HarnessRuntimeValidationResult(
                 output=strict,
                 checks=(
                     HarnessCheckV2(
                         name="stage_output_and_invariants",
-                        status=HarnessCheckStatus.PASSED,
-                        code="stage_evidence_valid",
-                        message=(
-                            "Stage output evidence passed strict validation."
-                            if outcome in {"passed", "applied", "validated"}
-                            else "Stage completed with a recorded non-success outcome."
-                        ),
+                        status=check_status,
+                        code=check_code,
+                        message=check_message,
                     ),
                 ),
             )
@@ -637,8 +695,6 @@ class HarnessProposalRuntimeService:
         trace = result.terminal_trace
         if trace is None:
             raise RuntimeError("harness_stage_runtime_trace_missing")
-        if trace.status not in {HarnessStatus.PASSED, HarnessStatus.REPAIRED}:
-            raise RuntimeError(trace.error_code or "harness_stage_runtime_failed")
         return trace
 
     def emit_document_stage_evidence(
@@ -739,7 +795,12 @@ class HarnessProposalRuntimeService:
                 binding=binding, success=False, error_code=str(error)
             )
             raise
-        self.workflow_operations.terminalize(binding=binding, success=True)
+        success = trace.status in {HarnessStatus.PASSED, HarnessStatus.REPAIRED}
+        self.workflow_operations.terminalize(
+            binding=binding,
+            success=success,
+            error_code=trace.error_code,
+        )
         return trace
 
     def emit_study_unit_cleanup_evidence(
@@ -779,7 +840,12 @@ class HarnessProposalRuntimeService:
                 binding=binding, success=False, error_code=str(error)
             )
             raise
-        self.workflow_operations.terminalize(binding=binding, success=True)
+        success = trace.status in {HarnessStatus.PASSED, HarnessStatus.REPAIRED}
+        self.workflow_operations.terminalize(
+            binding=binding,
+            success=success,
+            error_code=trace.error_code,
+        )
         return trace
 
 

@@ -246,9 +246,12 @@ class HarnessArtifactEvalResolver:
         self,
         repository: HarnessArtifactRepository,
         grant_resolver: HarnessEvalGrantResolver,
+        *,
+        now: Callable[[], datetime] | None = None,
     ) -> None:
         self._repository = repository
         self._grant_resolver = grant_resolver
+        self._now = now or (lambda: datetime.now(UTC))
 
     def resolve(
         self,
@@ -266,7 +269,7 @@ class HarnessArtifactEvalResolver:
             artifact_contract=source.artifact_contract,
             permission=HarnessArtifactPermission.READ,
         )
-        resolution = self._repository.resolve(request)
+        resolution = self._repository.resolve(request, now=self._now())
         authorization_digest = _digest(
             {
                 "request": request.model_dump(mode="json", exclude_none=False),

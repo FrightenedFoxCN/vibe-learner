@@ -62,6 +62,50 @@ class StreamRouteCancellationTests(unittest.TestCase):
         self.store.close()
         self.temp_dir.cleanup()
 
+    def test_goal_only_plan_routes_use_safe_report_keys_and_commit(self) -> None:
+        sync_request = LearningPlanCreateRequest(
+            document_id="",
+            persona_id="mentor-aurora",
+            client_request_id="goal-only/sync request",
+            objective="Learn introductory algebra",
+        )
+        stream_request = LearningPlanCreateRequest(
+            document_id="",
+            persona_id="mentor-aurora",
+            client_request_id="goal-only/stream request",
+            objective="Learn introductory geometry",
+        )
+        registry = StreamInterruptRegistry()
+        with (
+            patch.object(routes.container, "store", self.store),
+            patch.object(routes.container, "plan_service", self.plan_service),
+            patch.object(routes.container, "persona_engine", self.persona_engine),
+            patch.object(routes.container, "stream_interrupt_registry", registry),
+        ):
+            sync_result = routes.create_learning_plan(sync_request)
+            stream_response = routes.create_learning_plan_stream(stream_request)
+            stream_frames = asyncio.run(_read_stream(stream_response))
+
+        self.assertEqual(sync_result.creation_mode, "goal_only")
+        self.assertEqual(sync_result.document_id, "")
+        self.assertEqual(stream_frames[-1]["stage"], "stream_completed")
+        self.assertEqual(
+            stream_frames[-1]["committed_projection"]["creation_mode"],
+            "goal_only",
+        )
+        for request in (sync_request, stream_request):
+            storage_id = routes._learning_plan_stream_storage_id(request)
+            self.assertRegex(storage_id, r"^learning-plan-request-[0-9a-f]{24}$")
+            report = StreamReportRecorder.load(
+                store=self.store,
+                category=LEARNING_PLAN_STREAM_CATEGORY,
+                document_id=storage_id,
+                stream_kind="learning_plan",
+            )
+            self.assertEqual(report.status, "completed")
+            self.assertEqual(report.subject.subject_type, "learning_plan_request")
+            self.assertEqual(report.subject.subject_id, request.client_request_id)
+
     def test_confirmed_plan_cancel_wins_over_later_provider_runtime_error(self) -> None:
         document = self._processed_document("plan-cancel.pdf")
         provider_entered = threading.Event()

@@ -73,6 +73,7 @@ from app.persistence.harness_operation_repository import (
 )
 from app.persistence.tavern_repository import (
     TavernIdempotencyConflict,
+    TavernParticipantHistoryConflict,
     TavernRepository,
     TavernRoomCursorInvalid,
     TavernRetryAlreadyCreated,
@@ -366,6 +367,8 @@ class TavernService:
             except TavernRevisionConflict as exc:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
             except TavernRunInProgress as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            except TavernParticipantHistoryConflict as exc:
                 raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     def delete_room(self, room_id: str, *, expected_revision: int) -> None:

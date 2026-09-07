@@ -77,6 +77,7 @@ def _structured_tavern_error(
         "tavern_retry_participant_changed",
         "tavern_run_context_changed",
         "tavern_run_participant_changed",
+        "tavern_participant_history_conflict",
         "tavern_room_not_active",
     }:
         action = TavernRecoveryAction.RELOAD_ROOM
