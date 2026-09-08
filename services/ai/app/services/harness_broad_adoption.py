@@ -243,6 +243,15 @@ class PersonaSlotContentProposalV1(_StrictModel):
     sort_order: int = Field(default=0, ge=0, le=10000)
 
 
+class PersonaCardBatchContentProposalV1(_StrictModel):
+    """Raw model response, before application/provider metadata is attached."""
+
+    summary: str = Field(max_length=8000)
+    relationship: str = Field(max_length=2000)
+    learner_address: str = Field(max_length=500)
+    cards: list[PersonaCardContentProposalV1] = Field(min_length=1, max_length=24)
+
+
 class PersonaGenerationProposalV1(_StrictModel):
     schema_name: Literal["PersonaGenerationProposal"] = "PersonaGenerationProposal"
     schema_version: Literal["persona-generation-proposal-v1"] = (
@@ -416,8 +425,10 @@ class DocumentStageEvidenceV1(_StrictModel):
     item_count: int = Field(ge=0)
     warning_count: int = Field(ge=0)
     source_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    attempt_count: int = Field(default=1, ge=1, le=3)
-    duration_ms: int = Field(default=0, ge=0, le=86_400_000)
+    # None means the producer did not instrument this stage. Never substitute
+    # a parser-wide duration or an assumed attempt count for an observation.
+    attempt_count: int | None = Field(default=None, ge=0)
+    duration_ms: int | None = Field(default=None, ge=0, le=86_400_000)
     evidence_source: Literal["observed_runtime"] = "observed_runtime"
 
 

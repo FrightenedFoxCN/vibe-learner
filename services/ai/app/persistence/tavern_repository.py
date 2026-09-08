@@ -1290,21 +1290,38 @@ class TavernRepository:
         expected_revision: int,
     ) -> TavernRoomDetail:
         with self.database.session() as session:
-            current_persona_ids = set(
-                session.scalars(
-                    select(TavernParticipantRow.persona_id).where(
-                        TavernParticipantRow.room_id == room.id
-                    )
-                ).all()
+            pending_run_exists = select(TavernRunRow.id).where(
+                TavernRunRow.room_id == room.id,
+                TavernRunRow.status == TavernRunStatus.PENDING.value,
+            ).exists()
+            # Claim the room before checking history, so admission cannot race
+            # the history guard. A rejected update rolls this transaction back.
+            claimed = session.execute(
+                update(TavernRoomRow)
+                .where(
+                    TavernRoomRow.id == room.id,
+                    TavernRoomRow.revision == expected_revision,
+                    ~pending_run_exists,
+                )
+                .values(revision=TavernRoomRow.revision)
             )
-            next_persona_ids = {item.persona_id for item in participants}
-            removed_persona_ids = current_persona_ids - next_persona_ids
-            if removed_persona_ids:
+            if claimed.rowcount != 1:
+                self._raise_room_claim_failure(session, room_id=room.id)
+            current_orders = dict(session.execute(
+                select(TavernParticipantRow.persona_id, TavernParticipantRow.display_order)
+                .where(TavernParticipantRow.room_id == room.id)
+            ).all())
+            next_orders = {item.persona_id: item.display_order for item in participants}
+            changed_persona_ids = {
+                persona_id for persona_id, order in current_orders.items()
+                if next_orders.get(persona_id) != order
+            }
+            if changed_persona_ids:
                 referenced_message_persona = session.scalar(
                     select(TavernMessageRow.persona_id)
                     .where(
                         TavernMessageRow.room_id == room.id,
-                        TavernMessageRow.persona_id.in_(removed_persona_ids),
+                        TavernMessageRow.persona_id.in_(changed_persona_ids),
                     )
                     .limit(1)
                 )
@@ -1313,13 +1330,13 @@ class TavernRepository:
                     .join(TavernRunRow, TavernRunRow.id == TavernRunStepRow.run_id)
                     .where(
                         TavernRunRow.room_id == room.id,
-                        TavernRunStepRow.persona_id.in_(removed_persona_ids),
+                        TavernRunStepRow.persona_id.in_(changed_persona_ids),
                     )
                     .limit(1)
                 )
                 if referenced_message_persona or referenced_step_persona:
                     raise TavernParticipantHistoryConflict(
-                        sorted(removed_persona_ids)
+                        sorted(changed_persona_ids)
                     )
             pending_run_exists = select(TavernRunRow.id).where(
                 TavernRunRow.room_id == room.id,

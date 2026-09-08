@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -84,6 +85,25 @@ class DocumentProcessOperationTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.store.close()
         self.temp_dir.cleanup()
+
+    def test_uninstrumented_stages_do_not_invent_parser_timings(self) -> None:
+        service = self._service(parser=_FakeParser())
+        document = service.create_document(UploadFile(filename="metrics.pdf", file=io.BytesIO(b"pdf")))
+        harness = service.harness_service
+        with (
+            patch.object(harness, "emit_document_stage_evidence", wraps=harness.emit_document_stage_evidence) as stages,
+            patch.object(harness, "emit_ocr_stage_evidence", wraps=harness.emit_ocr_stage_evidence) as ocr,
+            patch.object(harness, "emit_study_unit_cleanup_evidence", wraps=harness.emit_study_unit_cleanup_evidence) as cleanup,
+            patch("app.services.documents.time.perf_counter", side_effect=[1.0, 1.125]),
+        ):
+            service.process_document(document.id)
+        for call in [*stages.call_args_list, ocr.call_args]:
+            evidence = call.kwargs["evidence"]
+            self.assertIsNone(evidence.duration_ms)
+            self.assertIsNone(evidence.attempt_count)
+        measured = cleanup.call_args.kwargs["evidence"]
+        self.assertEqual(measured.duration_ms, 125)
+        self.assertEqual(measured.attempt_count, 1)
 
     def test_success_commits_document_debug_and_terminal_truth_atomically(self) -> None:
         parser = _FakeParser()

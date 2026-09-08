@@ -386,6 +386,45 @@ class TavernApiTests(unittest.TestCase):
             },
         )
 
+    def test_historical_roster_order_is_fenced_and_commit_remains_valid(self) -> None:
+        other = self.persona_engine.create_persona(CreatePersonaRequest(
+            name="Second", summary="Another participant", relationship="friend",
+            learner_address="you", system_prompt="Respond naturally", slots=[],
+        ))
+        ids = [self.persona.id, other.id]
+        created = self.client.post("/tavern/rooms", json={
+            "title": "History", "persona_ids": ids, "opening_prompt": "",
+            "idempotency_key": "review-roster-order-create",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        url = f"/tavern/rooms/{created.json()['room']['id']}"
+        # With no history, editing the order remains supported.
+        reordered = self.client.patch(url, json={"persona_ids": ids[::-1], "expected_revision": 0})
+        self.assertEqual(reordered.status_code, 200, reordered.text)
+        turn = self.client.post(url + "/turns", json={
+            "input": {"kind": "user_message", "content": "Hello"},
+            "mode": "facilitated", "target_persona_ids": ids,
+            "idempotency_key": "review-roster-order-turn", "expected_room_revision": 1,
+        })
+        self.assertEqual(turn.status_code, 200, turn.text)
+        rejected = self.client.patch(url, json={"persona_ids": ids, "expected_revision": 2})
+        self.assertEqual(rejected.status_code, 409, rejected.text)
+        self.assertEqual(rejected.json()["detail"]["code"], "tavern_participant_history_conflict")
+        detail = self.client.get(url).json()
+        self.assertEqual(detail["room"]["revision"], 2)
+        self.assertEqual([p["persona_id"] for p in detail["participants"]], ids[::-1])
+        for message in turn.json()["generated_messages"]:
+            m, r, step, participants, anchor = self.repository.get_actor_commit_read_back(message_id=message["id"])
+            projection = build_tavern_persona_message_committed_projection(
+                message=m, run=r, step=step, participants=participants, reply_anchor=anchor,
+            )
+            validate_harness_operation_commit(
+                m.harness_trace, build_tavern_persona_message_commit_binding(projection),
+                message=m, run=r, step=step, participants=participants, reply_anchor=anchor,
+            )
+        renamed = self.client.patch(url, json={"title": "Renamed", "expected_revision": 2})
+        self.assertEqual(renamed.status_code, 200, renamed.text)
+
     def test_roster_update_cannot_remove_a_participant_with_history(self) -> None:
         created = self._create_room(creation_key="create-room-roster-history")
         room_id = created["room"]["id"]

@@ -55,7 +55,7 @@ from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
 from app.services.harness_broad_adoption import (
-    PersonaCardContentProposalV1,
+    PersonaCardBatchContentProposalV1,
     PersonaSlotContentProposalV1,
 )
 from app.services.persona_runtime import render_persona_runtime_instruction
@@ -1961,12 +1961,11 @@ class OpenAIModelProvider(MockModelProvider):
                 keywords=keywords,
                 card_count_hint=card_count_hint,
             )
-        cards = _normalize_generated_persona_cards(parsed)
+        batch = _decode_persona_card_batch(parsed)
+        cards = batch.pop("cards")
         _enforce_exact_persona_card_count(cards, count=count)
         return {
-            "summary": str(parsed.get("summary") or "").strip(),
-            "relationship": str(parsed.get("relationship") or "").strip(),
-            "learner_address": str(parsed.get("learner_address") or "").strip(),
+            **batch,
             "cards": cards,
             "used_model": self.setting_model,
             "used_web_search": used_web_search,
@@ -2005,12 +2004,11 @@ class OpenAIModelProvider(MockModelProvider):
             payload,
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 summary、relationship、learner_address、cards 字段完整。",
         )
-        cards = _normalize_generated_persona_cards(parsed)
+        batch = _decode_persona_card_batch(parsed)
+        cards = batch.pop("cards")
         _enforce_exact_persona_card_count(cards, count=count)
         return {
-            "summary": str(parsed.get("summary") or "").strip(),
-            "relationship": str(parsed.get("relationship") or "").strip(),
-            "learner_address": str(parsed.get("learner_address") or "").strip(),
+            **batch,
             "cards": cards,
             "used_model": self.setting_model,
             "used_web_search": False,
@@ -3645,22 +3643,15 @@ def _call_interrupt(callback: Callable[[], None] | None) -> None:
     callback()
 
 
-def _normalize_generated_persona_cards(parsed: dict[str, object]) -> list[dict[str, object]]:
-    raw_cards = parsed.get("cards")
-    if not isinstance(raw_cards, list):
-        raise RuntimeError("setting_model_invalid_payload")
-    cards: list[dict[str, object]] = []
-    for item in raw_cards:
-        if not isinstance(item, dict):
-            raise RuntimeError("setting_model_invalid_payload")
-        try:
-            proposal = PersonaCardContentProposalV1.model_validate(item, strict=True)
-        except ValidationError as exc:
-            raise RuntimeError("setting_model_invalid_payload") from exc
-        cards.append(proposal.model_dump(mode="python", exclude_none=False))
-    if not cards:
-        raise RuntimeError("setting_model_invalid_payload")
-    return cards
+def _decode_persona_card_batch(parsed: dict[str, object]) -> dict[str, Any]:
+    try:
+        proposal = PersonaCardBatchContentProposalV1.model_validate(parsed, strict=True)
+    except ValidationError as exc:
+        raise RuntimeError("setting_model_invalid_payload") from exc
+    batch = proposal.model_dump(mode="python")
+    for field in ("summary", "relationship", "learner_address"):
+        batch[field] = batch[field].strip()
+    return batch
 
 
 def _enforce_exact_persona_card_count(

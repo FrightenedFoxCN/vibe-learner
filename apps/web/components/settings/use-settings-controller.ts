@@ -134,6 +134,7 @@ export function useSettingsController(): SettingsController {
   const blockedSerializedRef = useRef("");
   const savingRef = useRef(false);
   const pendingSaveRef = useRef<PendingSettingsSave | null>(null);
+  const flushRequestedRef = useRef(false);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
 
   useEffect(() => {
@@ -252,12 +253,26 @@ export function useSettingsController(): SettingsController {
     } finally {
       savingRef.current = false;
       setIsSaving(false);
+      // A navigation flush must survive this controller's unmount, including
+      // when an older request was already running at the time of navigation.
+      if (flushRequestedRef.current) {
+        flushRequestedRef.current = false;
+        const pending = pendingSaveRef.current;
+        if (pending) {
+          pendingSaveRef.current = null;
+          void persistSnapshot(pending.snapshot, pending.serialized);
+        }
+      }
     }
   });
 
   const flushPendingSave = useEffectEvent(() => {
     const pending = pendingSaveRef.current;
-    if (!pending || savingRef.current) {
+    if (!pending) {
+      return;
+    }
+    if (savingRef.current) {
+      flushRequestedRef.current = true;
       return;
     }
     pendingSaveRef.current = null;
@@ -273,7 +288,7 @@ export function useSettingsController(): SettingsController {
       // fires. Flush the latest snapshot so navigation cannot drop a change.
       flushPendingSave();
     };
-  }, [flushPendingSave]);
+  }, []);
 
   useEffect(() => {
     if (!initializedRef.current || !settings || runtimeSettings.loading) {
@@ -281,10 +296,8 @@ export function useSettingsController(): SettingsController {
     }
 
     const serialized = serializeSettings(settings);
-    if (serialized === lastSavedSerializedRef.current) {
-      if (pendingSaveRef.current?.serialized === serialized) {
-        pendingSaveRef.current = null;
-      }
+    if (!savingRef.current && serialized === lastSavedSerializedRef.current) {
+      pendingSaveRef.current = null;
       if (!isSaving) {
         setSavePhase("saved");
       }
@@ -321,7 +334,7 @@ export function useSettingsController(): SettingsController {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isSaving, runtimeSettings.loading, settings, persistSnapshot]);
+  }, [isSaving, runtimeSettings.loading, settings]);
 
   function setSettingField<K extends keyof RuntimeSettings>(key: K, value: RuntimeSettings[K]) {
     setSaveError("");

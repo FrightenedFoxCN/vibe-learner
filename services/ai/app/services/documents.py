@@ -114,7 +114,7 @@ class DocumentService:
             raise HTTPException(status_code=409, detail="document_processing_state_conflict") from exc
         runtime_prepared: HarnessRuntimePreparedOutput | None = None
         harness_runtime: HarnessOperationRuntime | None = None
-        stage_timings: dict[str, int] = {}
+        cleanup_metrics = {"attempt_count": 0, "duration_ms": 0}
         try:
             operation_binding = self.process_repository.require_harness_operation(operation.operation_id)
             if operation_admitted_callback is not None:
@@ -167,7 +167,6 @@ class DocumentService:
                         handle.write(upload)
                         temp_path = Path(handle.name)
                     try:
-                        parser_started_at = time.perf_counter()
                         report = self.parser.parse(
                             document_id=source_document.id,
                             title=source_document.title,
@@ -176,32 +175,21 @@ class DocumentService:
                             progress_callback=progress_callback,
                             interrupt_check=interrupt_check,
                         )
-                        parser_duration_ms = max(
-                            0, int((time.perf_counter() - parser_started_at) * 1000)
-                        )
-                        stage_timings.update(
-                            {
-                                "page_extraction": parser_duration_ms,
-                                "section_detection": parser_duration_ms,
-                                "chunk_building": parser_duration_ms,
-                                "ocr_page": parser_duration_ms,
-                            }
-                        )
                     except fitz.FileDataError as error:
                         raise RuntimeError("document_process_invalid_pdf") from error
-                    cleanup_started_at = time.perf_counter()
-                    units = (
-                        []
-                        if source_force_ocr
-                        and report.ocr_status in {"unavailable", "failed"}
-                        else self.arrangement_service.build_study_units(
-                            document=source_document,
-                            debug_report=report,
-                        )
-                    )
-                    stage_timings["study_unit_cleanup"] = max(
-                        0, int((time.perf_counter() - cleanup_started_at) * 1000)
-                    )
+                    units = []
+                    if not (source_force_ocr and report.ocr_status in {"unavailable", "failed"}):
+                        cleanup_started_at = time.perf_counter()
+                        cleanup_metrics["attempt_count"] += 1
+                        try:
+                            units = self.arrangement_service.build_study_units(
+                                document=source_document,
+                                debug_report=report,
+                            )
+                        finally:
+                            cleanup_metrics["duration_ms"] += max(
+                                0, int((time.perf_counter() - cleanup_started_at) * 1000)
+                            )
                     return DocumentProcessRuntimeOutputV1(
                         debug_report=report,
                         study_units=units,
@@ -282,7 +270,6 @@ class DocumentService:
                     outcome="passed",
                     item_count=debug_report.page_count,
                     warning_count=len(debug_report.warnings),
-                    duration_ms=stage_timings.get("page_extraction", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in debug_report.pages]
                     ),
@@ -309,7 +296,6 @@ class DocumentService:
                     outcome="passed",
                     item_count=len(debug_report.sections),
                     warning_count=len(debug_report.warnings),
-                    duration_ms=stage_timings.get("section_detection", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in debug_report.sections]
                     ),
@@ -336,7 +322,6 @@ class DocumentService:
                     outcome="passed",
                     item_count=len(debug_report.chunks),
                     warning_count=len(debug_report.warnings),
-                    duration_ms=stage_timings.get("chunk_building", 0),
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in debug_report.chunks]
                     ),
@@ -368,7 +353,6 @@ class DocumentService:
                     ),
                     item_count=debug_report.page_count,
                     warning_count=len(debug_report.warnings),
-                    duration_ms=stage_timings.get("ocr_page", 0),
                     source_digest=canonical_harness_digest(
                         {
                             "ocr_status": debug_report.ocr_status,
@@ -397,7 +381,8 @@ class DocumentService:
                     outcome="passed",
                     item_count=len(study_units),
                     warning_count=len(debug_report.warnings),
-                    duration_ms=stage_timings.get("study_unit_cleanup", 0),
+                    duration_ms=cleanup_metrics["duration_ms"],
+                    attempt_count=cleanup_metrics["attempt_count"],
                     source_digest=canonical_harness_digest(
                         [item.model_dump(mode="json") for item in study_units]
                     ),

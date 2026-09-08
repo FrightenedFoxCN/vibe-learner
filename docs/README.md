@@ -19,6 +19,8 @@
 - `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2/v3 evidence compatibility
 - `harness-roadmap.md`: canonical unfinished Harness backlog, dependency graph, delivery waves, eval program, and production adoption gates
 - `audit-2026-09-06-remediation.md`: implementation fixes and validation record for the 2026-09-06 audit
+- `audit-2026-09-08-review.md`: follow-up review and residual failure evidence
+- `audit-2026-09-08-remediation.md`: fixes and regression results for the follow-up review
 - `performance-budgets-v1.md`: versioned fixture, query/payload, server P95, and React render gates for focused performance work
 
 ## Reading Order

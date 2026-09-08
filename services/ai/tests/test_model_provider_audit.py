@@ -16,6 +16,33 @@ class ModelProviderAuditTests(unittest.TestCase):
             setting_model="setting-model",
         )
 
+    def test_card_batch_top_level_types_fail_before_normalization(self) -> None:
+        valid = {
+            "summary": " Summary ", "relationship": " Friend ",
+            "learner_address": " You ",
+            "cards": [{"title": "Card", "kind": "custom", "label": "Label", "content": "Content"}],
+        }
+        for mode in ("text", "keywords", "web"):
+            provider = self._provider()
+            provider.setting_web_search_enabled = mode == "web"
+            method = "_request_setting_json_response" if mode == "web" else "_request_setting_json_chat"
+            def generate():
+                if mode == "text":
+                    return provider.generate_persona_cards_from_text(text="input", count=1)
+                return provider.generate_persona_cards_from_keywords(keywords="input", count=1)
+            for field in ("summary", "relationship", "learner_address"):
+                for wrong in ({"bad": True}, ["bad"], 77, False, None):
+                    with self.subTest(mode=mode, field=field, wrong=wrong):
+                        with patch.object(provider, method, return_value={**valid, field: wrong}):
+                            with self.assertRaisesRegex(RuntimeError, "setting_model_invalid_payload"):
+                                generate()
+            with patch.object(provider, method, return_value=valid):
+                self.assertEqual(generate()["summary"], "Summary")
+            for invalid in ({k: v for k, v in valid.items() if k != "summary"}, {**valid, "used_model": "forged"}):
+                with patch.object(provider, method, return_value=invalid):
+                    with self.assertRaisesRegex(RuntimeError, "setting_model_invalid_payload"):
+                        generate()
+
     def test_persona_slot_model_types_are_rejected_before_domain_coercion(self) -> None:
         provider = self._provider()
         slot = PersonaSlot(
