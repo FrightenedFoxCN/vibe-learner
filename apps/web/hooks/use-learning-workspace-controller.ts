@@ -1,6 +1,9 @@
 "use client";
 
+import { createStudyChatRequestId } from "../lib/client-request-id";
+
 import { useState } from "react";
+import { usePlanGeneration } from "./use-plan-generation";
 import { useEffect, useMemo, useReducer, useRef } from "react";
 import type {
   DocumentRecord,
@@ -14,14 +17,10 @@ import type {
 
 import {
   listDocuments,
-  processDocumentStream,
   updateDocumentStudyUnitTitle as updateDocumentStudyUnitTitleRequest,
-  uploadDocument,
 } from "../lib/data/documents";
 import {
   answerLearningPlanQuestion,
-  cancelStreamRun,
-  createLearningPlanStream,
   deleteLearningPlan as deleteLearningPlanRequest,
   listLearningPlans,
   updateLearningPlanProgress as updateLearningPlanProgressRequest,
@@ -71,8 +70,6 @@ import {
 import {
   CONNECTED_NOTICE,
   DISCONNECTED_NOTICE,
-  PLAN_GENERATED_NOTICE,
-  PLAN_GENERATED_SESSION_FAILED_NOTICE,
   SESSION_CREATED_NOTICE,
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
@@ -82,7 +79,6 @@ import {
   logWorkspaceError,
   logWorkspaceInfo
 } from "../lib/learning-workspace-telemetry";
-import { compactPreviewValue } from "../lib/preview";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
 import { useRuntimeSettings } from "../components/runtime-settings-provider";
 import type { StudyChatOperationStatus } from "../lib/study-chat-operation-decode";
@@ -96,16 +92,7 @@ import {
   type AsyncResultTicket,
 } from "../lib/async-result-fence";
 
-export interface GeneratePlanInput {
-  mode: "document" | "goal_only";
-  file?: File | null;
-  objective: string;
-}
-
-type StreamEventItem = {
-  stage: string;
-  payload: Record<string, unknown>;
-};
+export type { GeneratePlanInput } from "./use-plan-generation";
 
 type ChatFailureState = {
   message: string;
@@ -160,14 +147,6 @@ export function useLearningWorkspaceController({
       initialPersonas
     })
   );
-  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-  const [isInterruptingPlan, setIsInterruptingPlan] = useState(false);
-  const [processStreamEvents, setProcessStreamEvents] = useState<StreamEventItem[]>([]);
-  const [planStreamEvents, setPlanStreamEvents] = useState<StreamEventItem[]>([]);
-  const [processStreamStatus, setProcessStreamStatus] = useState("idle");
-  const [planStreamStatus, setPlanStreamStatus] = useState("idle");
-  const [processStreamDocumentId, setProcessStreamDocumentId] = useState("");
-  const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState(initialSelection?.sceneLibraryId ?? "");
@@ -175,9 +154,6 @@ export function useLearningWorkspaceController({
   const mountedRef = useRef(true);
   const selectedPersonaIdRef = useRef(state.selectedPersonaId);
   const selectedPlanIdRef = useRef(state.selectedPlanId);
-  const generationAbortControllerRef = useRef<AbortController | null>(null);
-  const processStreamIdRef = useRef("");
-  const planStreamIdRef = useRef("");
   const preludeInFlightRef = useRef<Set<string>>(new Set());
   const preludeFailedRef = useRef<Set<string>>(new Set());
   const sectionSwitchInFlightRef = useRef<Map<string, Promise<void>>>(new Map());
@@ -269,9 +245,6 @@ export function useLearningWorkspaceController({
       mountedRef.current = false;
       snapshotLoader.deactivate();
       studyViewFenceRef.current.transition("learning-route:unmounted", true);
-      generationAbortControllerRef.current?.abort();
-      const streamIds = new Set([processStreamIdRef.current, planStreamIdRef.current].filter(Boolean));
-      void Promise.allSettled([...streamIds].map((id) => cancelStreamRun(id)));
     };
   }, []);
 
@@ -476,283 +449,35 @@ export function useLearningWorkspaceController({
     });
   };
 
-  const applyGeneratedDocument = (nextDocument: DocumentRecord) => {
-    dispatch({
-      type: "generated_document_applied",
-      document: nextDocument
-    });
-  };
-
-  const applyGeneratedPlan = (nextPlan: LearningPlan) => {
-    selectedPlanIdRef.current = nextPlan.id;
-    transitionStudyView(`study-plan:${nextPlan.id}`, true);
-    dispatch({
-      type: "generated_plan_applied",
-      plan: nextPlan
-    });
-  };
-
-  const createInitialStudySession = async (input: {
-    plan: LearningPlan;
-    document?: DocumentRecord | null;
-    planId: string;
-    personaId: string;
-  }): Promise<StudySessionRecord> => {
-    const sceneProfile = resolveActiveSceneProfile();
-    const nextSession = await createStudySession(
-      {
-        ...buildInitialStudySessionInput(input),
-        sceneProfile,
-      }
-    );
-    logWorkspaceInfo("workflow:upload:session_ready", {
-      sessionId: nextSession.id,
-      studyUnitId: nextSession.studyUnitId
-    });
-    return nextSession;
-  };
-
-  const cancelPlanGeneration = async () => {
-    if (!isGeneratingPlan) {
-      return;
-    }
-    setIsInterruptingPlan(true);
-    dispatch({
-      type: "notice_set",
-      notice: "正在中断当前任务…"
-    });
-    const streamIds = Array.from(
-      new Set(
-        [processStreamIdRef.current, planStreamIdRef.current]
-          .map((item) => item.trim())
-          .filter(Boolean)
-      )
-    );
-    generationAbortControllerRef.current?.abort();
-    if (streamIds.length) {
-      await Promise.allSettled(streamIds.map((streamId) => cancelStreamRun(streamId)));
-    }
-  };
-
-  const generatePlanWorkflow = async (input: GeneratePlanInput) => {
-    if (planGenerationBlockedReason) {
-      dispatch({
-        type: "notice_set",
-        notice: planGenerationBlockedReason,
-      });
-      return;
-    }
-    generationAbortControllerRef.current?.abort();
-    const abortController = new AbortController();
-    generationAbortControllerRef.current = abortController;
-    processStreamIdRef.current = "";
-    planStreamIdRef.current = "";
-    setIsInterruptingPlan(false);
-    setIsGeneratingPlan(true);
-    selectedPlanIdRef.current = "";
-    transitionStudyView("study-plan:generating", true);
-    dispatch({ type: "generation_started" });
-    dispatch({ type: "busy_started" });
-    setProcessStreamEvents([]);
-    setPlanStreamEvents([]);
-    setProcessStreamStatus(input.mode === "document" ? "running" : "idle");
-    setPlanStreamStatus("idle");
-    try {
-      const sceneProfile = resolveActiveSceneProfile();
-      let nextDocument: DocumentRecord | null = null;
-
-      if (input.mode === "document") {
-        if (!input.file) {
-          throw new Error("missing_plan_source_document");
-        }
-        logWorkspaceInfo("workflow:upload:start", {
-          filename: input.file.name,
-          sizeBytes: input.file.size,
-          personaId: selectedPersona.id
-        });
-
-        const uploadedDocument = await uploadDocument(input.file, {
-          signal: abortController.signal,
-        });
-        setProcessStreamDocumentId(uploadedDocument.id);
-        setPlanStreamDocumentId(uploadedDocument.id);
-        dispatch({
-          type: "notice_set",
-          notice: "教材已上传，正在解析。"
-        });
-        logWorkspaceInfo("workflow:upload:document_uploaded", {
-          documentId: uploadedDocument.id,
-          status: uploadedDocument.status
-        });
-
-        nextDocument = await processDocumentStream(
-          uploadedDocument.id,
-          {
-            signal: abortController.signal,
-          },
-          (event) => {
-            const streamId = event.operationId?.trim() ?? "";
-            if (streamId) {
-              processStreamIdRef.current = streamId;
-            }
-            setProcessStreamEvents((current) => [
-              ...current.slice(-79),
-              {
-                stage: event.stage,
-                payload: compactPreviewValue(event.payload) as Record<string, unknown>
-              }
-            ]);
-            setProcessStreamStatus(resolveStreamStatus(event.stage));
-            dispatch({
-              type: "notice_set",
-              notice: "正在解析教材…"
-            });
-            logWorkspaceInfo("workflow:upload:process_event", {
-              documentId: uploadedDocument.id,
-              stage: event.stage,
-              ...event.payload
-            });
-          }
-        );
-        logWorkspaceInfo("workflow:upload:document_ready", {
-          documentId: nextDocument.id,
-          pageCount: nextDocument.pageCount,
-          chunkCount: nextDocument.chunkCount,
-          ocrStatus: nextDocument.ocrStatus
-        });
-        applyGeneratedDocument(nextDocument);
-        dispatch({
-          type: "notice_set",
-          notice: "教材解析完成，正在生成计划。"
-        });
-      } else {
-        setProcessStreamDocumentId("");
-        setPlanStreamDocumentId("");
-        dispatch({
-          type: "notice_set",
-          notice: "正在生成计划。"
-        });
-        logWorkspaceInfo("workflow:goal_only:start", {
-          personaId: selectedPersona.id,
-          objectiveLength: input.objective.length
-        });
-      }
-
-      setPlanStreamStatus("running");
-      const planClientRequestId = createStudyChatRequestId("learning-plan");
-      const nextPlan = await createLearningPlanStream(
-        {
-          documentId: nextDocument?.id ?? "",
-          personaId: selectedPersona.id,
-          clientRequestId: planClientRequestId,
-          expectedDocumentUpdatedAt: nextDocument?.updatedAt ?? "",
-          objective: input.objective,
-          sceneProfileSummary: sceneProfile?.summary ?? "",
-          sceneProfile,
-        },
-        (event) => {
-          const streamId = event.operationId?.trim() ?? "";
-          if (streamId) {
-            planStreamIdRef.current = streamId;
-          }
-          setPlanStreamEvents((current) => [
-            ...current.slice(-119),
-            {
-              stage: event.stage,
-              payload: compactPreviewValue(event.payload) as Record<string, unknown>
-            }
-          ]);
-          setPlanStreamStatus(resolveStreamStatus(event.stage));
-          dispatch({
-            type: "notice_set",
-            notice: "正在生成计划…"
-          });
-          logWorkspaceInfo("workflow:plan_event", {
-            documentId: nextDocument?.id ?? "",
-            stage: event.stage,
-            ...event.payload
-          });
-        },
-        {
-          signal: abortController.signal,
-        }
-      );
-      abortController.signal.throwIfAborted();
-      logWorkspaceInfo("workflow:upload:plan_ready", {
-        planId: nextPlan.id,
-        taskCount: nextPlan.todayTasks.length
-      });
-      applyGeneratedPlan(nextPlan);
-      const generatedPlanViewRevision = studyViewFenceRef.current.viewRevision;
-
-      try {
-        const nextSession = await createInitialStudySession({
-          plan: nextPlan,
-          document: nextDocument,
-          planId: nextPlan.id,
-          personaId: selectedPersona.id
-        });
-        if (
-          selectedPlanIdRef.current !== nextPlan.id ||
-          studyViewFenceRef.current.viewRevision !== generatedPlanViewRevision
-        ) {
-          return;
-        }
-        activateStudySessionView(nextSession);
-        dispatch({
-          type: "study_session_set",
-          studySession: nextSession,
-          clearResponse: true
-        });
-        dispatch({
-          type: "notice_set",
-          notice:
-            nextPlan.creationMode === "goal_only"
-              ? "目标计划已生成，会话已创建。"
-              : PLAN_GENERATED_NOTICE
-        });
-      } catch (sessionError) {
-        if (
-          selectedPlanIdRef.current !== nextPlan.id ||
-          studyViewFenceRef.current.viewRevision !== generatedPlanViewRevision
-        ) {
-          return;
-        }
-        dispatch({
-          type: "notice_set",
-          notice: PLAN_GENERATED_SESSION_FAILED_NOTICE
-        });
-        logWorkspaceError("workflow:upload:session_error", sessionError);
-      }
-    } catch (error) {
-      if (isAbortLikeError(error)) {
-        setProcessStreamStatus((current) => (current === "running" ? "cancelled" : current));
-        setPlanStreamStatus((current) => (current === "running" ? "cancelled" : current));
-        dispatch({
-          type: "notice_set",
-          notice: "已中断当前任务。"
-        });
-        logWorkspaceInfo("workflow:upload:interrupted", {
-          mode: input.mode,
-        });
-        return;
-      }
-      setProcessStreamStatus((current) => (current === "running" ? "error" : current));
-      setPlanStreamStatus((current) => (current === "running" ? "error" : current));
-      dispatch({
-        type: "notice_set",
-        notice: `${input.mode === "document" ? "教材处理失败" : "目标计划生成失败"}：${String(error)}`
-      });
-      logWorkspaceError("workflow:upload:error", error);
-    } finally {
-      generationAbortControllerRef.current = null;
-      processStreamIdRef.current = "";
-      planStreamIdRef.current = "";
-      setIsInterruptingPlan(false);
-      dispatch({ type: "busy_finished" });
-      setIsGeneratingPlan(false);
-    }
-  };
+  const {
+    generatePlanWorkflow, cancelPlanGeneration, isGeneratingPlan, isInterruptingPlan,
+    processStreamEvents, planStreamEvents, processStreamStatus, planStreamStatus,
+    processStreamDocumentId, planStreamDocumentId,
+  } = usePlanGeneration({
+    personaId: selectedPersona?.id ?? "",
+    blockedReason: planGenerationBlockedReason,
+    resolveSceneProfile: resolveActiveSceneProfile,
+    onStarted: () => {
+      selectedPlanIdRef.current = "";
+      transitionStudyView("study-plan:generating", true);
+      dispatch({ type: "generation_started" });
+      dispatch({ type: "busy_started" });
+    },
+    onFinished: () => dispatch({ type: "busy_finished" }),
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+    onDocument: (document) => dispatch({ type: "generated_document_applied", document }),
+    onPlan: (plan) => {
+      selectedPlanIdRef.current = plan.id;
+      transitionStudyView(`study-plan:${plan.id}`, true);
+      dispatch({ type: "generated_plan_applied", plan });
+      const revision = studyViewFenceRef.current.viewRevision;
+      return () => mountedRef.current && selectedPlanIdRef.current === plan.id && studyViewFenceRef.current.viewRevision === revision;
+    },
+    onSession: (studySession) => {
+      activateStudySessionView(studySession);
+      dispatch({ type: "study_session_set", studySession, clearResponse: true });
+    },
+  });
 
   const createSessionForActivePlan = async () => {
     if (!activePlan) {
@@ -2267,26 +1992,6 @@ export function useLearningWorkspaceController({
   };
 }
 
-function resolveStreamStatus(stage: string) {
-  if (stage === "stream_completed") {
-    return "completed";
-  }
-  if (stage === "stream_cancelled") {
-    return "cancelled";
-  }
-  if (stage === "stream_error") {
-    return "error";
-  }
-  return "running";
-}
-
-function isAbortLikeError(error: unknown) {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return true;
-  }
-  return String(error).includes("stream_interrupted");
-}
-
 function resolvePlanGenerationBlockedReason(input: {
   runtimeSettings: ReturnType<typeof useRuntimeSettings>["settings"];
   runtimeSettingsLoading: boolean;
@@ -2423,13 +2128,6 @@ function buildSessionPreludeMessage(input: {
   ].join("\n");
 }
 
-function createStudyChatRequestId(scope: string): string {
-  const normalizedScope = scope.toLowerCase().replace(/[^a-z0-9-]+/g, "-").slice(0, 20) || "chat";
-  const suffix = typeof globalThis.crypto?.randomUUID === "function"
-    ? globalThis.crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  return `study-${normalizedScope}-${suffix}`.slice(0, 80);
-}
 
 function getOrCreateAutomaticRequestId(
   requests: Map<string, string>,

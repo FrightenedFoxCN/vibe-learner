@@ -108,3 +108,5 @@
 - [ ] 补充有历史 Plan/Session 和在途操作的浏览器恢复验收；路由网络基线通过不替代这些恢复场景。
 - [x] 学习快照查询归入 `WorkspaceSnapshotLoader`，首次/focus/手动刷新共享响应归属判断；卸载后禁止新查询和旧结果投影，初始化被刷新取代时仍加载 Persona。独立 `test:workspace:data` 4 项并发/失败/卸载测试通过，Web 类型、可靠性回归、生产构建及 12 项 Chromium 路由验收通过。
 - [ ] 继续拆分学习动作/恢复、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。
+
+- [x] 计划生成归入 `usePlanGeneration`，以显式 API port 注入上传/解析/计划/Session 请求，主 controller 只保留选择与视图投影。每轮生成持有独立响应归属，旧进度和 finally 不清空新任务；Scene 在生成入口捕获并用于初始 Session。独立 `test:workspace:generation` 6 项真实 Hook 行为测试通过，Web 类型、可靠性门禁、生产构建与 12 项 Chromium 路由验收通过。
