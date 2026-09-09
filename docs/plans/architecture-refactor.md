@@ -87,7 +87,8 @@
 
 - [x] 拆出 Planning、Study、Tavern、Persona、Scene、Embedding、Image、Exercise 能力接口与 reply DTO；Planning/Tavern/Pedagogy 消费方收窄依赖。聚合 `ModelProvider` 保留兼容入口。
 - [x] 真实 provider 不再继承 Mock。独立练习生成与提交评价显式委托 `LocalExerciseProvider`，标记 `exercise_implementation=local_heuristic`，保留原文本和长度启发式，不调用传输。
-- [ ] 将真实 provider 各能力实现与共享传输/usage/错误/有界重试拆分，逐能力验证配置快照、调用上限和取消边界。
+- [x] 将共享执行器、payload 归一化、错误分类、usage 记录与有界重试移至 `provider_transport.py`；注入 SDK 错误类型、时钟、sleep 与 recovery sink，不依赖 provider 类或导入 LiteLLM。新增 `test:ai:provider:transport` 7 项独立测试，原兼容性/provider审计/Persona 回归 124 项通过。
+- [ ] 将真实 provider 各能力实现和 SDK 请求适配继续拆分，逐能力验证配置快照、调用上限和取消边界。
 - [ ] 完成 provider 阶段 release/recovery 门禁后关闭主任务。
 
 首个子任务验证：原 provider 审计、Study 解码、Tavern 安全模块 38 项通过；新增能力/练习契约连同 provider 审计与 Persona 流程共 122 项通过。测试能力导入无需 LiteLLM、真实 provider 无 Mock 继承、本地练习输出兼容及无传输调用。

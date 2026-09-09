@@ -36,7 +36,8 @@
     "test:ai:study:decode": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_study_chat_reply_decode",
     "test:ai:harness:contracts": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_persona_generation_contracts tests.test_scene_generation_contracts tests.test_document_processing_contracts tests.test_planning_runtime_contracts tests.test_harness_persistence_boundary",
     "test:ai:harness:commit": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_broad_commit_binding tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime",
-    "test:ai:provider:contracts": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_capabilities tests.test_provider_exercises"
+    "test:ai:provider:contracts": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_capabilities tests.test_provider_exercises",
+    "test:ai:provider:transport": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_transport"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"
