@@ -337,8 +337,8 @@ VIBE_LEARNER_ONNXTR_MODEL_SOURCE=/absolute/path/to/onnxtr-models npm run build:d
 - `docs/user_manual.md`：完整功能使用手册（逐页逐部件）
 - `docs/architecture.md`：架构说明
 - `docs/api-reference.md`：API 参考
-- `docs/harness-engineering.md`：仓库级 Harness 生命周期与采用门
-- `docs/harness-schema-ownership.md`：跨工作流 schema/ownership 注册表
+- `docs/harness-architecture.md`：Harness 架构图与代码边界
+- `TODO.md`：产品、可靠性和桌面的统一待办
 - `docs/tavern-architecture.md`：Tavern schema、可靠性、浏览器边界与性能约束
 - `docs/parsing-and-planning-data-flow.md`：解析与规划数据链路
 - `docs/frontend-learning-workspace.md`：前端学习工作台职责拆分

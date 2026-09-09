@@ -12,7 +12,6 @@ on:
       - "packages/shared/**"
       - "package.json"
       - "package-lock.json"
-      - "docs/desktop-roadmap.md"
       - "docs/desktop-packaging.md"
 
 jobs:

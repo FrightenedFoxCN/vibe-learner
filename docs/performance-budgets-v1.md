@@ -86,3 +86,69 @@ summary is outside loaded pages.
 Budget changes require a new document version, code/evidence showing why the old
 gate is no longer representative, and independent review. An implementation
 regression is not a reason to edit the budget in place.
+
+## Harness runtime budgets
+
+### Executable limits
+
+`app.models.harness_performance` owns `harness-performance-budget-v1`.
+Limits apply to one admitted runtime stage; equality passes.
+
+| Dimension | Limit | Boundary |
+|---|---:|---|
+| Canonical context UTF-8 bytes | 256 KiB | Before resolver/worker |
+| Subject plus snapshot references | 64 | Before resolver/worker |
+| One resolved snapshot | 64 MiB | After authorization/resolution, before worker |
+| All resolved snapshots | 128 MiB | After authorization/resolution, before worker |
+| Existing runtime attempts | 64 | Before heartbeat-wrapped callback |
+| Existing attempt/check canonical bytes | 1 MiB | Before heartbeat-wrapped callback |
+
+The snapshot size check measures resolved payloads, not a streaming database
+read allocation limit. Attempt/evidence limits check the existing journal before
+the next callback, not a maximum final trace size; failure/terminal evidence may
+still append. Existing policy-specific repair ceilings remain in force. An
+expired wall-time budget now prevents starting the next callback.
+
+Initial pre-execution budget failures record a content-free typed
+`HarnessBudgetViolationV1` (version, dimension, actual, limit) in a failed check.
+Canonical measurement uses UTF-8 and the canonical JSON settings; it never
+publishes a protected-content digest. No public proposal or API DTO is expanded.
+
+Batch resolution shares one database session/transaction while retaining each
+request's exact grant, operation, contract, permission, retention and digest
+checks before content access. Tavern, Study and broad-adoption resolver bridges
+use the batch path. Results preserve request order. Unexpected transaction
+errors roll the batch back; ordinary typed denials remain individual results.
+
+### Local benchmark
+
+From the repository root:
+
+```sh
+npm run bench:harness -- --samples 30 --output /tmp/harness-local.json
+```
+
+The command uses temporary SQLite and synthetic content, with five warmups per
+case and at least 30 measured samples. It requires the `cl100k_base` tokenizer
+data cache (first use may download public tokenizer data). It reads no runtime
+provider settings or credentials and makes zero provider calls. Each JSON report
+contains raw samples, nearest-rank p50/p95, environment/dependency versions,
+base commit, changed-source hashes, fixture/budget versions, limits and failures.
+
+| Local measurement | p95 ceiling |
+|---|---:|
+| Admitted Persona runtime, protected 8 KiB input, strict proposal, trace | 500 ms |
+| One snapshot resolution | 100 ms |
+| Eight snapshot resolutions | 300 ms |
+| 64 snapshot resolutions | 1500 ms |
+| Tavern prompt preflight plus tokenizer | 1500 ms |
+| Planning two-tool serial round | 100 ms |
+
+The runtime measurement includes the lifecycle and database work; it is not an
+isolated estimate of incremental Harness overhead. Resolver before/after uses
+the same protected payload and grants with individual transactions versus one
+batch. The batch SQL gate is at most `6 * reference_count + 3` statements.
+These are local regression ceilings, not production latency promises.
+
+
+Planning tools remain serial: all six registrations are `parallel_safe=false`. Any future parallel candidate must preserve immutable snapshot input, stable result order and effect safety, with a reviewed rollback threshold.

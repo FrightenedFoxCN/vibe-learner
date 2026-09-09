@@ -66,10 +66,10 @@ Domain-owned fail-closed client boundaries now cover Document, Planning,
 Persona/Scene, Study, Tavern, and versioned Document/Planning streams. They bind
 response identity, enums, finite numbers, nullability, ordering, ranges,
 cross-record references, duplicate IDs, derived projections, and each domain's
-operation/recovery versions before rendering. Remaining endpoint inventory,
-independent live-wire closure, Frontend Decoder component registration,
-`FRONTEND_REQUEST` evidence, and complete cross-endpoint v2/v3 trace forwarding remain open;
-implemented strict decode does not itself prove Harness v3 adoption.
+operation/recovery versions before rendering. Frontend Decoder registration,
+`FRONTEND_REQUEST` evidence and v1/v2/v3 trace routing are implemented. Actual
+Study/Tavern HTTP read-back after service restart is covered by decoder tests;
+remaining native UI and independent acceptance work is tracked in `TODO.md`.
 
 ### AI service
 
@@ -101,7 +101,7 @@ Harness Engineering is a repository-wide lifecycle, not a Tavern synonym:
 7. atomically commit validated effects or persist terminal failure evidence;
 8. emit trace/eval evidence.
 
-Tavern actor generation and Study Chat use the production v3 context/runtime boundary, authorized protected snapshots, strict proposal validation, terminal trace persistence, committed primary-output projections, and deterministic eval suites. Document/OCR/Study Unit, Planning, Persona, Scene, and Frontend Decode remain separate adoption work. See `harness-engineering.md` and `harness-schema-ownership.md`.
+Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern use production v3 lifecycle boundaries. Frontend strict decoders and all 13 stage eval registrations are implemented. The shared flow is shown in [Harness architecture](harness-architecture.md); remaining acceptance and product work lives only in [TODO](../TODO.md).
 
 Learning-plan text uses a stable cross-layer contract:
 
@@ -287,8 +287,8 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - no background queue, Live2D, or TTS runtime;
 - OCR cleanup remains heuristic-heavy;
 - tool-enabled model calls increase provider latency and timeout pressure;
-- Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, but its extraction/OCR/cleanup stages are not yet v3-adopted;
+- Document processing has durable admission, atomic Document/Debug projection commit, digest read-back, and startup recovery, and v3 evidence for extraction/OCR/cleanup stages;
 - Study Chat has production v3 context, trace, protected replay, deterministic eval, durable request admission, transactional Session/Scene database effects, and operation-owned attachment staging/read-back, while provider uncertainty remains explicit;
-- production Harness v3 adoption is complete for Tavern actor generation and Study Chat and remains open for Document/OCR/Study Unit, Planning, Persona, Scene, and Frontend Decode;
-- Tavern prompt/token/scene-depth budgets and eval metrics remain open;
+- current production lifecycle coverage is shown in `harness-architecture.md`; deterministic implementation gates do not certify independent quality or every platform;
+- Tavern prompt/token/scene-depth budgets and deterministic evals are enforced; representative provider performance and billing acceptance remain in `TODO.md`;
 - `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` is only a compatibility alias.

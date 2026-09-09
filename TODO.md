@@ -1,6 +1,8 @@
 # TODO
 
-本文件只保留未完成工作。完成事实、运行约束和长期设计应进入 `AGENTS.md` 或 `docs/`；tracking epic 与研究候选不作为可领取 checkbox。
+本文件是产品、Harness 和桌面工作的唯一待办入口，只保留未完成事项。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
+
+2026-09-10 整理：27 项未完成工作，其中 1 项质量复核按用户要求暂缓；研究候选不计入任务数。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -72,17 +74,9 @@
 
 - [ ] `STUDY-OP-RECOVERY-UX-001` `[P2]` 覆盖超长轮询、终态刷新、断网和页面恢复文案，不放宽 same-key mismatch 或 `uncertain` 禁止重放。
 
-## Harness roadmap
-
-Harness 的未完成工作、依赖图、里程碑、评估基线和生产采用门统一维护在
-`docs/harness-roadmap.md`。本文件不重复 Harness-owned checkbox；Tavern schema、
-Study operation hardening、Plan CAS 等产品线前置任务继续在本文件维护，并由
-Harness roadmap 按任务 ID 引用。
-
 ## Planning 迭代
 
-Tool Manifest、Planning tool eval 和 parallel-safety 性能门属于 Harness roadmap；
-本节只保留 Plan 聚合与用户修订流程。
+当前 Planning 创建、Tool Manifest 和确定性评测已实现；以下是 Plan 后续修订能力。
 
 - [ ] `SCH-PLAN-CAS-001` `[P1]` 建立数据库权威 Plan revision/CAS。
   - 覆盖全部计划写入口、旧数据迁移，以及既有 Study Session、进度和 schedule identity 的并发语义。
@@ -92,14 +86,38 @@ Tool Manifest、Planning tool eval 和 parallel-safety 性能门属于 Harness r
 
 - [ ] `PLAN-REV-UX-001` `[P2]` 增加修订 diff、接受/拒绝、冲突刷新、回滚和恢复 UX；依赖 `PLAN-PATCH-001`。
 
-## Tracking epics（不可直接领取）
+## 可靠性、部署与输入边界
 
-- `UX-001`：Tavern 发布体验；关闭条件包括 Copy、无 Persona/无 Room、设备级 IME、完整焦点顺序和 390×844 设备量测。
-- `UX-A11Y-001`：由 Study Question、Scene Dialog、Async/Touch 三个子项关闭。
-- `UX-EDITOR-DENSITY-001`：由 Sensory、Persona、Scene 三个子项关闭。
-- `PERF-001`：由 Provider ownership、Request dedupe、Bundle budget 三个子项关闭。
-- `STUDY-OP-HARDEN-001`：Clock 与 Scanner 已完成，剩余 Recovery UX 关闭本项。
-- `PLAN-ITER-001`：由 Plan CAS、Patch Operation、Revision UX 三个子项关闭。
+- [ ] `REL-DESKTOP-001` `[P2]` 完成真实桌面/浏览器恢复验收。
+  - 覆盖慢网、断网、刷新/离页、Settings 未保存变更、编辑器异步返回、删除/归档组合、桌面安装/退出；覆盖 Tavern 无 Persona/无 Room、设备级 IME 和完整焦点顺序。
+  - 已有进程退出、事务回滚、HTTP 重启读回测试作为回归门；不得重复列为待实现。Study 文案由 `STUDY-OP-RECOVERY-UX-001` 负责。
+
+- [ ] `REL-POSTGRES-001` `[P2]` 在实际 PostgreSQL 上完成迁移、并发 CAS、事务回滚和重启恢复验收。
+  - 当前完整恢复矩阵在 SQLite 上通过；SQLite 结果不能替代 PostgreSQL 实测。
+
+- [ ] `REL-REPLAY-001` `[P2]` 独立复核 Document、Planning、Persona/Scene 的受保护制品重放。
+  - 覆盖授权、保留/删除、摘要损坏和版本兼容；复用现有运行时、解析器和测试，不新增一套 Harness 基础设施。
+
+- [ ] `DOC-INPUT-BOUNDS-001` `[P2]` 定义文档上传字节/页数上限与可恢复的拒绝行为。
+  - 当前上传没有硬性上限；256 页压力测试已通过。明确单个不可分割文本块的策略，不能把 chunk packing target 当作硬上限。
+
+- [ ] `OCR-STRESS-001` `[P2]` 完成真实 OCR 多语言、大型扫描件和失败恢复测试。
+  - 复用已实现的 CPU fallback；测量内存、时延及错误状态，区分压力样本与正式支持上限。
+
+- [ ] `PERF-TAV-LIVE-001` `[P2]` 完成代表性真实 provider 的 Tavern 性能验收。
+  - 使用六人名册、每次最多四个调度目标及长对话，记录 token、真实计费证据、P50/P95、修复/失败率和 retry/cancel 行为。
+  - 既有 MiniMax 样本出现过上游 529；本地确定性门和 mock 恢复成功不代表真实 provider 全通过。
+
+- [ ] `DESKTOP-RELEASE-001` `[P2]` 完成生产签名、公证和跨平台安装验收。
+  - macOS sidecar/native dependencies 使用同一 Developer ID Team，验证后开启 hardened runtime；验证 Windows/Linux 安装、退出与校验和。
+  - 明确预览版缺少打包 OCR 模型时允许 fallback 还是阻止发布的策略。
+
+## 暂缓：质量复核
+
+- [ ] `QG-MODEL-QUALITY-001` `[P2 · 用户暂缓]` 建立独立复核的真实模型质量与 held-out 评测基线。
+  - 重点覆盖填空题语义判分、人格关系/称呼 grounding、规划引用和生成内容质量。
+  - 十个阶段的 64 个确定性案例及原有三个 pilot 已完成；不重做注册，不把技术恢复测试当作模型质量验收。
+  - 模型 grader 用于门禁前必须有独立人工校准；用户恢复此项后再开展，不因文档清理自动视为通过。
 
 ## Research parking lot（未排期）
 
@@ -109,10 +127,12 @@ Tool Manifest、Planning tool eval 和 parallel-safety 性能门属于 Harness r
 - `RND-THEME-001`：需要用户需求、稳定 design tokens、对比度基线和可关闭开关。
 - `RND-LIVE2D-001`：需要授权、资源预算、动画降级和设备性能证据。
 - `RND-TTS-001`：需要隐私、延迟、成本、可取消传输、字幕和静音降级证据。
+- 桌面自动更新、崩溃上报及 sidecar 打包形态调整：先确定发布策略并通过性能测量再立项。
 - `SKILL-DISTILL-001`：只抽取稳定、可验证、无密钥/用户数据的仓库流程；`AGENTS.md` 仍是事实真源。
 
 ## 持续规则
 
-- Harness-specific 持续规则、tracking epics 和 `QG-002` 扩展规则统一维护在 `docs/harness-roadmap.md`。
+- 本文件是唯一待办入口；已实现的 Harness 基础设施、13 个阶段评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
+- 架构见 `docs/harness-architecture.md`，工程约束见 `AGENTS.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
 - Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面。
 - 性能任务必须记录 fixture、环境、raw samples 和 before/after；不得通过放宽既有预算关闭回归。
