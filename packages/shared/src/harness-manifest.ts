@@ -537,6 +537,19 @@ const STUDY_ENTRY: HarnessWorkflowManifestEntryV1 = {
 
 // Independently typed projection: the golden test must compare two sources,
 // not compare a fixture to an unchecked cast of that same fixture.
+export const STAGE_EVAL_SUITES: Record<string, HarnessContractRef> = {
+  "document_parse:document_parse": contract("document_process_regression", "document-process-regression-v1"),
+  "document_parse:page_extraction": contract("page_extraction_regression", "page-extraction-regression-v1"),
+  "document_parse:section_detection": contract("section_detection_regression", "section-detection-regression-v1"),
+  "document_parse:chunk_building": contract("chunk_building_regression", "chunk-building-regression-v1"),
+  "ocr:ocr_page": contract("ocr_page_regression", "ocr-page-regression-v1"),
+  "study_unit_cleanup:study_unit_cleanup": contract("study_unit_cleanup_regression", "study-unit-cleanup-regression-v1"),
+  "planning:plan_generation": contract("plan_generation_regression", "plan-generation-regression-v1"),
+  "persona:persona_generation": contract("persona_generation_regression", "persona-generation-regression-v1"),
+  "scene:scene_generation": contract("scene_generation_regression", "scene-generation-regression-v1"),
+  "frontend_decode:response_decode": contract("frontend_decode_regression", "frontend-decode-regression-v1"),
+};
+
 const executableEntry = (
   workflow: HarnessWorkflow,
   stage: HarnessStage,
@@ -568,7 +581,9 @@ const executableEntry = (
   decoder_route: registeredString(options.decoder),
   eval_suites: options.evalSuites?.length
     ? registeredContracts(...options.evalSuites)
-    : unregistered("eval_suite_not_registered"),
+    : STAGE_EVAL_SUITES[`${workflow}:${stage}`]
+      ? registeredContracts(STAGE_EVAL_SUITES[`${workflow}:${stage}`])
+      : unregistered("eval_suite_not_registered"),
 });
 
 const entries: HarnessWorkflowManifestEntryV1[] = [

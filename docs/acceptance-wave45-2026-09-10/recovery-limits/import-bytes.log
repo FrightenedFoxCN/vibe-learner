@@ -1,0 +1,10 @@
+✔ both editors accept exactly 8 MiB and reject one byte more before reading (12.201542ms)
+✔ file limits use UTF-8 bytes, not JavaScript string length (12.933875ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.234458

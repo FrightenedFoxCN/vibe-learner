@@ -23,3 +23,15 @@ test("scene import enforces depth, layer, object and text limits before mutation
   assert.throws(() => validateSceneImportStructure([{ ...layer(), children: [tree] }]));
   assert.throws(() => validateSceneImportStructure([{ title: "Dome", summary: "x".repeat(60_000) }]));
 });
+
+test("scene import counts Unicode codepoints at exactly 60000 and leaves source untouched on rejection", () => {
+  const input = { sceneName: "景", sceneSummary: "述", sceneLayers: [{ title: "层", summary: "🦊".repeat(59_997) }] };
+  const serialized = JSON.stringify(input);
+  validateSceneImportStructure(input);
+  assert.equal(JSON.stringify(input), serialized);
+  const invalid = { ...input, sceneName: "景🦊" };
+  const before = JSON.stringify(invalid);
+  assert.throws(() => validateSceneImportStructure(invalid), /scene_text_budget_exceeded/);
+  assert.equal(JSON.stringify(invalid), before);
+  validateSceneImportStructure(JSON.parse(serialized));
+});

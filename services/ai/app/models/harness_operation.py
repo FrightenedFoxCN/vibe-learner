@@ -18,6 +18,7 @@ DOMAIN_OPERATION_ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$"
 
 
 class HarnessDomainOperationKind(StrEnum):
+    FRONTEND_DECODE = "frontend_decode"
     DOCUMENT_PROCESS = "document_process"
     DOCUMENT_OCR = "document_ocr"
     STUDY_UNIT_CLEANUP = "study_unit_cleanup"
@@ -30,6 +31,10 @@ class HarnessDomainOperationKind(StrEnum):
 
 HARNESS_DOMAIN_OPERATION_ROUTES = MappingProxyType(
     {
+        HarnessDomainOperationKind.FRONTEND_DECODE: (
+            HarnessWorkflow.FRONTEND_DECODE,
+            HarnessStage.FRONTEND_RESPONSE_DECODE,
+        ),
         HarnessDomainOperationKind.DOCUMENT_PROCESS: (
             HarnessWorkflow.DOCUMENT_PARSE,
             HarnessStage.DOCUMENT_PARSE,

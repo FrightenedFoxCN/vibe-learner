@@ -1,0 +1,2039 @@
+{
+  "schema_version": "stage-regression-cases-v1",
+  "provenance": "developer_authored",
+  "cases": [
+    {
+      "case_id": "document_parse-standard",
+      "stage": "document_parse",
+      "scenario": "standard",
+      "input": null,
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "case_id": "document_parse-missing_page",
+      "stage": "document_parse",
+      "scenario": "missing_page",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "document_parse-duplicate_page",
+      "stage": "document_parse",
+      "scenario": "duplicate_page",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "document_parse-foreign_section",
+      "stage": "document_parse",
+      "scenario": "foreign_section",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "document_parse-foreign_chunk",
+      "stage": "document_parse",
+      "scenario": "foreign_chunk",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "document_parse-chunk_out_of_bounds",
+      "stage": "document_parse",
+      "scenario": "chunk_out_of_bounds",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "page_extraction-standard",
+      "stage": "page_extraction",
+      "scenario": "standard",
+      "input": null,
+      "expected": {
+        "page_count": 2,
+        "ordered": true,
+        "anchors": true,
+        "ocr_applied": false
+      }
+    },
+    {
+      "case_id": "section_detection-standard",
+      "stage": "section_detection",
+      "scenario": "standard",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "unique": true,
+        "toc_titles": true
+      }
+    },
+    {
+      "case_id": "page_extraction-no_toc",
+      "stage": "page_extraction",
+      "scenario": "no_toc",
+      "input": null,
+      "expected": {
+        "page_count": 2,
+        "ordered": true,
+        "anchors": true,
+        "ocr_applied": false
+      }
+    },
+    {
+      "case_id": "section_detection-no_toc",
+      "stage": "section_detection",
+      "scenario": "no_toc",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "unique": true
+      }
+    },
+    {
+      "case_id": "chunk_building-standard",
+      "stage": "chunk_building",
+      "scenario": "standard",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "unique": true,
+        "attributed": true,
+        "text_preserved": true,
+        "counts_match": true
+      }
+    },
+    {
+      "case_id": "chunk_building-empty",
+      "stage": "chunk_building",
+      "scenario": "empty",
+      "input": null,
+      "expected": {
+        "nonempty": false,
+        "bounded": true,
+        "unique": true,
+        "attributed": true,
+        "text_preserved": true,
+        "counts_match": true
+      }
+    },
+    {
+      "case_id": "chunk_building-nested",
+      "stage": "chunk_building",
+      "scenario": "nested",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "unique": true,
+        "attributed": true,
+        "text_preserved": true,
+        "counts_match": true
+      }
+    },
+    {
+      "case_id": "chunk_building-unicode",
+      "stage": "chunk_building",
+      "scenario": "unicode",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "unique": true,
+        "attributed": true,
+        "text_preserved": true,
+        "counts_match": true
+      }
+    },
+    {
+      "case_id": "ocr_page-gain",
+      "stage": "ocr_page",
+      "scenario": "gain",
+      "input": null,
+      "expected": {
+        "source": "ocr",
+        "used_ocr": true,
+        "calls": 1,
+        "has_text": true,
+        "warned": false
+      }
+    },
+    {
+      "case_id": "ocr_page-unavailable",
+      "stage": "ocr_page",
+      "scenario": "unavailable",
+      "input": null,
+      "expected": {
+        "source": "ocr_unavailable",
+        "used_ocr": false,
+        "calls": 1,
+        "has_text": false,
+        "warned": true
+      }
+    },
+    {
+      "case_id": "ocr_page-failed",
+      "stage": "ocr_page",
+      "scenario": "failed",
+      "input": null,
+      "expected": {
+        "source": "ocr_failed",
+        "used_ocr": false,
+        "calls": 1,
+        "has_text": false,
+        "warned": true
+      }
+    },
+    {
+      "case_id": "ocr_page-no_gain",
+      "stage": "ocr_page",
+      "scenario": "no_gain",
+      "input": null,
+      "expected": {
+        "source": "ocr_attempted",
+        "used_ocr": false,
+        "calls": 1,
+        "has_text": true,
+        "warned": false
+      }
+    },
+    {
+      "case_id": "ocr_page-text_bypass",
+      "stage": "ocr_page",
+      "scenario": "text_bypass",
+      "input": null,
+      "expected": {
+        "source": "text",
+        "used_ocr": false,
+        "calls": 0,
+        "has_text": true,
+        "warned": false
+      }
+    },
+    {
+      "case_id": "study_unit_cleanup-standard",
+      "stage": "study_unit_cleanup",
+      "scenario": "standard",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "attributed": true,
+        "backmatter_excluded": true
+      }
+    },
+    {
+      "case_id": "study_unit_cleanup-no_sections",
+      "stage": "study_unit_cleanup",
+      "scenario": "no_sections",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "attributed": true,
+        "backmatter_excluded": true
+      }
+    },
+    {
+      "case_id": "study_unit_cleanup-backmatter",
+      "stage": "study_unit_cleanup",
+      "scenario": "backmatter",
+      "input": null,
+      "expected": {
+        "nonempty": true,
+        "bounded": true,
+        "attributed": true,
+        "backmatter_excluded": true
+      }
+    },
+    {
+      "case_id": "plan_generation-valid",
+      "stage": "plan_generation",
+      "scenario": "valid",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": true,
+        "grounded": true
+      }
+    },
+    {
+      "case_id": "plan_generation-foreign_unit",
+      "stage": "plan_generation",
+      "scenario": "foreign_unit",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "foreign",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false,
+        "grounded": false
+      }
+    },
+    {
+      "case_id": "plan_generation-foreign_section",
+      "stage": "plan_generation",
+      "scenario": "foreign_section",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "foreign"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false,
+        "grounded": false
+      }
+    },
+    {
+      "case_id": "plan_generation-foreign_slice",
+      "stage": "plan_generation",
+      "scenario": "foreign_slice",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "foreign"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false,
+        "grounded": false
+      }
+    },
+    {
+      "case_id": "plan_generation-duplicate_unit",
+      "stage": "plan_generation",
+      "scenario": "duplicate_unit",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false,
+        "grounded": false
+      }
+    },
+    {
+      "case_id": "plan_generation-owned_id",
+      "stage": "plan_generation",
+      "scenario": "owned_id",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "id": "model-owned-id"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false,
+        "grounded": false
+      }
+    },
+    {
+      "case_id": "plan_generation-reverse_range",
+      "stage": "plan_generation",
+      "scenario": "reverse_range",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 3,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false,
+        "grounded": false
+      }
+    },
+    {
+      "case_id": "plan_generation-goal_only",
+      "stage": "plan_generation",
+      "scenario": "goal_only",
+      "input": {
+        "schema_name": "learning-plan-proposal",
+        "schema_version": "learning-plan-proposal-v1",
+        "course_title": "Vectors",
+        "overview": "Build a basis then examine linear maps.",
+        "today_tasks": [
+          "Read the first example."
+        ],
+        "schedule": [
+          {
+            "unit_id": "u1",
+            "title": "Vectors",
+            "focus": "Find a basis",
+            "activity_type": "learn",
+            "schedule_chapters": [
+              {
+                "title": "Basis",
+                "anchor_page_start": 1,
+                "anchor_page_end": 2,
+                "source_section_ids": [
+                  "s1"
+                ],
+                "content_slices": [
+                  {
+                    "page_start": 1,
+                    "page_end": 2,
+                    "source_section_ids": [
+                      "s1"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": true,
+        "grounded": true
+      }
+    },
+    {
+      "case_id": "persona_generation-cards",
+      "stage": "persona_generation",
+      "scenario": "cards",
+      "input": {
+        "request_kind": "card_batch",
+        "cards": [
+          {
+            "title": "Tutor",
+            "kind": "teaching_method",
+            "label": "Method",
+            "content": "Ask for evidence before conclusions.",
+            "tags": [
+              "evidence"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "case_id": "persona_generation-slot",
+      "stage": "persona_generation",
+      "scenario": "slot",
+      "input": {
+        "request_kind": "slot_assist",
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Method",
+          "content": "Use examples.",
+          "weight": 50.0,
+          "locked": false,
+          "sort_order": 0
+        }
+      },
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "case_id": "persona_generation-setting",
+      "stage": "persona_generation",
+      "scenario": "setting",
+      "input": {
+        "request_kind": "setting_assist",
+        "slots": [
+          {
+            "kind": "teaching_method",
+            "label": "Method",
+            "content": "Use examples.",
+            "weight": 50.0,
+            "locked": false,
+            "sort_order": 0
+          }
+        ],
+        "system_prompt_suggestion": "Stay grounded in the textbook."
+      },
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "case_id": "persona_generation-owned_id",
+      "stage": "persona_generation",
+      "scenario": "owned_id",
+      "input": {
+        "request_kind": "card_batch",
+        "cards": [
+          {
+            "title": "Tutor",
+            "kind": "teaching_method",
+            "label": "Method",
+            "content": "Ask for evidence before conclusions.",
+            "tags": [
+              "evidence"
+            ],
+            "id": "invented"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "persona_generation-duplicate_tags",
+      "stage": "persona_generation",
+      "scenario": "duplicate_tags",
+      "input": {
+        "request_kind": "card_batch",
+        "cards": [
+          {
+            "title": "Tutor",
+            "kind": "teaching_method",
+            "label": "Method",
+            "content": "Ask for evidence before conclusions.",
+            "tags": [
+              "evidence",
+              "evidence"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "persona_generation-over_weight",
+      "stage": "persona_generation",
+      "scenario": "over_weight",
+      "input": {
+        "request_kind": "slot_assist",
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Method",
+          "content": "Use examples.",
+          "weight": 101.0,
+          "locked": false,
+          "sort_order": 0
+        }
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "persona_generation-empty_cards",
+      "stage": "persona_generation",
+      "scenario": "empty_cards",
+      "input": {
+        "request_kind": "card_batch",
+        "cards": []
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "persona_generation-mixed_shapes",
+      "stage": "persona_generation",
+      "scenario": "mixed_shapes",
+      "input": {
+        "request_kind": "card_batch",
+        "cards": [
+          {
+            "title": "Tutor",
+            "kind": "teaching_method",
+            "label": "Method",
+            "content": "Ask for evidence before conclusions.",
+            "tags": [
+              "evidence"
+            ]
+          }
+        ],
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Method",
+          "content": "Use examples.",
+          "weight": 50.0,
+          "locked": false,
+          "sort_order": 0
+        }
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "persona_generation-locked_slot",
+      "stage": "persona_generation",
+      "scenario": "locked_slot",
+      "input": {
+        "request_kind": "slot_assist",
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Method",
+          "content": "Use examples.",
+          "weight": 50.0,
+          "locked": true,
+          "sort_order": 0
+        }
+      },
+      "expected": {
+        "accepted": true
+      }
+    },
+    {
+      "case_id": "scene_generation-valid",
+      "stage": "scene_generation",
+      "scenario": "valid",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [],
+            "tags": [
+              "quiet"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": true,
+        "application_ids": true
+      }
+    },
+    {
+      "case_id": "scene_generation-nested",
+      "stage": "scene_generation",
+      "scenario": "nested",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [
+              {
+                "title": "Synthetic laboratory",
+                "scope_label": "Synthetic laboratory",
+                "summary": "Synthetic laboratory",
+                "atmosphere": "Synthetic laboratory",
+                "rules": "Synthetic laboratory",
+                "entrance": "Synthetic laboratory",
+                "objects": [],
+                "children": [],
+                "tags": [
+                  "quiet"
+                ]
+              }
+            ],
+            "tags": [
+              "quiet"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": true,
+        "application_ids": true
+      }
+    },
+    {
+      "case_id": "scene_generation-owned_id",
+      "stage": "scene_generation",
+      "scenario": "owned_id",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [],
+            "tags": [
+              "quiet"
+            ],
+            "id": "invented"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "scene_generation-bad_path",
+      "stage": "scene_generation",
+      "scenario": "bad_path",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          2
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [],
+            "tags": [
+              "quiet"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "scene_generation-duplicate_tags",
+      "stage": "scene_generation",
+      "scenario": "duplicate_tags",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [],
+            "tags": [
+              "quiet",
+              "quiet"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "scene_generation-depth_limit",
+      "stage": "scene_generation",
+      "scenario": "depth_limit",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [
+              {
+                "title": "Synthetic laboratory",
+                "scope_label": "Synthetic laboratory",
+                "summary": "Synthetic laboratory",
+                "atmosphere": "Synthetic laboratory",
+                "rules": "Synthetic laboratory",
+                "entrance": "Synthetic laboratory",
+                "objects": [],
+                "children": [
+                  {
+                    "title": "Synthetic laboratory",
+                    "scope_label": "Synthetic laboratory",
+                    "summary": "Synthetic laboratory",
+                    "atmosphere": "Synthetic laboratory",
+                    "rules": "Synthetic laboratory",
+                    "entrance": "Synthetic laboratory",
+                    "objects": [],
+                    "children": [
+                      {
+                        "title": "Synthetic laboratory",
+                        "scope_label": "Synthetic laboratory",
+                        "summary": "Synthetic laboratory",
+                        "atmosphere": "Synthetic laboratory",
+                        "rules": "Synthetic laboratory",
+                        "entrance": "Synthetic laboratory",
+                        "objects": [],
+                        "children": [
+                          {
+                            "title": "Synthetic laboratory",
+                            "scope_label": "Synthetic laboratory",
+                            "summary": "Synthetic laboratory",
+                            "atmosphere": "Synthetic laboratory",
+                            "rules": "Synthetic laboratory",
+                            "entrance": "Synthetic laboratory",
+                            "objects": [],
+                            "children": [
+                              {
+                                "title": "Synthetic laboratory",
+                                "scope_label": "Synthetic laboratory",
+                                "summary": "Synthetic laboratory",
+                                "atmosphere": "Synthetic laboratory",
+                                "rules": "Synthetic laboratory",
+                                "entrance": "Synthetic laboratory",
+                                "objects": [],
+                                "children": [
+                                  {
+                                    "title": "Synthetic laboratory",
+                                    "scope_label": "Synthetic laboratory",
+                                    "summary": "Synthetic laboratory",
+                                    "atmosphere": "Synthetic laboratory",
+                                    "rules": "Synthetic laboratory",
+                                    "entrance": "Synthetic laboratory",
+                                    "objects": [],
+                                    "children": [
+                                      {
+                                        "title": "Synthetic laboratory",
+                                        "scope_label": "Synthetic laboratory",
+                                        "summary": "Synthetic laboratory",
+                                        "atmosphere": "Synthetic laboratory",
+                                        "rules": "Synthetic laboratory",
+                                        "entrance": "Synthetic laboratory",
+                                        "objects": [],
+                                        "children": [],
+                                        "tags": [
+                                          "quiet"
+                                        ]
+                                      }
+                                    ],
+                                    "tags": [
+                                      "quiet"
+                                    ]
+                                  }
+                                ],
+                                "tags": [
+                                  "quiet"
+                                ]
+                              }
+                            ],
+                            "tags": [
+                              "quiet"
+                            ]
+                          }
+                        ],
+                        "tags": [
+                          "quiet"
+                        ]
+                      }
+                    ],
+                    "tags": [
+                      "quiet"
+                    ]
+                  }
+                ],
+                "tags": [
+                  "quiet"
+                ]
+              }
+            ],
+            "tags": [
+              "quiet"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": true,
+        "application_ids": true
+      }
+    },
+    {
+      "case_id": "scene_generation-depth_overflow",
+      "stage": "scene_generation",
+      "scenario": "depth_overflow",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [
+              {
+                "title": "Synthetic laboratory",
+                "scope_label": "Synthetic laboratory",
+                "summary": "Synthetic laboratory",
+                "atmosphere": "Synthetic laboratory",
+                "rules": "Synthetic laboratory",
+                "entrance": "Synthetic laboratory",
+                "objects": [],
+                "children": [
+                  {
+                    "title": "Synthetic laboratory",
+                    "scope_label": "Synthetic laboratory",
+                    "summary": "Synthetic laboratory",
+                    "atmosphere": "Synthetic laboratory",
+                    "rules": "Synthetic laboratory",
+                    "entrance": "Synthetic laboratory",
+                    "objects": [],
+                    "children": [
+                      {
+                        "title": "Synthetic laboratory",
+                        "scope_label": "Synthetic laboratory",
+                        "summary": "Synthetic laboratory",
+                        "atmosphere": "Synthetic laboratory",
+                        "rules": "Synthetic laboratory",
+                        "entrance": "Synthetic laboratory",
+                        "objects": [],
+                        "children": [
+                          {
+                            "title": "Synthetic laboratory",
+                            "scope_label": "Synthetic laboratory",
+                            "summary": "Synthetic laboratory",
+                            "atmosphere": "Synthetic laboratory",
+                            "rules": "Synthetic laboratory",
+                            "entrance": "Synthetic laboratory",
+                            "objects": [],
+                            "children": [
+                              {
+                                "title": "Synthetic laboratory",
+                                "scope_label": "Synthetic laboratory",
+                                "summary": "Synthetic laboratory",
+                                "atmosphere": "Synthetic laboratory",
+                                "rules": "Synthetic laboratory",
+                                "entrance": "Synthetic laboratory",
+                                "objects": [],
+                                "children": [
+                                  {
+                                    "title": "Synthetic laboratory",
+                                    "scope_label": "Synthetic laboratory",
+                                    "summary": "Synthetic laboratory",
+                                    "atmosphere": "Synthetic laboratory",
+                                    "rules": "Synthetic laboratory",
+                                    "entrance": "Synthetic laboratory",
+                                    "objects": [],
+                                    "children": [
+                                      {
+                                        "title": "Synthetic laboratory",
+                                        "scope_label": "Synthetic laboratory",
+                                        "summary": "Synthetic laboratory",
+                                        "atmosphere": "Synthetic laboratory",
+                                        "rules": "Synthetic laboratory",
+                                        "entrance": "Synthetic laboratory",
+                                        "objects": [],
+                                        "children": [
+                                          {
+                                            "title": "Synthetic laboratory",
+                                            "scope_label": "Synthetic laboratory",
+                                            "summary": "Synthetic laboratory",
+                                            "atmosphere": "Synthetic laboratory",
+                                            "rules": "Synthetic laboratory",
+                                            "entrance": "Synthetic laboratory",
+                                            "objects": [],
+                                            "children": [],
+                                            "tags": [
+                                              "quiet"
+                                            ]
+                                          }
+                                        ],
+                                        "tags": [
+                                          "quiet"
+                                        ]
+                                      }
+                                    ],
+                                    "tags": [
+                                      "quiet"
+                                    ]
+                                  }
+                                ],
+                                "tags": [
+                                  "quiet"
+                                ]
+                              }
+                            ],
+                            "tags": [
+                              "quiet"
+                            ]
+                          }
+                        ],
+                        "tags": [
+                          "quiet"
+                        ]
+                      }
+                    ],
+                    "tags": [
+                      "quiet"
+                    ]
+                  }
+                ],
+                "tags": [
+                  "quiet"
+                ]
+              }
+            ],
+            "tags": [
+              "quiet"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "scene_generation-unknown_reuse",
+      "stage": "scene_generation",
+      "scenario": "unknown_reuse",
+      "input": {
+        "schema_name": "scene-tree-proposal",
+        "schema_version": "scene-tree-proposal-v1",
+        "scene_name": "Lab",
+        "scene_summary": "A laboratory for observations.",
+        "selected_path": [
+          0
+        ],
+        "scene_layers": [
+          {
+            "title": "Synthetic laboratory",
+            "scope_label": "Synthetic laboratory",
+            "summary": "Synthetic laboratory",
+            "atmosphere": "Synthetic laboratory",
+            "rules": "Synthetic laboratory",
+            "entrance": "Synthetic laboratory",
+            "objects": [],
+            "children": [],
+            "tags": [
+              "quiet"
+            ],
+            "reusable_node_ref": "not-granted"
+          }
+        ]
+      },
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-DOCUMENT-IDENTITY-001",
+      "stage": "response_decode",
+      "scenario": "QG002-DOCUMENT-IDENTITY-001",
+      "input": {
+        "decoder": "document_record",
+        "input": {
+          "id": "document-attacker"
+        },
+        "invocation": {
+          "expected_document_id": "document-1"
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "document_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-PLAN-IDENTITY-001",
+      "stage": "response_decode",
+      "scenario": "QG002-PLAN-IDENTITY-001",
+      "input": {
+        "decoder": "learning_plan",
+        "input": {
+          "id": "plan-attacker"
+        },
+        "invocation": {
+          "expected_plan_id": "plan-1"
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "planning_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-PERSONA-TYPE-001",
+      "stage": "response_decode",
+      "scenario": "QG002-PERSONA-TYPE-001",
+      "input": {
+        "decoder": "persona_profile",
+        "input": {
+          "id": "persona-1",
+          "revision": 0,
+          "name": "Mentor",
+          "source": "user",
+          "summary": "A careful mentor",
+          "relationship": "Teacher",
+          "learner_address": "Learner",
+          "system_prompt": "Stay grounded",
+          "reference_hints": [],
+          "slots": [
+            {
+              "kind": "tone",
+              "label": "Tone",
+              "content": "Patient",
+              "weight": "100",
+              "locked": false,
+              "sort_order": 0
+            }
+          ],
+          "available_emotions": [
+            "calm"
+          ],
+          "available_actions": [
+            "idle"
+          ],
+          "default_speech_style": "warm"
+        },
+        "invocation": {}
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "persona_scene_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-SCENE-TYPE-001",
+      "stage": "response_decode",
+      "scenario": "QG002-SCENE-TYPE-001",
+      "input": {
+        "decoder": "scene_profile",
+        "input": {
+          "scene_name": "Night Library",
+          "summary": "A quiet study scene",
+          "scene_tree": "not-an-array"
+        },
+        "invocation": {}
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "persona_scene_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-STUDY-IDENTITY-001",
+      "stage": "response_decode",
+      "scenario": "QG002-STUDY-IDENTITY-001",
+      "input": {
+        "decoder": "study_session",
+        "input": {
+          "id": "session-attacker",
+          "document_id": "document-1",
+          "persona_id": "persona-1",
+          "plan_id": null,
+          "study_unit_id": "unit-1",
+          "revision": 0,
+          "last_turn_sequence": 0
+        },
+        "invocation": {
+          "expected_session_id": "session-1"
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "study_session_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-TAVERN-ENVELOPE-001",
+      "stage": "response_decode",
+      "scenario": "QG002-TAVERN-ENVELOPE-001",
+      "input": {
+        "decoder": "tavern_error_detail",
+        "input": {
+          "detail": "tavern_update_payload_empty"
+        },
+        "invocation": {}
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "tavern_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-QG002-STREAM-STATE-001",
+      "stage": "response_decode",
+      "scenario": "QG002-STREAM-STATE-001",
+      "input": {
+        "decoder": "stream_state_machine",
+        "input": [
+          {
+            "event_schema_version": "stream-event-v1",
+            "operation_id": "document-stream-1",
+            "event_id": "document-stream-1:event:1",
+            "event_sequence": 1,
+            "stream_kind": "document_process",
+            "subject": {
+              "subject_type": "document",
+              "subject_id": "document-1"
+            },
+            "stage": "document_processing_started",
+            "payload_contract_version": "document-process-stream-payload-v1",
+            "payload_digest": "0000000000000000000000000000000000000000000000000000000000000001",
+            "payload": {
+              "document_id": "document-1"
+            },
+            "terminal_evidence": null,
+            "committed_projection": null,
+            "created_at": "2026-08-25T00:00:01Z"
+          },
+          {
+            "event_schema_version": "stream-event-v1",
+            "operation_id": "document-stream-1",
+            "event_id": "document-stream-1:event:3",
+            "event_sequence": 3,
+            "stream_kind": "document_process",
+            "subject": {
+              "subject_type": "document",
+              "subject_id": "document-1"
+            },
+            "stage": "parser_started",
+            "payload_contract_version": "document-process-stream-payload-v1",
+            "payload_digest": "0000000000000000000000000000000000000000000000000000000000000003",
+            "payload": {
+              "document_id": "document-1"
+            },
+            "terminal_evidence": null,
+            "committed_projection": null,
+            "created_at": "2026-08-25T00:00:03Z"
+          }
+        ],
+        "invocation": {
+          "stream_kind": "document_process",
+          "subject_type": "document",
+          "subject_id": "document-1"
+        }
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "stream_response_decode_error"
+      }
+    },
+    {
+      "case_id": "response_decode-valid_document",
+      "stage": "response_decode",
+      "scenario": "valid_document",
+      "input": {
+        "decoder": "document_record",
+        "input": {
+          "id": "document-1",
+          "title": "Synthetic",
+          "original_filename": "synthetic.pdf",
+          "stored_path": "/synthetic.pdf",
+          "status": "uploaded",
+          "ocr_status": "pending",
+          "created_at": "2026-09-09T00:00:00Z",
+          "updated_at": "2026-09-09T00:00:00Z",
+          "sections": [],
+          "study_units": [],
+          "study_unit_count": 0,
+          "page_count": 0,
+          "chunk_count": 0,
+          "preview_excerpt": "",
+          "debug_ready": false
+        },
+        "invocation": {
+          "expected_document_id": "document-1"
+        }
+      },
+      "expected": {
+        "accepted": true,
+        "error_code": ""
+      }
+    },
+    {
+      "case_id": "persona_generation-fallback_locked",
+      "stage": "persona_generation",
+      "scenario": "fallback_locked",
+      "input": {
+        "kind": "teaching_method",
+        "label": "Method",
+        "content": "Keep the lamp red.",
+        "weight": 73.0,
+        "locked": true,
+        "sort_order": 20
+      },
+      "expected": {
+        "idempotent": true,
+        "controls_preserved": true,
+        "unchanged": true
+      }
+    },
+    {
+      "case_id": "persona_generation-fallback_custom",
+      "stage": "persona_generation",
+      "scenario": "fallback_custom",
+      "input": {
+        "kind": "custom",
+        "label": "Method",
+        "content": "Keep the lamp red.",
+        "weight": 73.0,
+        "locked": false,
+        "sort_order": 20
+      },
+      "expected": {
+        "idempotent": true,
+        "controls_preserved": true,
+        "unchanged": true
+      }
+    },
+    {
+      "case_id": "persona_generation-fallback_idempotent",
+      "stage": "persona_generation",
+      "scenario": "fallback_idempotent",
+      "input": {
+        "kind": "teaching_method",
+        "label": "Method",
+        "content": "Keep the lamp red.",
+        "weight": 73.0,
+        "locked": false,
+        "sort_order": 20
+      },
+      "expected": {
+        "idempotent": true,
+        "controls_preserved": true
+      }
+    },
+    {
+      "case_id": "persona_generation-structured_repair",
+      "stage": "persona_generation",
+      "scenario": "structured_repair",
+      "input": {
+        "kind": "teaching_method",
+        "label": "Method",
+        "content": "Keep the lamp red.",
+        "weight": 73.0,
+        "locked": false,
+        "sort_order": 20
+      },
+      "expected": {
+        "accepted": true,
+        "fixture_calls": 2,
+        "controls_preserved": true
+      }
+    },
+    {
+      "case_id": "persona_generation-exhausted_repair",
+      "stage": "persona_generation",
+      "scenario": "exhausted_repair",
+      "input": {
+        "kind": "teaching_method",
+        "label": "Method",
+        "content": "Keep the lamp red.",
+        "weight": 73.0,
+        "locked": false,
+        "sort_order": 20
+      },
+      "expected": {
+        "accepted": false,
+        "fixture_calls": 2,
+        "controls_preserved": false
+      }
+    },
+    {
+      "case_id": "persona_generation-provider_controls",
+      "stage": "persona_generation",
+      "scenario": "provider_controls",
+      "input": {
+        "kind": "teaching_method",
+        "label": "Method",
+        "content": "Keep the lamp red.",
+        "weight": 73.0,
+        "locked": false,
+        "sort_order": 20
+      },
+      "expected": {
+        "accepted": true,
+        "fixture_calls": 1,
+        "controls_preserved": true
+      }
+    },
+    {
+      "case_id": "response_decode-valid_v3",
+      "stage": "response_decode",
+      "scenario": "valid_v3",
+      "input": {
+        "decoder": "harness_trace",
+        "input": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "trace-tavern-context-foundation-1",
+          "operation_id": "harness-operation-11111111111111111111111111111111",
+          "parent_trace_id": null,
+          "workflow": "tavern",
+          "stage": "actor_reply",
+          "status": "passed",
+          "contract": {
+            "name": "TavernActorReply",
+            "version": "tavern-actor-reply-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "tavern",
+            "stage": "actor_reply",
+            "operation_id": "harness-operation-11111111111111111111111111111111",
+            "input_contract": {
+              "name": "TavernActorInputManifest",
+              "version": "tavern-actor-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "tavern_room",
+                "resource_id": "room-1",
+                "revision": 4
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "tavern_actor_prompt",
+                "version": "tavern-actor-v1"
+              },
+              {
+                "name": "tavern_persona_compiler",
+                "version": "tavern-persona-compiler-v1"
+              },
+              {
+                "name": "tavern_scheduler",
+                "version": "tavern-schedule-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "tavern_room_snapshot",
+                "artifact_id": "room-1-revision-4",
+                "contract": {
+                  "name": "TavernRoomSnapshot",
+                  "version": "tavern-room-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "e0955dcdef34e9576fd16b612da581be5a799fd2459beb1d50836d28e9e7f83a"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "6456b3b79ccb6aa5b3734eae226734a55f8e40eefc904fd45aeae3dd97f7f7d2",
+            "context_digest": "257ea34db59a134d79b405c337acabff1a247b4549098e937a4f7528864eed97",
+            "policy_contract": {
+              "name": "TavernHarnessPolicy",
+              "version": "tavern-harness-policy-v1"
+            },
+            "prompt_contract": {
+              "name": "TavernActorPrompt",
+              "version": "tavern-actor-v1"
+            }
+          },
+          "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+          "checks": [],
+          "attempt_records": [
+            {
+              "attempt_id": "attempt-generate-1",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+              "error_code": "",
+              "duration_ms": 7
+            },
+            {
+              "attempt_id": "attempt-validate-1",
+              "attempt_index": 2,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+              "error_code": "",
+              "duration_ms": 1
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 8,
+          "commit_evidence": {
+            "status": "not_applicable",
+            "effect_batch_id": null,
+            "payload_contract": null,
+            "digest_algorithm": null,
+            "digest_scope": null,
+            "attempted_resource_refs": [],
+            "committed_resources": [],
+            "payload_digest": null,
+            "committed_at": null,
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-08-12T10:00:00Z",
+          "completed_at": "2026-08-12T10:00:00.008Z"
+        },
+        "invocation": {}
+      },
+      "expected": {
+        "accepted": true,
+        "error_code": ""
+      }
+    },
+    {
+      "case_id": "response_decode-unknown_trace_version",
+      "stage": "response_decode",
+      "scenario": "unknown_trace_version",
+      "input": {
+        "decoder": "harness_trace",
+        "input": {
+          "trace_schema_version": "harness-trace-v99",
+          "trace_id": "trace-tavern-context-foundation-1",
+          "operation_id": "harness-operation-11111111111111111111111111111111",
+          "parent_trace_id": null,
+          "workflow": "tavern",
+          "stage": "actor_reply",
+          "status": "passed",
+          "contract": {
+            "name": "TavernActorReply",
+            "version": "tavern-actor-reply-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "tavern",
+            "stage": "actor_reply",
+            "operation_id": "harness-operation-11111111111111111111111111111111",
+            "input_contract": {
+              "name": "TavernActorInputManifest",
+              "version": "tavern-actor-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "tavern_room",
+                "resource_id": "room-1",
+                "revision": 4
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "tavern_actor_prompt",
+                "version": "tavern-actor-v1"
+              },
+              {
+                "name": "tavern_persona_compiler",
+                "version": "tavern-persona-compiler-v1"
+              },
+              {
+                "name": "tavern_scheduler",
+                "version": "tavern-schedule-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "tavern_room_snapshot",
+                "artifact_id": "room-1-revision-4",
+                "contract": {
+                  "name": "TavernRoomSnapshot",
+                  "version": "tavern-room-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "e0955dcdef34e9576fd16b612da581be5a799fd2459beb1d50836d28e9e7f83a"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "6456b3b79ccb6aa5b3734eae226734a55f8e40eefc904fd45aeae3dd97f7f7d2",
+            "context_digest": "257ea34db59a134d79b405c337acabff1a247b4549098e937a4f7528864eed97",
+            "policy_contract": {
+              "name": "TavernHarnessPolicy",
+              "version": "tavern-harness-policy-v1"
+            },
+            "prompt_contract": {
+              "name": "TavernActorPrompt",
+              "version": "tavern-actor-v1"
+            }
+          },
+          "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+          "checks": [],
+          "attempt_records": [
+            {
+              "attempt_id": "attempt-generate-1",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+              "error_code": "",
+              "duration_ms": 7
+            },
+            {
+              "attempt_id": "attempt-validate-1",
+              "attempt_index": 2,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+              "error_code": "",
+              "duration_ms": 1
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 8,
+          "commit_evidence": {
+            "status": "not_applicable",
+            "effect_batch_id": null,
+            "payload_contract": null,
+            "digest_algorithm": null,
+            "digest_scope": null,
+            "attempted_resource_refs": [],
+            "committed_resources": [],
+            "payload_digest": null,
+            "committed_at": null,
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-08-12T10:00:00Z",
+          "completed_at": "2026-08-12T10:00:00.008Z"
+        },
+        "invocation": {}
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "harness_decode_invalid"
+      }
+    },
+    {
+      "case_id": "response_decode-wrong_stage",
+      "stage": "response_decode",
+      "scenario": "wrong_stage",
+      "input": {
+        "decoder": "harness_trace",
+        "input": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "trace-tavern-context-foundation-1",
+          "operation_id": "harness-operation-11111111111111111111111111111111",
+          "parent_trace_id": null,
+          "workflow": "tavern",
+          "stage": "response_decode",
+          "status": "passed",
+          "contract": {
+            "name": "TavernActorReply",
+            "version": "tavern-actor-reply-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "tavern",
+            "stage": "actor_reply",
+            "operation_id": "harness-operation-11111111111111111111111111111111",
+            "input_contract": {
+              "name": "TavernActorInputManifest",
+              "version": "tavern-actor-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "tavern_room",
+                "resource_id": "room-1",
+                "revision": 4
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "tavern_actor_prompt",
+                "version": "tavern-actor-v1"
+              },
+              {
+                "name": "tavern_persona_compiler",
+                "version": "tavern-persona-compiler-v1"
+              },
+              {
+                "name": "tavern_scheduler",
+                "version": "tavern-schedule-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "tavern_room_snapshot",
+                "artifact_id": "room-1-revision-4",
+                "contract": {
+                  "name": "TavernRoomSnapshot",
+                  "version": "tavern-room-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "e0955dcdef34e9576fd16b612da581be5a799fd2459beb1d50836d28e9e7f83a"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "6456b3b79ccb6aa5b3734eae226734a55f8e40eefc904fd45aeae3dd97f7f7d2",
+            "context_digest": "257ea34db59a134d79b405c337acabff1a247b4549098e937a4f7528864eed97",
+            "policy_contract": {
+              "name": "TavernHarnessPolicy",
+              "version": "tavern-harness-policy-v1"
+            },
+            "prompt_contract": {
+              "name": "TavernActorPrompt",
+              "version": "tavern-actor-v1"
+            }
+          },
+          "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+          "checks": [],
+          "attempt_records": [
+            {
+              "attempt_id": "attempt-generate-1",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+              "error_code": "",
+              "duration_ms": 7
+            },
+            {
+              "attempt_id": "attempt-validate-1",
+              "attempt_index": 2,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+              "error_code": "",
+              "duration_ms": 1
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 8,
+          "commit_evidence": {
+            "status": "not_applicable",
+            "effect_batch_id": null,
+            "payload_contract": null,
+            "digest_algorithm": null,
+            "digest_scope": null,
+            "attempted_resource_refs": [],
+            "committed_resources": [],
+            "payload_digest": null,
+            "committed_at": null,
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-08-12T10:00:00Z",
+          "completed_at": "2026-08-12T10:00:00.008Z"
+        },
+        "invocation": {}
+      },
+      "expected": {
+        "accepted": false,
+        "error_code": "harness_decode_invalid"
+      }
+    }
+  ]
+}

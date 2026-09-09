@@ -1,0 +1,11 @@
+.......document.processing.recovered_abandoned count=1
+...document.processing.recovered_abandoned count=1
+document.processing.recovered_abandoned count=1
+document.processing.recovered_abandoned count=1
+document.processing.recovered_abandoned count=1
+...
+----------------------------------------------------------------------
+Ran 13 tests in 31.922s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute

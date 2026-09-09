@@ -27,6 +27,7 @@ from app.persistence.models import (
 
 
 _DOMAIN_ROW_TYPES = {
+    HarnessDomainOperationKind.FRONTEND_DECODE: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.DOCUMENT_PROCESS: DocumentProcessOperationRow,
     HarnessDomainOperationKind.DOCUMENT_OCR: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.STUDY_UNIT_CLEANUP: HarnessWorkflowOperationRow,

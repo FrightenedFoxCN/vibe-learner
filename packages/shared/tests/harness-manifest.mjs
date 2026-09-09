@@ -59,8 +59,7 @@ for (const entry of HARNESS_WORKFLOW_MANIFEST.stages) {
   if (!implemented) {
     assert.throws(() => requireExecutableWorkflowManifestEntry(entry.workflow, entry.stage), /stage_unregistered/);
   }
-  const pilotSuite = ["tavern:actor_reply", "planning:planning_tool_execution", "study_chat:study_chat_reply"].includes(entry.key);
-  assert.equal(entry.eval_suites.status, pilotSuite ? "registered" : "unregistered");
+  assert.equal(entry.eval_suites.status, "registered");
   if (entry.allowed_artifact_types.status === "registered") {
     assert.deepEqual(
       entry.allowed_artifact_types.artifact_types,
@@ -72,7 +71,7 @@ for (const entry of HARNESS_WORKFLOW_MANIFEST.stages) {
 const statuses = new Set(collectValuesForKey(fixture, "status"));
 assert.deepEqual(
   statuses,
-  new Set(["registered", "not_applicable", "unregistered"]),
+  new Set(["registered", "not_applicable"]),
 );
 const serialized = JSON.stringify(fixture).toLowerCase();
 for (const placeholder of ['"pending-', '"latest"', '"unknown"']) {
@@ -106,7 +105,7 @@ assert.deepEqual(tavern.eval_suites.contracts, [
 ]);
 const planning = requireExecutableWorkflowManifestEntry("planning", "plan_generation");
 assert.equal(planning.registration.status, "registered");
-assert.deepEqual(planning.eval_suites, { status: "unregistered", reason: "eval_suite_not_registered" });
+assert.deepEqual(planning.eval_suites, { status: "registered", contracts: [{ name: "plan_generation_regression", version: "plan-generation-regression-v1" }] });
 assert.throws(
   () => requireExecutableWorkflowManifestEntry("tavern", "plan_generation"),
   /stage_unknown/,

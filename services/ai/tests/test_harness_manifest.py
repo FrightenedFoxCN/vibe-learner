@@ -73,7 +73,6 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
             {
                 HarnessManifestSlotStatus.REGISTERED.value,
                 HarnessManifestSlotStatus.NOT_APPLICABLE.value,
-                HarnessManifestSlotStatus.UNREGISTERED.value,
             },
         )
         serialized = json.dumps(payload, sort_keys=True).lower()
@@ -154,7 +153,7 @@ class HarnessWorkflowManifestTests(unittest.TestCase):
                     workflow not in {HarnessWorkflow.TAVERN, HarnessWorkflow.STUDY_CHAT}
                     and stage != HarnessStage.PLANNING_TOOL_EXECUTION
                 ):
-                    self.assertEqual(entry.eval_suites.status, HarnessManifestSlotStatus.UNREGISTERED)
+                    self.assertEqual(entry.eval_suites.status, HarnessManifestSlotStatus.REGISTERED)
 
     def test_planning_tool_execution_references_the_tool_manifest(self) -> None:
         entry = HARNESS_WORKFLOW_MANIFEST_ENTRIES[

@@ -78,6 +78,30 @@ class HarnessPerformanceTests(unittest.TestCase):
             with self.assertRaisesRegex(budget.HarnessBudgetExceeded, "resolved_bytes"):
                 runtime._resolve_artifacts(request)
 
+    def test_real_snapshot_64mib_and_total_128mib_boundaries(self):
+        request = self._snapshot_request()
+        draft = request.context.model_dump(mode="json")
+        template = draft["snapshot_refs"][0]
+        draft["snapshot_refs"] = [{**template, "artifact_id": f"maximum-{i}"} for i in range(3)]
+        draft["context_digest"] = canonical_harness_context_digest(draft)
+        request = replace(request, context=HarnessContextEnvelopeV3.model_validate(draft))
+        block = b"x" * (64 * 1024 * 1024)
+        payloads = [block, block, b""]
+        def resolve(**_):
+            return tuple(HarnessRuntimeResolvedArtifact(f"maximum-{i}", "a" * 64, payload) for i, payload in enumerate(payloads))
+        runtime = HarnessOperationRuntime(repository=self.fixture.repository, artifact_resolver=SimpleNamespace(resolve=resolve))
+        self.assertEqual(sum(len(p) for p in runtime._resolve_artifacts(request).values()), 128 * 1024 * 1024)
+        payloads[2] = b"x"
+        with self.assertRaises(budget.HarnessBudgetExceeded) as total:
+            runtime._resolve_artifacts(request)
+        self.assertEqual(total.exception.evidence.dimension, "resolved_bytes")
+        self.assertEqual(total.exception.evidence.actual, 128 * 1024 * 1024 + 1)
+        payloads[:] = [block + b"x", b"", b""]
+        with self.assertRaises(budget.HarnessBudgetExceeded) as single:
+            runtime._resolve_artifacts(request)
+        self.assertEqual(single.exception.evidence.dimension, "snapshot_bytes")
+        self.assertEqual(single.exception.evidence.actual, 64 * 1024 * 1024 + 1)
+
     def test_expired_deadline_does_not_start_callback(self):
         runtime = HarnessOperationRuntime(repository=self.fixture.repository)
         with self.assertRaisesRegex(RuntimeError, "wall_time_budget"):

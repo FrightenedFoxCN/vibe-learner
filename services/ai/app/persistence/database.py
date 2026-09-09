@@ -288,81 +288,53 @@ class Database:
                 raise RuntimeError("sqlite_foreign_key_repair_failed")
 
     def _repair_sqlite_harness_operation_binding_route(self) -> None:
-        """Rebuild pre-Wave-4 SQLite bindings so new durable routes are legal."""
-
+        """Preserve existing admissions while widening the closed route catalog."""
         if not self.url.startswith("sqlite"):
             return
         with self.engine.connect() as connection:
-            table_sql = connection.exec_driver_sql(
-                "SELECT sql FROM sqlite_master "
-                "WHERE type = 'table' AND name = 'harness_operation_bindings'"
-            ).scalar_one_or_none()
-            if not table_sql or "document_ocr" in str(table_sql):
+            rebuild = []
+            for table in ("harness_operation_bindings", "harness_workflow_operations"):
+                ddl = connection.exec_driver_sql(
+                    "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
+                ).scalar_one_or_none()
+                if ddl and "frontend_decode" not in str(ddl):
+                    rebuild.append(table)
+            if not rebuild:
                 return
+            triggers = connection.exec_driver_sql(
+                "SELECT name, sql FROM sqlite_master WHERE type='trigger' AND "
+                "(sql LIKE '%harness_operation_bindings%' OR tbl_name='harness_workflow_operations')"
+            ).all()
             connection.commit()
             connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
             connection.exec_driver_sql("PRAGMA legacy_alter_table=ON")
             connection.commit()
             try:
                 with connection.begin():
-                    connection.exec_driver_sql(
-                        "DROP TRIGGER IF EXISTS trg_harness_operation_bindings_no_update"
-                    )
-                    connection.exec_driver_sql(
-                        "DROP TRIGGER IF EXISTS trg_harness_operation_bindings_no_delete"
-                    )
-                    for domain_table in (
-                        "document_process_operations",
-                        "learning_plan_operations",
-                        "study_chat_operations",
-                        "tavern_runs",
-                    ):
-                        connection.exec_driver_sql(
-                            "DROP TRIGGER IF EXISTS "
-                            f"trg_{domain_table}_harness_operation_validate_insert"
-                        )
-                    connection.exec_driver_sql(
-                        "DROP INDEX IF EXISTS ix_harness_operation_bindings_admitted_at"
-                    )
-                    connection.exec_driver_sql(
-                        "DROP INDEX IF EXISTS "
-                        "ix_harness_operation_bindings_parent_harness_operation_id"
-                    )
-                    connection.exec_driver_sql(
-                        "ALTER TABLE harness_operation_bindings "
-                        "RENAME TO harness_operation_bindings_wave3"
-                    )
-                    Base.metadata.tables["harness_operation_bindings"].create(
-                        connection,
-                        checkfirst=False,
-                    )
-                    connection.exec_driver_sql(
-                        """
-                        INSERT INTO harness_operation_bindings (
-                            harness_operation_id, schema_name, schema_version,
-                            domain_operation_kind, domain_operation_id, workflow,
-                            entry_stage, parent_harness_operation_id, admitted_at
-                        )
-                        SELECT
-                            harness_operation_id, schema_name, schema_version,
-                            domain_operation_kind, domain_operation_id, workflow,
-                            entry_stage, parent_harness_operation_id, admitted_at
-                        FROM harness_operation_bindings_wave3
-                        """
-                    )
-                    connection.exec_driver_sql(
-                        "DROP TABLE harness_operation_bindings_wave3"
-                    )
+                    for name, _ in triggers:
+                        connection.exec_driver_sql('DROP TRIGGER "' + name.replace('"', '""') + '"')
+                    for table in rebuild:
+                        indexes = connection.exec_driver_sql(
+                            "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL", (table,)
+                        ).all()
+                        for (name,) in indexes:
+                            connection.exec_driver_sql('DROP INDEX "' + name.replace('"', '""') + '"')
+                        connection.exec_driver_sql(f"ALTER TABLE {table} RENAME TO {table}_old_routes")
+                        metadata = Base.metadata.tables[table]
+                        metadata.create(connection, checkfirst=False)
+                        columns = ", ".join(column.name for column in metadata.columns)
+                        connection.exec_driver_sql(f"INSERT INTO {table} ({columns}) SELECT {columns} FROM {table}_old_routes")
+                        connection.exec_driver_sql(f"DROP TABLE {table}_old_routes")
+                    for _, sql in triggers:
+                        connection.exec_driver_sql(sql)
+                    if connection.exec_driver_sql("PRAGMA foreign_key_check").all():
+                        raise RuntimeError("sqlite_harness_operation_route_repair_failed")
             finally:
                 if connection.in_transaction():
                     connection.rollback()
                 connection.exec_driver_sql("PRAGMA legacy_alter_table=OFF")
                 connection.exec_driver_sql("PRAGMA foreign_keys=ON")
                 connection.commit()
-
-            violations = connection.exec_driver_sql("PRAGMA foreign_key_check").all()
-            if violations:
-                raise RuntimeError("sqlite_harness_operation_route_repair_failed")
 
     def _repair_sqlite_harness_artifact_audit_schema(self) -> None:
         """Replace the pre-resolver audit table while preserving content-free rows."""

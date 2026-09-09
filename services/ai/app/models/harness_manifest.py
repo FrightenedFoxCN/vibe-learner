@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.models.harness_stage_eval_contracts import STAGE_EVAL_SUITES
 from app.models.harness import (
     HARNESS_COMPONENT_REGISTRATIONS,
     HARNESS_OPERATION_COMMIT_POLICIES,
@@ -481,6 +482,8 @@ def _executable_entry(
     budget: HarnessManifestExecutionBudgetV1 = _DEFAULT_BUDGET,
     eval_suites: tuple[HarnessContractRef, ...] = (),
 ) -> HarnessWorkflowManifestEntryV1:
+    if not eval_suites and f"{workflow.value}:{stage.value}" in STAGE_EVAL_SUITES:
+        eval_suites = (STAGE_EVAL_SUITES[f"{workflow.value}:{stage.value}"],)
     vocabulary = HARNESS_OPERATION_STAGE_REGISTRATIONS[(workflow, stage)]
     return HarnessWorkflowManifestEntryV1(
         key=f"{workflow.value}:{stage.value}",

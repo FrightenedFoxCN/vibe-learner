@@ -1,0 +1,17 @@
+{
+  "schema_version": "stage-regression-gates-v1",
+  "provenance": "developer_authored",
+  "required_pass_rate": 1.0,
+  "sample_counts": {
+    "document_process_regression": 6,
+    "page_extraction_regression": 2,
+    "section_detection_regression": 2,
+    "chunk_building_regression": 4,
+    "ocr_page_regression": 5,
+    "study_unit_cleanup_regression": 3,
+    "plan_generation_regression": 8,
+    "persona_generation_regression": 15,
+    "scene_generation_regression": 8,
+    "frontend_decode_regression": 11
+  }
+}

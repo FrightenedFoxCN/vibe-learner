@@ -23,6 +23,7 @@ import {
   renderPersonaRuntimeInstruction,
 } from "@vibe-learner/shared";
 
+import { readBoundedJsonImport } from "../../lib/bounded-json-import";
 import { exportJson } from "../../lib/export-json";
 import { TopNav } from "../../components/top-nav";
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
@@ -933,9 +934,7 @@ export default function PersonaSpectrumPage() {
       currentPersonaAsyncScope(fieldTarget),
     );
     try {
-      if (file.size > 8 * 1024 * 1024) throw new Error("persona_import_file_too_large");
-      const raw = await file.text();
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const parsed = await readBoundedJsonImport(file, "persona") as Record<string, unknown>;
       const normalized = normalizeImportedPersonaConfig(parsed);
       const decision = applyAsyncResult({
         fence: configImportFenceRef.current,

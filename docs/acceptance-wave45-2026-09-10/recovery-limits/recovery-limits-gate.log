@@ -1,0 +1,350 @@
+
+> vibe-learner@0.2.3 test:acceptance:recovery-limits
+> cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery tests.test_wave45_input_limits tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime tests.test_harness_recovery_migration tests.test_harness_effect_journal tests.test_harness_artifact_resolver tests.test_study_chat_operation tests.test_study_v3_runtime tests.test_study_chat_effects tests.test_tavern_facilitated tests.test_tavern_api tests.test_tavern_prompt_safety tests.test_scene_schema_ownership tests.test_persona_lifecycle && npm run test:web:reliability
+
+document.processing.recovered_abandoned count=1
+...document.processing.recovered_abandoned count=1
+document.processing.recovered_abandoned count=1
+document.processing.recovered_abandoned count=1
+document.processing.recovered_abandoned count=1
+...........document.processing.failed id=doc-5fc81c6281
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 205, in process_document
+    runtime_prepared, harness_runtime = self.harness_service.prepare_document(
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_broad_adoption.py", line 566, in prepare_document
+    return self._prepare_existing_operation(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_broad_adoption.py", line 1157, in _prepare_existing_operation
+    raise RuntimeError(
+RuntimeError: cleanup_failed
+..document.processing.failed id=doc-f5fdffb69f
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 405, in process_document
+    raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+RuntimeError: document_ocr_unavailable
+...document.processing.progress_after_commit_ignored id=doc-73c65df867 operation_id=document-process-op-e9de6822f7b445db
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 458, in process_document
+    _emit_progress(
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 587, in _emit_progress
+    callback(stage, payload)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 252, in fail_only_after_commit
+    raise RuntimeError("progress_sink_unavailable")
+RuntimeError: progress_sink_unavailable
+.document.processing.failed id=doc-ae5e94a95d
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 406, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 177, in commit_success
+    self._inject("before_debug_projection")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:before_debug_projection
+document.processing.failed id=doc-baad2b68c9
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 406, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 182, in commit_success
+    self._inject("after_debug_projection")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:after_debug_projection
+document.processing.failed id=doc-5d3c42393f
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 406, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 186, in commit_success
+    self._inject("after_document_projection")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:after_document_projection
+document.processing.failed id=doc-d335eced52
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 406, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 240, in commit_success
+    self._inject("before_terminal_commit")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:before_terminal_commit
+.document.processing.recovered_abandoned count=1
+..........................................................study_chat.error session_id=session-study-v3 public_detail=chat_generation_failed internal_error_code=harness_runtime_prepare_output_invalid retry_attempts=1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2000, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+study_chat.operation_uncertain session_id=session-study-v3 operation_id=study-chat-op-372106d970b24a39 error_code=study_chat_uncertain_chat_generation_failed
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2000, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1592, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2036, in _run_study_chat
+    raise http_error from exc
+fastapi.exceptions.HTTPException: 500: chat_generation_failed
+..study_chat.operation_uncertain session_id=session-study-v3 operation_id=study-chat-op-cfc523a213e24cdd error_code=study_chat_execution_uncertain
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1592, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2118, in _run_study_chat
+    container.study_session_repository.commit_chat_operation_turn(
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: study_commit_fixture_failure
+..........................tavern.turn_failed room_id=tavern-1747ff45c209 error=planned_context_read_failure
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/tavern_routes.py", line 189, in run_tavern_turn
+    return container.tavern_service.run_turn(room_id=room_id, payload=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/tavern.py", line 466, in run_turn
+    return self._execute_run(
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/tavern.py", line 728, in _execute_run
+    recent_messages = self.repository.list_recent_messages(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: planned_context_read_failure
+............model.tavern.recovery reason=tavern_actor_invalid_payload
+................model.tavern.recovery reason=tavern_actor_invalid_payload
+.model.tavern.recovery reason=tavern_actor_invalid_payload
+.model.tavern.schema_transport_fallback status= upstream_code=unsupported_params
+..........................................
+----------------------------------------------------------------------
+Ran 179 tests in 44.984s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+
+> vibe-learner@0.2.3 test:web:reliability
+> npm --workspace @vibe-learner/web run test:reliability
+
+
+> @vibe-learner/web@0.2.3 test:reliability
+> node --experimental-strip-types --test tests/settings-save-lifecycle.test.cjs tests/async-result-fence.test.ts tests/debug-overlay-accessibility.test.ts tests/desktop-startup.test.ts tests/document-decode.test.ts tests/navigation-study-accessibility.test.ts tests/planning-decode.test.ts tests/persona-draft.test.ts tests/scene-import-structure.test.ts tests/bounded-json-import.test.ts tests/persona-scene-decode.test.ts tests/rich-text-normalize.test.ts tests/shared-adversarial-fixtures.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-dialog-empty-state.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts tests/study-real-response-decode.test.ts
+
+✔ an async result applies only to its exact operation and captured scope (11.696958ms)
+✔ cross-operation and superseded results fail closed (0.259542ms)
+✔ a newer attempt for the same server operation supersedes the older request (0.726875ms)
+✔ subject, draft revision, and field target changes reject a late result (0.208583ms)
+✔ invalid scopes and inactive tickets cannot be treated as current (0.518666ms)
+✔ Study rejects a response after the active Session or Plan changes (0.080083ms)
+✔ Persona rejects an assist result after the user edits the draft (0.055167ms)
+✔ Scene rejects a rewrite result after switching layer, object, or field (12.484083ms)
+✔ Study view keeps a newer projection for the same Session and Unit (1.747042ms)
+✔ a deferred Study refresh cannot restore a Session after switching Plan (0.530125ms)
+✔ deferred Persona and Scene imports do not apply after edit or subject switch (0.123667ms)
+✔ both editors accept exactly 8 MiB and reject one byte more before reading (23.0475ms)
+✔ file limits use UTF-8 bytes, not JavaScript string length (69.327875ms)
+✔ Debug Overlay exposes a labelled modal and focuses its collapse control (0.797667ms)
+✔ Debug Overlay isolates main content and restores page state exactly (0.115625ms)
+✔ Debug Overlay traps focus and routes every close interaction through one path (0.130334ms)
+✔ desktop navigation remains locked until the first Vault is created (0.352167ms)
+✔ desktop vault gate blocks both app links and side navigation (0.084083ms)
+✔ desktop navigation preserves the root workspace provider during route changes (0.091667ms)
+✔ Document decoder accepts a coherent committed projection and list envelope (3.931292ms)
+✔ Document decoder rejects wrong identity, status, count, and scalar coercion (1.132583ms)
+✔ Document decoder rejects unordered, duplicate, reversed, and drifted projected sections (1.174667ms)
+✔ Document decoder rejects non-finite confidence (0.165167ms)
+✔ Document Debug decoder validates page order, ranges, chunk refs, and nullability (1.2385ms)
+✔ Document Debug decoder rejects duplicate and unordered chunks (0.191792ms)
+✔ mobile primary navigation keeps labelled 44px touch targets (0.433708ms)
+✔ Study question composer exposes an accessible name (0.100292ms)
+✔ Tavern mobile controls keep 44px touch targets and provider state is announced (0.772833ms)
+✔ Tavern sequence updates are announced without appearing in the transcript (0.362083ms)
+✔ model scope connection fields stay compact and new personas begin as drafts (0.403916ms)
+✔ Persona config export and import preserve every editable field (0.948291ms)
+✔ Persona config import accepts snake case aliases without coercing unsafe values (0.172917ms)
+✔ Persona draft fingerprints track edits and reset against committed snapshots (0.691333ms)
+✔ Whole-setting assist merges by slot identity and preserves locks (0.138417ms)
+✔ Destructive generated backfill clears exactly the fields named in the UI (0.068709ms)
+✔ maximum API-sized persona survives JSON reload and draft conversion without truncation (52.206125ms)
+✔ Persona decoder accepts custom slot vocabulary and duplicate sort orders (0.896584ms)
+✔ Persona decoder rejects coercion, illegal source, URL drift, and non-finite slots (0.310667ms)
+✔ Persona card envelopes reject duplicate IDs and illegal source values (0.155458ms)
+✔ Persona generation binds mode, generated source, booleans, and recovery schema (2.154708ms)
+✔ Persona count UI states exact 1-24 semantics (0.410958ms)
+✔ Persona assist decoders require typed slots and preserve assisted slot identity (19.45875ms)
+✔ Persona assets and delete projections bind the URL identity (0.96575ms)
+✔ Scene generation accepts a coherent committed projection (3.521333ms)
+✔ Scene generation rejects contract, mode, selection, depth, child, and identity attacks (0.649917ms)
+✔ Wave 4 decoders fail closed on malformed nested v3 Harness evidence (0.324375ms)
+✔ Scene Setup accepts only the exact empty initial state or a coherent committed state (0.468291ms)
+✔ Scene Profile binds title path, tags, focus objects, and committed tree (0.199542ms)
+✔ Scene Library binds config, URL, revision, profile, and list identity (0.2185ms)
+✔ Reusable Scene Node decoder enforces the discriminated node projection (0.161458ms)
+✔ Planning decoder accepts a coherent plan and list envelope (1.84925ms)
+✔ Planning decoder accepts the real goal-only synthetic Study Unit scope (0.205167ms)
+✔ Planning decoder rejects forged goal-only Study Unit scopes (0.320334ms)
+✔ Planning decoder rejects plan/document identity and illegal enums (0.164708ms)
+✔ Planning decoder rejects broken Study Unit, chapter, and slice references (1.134792ms)
+✔ Planning decoder rejects duplicate IDs, invalid numbers, and forged progress (0.441208ms)
+✔ Planning Context decoder validates identity, ordering, detail set, and references (1.891041ms)
+✔ Planning Trace decoder validates recovery versions, contracts, identity, and summary (0.952041ms)
+✔ Planning Trace decoder accepts a truthful no-trace projection only (0.623917ms)
+✔ repairs historic inline Markdown headings without exposing hash markers (0.923166ms)
+✔ preserves already-valid Markdown headings (0.0775ms)
+✔ scene import accepts exported trees and rejects unrelated valid JSON (1.322917ms)
+✔ scene import enforces depth, layer, object and text limits before mutation (2.090334ms)
+✔ scene import counts Unicode codepoints at exactly 60000 and leaves source untouched on rejection (4.264875ms)
+✔ settings preserve 900ms debounce across unrelated renders and rapid edits (1.559958ms)
+✔ settings navigation flush saves the latest edit after an in-flight save (1.518459ms)
+✔ settings navigation flush continues after older request fails without retrying it (0.912417ms)
+✔ reverting to the saved value clears an unsent edit before navigation (0.316125ms)
+✔ reverting while saving still restores the original value after navigation (0.92275ms)
+✔ QG-002 shared adversarial catalog has closed domain and attack coverage (0.675958ms)
+✔ QG002-DOCUMENT-IDENTITY-001 rejects document/identity (0.234541ms)
+✔ QG002-PLAN-IDENTITY-001 rejects plan/identity (0.229125ms)
+✔ QG002-PERSONA-TYPE-001 rejects persona/type (0.268375ms)
+✔ QG002-SCENE-TYPE-001 rejects scene/type (0.197041ms)
+✔ QG002-STUDY-IDENTITY-001 rejects study/identity (0.326166ms)
+✔ QG002-TAVERN-ENVELOPE-001 rejects tavern/envelope (0.111833ms)
+✔ QG002-STREAM-STATE-001 rejects stream/stream_state (0.429ms)
+✔ document state machine accepts only the committed terminal and ignores an exact duplicate (1.333541ms)
+✔ same event identity with a different supplied digest fails closed (0.262ms)
+✔ cross-operation, cross-subject, sequence gap, and unknown stage frames are rejected (0.165333ms)
+✔ illegal transitions and new frames after terminal are rejected while terminal replay is idempotent (0.192584ms)
+✔ EOF without a terminal is a typed failure, including a final line without newline (1.215666ms)
+✔ planning state machines bind document and goal-only request subjects (0.179958ms)
+✔ planning question tool progress remains inside the strict stream lifecycle (0.129375ms)
+✔ trimmed v1 reports remain decidable and legacy reports do not gain invented evidence (0.258458ms)
+✔ unknown versions and false committed terminals do not downgrade or succeed (0.108542ms)
+✔ only explicit pre-admission HTTP failures unlock the original operation identity (30.688292ms)
+✔ ambiguous transport and provider failures remain query-only (0.126375ms)
+✔ a missing operation GET is distinct from a missing Session POST (0.067041ms)
+✔ Study Chat operation decoder accepts every frozen status (1.86075ms)
+✔ Study Chat operation decoder requires every public field (0.309042ms)
+✔ Study Chat operation decoder rejects unregistered or coerced statuses (0.085875ms)
+✔ Study Chat operation decoder rejects empty or non-string identities (0.113542ms)
+✔ Study Chat operation decoder rejects unsafe revision and sequence evidence (0.153ms)
+✔ committed requires complete result, Turn, revision, and terminal evidence (0.107708ms)
+✔ non-committed statuses reject fabricated result or commit evidence (0.147125ms)
+✔ safe_to_retry is true only for not_committed and never for running or uncertain (0.101041ms)
+✔ terminal timestamp nullability follows the operation state (0.079459ms)
+✔ operation timestamps reject impossible dates and reversed state time (0.1535ms)
+✔ nested committed result is delegated to the caller's existing decoder (0.397083ms)
+✔ outer receipt identity is fenced to the requested Session and request (0.072583ms)
+✔ committed result decoder is mandatory and cannot return nullish output (0.147958ms)
+✔ committed result is bound to the receipt Session, revision, and exact Turn (0.18775ms)
+✔ Study Chat operation decode errors are identifiable without trusting realms (0.037583ms)
+✔ Study Dialog replaces its disabled console with a focusable Plan CTA (0.464ms)
+✔ attempt response decoder binds exact Session, Turn, identity, and revisions (0.51925ms)
+✔ attempt read-back accepts the exact committed result (0.263417ms)
+✔ attempt read-back rejects identity, answer, verdict, and result drift (0.100167ms)
+✔ a late lower-revision response cannot replace a newer committed snapshot (0.787209ms)
+✔ read-back applies only to the active Session and only when it advances state (0.30675ms)
+✔ an attempt read-back accepts a legitimate concurrently appended Turn (0.256541ms)
+✔ read-back rejects committed Turn prefix drift and invalid watermarks (0.171791ms)
+✔ a question with any prior committed result cannot be submitted again (0.164833ms)
+﹣ strict Study decoders accept one live committed operation read-back (0.321625ms) # SKIP
+✔ Study Session committed identity decoder accepts contiguous unique turns (0.831917ms)
+✔ Study Session committed identity decoder fails closed on missing watermarks (0.223667ms)
+✔ Study Session committed identity decoder rejects invalid numeric projections (0.102083ms)
+✔ Study Session committed identity decoder rejects duplicate, empty, or gapped turns (0.083625ms)
+✔ full Study Session decoder accepts the complete modern public projection (1.333708ms)
+✔ full Study Session decoder rejects missing, coerced, and fabricated aggregate state (0.283791ms)
+✔ attachment projection rejects private paths and broken citation references (0.317584ms)
+✔ Character Events and tool traces are closed and cross-referenced (0.182417ms)
+✔ interactive question decoder rejects grading leaks and partial result evidence (0.3015ms)
+✔ follow-up, affinity, and projected-state terminal invariants fail closed (0.271625ms)
+✔ Study Scene decoder preserves empty-tree and empty-reuse compatibility (0.339334ms)
+✔ committed Study Chat exchange must equal the exact committed last Turn (0.286666ms)
+✔ Study Session list and plan-confirmation read-back fence identities and terminal state (0.386625ms)
+✔ Study Session display ordering follows sequence rather than timestamps (0.068333ms)
+✔ Study Session decode failures use safe user notices and retain generic fallbacks (0.137833ms)
+✔ Study Session decode failures never expose a retryable chat failure (0.052917ms)
+﹣ strict Tavern decoders accept live backend room aggregates (0.569459ms) # SKIP
+✔ mergeTavernMessages orders and deduplicates tail/prepend pages (0.801834ms)
+✔ Tavern Room pages append monotonically, deduplicate IDs, and retain at most 100 summaries (0.345667ms)
+✔ selected Tavern Room detail remains a visible authoritative button outside loaded summaries (0.549542ms)
+✔ Tavern creation drafts drop deleted personas and rotate request identity (0.196334ms)
+✔ mergeTavernMessages fails closed on message identity conflicts (0.11475ms)
+✔ a child retry suppresses retry on its parent (0.092625ms)
+✔ latest facilitated recovery exposes only unfinished actors (0.104375ms)
+✔ facilitated recovery hides ineligible and already retried runs (0.086666ms)
+✔ authoritative recovery follows the chain leaf instead of a recent run window (0.104083ms)
+✔ Tavern client recovery only accepts an explicit terminal replay directive (0.105667ms)
+✔ Tavern client strictly decodes the empty room update error envelope (0.077458ms)
+✔ stale room results cannot move revision or sequence backwards (0.053125ms)
+✔ late run polling cannot resurrect a terminal run (5.691458ms)
+✔ optimistic roster marks only the first eligible actor as generating (0.130042ms)
+✔ server speaker steps override optimistic roster state (0.050625ms)
+✔ an admitted run without visible steps stays truthful while starting (0.042833ms)
+✔ terminal roster states are explicitly scoped to the previous round (0.045667ms)
+✔ mobile Tavern DOM order matches its primary visual flow (0.205917ms)
+✔ Tavern Session pagination exposes pending, error, and duplicate-cursor fences (0.110458ms)
+✔ mobile Tavern buttons keep a 44px minimum touch target (0.159167ms)
+✔ Interaction Composer restores focus only after a confirmed user turn settles (0.161167ms)
+✔ Interaction Composer retains Enter, Shift+Enter, and IME composition fencing (0.106125ms)
+✔ strict Tavern decoders accept the current backend wire format (0.393959ms)
+✔ strict Tavern decoder accepts retry responses without replaying the user message (0.058417ms)
+✔ strict Tavern decoder enforces trigger and input-message semantics (0.174334ms)
+✔ strict Tavern decoder accepts a legacy persona with an empty system prompt (0.036458ms)
+✔ strict Tavern decoder mirrors backend-compatible empty persona and scene strings (0.109875ms)
+✔ strict Tavern decoders fail closed on invalid identity, enums, and counters (0.134125ms)
+✔ Tavern v1 Harness trace status is not coerced from an unknown enum (0.050792ms)
+✔ strict Tavern decoder distinguishes a missing nullable field from null (0.106292ms)
+✔ strict Tavern decoder rejects malformed nested persona and scene snapshots (0.049334ms)
+✔ strict Tavern list decoders reject a malformed envelope (0.242916ms)
+✔ strict Tavern recovery and error decoders enforce identity and action (0.153667ms)
+✔ strict Tavern decoders bind responses to the requested room (0.079083ms)
+✔ strict Tavern decoders reject aggregate ownership mismatches (0.110875ms)
+✔ strict Tavern decoder binds the run schedule to ordered speaker steps (0.076792ms)
+✔ strict Tavern decoder requires exact completed-step message projections (0.352083ms)
+✔ strict Tavern decoder rejects non-finite and out-of-range evidence (0.217042ms)
+✔ Tavern decoder accepts backend-compatible v2 and committed v3 traces (0.181958ms)
+✔ Tavern v3 trace decoder rejects forged identity, ordering, and commit evidence (0.071125ms)
+ℹ tests 171
+ℹ suites 0
+ℹ pass 169
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 391.1585

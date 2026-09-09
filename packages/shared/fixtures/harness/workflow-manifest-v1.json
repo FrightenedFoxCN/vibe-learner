@@ -105,8 +105,13 @@
         "value": "document.chunk_building"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "chunk_building_regression",
+            "version": "chunk-building-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -222,8 +227,13 @@
         "value": "document.parse"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "document_process_regression",
+            "version": "document-process-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -328,8 +338,13 @@
         "value": "document.page_extraction"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "page_extraction_regression",
+            "version": "page-extraction-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -435,8 +450,13 @@
         "value": "document.section_detection"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "section_detection_regression",
+            "version": "section-detection-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -541,8 +561,13 @@
         "value": "frontend.response_decode"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "frontend_decode_regression",
+            "version": "frontend-decode-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -648,8 +673,13 @@
         "value": "document.ocr_page"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "ocr_page_regression",
+            "version": "ocr-page-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -757,8 +787,13 @@
         "value": "persona.generation"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "persona_generation_regression",
+            "version": "persona-generation-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -894,8 +929,13 @@
         "value": "planning.plan_generation"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "plan_generation_regression",
+            "version": "plan-generation-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -1130,8 +1170,13 @@
         "value": "scene.generation"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "scene_generation_regression",
+            "version": "scene-generation-regression-v1"
+          }
+        ]
       }
     },
     {
@@ -1383,8 +1428,13 @@
         "value": "document.study_unit_cleanup"
       },
       "eval_suites": {
-        "status": "unregistered",
-        "reason": "eval_suite_not_registered"
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "study_unit_cleanup_regression",
+            "version": "study-unit-cleanup-regression-v1"
+          }
+        ]
       }
     },
     {

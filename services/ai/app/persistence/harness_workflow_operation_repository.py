@@ -19,6 +19,7 @@ from app.persistence.models import HarnessRuntimeExecutionRow, HarnessWorkflowOp
 
 
 _SUPPORTED_KINDS = {
+    HarnessDomainOperationKind.FRONTEND_DECODE,
     HarnessDomainOperationKind.DOCUMENT_OCR,
     HarnessDomainOperationKind.STUDY_UNIT_CLEANUP,
     HarnessDomainOperationKind.PERSONA_GENERATION,

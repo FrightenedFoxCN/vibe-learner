@@ -91,7 +91,7 @@ itself make a workflow Harness-adopted.
 The 2026-09-06 audit found implementation defects across the Wave 4 slices;
 their remediation is recorded in `audit-2026-09-06-remediation.md`. The Wave 4
 checkboxes continue to describe implementation registration, while independent
-browser, desktop, live-wire, and unregistered-suite acceptance remains open.
+browser, desktop, live-wire, and independent suite acceptance remains open.
 
 ## Program epics
 
@@ -204,9 +204,9 @@ Native Persona/Scene import-export roundtrips and invalid Scene import protectio
 passed. Actual image-only English OCR recovered 8/8 anchor terms after a bounded
 CPU fallback fixed a CoreML initialization failure. The post-prompt-fix Tavern
 sample completed 28/30 scheduled steps; one upstream 529 failed and blocked one
-later actor, so joint acceptance still has no passing certificate. Ten stage eval
-registrations, independent quality/replay review and broader recovery/maximum-input
-coverage remain open. The checked implementation boxes below do not close these
+later actor, so joint acceptance still has no passing certificate. The ten missing stage eval registrations are now implemented with 64 deterministic
+regression cases and PR gates; see [Stage evals](harness-stage-evals.md). Independent
+quality/replay review remains open. The [2026-09-10 recovery and input-boundary run](acceptance-wave45-2026-09-10/recovery-limits/README.md) passed the documented process-crash, transaction, configured-size and HTTP-restart matrix. Native rendered-UI recovery, PostgreSQL, neural-OCR/unbounded-upload extremes and independent revalidation retain their separate coverage requirements. The checked implementation boxes below do not close these
 evidence requirements.
 
 The follow-up [remediation and desktop acceptance](acceptance-wave45-2026-09-09/remediation.md)

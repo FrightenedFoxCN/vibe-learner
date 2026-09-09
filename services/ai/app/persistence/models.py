@@ -59,7 +59,8 @@ class HarnessOperationBindingRow(Base):
             "(domain_operation_kind = 'study_chat' "
             "AND workflow = 'study_chat' AND entry_stage = 'study_chat_reply') OR "
             "(domain_operation_kind = 'tavern_run' "
-            "AND workflow = 'tavern' AND entry_stage = 'actor_reply')",
+            "AND workflow = 'tavern' AND entry_stage = 'actor_reply') OR "
+            "(domain_operation_kind = 'frontend_decode' AND workflow = 'frontend_decode' AND entry_stage = 'response_decode')",
             name="ck_harness_operation_binding_route",
         ),
         CheckConstraint(
@@ -104,7 +105,7 @@ class HarnessWorkflowOperationRow(Base):
         ),
         CheckConstraint(
             "domain_operation_kind IN ('document_ocr', 'study_unit_cleanup', "
-            "'persona_generation', 'scene_generation')",
+            "'persona_generation', 'scene_generation', 'frontend_decode')",
             name="ck_harness_workflow_operation_kind",
         ),
         CheckConstraint(

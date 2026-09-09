@@ -147,3 +147,18 @@ test("Destructive generated backfill clears exactly the fields named in the UI",
   assert.deepEqual(cleared.referenceHints, []);
   assert.deepEqual(cleared.slots, []);
 });
+
+test("maximum API-sized persona survives JSON reload and draft conversion without truncation", () => {
+  const payload = {
+    name: "n".repeat(120), summary: "s".repeat(100_000), relationship: "r".repeat(10_000),
+    learnerAddress: "a".repeat(2_000), systemPrompt: "p".repeat(100_000),
+    referenceHints: Array.from({ length: 64 }, (_, i) => `${i}:` + "h".repeat(9_990)),
+    slots: Array.from({ length: 64 }, (_, i) => ({ kind: `custom-${i}`, label: "l".repeat(256), content: "c".repeat(100_000), weight: 100, locked: true, sortOrder: i })),
+    availableEmotions: ["calm"], availableActions: ["idle"], defaultSpeechStyle: "precise",
+  };
+  const input = normalizeImportedPersonaConfig(JSON.parse(JSON.stringify(payload)));
+  assert.deepEqual(input, payload);
+  const restored = draftToCreatePersonaInput(createPersonaInputToDraft(input));
+  // Saving reindexes application-owned ordering; content and controls remain exact.
+  assert.deepEqual(restored, { ...payload, slots: payload.slots.map((slot, i) => ({ ...slot, sortOrder: i * 10 })) });
+});

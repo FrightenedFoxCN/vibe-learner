@@ -17,6 +17,8 @@
 - `tavern-architecture.md`: Tavern schema, transaction invariants, harness ownership, and performance boundaries
 - `harness-engineering.md`: repository-wide validate/repair/commit lifecycle, shared trace schema, adoption matrix, and release metrics
 - `harness-schema-ownership.md`: cross-workflow input/proposal/committed/API ownership registry and v1/v2/v3 evidence compatibility
+- `acceptance-wave45-2026-09-10/recovery-limits/README.md`: process-crash recovery, maximum-input boundaries and HTTP restart evidence
+- `harness-stage-evals.md`: ten deterministic stage regression suites, commands, gates, and evidence limits
 - `harness-roadmap.md`: canonical unfinished Harness backlog, dependency graph, delivery waves, eval program, and production adoption gates
 - `audit-2026-09-06-remediation.md`: implementation fixes and validation record for the 2026-09-06 audit
 - `audit-2026-09-08-review.md`: follow-up review and residual failure evidence

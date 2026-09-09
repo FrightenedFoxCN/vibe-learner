@@ -16,7 +16,7 @@ from app.persistence.database import Database
 
 
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD = "20260903_0018"
+ALEMBIC_HEAD = "20260909_0019"
 
 
 def _alembic_config(database_url: str) -> Config:

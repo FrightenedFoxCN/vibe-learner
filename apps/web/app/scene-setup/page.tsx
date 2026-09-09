@@ -8,6 +8,7 @@ import { MaterialIcon, type MaterialIconName } from "../../components/material-i
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
 import { validateSceneImportStructure } from "../../lib/scene-import-structure";
+import { readBoundedJsonImport } from "../../lib/bounded-json-import";
 import { exportJson } from "../../lib/export-json";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
@@ -954,9 +955,7 @@ export default function SceneSetupPage() {
         currentSceneAsyncScope(fieldTarget),
     );
     try {
-      if (file.size > 8 * 1024 * 1024) throw new Error("scene_import_file_too_large");
-      const content = await file.text();
-      const parsed = JSON.parse(content);
+      const parsed = await readBoundedJsonImport(file, "scene");
       const imported = parseSceneImportPayload(parsed, true);
       const decision = applyAsyncResult({
         fence: sceneImportFenceRef.current,

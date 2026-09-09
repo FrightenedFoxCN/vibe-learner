@@ -1391,7 +1391,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(result.aggregate_json(), sort_keys=True, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
-    return 0
+    return 0 if result.report.status == "passed" else 1
 
 
 if __name__ == "__main__":  # pragma: no cover - exercised through the module entry point.
