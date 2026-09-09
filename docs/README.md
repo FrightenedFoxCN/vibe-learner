@@ -18,4 +18,11 @@
 | [学习工作区](frontend-learning-workspace.md) | Plan/Study 前端职责 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
-修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。不要在本目录另建 roadmap 或复制待办列表；新评测数据放在版本化 fixture 或运行产物中，避免重新积累日期命名的过程文档。
+修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。除用户指定的下列专项计划外，不另建 roadmap 或复制待办列表；新评测数据放在版本化 fixture 或运行产物中，避免重新积累日期命名的过程文档。
+
+## 下一版本专项计划
+
+- [代码解耦重构](plans/architecture-refactor.md)：分步重构顺序及验收边界。
+- [统一 Logging 与 Debug](plans/unified-debug.md)：独立任务、诊断链路和数据留存设计。
+
+两份计划均为待实施设计；产品及其他验收任务继续维护在根 TODO。

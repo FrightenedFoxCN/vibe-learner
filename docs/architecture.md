@@ -292,3 +292,8 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 - current production lifecycle coverage is shown in `harness-architecture.md`; deterministic implementation gates do not certify independent quality or every platform;
 - Tavern prompt/token/scene-depth budgets and deterministic evals are enforced; representative provider performance and billing acceptance remain in `TODO.md`;
 - `npm run check` runs shared/Web reliability and type gates; `npm run check:release` adds the full backend suite and production Web build. `npm run lint:web` is only a compatibility alias.
+
+
+## Planned changes
+
+The next incremental releases are planned in [Architecture refactor](plans/architecture-refactor.md) and [Unified diagnostics](plans/unified-debug.md). These plans are not implemented behavior in 0.3.0.
