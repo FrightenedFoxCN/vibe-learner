@@ -5,7 +5,8 @@
 | 入口 | 边界 |
 | --- | --- |
 | `npm run test:web:debug` | 完整 React 组件的 Debug 发布、更新、卸载清理；无学习 controller/API |
-| `npm run test:web:workspace` | 草稿缓存组件的文件/文本生命周期、选择初始化；无网络 |
+| `npm run test:web:workspace` | 快照查询并发/卸载/失败与草稿组件生命周期；注入查询依赖，无网络 |
+| `npm --workspace @vibe-learner/web run test:workspace:data` | 只运行首次加载、刷新竞争、失效与重试模块 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |

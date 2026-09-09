@@ -27,6 +27,7 @@ import {
   updateLearningPlanProgress as updateLearningPlanProgressRequest,
   updateLearningPlanTitle as updateLearningPlanTitleRequest,
 } from "../lib/data/learning-plans";
+import { WorkspaceSnapshotLoader } from "../lib/workspace-snapshot-loader";
 import { listPersonas } from "../lib/data/personas";
 import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
 import {
@@ -182,7 +183,11 @@ export function useLearningWorkspaceController({
   const sectionSwitchInFlightRef = useRef<Map<string, Promise<void>>>(new Map());
   const sectionSwitchQueueRef = useRef<Promise<void>>(Promise.resolve());
   const latestSectionSwitchRef = useRef("");
-  const workspaceSnapshotRequestRef = useRef(0);
+  const snapshotLoaderRef = useRef<WorkspaceSnapshotLoader | null>(null);
+  if (snapshotLoaderRef.current === null) {
+    snapshotLoaderRef.current = new WorkspaceSnapshotLoader({ listDocuments, listLearningPlans, listPersonas });
+  }
+  const snapshotLoader = snapshotLoaderRef.current;
   const automaticRequestIdsRef = useRef<Map<string, string>>(new Map());
   const followUpTimerRef = useRef<Map<string, number>>(new Map());
   const followUpInFlightRef = useRef<Set<string>>(new Set());
@@ -259,9 +264,10 @@ export function useLearningWorkspaceController({
 
   useEffect(() => {
     mountedRef.current = true;
+    snapshotLoader.activate();
     return () => {
       mountedRef.current = false;
-      workspaceSnapshotRequestRef.current += 1;
+      snapshotLoader.deactivate();
       studyViewFenceRef.current.transition("learning-route:unmounted", true);
       generationAbortControllerRef.current?.abort();
       const streamIds = new Set([processStreamIdRef.current, planStreamIdRef.current].filter(Boolean));
@@ -433,56 +439,28 @@ export function useLearningWorkspaceController({
     });
   };
 
-  const readWorkspaceSnapshot = async (includePersonas: boolean): Promise<WorkspaceSnapshot> => {
-    if (includePersonas) {
-      const [remotePersonas, remoteDocuments, remotePlans] = await Promise.all([
-        listPersonas(),
-        listDocuments(),
-        listLearningPlans()
-      ]);
-      return {
-        personas: remotePersonas,
-        documents: remoteDocuments,
-        plans: remotePlans
-      };
-    }
-
-    const [remoteDocuments, remotePlans] = await Promise.all([
-      listDocuments(),
-      listLearningPlans()
-    ]);
-    return {
-      documents: remoteDocuments,
-      plans: remotePlans
-    };
-  };
-
-  const syncWorkspaceSnapshot = async (options: {
+  const syncWorkspaceSnapshot = (options: {
     includePersonas: boolean;
     preferredPlanId: string;
     successNotice?: string;
-  }) => {
-    const requestToken = ++workspaceSnapshotRequestRef.current;
-    try {
-      dispatch({ type: "snapshot_refresh_started" });
-      const snapshot = await readWorkspaceSnapshot(options.includePersonas);
-      if (requestToken !== workspaceSnapshotRequestRef.current) {
-        return;
-      }
+    initial?: boolean;
+  }) => snapshotLoader.load(options.includePersonas, {
+    started: () => dispatch({ type: "snapshot_refresh_started" }),
+    loaded: (snapshot) => {
       applyWorkspaceSnapshot(snapshot, selectedPlanIdRef.current || options.preferredPlanId);
-      if (options.successNotice) {
-        dispatch({ type: "notice_set", notice: options.successNotice });
-      }
-    } catch {
-      if (requestToken === workspaceSnapshotRequestRef.current) {
-        dispatch({ type: "notice_set", notice: DISCONNECTED_NOTICE });
-      }
-    } finally {
-      if (requestToken === workspaceSnapshotRequestRef.current) {
-        dispatch({ type: "snapshot_refresh_finished" });
-      }
-    }
-  };
+      if (options.successNotice) dispatch({ type: "notice_set", notice: options.successNotice });
+    },
+    failed: (error) => {
+      dispatch({
+        type: "notice_set",
+        notice: options.initial
+          ? resolveStudySessionErrorNotice(error, DISCONNECTED_NOTICE, "history")
+          : DISCONNECTED_NOTICE,
+      });
+      if (options.initial) logWorkspaceError("workflow:workspace_snapshot:load_error", error);
+    },
+    finished: () => dispatch({ type: "snapshot_refresh_finished" }),
+  });
 
   const selectPlan = (planId: string, noticeMessage?: string) => {
     const nextPlan = findLearningPlan(state.planHistory, planId);
@@ -1955,42 +1933,12 @@ export function useLearningWorkspaceController({
   };
 
   useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        dispatch({ type: "snapshot_refresh_started" });
-        const snapshot = await readWorkspaceSnapshot(true);
-        if (!active) {
-          return;
-        }
-        applyWorkspaceSnapshot(snapshot, selectedPlanIdRef.current);
-        dispatch({
-          type: "notice_set",
-          notice: CONNECTED_NOTICE
-        });
-      } catch (error) {
-        if (active) {
-          dispatch({
-            type: "notice_set",
-            notice: resolveStudySessionErrorNotice(
-              error,
-              DISCONNECTED_NOTICE,
-              "history",
-            ),
-          });
-        }
-        logWorkspaceError("workflow:workspace_snapshot:load_error", error);
-      } finally {
-        if (active) {
-          dispatch({ type: "snapshot_refresh_finished" });
-        }
-      }
-    };
-    void load();
-
-    return () => {
-      active = false;
-    };
+    void syncWorkspaceSnapshot({
+      includePersonas: true,
+      preferredPlanId: selectedPlanIdRef.current,
+      successNotice: CONNECTED_NOTICE,
+      initial: true,
+    });
   }, []);
 
   useEffect(() => {

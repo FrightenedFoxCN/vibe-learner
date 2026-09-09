@@ -106,4 +106,5 @@
 - [x] 学习 Provider 迁到 `(learning)` 路由组，Plan/Study 共享实例；根布局仅保留不发请求的草稿缓存。文件草稿、目标与所选 Plan/Persona/Scene 跨路由保留，重新进入后仍从服务端恢复学习资源。离开时废弃旧 Study response ticket、停止本地流读取并请求取消已知 stream。
 - [x] 生产 Chromium 的 12 项路由/导航测试通过：十个顶级页面初始请求清单、focus 请求上限、Plan/Study 切换不重复初始化、离开后不刷新学习数据、目标/PDF 草稿跨 Settings 导航。`test:web:workspace` 2 项组件/选择初始化测试通过；Web 类型检查、可靠性门禁和生产构建通过。请求 JSON 附件输出到 `/tmp/vibe-learner-route-report.json`；范围详见 `docs/frontend-test-boundaries.md`。
 - [ ] 补充有历史 Plan/Session 和在途操作的浏览器恢复验收；路由网络基线通过不替代这些恢复场景。
-- [ ] 拆分学习、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。
+- [x] 学习快照查询归入 `WorkspaceSnapshotLoader`，首次/focus/手动刷新共享响应归属判断；卸载后禁止新查询和旧结果投影，初始化被刷新取代时仍加载 Persona。独立 `test:workspace:data` 4 项并发/失败/卸载测试通过，Web 类型、可靠性回归、生产构建及 12 项 Chromium 路由验收通过。
+- [ ] 继续拆分学习动作/恢复、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。
