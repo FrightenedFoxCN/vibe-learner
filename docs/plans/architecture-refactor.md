@@ -51,7 +51,11 @@
 ### ARCH-TRANSACTION-001
 
 - [x] 提取不可变 `TavernReferenceWriteSet` 和作用域扫描接口；完整扫描保留为显式审计入口。独立模块 `tests.test_tavern_reference_scope` 覆盖空写集、无关房间、跨房间双向引用和删除身份，连同原审计测试共 7 项通过。
-- [ ] 接入事务写集，覆盖 ORM flush、SQL DML 和显式提交；替换旧全图 guard。
+- [x] 接入连接级事务写集，覆盖 ORM flush、SQLAlchemy DML、Session/Connection 显式提交；替换旧全图 guard。托管事务内不透明写 SQL、无法确定身份的表达式写入和嵌套 DML 明确拒绝；维护 SQL 仍走 engine 与显式审计。修复 SQLite 首个 savepoint 在外层 BEGIN 前释放会提前提交的问题。
 - [ ] 完成事务入口、领域回归及阶段验收后关闭主任务。
 
 测试分层：引用规则/作用域测试不启动 API 或 provider；事务入口测试只构建临时数据库；Tavern 业务及恢复测试单独运行。阶段交付仍执行 release 与 recovery-limits 门禁。
+
+事务入口测试独立为 `tests.test_transaction_validation`，使用临时 SQLite，覆盖 SQL/ORM 写入、过期 identity map、回滚、savepoint 和 Settings 查询隔离；`npm run test:ai:transactions` 只运行事务基础模块。PostgreSQL 实例级验收尚缺运行环境，不以 SQLite 结果替代。
+
+2026-09-10 事务接入阶段验证：`test:ai:transactions` 23 项通过；`check:release` 通过（后端 587 项、共享/Web 检查、13 个 eval suite 与生产构建）；`test:acceptance:recovery-limits` 通过（后端 188 项、Web 169 通过/2 条环境相关跳过）。SQLite savepoint 故障修复后已重新执行两个阶段门禁。

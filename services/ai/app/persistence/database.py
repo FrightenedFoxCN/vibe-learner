@@ -29,6 +29,10 @@ class Database:
             future=True,
         )
 
+        from app.persistence.transaction_validation import install_transaction_validation
+
+        install_transaction_validation(self.engine, self._session_factory)
+
     def create_schema(self) -> None:
         self._repair_sqlite_harness_operation_binding_route()
         self._repair_sqlite_harness_artifact_audit_schema()
@@ -51,18 +55,6 @@ class Database:
         session = self._session_factory()
         try:
             yield session
-            # Tavern keeps several nullable legacy-compatible references rather
-            # than hard FKs because append order spans one transaction. Validate
-            # the complete graph at the transaction boundary on every backend.
-            if session.new or session.dirty or session.deleted:
-                from app.persistence.tavern_invariant_scanner import (
-                    require_tavern_reference_integrity,
-                )
-
-                # Repositories commonly use autoflush=False while assembling
-                # a Run and its Message/Steps in one transaction.
-                session.flush()
-                require_tavern_reference_integrity(session)
             session.commit()
         except Exception:
             session.rollback()
