@@ -98,3 +98,10 @@
 - [x] 2026-09-10 provider 阶段门禁通过：`check:release`（后端 635 项、共享/Web 检查、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 193 项、Web 169 通过/2 条环境相关跳过）。恢复集中的两项纯 Tavern provider 测试已移入独立能力模块，45 项 provider 聚合测试通过。阶段 eval 的请求计数器改为 SDK 注入依赖，避免将可变 fixture 计数误放进 provider 配置快照。
 
 首个子任务验证：原 provider 审计、Study 解码、Tavern 安全模块 38 项通过；新增能力/练习契约连同 provider 审计与 Persona 流程共 122 项通过。测试能力导入无需 LiteLLM、真实 provider 无 Mock 继承、本地练习输出兼容及无传输调用。
+
+### ARCH-WEB-001
+
+- [x] 新建独立 `DebugProvider`，只接收学习模块发布的窄只读投影，不初始化 controller 或请求数据；全局 Overlay 移到学习 Provider 外侧。发布与读取 context 分离，学习 owner 卸载清空投影，避免旧页面调试状态残留。
+- [x] 引入 React Testing Library/jsdom/TSX 的完整组件执行入口（不切片源码），以及后续路由浏览器验收所需 Playwright。`test:web:debug` 2 项真实生命周期测试、Web 类型检查和可靠性回归（169 通过/2 条环境相关跳过）通过；组件测试已加入常规 reliability 门禁。
+- [ ] 限定学习 Provider 的路由 ownership，同时保留跨路由文件草稿、学习选择与操作恢复；用实际浏览器请求记录验证 Settings/Model Usage/404 等页面。
+- [ ] 拆分学习、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。

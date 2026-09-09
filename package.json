@@ -47,7 +47,8 @@
     "test:ai:provider:persona": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_persona",
     "test:ai:provider:scene": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_scene",
     "test:ai:provider:sdk": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_sdk",
-    "test:ai:provider": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_capabilities tests.test_provider_exercises tests.test_provider_transport tests.test_provider_embedding tests.test_provider_image tests.test_provider_tavern tests.test_provider_planning tests.test_provider_study tests.test_provider_persona tests.test_provider_scene tests.test_provider_sdk tests.test_provider_configuration"
+    "test:ai:provider": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_capabilities tests.test_provider_exercises tests.test_provider_transport tests.test_provider_embedding tests.test_provider_image tests.test_provider_tavern tests.test_provider_planning tests.test_provider_study tests.test_provider_persona tests.test_provider_scene tests.test_provider_sdk tests.test_provider_configuration",
+    "test:web:debug": "npm --workspace @vibe-learner/web run test:debug"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

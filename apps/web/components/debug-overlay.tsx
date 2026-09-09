@@ -8,7 +8,7 @@ import { useDocumentDebugData } from "../hooks/use-document-debug-data";
 import { DocumentDebugPanels } from "./document-debug-panels";
 import { PageDebugPanel } from "./page-debug-panel";
 import { useCurrentPageDebugSnapshot } from "./page-debug-context";
-import { useLearningWorkspace } from "./learning-workspace-provider";
+import { useLearningDebugSnapshot } from "./debug-provider";
 import { useRuntimeSettings } from "./runtime-settings-provider";
 import { StudyDebugPanels } from "./study-debug-panels";
 import {
@@ -21,7 +21,7 @@ import {
 export function DebugOverlay() {
   const pathname = usePathname();
   const { showDebugInfo } = useRuntimeSettings();
-  const workspace = useLearningWorkspace();
+  const workspace = useLearningDebugSnapshot();
   const pageSnapshot = useCurrentPageDebugSnapshot();
   const [open, setOpen] = useState(false);
   const [openPreferenceLoaded, setOpenPreferenceLoaded] = useState(false);
@@ -30,11 +30,11 @@ export function DebugOverlay() {
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
-  const activeDocumentId = workspace.activeDocument?.id ?? "";
+  const activeDocumentId = workspace?.activeDocument?.id ?? "";
   const debugData = useDocumentDebugData(
     activeDocumentId,
     showDebugInfo && open && pathname === "/plan" && Boolean(activeDocumentId),
-    Boolean(workspace.activeDocument?.debugReady)
+    Boolean(workspace?.activeDocument?.debugReady)
   );
 
   const closeOverlay = useCallback(() => {
@@ -219,7 +219,7 @@ export function DebugOverlay() {
             </header>
 
             <div style={styles.overlayBody}>
-              {pathname === "/plan" ? (
+              {pathname === "/plan" && workspace ? (
                 <DocumentDebugPanels
                   document={workspace.activeDocument}
                   debugRecord={debugData.debugRecord}
@@ -243,7 +243,7 @@ export function DebugOverlay() {
                   loading={debugData.loading}
                   error={debugData.error}
                 />
-              ) : pathname === "/study" ? (
+              ) : pathname === "/study" && workspace ? (
                 <StudyDebugPanels
                   document={workspace.activeDocument}
                   persona={workspace.selectedPersona ?? null}

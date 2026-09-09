@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef } from "react";
 import type { ReactNode } from "react";
 
 import { useLearningWorkspaceController } from "../hooks/use-learning-workspace-controller";
@@ -9,6 +9,7 @@ import {
   persistLearningWorkspacePageCache,
   type LearningWorkspacePageCache,
 } from "../lib/learning-workspace-page-cache";
+import { usePublishLearningDebugSnapshot } from "./debug-provider";
 import { mockPersonas } from "../lib/mock-data";
 
 type LearningWorkspaceControllerValue = ReturnType<typeof useLearningWorkspaceController> & {
@@ -27,6 +28,30 @@ export function LearningWorkspaceProvider({ children }: { children: ReactNode })
   const controller = useLearningWorkspaceController({
     initialPersonas: mockPersonas
   });
+  const debugSnapshot = useMemo(() => ({
+    activeDocument: controller.activeDocument,
+    selectedPersona: controller.selectedPersona,
+    studySession: controller.studySession,
+    response: controller.response,
+    processStreamDocumentId: controller.processStreamDocumentId,
+    processStreamEvents: controller.processStreamEvents,
+    processStreamStatus: controller.processStreamStatus,
+    planStreamDocumentId: controller.planStreamDocumentId,
+    planStreamEvents: controller.planStreamEvents,
+    planStreamStatus: controller.planStreamStatus,
+  }), [
+    controller.activeDocument,
+    controller.selectedPersona,
+    controller.studySession,
+    controller.response,
+    controller.processStreamDocumentId,
+    controller.processStreamEvents,
+    controller.processStreamStatus,
+    controller.planStreamDocumentId,
+    controller.planStreamEvents,
+    controller.planStreamStatus,
+  ]);
+  usePublishLearningDebugSnapshot(debugSnapshot);
   const pageCacheRef = useRef<LearningWorkspacePageCache>(loadLearningWorkspacePageCache());
   const getPageCache = useCallback(
     function <K extends keyof LearningWorkspacePageCache>(
