@@ -224,10 +224,17 @@ def preflight_tavern_actor_prompt(
             _canonical_prompt_bytes(messages),
             _canonical_prompt_bytes(recovery_messages),
         )
-        token_estimate = max(
-            estimate_tavern_prompt_input_tokens(messages),
-            estimate_tavern_prompt_input_tokens(recovery_messages),
-        )
+        # Byte failures already require dropping the oldest message. Avoid scanning
+        # those oversized prompts; retain the empty-transcript error precedence.
+        if retained_messages and (
+            transcript_bytes > TAVERN_PROMPT_MAX_TRANSCRIPT_BYTES
+            or prompt_bytes > TAVERN_PROMPT_MAX_CANONICAL_BYTES
+        ):
+            retained_messages = retained_messages[1:]
+            removed_message_count += 1
+            continue
+        # The estimator is additive per message, so recovery always dominates.
+        token_estimate = estimate_tavern_prompt_input_tokens(recovery_messages)
         if (
             transcript_bytes <= TAVERN_PROMPT_MAX_TRANSCRIPT_BYTES
             and prompt_bytes <= TAVERN_PROMPT_MAX_CANONICAL_BYTES

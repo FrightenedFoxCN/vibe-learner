@@ -22,6 +22,7 @@
 - `audit-2026-09-08-review.md`: follow-up review and residual failure evidence
 - `audit-2026-09-08-remediation.md`: fixes and regression results for the follow-up review
 - `performance-budgets-v1.md`: versioned fixture, query/payload, server P95, and React render gates for focused performance work
+- `harness-performance-budgets-v1.md`: Wave 5 runtime limits, local performance fixtures and raw samples, serial Planning decision, and pending joint acceptance
 
 ## Reading Order
 

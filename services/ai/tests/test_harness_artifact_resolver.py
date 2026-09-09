@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from sqlalchemy import update
+from sqlalchemy import update, event
 from sqlalchemy.exc import IntegrityError
 
 from app.models.harness import HarnessArtifactType, HarnessContractRef
@@ -122,6 +122,24 @@ class HarnessArtifactResolverTests(unittest.TestCase):
         self.assertEqual(audit.authorization_outcome.value, "allowed")
         self.assertEqual(audit.resolution_status.value, "resolved")
         self.assertNotIn("protected transcript", audit.model_dump_json())
+
+    def test_batch_keeps_authorization_results_with_fewer_database_statements(self) -> None:
+        _, _, first = self._artifact_and_grant()
+        _, _, second = self._artifact_and_grant()
+        statements = []
+        def capture(_conn, _cursor, statement, *_):
+            statements.append(statement)
+        event.listen(self.database.engine, "before_cursor_execute", capture)
+        try:
+            before = [self.repository.resolve(request, now=NOW) for request in (first, second)]
+            before_count = len(statements)
+            statements.clear()
+            after = self.repository.resolve_batch((first, second), now=NOW)
+            after_count = len(statements)
+        finally:
+            event.remove(self.database.engine, "before_cursor_execute", capture)
+        self.assertEqual(list(after.results), before)
+        self.assertLess(after_count, before_count)
 
     def test_digest_verification_never_returns_protected_content(self) -> None:
         artifact, _, request = self._artifact_and_grant(

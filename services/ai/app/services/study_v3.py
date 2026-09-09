@@ -177,11 +177,12 @@ class StudyHarnessArtifactResolver(HarnessRuntimeArtifactResolver):
 
     def resolve(self, *, operation_binding, context):
         resolved: list[HarnessRuntimeResolvedArtifact] = []
+        requests: list[HarnessArtifactResolveRequestV1] = []
         for ref in context.snapshot_refs:
             grant_id = self.grants.get(ref.artifact_id)
             if not grant_id:
                 raise PermissionError("harness_artifact_grant_missing")
-            result = self.repository.resolve(
+            requests.append(
                 HarnessArtifactResolveRequestV1(
                     grant_id=grant_id,
                     harness_operation_id=operation_binding.harness_operation_id,
@@ -191,6 +192,9 @@ class StudyHarnessArtifactResolver(HarnessRuntimeArtifactResolver):
                     permission=HarnessArtifactPermission.READ,
                 )
             )
+        if not requests:
+            return ()
+        for result in self.repository.resolve_batch(requests).results:
             if result.status != HarnessArtifactResolutionStatus.RESOLVED:
                 raise PermissionError(
                     f"harness_artifact_resolution_{result.status.value}"

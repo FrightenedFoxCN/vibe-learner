@@ -71,11 +71,12 @@ class TavernHarnessArtifactResolver(HarnessRuntimeArtifactResolver):
 
     def resolve(self, *, operation_binding, context):
         resolved = []
+        requests = []
         for ref in context.snapshot_refs:
             grant_id = self.grants.get(ref.artifact_id)
             if not grant_id:
                 raise PermissionError("harness_artifact_grant_missing")
-            result = self.repository.resolve(HarnessArtifactResolveRequestV1(
+            requests.append(HarnessArtifactResolveRequestV1(
                 grant_id=grant_id,
                 harness_operation_id=operation_binding.harness_operation_id,
                 artifact_id=ref.artifact_id,
@@ -83,6 +84,9 @@ class TavernHarnessArtifactResolver(HarnessRuntimeArtifactResolver):
                 artifact_contract=ref.contract,
                 permission=HarnessArtifactPermission.READ,
             ))
+        if not requests:
+            return ()
+        for result in self.repository.resolve_batch(requests).results:
             if result.status != HarnessArtifactResolutionStatus.RESOLVED:
                 raise PermissionError(f"harness_artifact_resolution_{result.status.value}")
             assert result.content is not None and result.payload_digest is not None

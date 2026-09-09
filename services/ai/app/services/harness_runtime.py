@@ -23,6 +23,7 @@ from app.models.harness import (
     canonical_harness_digest,
 )
 from app.models.harness_manifest import require_executable_workflow_manifest_entry
+from app.models import harness_performance as performance_budget
 from app.models.harness_operation import HarnessOperationBindingV1
 from app.models.harness_runtime import (
     HarnessRuntimeClaimV1,
@@ -240,6 +241,15 @@ class HarnessOperationRuntime:
         raw: object | None = None
         artifacts: Mapping[str, object] = {}
         try:
+            performance_budget.enforce_budget(
+                "reference_count",
+                len(request.context.subject_refs) + len(request.context.snapshot_refs),
+                performance_budget.CONTEXT_MAX_REFERENCES,
+            )
+            performance_budget.enforce_budget(
+                "context_bytes", performance_budget.canonical_byte_count(request.context),
+                performance_budget.CONTEXT_MAX_BYTES,
+            )
             artifacts = self._call_with_heartbeat(
                 claim,
                 lease_seconds,
@@ -261,6 +271,11 @@ class HarnessOperationRuntime:
             )
         except Exception as error:
             recovery_strategy = "none"
+            if isinstance(error, performance_budget.HarnessBudgetExceeded):
+                self.repository.append_check(claim=claim, check=HarnessCheckV2(
+                    name="pre_execution_budget", status=HarnessCheckStatus.FAILED,
+                    code=error.code, message=error.evidence.model_dump_json(),
+                ))
             if isinstance(error, HarnessRuntimeGenerationError):
                 for check in error.checks:
                     self.repository.append_check(claim=claim, check=check)
@@ -718,6 +733,12 @@ class HarnessOperationRuntime:
             item = by_id[ref.artifact_id]
             if item.payload_digest != ref.payload_digest:
                 raise HarnessRuntimeError("harness_runtime_artifact_digest_mismatch")
+        total = 0
+        for item in resolved:
+            size = performance_budget.canonical_byte_count(item.payload)
+            performance_budget.enforce_budget("snapshot_bytes", size, performance_budget.SNAPSHOT_MAX_BYTES)
+            total += size
+            performance_budget.enforce_budget("resolved_bytes", total, performance_budget.RESOLVED_MAX_BYTES)
         return {artifact_id: item.payload for artifact_id, item in by_id.items()}
 
     def _repair(
@@ -765,6 +786,21 @@ class HarnessOperationRuntime:
         callback: Callable[[], object],
         deadline: datetime | None = None,
     ) -> object:
+        # A previous phase may consume the remaining deadline. Never start a
+        # provider/worker/commit callback after that deadline has already passed.
+        if deadline is not None:
+            self._ensure_within_budget(deadline)
+        current = self._require_execution(claim.trace_id)
+        performance_budget.enforce_budget(
+            "attempt_count", len(current.attempt_records), performance_budget.RUNTIME_MAX_ATTEMPTS,
+        )
+        performance_budget.enforce_budget(
+            "runtime_evidence_bytes",
+            performance_budget.canonical_byte_count({
+                "attempts": [a.model_dump(mode="json") for a in current.attempt_records],
+                "checks": [c.model_dump(mode="json") for c in current.checks],
+            }), performance_budget.RUNTIME_MAX_EVIDENCE_BYTES,
+        )
         with _HarnessLeaseHeartbeat(self.repository, claim, lease_seconds) as heartbeat:
             result = callback()
         heartbeat.raise_if_failed()

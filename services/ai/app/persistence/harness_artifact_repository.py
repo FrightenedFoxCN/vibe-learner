@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 import hashlib
 import secrets
@@ -8,6 +9,7 @@ import secrets
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.models.harness import HarnessArtifactType, HarnessContractRef
 from app.models.harness_artifact_access import (
@@ -333,12 +335,13 @@ class HarnessArtifactRepository:
         request: HarnessArtifactResolveRequestV1,
         *,
         now: datetime | None = None,
+        _session: Session | None = None,
     ) -> HarnessArtifactResolutionV1:
         resolved_at = _now(now)
         _utc_wire(resolved_at)
         # All authorization (including operation binding and scope) happens
         # before querying the protected row/payload below.
-        with self.database.session() as session:
+        with (self.database.session() if _session is None else nullcontext(_session)) as session:
             grant_row = session.get(HarnessArtifactGrantRow, request.grant_id)
             principal_row = session.get(HarnessArtifactPrincipalRow, _INSTALLATION_SLOT)
             if grant_row is None:
@@ -492,9 +495,12 @@ class HarnessArtifactRepository:
             raise ValueError("harness_artifact_batch_size_invalid")
         resolved_at = _now(now)
         _utc_wire(resolved_at)
-        return HarnessArtifactBatchResolutionV1(
-            results=tuple(self.resolve(item, now=resolved_at) for item in request_tuple)
-        )
+        # One transaction for the batch; each item still performs its
+        # own authorization before touching protected content, in input order.
+        with self.database.session() as session:
+            return HarnessArtifactBatchResolutionV1(
+                results=tuple(self.resolve(item, now=resolved_at, _session=session) for item in request_tuple)
+            )
 
     def list_resolution_audits(self) -> tuple[HarnessArtifactResolutionAuditV1, ...]:
         with self.database.session() as session:

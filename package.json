@@ -22,6 +22,7 @@
     "eval:harness:pr": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr",
     "eval:harness:manual": "npm run eval:harness -- --profile manual",
     "eval:harness:nightly": "npm run eval:harness -- --profile nightly",
+    "bench:harness": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_performance_benchmark",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai",
     "check": "npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr",

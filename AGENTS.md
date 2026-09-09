@@ -34,6 +34,7 @@ This repository was last materially updated on 2026-09-03. The codebase is a mon
 - Harness schema ownership: `docs/harness-schema-ownership.md`
 - Harness active roadmap: `docs/harness-roadmap.md`
 - Versioned performance gates: `docs/performance-budgets-v1.md`
+- Harness Wave 5 performance gates: `docs/harness-performance-budgets-v1.md`; run `npm run bench:harness -- --samples 30 --output /tmp/harness-local.json` for provider-free local measurements. Wave 4/5 joint independent acceptance and Tavern live provider measurements remain open.
 - Tavern contracts and persistence: `services/ai/app/models/tavern.py`, `services/ai/app/persistence/tavern_repository.py`, and `packages/shared/src/tavern.ts`
 - Study Session CAS persistence: `services/ai/app/persistence/study_session_repository.py`; new Study Session writes must not return to `LocalJsonStore.save_list("sessions", ...)`.
 - Study Chat operation contracts: `services/ai/app/models/study_chat_operation.py`, `services/ai/app/persistence/study_chat_operation_repository.py`, and `apps/web/lib/study-chat-operation-decode.ts`.

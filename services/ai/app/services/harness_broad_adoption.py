@@ -476,11 +476,12 @@ class AuthorizedJsonArtifactResolver(HarnessRuntimeArtifactResolver):
         context,
     ) -> tuple[HarnessRuntimeResolvedArtifact, ...]:
         resolved: list[HarnessRuntimeResolvedArtifact] = []
+        requests: list[HarnessArtifactResolveRequestV1] = []
         for ref in context.snapshot_refs:
             grant_id = self.grants.get(ref.artifact_id)
             if not grant_id:
                 raise PermissionError("harness_artifact_grant_missing")
-            result = self.artifacts.resolve(
+            requests.append(
                 HarnessArtifactResolveRequestV1(
                     grant_id=grant_id,
                     harness_operation_id=operation_binding.harness_operation_id,
@@ -490,6 +491,9 @@ class AuthorizedJsonArtifactResolver(HarnessRuntimeArtifactResolver):
                     permission=HarnessArtifactPermission.READ,
                 )
             )
+        if not requests:
+            return ()
+        for result in self.artifacts.resolve_batch(requests).results:
             if result.status != HarnessArtifactResolutionStatus.RESOLVED or result.content is None:
                 raise PermissionError(
                     f"harness_artifact_resolution_{result.status.value}"

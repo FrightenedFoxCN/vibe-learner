@@ -188,9 +188,9 @@ class StudyV3RuntimeTests(unittest.TestCase):
         events: list[str] = []
         original_resolve = HarnessArtifactRepository.resolve
 
-        def resolve(repository, request):
+        def resolve(repository, request, **kwargs):
             events.append("resolve")
-            return original_resolve(repository, request)
+            return original_resolve(repository, request, **kwargs)
 
         provider = Mock(side_effect=lambda **_kwargs: (events.append("provider"), self._result())[1])
         with ExitStack() as stack:

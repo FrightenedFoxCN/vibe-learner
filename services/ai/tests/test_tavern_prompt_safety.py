@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from fastapi import HTTPException
 
@@ -168,6 +169,32 @@ class CountingMockProvider(MockModelProvider):
 
 
 class TavernPromptBudgetTests(unittest.TestCase):
+    def test_trim_matches_exhaustive_suffix_oracle(self) -> None:
+        from app.services import tavern_prompt as prompt
+
+        participants = [_participant(_persona("persona-a", "阿澜"), display_order=0)]
+        messages = [_message(i, '中文 evidence \\"\n' * 100) for i in range(1, 9)]
+        limits = {"TAVERN_PROMPT_MAX_TRANSCRIPT_BYTES": 6000,
+                  "TAVERN_PROMPT_MAX_CANONICAL_BYTES": 20000,
+                  "TAVERN_PROMPT_MAX_INPUT_TOKEN_ESTIMATE": 6000}
+        with patch.multiple(prompt, **limits):
+            actual = _preflight(participants, recent_messages=messages)
+        # Independently enumerate every suffix without allowing the preflight to
+        # trim it. The first admissible suffix must be the production result.
+        with patch.multiple(prompt, **{key: 10**9 for key in limits}):
+            for removed in range(len(messages) + 1):
+                candidate = _preflight(participants, recent_messages=messages[removed:])
+                report = candidate.report
+                if (report.final_transcript_bytes <= limits["TAVERN_PROMPT_MAX_TRANSCRIPT_BYTES"]
+                    and report.final_prompt_bytes <= limits["TAVERN_PROMPT_MAX_CANONICAL_BYTES"]
+                    and report.input_token_estimate <= limits["TAVERN_PROMPT_MAX_INPUT_TOKEN_ESTIMATE"]):
+                    break
+            else:
+                self.fail("fixture has no admissible suffix")
+        self.assertEqual(actual.messages, candidate.messages)
+        self.assertEqual(actual.report.removed_message_count, removed)
+        self.assertEqual(actual.report.input_token_estimate, report.input_token_estimate)
+
     def test_one_and_six_person_prompts_fit_explicit_limits(self) -> None:
         for count in (1, 6):
             with self.subTest(count=count):

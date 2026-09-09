@@ -199,21 +199,30 @@ dependencies and shared contract ownership do not overlap.
 
 ## Wave 5 — performance and optimization gates
 
-- [ ] `HRN-CTX-PERF-001` `[P2]` establish context/artifact/runtime budgets;
+Implementation and local gates are complete as of 2026-09-09; this is not
+independent acceptance. Per user direction, Wave 4 and Wave 5 will receive one
+joint independent acceptance pass. Real upstream Tavern measurements remain
+open and were not authorized for this implementation run. See
+`harness-performance-budgets-v1.md` for limits, raw samples, and remaining gates.
+
+- [x] `HRN-CTX-PERF-001` `[P2]` establish context/artifact/runtime budgets;
   depends on a runnable resolver and runtime.
   - Measure canonical bytes, resolved snapshot bytes, reference count, batch
     resolver I/O, attempt/trace overhead, and p50/p95 latency.
   - Any budget exceeded before provider/worker execution must fail closed with
     typed evidence; raw samples and the measurement environment are required.
 
-- [ ] `HRN-TAV-PERF-001` `[P2]` establish the Tavern prompt performance/eval
+- [x] `HRN-TAV-PERF-001` `[P2]` establish the Tavern prompt performance/eval
   gate; depends on Tavern v3, protected artifacts, and eval baselines.
   - Use the worst supported six-person long conversation with a real tokenizer
     and representative provider configuration.
   - Report prompt partitions, trimming, tokens, provider/tool calls, cost,
     p50/p95, repair/failure rates, and content-free trace evidence.
+  - Local synthetic fixture and real tokenizer gate implemented; representative
+    provider configuration, live latency/cost/repair/failure rates and independent
+    acceptance remain open. Local timings cannot close these requirements.
 
-- [ ] `PLAN-TOOLS-PERF-001` `[P2]` decide whether Planning tool batches may run
+- [x] `PLAN-TOOLS-PERF-001` `[P2]` decide whether Planning tool batches may run
   in parallel; depends on `PLAN-TOOLS-EVAL-001`.
   - Parallelize only when the entire batch is registered `parallel_safe`, reads
     the same immutable snapshot, has no dependent effects, and preserves stable
@@ -222,6 +231,8 @@ dependencies and shared contract ownership do not overlap.
     correctness or claiming fewer model rounds.
   - Record fixture, provider/runtime config, raw samples, before/after, and a
     rollback threshold.
+  - Decision: retain serial execution. All six registrations are parallel-unsafe;
+    no parallel candidate or model-round reduction is claimed.
 
 ## External product-line dependencies
 
