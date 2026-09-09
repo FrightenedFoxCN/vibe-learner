@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - ".node-version"
       - ".github/workflows/desktop-preview.yml"
       - "apps/desktop/**"
       - "apps/web/**"
@@ -42,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: ".node-version"
           cache: "npm"
 
       - name: Setup Python

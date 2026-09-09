@@ -78,6 +78,10 @@ verification and hostname checks are never disabled.
 
 Preview installers are produced by `.github/workflows/desktop-preview.yml`.
 
+Release and preview workflows use Node.js 26.x from the repository
+`.node-version` file, matching the root package engine requirement and native
+TypeScript test runner. Use the same major version for local validation.
+
 The workflow:
 
 - runs on `workflow_dispatch` plus desktop-relevant `pull_request` changes

@@ -89,7 +89,7 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 ## 软件依赖（新增与建议版本）
 
 - Git（新增）: >= 2.40
-- Node.js: >= 20
+- Node.js: 26.x（版本见 `.node-version`，CI 与本地开发保持一致）
 - npm: >= 10
 - Python: >= 3.12
 - uv: 建议最新稳定版
