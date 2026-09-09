@@ -69,8 +69,7 @@ class ModelCompatibilityTests(unittest.TestCase):
 
     def test_litellm_path_receives_adapted_reasoning_payload(self) -> None:
         provider = self.build_provider()
-        with patch(
-            "app.services.model_provider.litellm_completion",
+        with patch.object(provider.sdk, "completion",
             return_value={"choices": [{"message": {"content": "ok"}}]},
         ) as completion:
             provider._request_openai_chat_completion(
@@ -92,8 +91,7 @@ class ModelCompatibilityTests(unittest.TestCase):
 
     def test_unsupported_parameters_get_typed_non_retryable_reason(self) -> None:
         provider = self.build_provider(model="gpt-4.1-mini")
-        with patch(
-            "app.services.model_provider.litellm_completion",
+        with patch.object(provider.sdk, "completion",
             side_effect=UnsupportedParamsError("Unsupported parameter: temperature"),
         ) as completion:
             with self.assertRaises(ModelRequestError) as caught:

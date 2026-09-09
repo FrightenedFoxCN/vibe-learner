@@ -174,8 +174,7 @@ class PlanningContractTests(unittest.TestCase):
             _FakeLiteLLMResult(_chat_payload(_valid_proposal_payload())),
         ]
 
-        with patch(
-            "app.services.model_provider.litellm_completion",
+        with patch.object(provider.sdk, "completion",
             side_effect=responses,
         ) as completion:
             reply = provider.generate_learning_plan(

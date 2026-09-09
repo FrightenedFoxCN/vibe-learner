@@ -39,3 +39,35 @@ class ProviderConfigurationTests(unittest.TestCase):
             self.assertEqual(kwargs["model"], "initial-model")
             self.assertEqual(payload["max_tokens"], 800)
             self.assertNotIn("ask_fill_blank_question", [tool["function"]["name"] for tool in payload["tools"]])
+
+    def test_repair_captures_endpoint_credentials_timeout_and_sdk_callable(self):
+        from app.services.provider_sdk import ProviderSDK
+        calls = []
+        provider = None
+
+        def completion(**kwargs):
+            calls.append(kwargs)
+            if len(calls) == 1:
+                provider.chat_base_url = "https://changed.invalid/v1"
+                provider.chat_api_key = "changed-key"
+                provider.timeout_seconds = 99
+                provider.chat_model = "changed-model"
+                provider.sdk.completion = Mock(side_effect=AssertionError("new SDK used during old operation"))
+                return raw_chat_reply('{"mood":"calm"}')
+            return raw_chat_reply('{"text":"完成","mood":"calm","action":"point"}')
+
+        provider = OpenAIModelProvider(api_key="initial-key", base_url="https://initial.invalid/v1",
+            plan_model="initial-model", timeout_seconds=3, chat_tools_enabled=False,
+            sdk=ProviderSDK(completion=completion))
+        reply = provider.generate_chat(persona=study_persona(), section_id="unit-1", message="explain")
+        self.assertEqual(reply.text, "完成")
+        self.assertEqual(len(calls), 2)
+        for call in calls:
+            self.assertEqual(call["api_key"], "initial-key")
+            self.assertEqual(call["api_base"], "https://initial.invalid/v1")
+            self.assertEqual(call["model"], "openai/initial-model")
+            self.assertEqual(call["timeout"], 3)
+        # A later operation adopts the new configuration rather than caching it forever.
+        with self.assertRaisesRegex(RuntimeError, "openai_chat_request_failed"):
+            provider.generate_chat(persona=study_persona(), section_id="unit-1", message="next")
+        provider.sdk.completion.assert_called_once()

@@ -6,6 +6,8 @@ from app.services.provider_capabilities import ModelProvider, ModelReply, PlanMo
 from app.services.provider_exercises import LocalExerciseProvider
 from app.services.provider_embedding import RemoteEmbeddingProvider
 from app.services.provider_image import RemoteImageProvider
+from app.services.provider_sdk import ProviderSDK, ProviderRequestAdapter, _known_litellm_providers, adapt_openai_compatible_payload
+from app.services.provider_snapshot import operation_snapshot
 from app.services.provider_settings import (
     RemoteSettingsProvider,
     _enforce_exact_persona_card_count,
@@ -112,50 +114,8 @@ from app.services.session_scene import (
     serialize_chat_tool_trace_item,
 )
 
-try:
-    import litellm
-    from litellm import completion as litellm_completion
-    from litellm import embedding as litellm_embedding
-    from litellm import responses as litellm_responses
-except ImportError:
-    litellm = None
-    litellm_completion = None
-    litellm_embedding = None
-    litellm_responses = None
 
 logger = get_logger("vibe_learner.model_provider")
-
-
-REASONING_CHAT_MODEL_RE = re.compile(
-    r"^(?:gpt-5(?:[.-]|$)|o[134](?:[.-]|$))",
-    re.IGNORECASE,
-)
-
-
-def adapt_openai_compatible_payload(
-    payload: dict[str, Any],
-    *,
-    model: str,
-) -> tuple[dict[str, Any], list[str]]:
-    """Apply explicit model-family request rules without global parameter dropping."""
-    adapted = dict(payload)
-    adjustments: list[str] = []
-    model_id = _bare_model_id(model)
-    if REASONING_CHAT_MODEL_RE.match(model_id):
-        if "temperature" in adapted:
-            adapted.pop("temperature", None)
-            adjustments.append("temperature_omitted")
-        if "max_tokens" in adapted and "max_completion_tokens" not in adapted:
-            adapted["max_completion_tokens"] = adapted.pop("max_tokens")
-            adjustments.append("max_tokens_to_max_completion_tokens")
-    return adapted, adjustments
-
-
-def _bare_model_id(model: str) -> str:
-    normalized = model.strip()
-    if "/" in normalized:
-        normalized = normalized.rsplit("/", 1)[-1]
-    return normalized
 
 
 def _feature_probe_tools_payload(model: str) -> dict[str, Any]:
@@ -712,6 +672,7 @@ class OpenAIModelProvider(ModelProvider):
         plan_disabled_tools_provider: Callable[[], set[str]] | None = None,
         chat_disabled_tools_provider: Callable[[], set[str]] | None = None,
         token_usage_service: TokenUsageService | None = None,
+        sdk: ProviderSDK | None = None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
@@ -744,6 +705,7 @@ class OpenAIModelProvider(ModelProvider):
         self.chat_disabled_tools_provider = chat_disabled_tools_provider
         self.token_usage_service = token_usage_service
         self._local_exercises = LocalExerciseProvider()
+        self.sdk = sdk if sdk is not None else ProviderSDK.load()
 
     def generate_exercise(self, *, persona: PersonaProfile, section_id: str, topic: str) -> ModelReply:
         return self._local_exercises.generate_exercise(persona=persona, section_id=section_id, topic=topic)
@@ -769,6 +731,7 @@ class OpenAIModelProvider(ModelProvider):
     def chat_memory_tool_runtime_enabled(self) -> bool:
         return self.chat_memory_tool_enabled
 
+    @operation_snapshot
     def probe_feature_readiness(self, features: list[str]) -> dict[str, dict[str, object]]:
         requested = list(dict.fromkeys(features))
         results: dict[str, dict[str, object]] = {}
@@ -843,6 +806,7 @@ class OpenAIModelProvider(ModelProvider):
                 results[feature] = dict(readiness)
         return results
 
+    @operation_snapshot
     def generate_chat(
         self,
         *,
@@ -896,6 +860,7 @@ class OpenAIModelProvider(ModelProvider):
             document_path=document_path,
         )
 
+    @operation_snapshot
     def generate_tavern_actor_reply(
         self,
         *,
@@ -922,6 +887,7 @@ class OpenAIModelProvider(ModelProvider):
             required_target_id=required_target_id, should_continue=should_continue,
         )
 
+    @operation_snapshot
     def assist_persona_setting(
         self,
         *,
@@ -937,6 +903,7 @@ class OpenAIModelProvider(ModelProvider):
             rewrite_strength=rewrite_strength,
         )
 
+    @operation_snapshot
     def assist_persona_slot(
         self,
         *,
@@ -952,6 +919,7 @@ class OpenAIModelProvider(ModelProvider):
             rewrite_strength=rewrite_strength,
         )
 
+    @operation_snapshot
     def generate_persona_cards_from_keywords(
         self,
         *,
@@ -963,6 +931,7 @@ class OpenAIModelProvider(ModelProvider):
             count=count,
         )
 
+    @operation_snapshot
     def generate_persona_cards_from_text(
         self,
         *,
@@ -974,6 +943,7 @@ class OpenAIModelProvider(ModelProvider):
             count=count,
         )
 
+    @operation_snapshot
     def generate_scene_tree_from_keywords(
         self,
         *,
@@ -986,6 +956,7 @@ class OpenAIModelProvider(ModelProvider):
         )
 
 
+    @operation_snapshot
     def generate_scene_tree_from_text(
         self,
         *,
@@ -998,6 +969,7 @@ class OpenAIModelProvider(ModelProvider):
         )
 
 
+    @operation_snapshot
     def generate_learning_plan(
         self,
         *,
@@ -1026,8 +998,25 @@ class OpenAIModelProvider(ModelProvider):
         )
 
 
+    @operation_snapshot
     def generate_projected_image(self, *, prompt: str, size: str = "1024x1024") -> dict[str, str]:
         return self._image_provider().generate_projected_image(prompt=prompt, size=size)
+
+    def _sdk_adapter(self) -> ProviderRequestAdapter:
+        existing = getattr(self, "_operation_adapter", None)
+        if existing is not None:
+            return existing
+        return ProviderRequestAdapter(
+            api_key=self.api_key, base_url=self.base_url,
+            plan_api_key=self.plan_api_key, plan_base_url=self.plan_base_url,
+            setting_api_key=self.setting_api_key, setting_base_url=self.setting_base_url,
+            chat_api_key=self.chat_api_key, chat_base_url=self.chat_base_url,
+            timeout_seconds=self.timeout_seconds,
+            completion=self.sdk.completion, responses=self.sdk.responses, embedding=self.sdk.embedding,
+            providers=frozenset(_known_litellm_providers(self.sdk.error_types)),
+            transport=ProviderTransport(timeout_seconds=self.timeout_seconds,
+                sdk=self.sdk.error_types, token_usage_service=self.token_usage_service),
+        )
 
     def _settings_provider(self) -> RemoteSettingsProvider:
         return RemoteSettingsProvider(
@@ -1041,7 +1030,7 @@ class OpenAIModelProvider(ModelProvider):
     def _image_provider(self) -> RemoteImageProvider:
         return RemoteImageProvider(
             chat_model=self.chat_model,
-            responses_available=bool(litellm_responses),
+            responses_available=bool(self._sdk_adapter().responses),
             request=self._request_openai_response,
         )
 
@@ -1052,37 +1041,7 @@ class OpenAIModelProvider(ModelProvider):
         request_kind: str,
         model: str,
     ) -> tuple[dict[str, Any], int]:
-        request_base_url, request_api_key = self._resolve_request_endpoint(request_kind)
-        resolved_payload = self._normalize_litellm_payload_model(
-            payload,
-            api_base=request_base_url,
-        )
-        tools_enabled = "tools" in payload
-        tool_round = len(
-            [message for message in resolved_payload.get("messages", []) if message.get("role") == "tool"]
-        )
-        logger.info(
-            "model.%s.request provider=litellm model=%s tool_round=%s tools_enabled=%s",
-            request_kind,
-            str(resolved_payload.get("model") or model),
-            tool_round,
-            tools_enabled,
-        )
-        self._require_litellm_sdk(litellm_completion, feature="completion")
-        raw_payload, elapsed_ms = self._execute_litellm_request(
-            request_kind=request_kind,
-            model=model,
-            invoke=lambda: litellm_completion(
-                **resolved_payload,
-                **self._build_litellm_request_kwargs(
-                    api_base=request_base_url,
-                    api_key=request_api_key,
-                    model=str(resolved_payload.get("model") or model),
-                ),
-            ),
-        )
-        self._record_token_usage(raw_payload, feature=request_kind, model=model)
-        return raw_payload, elapsed_ms
+        return self._sdk_adapter().request_chat_completion(payload, request_kind=request_kind, model=model)
 
     def _request_openai_response(
         self,
@@ -1091,35 +1050,9 @@ class OpenAIModelProvider(ModelProvider):
         request_kind: str,
         model: str,
     ) -> tuple[dict[str, Any], int]:
-        request_base_url, request_api_key = self._resolve_request_endpoint(request_kind)
-        resolved_payload = self._normalize_litellm_payload_model(
-            payload,
-            api_base=request_base_url,
-        )
-        if "input" not in resolved_payload and "messages" in resolved_payload:
-            resolved_payload["input"] = resolved_payload.pop("messages")
-        logger.info(
-            "model.%s.responses.request provider=litellm model=%s tools_enabled=%s",
-            request_kind,
-            str(resolved_payload.get("model") or model),
-            bool(resolved_payload.get("tools")),
-        )
-        self._require_litellm_sdk(litellm_responses, feature="responses")
-        raw_payload, elapsed_ms = self._execute_litellm_request(
-            request_kind=request_kind,
-            model=model,
-            invoke=lambda: litellm_responses(
-                **resolved_payload,
-                **self._build_litellm_request_kwargs(
-                    api_base=request_base_url,
-                    api_key=request_api_key,
-                    model=str(resolved_payload.get("model") or model),
-                ),
-            ),
-        )
-        self._record_token_usage_responses(raw_payload, feature=request_kind, model=model)
-        return raw_payload, elapsed_ms
+        return self._sdk_adapter().request_response(payload, request_kind=request_kind, model=model)
 
+    @operation_snapshot
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         return RemoteEmbeddingProvider(
             embedding_model=self.embedding_model,
@@ -1132,122 +1065,7 @@ class OpenAIModelProvider(ModelProvider):
         *,
         model: str,
     ) -> tuple[dict[str, Any], int]:
-        request_base_url, request_api_key = self._resolve_request_endpoint("chat")
-        resolved_payload = self._normalize_litellm_payload_model(
-            payload,
-            api_base=request_base_url,
-        )
-        self._require_litellm_sdk(litellm_embedding, feature="embedding")
-        raw_payload, elapsed_ms = self._execute_litellm_request(
-            request_kind="embedding",
-            model=model,
-            invoke=lambda: litellm_embedding(
-                **resolved_payload,
-                **self._build_litellm_request_kwargs(
-                    api_base=request_base_url,
-                    api_key=request_api_key,
-                    model=str(resolved_payload.get("model") or model),
-                ),
-            ),
-        )
-        logger.info("model.embedding.request provider=litellm model=%s elapsed_ms=%s", model, elapsed_ms)
-        self._record_token_usage(raw_payload, feature="embedding", model=model)
-        return raw_payload, elapsed_ms
-
-    def _record_token_usage(
-        self,
-        raw_payload: dict[str, Any],
-        *,
-        feature: str,
-        model: str,
-        prompt_key: str = "prompt_tokens",
-        completion_key: str = "completion_tokens",
-    ) -> None:
-        return self._transport().record_usage(raw_payload, feature=feature, model=model, prompt_key=prompt_key, completion_key=completion_key)
-
-    def _record_token_usage_responses(self, raw_payload: dict[str, Any], *, feature: str, model: str) -> None:
-        self._record_token_usage(
-            raw_payload,
-            feature=feature,
-            model=model,
-            prompt_key="input_tokens",
-            completion_key="output_tokens",
-        )
-
-    def _resolve_request_endpoint(self, request_kind: str) -> tuple[str, str]:
-        if request_kind == "plan":
-            return self.plan_base_url, self.plan_api_key
-        if request_kind == "setting":
-            return self.setting_base_url, self.setting_api_key
-        if request_kind == "chat":
-            return self.chat_base_url, self.chat_api_key
-        return self.base_url, self.api_key
-
-    def _require_litellm_sdk(self, client: Any, *, feature: str) -> None:
-        if client is None:
-            raise RuntimeError(f"litellm_sdk_not_installed:{feature}")
-
-    def _build_litellm_request_kwargs(
-        self,
-        *,
-        api_base: str,
-        api_key: str,
-        model: str,
-    ) -> dict[str, Any]:
-        kwargs: dict[str, Any] = {
-            "timeout": self.timeout_seconds,
-        }
-        if api_base:
-            kwargs["api_base"] = api_base
-        if api_key:
-            kwargs["api_key"] = api_key
-        forced_provider = _infer_openai_compatible_provider(model=model, api_base=api_base)
-        if forced_provider:
-            kwargs["custom_llm_provider"] = forced_provider
-        return kwargs
-
-    def _normalize_litellm_payload_model(
-        self,
-        payload: dict[str, Any],
-        *,
-        api_base: str,
-    ) -> dict[str, Any]:
-        resolved_payload = dict(payload)
-        raw_model = str(resolved_payload.get("model") or "").strip()
-        resolved_payload["model"] = _normalize_litellm_model_name(
-            model=raw_model,
-            api_base=api_base,
-        )
-        adapted_payload, adjustments = adapt_openai_compatible_payload(
-            resolved_payload,
-            model=str(resolved_payload["model"]),
-        )
-        if adjustments:
-            logger.info(
-                "model.request.compatibility model=%s adjustments=%s",
-                raw_model,
-                ",".join(adjustments),
-            )
-        return adapted_payload
-
-    def _map_litellm_request_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:
-        return self._transport().map_error(exc, request_kind=request_kind)
-
-    def _transport(self) -> ProviderTransport:
-        return ProviderTransport(
-            timeout_seconds=self.timeout_seconds,
-            sdk=litellm,
-            token_usage_service=self.token_usage_service,
-        )
-
-    def _execute_litellm_request(
-        self,
-        *,
-        request_kind: str,
-        model: str,
-        invoke: Callable[[], Any],
-    ) -> tuple[dict[str, Any], int]:
-        return self._transport().execute(request_kind=request_kind, model=model, invoke=invoke)
+        return self._sdk_adapter().request_embeddings(payload, model=model)
 
 
 def _reject_nonstandard_json_constant(value: str) -> None:
@@ -1448,63 +1266,3 @@ def _fallback_schedule_chapters_for_unit(
             ],
         )
     ]
-
-
-def _normalize_litellm_model_name(*, model: str, api_base: str) -> str:
-    normalized = model.strip()
-    if not normalized:
-        return normalized
-    if _litellm_model_has_provider_prefix(normalized):
-        return normalized
-    if _infer_openai_compatible_provider(model=normalized, api_base=api_base):
-        return f"openai/{normalized}"
-    return normalized
-
-
-def _infer_openai_compatible_provider(*, model: str, api_base: str) -> str | None:
-    if not model.strip():
-        return None
-    if _litellm_model_has_provider_prefix(model):
-        return None
-    normalized_base = api_base.rstrip("/")
-    if not normalized_base:
-        return None
-    if normalized_base == "https://api.openai.com/v1":
-        return None
-    return "openai"
-
-
-def _litellm_model_has_provider_prefix(model: str) -> bool:
-    if "/" not in model:
-        return False
-    provider = model.split("/", 1)[0].strip().lower()
-    if not provider:
-        return False
-    return provider in _known_litellm_providers()
-
-
-def _known_litellm_providers() -> set[str]:
-    if litellm is not None:
-        providers = getattr(litellm, "provider_list", None)
-        if providers:
-            normalized = {
-                str(getattr(provider, "value", provider)).strip().lower()
-                for provider in providers
-            }
-            return {provider for provider in normalized if provider}
-    return {
-        "openai",
-        "azure",
-        "anthropic",
-        "gemini",
-        "vertex_ai",
-        "vertex_ai_beta",
-        "openrouter",
-        "ollama",
-        "huggingface",
-        "bedrock",
-        "xai",
-        "custom_openai",
-        "openai_like",
-        "text-completion-openai",
-    }

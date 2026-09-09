@@ -352,8 +352,7 @@ class PersonaPipelineTests(ContainerTestCase):
             timeout_seconds=3,
         )
 
-        with patch(
-            "app.services.model_provider.litellm_responses",
+        with patch.object(provider.sdk, "responses",
             return_value=FakeLiteLLMResult(
                 {
                     "output": [
@@ -413,8 +412,7 @@ class PersonaPipelineTests(ContainerTestCase):
             timeout_seconds=3,
         )
 
-        with patch(
-            "app.services.model_provider.litellm_completion",
+        with patch.object(provider.sdk, "completion",
             return_value=FakeLiteLLMResult(
                 {
                     "choices": [
@@ -562,8 +560,7 @@ class PersonaPipelineTests(ContainerTestCase):
             timeout_seconds=3,
         )
 
-        with patch(
-            "app.services.model_provider.litellm_responses",
+        with patch.object(provider.sdk, "responses",
             return_value=FakeLiteLLMResult(
                 {
                     "output": [
@@ -1873,7 +1870,7 @@ class PersonaPipelineTests(ContainerTestCase):
                 }
             )
 
-        with patch("app.services.model_provider.litellm_completion", side_effect=fake_completion):
+        with patch.object(provider.sdk, "completion", side_effect=fake_completion):
             reply = provider.generate_chat(
                 persona=self.persona_engine.require_persona("mentor-aurora"),
                 section_id="chapter-1",
@@ -1941,7 +1938,7 @@ class PersonaPipelineTests(ContainerTestCase):
             captured_payloads.append(kwargs)
             return responses.pop(0)
 
-        with patch("app.services.model_provider.litellm_completion", side_effect=fake_completion):
+        with patch.object(provider.sdk, "completion", side_effect=fake_completion):
             reply = provider.generate_chat(
                 persona=self.persona_engine.require_persona("mentor-aurora"),
                 section_id="chapter-1",
@@ -2109,7 +2106,7 @@ class PersonaPipelineTests(ContainerTestCase):
             captured_payloads.append(kwargs)
             return responses.pop(0)
 
-        with patch("app.services.model_provider.litellm_completion", side_effect=fake_completion):
+        with patch.object(provider.sdk, "completion", side_effect=fake_completion):
             reply = provider.generate_chat(
                 persona=self.persona_engine.require_persona("mentor-aurora"),
                 section_id="chapter-1",
@@ -3196,8 +3193,7 @@ class PersonaPipelineTests(ContainerTestCase):
             timeout_seconds=3,
         )
 
-        with patch(
-            "app.services.model_provider.litellm_completion",
+        with patch.object(provider.sdk, "completion",
             return_value=FakeLiteLLMResult(
                 {
                     "choices": [
@@ -3397,7 +3393,7 @@ class PersonaPipelineTests(ContainerTestCase):
         ]
         progress_events: list[tuple[str, dict[str, object]]] = []
 
-        with patch("app.services.model_provider.litellm_completion", side_effect=responses) as mocked_completion:
+        with patch.object(provider.sdk, "completion", side_effect=responses) as mocked_completion:
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -3576,7 +3572,7 @@ class PersonaPipelineTests(ContainerTestCase):
         ]
         progress_events: list[tuple[str, dict[str, object]]] = []
 
-        with patch("app.services.model_provider.litellm_completion", side_effect=responses) as mocked_completion:
+        with patch.object(provider.sdk, "completion", side_effect=responses) as mocked_completion:
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -3732,7 +3728,7 @@ class PersonaPipelineTests(ContainerTestCase):
             ),
         ]
 
-        with patch("app.services.model_provider.litellm_completion", side_effect=responses):
+        with patch.object(provider.sdk, "completion", side_effect=responses):
             reply = provider.generate_learning_plan(
                 persona=persona,
                 document_title="Discrete Mathematics",
@@ -3838,7 +3834,7 @@ class PersonaPipelineTests(ContainerTestCase):
         ]
 
         with (
-            patch("app.services.model_provider.litellm_completion", side_effect=responses) as mocked_completion,
+            patch.object(provider.sdk, "completion", side_effect=responses) as mocked_completion,
             patch(
                 "app.services.plan_tool_runtime.read_page_range_images",
                 return_value={
