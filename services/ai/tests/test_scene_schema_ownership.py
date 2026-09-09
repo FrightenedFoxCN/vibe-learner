@@ -1,3 +1,5 @@
+from tests.support.scene_samples import scene_proposal_payload as _proposal_payload, scene_layer_payload as _layer_payload
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from copy import deepcopy
@@ -438,38 +440,8 @@ class SceneSchemaOwnershipTests(unittest.TestCase):
                 store.close()
 
 
-def _proposal_payload() -> dict[str, object]:
-    return {
-        "schema_name": "scene-tree-proposal",
-        "schema_version": "scene-tree-proposal-v1",
-        "scene_name": "Study room",
-        "scene_summary": "A bounded study room.",
-        "selected_path": [0],
-        "scene_layers": [_layer_payload(title="Room")],
-    }
 
 
-def _layer_payload(*, title: str) -> dict[str, object]:
-    return {
-        "title": title,
-        "scope_label": "room",
-        "summary": "A room for focused study.",
-        "atmosphere": "Quiet.",
-        "rules": "Keep the room organized.",
-        "entrance": "Enter through the door.",
-        "tags": ["room", "study"],
-        "reuse_hint": "Reusable as a study room.",
-        "objects": [
-            {
-                "name": "Board",
-                "description": "A writing board.",
-                "interaction": "Write on the board.",
-                "tags": ["board"],
-                "reuse_hint": "Reusable as a board.",
-            }
-        ],
-        "children": [],
-    }
 
 
 def _save_payload(result: dict[str, object]) -> dict[str, object]:

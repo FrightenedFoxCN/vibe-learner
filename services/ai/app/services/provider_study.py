@@ -3,9 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from app.services.provider_capabilities import StudyModelCapability
-from app.services.provider_transport import _coerce_int
 from app.services.provider_capabilities import ModelReply
-from app.services.provider_payload import _extract_choice_content
+from app.services.provider_payload import _extract_choice_content, _extract_choice_diagnostics
 import json
 import re
 from typing import Callable
@@ -1368,22 +1367,3 @@ def _extract_memory_trace_payload(
                 })
             return normalized
     return [{**item, "source": str(item.get("source") or "retriever")} for item in fallback_memory_trace]
-
-
-
-def _extract_choice_diagnostics(payload: dict[str, Any]) -> tuple[str, int, int]:
-    choices = payload.get("choices")
-    finish_reason = ""
-    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
-        finish_reason = str(choices[0].get("finish_reason") or "")
-
-    usage = payload.get("usage") if isinstance(payload, dict) else None
-    completion_tokens = 0
-    reasoning_tokens = 0
-    if isinstance(usage, dict):
-        completion_tokens = _coerce_int(usage.get("completion_tokens"), default=0)
-        details = usage.get("completion_tokens_details")
-        if isinstance(details, dict):
-            reasoning_tokens = _coerce_int(details.get("reasoning_tokens"), default=0)
-    return finish_reason, reasoning_tokens, completion_tokens
-

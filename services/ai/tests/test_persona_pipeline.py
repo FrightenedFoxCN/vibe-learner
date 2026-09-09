@@ -1,3 +1,5 @@
+
+from tests.support.provider_payloads import setting_wire_reply
 from tests.support.api import ContainerTestCase, isolated_client
 
 import base64
@@ -549,86 +551,7 @@ class PersonaPipelineTests(ContainerTestCase):
             ["冷静分析", "先给框架", "冷静分析", "先给框架"],
         )
 
-    def test_openai_persona_card_count_invariant_accepts_exact_count(self) -> None:
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://api.openai.test/v1",
-            plan_model="gpt-test",
-            setting_model="gpt-setting-test",
-            setting_web_search_enabled=False,
-            timeout_seconds=3,
-        )
-        parsed = {
-            "summary": "结构化导师",
-            "relationship": "导师",
-            "learner_address": "同学",
-            "cards": [
-                {
-                    "title": f"卡片 {index + 1}",
-                    "kind": "thinking_style",
-                    "label": "思维风格",
-                    "content": f"内容 {index + 1}",
-                }
-                for index in range(2)
-            ],
-        }
 
-        with patch.object(
-            provider,
-            "_request_setting_json_chat",
-            return_value=parsed,
-        ) as request:
-            result = provider.generate_persona_cards_from_keywords(
-                keywords="结构化导师",
-                count=2,
-            )
-
-        self.assertEqual(len(result["cards"]), 2)
-        prompt_payload = request.call_args.args[0]
-        prompt_text = "\n".join(
-            str(message["content"])
-            for message in prompt_payload["messages"]
-        )
-        self.assertIn("card_count_hint: 2", prompt_text)
-        self.assertIn("`cards` 必须恰好生成该数量", prompt_text)
-
-    def test_openai_persona_card_count_invariant_rejects_under_and_over_generation(self) -> None:
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://api.openai.test/v1",
-            plan_model="gpt-test",
-            setting_model="gpt-setting-test",
-            setting_web_search_enabled=False,
-            timeout_seconds=3,
-        )
-        for actual_count in (1, 3):
-            parsed = {
-                "summary": "结构化导师",
-                "relationship": "导师",
-                "learner_address": "同学",
-                "cards": [
-                    {
-                        "title": f"卡片 {index + 1}",
-                        "kind": "thinking_style",
-                        "label": "思维风格",
-                        "content": f"内容 {index + 1}",
-                    }
-                    for index in range(actual_count)
-                ],
-            }
-            with self.subTest(actual_count=actual_count), patch.object(
-                provider,
-                "_request_setting_json_chat",
-                return_value=parsed,
-            ):
-                with self.assertRaisesRegex(
-                    RuntimeError,
-                    "^setting_persona_card_count_mismatch$",
-                ):
-                    provider.generate_persona_cards_from_keywords(
-                        keywords="结构化导师",
-                        count=2,
-                    )
 
     def test_openai_provider_keyword_card_generation_keeps_unspecified_count_flexible(self) -> None:
         provider = OpenAIModelProvider(

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from app.services.provider_transport import _coerce_int
 
 from app.core.logging import get_logger
 
@@ -158,4 +159,21 @@ def _extract_choice_content(payload: dict[str, Any]) -> str:
         type(content).__name__,
     )
     raise RuntimeError("chat_model_invalid_payload")
+
+
+def _extract_choice_diagnostics(payload: dict[str, Any]) -> tuple[str, int, int]:
+    choices = payload.get("choices")
+    finish_reason = ""
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        finish_reason = str(choices[0].get("finish_reason") or "")
+
+    usage = payload.get("usage") if isinstance(payload, dict) else None
+    completion_tokens = 0
+    reasoning_tokens = 0
+    if isinstance(usage, dict):
+        completion_tokens = _coerce_int(usage.get("completion_tokens"), default=0)
+        details = usage.get("completion_tokens_details")
+        if isinstance(details, dict):
+            reasoning_tokens = _coerce_int(details.get("reasoning_tokens"), default=0)
+    return finish_reason, reasoning_tokens, completion_tokens
 

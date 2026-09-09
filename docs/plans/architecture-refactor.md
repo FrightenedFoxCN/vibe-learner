@@ -92,7 +92,8 @@
 - [x] Tavern actor 能力独立为 `RemoteTavernProvider`，共享响应包络解码移入 `provider_payload.py`；保留严格 schema、transport fallback、一次语义修复与调用前取消检查。两项纯 provider 测试移出 API/数据库 fixture，新增 `test:ai:provider:tavern` 5 项独立契约，Tavern API/调度/安全和共享解码相关 97 项回归通过。
 - [x] Planning 能力、proposal decode/reference checks 和 fallback/repair 编排迁入 `provider_planning.py`；入口捕获模型参数与工具禁用集合，能力通过显式 request/runner factory 协作。计划修复测试移出数据库 fixture，公共样例归入 `tests/support/planning_samples.py`。`test:ai:provider:planning` 4 项通过，Planning/Persona/阶段 eval/持久操作等相关回归 145 项通过；保留 manifest/eval 使用的原 decoder aliases。
 - [x] Study 生成、工具预算/执行和严格回复解码归入 `provider_study.py`，工具禁用集合在操作入口捕获。原解码模块中的三项生成/修复测试迁入无 SDK 的能力测试；`test:ai:provider:study` 19 项通过，配置变更跨轮次测试 1 项通过，Study 应用/effects/v3/Persona/阶段 eval 等相关回归 150 项通过。保留调用上限、单次无工具修复和私有答案 redaction。
-- [ ] 将其余真实 provider 能力实现和 SDK 请求适配继续拆分，逐能力验证完整配置快照、调用上限和取消边界。
+- [x] Persona/Scene 生成、web-search fallback 和有界结构化重试迁入冻结配置的 `RemoteSettingsProvider`；共享 envelope diagnostics 归入 `provider_payload.py`，Settings 不依赖 Study 能力。两项纯卡片测试迁出大型 Persona 流程模块，旧测试不再 patch `_request_setting_json_*` 内部 helper，公共场景样例归入 `tests/support/`。Persona/Scene 独立模块各 3 项通过，相关流程/schema/Study decode/阶段 eval 回归 151 项通过。
+- [ ] 将 SDK 请求适配拆分，补齐端点/凭据等完整操作配置快照与逐能力状态验证。
 - [ ] 完成 provider 阶段 release/recovery 门禁后关闭主任务。
 
 首个子任务验证：原 provider 审计、Study 解码、Tavern 安全模块 38 项通过；新增能力/练习契约连同 provider 审计与 Persona 流程共 122 项通过。测试能力导入无需 LiteLLM、真实 provider 无 Mock 继承、本地练习输出兼容及无传输调用。

@@ -1,3 +1,5 @@
+
+from tests.support.provider_payloads import setting_wire_reply
 from tests.support.api import ContainerTestCase, isolated_client
 
 import unittest
@@ -87,12 +89,7 @@ class PersonaSlotRewriteTests(ContainerTestCase):
             weight=73, locked=False, sort_order=20,
         )
         for controls in ({}, {"weight": 1.0, "locked": True, "sort_order": 0}):
-            with self.subTest(controls=controls), patch.object(
-                provider, "_request_setting_json_chat", return_value={"slot": {
-                    "kind": "unexpected_kind", "label": "Evidence method",
-                    "content": "Ask one question and check the observation.", **controls,
-                }},
-            ):
+            with self.subTest(controls=controls), patch.object(provider, '_request_openai_chat_completion', return_value=setting_wire_reply({'slot': {'kind': 'unexpected_kind', 'label': 'Evidence method', 'content': 'Ask one question and check the observation.', **controls}}, responses=False)):
                 result = provider.assist_persona_slot(
                     name="Mira", summary="Astronomy tutor", slot=original,
                     rewrite_strength=0.3,
