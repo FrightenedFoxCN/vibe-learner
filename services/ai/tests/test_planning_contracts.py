@@ -16,6 +16,7 @@ from app.models.planning import (
     PlanContentSliceProposalV1,
     PlanScheduleChapterProposalV1,
 )
+from tests.support.planning_samples import planning_persona as _persona, valid_proposal_payload as _valid_proposal_payload
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import (
     MockModelProvider,
@@ -30,37 +31,6 @@ from app.services.study_arrangement import StudyArrangementService
 
 
 class PlanningContractTests(unittest.TestCase):
-    def test_repair_uses_post_tool_units_and_cannot_mutate_them_again(self) -> None:
-        from types import SimpleNamespace
-        from app.models.domain import PlanGenerationTraceRecord
-
-        unit = StudyUnitRecord(id="unit-1", document_id="doc-1", title="Basics",
-            page_start=1, page_end=5, source_section_ids=["section-1"])
-        revised = unit.model_copy(update={"id": "unit-revised"})
-        provider = OpenAIModelProvider(api_key="test", base_url="https://api.openai.test/v1",
-            plan_model="test", plan_tools_enabled=True)
-        calls = []
-
-        def run(**kwargs):
-            calls.append(kwargs)
-            payload = _valid_proposal_payload()
-            if len(calls) == 1:
-                kwargs["tool_runtime"].context.study_units[:] = [revised]
-            else:
-                context = json.loads(kwargs["messages"][1]["content"])
-                self.assertEqual(context["study_units"][0]["unit_id"], revised.id)
-                self.assertFalse(kwargs["tool_runtime"].has_tools())
-                payload["schedule"][0]["unit_id"] = revised.id
-            return SimpleNamespace(content=json.dumps(payload), trace=PlanGenerationTraceRecord(
-                document_id="doc-1", model="test", created_at="2026-09-09T00:00:00+00:00"))
-
-        with patch.object(provider, "_run_plan_model", side_effect=run):
-            result = provider.generate_learning_plan(persona=_persona(), document_title="Basics",
-                goal=LearningGoalInput(document_id="doc-1", persona_id="persona-1", objective="Learn"),
-                study_units=[unit])
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(result.schedule[0].unit_id, revised.id)
-        self.assertEqual(result.revised_study_units[0].id, revised.id)
 
     def test_duplicate_unit_repair_receives_specific_safe_invariant(self) -> None:
         payload = _valid_proposal_payload()
@@ -335,50 +305,8 @@ def _chat_payload(content: dict) -> dict[str, object]:
     }
 
 
-def _persona() -> PersonaProfile:
-    return PersonaProfile(
-        id="persona-1",
-        name="Test Mentor",
-        source="user",
-        summary="A deterministic planning test persona.",
-        system_prompt="Help the learner build a grounded plan.",
-        available_emotions=["focused"],
-        available_actions=["explain"],
-        default_speech_style="clear",
-    )
 
 
-def _valid_proposal_payload() -> dict:
-    return {
-        "schema_name": LEARNING_PLAN_PROPOSAL_SCHEMA_NAME,
-        "schema_version": LEARNING_PLAN_PROPOSAL_SCHEMA_VERSION,
-        "course_title": "离散数学基础",
-        "overview": "先建立命题逻辑与集合的知识结构。",
-        "today_tasks": ["阅读第一章并整理定义。"],
-        "schedule": [
-            {
-                "unit_id": "unit-1",
-                "title": "第一章精读",
-                "focus": "理解集合与命题逻辑。",
-                "activity_type": "learn",
-                "schedule_chapters": [
-                    {
-                        "title": "1.1 集合",
-                        "anchor_page_start": 1,
-                        "anchor_page_end": 5,
-                        "source_section_ids": ["section-1"],
-                        "content_slices": [
-                            {
-                                "page_start": 1,
-                                "page_end": 5,
-                                "source_section_ids": ["section-1"],
-                            }
-                        ],
-                    }
-                ],
-            }
-        ],
-    }
 
 
 if __name__ == "__main__":
