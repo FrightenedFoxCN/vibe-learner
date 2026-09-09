@@ -45,6 +45,19 @@ Route tests use instance-level dependency overrides in `tests.support.api`.
 `npm run test:ai:lifecycle` separately tests real lifespan and import behavior;
 route fault tests do not implicitly initialize the normal runtime database.
 
+## Study Chat application boundary
+
+`StudyChatApplication` owns admission, protected context, attachment staging,
+tools/effects, runtime execution and committed receipt read-back. It receives
+explicit dependencies and a frozen execution context; HTTP routes parse inputs,
+map application errors and project public DTOs. Server-only grading material is
+kept in the committed payload and filtered at that public projection boundary.
+`StudySessionRepository.commit_chat_operation_turn` remains the single owner of
+the atomic Session/Turn/effects/receipt/terminal-trace transaction.
+
+Study decode, application/commit and API projection tests run independently via
+`test:ai:study:decode`, `test:ai:study:application` and `test:ai:study:api`.
+
 ## Core boundaries
 
 ### Web

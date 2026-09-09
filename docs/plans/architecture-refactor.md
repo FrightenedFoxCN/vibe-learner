@@ -12,7 +12,7 @@
   - logging 先于数据库初始化、恢复与 provider 创建；启动恢复只在显式启动边界运行。
   - 验收：导入模块不访问运行数据库或启动恢复；两个应用实例使用不同临时数据库互不影响；退出释放资源。与 `PERF-002` 的懒加载协同，不重复立项。
 
-- [ ] `ARCH-STUDY-001` `[P2]` 提取 Study Chat 应用服务。
+- [x] `ARCH-STUDY-001` `[P2]` 提取 Study Chat 应用服务。
   - 将 `routes.py::_admit_and_run_study_chat` / `_run_study_chat` 的上下文、工具、effects、运行与提交编排迁至独立应用服务。
   - 路由只解析输入、投影 API DTO 和映射错误；应用服务接收明确依赖和不可变执行上下文。
   - 验收：现有 API、幂等/uncertain 语义、私有评分材料隔离、Session/Turn/effect/receipt/trace 原子提交及故障恢复全部保持。
@@ -68,3 +68,10 @@
 - 删除导入期 `container = Container()`。路由使用 `get_container(Request)` 依赖，内部编排通过显式参数传递实例；没有全局代理或隐式运行数据库 fallback。
 - 公共 `tests.support.api` 提供实例级 fixture 与全新测试 app 的依赖覆盖；原 8 个测试模块的全局 container patch 已迁移。路由故障注入与真实 lifespan 验收分开运行。
 - `npm run test:ai:lifecycle` 独立覆盖导入无数据库访问、双应用 Settings 隔离、恢复启动边界、退出/失败清理和 logging 初始化顺序。2026-09-10 阶段门禁通过：`check:release`（后端 592 项、共享/Web、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 188 项、Web 169 通过/2 条环境相关跳过）。
+
+### ARCH-STUDY-001
+
+- `StudyChatApplication` 接收冻结依赖集合；`StudyChatExecutionContext` 固定一次已 admission 执行的身份、输入与附件集合。上下文拼装 helpers 与错误分类分模块维护，应用服务不依赖 bootstrap 或 API DTO。
+- admission、preclaim、附件 staging/compensation、protected snapshot、工具/effects、Harness prepare/finalize 与 receipt read-back 已移出路由；`commit_chat_operation_turn` 仍是一次 Session/Turn/effects/receipt/terminal trace 原子提交的事务 owner。
+- 路由只解析输入、映射应用错误并投影公开 receipt；服务端历史 payload 的私有评分材料仍在 API 投影时隔离。操作捕获 provider/settings 与 Settings 替换通过同一个短锁协调，provider 调用在锁外运行。
+- 测试拆为 `test:ai:study:decode`（18 项）、`test:ai:study:application`（37 项）和 `test:ai:study:api`（4 项），均通过；公共样例和数据库 fixture 移到 `tests/support/`，没有跨 TestCase 的私有 helper 依赖。2026-09-10 完整阶段门禁通过：`check:release`（后端 593 项、共享/Web、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 195 项、Web 169 通过/2 条环境相关跳过）。

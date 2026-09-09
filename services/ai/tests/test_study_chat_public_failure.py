@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.services.study_chat_attachments import StudyChatAttachmentService
 from app.api import routes
 app = FastAPI()
 app.include_router(routes.router)
@@ -151,7 +152,7 @@ class StudyChatPublicProviderFailureTests(ContainerTestCase):
             )
         )
         cleanup_observations: list[bool] = []
-        original_cleanup = routes.cleanup_staged_study_chat_operation_attachments
+        original_cleanup = StudyChatAttachmentService.cleanup
 
         def observe_cleanup(*, store, session_id: str, operation_id: str) -> int:
             operation_root = Path(store.chat_attachment_root) / session_id / operation_id
@@ -179,8 +180,8 @@ class StudyChatPublicProviderFailureTests(ContainerTestCase):
             patch.object(self.container, "persona_engine", persona_engine),
             patch.object(self.container, "pedagogy_orchestrator", orchestrator),
             patch.object(
-                routes,
-                "cleanup_staged_study_chat_operation_attachments",
+                StudyChatAttachmentService,
+                "cleanup",
                 side_effect=observe_cleanup,
             ),
             isolated_client(app, self.container) as client,

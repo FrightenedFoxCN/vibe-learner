@@ -607,3 +607,25 @@ def _normalize_pdf_rect(rect: fitz.Rect, page_rect: fitz.Rect) -> PdfRectRecord:
         width=max(0.0, min(1.0, rect.width / page_width)),
         height=max(0.0, min(1.0, rect.height / page_height)),
     )
+
+
+class StudyChatAttachmentService:
+    """Application attachment boundary for validation, staging and compensation."""
+
+    @staticmethod
+    def manifest(inputs):
+        return study_chat_attachment_manifest(inputs)
+
+    @staticmethod
+    def validate(inputs, *, allow_image_input: bool):
+        return validate_study_chat_attachment_inputs(inputs, allow_image_input=allow_image_input)
+
+    @staticmethod
+    def prepare(**request) -> PreparedStudyChatAttachments:
+        return prepare_study_chat_attachments(**request)
+
+    @staticmethod
+    def cleanup(*, store, session_id: str, operation_id: str):
+        return cleanup_staged_study_chat_operation_attachments(
+            store=store, session_id=session_id, operation_id=operation_id,
+        )

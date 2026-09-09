@@ -9,7 +9,6 @@ from contextlib import ExitStack
 import unittest
 from unittest.mock import Mock, patch
 
-from app.api import routes
 from app.models.domain import (
     CharacterStateEvent,
     Citation,
@@ -175,7 +174,7 @@ class StudyV3RuntimeTests(ContainerTestCase):
         )
 
     def _run(self, *, client_request_id: str):
-        return routes._admit_and_run_study_chat(
+        return self.container.study_chat_application().admit(
             session_id=self.session_id,
             client_request_id=client_request_id,
             expected_session_revision=0,
@@ -184,7 +183,6 @@ class StudyV3RuntimeTests(ContainerTestCase):
             follow_up_id="",
             hidden_message_prefix="",
             attachment_inputs=[],
-            container=self.container,
         )
 
     def test_authorized_snapshot_precedes_single_provider_call_and_atomic_commit(self) -> None:

@@ -1,4 +1,5 @@
 from pathlib import Path
+from threading import RLock
 
 from app.services.document_parser import DocumentParser
 from app.core.logging import configure_logging, get_logger
@@ -45,6 +46,7 @@ class Container:
     def __init__(self, settings: Settings | None = None) -> None:
         configure_logging()
         self.base_settings = settings if settings is not None else Settings.from_env()
+        self._provider_lock = RLock()
         self._started = False
         self._closed = False
         try:
@@ -168,32 +170,60 @@ class Container:
         if database is not None:
             database.dispose()
 
+    def study_chat_application(self):
+        # Capture the operation's provider and settings together. Runtime
+        # Settings replacement must not switch a running chat's provider.
+        with self._provider_lock:
+            from copy import copy
+            from app.services.study_chat_application import StudyChatApplication, StudyChatDependencies
+
+            provider = self.model_provider
+            orchestrator = copy(self.pedagogy_orchestrator)
+            if hasattr(orchestrator, "model_provider"):
+                orchestrator.model_provider = provider
+            return StudyChatApplication(StudyChatDependencies(
+                study_chat_operation_repository=self.study_chat_operation_repository,
+                study_session_repository=self.study_session_repository,
+                study_session_service=self.study_session_service,
+                store=self.store,
+                model_provider=provider,
+                runtime_settings=self.runtime_settings_service.effective_settings(),
+                persona_engine=self.persona_engine,
+                plan_service=self.plan_service,
+                document_service=self.document_service,
+                session_scene_service=self.session_scene_service,
+                pedagogy_orchestrator=orchestrator,
+            ))
+
     def update_runtime_settings(self, updates: dict[str, object]) -> None:
-        self.runtime_settings_service.update(updates)
-        self.model_provider = self._build_model_provider(
-            self.runtime_settings_service.effective_settings()
-        )
-        self.plan_service.model_provider = self.model_provider
-        self.pedagogy_orchestrator.model_provider = self.model_provider
-        self.tavern_service.model_provider = self.model_provider
+        with self._provider_lock:
+            self.runtime_settings_service.update(updates)
+            self.model_provider = self._build_model_provider(
+                self.runtime_settings_service.effective_settings()
+            )
+            self.plan_service.model_provider = self.model_provider
+            self.pedagogy_orchestrator.model_provider = self.model_provider
+            self.tavern_service.model_provider = self.model_provider
 
     def apply_runtime_session_secrets(self, updates: dict[str, object]) -> None:
-        self.runtime_settings_service.apply_session_secrets(updates)
-        self.model_provider = self._build_model_provider(
-            self.runtime_settings_service.effective_settings()
-        )
-        self.plan_service.model_provider = self.model_provider
-        self.pedagogy_orchestrator.model_provider = self.model_provider
-        self.tavern_service.model_provider = self.model_provider
+        with self._provider_lock:
+            self.runtime_settings_service.apply_session_secrets(updates)
+            self.model_provider = self._build_model_provider(
+                self.runtime_settings_service.effective_settings()
+            )
+            self.plan_service.model_provider = self.model_provider
+            self.pedagogy_orchestrator.model_provider = self.model_provider
+            self.tavern_service.model_provider = self.model_provider
 
     def clear_runtime_session_secrets(self) -> None:
-        self.runtime_settings_service.clear_session_secrets()
-        self.model_provider = self._build_model_provider(
-            self.runtime_settings_service.effective_settings()
-        )
-        self.plan_service.model_provider = self.model_provider
-        self.pedagogy_orchestrator.model_provider = self.model_provider
-        self.tavern_service.model_provider = self.model_provider
+        with self._provider_lock:
+            self.runtime_settings_service.clear_session_secrets()
+            self.model_provider = self._build_model_provider(
+                self.runtime_settings_service.effective_settings()
+            )
+            self.plan_service.model_provider = self.model_provider
+            self.pedagogy_orchestrator.model_provider = self.model_provider
+            self.tavern_service.model_provider = self.model_provider
 
     def _build_model_provider(self, settings: Settings):
         if settings.plan_provider in {"openai", "litellm"}:

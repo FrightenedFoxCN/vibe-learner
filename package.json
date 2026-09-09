@@ -23,14 +23,17 @@
     "eval:harness:manual": "npm run eval:harness -- --profile manual",
     "eval:harness:nightly": "npm run eval:harness -- --profile nightly",
     "bench:harness": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_performance_benchmark",
-    "test:acceptance:recovery-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery tests.test_wave45_input_limits tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime tests.test_harness_performance tests.test_harness_recovery_migration tests.test_harness_effect_journal tests.test_harness_artifact_resolver tests.test_study_chat_operation tests.test_study_v3_runtime tests.test_study_chat_effects tests.test_tavern_facilitated tests.test_tavern_api tests.test_tavern_prompt_safety tests.test_scene_schema_ownership tests.test_persona_lifecycle && npm run test:web:reliability",
+    "test:acceptance:recovery-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery tests.test_wave45_input_limits tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime tests.test_harness_performance tests.test_harness_recovery_migration tests.test_harness_effect_journal tests.test_harness_artifact_resolver tests.test_study_chat_operation tests.test_study_chat_application tests.test_study_chat_projection tests.test_study_chat_public_failure tests.test_study_v3_runtime tests.test_study_chat_effects tests.test_tavern_facilitated tests.test_tavern_api tests.test_tavern_prompt_safety tests.test_scene_schema_ownership tests.test_persona_lifecycle && npm run test:web:reliability",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",
     "test": "npm run test:ai",
     "check": "npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr",
     "check:release": "npm run check && npm run test:ai && npm run build:web",
     "eval:harness:stages": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_stage_evals",
     "test:ai:transactions": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_transaction_validation tests.test_tavern_reference_scope tests.test_tavern_invariant_scanner",
-    "test:ai:lifecycle": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_app_lifecycle"
+    "test:ai:lifecycle": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_app_lifecycle",
+    "test:ai:study:application": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_study_chat_application tests.test_study_v3_runtime tests.test_study_chat_operation tests.test_study_chat_effects",
+    "test:ai:study:api": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_study_chat_projection tests.test_study_chat_public_failure",
+    "test:ai:study:decode": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_study_chat_reply_decode"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"
