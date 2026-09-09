@@ -1,12 +1,10 @@
 """Room/write-set selection contracts, independent of repository orchestration."""
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import unittest
 
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 
-from app.persistence.database import Database
+from tests.support.database import isolated_database
 from app.persistence.models import TavernMessageRow, TavernRoomRow, TavernRunRow, TavernRunStepRow
 from app.persistence.tavern_invariant_scanner import (
     TavernReferenceWriteSet,
@@ -16,11 +14,7 @@ from app.persistence.tavern_invariant_scanner import (
 
 class TavernReferenceScopeTests(unittest.TestCase):
     def setUp(self) -> None:
-        directory = TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        self.database = Database(f"sqlite:///{Path(directory.name) / 'scope.db'}")
-        self.addCleanup(self.database.dispose)
-        self.database.create_schema()
+        self.database = isolated_database(self)
         # Deliberately bypass application validation to exercise audit inputs.
         with self.database.engine.begin() as connection:
             connection.execute(TavernRoomRow.__table__.insert(), [

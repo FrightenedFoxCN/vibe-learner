@@ -1,22 +1,16 @@
 """Transaction entrance tests: no API container, model provider or business fixture."""
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import unittest
 
 from sqlalchemy import bindparam, literal_column, delete, event, insert, select, text, update
 
-from app.persistence.database import Database
+from tests.support.database import isolated_database
 from app.persistence.models import RuntimeSettingsRow, TavernMessageRow, TavernRoomRow, TavernRunRow
 from app.persistence.tavern_invariant_scanner import TavernReferenceIntegrityError
 
 
 class TransactionValidationTests(unittest.TestCase):
     def setUp(self):
-        directory = TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        self.database = Database(f"sqlite:///{Path(directory.name) / 'transaction.db'}")
-        self.addCleanup(self.database.dispose)
-        self.database.create_schema()
+        self.database = isolated_database(self)
         with self.database.session() as session:
             session.add(TavernRoomRow(id="room", title="Room"))
         with self.database.session() as session:
