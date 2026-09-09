@@ -4,6 +4,8 @@ from app.services.provider_transport import ProviderTransport, ModelRequestError
 
 from app.services.provider_capabilities import ModelProvider, ModelReply, PlanModelReply, PlanScheduleItem
 from app.services.provider_exercises import LocalExerciseProvider
+from app.services.provider_embedding import RemoteEmbeddingProvider
+from app.services.provider_image import RemoteImageProvider
 
 import json
 import re
@@ -159,14 +161,6 @@ CHAT_BARE_REPLY_KEY_RE = re.compile(
     r"(?ix)\b(?P<key>text|mood|action)\b\s*(?::|=)"
 )
 
-CHAT_IMAGE_GENERATION_MODEL_HINTS = (
-    re.compile(r"^gpt-4o(?:[-.:]|$)", re.IGNORECASE),
-    re.compile(r"^gpt-4\.1(?:[-.:]|$)", re.IGNORECASE),
-    re.compile(r"^gpt-5(?:[-.:]|$)", re.IGNORECASE),
-    re.compile(r"^o3(?:[-.:]|$)", re.IGNORECASE),
-    re.compile(r"^chatgpt-image-latest$", re.IGNORECASE),
-    re.compile(r"^gpt-image-1(?:[-.:]|$)", re.IGNORECASE),
-)
 
 CHAT_JSON_SCHEMA = (
     '{'
@@ -1071,7 +1065,7 @@ class OpenAIModelProvider(ModelProvider):
         return self.chat_multimodal_enabled
 
     def supports_chat_generated_image_tools(self) -> bool:
-        return bool(litellm_responses) and _model_supports_chat_image_generation(self.chat_model)
+        return self._image_provider().supports_chat_generated_image_tools()
 
     def plan_tools_runtime_enabled(self) -> bool:
         return self.plan_tools_enabled
@@ -2362,33 +2356,15 @@ class OpenAIModelProvider(ModelProvider):
                 return None
             raise
 
-    def generate_projected_image(
-        self,
-        *,
-        prompt: str,
-        size: str = "1024x1024",
-    ) -> dict[str, str]:
-        normalized_prompt = prompt.strip()
-        if not normalized_prompt:
-            raise RuntimeError("chat_image_generation_prompt_required")
-        if not self.supports_chat_generated_image_tools():
-            raise RuntimeError("chat_image_generation_unsupported")
-        payload: dict[str, Any] = {
-            "model": self.chat_model,
-            "input": normalized_prompt,
-            "tools": [
-                {
-                    "type": "image_generation",
-                    "size": _normalize_generated_image_size(size),
-                }
-            ],
-        }
-        raw_payload, _ = self._request_openai_response(
-            payload,
-            request_kind="chat",
-            model=self.chat_model,
+    def generate_projected_image(self, *, prompt: str, size: str = "1024x1024") -> dict[str, str]:
+        return self._image_provider().generate_projected_image(prompt=prompt, size=size)
+
+    def _image_provider(self) -> RemoteImageProvider:
+        return RemoteImageProvider(
+            chat_model=self.chat_model,
+            responses_available=bool(litellm_responses),
+            request=self._request_openai_response,
         )
-        return _extract_response_output_image(raw_payload)
 
     def _request_openai_chat_completion(
         self,
@@ -2466,21 +2442,10 @@ class OpenAIModelProvider(ModelProvider):
         return raw_payload, elapsed_ms
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        clean = [text.strip() for text in texts if text and text.strip()]
-        if not clean:
-            return []
-        payload: dict[str, Any] = {
-            "model": self.embedding_model,
-            "input": clean,
-        }
-        raw_payload, _ = self._request_openai_embeddings(payload, model=self.embedding_model)
-        data = raw_payload.get("data") or []
-        vectors: list[list[float]] = []
-        for item in data:
-            embedding = item.get("embedding") if isinstance(item, dict) else None
-            if isinstance(embedding, list):
-                vectors.append([float(value) for value in embedding])
-        return vectors
+        return RemoteEmbeddingProvider(
+            embedding_model=self.embedding_model,
+            request=self._request_openai_embeddings,
+        ).embed_texts(texts)
 
     def _request_openai_embeddings(
         self,
@@ -3326,48 +3291,10 @@ def _extract_response_output_text(payload: dict[str, Any]) -> str:
     return merged
 
 
-def _extract_response_output_image(payload: dict[str, Any]) -> dict[str, str]:
-    output = payload.get("output")
-    if not isinstance(output, list):
-        raise RuntimeError("chat_image_generation_empty_response")
-    for item in output:
-        if not isinstance(item, dict):
-            continue
-        if item.get("type") == "image_generation_call":
-            raw_result = item.get("result")
-            if isinstance(raw_result, str) and raw_result.strip():
-                image_base64 = raw_result.strip()
-            elif isinstance(raw_result, list):
-                image_base64 = next(
-                    (
-                        str(entry).strip()
-                        for entry in raw_result
-                        if isinstance(entry, str) and str(entry).strip()
-                    ),
-                    "",
-                )
-            else:
-                image_base64 = ""
-            if image_base64:
-                return {
-                    "image_url": f"data:image/png;base64,{image_base64}",
-                    "revised_prompt": str(item.get("revised_prompt") or "").strip(),
-                }
-    raise RuntimeError("chat_image_generation_empty_response")
 
 
-def _normalize_generated_image_size(value: str) -> str:
-    normalized = value.strip().lower()
-    if normalized in {"1024x1024", "1536x1024", "1024x1536", "auto"}:
-        return normalized
-    return "1024x1024"
 
 
-def _model_supports_chat_image_generation(model: str) -> bool:
-    normalized = model.strip()
-    if not normalized:
-        return False
-    return any(pattern.search(normalized) for pattern in CHAT_IMAGE_GENERATION_MODEL_HINTS)
 
 
 def _call_interrupt(callback: Callable[[], None] | None) -> None:
