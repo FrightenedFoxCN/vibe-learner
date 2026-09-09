@@ -1,6 +1,6 @@
 # 代码解耦重构计划
 
-状态：已审计、待实施；在 0.3.0 之后的小版本逐步推进，不属于 0.3.0 已实现功能。本文件维护七项重构的明细，根 [TODO](../../TODO.md) 作为统一索引。与 [统一 Logging / Debug](unified-debug.md) 共享基础边界，不要求先做完全仓重构。
+状态：实施中；在 0.3.0 之后的小版本逐步推进，不属于 0.3.0 已实现功能。本文件维护七项重构的明细，根 [TODO](../../TODO.md) 作为统一索引。与 [统一 Logging / Debug](unified-debug.md) 共享基础边界，不要求先做完全仓重构。
 
 - [ ] `ARCH-TRANSACTION-001` `[P1]` 明确领域事务校验边界。
   - 当前 `Database.session()` 在存在未 flush ORM 变更时执行 Tavern 全图扫描。审计实测普通 Settings 写入扫描三张 Tavern 表；提前 flush 则不触发该检查。
@@ -45,3 +45,13 @@
 4. 每个小提交跑受影响的契约/故障测试；阶段交付跑 `npm run check:release`，涉及恢复时加 `npm run test:acceptance:recovery-limits`。
 
 操作身份、授权、CAS、私有 DTO 隔离、primary-output commit proof 及外部 provider 的 uncertain 边界不可在重构中放宽。禁止把原本一次原子提交拆成多个独立事务，也不引入一轮重构同时修改业务语义的大变更。
+
+## 实施记录
+
+### ARCH-TRANSACTION-001
+
+- [x] 提取不可变 `TavernReferenceWriteSet` 和作用域扫描接口；完整扫描保留为显式审计入口。独立模块 `tests.test_tavern_reference_scope` 覆盖空写集、无关房间、跨房间双向引用和删除身份，连同原审计测试共 7 项通过。
+- [ ] 接入事务写集，覆盖 ORM flush、SQL DML 和显式提交；替换旧全图 guard。
+- [ ] 完成事务入口、领域回归及阶段验收后关闭主任务。
+
+测试分层：引用规则/作用域测试不启动 API 或 provider；事务入口测试只构建临时数据库；Tavern 业务及恢复测试单独运行。阶段交付仍执行 release 与 recovery-limits 门禁。
