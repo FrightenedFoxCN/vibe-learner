@@ -91,6 +91,7 @@
 - [x] Embedding/Image 真实能力实现迁入独立模块，使用冻结的 model/readiness 配置与显式请求接口；聚合 provider 在入口创建能力实例。新增独立测试入口 `test:ai:provider:embedding`（3 项）与 `test:ai:provider:image`（4 项），不启动 SDK/数据库；原兼容性/provider 审计/Persona 回归 124 项通过。
 - [x] Tavern actor 能力独立为 `RemoteTavernProvider`，共享响应包络解码移入 `provider_payload.py`；保留严格 schema、transport fallback、一次语义修复与调用前取消检查。两项纯 provider 测试移出 API/数据库 fixture，新增 `test:ai:provider:tavern` 5 项独立契约，Tavern API/调度/安全和共享解码相关 97 项回归通过。
 - [x] Planning 能力、proposal decode/reference checks 和 fallback/repair 编排迁入 `provider_planning.py`；入口捕获模型参数与工具禁用集合，能力通过显式 request/runner factory 协作。计划修复测试移出数据库 fixture，公共样例归入 `tests/support/planning_samples.py`。`test:ai:provider:planning` 4 项通过，Planning/Persona/阶段 eval/持久操作等相关回归 145 项通过；保留 manifest/eval 使用的原 decoder aliases。
+- [x] Study 生成、工具预算/执行和严格回复解码归入 `provider_study.py`，工具禁用集合在操作入口捕获。原解码模块中的三项生成/修复测试迁入无 SDK 的能力测试；`test:ai:provider:study` 19 项通过，配置变更跨轮次测试 1 项通过，Study 应用/effects/v3/Persona/阶段 eval 等相关回归 150 项通过。保留调用上限、单次无工具修复和私有答案 redaction。
 - [ ] 将其余真实 provider 能力实现和 SDK 请求适配继续拆分，逐能力验证完整配置快照、调用上限和取消边界。
 - [ ] 完成 provider 阶段 release/recovery 门禁后关闭主任务。
 

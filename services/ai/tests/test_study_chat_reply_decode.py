@@ -2,12 +2,11 @@ from tests.support.study_chat_samples import study_persona, raw_chat_reply, ques
 
 import json
 import unittest
-from unittest.mock import patch
 
 
 from app.models.api import StudyChatResponse
 from app.models.study_question import project_study_question_proposal
-from app.services.model_provider import OpenAIModelProvider, _execute_chat_tool_call, _parse_chat_model_reply
+from app.services.provider_study import _execute_chat_tool_call, _parse_chat_model_reply
 
 
 def _parse(content: str):
@@ -304,179 +303,8 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
         ):
             self.assertNotIn(private_key, serialized)
 
-    def test_provider_repairs_once_without_tools_then_propagates_invalid(self) -> None:
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://api.openai.test/v1",
-            plan_model="gpt-test",
-            chat_model="gpt-test",
-            chat_tools_enabled=False,
-            timeout_seconds=3,
-        )
-        invalid = json.dumps({"mood": "calm", "action": "point"})
-        responses = [(raw_chat_reply(invalid), []), (raw_chat_reply(invalid), [])]
 
-        with patch.object(
-            provider,
-            "_request_openai_chat_completion",
-            side_effect=responses,
-        ) as request:
-            with self.assertRaisesRegex(RuntimeError, "chat_model_invalid_payload"):
-                provider.generate_chat(
-                    persona=study_persona(),
-                    section_id="unit-1",
-                    message="Explain vector bases",
-                )
 
-        self.assertEqual(request.call_count, 2)
-        second_payload = request.call_args_list[1].args[0]
-        self.assertNotIn("tools", second_payload)
-        self.assertEqual(second_payload["response_format"], {"type": "json_object"})
-        self.assertEqual(second_payload["messages"][-2]["role"], "assistant")
-        self.assertEqual(second_payload["messages"][-2]["content"], invalid)
-        self.assertEqual(second_payload["messages"][-1]["role"], "user")
-
-    def test_repair_preserves_completed_tool_result_and_redacts_public_trace(self) -> None:
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://api.openai.test/v1",
-            plan_model="gpt-test",
-            chat_model="gpt-test",
-            timeout_seconds=3,
-        )
-        tool_call = {
-            "choices": [
-                {
-                    "finish_reason": "tool_calls",
-                    "message": {
-                        "content": "",
-                        "tool_calls": [
-                            {
-                                "id": "call-question-1",
-                                "type": "function",
-                                "function": {
-                                    "name": "ask_multiple_choice_question",
-                                    "arguments": json.dumps(
-                                        {
-                                            "topic": "vector basis",
-                                            "difficulty": "easy",
-                                            "option_count": 3,
-                                        }
-                                    ),
-                                },
-                            }
-                        ],
-                    },
-                }
-            ]
-        }
-        invalid = json.dumps({"mood": "calm", "action": "point"})
-        repaired = json.dumps(
-            {
-                "text": "先完成题目，再告诉我你的判断。",
-                "mood": "calm",
-                "action": "point",
-            }
-        )
-
-        with patch.object(
-            provider,
-            "_request_openai_chat_completion",
-            side_effect=[(tool_call, []), (raw_chat_reply(invalid), []), (raw_chat_reply(repaired), [])],
-        ) as request:
-            reply = provider.generate_chat(
-                persona=study_persona(),
-                section_id="unit-1",
-                message="Quiz me about vector bases",
-            )
-
-        self.assertEqual(request.call_count, 3)
-        recovery_payload = request.call_args_list[2].args[0]
-        self.assertNotIn("tools", recovery_payload)
-        self.assertTrue(
-            any(message.get("role") == "tool" for message in recovery_payload["messages"])
-        )
-        self.assertIsNotNone(reply.interactive_question)
-        self.assertEqual(len(reply.tool_calls), 1)
-        private_question = reply.interactive_question
-        assert private_question is not None
-        self.assertIsNotNone(private_question.answer_key)
-        public_trace = reply.tool_calls[0].result_json
-        for private_key in (
-            "answer",
-            "answer_key",
-            "accepted_answers",
-            "grading_spec",
-            "correct_option_key",
-            "explanation",
-        ):
-            self.assertNotIn(private_key, public_trace)
-
-    def test_fill_blank_tool_trace_redacts_private_answer(self) -> None:
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://api.openai.test/v1",
-            plan_model="gpt-test",
-            chat_model="gpt-test",
-            timeout_seconds=3,
-        )
-        tool_call = {
-            "choices": [
-                {
-                    "finish_reason": "tool_calls",
-                    "message": {
-                        "content": "",
-                        "tool_calls": [
-                            {
-                                "id": "call-fill-blank-1",
-                                "type": "function",
-                                "function": {
-                                    "name": "ask_fill_blank_question",
-                                    "arguments": json.dumps(
-                                        {
-                                            "topic": "vector basis",
-                                            "difficulty": "easy",
-                                            "blank_count": 1,
-                                        }
-                                    ),
-                                },
-                            }
-                        ],
-                    },
-                }
-            ]
-        }
-        final_reply = json.dumps(
-            {
-                "text": "请完成填空题。",
-                "mood": "calm",
-                "action": "point",
-            }
-        )
-
-        with patch.object(
-            provider,
-            "_request_openai_chat_completion",
-            side_effect=[(tool_call, []), (raw_chat_reply(final_reply), [])],
-        ):
-            reply = provider.generate_chat(
-                persona=study_persona(),
-                section_id="unit-1",
-                message="Give me a fill-blank question",
-            )
-
-        self.assertIsNotNone(reply.interactive_question)
-        self.assertEqual(len(reply.tool_calls), 1)
-        public_result = json.loads(reply.tool_calls[0].result_json)
-        for private_key in (
-            "answer",
-            "answer_key",
-            "accepted_answers",
-            "grading_spec",
-            "correct_option_key",
-            "explanation",
-        ):
-            self.assertNotIn(private_key, public_result)
 
 
 if __name__ == "__main__":

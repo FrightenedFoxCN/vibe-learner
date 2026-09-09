@@ -41,7 +41,9 @@
     "test:ai:provider:embedding": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_embedding",
     "test:ai:provider:image": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_image",
     "test:ai:provider:tavern": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_tavern",
-    "test:ai:provider:planning": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_planning"
+    "test:ai:provider:planning": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_planning",
+    "test:ai:provider:study": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_study tests.test_study_chat_reply_decode",
+    "test:ai:provider:configuration": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_provider_configuration"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"
