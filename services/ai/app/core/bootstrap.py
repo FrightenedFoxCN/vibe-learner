@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.services.document_parser import DocumentParser
-from app.core.logging import get_logger
+from app.core.logging import configure_logging, get_logger
 from app.core.settings import Settings
 from app.persistence.database import Database
 from app.persistence.harness_artifact_repository import HarnessArtifactRepository
@@ -42,8 +42,18 @@ logger = get_logger("vibe_learner.bootstrap")
 
 
 class Container:
-    def __init__(self) -> None:
-        self.base_settings = Settings.from_env()
+    def __init__(self, settings: Settings | None = None) -> None:
+        configure_logging()
+        self.base_settings = settings if settings is not None else Settings.from_env()
+        self._started = False
+        self._closed = False
+        try:
+            self._initialize()
+        except BaseException:
+            self.close()
+            raise
+
+    def _initialize(self) -> None:
         data_root = Path(self.base_settings.storage_root).expanduser() if self.base_settings.storage_root else (
             Path(__file__).resolve().parents[2] / "data"
         )
@@ -52,12 +62,6 @@ class Container:
         self.database.create_schema()
         self.harness_artifact_repository = HarnessArtifactRepository(self.database)
         self.harness_workflow_operations = HarnessWorkflowOperationRepository(self.database)
-        recovered_workflow_operations = self.harness_workflow_operations.recover_abandoned_operations()
-        if recovered_workflow_operations:
-            logger.warning(
-                "bootstrap.harness_workflow_operations recovered=%s",
-                recovered_workflow_operations,
-            )
         self.harness_proposal_runtime = HarnessProposalRuntimeService(
             self.database,
             self.harness_artifact_repository,
@@ -105,14 +109,12 @@ class Container:
             self.study_arrangement_service,
             harness_service=self.harness_proposal_runtime,
         )
-        self.document_service.recover_abandoned_operations()
         self.plan_service = LearningPlanService(
             self.store,
             self.study_arrangement_service,
             self.model_provider,
             harness_service=self.harness_proposal_runtime,
         )
-        self.plan_service.recover_abandoned_operations()
         self.study_session_repository = StudySessionRepository(
             self.database,
             effect_journal=self.harness_effect_journal,
@@ -138,6 +140,33 @@ class Container:
             persona_engine=self.persona_engine,
             model_provider=self.model_provider,
         )
+
+    def start(self) -> None:
+        """Recover durable operations only at the explicit application start."""
+        if self._closed:
+            raise RuntimeError("container_closed")
+        if self._started:
+            return
+        recovered_workflow_operations = self.harness_workflow_operations.recover_abandoned_operations()
+        if recovered_workflow_operations:
+            logger.warning(
+                "bootstrap.harness_workflow_operations recovered=%s",
+                recovered_workflow_operations,
+            )
+        self.document_service.recover_abandoned_operations()
+        self.plan_service.recover_abandoned_operations()
+        self._started = True
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        registry = getattr(self, "stream_interrupt_registry", None)
+        if registry is not None:
+            registry.close()
+        database = getattr(self, "database", None)
+        if database is not None:
+            database.dispose()
 
     def update_runtime_settings(self, updates: dict[str, object]) -> None:
         self.runtime_settings_service.update(updates)
@@ -226,6 +255,3 @@ class Container:
 
         logger.info("bootstrap.model_provider provider=mock")
         return MockModelProvider()
-
-
-container = Container()

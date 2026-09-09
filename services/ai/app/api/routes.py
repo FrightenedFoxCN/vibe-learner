@@ -12,7 +12,9 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.core.logging import get_logger
-from app.core.bootstrap import container
+from app.core.bootstrap import Container
+from app.api.dependencies import get_container
+from fastapi import Depends
 from app.models.api import (
     BatchCreatePersonaCardsRequest,
     CreatePersonaCardRequest,
@@ -211,6 +213,7 @@ def _require_domain_harness_trace(
     domain_operation_kind: HarnessDomainOperationKind,
     domain_operation_id: str,
     stage: HarnessStage,
+    container: Container,
 ):
     if not domain_operation_id:
         raise RuntimeError("harness_domain_operation_identity_missing")
@@ -269,6 +272,7 @@ def _document_stream_committed_evidence(
     *,
     operation_id: str,
     document_payload: dict[str, object],
+    container: Container,
 ) -> StreamTerminalEvidenceV1:
     operation = container.document_service.process_repository.require(
         operation_id=operation_id,
@@ -301,6 +305,7 @@ def _learning_plan_stream_committed_evidence(
     *,
     operation_id: str,
     plan_payload: dict[str, object],
+    container: Container,
 ) -> StreamTerminalEvidenceV1:
     operation = container.plan_service.operation_repository.require(
         operation_id=operation_id,
@@ -334,6 +339,7 @@ def _stream_failure_evidence(
     *,
     operation_id: str,
     domain: Literal["document_process", "learning_plan"],
+    container: Container,
 ) -> StreamTerminalEvidenceV1:
     if not operation_id:
         return StreamTerminalEvidenceV1(
@@ -482,7 +488,7 @@ def healthcheck() -> dict[str, str]:
 
 
 @router.get("/storage/summary", response_model=StorageSummaryResponse)
-def get_storage_summary() -> StorageSummaryResponse:
+def get_storage_summary(*, container: Container = Depends(get_container)) -> StorageSummaryResponse:
     return StorageSummaryResponse(
         buckets=container.storage_lifecycle_service.summarize(),
         orphaned_uploads=container.storage_lifecycle_service.list_orphaned_uploads(),
@@ -490,7 +496,7 @@ def get_storage_summary() -> StorageSummaryResponse:
 
 
 @router.post("/storage/cleanup", response_model=StorageCleanupResponse)
-def cleanup_storage(payload: StorageCleanupRequest) -> StorageCleanupResponse:
+def cleanup_storage(payload: StorageCleanupRequest, *, container: Container = Depends(get_container)) -> StorageCleanupResponse:
     try:
         items = container.storage_lifecycle_service.cleanup(
             buckets=payload.buckets,
@@ -503,7 +509,7 @@ def cleanup_storage(payload: StorageCleanupRequest) -> StorageCleanupResponse:
 
 
 @router.get("/model-tools/config", response_model=ModelToolConfigResponse)
-def get_model_tool_config() -> ModelToolConfigResponse:
+def get_model_tool_config(*, container: Container = Depends(get_container)) -> ModelToolConfigResponse:
     described = container.model_tool_config_service.describe()
     provider = container.model_provider
 
@@ -557,54 +563,54 @@ def get_model_tool_config() -> ModelToolConfigResponse:
 
 
 @router.patch("/model-tools/config", response_model=ModelToolConfigResponse)
-def update_model_tool_config(payload: UpdateModelToolConfigRequest) -> ModelToolConfigResponse:
+def update_model_tool_config(payload: UpdateModelToolConfigRequest, *, container: Container = Depends(get_container)) -> ModelToolConfigResponse:
     try:
         container.model_tool_config_service.update(
             [toggle.model_dump(mode="json") for toggle in payload.toggles]
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return get_model_tool_config()
+    return get_model_tool_config(container=container)
 
 
 @router.get("/runtime-settings", response_model=RuntimeSettingsResponse)
-def get_runtime_settings() -> RuntimeSettingsResponse:
+def get_runtime_settings(*, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
     described = container.runtime_settings_service.describe()
     return _into_response(RuntimeSettingsResponse, described)
 
 
 @router.patch("/runtime-settings", response_model=RuntimeSettingsResponse)
-def update_runtime_settings(payload: UpdateRuntimeSettingsRequest) -> RuntimeSettingsResponse:
+def update_runtime_settings(payload: UpdateRuntimeSettingsRequest, *, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
     try:
         updates = payload.model_dump(mode="json", exclude_none=True)
         container.update_runtime_settings(updates)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return get_runtime_settings()
+    return get_runtime_settings(container=container)
 
 
 @router.put("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
-def apply_runtime_session_secrets(payload: RuntimeSessionSecretsRequest) -> RuntimeSettingsResponse:
+def apply_runtime_session_secrets(payload: RuntimeSessionSecretsRequest, *, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
     container.apply_runtime_session_secrets(
         payload.model_dump(mode="json", exclude_none=True)
     )
-    return get_runtime_settings()
+    return get_runtime_settings(container=container)
 
 
 @router.delete("/runtime-settings/session-secrets", response_model=RuntimeSettingsResponse)
-def clear_runtime_session_secrets() -> RuntimeSettingsResponse:
+def clear_runtime_session_secrets(*, container: Container = Depends(get_container)) -> RuntimeSettingsResponse:
     container.clear_runtime_session_secrets()
-    return get_runtime_settings()
+    return get_runtime_settings(container=container)
 
 
 @router.get("/scene-setup", response_model=SceneSetupResponse)
-def get_scene_setup() -> SceneSetupResponse:
+def get_scene_setup(*, container: Container = Depends(get_container)) -> SceneSetupResponse:
     record = container.scene_setup_service.get_state()
     return _into_response(SceneSetupResponse, record)
 
 
 @router.put("/scene-setup", response_model=SceneSetupResponse)
-def update_scene_setup(payload: UpdateSceneSetupRequest) -> SceneSetupResponse:
+def update_scene_setup(payload: UpdateSceneSetupRequest, *, container: Container = Depends(get_container)) -> SceneSetupResponse:
     record = container.scene_setup_service.upsert_state(
         scene_name=payload.scene_name,
         scene_summary=payload.scene_summary,
@@ -617,19 +623,19 @@ def update_scene_setup(payload: UpdateSceneSetupRequest) -> SceneSetupResponse:
 
 
 @router.get("/scene-library", response_model=SceneLibraryListResponse)
-def list_scene_library() -> SceneLibraryListResponse:
+def list_scene_library(*, container: Container = Depends(get_container)) -> SceneLibraryListResponse:
     items = container.scene_library_service.list_scenes()
     return SceneLibraryListResponse(items=[_into_response(SceneLibraryResponse, item) for item in items])
 
 
 @router.get("/scene-library/{scene_id}", response_model=SceneLibraryResponse)
-def get_scene_library_item(scene_id: str) -> SceneLibraryResponse:
+def get_scene_library_item(scene_id: str, *, container: Container = Depends(get_container)) -> SceneLibraryResponse:
     record = container.scene_library_service.require_scene(scene_id)
     return _into_response(SceneLibraryResponse, record)
 
 
 @router.post("/scene-library", response_model=SceneLibraryResponse)
-def create_scene_library_item(payload: UpsertSceneLibraryRequest) -> SceneLibraryResponse:
+def create_scene_library_item(payload: UpsertSceneLibraryRequest, *, container: Container = Depends(get_container)) -> SceneLibraryResponse:
     record = container.scene_library_service.upsert_scene(
         scene_id=None,
         scene_name=payload.scene_name,
@@ -643,7 +649,7 @@ def create_scene_library_item(payload: UpsertSceneLibraryRequest) -> SceneLibrar
 
 
 @router.put("/scene-library/{scene_id}", response_model=SceneLibraryResponse)
-def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest) -> SceneLibraryResponse:
+def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest, *, container: Container = Depends(get_container)) -> SceneLibraryResponse:
     record = container.scene_library_service.upsert_scene(
         scene_id=scene_id,
         scene_name=payload.scene_name,
@@ -657,13 +663,13 @@ def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest)
 
 
 @router.delete("/scene-library/{scene_id}")
-def delete_scene_library_item(scene_id: str) -> dict[str, str]:
+def delete_scene_library_item(scene_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
     container.scene_library_service.delete_scene(scene_id)
     return {"deleted_scene_id": scene_id}
 
 
 @router.get("/reusable-scene-nodes", response_model=ReusableSceneNodeListResponse)
-def list_reusable_scene_nodes() -> ReusableSceneNodeListResponse:
+def list_reusable_scene_nodes(*, container: Container = Depends(get_container)) -> ReusableSceneNodeListResponse:
     items = container.reusable_scene_node_library_service.list_nodes()
     return ReusableSceneNodeListResponse(
         items=[_into_response(ReusableSceneNodeResponse, item) for item in items]
@@ -671,19 +677,19 @@ def list_reusable_scene_nodes() -> ReusableSceneNodeListResponse:
 
 
 @router.post("/reusable-scene-nodes", response_model=ReusableSceneNodeResponse)
-def create_reusable_scene_node(payload: CreateReusableSceneNodeRequest) -> ReusableSceneNodeResponse:
+def create_reusable_scene_node(payload: CreateReusableSceneNodeRequest, *, container: Container = Depends(get_container)) -> ReusableSceneNodeResponse:
     record = container.reusable_scene_node_library_service.create_node(payload)
     return _into_response(ReusableSceneNodeResponse, record)
 
 
 @router.delete("/reusable-scene-nodes/{node_id}")
-def delete_reusable_scene_node(node_id: str) -> dict[str, str]:
+def delete_reusable_scene_node(node_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
     container.reusable_scene_node_library_service.delete_node(node_id)
     return {"deleted_reusable_scene_node_id": node_id}
 
 
 @router.post("/scene-setup/generate", response_model=SceneTreeGenerateResponse)
-def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateResponse:
+def generate_scene_tree(payload: SceneTreeGenerateRequest, *, container: Container = Depends(get_container)) -> SceneTreeGenerateResponse:
     reset_model_recovery_state()
     try:
         def generate_scene(protected: dict[str, object]) -> SceneGenerationProposalV1:
@@ -732,7 +738,7 @@ def generate_scene_tree(payload: SceneTreeGenerateRequest) -> SceneTreeGenerateR
 
 
 @router.post("/runtime-settings/check-openai-models", response_model=RuntimeSettingsProbeResponse)
-def check_openai_models(payload: RuntimeSettingsProbeRequest) -> RuntimeSettingsProbeResponse:
+def check_openai_models(payload: RuntimeSettingsProbeRequest, *, container: Container = Depends(get_container)) -> RuntimeSettingsProbeResponse:
     api_key = payload.api_key.strip()
     base_url = payload.base_url.strip().rstrip("/")
     if not api_key:
@@ -763,7 +769,7 @@ def check_openai_models(payload: RuntimeSettingsProbeRequest) -> RuntimeSettings
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-def list_documents() -> DocumentListResponse:
+def list_documents(*, container: Container = Depends(get_container)) -> DocumentListResponse:
     return DocumentListResponse(
         items=[
             _into_response(DocumentResponse, document)
@@ -773,7 +779,7 @@ def list_documents() -> DocumentListResponse:
 
 
 @router.post("/documents", response_model=DocumentResponse)
-def create_document(file: UploadFile = File(...)) -> DocumentResponse:
+def create_document(file: UploadFile = File(...), *, container: Container = Depends(get_container)) -> DocumentResponse:
     logger.info(
         "documents.create filename=%s content_type=%s",
         file.filename,
@@ -786,7 +792,7 @@ def create_document(file: UploadFile = File(...)) -> DocumentResponse:
 @router.post("/documents/{document_id}/process", response_model=DocumentProcessResponse)
 def process_document(
     document_id: str, payload: ProcessDocumentRequest | None = None
-) -> DocumentProcessResponse:
+, *, container: Container = Depends(get_container)) -> DocumentProcessResponse:
     domain_operation_id = ""
 
     def remember_operation(operation_id: str) -> None:
@@ -822,6 +828,7 @@ def process_document(
             terminal_evidence=_stream_failure_evidence(
                 operation_id=domain_operation_id,
                 domain="document_process",
+                container=container,
             ),
         )
         raise
@@ -829,6 +836,7 @@ def process_document(
         domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
         domain_operation_id=domain_operation_id,
         stage=HarnessStage.DOCUMENT_PARSE,
+        container=container,
     )
     document_commit_projection = document.model_dump(mode="json")
     document_projection = {
@@ -844,6 +852,7 @@ def process_document(
         terminal_evidence=_document_stream_committed_evidence(
             operation_id=domain_operation_id,
             document_payload=document_projection,
+            container=container,
         ),
         committed_projection=document_projection,
     )
@@ -858,6 +867,8 @@ def update_study_unit_title(
     document_id: str,
     study_unit_id: str,
     payload: StudyUnitTitleUpdateRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> DocumentStudyUnitUpdateResponse:
     document = container.document_service.update_study_unit_title(
         document_id=document_id,
@@ -878,7 +889,7 @@ def update_study_unit_title(
 @router.post("/documents/{document_id}/process/stream")
 def process_document_stream(
     document_id: str, payload: ProcessDocumentRequest | None = None
-) -> StreamingResponse:
+, *, container: Container = Depends(get_container)) -> StreamingResponse:
     force_ocr = payload.force_ocr if payload else False
     event_queue: queue.Queue[dict[str, object] | None] = queue.Queue()
     interrupt_handle = container.stream_interrupt_registry.create(
@@ -914,6 +925,7 @@ def process_document_stream(
             terminal_evidence=_stream_failure_evidence(
                 operation_id=domain_operation_id,
                 domain="document_process",
+                container=container,
             ),
         )
         event_queue.put(event.model_dump(mode="json"))
@@ -934,6 +946,7 @@ def process_document_stream(
                     domain_operation_kind=HarnessDomainOperationKind.DOCUMENT_PROCESS,
                     domain_operation_id=domain_operation_id,
                     stage=HarnessStage.DOCUMENT_PARSE,
+                    container=container,
                 )
                 document_commit_projection = document.model_dump(mode="json")
                 document_projection = {
@@ -949,6 +962,7 @@ def process_document_stream(
                     terminal_evidence=_document_stream_committed_evidence(
                         operation_id=domain_operation_id,
                         document_payload=document_projection,
+                        container=container,
                     ),
                     committed_projection=document_projection,
                 )
@@ -969,6 +983,7 @@ def process_document_stream(
                     terminal_evidence=_stream_failure_evidence(
                         operation_id=domain_operation_id,
                         domain="document_process",
+                        container=container,
                     ),
                 )
                 event_queue.put(event.model_dump(mode="json"))
@@ -989,13 +1004,13 @@ def process_document_stream(
 
 
 @router.get("/documents/{document_id}/status", response_model=DocumentStatusResponse)
-def get_document_status(document_id: str) -> DocumentStatusResponse:
+def get_document_status(document_id: str, *, container: Container = Depends(get_container)) -> DocumentStatusResponse:
     document = container.document_service.require_document(document_id)
     return _into_response(DocumentStatusResponse, document)
 
 
 @router.get("/documents/{document_id}/file")
-def get_document_file(document_id: str) -> FileResponse:
+def get_document_file(document_id: str, *, container: Container = Depends(get_container)) -> FileResponse:
     document = container.document_service.require_document(document_id)
     path = Path(document.stored_path)
     if not path.exists() or not path.is_file():
@@ -1008,7 +1023,7 @@ def get_document_file(document_id: str) -> FileResponse:
 
 
 @router.get("/documents/{document_id}/pages/{page_number}/image")
-def get_document_page_image(document_id: str, page_number: int) -> Response:
+def get_document_page_image(document_id: str, page_number: int, *, container: Container = Depends(get_container)) -> Response:
     document = container.document_service.require_document(document_id)
     path = Path(document.stored_path)
     if not path.exists() or not path.is_file():
@@ -1021,13 +1036,13 @@ def get_document_page_image(document_id: str, page_number: int) -> Response:
 
 
 @router.get("/documents/{document_id}/debug", response_model=DocumentDebugResponse)
-def get_document_debug(document_id: str) -> DocumentDebugResponse:
+def get_document_debug(document_id: str, *, container: Container = Depends(get_container)) -> DocumentDebugResponse:
     report = container.document_service.require_debug_report(document_id)
     return _into_response(DocumentDebugResponse, report)
 
 
 @router.get("/documents/{document_id}/process-events", response_model=StreamReportResponse)
-def get_document_process_events(document_id: str) -> StreamReportResponse:
+def get_document_process_events(document_id: str, *, container: Container = Depends(get_container)) -> StreamReportResponse:
     report = StreamReportRecorder.load(
         store=container.store,
         category=DOCUMENT_PROCESS_STREAM_CATEGORY,
@@ -1041,7 +1056,7 @@ def get_document_process_events(document_id: str) -> StreamReportResponse:
     "/documents/{document_id}/planning-context",
     response_model=DocumentPlanningContextResponse,
 )
-def get_document_planning_context(document_id: str) -> DocumentPlanningContextResponse:
+def get_document_planning_context(document_id: str, *, container: Container = Depends(get_container)) -> DocumentPlanningContextResponse:
     document = container.document_service.require_document(document_id)
     report = container.document_service.require_debug_report(document_id)
     study_units = document.study_units or report.study_units
@@ -1069,7 +1084,7 @@ def get_document_planning_context(document_id: str) -> DocumentPlanningContextRe
     "/documents/{document_id}/planning-trace",
     response_model=DocumentPlanningTraceResponse,
 )
-def get_document_planning_trace(document_id: str) -> DocumentPlanningTraceResponse:
+def get_document_planning_trace(document_id: str, *, container: Container = Depends(get_container)) -> DocumentPlanningTraceResponse:
     trace = container.store.load_item("planning_trace", document_id, PlanGenerationTraceRecord)
     if trace is not None:
         tool_call_count = sum(len(round_record.tool_calls) for round_record in trace.rounds)
@@ -1097,7 +1112,7 @@ def get_document_planning_trace(document_id: str) -> DocumentPlanningTraceRespon
 
 
 @router.get("/documents/{document_id}/plan-events", response_model=StreamReportResponse)
-def get_document_plan_events(document_id: str) -> StreamReportResponse:
+def get_document_plan_events(document_id: str, *, container: Container = Depends(get_container)) -> StreamReportResponse:
     report = StreamReportRecorder.load(
         store=container.store,
         category=LEARNING_PLAN_STREAM_CATEGORY,
@@ -1108,7 +1123,7 @@ def get_document_plan_events(document_id: str) -> StreamReportResponse:
 
 
 @router.get("/personas", response_model=PersonaListResponse)
-def list_personas() -> PersonaListResponse:
+def list_personas(*, container: Container = Depends(get_container)) -> PersonaListResponse:
     personas = container.persona_engine.list_personas()
     return PersonaListResponse(
         items=[_into_response(PersonaResponse, persona) for persona in personas]
@@ -1116,13 +1131,13 @@ def list_personas() -> PersonaListResponse:
 
 
 @router.post("/personas", response_model=PersonaResponse)
-def create_persona(payload: CreatePersonaRequest) -> PersonaResponse:
+def create_persona(payload: CreatePersonaRequest, *, container: Container = Depends(get_container)) -> PersonaResponse:
     persona = container.persona_engine.create_persona(payload)
     return _into_response(PersonaResponse, persona)
 
 
 @router.patch("/personas/{persona_id}", response_model=PersonaResponse)
-def update_persona(persona_id: str, payload: UpdatePersonaRequest) -> PersonaResponse:
+def update_persona(persona_id: str, payload: UpdatePersonaRequest, *, container: Container = Depends(get_container)) -> PersonaResponse:
     persona = container.persona_engine.update_persona(persona_id, payload)
     return _into_response(PersonaResponse, persona)
 
@@ -1131,6 +1146,8 @@ def update_persona(persona_id: str, payload: UpdatePersonaRequest) -> PersonaRes
 def delete_persona(
     persona_id: str,
     expected_revision: int = Query(ge=0),
+    *,
+    container: Container = Depends(get_container),
 ) -> dict[str, str]:
     container.persona_engine.delete_persona(
         persona_id,
@@ -1140,7 +1157,7 @@ def delete_persona(
 
 
 @router.get("/personas/{persona_id}/assets", response_model=PersonaAssetsResponse)
-def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
+def get_persona_assets(persona_id: str, *, container: Container = Depends(get_container)) -> PersonaAssetsResponse:
     persona = container.persona_engine.require_persona(persona_id)
     return PersonaAssetsResponse(
         persona_id=persona.id,
@@ -1154,7 +1171,7 @@ def get_persona_assets(persona_id: str) -> PersonaAssetsResponse:
 
 
 @router.get("/persona-cards", response_model=PersonaCardListResponse)
-def list_persona_cards() -> PersonaCardListResponse:
+def list_persona_cards(*, container: Container = Depends(get_container)) -> PersonaCardListResponse:
     items = container.persona_card_library_service.list_cards()
     return PersonaCardListResponse(
         items=[_into_response(PersonaCardResponse, item) for item in items]
@@ -1162,13 +1179,13 @@ def list_persona_cards() -> PersonaCardListResponse:
 
 
 @router.post("/persona-cards", response_model=PersonaCardResponse)
-def create_persona_card(payload: CreatePersonaCardRequest) -> PersonaCardResponse:
+def create_persona_card(payload: CreatePersonaCardRequest, *, container: Container = Depends(get_container)) -> PersonaCardResponse:
     record = container.persona_card_library_service.create_card(payload)
     return _into_response(PersonaCardResponse, record)
 
 
 @router.post("/persona-cards/batch", response_model=PersonaCardListResponse)
-def create_persona_cards_batch(payload: BatchCreatePersonaCardsRequest) -> PersonaCardListResponse:
+def create_persona_cards_batch(payload: BatchCreatePersonaCardsRequest, *, container: Container = Depends(get_container)) -> PersonaCardListResponse:
     items = container.persona_card_library_service.create_many(payload.items)
     return PersonaCardListResponse(
         items=[_into_response(PersonaCardResponse, item) for item in items]
@@ -1176,13 +1193,13 @@ def create_persona_cards_batch(payload: BatchCreatePersonaCardsRequest) -> Perso
 
 
 @router.delete("/persona-cards/{card_id}")
-def delete_persona_card(card_id: str) -> dict[str, str]:
+def delete_persona_card(card_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
     container.persona_card_library_service.delete_card(card_id)
     return {"deleted_persona_card_id": card_id}
 
 
 @router.post("/persona-cards/generate", response_model=PersonaCardGenerateResponse)
-def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGenerateResponse:
+def generate_persona_cards(payload: PersonaCardGenerateRequest, *, container: Container = Depends(get_container)) -> PersonaCardGenerateResponse:
     reset_model_recovery_state()
     try:
         def generate_cards(protected: dict[str, object]) -> PersonaGenerationProposalV1:
@@ -1263,7 +1280,7 @@ def generate_persona_cards(payload: PersonaCardGenerateRequest) -> PersonaCardGe
 
 
 @router.post("/personas/assist-setting", response_model=PersonaSettingAssistResponse)
-def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSettingAssistResponse:
+def assist_persona_setting(payload: PersonaSettingAssistRequest, *, container: Container = Depends(get_container)) -> PersonaSettingAssistResponse:
     reset_model_recovery_state()
     try:
         def generate_setting(protected: dict[str, object]) -> PersonaGenerationProposalV1:
@@ -1344,7 +1361,7 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
 
 
 @router.post("/personas/assist-slot", response_model=PersonaSlotAssistResponse)
-def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistResponse:
+def assist_persona_slot(payload: PersonaSlotAssistRequest, *, container: Container = Depends(get_container)) -> PersonaSlotAssistResponse:
     reset_model_recovery_state()
     try:
         def generate_slot(protected: dict[str, object]) -> PersonaGenerationProposalV1:
@@ -1416,7 +1433,7 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
 
 
 @router.get("/study-sessions/{session_id}/attachments/{attachment_id}/file")
-def get_study_session_attachment_file(session_id: str, attachment_id: str) -> FileResponse:
+def get_study_session_attachment_file(session_id: str, attachment_id: str, *, container: Container = Depends(get_container)) -> FileResponse:
     attachment = container.study_session_service.require_attachment(
         session_id=session_id,
         attachment_id=attachment_id,
@@ -1437,6 +1454,8 @@ def get_study_session_attachment_page_image(
     session_id: str,
     attachment_id: str,
     page_number: int,
+    *,
+    container: Container = Depends(get_container),
 ) -> Response:
     attachment = container.study_session_service.require_attachment(
         session_id=session_id,
@@ -1453,7 +1472,7 @@ def get_study_session_attachment_page_image(
 
 
 @router.post("/study-sessions/{session_id}/chat", response_model=StudyChatOperationReceiptResponse)
-def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatOperationReceiptResponse:
+def study_chat(session_id: str, payload: StudyChatRequest, *, container: Container = Depends(get_container)) -> StudyChatOperationReceiptResponse:
     return _admit_and_run_study_chat(
         session_id=session_id,
         client_request_id=payload.client_request_id,
@@ -1462,6 +1481,7 @@ def study_chat(session_id: str, payload: StudyChatRequest) -> StudyChatOperation
         message_kind=payload.message_kind,
         follow_up_id=payload.follow_up_id,
         hidden_message_prefix=payload.hidden_message_prefix,
+        container=container,
     )
 
 
@@ -1475,6 +1495,8 @@ def study_chat_with_attachments(
     follow_up_id: str = Form(""),
     hidden_message_prefix: str = Form(""),
     files: list[UploadFile] | None = File(default=None),
+    *,
+    container: Container = Depends(get_container),
 ) -> StudyChatOperationReceiptResponse:
     attachment_inputs = read_study_chat_attachment_inputs(files or [])
     return _admit_and_run_study_chat(
@@ -1486,6 +1508,7 @@ def study_chat_with_attachments(
         follow_up_id=follow_up_id,
         hidden_message_prefix=hidden_message_prefix,
         attachment_inputs=attachment_inputs,
+        container=container,
     )
 
 
@@ -1496,6 +1519,8 @@ def study_chat_with_attachments(
 def get_study_chat_operation(
     session_id: str,
     client_request_id: str,
+    *,
+    container: Container = Depends(get_container),
 ) -> StudyChatOperationReceiptResponse:
     try:
         operation = container.study_chat_operation_repository.require(
@@ -1504,8 +1529,8 @@ def get_study_chat_operation(
         )
     except StudyChatOperationNotFound as exc:
         raise HTTPException(status_code=404, detail="study_chat_operation_not_found") from exc
-    _cleanup_terminal_study_chat_staging(operation)
-    return _study_chat_operation_response(operation)
+    _cleanup_terminal_study_chat_staging(operation, container=container)
+    return _study_chat_operation_response(operation, container=container)
 
 
 def _admit_and_run_study_chat(
@@ -1518,6 +1543,7 @@ def _admit_and_run_study_chat(
     follow_up_id: str,
     hidden_message_prefix: str,
     attachment_inputs=None,
+    container: Container,
 ) -> StudyChatOperationReceiptResponse:
     request_payload = StudyChatOperationRequestPayload(
         message=message,
@@ -1552,8 +1578,8 @@ def _admit_and_run_study_chat(
         raise HTTPException(status_code=409, detail="study_chat_operation_already_active") from exc
 
     if operation.status != StudyChatOperationStatus.ADMITTED:
-        _cleanup_terminal_study_chat_staging(operation)
-        return _study_chat_operation_response(operation)
+        _cleanup_terminal_study_chat_staging(operation, container=container)
+        return _study_chat_operation_response(operation, container=container)
     try:
         validate_study_chat_preclaim(
             session=container.study_session_service.require_session(session_id),
@@ -1569,7 +1595,7 @@ def _admit_and_run_study_chat(
             operation_id=operation.operation_id,
             error_code=f"study_chat_not_committed_{str(detail)}"[:128],
         )
-        return _study_chat_operation_response(not_committed)
+        return _study_chat_operation_response(not_committed, container=container)
 
     runtime_settings = container.runtime_settings_service.effective_settings()
     operation, claimed = container.study_chat_operation_repository.claim(
@@ -1578,7 +1604,7 @@ def _admit_and_run_study_chat(
         * (runtime_settings.openai_chat_tool_max_rounds + 2),
     )
     if not claimed:
-        return _study_chat_operation_response(operation)
+        return _study_chat_operation_response(operation, container=container)
     try:
         prepared = prepare_study_chat_attachments(
             store=container.store,
@@ -1600,6 +1626,7 @@ def _admit_and_run_study_chat(
             learner_multimodal_parts=prepared.multimodal_parts,
             operation_id=operation.operation_id,
             execution_token=operation.execution_token,
+            container=container,
         )
         committed = container.study_chat_operation_repository.require(
             session_id=session_id,
@@ -1607,10 +1634,10 @@ def _admit_and_run_study_chat(
         )
         if committed.response_payload != response_payload:
             raise RuntimeError("study_chat_committed_response_mismatch")
-        return _study_chat_operation_response(committed)
+        return _study_chat_operation_response(committed, container=container)
     except Exception as exc:
         error_code = _study_chat_uncertain_error_code(exc)
-        harness_trace = _study_chat_terminal_harness_trace(operation.operation_id)
+        harness_trace = _study_chat_terminal_harness_trace(operation.operation_id, container=container)
         terminal = container.study_chat_operation_repository.mark_uncertain(
             operation_id=operation.operation_id,
             execution_token=operation.execution_token,
@@ -1636,10 +1663,10 @@ def _admit_and_run_study_chat(
             operation.operation_id,
             error_code,
         )
-        return _study_chat_operation_response(terminal)
+        return _study_chat_operation_response(terminal, container=container)
 
 
-def _cleanup_terminal_study_chat_staging(operation) -> None:
+def _cleanup_terminal_study_chat_staging(operation, *, container: Container) -> None:
     if operation.status not in {
         StudyChatOperationStatus.NOT_COMMITTED,
         StudyChatOperationStatus.UNCERTAIN,
@@ -1659,7 +1686,7 @@ def _cleanup_terminal_study_chat_staging(operation) -> None:
         )
 
 
-def _study_chat_operation_response(operation) -> StudyChatOperationReceiptResponse:
+def _study_chat_operation_response(operation, *, container: Container) -> StudyChatOperationReceiptResponse:
     receipt = container.study_chat_operation_repository.receipt(operation)
     payload = receipt.model_dump(mode="json")
     if receipt.result is not None:
@@ -1676,7 +1703,7 @@ def _study_chat_uncertain_error_code(exc: Exception) -> str:
     return "study_chat_execution_uncertain"
 
 
-def _study_chat_terminal_harness_trace(operation_id: str):
+def _study_chat_terminal_harness_trace(operation_id: str, *, container: Container):
     """Return the terminal reply trace without exposing it on the public receipt."""
 
     try:
@@ -1700,7 +1727,7 @@ def _study_chat_terminal_harness_trace(operation_id: str):
 
 
 @router.post("/study-sessions/{session_id}/follow-ups/cancel", response_model=StudySessionResponse)
-def cancel_study_session_follow_ups(session_id: str) -> StudySessionResponse:
+def cancel_study_session_follow_ups(session_id: str, *, container: Container = Depends(get_container)) -> StudySessionResponse:
     session = container.study_session_service.cancel_pending_follow_ups(session_id=session_id)
     return _into_response(StudySessionResponse, session)
 
@@ -1717,6 +1744,7 @@ def _run_study_chat(
     learner_multimodal_parts=None,
     operation_id: str,
     execution_token: str,
+    container: Container,
 ) -> dict[str, object]:
     reset_model_recovery_state()
     session = container.study_session_service.require_session(session_id)
@@ -1754,7 +1782,7 @@ def _run_study_chat(
             persona_id=session.persona_id,
         )
     )
-    document = _resolve_session_document(session.document_id, active_plan)
+    document = _resolve_session_document(session.document_id, active_plan, container=container)
     debug_report = None
     if document is not None:
         try:
@@ -2193,6 +2221,8 @@ def resolve_study_session_plan_confirmation(
     session_id: str,
     confirmation_id: str,
     payload: StudySessionPlanConfirmationDecisionRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> StudySessionPlanConfirmationDecisionResponse:
     decision = payload.decision.strip().lower()
     if decision not in {"approve", "reject"}:
@@ -2243,6 +2273,8 @@ def list_study_sessions(
     plan_id: str | None = None,
     study_unit_id: str | None = None,
     section_id: str | None = None,
+    *,
+    container: Container = Depends(get_container),
 ) -> StudySessionListResponse:
     resolved_study_unit_id = study_unit_id or section_id
     sessions = container.study_session_service.list_sessions(
@@ -2257,7 +2289,7 @@ def list_study_sessions(
 
 
 @router.get("/study-sessions/{session_id}", response_model=StudySessionResponse)
-def get_study_session(session_id: str) -> StudySessionResponse:
+def get_study_session(session_id: str, *, container: Container = Depends(get_container)) -> StudySessionResponse:
     session = container.study_session_service.require_session(session_id)
     return _into_response(StudySessionResponse, session)
 
@@ -2269,6 +2301,8 @@ def get_study_session(session_id: str) -> StudySessionResponse:
 def record_study_question_attempt(
     session_id: str,
     payload: StudyQuestionAttemptRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> StudyQuestionAttemptResponse:
     result = container.study_session_service.record_question_attempt(
         session_id=session_id,
@@ -2283,13 +2317,13 @@ def record_study_question_attempt(
 @router.patch("/study-sessions/{session_id}", response_model=StudySessionResponse)
 def update_study_session(
     session_id: str, payload: UpdateStudySessionRequest
-) -> StudySessionResponse:
+, *, container: Container = Depends(get_container)) -> StudySessionResponse:
     if payload.study_unit_id is None and "scene_profile" not in payload.model_fields_set:
         raise HTTPException(status_code=400, detail="update_payload_empty")
 
     current_session = _ensure_session_scene_binding(
         container.study_session_service.require_session(session_id)
-    )
+    , container=container)
     next_study_unit_id = payload.study_unit_id or current_session.study_unit_id
     has_scene_profile = "scene_profile" in payload.model_fields_set
     next_scene_instance_id = current_session.scene_instance_id
@@ -2311,7 +2345,7 @@ def update_study_session(
             active_plan = container.plan_service.require_plan(current_session.plan_id)
         except HTTPException:
             active_plan = None
-    document = _resolve_session_document(current_session.document_id, active_plan)
+    document = _resolve_session_document(current_session.document_id, active_plan, container=container)
     next_study_unit_title = _resolve_study_unit_title(
         document=document,
         plan=active_plan,
@@ -2347,7 +2381,7 @@ def update_study_session(
 
 
 @router.post("/study-sessions", response_model=StudySessionResponse)
-def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResponse:
+def create_study_session(payload: CreateStudySessionRequest, *, container: Container = Depends(get_container)) -> StudySessionResponse:
     session_id = f"session-{uuid4().hex[:10]}"
     logger.info(
         "study_sessions.create document_id=%s persona_id=%s study_unit_id=%s scene_id=%s",
@@ -2368,7 +2402,7 @@ def create_study_session(payload: CreateStudySessionRequest) -> StudySessionResp
             raise HTTPException(status_code=400, detail="plan_session_binding_mismatch")
         if not resolved_document_id and plan.document_id:
             resolved_document_id = plan.document_id
-    document = _resolve_session_document(resolved_document_id, plan)
+    document = _resolve_session_document(resolved_document_id, plan, container=container)
     study_unit_title = payload.study_unit_title.strip() or _resolve_study_unit_title(
         document=document,
         plan=plan,
@@ -2489,7 +2523,7 @@ def _resolve_study_unit_theme_hint(*, plan, study_unit_id: str, fallback: str = 
     return plan.objective
 
 
-def _resolve_session_document(document_id: str, plan):
+def _resolve_session_document(document_id: str, plan, *, container: Container):
     resolved_document_id = document_id.strip() or (plan.document_id.strip() if plan is not None else "")
     if not resolved_document_id:
         return None
@@ -2510,7 +2544,7 @@ def _scene_profile_summary(session) -> str:
     return session.scene_profile.summary.strip()
 
 
-def _ensure_session_scene_binding(session):
+def _ensure_session_scene_binding(session, *, container: Container):
     if session.scene_instance_id or session.scene_profile is None:
         return session
     bound_scene = container.session_scene_service.clone_scene_for_session(
@@ -2530,7 +2564,7 @@ def _ensure_session_scene_binding(session):
 
 
 @router.post("/learning-plans", response_model=LearningPlanCreateResponse)
-def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCreateResponse:
+def create_learning_plan(payload: LearningPlanCreateRequest, *, container: Container = Depends(get_container)) -> LearningPlanCreateResponse:
     reset_model_recovery_state()
     stream_document_id = _learning_plan_stream_storage_id(payload)
     domain_operation_id = ""
@@ -2593,6 +2627,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCrea
             terminal_evidence=_stream_failure_evidence(
                 operation_id=domain_operation_id,
                 domain="learning_plan",
+                container=container,
             ),
         )
         logger.warning(
@@ -2615,6 +2650,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCrea
             terminal_evidence=_stream_failure_evidence(
                 operation_id=domain_operation_id,
                 domain="learning_plan",
+                container=container,
             ),
         )
         raise
@@ -2622,6 +2658,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCrea
         domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
         domain_operation_id=domain_operation_id,
         stage=HarnessStage.PLAN_GENERATION,
+        container=container,
     )
     plan_commit_projection = plan.model_dump(mode="json")
     plan_projection = {
@@ -2638,6 +2675,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCrea
         terminal_evidence=_learning_plan_stream_committed_evidence(
             operation_id=domain_operation_id,
             plan_payload=plan_projection,
+            container=container,
         ),
         committed_projection=plan_projection,
     )
@@ -2645,7 +2683,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest) -> LearningPlanCrea
 
 
 @router.get("/learning-plans", response_model=LearningPlanListResponse)
-def list_learning_plans() -> LearningPlanListResponse:
+def list_learning_plans(*, container: Container = Depends(get_container)) -> LearningPlanListResponse:
     plans = container.plan_service.list_plans()
     return LearningPlanListResponse(
         items=[_into_response(LearningPlanResponse, plan) for plan in plans]
@@ -2658,6 +2696,8 @@ def list_learning_plans() -> LearningPlanListResponse:
 )
 def get_learning_plan_operation(
     client_request_id: str,
+    *,
+    container: Container = Depends(get_container),
 ) -> LearningPlanOperationResponse:
     operation = container.plan_service.require_operation(
         client_request_id=client_request_id
@@ -2687,6 +2727,8 @@ def get_learning_plan_operation(
 @router.post("/learning-plans/stream")
 def create_learning_plan_stream(
     payload: LearningPlanCreateRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> StreamingResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
     document = None
@@ -2733,6 +2775,7 @@ def create_learning_plan_stream(
             terminal_evidence=_stream_failure_evidence(
                 operation_id=domain_operation_id,
                 domain="learning_plan",
+                container=container,
             ),
         )
         event_queue.put(event.model_dump(mode="json"))
@@ -2765,6 +2808,7 @@ def create_learning_plan_stream(
                     domain_operation_kind=HarnessDomainOperationKind.LEARNING_PLAN_GENERATION,
                     domain_operation_id=domain_operation_id,
                     stage=HarnessStage.PLAN_GENERATION,
+                    container=container,
                 )
                 plan_commit_projection = plan.model_dump(mode="json")
                 plan_projection = {
@@ -2781,6 +2825,7 @@ def create_learning_plan_stream(
                     terminal_evidence=_learning_plan_stream_committed_evidence(
                         operation_id=domain_operation_id,
                         plan_payload=plan_projection,
+                        container=container,
                     ),
                     committed_projection=plan_projection,
                 )
@@ -2805,6 +2850,7 @@ def create_learning_plan_stream(
                     terminal_evidence=_stream_failure_evidence(
                         operation_id=domain_operation_id,
                         domain="learning_plan",
+                        container=container,
                     ),
                 )
                 event_queue.put(event.model_dump(mode="json"))
@@ -2821,6 +2867,7 @@ def create_learning_plan_stream(
                     terminal_evidence=_stream_failure_evidence(
                         operation_id=domain_operation_id,
                         domain="learning_plan",
+                        container=container,
                     ),
                 )
                 event_queue.put(event.model_dump(mode="json"))
@@ -2841,7 +2888,7 @@ def create_learning_plan_stream(
 
 
 @router.post("/stream-runs/{stream_id}/cancel")
-def cancel_stream_run(stream_id: str) -> dict[str, object]:
+def cancel_stream_run(stream_id: str, *, container: Container = Depends(get_container)) -> dict[str, object]:
     handle = container.stream_interrupt_registry.cancel(stream_id=stream_id)
     return {
         "stream_id": handle.stream_id,
@@ -2853,7 +2900,7 @@ def cancel_stream_run(stream_id: str) -> dict[str, object]:
 
 
 @router.get("/learning-plans/{plan_id}", response_model=LearningPlanResponse)
-def get_learning_plan(plan_id: str) -> LearningPlanResponse:
+def get_learning_plan(plan_id: str, *, container: Container = Depends(get_container)) -> LearningPlanResponse:
     plan = container.plan_service.require_plan(plan_id)
     return _into_response(LearningPlanResponse, plan)
 
@@ -2862,6 +2909,8 @@ def get_learning_plan(plan_id: str) -> LearningPlanResponse:
 def update_learning_plan(
     plan_id: str,
     payload: LearningPlanUpdateRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> LearningPlanResponse:
     plan = container.plan_service.update_plan(
         plan_id=plan_id,
@@ -2874,6 +2923,8 @@ def update_learning_plan(
 def update_learning_plan_progress(
     plan_id: str,
     payload: LearningPlanProgressUpdateRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> LearningPlanResponse:
     plan = container.plan_service.update_progress(
         plan_id=plan_id,
@@ -2891,6 +2942,8 @@ def answer_learning_plan_question(
     plan_id: str,
     question_id: str,
     payload: PlanningQuestionAnswerRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> LearningPlanResponse:
     plan = container.plan_service.answer_planning_question(
         plan_id=plan_id,
@@ -2901,13 +2954,13 @@ def answer_learning_plan_question(
 
 
 @router.delete("/learning-plans/{plan_id}")
-def delete_learning_plan(plan_id: str) -> dict[str, str]:
+def delete_learning_plan(plan_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
     container.plan_service.delete_plan(plan_id)
     return {"deleted_plan_id": plan_id}
 
 
 @router.post("/exercises/generate", response_model=ExerciseGenerateResponse)
-def generate_exercise(payload: ExerciseGenerateRequest) -> ExerciseGenerateResponse:
+def generate_exercise(payload: ExerciseGenerateRequest, *, container: Container = Depends(get_container)) -> ExerciseGenerateResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
     response = container.pedagogy_orchestrator.generate_exercise(
         persona=persona,
@@ -2918,7 +2971,7 @@ def generate_exercise(payload: ExerciseGenerateRequest) -> ExerciseGenerateRespo
 
 
 @router.post("/submissions/grade", response_model=SubmissionGradeResponse)
-def grade_submission(payload: SubmissionGradeRequest) -> SubmissionGradeResponse:
+def grade_submission(payload: SubmissionGradeRequest, *, container: Container = Depends(get_container)) -> SubmissionGradeResponse:
     persona = container.persona_engine.require_persona(payload.persona_id)
     response = container.pedagogy_orchestrator.grade_submission(
         persona=persona,
@@ -2929,7 +2982,7 @@ def grade_submission(payload: SubmissionGradeRequest) -> SubmissionGradeResponse
 
 
 @router.get("/model-usage/stats", response_model=TokenUsageStatsResponse)
-def get_model_usage_stats() -> TokenUsageStatsResponse:
+def get_model_usage_stats(*, container: Container = Depends(get_container)) -> TokenUsageStatsResponse:
     records = container.token_usage_service.load_all()
     buckets_map: dict[tuple[str, str, str], TokenUsageDailyBucket] = {}
     call_records: list[TokenUsageCallRecord] = []

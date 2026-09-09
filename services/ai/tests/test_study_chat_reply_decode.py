@@ -1,3 +1,5 @@
+from tests.support.api import ContainerTestCase, isolated_client
+
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -5,10 +7,12 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api import routes
-from app.main import app
+app = FastAPI()
+app.include_router(routes.router)
 from app.models.api import StudyChatResponse
 from app.models.domain import (
     ChatToolCallTraceRecord,
@@ -84,7 +88,7 @@ def _valid_question_reply() -> dict[str, object]:
     }
 
 
-class StudyChatReplyDecodeTests(unittest.TestCase):
+class StudyChatReplyDecodeTests(ContainerTestCase):
     def test_malformed_builtin_question_arguments_fail_closed(self) -> None:
         raw_arguments = '{"topic":"vector basis"'
 
@@ -544,7 +548,7 @@ class StudyChatReplyDecodeTests(unittest.TestCase):
             self.assertNotIn(private_key, public_result)
 
 
-class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
+class StudyChatReplyRouteBoundaryTests(ContainerTestCase):
     def setUp(self) -> None:
         self.temp = TemporaryDirectory()
         self.database = Database(f"sqlite:///{Path(self.temp.name) / 'test.db'}")
@@ -603,11 +607,11 @@ class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
         )
 
         with (
-            patch.object(routes.container, "study_chat_operation_repository", self.operations),
-            patch.object(routes.container, "study_session_service", session_service),
-            patch.object(routes.container, "runtime_settings_service", runtime_settings),
-            patch.object(routes.container, "model_provider", provider),
-            patch.object(routes.container, "store", object()),
+            patch.object(self.container, "study_chat_operation_repository", self.operations),
+            patch.object(self.container, "study_session_service", session_service),
+            patch.object(self.container, "runtime_settings_service", runtime_settings),
+            patch.object(self.container, "model_provider", provider),
+            patch.object(self.container, "store", object()),
             patch.object(routes, "prepare_study_chat_attachments", return_value=prepared),
             patch.object(routes, "cleanup_staged_study_chat_operation_attachments"),
             patch.object(routes, "_run_study_chat", side_effect=run_failed_chat),
@@ -626,6 +630,7 @@ class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
                 follow_up_id="",
                 hidden_message_prefix="",
                 attachment_inputs=[],
+                container=self.container,
             )
 
         self.assertEqual(request.call_count, 2)
@@ -665,11 +670,11 @@ class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
         )
 
         with (
-            patch.object(routes.container, "study_chat_operation_repository", self.operations),
-            patch.object(routes.container, "study_session_service", session_service),
-            patch.object(routes.container, "runtime_settings_service", runtime_settings),
-            patch.object(routes.container, "model_provider", provider),
-            patch.object(routes.container, "store", object()),
+            patch.object(self.container, "study_chat_operation_repository", self.operations),
+            patch.object(self.container, "study_session_service", session_service),
+            patch.object(self.container, "runtime_settings_service", runtime_settings),
+            patch.object(self.container, "model_provider", provider),
+            patch.object(self.container, "store", object()),
             patch.object(routes, "prepare_study_chat_attachments", return_value=prepared),
             patch.object(routes, "cleanup_staged_study_chat_operation_attachments"),
             patch.object(routes, "_run_study_chat", side_effect=fail_after_capture),
@@ -683,6 +688,7 @@ class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
                 follow_up_id="",
                 hidden_message_prefix="",
                 attachment_inputs=[],
+                container=self.container,
             )
 
         self.assertEqual(receipt.status, "uncertain")
@@ -769,10 +775,10 @@ class StudyChatReplyRouteBoundaryTests(unittest.TestCase):
         session_service = SimpleNamespace(require_session=self.sessions.require)
 
         with (
-            patch.object(routes.container, "study_chat_operation_repository", self.operations),
-            patch.object(routes.container, "study_session_service", session_service),
+            patch.object(self.container, "study_chat_operation_repository", self.operations),
+            patch.object(self.container, "study_session_service", session_service),
             patch.object(routes, "_cleanup_terminal_study_chat_staging"),
-            TestClient(app) as client,
+            isolated_client(app, self.container) as client,
         ):
             responses = [
                 client.get("/study-sessions/session-invalid-reply"),

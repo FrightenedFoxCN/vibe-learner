@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.support.api import ContainerTestCase, isolated_client
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from concurrent.futures import ThreadPoolExecutor
@@ -66,7 +68,7 @@ class SequencedTavernProvider(MockModelProvider):
         )
 
 
-class TavernFacilitatedApiTests(unittest.TestCase):
+class TavernFacilitatedApiTests(ContainerTestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
         root = Path(self.temp_dir.name)
@@ -86,19 +88,13 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             persona_engine=self.persona_engine,
             model_provider=self.provider,
         )
-        self.container_patch = patch.object(
-            tavern_routes,
-            "container",
-            SimpleNamespace(tavern_service=self.service),
-        )
-        self.container_patch.start()
+        self.container = SimpleNamespace(tavern_service=self.service)
         app = FastAPI()
         app.include_router(tavern_routes.router)
-        self.client = TestClient(app)
+        self.client = isolated_client(app, self.container)
 
     def tearDown(self) -> None:
         self.client.close()
-        self.container_patch.stop()
         self.store.close()
         self.temp_dir.cleanup()
 
@@ -594,7 +590,7 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             persona_engine=self.persona_engine,
             model_provider=self.provider,
         )
-        tavern_routes.container.tavern_service = restarted
+        self.container.tavern_service = restarted
         response = self.client.post(
             f"/tavern/rooms/{room_id}/runs/{abandoned.id}/resume"
         )
@@ -683,7 +679,7 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             persona_engine=self.persona_engine,
             model_provider=self.provider,
         )
-        tavern_routes.container.tavern_service = restarted
+        self.container.tavern_service = restarted
         response = self.client.post(
             f"/tavern/rooms/{room_id}/runs/{legacy_run_id}/resume"
         )
@@ -757,7 +753,7 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             persona_engine=self.persona_engine,
             model_provider=self.provider,
         )
-        tavern_routes.container.tavern_service = restarted
+        self.container.tavern_service = restarted
         response = self.client.post(
             f"/tavern/rooms/{room_id}/runs/{abandoned.id}/resume"
         )
@@ -933,7 +929,7 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             model_provider=self.provider,
             step_lease_seconds=2,
         )
-        tavern_routes.container.tavern_service = heartbeat_service
+        self.container.tavern_service = heartbeat_service
         with patch.object(
             self.provider,
             "generate_tavern_actor_reply",
@@ -1009,7 +1005,7 @@ class TavernFacilitatedApiTests(unittest.TestCase):
             model_provider=self.provider,
             max_step_claims=2,
         )
-        tavern_routes.container.tavern_service = bounded_service
+        self.container.tavern_service = bounded_service
         response = self.client.post(
             f"/tavern/rooms/{room_id}/runs/{run.id}/resume"
         )

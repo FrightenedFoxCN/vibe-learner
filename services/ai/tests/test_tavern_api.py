@@ -1,3 +1,5 @@
+from tests.support.api import ContainerTestCase, isolated_client
+
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -90,7 +92,7 @@ class CapturingMockProvider(MockModelProvider):
         return super().generate_tavern_actor_reply(**kwargs)
 
 
-class TavernApiTests(unittest.TestCase):
+class TavernApiTests(ContainerTestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
         root = Path(self.temp_dir.name)
@@ -118,19 +120,13 @@ class TavernApiTests(unittest.TestCase):
             persona_engine=self.persona_engine,
             model_provider=MockModelProvider(),
         )
-        self.container_patch = patch.object(
-            tavern_routes,
-            "container",
-            SimpleNamespace(tavern_service=self.service),
-        )
-        self.container_patch.start()
+        self.container = SimpleNamespace(tavern_service=self.service)
         app = FastAPI()
         app.include_router(tavern_routes.router)
-        self.client = TestClient(app)
+        self.client = isolated_client(app, self.container)
 
     def tearDown(self) -> None:
         self.client.close()
-        self.container_patch.stop()
         self.store.close()
         self.temp_dir.cleanup()
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.support.api import ContainerTestCase, isolated_client
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -27,7 +29,7 @@ from app.services.study_sessions import StudySessionService
 from app.services.study_v3 import StudyV3SnapshotService
 
 
-class StudyV3RuntimeTests(unittest.TestCase):
+class StudyV3RuntimeTests(ContainerTestCase):
     def setUp(self) -> None:
         self.temp = TemporaryDirectory()
         self.database = Database(f"sqlite:///{Path(self.temp.name) / 'test.db'}")
@@ -114,20 +116,20 @@ class StudyV3RuntimeTests(unittest.TestCase):
 
     def _patches(self, provider_call):
         return (
-            patch.object(routes.container, "store", self.store),
-            patch.object(routes.container, "study_session_repository", self.sessions),
+            patch.object(self.container, "store", self.store),
+            patch.object(self.container, "study_session_repository", self.sessions),
             patch.object(
-                routes.container,
+                self.container,
                 "study_chat_operation_repository",
                 self.operations,
             ),
             patch.object(
-                routes.container,
+                self.container,
                 "study_session_service",
                 self.session_service,
             ),
             patch.object(
-                routes.container,
+                self.container,
                 "runtime_settings_service",
                 SimpleNamespace(
                     effective_settings=lambda: SimpleNamespace(
@@ -137,7 +139,7 @@ class StudyV3RuntimeTests(unittest.TestCase):
                 ),
             ),
             patch.object(
-                routes.container,
+                self.container,
                 "model_provider",
                 SimpleNamespace(
                     supports_chat_page_image_tools=lambda: False,
@@ -145,12 +147,12 @@ class StudyV3RuntimeTests(unittest.TestCase):
                 ),
             ),
             patch.object(
-                routes.container,
+                self.container,
                 "plan_service",
                 SimpleNamespace(find_latest_plan=lambda **_kwargs: None),
             ),
             patch.object(
-                routes.container,
+                self.container,
                 "persona_engine",
                 SimpleNamespace(
                     require_persona=lambda _persona_id: PersonaProfile(
@@ -166,7 +168,7 @@ class StudyV3RuntimeTests(unittest.TestCase):
                 ),
             ),
             patch.object(
-                routes.container,
+                self.container,
                 "pedagogy_orchestrator",
                 SimpleNamespace(generate_chat_reply=provider_call),
             ),
@@ -182,6 +184,7 @@ class StudyV3RuntimeTests(unittest.TestCase):
             follow_up_id="",
             hidden_message_prefix="",
             attachment_inputs=[],
+            container=self.container,
         )
 
     def test_authorized_snapshot_precedes_single_provider_call_and_atomic_commit(self) -> None:

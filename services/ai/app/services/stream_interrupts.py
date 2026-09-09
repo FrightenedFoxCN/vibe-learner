@@ -56,6 +56,13 @@ class StreamInterruptRegistry:
         self._lock = Lock()
         self._handles: dict[str, StreamInterruptHandle] = {}
 
+    def close(self) -> None:
+        with self._lock:
+            handles = list(self._handles.values())
+            self._handles.clear()
+        for handle in handles:
+            handle.cancel(reason="application_shutdown")
+
     def create(self, *, stream_kind: str, target_id: str) -> StreamInterruptHandle:
         handle = StreamInterruptHandle(
             stream_id=f"stream-{uuid4().hex[:12]}",

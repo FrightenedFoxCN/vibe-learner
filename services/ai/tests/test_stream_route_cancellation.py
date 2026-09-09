@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from tests.support.api import ContainerTestCase, isolated_client
+
 import asyncio
 import io
 import json
@@ -41,7 +43,7 @@ async def _read_stream(response) -> list[dict[str, object]]:
     return [json.loads(line) for line in content.splitlines() if line.strip()]
 
 
-class StreamRouteCancellationTests(unittest.TestCase):
+class StreamRouteCancellationTests(ContainerTestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
         self.store = LocalJsonStore(Path(self.temp_dir.name))
@@ -77,13 +79,13 @@ class StreamRouteCancellationTests(unittest.TestCase):
         )
         registry = StreamInterruptRegistry()
         with (
-            patch.object(routes.container, "store", self.store),
-            patch.object(routes.container, "plan_service", self.plan_service),
-            patch.object(routes.container, "persona_engine", self.persona_engine),
-            patch.object(routes.container, "stream_interrupt_registry", registry),
+            patch.object(self.container, "store", self.store),
+            patch.object(self.container, "plan_service", self.plan_service),
+            patch.object(self.container, "persona_engine", self.persona_engine),
+            patch.object(self.container, "stream_interrupt_registry", registry),
         ):
-            sync_result = routes.create_learning_plan(sync_request)
-            stream_response = routes.create_learning_plan_stream(stream_request)
+            sync_result = routes.create_learning_plan(sync_request, container=self.container)
+            stream_response = routes.create_learning_plan_stream(stream_request, container=self.container)
             stream_frames = asyncio.run(_read_stream(stream_response))
 
         self.assertEqual(sync_result.creation_mode, "goal_only")
@@ -133,20 +135,20 @@ class StreamRouteCancellationTests(unittest.TestCase):
         )
         try:
             with (
-                patch.object(routes.container, "store", self.store),
+                patch.object(self.container, "store", self.store),
                 patch.object(
-                    routes.container,
+                    self.container,
                     "document_service",
                     self.document_service,
                 ),
-                patch.object(routes.container, "plan_service", self.plan_service),
+                patch.object(self.container, "plan_service", self.plan_service),
                 patch.object(
-                    routes.container,
+                    self.container,
                     "persona_engine",
                     self.persona_engine,
                 ),
                 patch.object(
-                    routes.container,
+                    self.container,
                     "stream_interrupt_registry",
                     registry,
                 ),
@@ -156,7 +158,7 @@ class StreamRouteCancellationTests(unittest.TestCase):
                     side_effect=fail_after_cancel,
                 ),
             ):
-                response = routes.create_learning_plan_stream(request)
+                response = routes.create_learning_plan_stream(request, container=self.container)
                 self.assertTrue(provider_entered.wait(timeout=5))
                 running_report = self._load_report(
                     category=LEARNING_PLAN_STREAM_CATEGORY,
@@ -165,7 +167,7 @@ class StreamRouteCancellationTests(unittest.TestCase):
                 )
                 self.assertEqual(running_report.events[-1].stage, "model_round_started")
                 assert running_report.operation_id is not None
-                cancel_result = routes.cancel_stream_run(running_report.operation_id)
+                cancel_result = routes.cancel_stream_run(running_report.operation_id, container=self.container)
                 self.assertTrue(cancel_result["cancelled"])
                 release_provider.set()
                 frames = asyncio.run(_read_stream(response))
@@ -207,18 +209,18 @@ class StreamRouteCancellationTests(unittest.TestCase):
             objective="Preserve the provider error terminal",
         )
         with (
-            patch.object(routes.container, "store", self.store),
-            patch.object(routes.container, "document_service", self.document_service),
-            patch.object(routes.container, "plan_service", self.plan_service),
-            patch.object(routes.container, "persona_engine", self.persona_engine),
-            patch.object(routes.container, "stream_interrupt_registry", registry),
+            patch.object(self.container, "store", self.store),
+            patch.object(self.container, "document_service", self.document_service),
+            patch.object(self.container, "plan_service", self.plan_service),
+            patch.object(self.container, "persona_engine", self.persona_engine),
+            patch.object(self.container, "stream_interrupt_registry", registry),
             patch.object(
                 self.plan_service.model_provider,
                 "generate_learning_plan",
                 side_effect=fail_provider,
             ),
         ):
-            response = routes.create_learning_plan_stream(request)
+            response = routes.create_learning_plan_stream(request, container=self.container)
             self.assertTrue(provider_entered.wait(timeout=5))
             frames = asyncio.run(_read_stream(response))
             report = self._load_report(
@@ -227,7 +229,7 @@ class StreamRouteCancellationTests(unittest.TestCase):
                 stream_kind="learning_plan",
             )
             assert report.operation_id is not None
-            late_cancel = routes.cancel_stream_run(report.operation_id)
+            late_cancel = routes.cancel_stream_run(report.operation_id, container=self.container)
 
         terminal = self._assert_single_terminal(frames, report)
         self.assertEqual(terminal.stage, "stream_error")
@@ -251,14 +253,14 @@ class StreamRouteCancellationTests(unittest.TestCase):
         registry = StreamInterruptRegistry()
         try:
             with (
-                patch.object(routes.container, "store", self.store),
+                patch.object(self.container, "store", self.store),
                 patch.object(
-                    routes.container,
+                    self.container,
                     "document_service",
                     self.document_service,
                 ),
                 patch.object(
-                    routes.container,
+                    self.container,
                     "stream_interrupt_registry",
                     registry,
                 ),
@@ -271,6 +273,7 @@ class StreamRouteCancellationTests(unittest.TestCase):
                 response = routes.process_document_stream(
                     document.id,
                     ProcessDocumentRequest(force_ocr=False),
+                    container=self.container,
                 )
                 self.assertTrue(parser_entered.wait(timeout=5))
                 running_report = self._load_report(
@@ -279,7 +282,7 @@ class StreamRouteCancellationTests(unittest.TestCase):
                     stream_kind="document_process",
                 )
                 assert running_report.operation_id is not None
-                cancel_result = routes.cancel_stream_run(running_report.operation_id)
+                cancel_result = routes.cancel_stream_run(running_report.operation_id, container=self.container)
                 self.assertTrue(cancel_result["cancelled"])
                 release_parser.set()
                 frames = asyncio.run(_read_stream(response))

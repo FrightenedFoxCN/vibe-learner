@@ -30,6 +30,21 @@ flowchart LR
 
 There is no background queue, authentication layer, Live2D runtime, or TTS service in the current repository.
 
+## Application lifecycle
+
+`create_app(settings=...)` builds an application without opening a database.
+Its FastAPI lifespan constructs one `Container`, runs explicit startup recovery,
+and closes it on exit or startup failure. Container construction configures
+logging before database and provider initialization; construction alone does not
+run recovery. Closing cancels registered streams and disposes database resources.
+Routes resolve the container from `Request.app.state` through `get_container`;
+internal orchestration receives it explicitly. Two applications can therefore
+use independent databases and runtime settings in one process.
+
+Route tests use instance-level dependency overrides in `tests.support.api`.
+`npm run test:ai:lifecycle` separately tests real lifespan and import behavior;
+route fault tests do not implicitly initialize the normal runtime database.
+
 ## Core boundaries
 
 ### Web

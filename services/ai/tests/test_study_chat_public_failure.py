@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+from tests.support.api import ContainerTestCase, isolated_client
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api import routes
-from app.main import app
+app = FastAPI()
+app.include_router(routes.router)
 from app.models.domain import (
     PersonaProfile,
     SessionFollowUpRecord,
@@ -25,18 +29,18 @@ from app.services.local_store import LocalJsonStore
 from app.services.study_sessions import StudySessionService
 
 
-class StudyChatPublicProviderFailureTests(unittest.TestCase):
+class StudyChatPublicProviderFailureTests(ContainerTestCase):
     def test_catalog_failure_is_not_committed_before_claim_or_provider(self) -> None:
         from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
 
         request_id = "request-public-catalog-0001"
         provider_call = Mock()
         with (
-            patch.object(routes.container, "study_chat_operation_repository", self.operations),
-            patch.object(routes.container, "study_session_service", self.session_service),
-            patch.object(routes.container, "pedagogy_orchestrator", SimpleNamespace(generate_chat_reply=provider_call)),
+            patch.object(self.container, "study_chat_operation_repository", self.operations),
+            patch.object(self.container, "study_session_service", self.session_service),
+            patch.object(self.container, "pedagogy_orchestrator", SimpleNamespace(generate_chat_reply=provider_call)),
             patch.dict(TOOL_CATALOG[CHAT_STAGE]["ask_fill_blank_question"], {"description": "drifted"}),
-            TestClient(app) as client,
+            isolated_client(app, self.container) as client,
         ):
             response = self._post_chat(client, client_request_id=request_id, with_attachment=False)
             self.assertEqual(response.status_code, 200)
@@ -161,25 +165,25 @@ class StudyChatPublicProviderFailureTests(unittest.TestCase):
             )
 
         with (
-            patch.object(routes.container, "store", self.store),
-            patch.object(routes.container, "study_session_repository", self.sessions),
+            patch.object(self.container, "store", self.store),
+            patch.object(self.container, "study_session_repository", self.sessions),
             patch.object(
-                routes.container,
+                self.container,
                 "study_chat_operation_repository",
                 self.operations,
             ),
-            patch.object(routes.container, "study_session_service", self.session_service),
-            patch.object(routes.container, "runtime_settings_service", runtime_settings),
-            patch.object(routes.container, "model_provider", model_provider),
-            patch.object(routes.container, "plan_service", plan_service),
-            patch.object(routes.container, "persona_engine", persona_engine),
-            patch.object(routes.container, "pedagogy_orchestrator", orchestrator),
+            patch.object(self.container, "study_session_service", self.session_service),
+            patch.object(self.container, "runtime_settings_service", runtime_settings),
+            patch.object(self.container, "model_provider", model_provider),
+            patch.object(self.container, "plan_service", plan_service),
+            patch.object(self.container, "persona_engine", persona_engine),
+            patch.object(self.container, "pedagogy_orchestrator", orchestrator),
             patch.object(
                 routes,
                 "cleanup_staged_study_chat_operation_attachments",
                 side_effect=observe_cleanup,
             ),
-            TestClient(app) as client,
+            isolated_client(app, self.container) as client,
         ):
             post_response = self._post_chat(
                 client,

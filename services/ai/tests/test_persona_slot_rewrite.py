@@ -1,3 +1,5 @@
+from tests.support.api import ContainerTestCase, isolated_client
+
 import unittest
 import json
 from tempfile import TemporaryDirectory
@@ -14,7 +16,7 @@ from app.services.local_store import LocalJsonStore
 from app.services.harness_broad_adoption import HarnessProposalRuntimeService
 
 
-class PersonaSlotRewriteTests(unittest.TestCase):
+class PersonaSlotRewriteTests(ContainerTestCase):
     def test_typed_slot_failure_uses_one_bounded_provider_repair(self):
         provider = OpenAIModelProvider(api_key="test", base_url="https://example.test/v1", plan_model="test", setting_model="test", timeout_seconds=3)
         slot = PersonaSlot(kind="teaching_method", label="Method", content="Observe.")
@@ -40,17 +42,17 @@ class PersonaSlotRewriteTests(unittest.TestCase):
             store = LocalJsonStore(Path(directory))
             try:
                 with (
-                    patch.object(routes.container, "model_provider", SimpleNamespace(assist_persona_slot=fail, assist_persona_setting=fail)),
-                    patch.object(routes.container, "persona_engine", PersonaEngine()),
-                    patch.object(routes.container, "harness_proposal_runtime", HarnessProposalRuntimeService.from_database(store.database)),
+                    patch.object(self.container, "model_provider", SimpleNamespace(assist_persona_slot=fail, assist_persona_setting=fail)),
+                    patch.object(self.container, "persona_engine", PersonaEngine()),
+                    patch.object(self.container, "harness_proposal_runtime", HarnessProposalRuntimeService.from_database(store.database)),
                 ):
                     slots = [
                         PersonaSlot(kind="worldview", label="World", content="A red lamp.", locked=True),
                         PersonaSlot(kind="past_experiences", label="History", content="Observatory volunteer."),
                     ]
-                    setting = routes.assist_persona_setting(PersonaSettingAssistRequest(name="Mira", summary="Tutor", slots=slots, rewrite_strength=0.3))
+                    setting = routes.assist_persona_setting(PersonaSettingAssistRequest(name="Mira", summary="Tutor", slots=slots, rewrite_strength=0.3), container=self.container)
                     self.assertEqual([item.model_dump() for item in setting.slots], [item.model_dump() for item in slots])
-                    slot = routes.assist_persona_slot(PersonaSlotAssistRequest(name="Mira", summary="Tutor", slot=slots[0], rewrite_strength=0.3))
+                    slot = routes.assist_persona_slot(PersonaSlotAssistRequest(name="Mira", summary="Tutor", slot=slots[0], rewrite_strength=0.3), container=self.container)
                     for response in (setting, slot):
                         self.assertEqual(response.harness_trace.status.value, "repaired")
                         self.assertEqual(len(response.model_recoveries), 1)

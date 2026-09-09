@@ -1,3 +1,5 @@
+from tests.support.api import ContainerTestCase, isolated_client
+
 import base64
 import asyncio
 from pathlib import Path
@@ -169,7 +171,7 @@ def _plan_proposal_schedule_chapter(
     return payload
 
 
-class PersonaPipelineTests(unittest.TestCase):
+class PersonaPipelineTests(ContainerTestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
         store = LocalJsonStore(Path(self.temp_dir.name))
@@ -2660,8 +2662,8 @@ class PersonaPipelineTests(unittest.TestCase):
             }
         )
 
-        with patch("app.api.routes.container.store.load_item", return_value=trace):
-            response = get_document_planning_trace("doc-1")
+        with patch.object(self.container.store, "load_item", return_value=trace):
+            response = get_document_planning_trace("doc-1", container=self.container)
 
         self.assertTrue(response.has_trace)
         self.assertIsNotNone(response.trace)
@@ -2831,10 +2833,10 @@ class PersonaPipelineTests(unittest.TestCase):
             upload.file.close()
 
         with (
-            patch.object(routes.container, "store", self.store),
-            patch.object(routes.container, "document_service", self.document_service),
+            patch.object(self.container, "store", self.store),
+            patch.object(self.container, "document_service", self.document_service),
             patch.object(
-                routes.container,
+                self.container,
                 "stream_interrupt_registry",
                 StreamInterruptRegistry(),
             ),
@@ -2842,6 +2844,7 @@ class PersonaPipelineTests(unittest.TestCase):
             response = routes.process_document_stream(
                 document.id,
                 ProcessDocumentRequest(force_ocr=False),
+                container=self.container,
             )
             document_frames = asyncio.run(_read_streaming_response(response))
 
@@ -2868,17 +2871,17 @@ class PersonaPipelineTests(unittest.TestCase):
             objective="掌握第一章",
         )
         with (
-            patch.object(routes.container, "store", self.store),
-            patch.object(routes.container, "document_service", self.document_service),
-            patch.object(routes.container, "plan_service", self.plan_service),
-            patch.object(routes.container, "persona_engine", self.persona_engine),
+            patch.object(self.container, "store", self.store),
+            patch.object(self.container, "document_service", self.document_service),
+            patch.object(self.container, "plan_service", self.plan_service),
+            patch.object(self.container, "persona_engine", self.persona_engine),
             patch.object(
-                routes.container,
+                self.container,
                 "stream_interrupt_registry",
                 StreamInterruptRegistry(),
             ),
         ):
-            response = routes.create_learning_plan_stream(plan_request)
+            response = routes.create_learning_plan_stream(plan_request, container=self.container)
             plan_frames = asyncio.run(_read_streaming_response(response))
 
         decoded_plan_frames = [

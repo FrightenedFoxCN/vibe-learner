@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+from collections.abc import Callable
+
 import time
 from uuid import uuid4
 
@@ -10,14 +13,26 @@ from app.api.routes import router
 from app.api.tavern_routes import router as tavern_router
 from app.core.logging import configure_logging, get_logger
 from app.core.settings import Settings
+from app.core.bootstrap import Container
 
 
-def create_app() -> FastAPI:
+def create_app(*, settings: Settings | None = None, container_factory: Callable[[Settings], Container] = Container) -> FastAPI:
     configure_logging()
-    settings = Settings.from_env()
+    settings = settings if settings is not None else Settings.from_env()
     logger = get_logger("vibe_learner.api")
 
-    app = FastAPI(title="Vibe Learner AI Service", version="0.3.0")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        container = container_factory(settings)
+        try:
+            container.start()
+            app.state.container = container
+            yield
+        finally:
+            app.state.container = None
+            container.close()
+
+    app = FastAPI(title="Vibe Learner AI Service", version="0.3.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.allowed_origins),

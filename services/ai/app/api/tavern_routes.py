@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.core.bootstrap import container
+from app.core.bootstrap import Container
+from app.api.dependencies import get_container
+from fastapi import Depends
 from app.core.logging import get_logger
 from app.models.tavern import (
     CreateTavernRoomRequest,
@@ -29,6 +31,7 @@ def _structured_tavern_error(
     room_id: str = "",
     idempotency_key: str = "",
     fallback_run_id: str = "",
+    container: Container,
 ) -> HTTPException:
     if isinstance(exc.detail, dict) and isinstance(exc.detail.get("code"), str):
         return exc
@@ -98,17 +101,19 @@ def _structured_tavern_error(
 
 
 @router.post("/rooms", response_model=TavernRoomDetail)
-def create_tavern_room(payload: CreateTavernRoomRequest) -> TavernRoomDetail:
+def create_tavern_room(payload: CreateTavernRoomRequest, *, container: Container = Depends(get_container)) -> TavernRoomDetail:
     try:
         return container.tavern_service.create_room(payload)
     except HTTPException as exc:
-        raise _structured_tavern_error(exc) from exc
+        raise _structured_tavern_error(exc, container=container) from exc
 
 
 @router.get("/rooms", response_model=TavernRoomListResponse)
 def list_tavern_rooms(
     limit: int = Query(default=30, ge=1, le=50),
     cursor: str | None = Query(default=None, min_length=1, max_length=512),
+    *,
+    container: Container = Depends(get_container),
 ) -> TavernRoomListResponse:
     return container.tavern_service.list_rooms(limit=limit, cursor=cursor)
 
@@ -120,6 +125,8 @@ def get_tavern_room(
     before_sequence: int | None = Query(default=None, ge=1),
     tail: bool = Query(default=False),
     limit: int = Query(default=200, ge=1, le=200),
+    *,
+    container: Container = Depends(get_container),
 ) -> TavernRoomDetail:
     if tail and (before_sequence is not None or after_sequence != 0):
         raise HTTPException(status_code=400, detail="tavern_message_cursor_conflict")
@@ -138,6 +145,8 @@ def get_tavern_room(
 def list_tavern_runs(
     room_id: str,
     limit: int = Query(default=50, ge=1, le=100),
+    *,
+    container: Container = Depends(get_container),
 ) -> TavernRunListResponse:
     return TavernRunListResponse(items=container.tavern_service.list_runs(room_id, limit=limit))
 
@@ -149,6 +158,8 @@ def list_tavern_runs(
 def get_tavern_run_recovery(
     room_id: str,
     limit: int = Query(default=50, ge=1, le=100),
+    *,
+    container: Container = Depends(get_container),
 ) -> TavernRunRecoveryResponse:
     return TavernRunRecoveryResponse(
         items=container.tavern_service.list_run_recovery(room_id, limit=limit)
@@ -159,19 +170,23 @@ def get_tavern_run_recovery(
 def update_tavern_room(
     room_id: str,
     payload: UpdateTavernRoomRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> TavernRoomDetail:
     try:
         if not (payload.model_fields_set - {"expected_revision"}):
             raise HTTPException(status_code=400, detail="tavern_update_payload_empty")
         return container.tavern_service.update_room(room_id=room_id, payload=payload)
     except HTTPException as exc:
-        raise _structured_tavern_error(exc, room_id=room_id) from exc
+        raise _structured_tavern_error(exc, room_id=room_id, container=container) from exc
 
 
 @router.delete("/rooms/{room_id}")
 def delete_tavern_room(
     room_id: str,
     expected_revision: int = Query(ge=0),
+    *,
+    container: Container = Depends(get_container),
 ) -> dict[str, str]:
     try:
         container.tavern_service.delete_room(
@@ -179,12 +194,12 @@ def delete_tavern_room(
             expected_revision=expected_revision,
         )
     except HTTPException as exc:
-        raise _structured_tavern_error(exc, room_id=room_id) from exc
+        raise _structured_tavern_error(exc, room_id=room_id, container=container) from exc
     return {"deleted_room_id": room_id}
 
 
 @router.post("/rooms/{room_id}/turns", response_model=TavernTurnResponse)
-def run_tavern_turn(room_id: str, payload: TavernTurnRequest) -> TavernTurnResponse:
+def run_tavern_turn(room_id: str, payload: TavernTurnRequest, *, container: Container = Depends(get_container)) -> TavernTurnResponse:
     try:
         return container.tavern_service.run_turn(room_id=room_id, payload=payload)
     except HTTPException as exc:
@@ -192,6 +207,7 @@ def run_tavern_turn(room_id: str, payload: TavernTurnRequest) -> TavernTurnRespo
             exc,
             room_id=room_id,
             idempotency_key=payload.idempotency_key,
+            container=container,
         ) from exc
     except RuntimeError as exc:
         logger.exception("tavern.turn_failed room_id=%s error=%s", room_id, str(exc))
@@ -200,6 +216,7 @@ def run_tavern_turn(room_id: str, payload: TavernTurnRequest) -> TavernTurnRespo
             mapped,
             room_id=room_id,
             idempotency_key=payload.idempotency_key,
+            container=container,
         ) from exc
 
 
@@ -211,6 +228,8 @@ def retry_tavern_run(
     room_id: str,
     run_id: str,
     payload: RetryTavernRunRequest,
+    *,
+    container: Container = Depends(get_container),
 ) -> TavernTurnResponse:
     try:
         return container.tavern_service.retry_run(
@@ -224,6 +243,7 @@ def retry_tavern_run(
             room_id=room_id,
             idempotency_key=payload.idempotency_key,
             fallback_run_id=run_id,
+            container=container,
         ) from exc
     except RuntimeError as exc:
         logger.exception("tavern.retry_failed room_id=%s run_id=%s", room_id, run_id)
@@ -233,6 +253,7 @@ def retry_tavern_run(
             room_id=room_id,
             idempotency_key=payload.idempotency_key,
             fallback_run_id=run_id,
+            container=container,
         ) from exc
 
 
@@ -240,7 +261,7 @@ def retry_tavern_run(
     "/rooms/{room_id}/runs/{run_id}/cancel",
     response_model=TavernTurnResponse,
 )
-def cancel_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
+def cancel_tavern_run(room_id: str, run_id: str, *, container: Container = Depends(get_container)) -> TavernTurnResponse:
     try:
         return container.tavern_service.cancel_run(room_id=room_id, run_id=run_id)
     except HTTPException as exc:
@@ -248,6 +269,7 @@ def cancel_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
             exc,
             room_id=room_id,
             fallback_run_id=run_id,
+            container=container,
         ) from exc
 
 
@@ -255,7 +277,7 @@ def cancel_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
     "/rooms/{room_id}/runs/{run_id}/resume",
     response_model=TavernTurnResponse,
 )
-def resume_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
+def resume_tavern_run(room_id: str, run_id: str, *, container: Container = Depends(get_container)) -> TavernTurnResponse:
     try:
         return container.tavern_service.resume_run(room_id=room_id, run_id=run_id)
     except HTTPException as exc:
@@ -263,6 +285,7 @@ def resume_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
             exc,
             room_id=room_id,
             fallback_run_id=run_id,
+            container=container,
         ) from exc
     except RuntimeError as exc:
         logger.exception("tavern.resume_failed room_id=%s run_id=%s", room_id, run_id)
@@ -271,4 +294,5 @@ def resume_tavern_run(room_id: str, run_id: str) -> TavernTurnResponse:
             mapped,
             room_id=room_id,
             fallback_run_id=run_id,
+            container=container,
         ) from exc

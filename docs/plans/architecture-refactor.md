@@ -7,7 +7,7 @@
   - 采用明确的事务写集/领域校验接口，对受影响房间及引用进行验证；完整扫描保留为显式审计工具。
   - 验收：不相关写入不扫描 Tavern；相关写入在显式 flush、SQL 更新和提交等路径都不能绕过校验；SQLite/PostgreSQL 语义一致。不能直接删除现有 guard 而无等价替代。
 
-- [ ] `ARCH-LIFECYCLE-001` `[P2]` 将全局容器迁入应用生命周期。
+- [x] `ARCH-LIFECYCLE-001` `[P2]` 将全局容器迁入应用生命周期。
   - 消除 `bootstrap.py` 模块导入时的 `Container()`；FastAPI lifespan 创建/关闭服务，路由通过依赖注入获得应用实例的容器。
   - logging 先于数据库初始化、恢复与 provider 创建；启动恢复只在显式启动边界运行。
   - 验收：导入模块不访问运行数据库或启动恢复；两个应用实例使用不同临时数据库互不影响；退出释放资源。与 `PERF-002` 的懒加载协同，不重复立项。
@@ -61,3 +61,10 @@
 2026-09-10 事务接入阶段验证：`test:ai:transactions` 23 项通过；`check:release` 通过（后端 587 项、共享/Web 检查、13 个 eval suite 与生产构建）；`test:acceptance:recovery-limits` 通过（后端 188 项、Web 169 通过/2 条环境相关跳过）。SQLite savepoint 故障修复后已重新执行两个阶段门禁。
 
 2026-09-10 PostgreSQL 验收：启动本机 OrbStack 临时 `postgres:17-alpine` 容器，在 PostgreSQL 上运行 `tests.test_transaction_validation` 与 `tests.test_tavern_reference_scope` 共 22 项，全部通过；SQLite 模块入口 23 项通过。测试 schema 与临时容器在验收后清理。复跑方式：将 `VIBE_TEST_POSTGRES_URL` 指向可创建 schema 的测试数据库，执行 `cd services/ai && uv run python -m unittest tests.test_transaction_validation tests.test_tavern_reference_scope`。
+
+### ARCH-LIFECYCLE-001
+
+- FastAPI lifespan 创建实例容器并调用幂等 `start()`，退出或恢复失败时 `close()`；构造失败也释放已初始化的数据库。logging 在数据库/恢复/provider 之前配置。
+- 删除导入期 `container = Container()`。路由使用 `get_container(Request)` 依赖，内部编排通过显式参数传递实例；没有全局代理或隐式运行数据库 fallback。
+- 公共 `tests.support.api` 提供实例级 fixture 与全新测试 app 的依赖覆盖；原 8 个测试模块的全局 container patch 已迁移。路由故障注入与真实 lifespan 验收分开运行。
+- `npm run test:ai:lifecycle` 独立覆盖导入无数据库访问、双应用 Settings 隔离、恢复启动边界、退出/失败清理和 logging 初始化顺序。2026-09-10 阶段门禁通过：`check:release`（后端 592 项、共享/Web、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 188 项、Web 169 通过/2 条环境相关跳过）。
