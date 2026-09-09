@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.models.harness_runtime_commit import HarnessRuntimePreparedOutput, HarnessRuntimeFinalizeResult
+
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from threading import Event, Thread
@@ -73,25 +75,8 @@ class HarnessRuntimeValidationResult:
             raise HarnessRuntimeError("harness_runtime_validation_recovery_mismatch")
 
 
-@dataclass(frozen=True)
-class HarnessRuntimePreparedOutput:
-    """Validated, content-owned output awaiting a domain transaction commit."""
-
-    execution: HarnessRuntimeExecutionV1
-    claim: HarnessRuntimeClaimV1
-    output: BaseModel
-    output_digest: str
-    checks: tuple[HarnessCheckV2, ...]
-    started_at: datetime
-    prepared_at: datetime
-    status: HarnessStatus
-    recovery_strategy: str
 
 
-@dataclass(frozen=True)
-class HarnessRuntimeFinalizeResult:
-    execution: HarnessRuntimeExecutionV1
-    trace: HarnessTraceV3
 
 
 GenerateCallback = Callable[
@@ -554,6 +539,9 @@ class HarnessOperationRuntime:
 
     def inspect_recovery(self, trace_id: str) -> HarnessRuntimeRecoveryDecisionV1:
         return self.repository.inspect_recovery(trace_id)
+
+    def get_execution_in_session(self, session: Session, trace_id: str) -> HarnessRuntimeExecutionV1 | None:
+        return self.repository.get_in_session(session, trace_id)
 
     def finalize_prepared_in_session(
         self,

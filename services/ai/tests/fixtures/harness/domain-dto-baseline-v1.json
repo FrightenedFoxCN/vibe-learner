@@ -1,0 +1,212 @@
+{
+  "schema_digests": {
+    "PersonaGenerationInputManifest": "5f4c521ffee3b0384e5119e4e7ba8961f2fd53b820e0c1385bf05d1115cdcaa8",
+    "SceneGenerationInputManifest": "b12f48cf9443be2a95297b3561238b6cebe78b5910ad75e76f94125aac99d518",
+    "DocumentProcessInputManifest": "c89417fb05882320aaef7115b64b76297913036ac70a8e6f736db9ddee74b6a8",
+    "LearningPlanInputManifest": "aa4cf8965c0ba56bceba762fc69f4147ee7ce35ef517f165b767229710d1cf50",
+    "PersonaCardContentProposalV1": "60e38debfc3e0a809e4dfe069bba5d88eab4667343213f9d6f526475596c6ca5",
+    "PersonaSlotContentProposalV1": "152c6b07c8a73642885eda78b3e8833183d37dd06c81f46caa8b722b56b15699",
+    "PersonaCardBatchContentProposalV1": "93288b4a8cd23a9e7e92e21cacff976dd0753c59a507bd09e971d33cb3f37b99",
+    "PersonaGenerationProposalV1": "59296fcf91eb2e2dd8539faac477fff791692f348abfec8c03343d51667f2702",
+    "SceneGenerationProposalV1": "2650ce04f8de55b7030eaa53eeae4eab0bda704e1d27cced2688733b3b71d657",
+    "DocumentProcessRuntimeOutputV1": "54c9460dbd8ac0e693b783ac1a4d6c216d27d27ff469b3780066d6d5970bc320",
+    "LearningPlanRuntimeOutputV1": "1f10a775eb61da7b9cec0d7c156d21708deac982faa3d89fedde3bdfe28a0697",
+    "DocumentStageInputManifest": "4352c7b4494bd3e6f44e94c8e2214087818c2022850a08e21039581ab35e8c37",
+    "DocumentStageEvidenceV1": "c4d57f13b16937e0043705db1f9f9c89f47259668967f0351a3b0f06e0d02231",
+    "PlanningToolExecutionInputManifest": "671780eed37afe5d51a62d892d57b44017736b1be9570d7c0a75dc1b9fa81e06",
+    "PlanningToolExecutionEvidenceV1": "5b93ad21fa3b68d6d0c89584b7d5e3ce9f3bb4b75b37876cb87189dd34784847"
+  },
+  "contracts": {
+    "PERSONA_INPUT_CONTRACT": {
+      "name": "PersonaGenerationInputManifest",
+      "version": "persona-generation-input-manifest-v1"
+    },
+    "PERSONA_SNAPSHOT_CONTRACT": {
+      "name": "PersonaGenerationProtectedInput",
+      "version": "persona-generation-protected-input-v1"
+    },
+    "PERSONA_PROMPT_CONTRACT": {
+      "name": "PersonaGenerationPrompt",
+      "version": "persona-generation-prompt-v1"
+    },
+    "PERSONA_POLICY_CONTRACT": {
+      "name": "PersonaGenerationHarnessPolicy",
+      "version": "persona-generation-harness-v1"
+    },
+    "PERSONA_ADAPTER_CONTRACT": {
+      "name": "PersonaGenerationWorkflowAdapter",
+      "version": "persona-generation-workflow-adapter-v1"
+    },
+    "PERSONA_TRACE_CONTRACT": {
+      "name": "PersonaGenerationProposal",
+      "version": "persona-generation-proposal-v1"
+    },
+    "SCENE_INPUT_CONTRACT": {
+      "name": "SceneGenerationInputManifest",
+      "version": "scene-generation-input-manifest-v1"
+    },
+    "SCENE_SNAPSHOT_CONTRACT": {
+      "name": "SceneGenerationProtectedInput",
+      "version": "scene-generation-protected-input-v1"
+    },
+    "SCENE_PROMPT_CONTRACT": {
+      "name": "SceneGenerationPrompt",
+      "version": "scene-generation-prompt-v1"
+    },
+    "SCENE_POLICY_CONTRACT": {
+      "name": "SceneGenerationHarnessPolicy",
+      "version": "scene-generation-harness-v1"
+    },
+    "SCENE_ADAPTER_CONTRACT": {
+      "name": "SceneGenerationWorkflowAdapter",
+      "version": "scene-generation-workflow-adapter-v1"
+    },
+    "SCENE_TRACE_CONTRACT": {
+      "name": "SceneTreeProposal",
+      "version": "scene-tree-proposal-v1"
+    },
+    "DOCUMENT_INPUT_CONTRACT": {
+      "name": "DocumentProcessInputManifest",
+      "version": "document-process-input-manifest-v1"
+    },
+    "DOCUMENT_SNAPSHOT_CONTRACT": {
+      "name": "DocumentProcessProtectedInput",
+      "version": "document-process-protected-input-v1"
+    },
+    "DOCUMENT_POLICY_CONTRACT": {
+      "name": "DocumentProcessHarnessPolicy",
+      "version": "document-process-harness-v1"
+    },
+    "DOCUMENT_ADAPTER_CONTRACT": {
+      "name": "DocumentProcessWorkflowAdapter",
+      "version": "document-process-workflow-adapter-v1"
+    },
+    "DOCUMENT_TRACE_CONTRACT": {
+      "name": "DocumentProcessRuntimeOutput",
+      "version": "document-process-runtime-output-v1"
+    },
+    "PLAN_INPUT_CONTRACT": {
+      "name": "LearningPlanInputManifest",
+      "version": "learning-plan-input-manifest-v1"
+    },
+    "PLAN_SNAPSHOT_CONTRACT": {
+      "name": "LearningPlanProtectedInput",
+      "version": "learning-plan-protected-input-v1"
+    },
+    "PLAN_PROMPT_CONTRACT": {
+      "name": "LearningPlanPrompt",
+      "version": "planning-prompt-v1"
+    },
+    "PLAN_POLICY_CONTRACT": {
+      "name": "LearningPlanHarnessPolicy",
+      "version": "learning-plan-harness-v1"
+    },
+    "PLAN_ADAPTER_CONTRACT": {
+      "name": "LearningPlanWorkflowAdapter",
+      "version": "learning-plan-workflow-adapter-v1"
+    },
+    "PLAN_TRACE_CONTRACT": {
+      "name": "LearningPlanRuntimeOutput",
+      "version": "learning-plan-runtime-output-v1"
+    },
+    "DOCUMENT_STAGE_INPUT_CONTRACT": {
+      "name": "DocumentStageInputManifest",
+      "version": "document-stage-input-manifest-v1"
+    },
+    "DOCUMENT_STAGE_PROTECTED_INPUT_CONTRACT": {
+      "name": "DocumentStageProtectedInput",
+      "version": "document-stage-protected-input-v1"
+    },
+    "DOCUMENT_STAGE_POLICY_CONTRACT": {
+      "name": "DocumentStageHarnessPolicy",
+      "version": "document-stage-harness-v1"
+    },
+    "DOCUMENT_STAGE_ADAPTER_CONTRACT": {
+      "name": "DocumentStageWorkflowAdapter",
+      "version": "document-stage-workflow-adapter-v1"
+    },
+    "DOCUMENT_STAGE_TRACE_CONTRACT": {
+      "name": "DocumentStageEvidence",
+      "version": "document-stage-evidence-v1"
+    },
+    "PLANNING_TOOL_STAGE_INPUT_CONTRACT": {
+      "name": "PlanningToolExecutionInputManifest",
+      "version": "planning-tool-execution-input-manifest-v1"
+    },
+    "PLANNING_TOOL_STAGE_PROTECTED_INPUT_CONTRACT": {
+      "name": "PlanningToolExecutionProtectedInput",
+      "version": "planning-tool-execution-protected-input-v1"
+    },
+    "PLANNING_TOOL_STAGE_POLICY_CONTRACT": {
+      "name": "PlanningToolExecutionHarnessPolicy",
+      "version": "planning-tool-execution-harness-v1"
+    },
+    "PLANNING_TOOL_STAGE_ADAPTER_CONTRACT": {
+      "name": "PlanningToolExecutionWorkflowAdapter",
+      "version": "planning-tool-execution-workflow-adapter-v1"
+    },
+    "PLANNING_TOOL_STAGE_TRACE_CONTRACT": {
+      "name": "PlanningToolExecutionEvidence",
+      "version": "planning-tool-execution-evidence-v1"
+    }
+  },
+  "domains": {
+    "document_processing": [
+      "DOCUMENT_ADAPTER_CONTRACT",
+      "DOCUMENT_INPUT_CONTRACT",
+      "DOCUMENT_POLICY_CONTRACT",
+      "DOCUMENT_SNAPSHOT_CONTRACT",
+      "DOCUMENT_STAGE_ADAPTER_CONTRACT",
+      "DOCUMENT_STAGE_INPUT_CONTRACT",
+      "DOCUMENT_STAGE_POLICY_CONTRACT",
+      "DOCUMENT_STAGE_PROTECTED_INPUT_CONTRACT",
+      "DOCUMENT_STAGE_TRACE_CONTRACT",
+      "DOCUMENT_TRACE_CONTRACT",
+      "DocumentProcessInputManifest",
+      "DocumentProcessRuntimeOutputV1",
+      "DocumentStageEvidenceV1",
+      "DocumentStageInputManifest"
+    ],
+    "persona_generation": [
+      "PERSONA_ADAPTER_CONTRACT",
+      "PERSONA_INPUT_CONTRACT",
+      "PERSONA_POLICY_CONTRACT",
+      "PERSONA_PROMPT_CONTRACT",
+      "PERSONA_SNAPSHOT_CONTRACT",
+      "PERSONA_TRACE_CONTRACT",
+      "PersonaCardBatchContentProposalV1",
+      "PersonaCardContentProposalV1",
+      "PersonaGenerationInputManifest",
+      "PersonaGenerationProposalV1",
+      "PersonaSlotContentProposalV1"
+    ],
+    "planning_runtime": [
+      "LearningPlanInputManifest",
+      "LearningPlanRuntimeOutputV1",
+      "PLANNING_TOOL_STAGE_ADAPTER_CONTRACT",
+      "PLANNING_TOOL_STAGE_INPUT_CONTRACT",
+      "PLANNING_TOOL_STAGE_POLICY_CONTRACT",
+      "PLANNING_TOOL_STAGE_PROTECTED_INPUT_CONTRACT",
+      "PLANNING_TOOL_STAGE_TRACE_CONTRACT",
+      "PLAN_ADAPTER_CONTRACT",
+      "PLAN_INPUT_CONTRACT",
+      "PLAN_POLICY_CONTRACT",
+      "PLAN_PROMPT_CONTRACT",
+      "PLAN_SNAPSHOT_CONTRACT",
+      "PLAN_TRACE_CONTRACT",
+      "PlanningToolExecutionEvidenceV1",
+      "PlanningToolExecutionInputManifest"
+    ],
+    "scene_generation": [
+      "SCENE_ADAPTER_CONTRACT",
+      "SCENE_INPUT_CONTRACT",
+      "SCENE_POLICY_CONTRACT",
+      "SCENE_PROMPT_CONTRACT",
+      "SCENE_SNAPSHOT_CONTRACT",
+      "SCENE_TRACE_CONTRACT",
+      "SceneGenerationInputManifest",
+      "SceneGenerationProposalV1"
+    ]
+  },
+  "source_commit": "6f2e449"
+}

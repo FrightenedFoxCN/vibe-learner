@@ -13,7 +13,9 @@ from app.services.persona import PersonaEngine
 from app.api import routes
 from app.models.api import PersonaSlotAssistRequest, PersonaSettingAssistRequest
 from app.services.local_store import LocalJsonStore
-from app.services.harness_broad_adoption import HarnessProposalRuntimeService
+from app.services.harness_broad_adoption import (
+    HarnessProposalRuntimeService,
+)
 
 
 class PersonaSlotRewriteTests(ContainerTestCase):

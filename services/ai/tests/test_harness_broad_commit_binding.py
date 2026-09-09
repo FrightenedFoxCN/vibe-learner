@@ -13,18 +13,22 @@ from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.models.planning import LearningPlanOperationRequestV1, LearningPlanOperationStatus
 from app.services.documents import DocumentService
 from app.models.domain import DocumentSection
-from app.services.harness_broad_adoption import (
+from app.models.document_processing import (
     DocumentProcessInputManifest,
     DocumentProcessRuntimeOutputV1,
+    DocumentStageEvidenceV1,
+    DocumentStageInputManifest,
+)
+from app.models.planning_runtime import (
     LearningPlanInputManifest,
     LearningPlanRuntimeOutputV1,
+    PlanningToolExecutionEvidenceV1,
+    PlanningToolExecutionInputManifest,
+)
+from app.models.persona_generation import (
     PersonaGenerationInputManifest,
     PersonaGenerationProposalV1,
     PersonaSlotContentProposalV1,
-    DocumentStageEvidenceV1,
-    DocumentStageInputManifest,
-    PlanningToolExecutionEvidenceV1,
-    PlanningToolExecutionInputManifest,
 )
 from app.services.local_store import LocalJsonStore
 from app.services.model_provider import MockModelProvider

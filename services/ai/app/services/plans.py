@@ -51,6 +51,8 @@ from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
 from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
+)
+from app.models.planning_runtime import (
     LearningPlanInputManifest,
     LearningPlanRuntimeOutputV1,
     PlanningToolExecutionEvidenceV1,

@@ -9,7 +9,9 @@ from app.models.planning import LearningPlanOperationRequestV1, LearningPlanProp
 from app.models.scene import SceneTreeProposalV1, project_scene_tree_proposal
 from app.models.study_chat_operation import StudyChatOperationRequestPayload
 from app.models.tavern import CreateTavernRoomRequest, TavernTurnRequest
-from app.services.harness_broad_adoption import PersonaGenerationProposalV1
+from app.models.persona_generation import (
+    PersonaGenerationProposalV1,
+)
 from pydantic import ValidationError
 
 

@@ -35,7 +35,7 @@ from app.models.harness import (
     HarnessWorkflow,
     canonical_harness_digest,
 )
-from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.models.harness_runtime_commit import HarnessTransactionFinalizer, HarnessRuntimePreparedOutput
 from app.models.domain import DocumentDebugRecord, DocumentRecord, DocumentSection
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
@@ -138,7 +138,7 @@ class DocumentProcessOperationRepository:
         operation_id: str,
         document: DocumentRecord,
         debug_report: DocumentDebugRecord,
-        harness_runtime: HarnessOperationRuntime | None = None,
+        harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         document_payload = document.model_dump(mode="json")
@@ -246,7 +246,7 @@ class DocumentProcessOperationRepository:
         *,
         operation_id: str,
         error_code: str,
-        harness_runtime: HarnessOperationRuntime | None = None,
+        harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         return self._mark_not_committed(
@@ -263,7 +263,7 @@ class DocumentProcessOperationRepository:
         *,
         operation_id: str,
         error_code: str = "document_process_interrupted",
-        harness_runtime: HarnessOperationRuntime | None = None,
+        harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         return self._mark_not_committed(
@@ -384,7 +384,7 @@ class DocumentProcessOperationRepository:
         status: DocumentProcessOperationStatus,
         error_code: str,
         restore_base: bool,
-        harness_runtime: HarnessOperationRuntime | None = None,
+        harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> DocumentProcessOperationRecord:
         now = _now()
@@ -462,16 +462,18 @@ class DocumentProcessOperationRepository:
         session: Session,
         *,
         binding: HarnessOperationBindingV1 | None,
-        harness_runtime: HarnessOperationRuntime | None,
+        harness_runtime: HarnessTransactionFinalizer | None,
         runtime_prepared: HarnessRuntimePreparedOutput | None,
     ) -> None:
         if (harness_runtime is None) != (runtime_prepared is None):
             raise ValueError("document_process_runtime_pair_required")
         if harness_runtime is None or runtime_prepared is None:
             return
-        from app.services.harness_broad_adoption import DocumentProcessRuntimeOutputV1
+        from app.models.document_processing import (
+            DocumentProcessRuntimeOutputV1,
+        )
 
-        current = harness_runtime.repository.get_in_session(
+        current = harness_runtime.get_execution_in_session(
             session, runtime_prepared.claim.trace_id
         )
         if (

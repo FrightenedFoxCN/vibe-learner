@@ -43,9 +43,11 @@ from app.services.plan_prompt import build_learning_plan_context
 from app.services.plan_tool_runtime import get_learning_plan_tool_specs
 from app.services.runtime_model_probe import probe_openai_models
 from app.services.study_session_prompt import build_study_session_system_prompt
-from app.services.harness_broad_adoption import (
+from app.models.persona_generation import (
     PersonaGenerationInputManifest,
     PersonaGenerationProposalV1,
+)
+from app.models.scene_generation import (
     SceneGenerationInputManifest,
     SceneGenerationProposalV1,
 )

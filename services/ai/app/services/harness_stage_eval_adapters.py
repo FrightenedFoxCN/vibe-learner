@@ -22,8 +22,10 @@ from app.models.domain import (
 )
 from app.models.scene import decode_scene_tree_proposal, project_scene_tree_proposal
 from app.services.document_parser import DocumentParser
-from app.services.harness_broad_adoption import (
+from app.models.document_processing import (
     DocumentProcessRuntimeOutputV1,
+)
+from app.models.persona_generation import (
     PersonaGenerationProposalV1,
 )
 from app.services.model_provider import (

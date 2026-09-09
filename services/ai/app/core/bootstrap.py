@@ -12,7 +12,9 @@ from app.services.study_v3 import StudyV3SnapshotService
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.persistence.harness_workflow_operation_repository import HarnessWorkflowOperationRepository
 from app.services.harness_runtime import HarnessOperationRuntime
-from app.services.harness_broad_adoption import HarnessProposalRuntimeService
+from app.services.harness_broad_adoption import (
+    HarnessProposalRuntimeService,
+)
 from app.persistence.storage import StorageManager
 from app.persistence.study_session_repository import StudySessionRepository
 from app.persistence.study_chat_operation_repository import StudyChatOperationRepository

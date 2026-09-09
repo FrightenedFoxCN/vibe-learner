@@ -49,7 +49,10 @@ digests provide integrity, not authorization or replay availability.
 | --- | --- |
 | Stage routing and registrations | `services/ai/app/models/harness_manifest.py`, `packages/shared/src/harness-manifest.ts` and shared golden fixtures |
 | Admission, claims and terminal records | `services/ai/app/persistence/harness_operation_repository.py`, `harness_runtime_repository.py` |
-| Runtime lifecycle and domain adapters | `services/ai/app/services/harness_runtime.py`, `harness_broad_adoption.py` |
+| Runtime lifecycle and shared execution | `services/ai/app/services/harness_runtime.py`, `harness_broad_adoption.py` |
+| Domain proposal/runtime DTOs | `services/ai/app/models/persona_generation.py`, `scene_generation.py`, `document_processing.py`, `planning_runtime.py` |
+| Domain adapters | `services/ai/app/services/persona_harness_adapter.py`, `scene_harness_adapter.py`, `document_harness_adapter.py`, `planning_harness_adapter.py` |
+| Transaction finalize port | `services/ai/app/models/harness_runtime_commit.py`; domain repositories own the Session and the atomic commit |
 | Protected artifacts and effects | `services/ai/app/persistence/harness_artifact_repository.py`, `harness_effect_repository.py` |
 | Model / committed / API ownership | Domain model modules and `packages/shared/src/`; repository-wide rules in `AGENTS.md` |
 | Eval execution | `services/ai/app/services/harness_eval_runner.py`, `harness_stage_evals.py` |
@@ -60,3 +63,15 @@ Run `npm run eval:harness:pr` for all 13 suites, `npm run eval:harness:stages --
 `npm run test:acceptance:recovery-limits` for crash/size regression coverage.
 `npm run check:release` is the full release gate. Deterministic regression
 results do not certify independent model quality.
+
+`HarnessProposalRuntimeService` retains the versioned manifest route anchors and
+delegates to domain-owned adapters. DTOs and contract constants live in models;
+Document/Planning repositories depend on `HarnessTransactionFinalizer`, not the
+application runtime. Its read-back/finalize/failure methods all receive the
+existing domain Session; the port exposes no transaction factory.
+
+`npm run test:ai:harness:contracts` checks the four domain schema/constant
+baselines and persistence import boundary without a database or provider;
+`npm run test:ai:harness:commit` separately runs operation binding and atomic
+commit/failure tests. Existing manifest/golden fixtures and trace versions are
+unchanged by this relocation.

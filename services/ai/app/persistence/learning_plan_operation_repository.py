@@ -34,7 +34,7 @@ from app.models.harness import (
     HarnessWorkflow,
     canonical_harness_digest,
 )
-from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput
+from app.models.harness_runtime_commit import HarnessTransactionFinalizer, HarnessRuntimePreparedOutput
 from app.models.planning import (
     LEARNING_PLAN_COMMIT_CONTRACT_VERSION,
     LEARNING_PLAN_OPERATION_FINGERPRINT_VERSION,
@@ -238,7 +238,7 @@ class LearningPlanOperationRepository:
         document: DocumentRecord | None,
         debug_report: DocumentDebugRecord | None,
         trace: PlanGenerationTraceRecord | None,
-        harness_runtime: HarnessOperationRuntime | None = None,
+        harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> LearningPlanOperationRecord:
         now = _now()
@@ -460,7 +460,7 @@ class LearningPlanOperationRepository:
         operation_id: str,
         status: LearningPlanOperationStatus,
         error_code: str,
-        harness_runtime: HarnessOperationRuntime | None = None,
+        harness_runtime: HarnessTransactionFinalizer | None = None,
         runtime_prepared: HarnessRuntimePreparedOutput | None = None,
     ) -> LearningPlanOperationRecord:
         if status not in {
@@ -544,16 +544,18 @@ class LearningPlanOperationRepository:
         session: Session,
         *,
         binding: HarnessOperationBindingV1 | None,
-        harness_runtime: HarnessOperationRuntime | None,
+        harness_runtime: HarnessTransactionFinalizer | None,
         runtime_prepared: HarnessRuntimePreparedOutput | None,
     ) -> None:
         if (harness_runtime is None) != (runtime_prepared is None):
             raise ValueError("learning_plan_runtime_pair_required")
         if harness_runtime is None or runtime_prepared is None:
             return
-        from app.services.harness_broad_adoption import LearningPlanRuntimeOutputV1
+        from app.models.planning_runtime import (
+            LearningPlanRuntimeOutputV1,
+        )
 
-        current = harness_runtime.repository.get_in_session(
+        current = harness_runtime.get_execution_in_session(
             session, runtime_prepared.claim.trace_id
         )
         if (

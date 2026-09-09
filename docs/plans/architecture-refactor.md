@@ -17,7 +17,7 @@
   - 路由只解析输入、投影 API DTO 和映射错误；应用服务接收明确依赖和不可变执行上下文。
   - 验收：现有 API、幂等/uncertain 语义、私有评分材料隔离、Session/Turn/effect/receipt/trace 原子提交及故障恢复全部保持。
 
-- [ ] `ARCH-HARNESS-CONTRACTS-001` `[P2]` 让 Harness 领域契约归位。
+- [x] `ARCH-HARNESS-CONTRACTS-001` `[P2]` 让 Harness 领域契约归位。
   - 将 `harness_broad_adoption.py` 中 Persona/Scene/Document/Planning 的输入、输出与证据 DTO 移至对应 models 模块，领域适配器分开维护。
   - Repository 不再为了类型与输出检查依赖整个应用编排模块；通过窄事务内 finalize 接口协作。
   - 验收：持久化层到高层服务的依赖减少；迁移前后 golden fixtures、公开序列化和历史 trace 解码保持一致。只移动契约不擅自升级其语义版本。
@@ -75,3 +75,10 @@
 - admission、preclaim、附件 staging/compensation、protected snapshot、工具/effects、Harness prepare/finalize 与 receipt read-back 已移出路由；`commit_chat_operation_turn` 仍是一次 Session/Turn/effects/receipt/terminal trace 原子提交的事务 owner。
 - 路由只解析输入、映射应用错误并投影公开 receipt；服务端历史 payload 的私有评分材料仍在 API 投影时隔离。操作捕获 provider/settings 与 Settings 替换通过同一个短锁协调，provider 调用在锁外运行。
 - 测试拆为 `test:ai:study:decode`（18 项）、`test:ai:study:application`（37 项）和 `test:ai:study:api`（4 项），均通过；公共样例和数据库 fixture 移到 `tests/support/`，没有跨 TestCase 的私有 helper 依赖。2026-09-10 完整阶段门禁通过：`check:release`（后端 593 项、共享/Web、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 195 项、Web 169 通过/2 条环境相关跳过）。
+
+### ARCH-HARNESS-CONTRACTS-001
+
+- 15 个 Persona/Scene/Document/Planning DTO 和 33 个契约常量归入四个领域 models 模块；迁移前基线取自 `6f2e449`，schema 摘要与常量全部一致，未升级语义版本。
+- 领域适配器拆为四个 `*_harness_adapter.py`，经 `HarnessDomainExecutionPort` 使用共享执行设施；旧 manifest decoder-route anchors 保持为 façade，不修改注册/golden fixtures。
+- Document/Planning Repository 通过 `HarnessTransactionFinalizer` 在调用方 Session 内读取执行状态、finalize 或记录失败；prepared/finalize DTO 归入 models，不再导入 `app.services.harness_runtime` 或 broad orchestration。
+- `test:ai:harness:contracts` 的 5 项模块测试（含 48 个 schema/constant 子项）与 `test:ai:harness:commit` 的 44 项绑定/提交/故障回归通过。benchmark 源码身份清单纳入拆出的文件。2026-09-10 阶段门禁通过：`check:release`（后端 598 项、共享/Web、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 195 项、Web 169 通过/2 条环境相关跳过）。

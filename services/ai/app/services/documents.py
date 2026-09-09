@@ -26,11 +26,13 @@ from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
 from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
-from app.services.harness_broad_adoption import (
+from app.models.document_processing import (
     DocumentStageEvidenceV1,
     DocumentStageInputManifest,
     DocumentProcessInputManifest,
     DocumentProcessRuntimeOutputV1,
+)
+from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
 )
 from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimePreparedOutput

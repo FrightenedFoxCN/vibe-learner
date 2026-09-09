@@ -54,7 +54,7 @@ from app.models.study_question import (
 from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
-from app.services.harness_broad_adoption import (
+from app.models.persona_generation import (
     PersonaCardBatchContentProposalV1,
     PersonaSlotContentProposalV1,
 )

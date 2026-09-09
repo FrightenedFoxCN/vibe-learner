@@ -27,8 +27,13 @@ from app.models.tavern_integrity import persona_prompt_hash
 from app.models.tool_manifest import TOOL_MANIFEST_ENTRIES
 from app.persistence.database import Database
 from app.services.harness_broad_adoption import (
-    HarnessProposalRuntimeService, PERSONA_SNAPSHOT_CONTRACT,
-    PersonaCardContentProposalV1, PersonaGenerationInputManifest, PersonaGenerationProposalV1,
+    HarnessProposalRuntimeService,
+)
+from app.models.persona_generation import (
+    PERSONA_SNAPSHOT_CONTRACT,
+    PersonaCardContentProposalV1,
+    PersonaGenerationInputManifest,
+    PersonaGenerationProposalV1,
 )
 from app.services.plan_prompt import build_study_unit_detail_map
 from app.services.plan_tool_runtime import build_plan_tool_runtime
@@ -205,6 +210,12 @@ def benchmark(count: int) -> dict:
     paths = [Path(__file__), Path(__file__).with_name("harness_runtime.py"),
              Path(__file__).with_name("tavern_prompt.py"), Path(__file__).with_name("plan_tool_runtime.py"),
              Path(__file__).with_name("harness_broad_adoption.py"),
+             Path(__file__).with_name("harness_domain_port.py"),
+             *[Path(__file__).with_name(f"{domain}_harness_adapter.py")
+               for domain in ("persona", "scene", "document", "planning")],
+             *[Path(__file__).parents[1] / "models" / f"{module}.py"
+               for module in ("persona_generation", "scene_generation", "document_processing",
+                              "planning_runtime", "harness_runtime_commit")],
              Path(__file__).with_name("study_v3.py"), Path(__file__).with_name("tavern_v3.py"),
              Path(__file__).parents[1] / "persistence" / "harness_artifact_repository.py",
              Path(__file__).parents[1] / "models" / "harness_performance.py",

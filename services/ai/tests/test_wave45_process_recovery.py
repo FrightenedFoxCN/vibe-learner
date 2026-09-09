@@ -24,8 +24,12 @@ from app.persistence.learning_plan_operation_repository import (
 from app.services.documents import DocumentService
 from app.services.harness_broad_adoption import (
     HarnessProposalRuntimeService,
+)
+from app.models.persona_generation import (
     PersonaGenerationInputManifest,
     PersonaGenerationProposalV1,
+)
+from app.models.scene_generation import (
     SceneGenerationInputManifest,
     SceneGenerationProposalV1,
 )
