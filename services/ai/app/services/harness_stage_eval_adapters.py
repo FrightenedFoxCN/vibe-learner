@@ -28,6 +28,7 @@ from app.models.document_processing import (
 from app.models.persona_generation import (
     PersonaGenerationProposalV1,
 )
+from app.services.provider_sdk import ProviderSDK
 from app.services.model_provider import (
     OpenAIModelProvider,
     PlanningProposalDecodeError,
@@ -282,17 +283,18 @@ class FixtureSettingProvider(OpenAIModelProvider):
     """Exercise real bounded decode/repair, replacing only network transport."""
 
     def __init__(self, responses):
+        self.responses = responses
+        self.fixture_calls = 0
         super().__init__(
             api_key="synthetic-not-a-credential",
             base_url="https://example.invalid/v1",
             plan_model="fixture",
             setting_model="fixture",
             timeout_seconds=1,
+            sdk=ProviderSDK(completion=self._fixture_completion),
         )
-        self.responses = responses
-        self.fixture_calls = 0
 
-    def _request_openai_chat_completion(self, *args, **kwargs):
+    def _fixture_completion(self, **kwargs):
         if self.fixture_calls >= len(self.responses):
             raise RuntimeError("stage_eval_transport_budget_exceeded")
         response = self.responses[self.fixture_calls]
@@ -301,7 +303,7 @@ class FixtureSettingProvider(OpenAIModelProvider):
             "choices": [
                 {"finish_reason": "stop", "message": {"content": json.dumps(response)}}
             ]
-        }, 0
+        }
 
 
 def _persona(payload: dict) -> dict:

@@ -22,7 +22,7 @@
   - Repository 不再为了类型与输出检查依赖整个应用编排模块；通过窄事务内 finalize 接口协作。
   - 验收：持久化层到高层服务的依赖减少；迁移前后 golden fixtures、公开序列化和历史 trace 解码保持一致。只移动契约不擅自升级其语义版本。
 
-- [ ] `ARCH-PROVIDER-001` `[P2]` 分离模型能力、传输与 fallback。
+- [x] `ARCH-PROVIDER-001` `[P2]` 分离模型能力、传输与 fallback。
   - 拆分 Planning、Study、Tavern、Persona/Scene、Embedding/Image 等能力接口；共享传输、usage、错误分类和有界重试设施。
   - 移除真实 provider 对 mock provider 的隐式继承；独立练习生成/提交评价等沿用 mock 的能力必须显式标记或实现，不能悄悄改变行为。
   - 验收：逐能力 contract tests；配置快照在一次操作内稳定；调用/重试上限、取消能力和 truthful provider 状态保持。
@@ -31,6 +31,7 @@
   - DebugProvider 独立于 LearningWorkspaceProvider；Settings/Model Usage 等路由不初始化学习数据。此部分与 `OBS-DEBUG-001` / `PERF-WEB-PROVIDER-001` 共用同一实现。
   - 将大型学习 controller、Persona Spectrum 和 Scene Setup 页面拆成数据访问、编辑草稿、动作/恢复控制器与展示组件。
   - 验收：路由请求清单、focus 刷新、取消/过期响应、草稿保存和页面切换保持正确；不以单纯文件拆分作为完成标准。
+  - 按用户 2026-09-10 补充授权，同步处理直接相关 UX：Scene 删除 Dialog、Persona/Scene 默认折叠与主次动作、异步状态/错误反馈；进度归入 TODO 的原任务，不复制 checkbox。跨页面 UX 条目只有所有指定页面及独立/设备级验收通过后才关闭。
 
 - [ ] `ARCH-TEST-SEAMS-001` `[P2]` 建立可重构的测试边界。
   - 公共 fixture/helper 不再藏在其他 TestCase 模块的私有函数中；使用应用实例级依赖覆盖，逐步减少全局 container patch。
@@ -94,6 +95,6 @@
 - [x] Study 生成、工具预算/执行和严格回复解码归入 `provider_study.py`，工具禁用集合在操作入口捕获。原解码模块中的三项生成/修复测试迁入无 SDK 的能力测试；`test:ai:provider:study` 19 项通过，配置变更跨轮次测试 1 项通过，Study 应用/effects/v3/Persona/阶段 eval 等相关回归 150 项通过。保留调用上限、单次无工具修复和私有答案 redaction。
 - [x] Persona/Scene 生成、web-search fallback 和有界结构化重试迁入冻结配置的 `RemoteSettingsProvider`；共享 envelope diagnostics 归入 `provider_payload.py`，Settings 不依赖 Study 能力。两项纯卡片测试迁出大型 Persona 流程模块，旧测试不再 patch `_request_setting_json_*` 内部 helper，公共场景样例归入 `tests/support/`。Persona/Scene 独立模块各 3 项通过，相关流程/schema/Study decode/阶段 eval 回归 151 项通过。
 - [x] SDK 请求适配移入 `provider_sdk.py`，SDK callable/error types 由实例 `ProviderSDK` 注入，旧测试不再 patch SDK 模块全局变量。操作入口捕获实例参数和冻结的请求适配器（端点、凭据、超时、callable、provider-prefix 集合、usage sink）；下一次操作读取新配置。SDK/配置模块 7 项通过，原兼容性/Persona/Planning/本地练习相关回归 133 项通过。`test:ai:provider` 聚合各独立模块，亦可通过各能力脚本单独运行。
-- [ ] 完成 provider 阶段 release/recovery 门禁后关闭主任务。
+- [x] 2026-09-10 provider 阶段门禁通过：`check:release`（后端 635 项、共享/Web 检查、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 193 项、Web 169 通过/2 条环境相关跳过）。恢复集中的两项纯 Tavern provider 测试已移入独立能力模块，45 项 provider 聚合测试通过。阶段 eval 的请求计数器改为 SDK 注入依赖，避免将可变 fixture 计数误放进 provider 配置快照。
 
 首个子任务验证：原 provider 审计、Study 解码、Tavern 安全模块 38 项通过；新增能力/练习契约连同 provider 审计与 Persona 流程共 122 项通过。测试能力导入无需 LiteLLM、真实 provider 无 Mock 继承、本地练习输出兼容及无传输调用。
