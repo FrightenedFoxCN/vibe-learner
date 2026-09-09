@@ -54,7 +54,14 @@ export interface StudyConsolePageCache {
   expandedExplanation: Record<string, boolean>;
 }
 
+export interface LearningWorkspaceSelection {
+  planId: string;
+  personaId: string;
+  sceneLibraryId: string;
+}
+
 export interface LearningWorkspacePageCache {
+  selection?: LearningWorkspaceSelection;
   planSetup?: PlanSetupPageCache;
   studyDialog?: StudyDialogPageCache;
   studyConsole?: StudyConsolePageCache;
@@ -63,6 +70,7 @@ export interface LearningWorkspacePageCache {
 const STORAGE_KEY = "vibe-learner:learning-workspace-page-cache:v1";
 
 type SerializableLearningWorkspacePageCache = {
+  selection?: LearningWorkspaceSelection;
   planSetup?: Omit<PlanSetupPageCache, "file">;
   studyDialog?: StudyDialogPageCache & {
     selectedChapter?: string;
@@ -85,6 +93,11 @@ export function loadLearningWorkspacePageCache(): LearningWorkspacePageCache {
       return {};
     }
     return {
+      selection: parsed.selection ? {
+        planId: String(parsed.selection.planId ?? ""),
+        personaId: String(parsed.selection.personaId ?? ""),
+        sceneLibraryId: String(parsed.selection.sceneLibraryId ?? ""),
+      } : undefined,
       planSetup: parsed.planSetup
         ? {
             generationMode: parsed.planSetup.generationMode === "goal_only" ? "goal_only" : "document",
@@ -124,7 +137,7 @@ export function persistLearningWorkspacePageCache(
   if (typeof window === "undefined" || typeof window.sessionStorage === "undefined") {
     return;
   }
-  const serializable: SerializableLearningWorkspacePageCache = {};
+  const serializable: SerializableLearningWorkspacePageCache = { selection: cache.selection };
   if (cache.planSetup) {
     serializable.planSetup = {
       generationMode: cache.planSetup.generationMode,

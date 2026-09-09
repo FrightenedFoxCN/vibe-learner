@@ -140,12 +140,14 @@ const PENDING_STUDY_OPERATION_STORAGE_KEY = "vibe-learner:pending-study-chat-ope
 const AUTOMATIC_STUDY_REQUEST_STORAGE_KEY = "vibe-learner:automatic-study-chat-requests:v1";
 
 interface UseLearningWorkspaceControllerOptions {
+  initialSelection?: { planId: string; personaId: string; sceneLibraryId: string };
   initialPlan?: LearningPlan;
   initialPersonas?: PersonaProfile[];
 }
 
 export function useLearningWorkspaceController({
   initialPlan,
+  initialSelection,
   initialPersonas = mockPersonas
 }: UseLearningWorkspaceControllerOptions) {
   const runtimeSettings = useRuntimeSettings();
@@ -153,6 +155,7 @@ export function useLearningWorkspaceController({
     learningWorkspaceReducer,
     createInitialLearningWorkspaceState({
       initialPlan,
+      initialSelection,
       initialPersonas
     })
   );
@@ -166,8 +169,9 @@ export function useLearningWorkspaceController({
   const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
   const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
-  const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState("");
+  const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState(initialSelection?.sceneLibraryId ?? "");
   const [interruptedDialogueSessionId, setInterruptedDialogueSessionId] = useState("");
+  const mountedRef = useRef(true);
   const selectedPersonaIdRef = useRef(state.selectedPersonaId);
   const selectedPlanIdRef = useRef(state.selectedPlanId);
   const generationAbortControllerRef = useRef<AbortController | null>(null);
@@ -247,11 +251,23 @@ export function useLearningWorkspaceController({
     ticket: AsyncResultTicket,
     resultOperationId = ticket.operationId,
   ) =>
-    studyViewFenceRef.current.decide(
+    mountedRef.current && studyViewFenceRef.current.decide(
       ticket,
       selectedPlanIdRef.current,
       resultOperationId,
     ) === "apply";
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      workspaceSnapshotRequestRef.current += 1;
+      studyViewFenceRef.current.transition("learning-route:unmounted", true);
+      generationAbortControllerRef.current?.abort();
+      const streamIds = new Set([processStreamIdRef.current, planStreamIdRef.current].filter(Boolean));
+      void Promise.allSettled([...streamIds].map((id) => cancelStreamRun(id)));
+    };
+  }, []);
 
   useEffect(() => {
     const persistedSessionId = readInterruptedDialogueSessionId();
@@ -683,6 +699,7 @@ export function useLearningWorkspaceController({
           signal: abortController.signal,
         }
       );
+      abortController.signal.throwIfAborted();
       logWorkspaceInfo("workflow:upload:plan_ready", {
         planId: nextPlan.id,
         taskCount: nextPlan.todayTasks.length

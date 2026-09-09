@@ -39,7 +39,8 @@
   - 按 `docs/performance-budgets-v1.md` 记录首/中/末页 server samples、React Profiler commits 和原始样本；纯函数时间不得冒充 React 门。
 
 - [ ] `PERF-WEB-PROVIDER-001` `[P2]` 建立路由级 Provider ownership。
-  - Settings、Model Usage、404 等无关页面不得加载 Learning Workspace 数据；Debug Overlay 与 Workspace Context 解耦。
+  - 已实现：学习 Provider 限于 Plan/Study，Debug Overlay 独立；默认教师/空业务数据下，十个顶级页面及 focus 的 Chromium 网络清单通过。
+  - 剩余：有历史 Plan/Session、在途操作和离页恢复的完整路由矩阵；不以空数据初始化验收代替恢复场景。
   - 验收：为每个顶级路由冻结允许请求清单，并以浏览器网络记录和自动化测试验证。
 
 ## Next（已定义、待排期）

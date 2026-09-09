@@ -87,13 +87,14 @@ type LearningWorkspaceAction =
 
 export function createInitialLearningWorkspaceState(input: {
   initialPlan?: LearningPlan;
+  initialSelection?: { planId: string; personaId: string };
   initialPersonas: PersonaProfile[];
 }): LearningWorkspaceState {
   return {
     personas: input.initialPersonas,
-    selectedPersonaId: input.initialPersonas[0]?.id ?? "",
+    selectedPersonaId: input.initialSelection?.personaId || input.initialPersonas[0]?.id || "",
     documents: [],
-    selectedPlanId: input.initialPlan?.id ?? "",
+    selectedPlanId: input.initialSelection?.planId || input.initialPlan?.id || "",
     planHistory: input.initialPlan ? [input.initialPlan] : [],
     studySession: null,
     response: null,

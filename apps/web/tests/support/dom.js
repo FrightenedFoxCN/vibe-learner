@@ -9,3 +9,5 @@ export function installDOM() {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   return dom;
 }
+
+export const dom = installDOM();

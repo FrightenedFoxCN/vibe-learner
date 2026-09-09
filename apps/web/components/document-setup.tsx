@@ -152,7 +152,7 @@ export function DocumentSetup({
               </select>
             </label>
             <label style={styles.field}>
-              <span style={styles.fieldLabel}>教材文件（PDF）</span>
+              <span style={styles.fieldLabel}>{file ? "更换教材文件（PDF）" : "教材文件（PDF）"}</span>
               <input
                 type="file"
                 accept=".pdf"
@@ -160,6 +160,7 @@ export function DocumentSetup({
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}
                 disabled={generationMode === "goal_only"}
               />
+              {file ? <span style={styles.fieldLabel}>已保留：{file.name}</span> : null}
             </label>
             <label style={styles.field}>
               <span style={styles.fieldLabel}>学习目标</span>

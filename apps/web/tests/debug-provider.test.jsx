@@ -1,12 +1,11 @@
+import { dom } from "./support/dom.js";
 import assert from "node:assert/strict";
 import { after, afterEach, test } from "node:test";
 import { StrictMode } from "react";
 import { cleanup, render } from "@testing-library/react";
 
 import { DebugProvider, useLearningDebugSnapshot, usePublishLearningDebugSnapshot } from "../components/debug-provider.tsx";
-import { installDOM } from "./support/dom.js";
 
-const dom = installDOM();
 afterEach(cleanup);
 after(() => dom.window.close());
 

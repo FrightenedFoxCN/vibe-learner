@@ -6,7 +6,7 @@ import { DebugProvider } from "../components/debug-provider";
 import { DebugOverlay } from "../components/debug-overlay";
 import { DesktopStartupGuard } from "../components/desktop-startup-guard";
 import { DesktopViewMenuBridge } from "../components/desktop-view-menu-bridge";
-import { LearningWorkspaceProvider } from "../components/learning-workspace-provider";
+import { LearningPageCacheProvider } from "../components/learning-page-cache-provider";
 import { PageDebugProvider } from "../components/page-debug-context";
 import { RuntimeSettingsProvider } from "../components/runtime-settings-provider";
 
@@ -23,10 +23,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <DesktopStartupGuard />
           <DebugProvider>
             <PageDebugProvider>
-              <LearningWorkspaceProvider>
+              <LearningPageCacheProvider>
                 <DesktopViewMenuBridge />
                 {children}
-              </LearningWorkspaceProvider>
+              </LearningPageCacheProvider>
               <DebugOverlay />
             </PageDebugProvider>
           </DebugProvider>

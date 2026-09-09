@@ -1,14 +1,11 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { useLearningWorkspaceController } from "../hooks/use-learning-workspace-controller";
-import {
-  loadLearningWorkspacePageCache,
-  persistLearningWorkspacePageCache,
-  type LearningWorkspacePageCache,
-} from "../lib/learning-workspace-page-cache";
+import { useLearningPageCache } from "./learning-page-cache-provider";
+import type { LearningWorkspacePageCache } from "../lib/learning-workspace-page-cache";
 import { usePublishLearningDebugSnapshot } from "./debug-provider";
 import { mockPersonas } from "../lib/mock-data";
 
@@ -25,7 +22,9 @@ type LearningWorkspaceControllerValue = ReturnType<typeof useLearningWorkspaceCo
 const LearningWorkspaceContext = createContext<LearningWorkspaceControllerValue | null>(null);
 
 export function LearningWorkspaceProvider({ children }: { children: ReactNode }) {
+  const { getPageCache, setPageCache } = useLearningPageCache();
   const controller = useLearningWorkspaceController({
+    initialSelection: getPageCache("selection"),
     initialPersonas: mockPersonas
   });
   const debugSnapshot = useMemo(() => ({
@@ -52,28 +51,13 @@ export function LearningWorkspaceProvider({ children }: { children: ReactNode })
     controller.planStreamStatus,
   ]);
   usePublishLearningDebugSnapshot(debugSnapshot);
-  const pageCacheRef = useRef<LearningWorkspacePageCache>(loadLearningWorkspacePageCache());
-  const getPageCache = useCallback(
-    function <K extends keyof LearningWorkspacePageCache>(
-      key: K
-    ): LearningWorkspacePageCache[K] | undefined {
-      return pageCacheRef.current[key];
-    },
-    []
-  );
-  const setPageCache = useCallback(
-    function <K extends keyof LearningWorkspacePageCache>(
-      key: K,
-      value: LearningWorkspacePageCache[K]
-    ) {
-      pageCacheRef.current = {
-        ...pageCacheRef.current,
-        [key]: value,
-      };
-      persistLearningWorkspacePageCache(pageCacheRef.current);
-    },
-    []
-  );
+  useEffect(() => {
+    setPageCache("selection", {
+      planId: controller.selectedPlanId,
+      personaId: controller.selectedPersonaId,
+      sceneLibraryId: controller.selectedSceneLibraryId,
+    });
+  }, [controller.selectedPlanId, controller.selectedPersonaId, controller.selectedSceneLibraryId, setPageCache]);
   const value: LearningWorkspaceControllerValue = {
     ...controller,
     getPageCache,
