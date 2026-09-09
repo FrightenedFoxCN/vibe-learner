@@ -6,6 +6,10 @@ from app.services.provider_capabilities import ModelProvider, ModelReply, PlanMo
 from app.services.provider_exercises import LocalExerciseProvider
 from app.services.provider_embedding import RemoteEmbeddingProvider
 from app.services.provider_image import RemoteImageProvider
+from app.services.provider_payload import (
+    _extract_choice_content, _extract_json_payload, _escape_invalid_backslashes_in_json_strings,
+)
+from app.services.provider_tavern import RemoteTavernProvider, _should_fallback_tavern_schema_transport
 
 import json
 import re
@@ -75,10 +79,6 @@ from app.services.tool_provider_projection import (
     project_tool_arguments_for_observability,
     project_validated_tool_result,
     provider_function_for_entry,
-)
-from app.services.tavern_prompt import (
-    build_tavern_actor_messages,
-    build_tavern_actor_recovery_message,
 )
 from app.services.openai_plan_runner import OpenAIPlanRunner
 from app.services.plan_prompt import (
@@ -1437,101 +1437,17 @@ class OpenAIModelProvider(ModelProvider):
         required_target_id: str = "",
         should_continue: Callable[[], bool] | None = None,
     ) -> TavernActorReply:
-        if should_continue is not None and not should_continue():
-            raise RuntimeError("tavern_actor_generation_canceled")
-        actor_schema = TavernActorReply.transport_json_schema()
-        actor_schema_text = json.dumps(actor_schema, ensure_ascii=False, sort_keys=True)
-        messages = build_tavern_actor_messages(
-            persona=persona,
-            participants=participants,
-            scene_profile=scene_profile,
-            recent_messages=recent_messages,
-            user_message=user_message,
-            guidance=guidance,
-            allowed_target_ids=allowed_target_ids,
-            actor_reply_schema=actor_schema_text,
-            turn_kind=turn_kind,
-            required_target_id=required_target_id,
+        return RemoteTavernProvider(
+            chat_model=self.chat_model,
+            chat_temperature=self.chat_temperature,
+            chat_max_tokens=self.chat_max_tokens,
+            request=self._request_openai_chat_completion,
+        ).generate_tavern_actor_reply(
+            persona=persona, participants=participants, scene_profile=scene_profile,
+            recent_messages=recent_messages, user_message=user_message, guidance=guidance,
+            allowed_target_ids=allowed_target_ids, turn_kind=turn_kind,
+            required_target_id=required_target_id, should_continue=should_continue,
         )
-        response_format: dict[str, Any] = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "tavern_actor_reply",
-                "strict": True,
-                "schema": actor_schema,
-            },
-        }
-        payload: dict[str, Any] = {
-            "model": self.chat_model,
-            "temperature": self.chat_temperature,
-            "max_tokens": self.chat_max_tokens,
-            "messages": messages,
-            "response_format": response_format,
-        }
-        active_response_format = response_format
-        try:
-            raw_payload, _ = self._request_openai_chat_completion(
-                payload,
-                request_kind="chat",
-                model=self.chat_model,
-            )
-        except ModelRequestError as exc:
-            if not _should_fallback_tavern_schema_transport(exc):
-                raise
-            if should_continue is not None and not should_continue():
-                raise RuntimeError("tavern_actor_generation_canceled") from exc
-            logger.warning(
-                "model.tavern.schema_transport_fallback status=%s upstream_code=%s",
-                exc.status_code,
-                exc.upstream_code,
-            )
-            record_model_recovery(
-                category="transport_compatibility",
-                reason="tavern_json_schema_unsupported",
-                strategy="retry_json_object",
-                attempts=2,
-            )
-            active_response_format = {"type": "json_object"}
-            fallback_payload = {**payload, "response_format": active_response_format}
-            raw_payload, _ = self._request_openai_chat_completion(
-                fallback_payload,
-                request_kind="chat",
-                model=self.chat_model,
-            )
-
-        try:
-            return _parse_tavern_actor_reply(raw_payload)
-        except RuntimeError as exc:
-            recovery_reason = str(exc)
-            if should_continue is not None and not should_continue():
-                raise RuntimeError("tavern_actor_generation_canceled") from exc
-            logger.warning("model.tavern.recovery reason=%s", recovery_reason)
-            record_model_recovery(
-                category="semantic_retry",
-                reason=recovery_reason,
-                strategy="retry_strict_actor_reply",
-                attempts=2,
-            )
-            recovery_payload: dict[str, Any] = {
-                "model": self.chat_model,
-                "temperature": min(self.chat_temperature, 0.2),
-                "max_tokens": max(self.chat_max_tokens, 900),
-                "messages": [
-                    *messages,
-                    {
-                        "role": "user",
-                        "content": build_tavern_actor_recovery_message(actor_schema_text),
-                    },
-                ],
-                "response_format": active_response_format,
-            }
-            recovery_raw_payload, _ = self._request_openai_chat_completion(
-                recovery_payload,
-                request_kind="chat",
-                model=self.chat_model,
-            )
-            recovered = _parse_tavern_actor_reply(recovery_raw_payload)
-            return recovered
 
     def assist_persona_setting(
         self,
@@ -3156,49 +3072,6 @@ def _normalize_interactive_question(
         return None
 
 
-def _extract_json_payload(
-    content: str,
-    *,
-    invalid_json_code: str = "plan_model_invalid_json",
-    invalid_payload_code: str = "plan_model_invalid_payload",
-) -> dict[str, object]:
-    content = content.strip()
-    if content.startswith("```"):
-        content = content.strip("`")
-        if content.startswith("json"):
-            content = content[4:].strip()
-    try:
-        payload = json.loads(content)
-    except json.JSONDecodeError:
-        # Some upstream models emit invalid string escapes like "\("; normalize and retry once.
-        sanitized = _escape_invalid_backslashes_in_json_strings(content)
-        if sanitized != content:
-            try:
-                payload = json.loads(sanitized)
-            except json.JSONDecodeError:
-                payload = None
-        else:
-            payload = None
-        if payload is not None:
-            if not isinstance(payload, dict):
-                raise RuntimeError(invalid_payload_code)
-            return payload
-        start = content.find("{")
-        end = content.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            raise RuntimeError(invalid_json_code)
-        sliced = content[start : end + 1]
-        try:
-            payload = json.loads(sliced)
-        except json.JSONDecodeError:
-            sanitized_sliced = _escape_invalid_backslashes_in_json_strings(sliced)
-            try:
-                payload = json.loads(sanitized_sliced)
-            except json.JSONDecodeError as exc:
-                raise RuntimeError(invalid_json_code) from exc
-    if not isinstance(payload, dict):
-        raise RuntimeError(invalid_payload_code)
-    return payload
 
 
 class PlanningProposalDecodeError(RuntimeError):
@@ -3699,19 +3572,6 @@ def _parse_chat_model_reply(
     )
 
 
-def _parse_tavern_actor_reply(raw_payload: dict[str, Any]) -> TavernActorReply:
-    try:
-        content = _extract_choice_content(raw_payload)
-        parsed = _extract_json_payload(
-            content,
-            invalid_json_code="tavern_actor_invalid_payload",
-            invalid_payload_code="tavern_actor_invalid_payload",
-        )
-        return TavernActorReply.model_validate(parsed)
-    except Exception as exc:
-        if isinstance(exc, ModelRequestError):
-            raise
-        raise RuntimeError("tavern_actor_invalid_payload") from exc
 
 
 def _extract_memory_trace_payload(
@@ -3735,45 +3595,6 @@ def _extract_memory_trace_payload(
     return [{**item, "source": str(item.get("source") or "retriever")} for item in fallback_memory_trace]
 
 
-def _escape_invalid_backslashes_in_json_strings(raw: str) -> str:
-    result: list[str] = []
-    in_string = False
-    escaped = False
-    i = 0
-    valid_escape = {'"', "\\", "/", "b", "f", "n", "r", "t", "u"}
-
-    while i < len(raw):
-        ch = raw[i]
-        if not in_string:
-            result.append(ch)
-            if ch == '"':
-                in_string = True
-            i += 1
-            continue
-
-        if escaped:
-            result.append(ch)
-            escaped = False
-            i += 1
-            continue
-
-        if ch == "\\":
-            next_char = raw[i + 1] if i + 1 < len(raw) else ""
-            if next_char and next_char in valid_escape:
-                result.append(ch)
-            else:
-                # Double invalid backslashes so the payload remains literal text.
-                result.append("\\\\")
-            escaped = True
-            i += 1
-            continue
-
-        result.append(ch)
-        if ch == '"':
-            in_string = False
-        i += 1
-
-    return "".join(result)
 
 
 def _emit_progress(
@@ -3845,12 +3666,6 @@ def _should_fallback_setting_web_search(exc: RuntimeError) -> bool:
     )
 
 
-def _should_fallback_tavern_schema_transport(exc: ModelRequestError) -> bool:
-    return (
-        exc.status_code in {"400", "422"}
-        or exc.upstream_code == "unsupported_params"
-        or str(exc) == "openai_chat_request_unsupported_params"
-    )
 
 
 def _normalize_litellm_model_name(*, model: str, api_base: str) -> str:
@@ -3913,67 +3728,6 @@ def _known_litellm_providers() -> set[str]:
     }
 
 
-def _extract_choice_content(payload: dict[str, Any]) -> str:
-    choices = payload.get("choices")
-    if not isinstance(choices, list) or not choices:
-        raise RuntimeError("chat_model_invalid_payload")
-    message = choices[0].get("message") if isinstance(choices[0], dict) else None
-    if not isinstance(message, dict):
-        raise RuntimeError("chat_model_invalid_payload")
-
-    # Some OpenAI-compatible providers return assistant text in non-standard shapes.
-    # Keep extraction tolerant before treating the payload as invalid.
-    content = message.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, dict):
-        for key in ("text", "value", "content"):
-            value = content.get(key)
-            if isinstance(value, str) and value.strip():
-                return value
-            if isinstance(value, dict):
-                nested = value.get("value")
-                if isinstance(nested, str) and nested.strip():
-                    return nested
-    if isinstance(content, list):
-        texts: list[str] = []
-        for item in content:
-            if not isinstance(item, dict):
-                continue
-            item_type = str(item.get("type") or "").strip().lower()
-            if item_type not in {"text", "output_text", "message"}:
-                continue
-            text_value = item.get("text")
-            if isinstance(text_value, str) and text_value.strip():
-                texts.append(text_value)
-                continue
-            if isinstance(text_value, dict):
-                nested_value = text_value.get("value")
-                if isinstance(nested_value, str) and nested_value.strip():
-                    texts.append(nested_value)
-                    continue
-            value_field = item.get("value")
-            if isinstance(value_field, str) and value_field.strip():
-                texts.append(value_field)
-        merged = "".join(texts).strip()
-        if merged:
-            return merged
-
-    alt_text = choices[0].get("text") if isinstance(choices[0], dict) else None
-    if isinstance(alt_text, str) and alt_text.strip():
-        return alt_text
-
-    reasoning_content = message.get("reasoning_content")
-    if isinstance(reasoning_content, str) and reasoning_content.strip():
-        logger.warning("model.chat.extract_content fallback=reasoning_content")
-        return reasoning_content
-
-    logger.warning(
-        "model.chat.extract_content failed message_keys=%s content_type=%s",
-        sorted(message.keys()),
-        type(content).__name__,
-    )
-    raise RuntimeError("chat_model_invalid_payload")
 
 
 def _extract_choice_diagnostics(payload: dict[str, Any]) -> tuple[str, int, int]:

@@ -89,6 +89,7 @@
 - [x] 真实 provider 不再继承 Mock。独立练习生成与提交评价显式委托 `LocalExerciseProvider`，标记 `exercise_implementation=local_heuristic`，保留原文本和长度启发式，不调用传输。
 - [x] 将共享执行器、payload 归一化、错误分类、usage 记录与有界重试移至 `provider_transport.py`；注入 SDK 错误类型、时钟、sleep 与 recovery sink，不依赖 provider 类或导入 LiteLLM。新增 `test:ai:provider:transport` 7 项独立测试，原兼容性/provider审计/Persona 回归 124 项通过。
 - [x] Embedding/Image 真实能力实现迁入独立模块，使用冻结的 model/readiness 配置与显式请求接口；聚合 provider 在入口创建能力实例。新增独立测试入口 `test:ai:provider:embedding`（3 项）与 `test:ai:provider:image`（4 项），不启动 SDK/数据库；原兼容性/provider 审计/Persona 回归 124 项通过。
+- [x] Tavern actor 能力独立为 `RemoteTavernProvider`，共享响应包络解码移入 `provider_payload.py`；保留严格 schema、transport fallback、一次语义修复与调用前取消检查。两项纯 provider 测试移出 API/数据库 fixture，新增 `test:ai:provider:tavern` 5 项独立契约，Tavern API/调度/安全和共享解码相关 97 项回归通过。
 - [ ] 将其余真实 provider 能力实现和 SDK 请求适配继续拆分，逐能力验证完整配置快照、调用上限和取消边界。
 - [ ] 完成 provider 阶段 release/recovery 门禁后关闭主任务。
 

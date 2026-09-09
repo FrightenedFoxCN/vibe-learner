@@ -764,56 +764,6 @@ class TavernApiTests(ContainerTestCase):
         self.assertNotIn("MALICIOUS_PERSONA_TOKEN", injected[0]["content"])
         self.assertIn("MALICIOUS_PERSONA_TOKEN", injected[1]["content"])
 
-    def test_openai_tavern_actor_uses_strict_json_schema_transport(self) -> None:
-        room = self.service.create_room(
-            CreateTavernRoomRequest(
-                title="Strict Schema Room",
-                persona_ids=[self.persona.id],
-                idempotency_key="create-room-strict-1",
-            )
-        )
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://example.invalid/v1",
-            plan_model="test-model",
-            chat_model="test-model",
-        )
-        raw_payload = {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "content": (
-                            '{"text":"你好。","mood":"calm","action":"点头",'
-                            '"speech_style":"warm","delivery_cue":"自然回应",'
-                            '"state_commentary":"保持身份",'
-                            '"addressed_participant_ids":[]}'
-                        )
-                    },
-                }
-            ]
-        }
-        with patch.object(
-            provider,
-            "_request_openai_chat_completion",
-            return_value=(raw_payload, 1),
-        ) as request_mock:
-            reply = provider.generate_tavern_actor_reply(
-                persona=room.participants[0].persona_snapshot,
-                participants=room.participants,
-                scene_profile=None,
-                recent_messages=[],
-                user_message="你好",
-                guidance="",
-                allowed_target_ids=[self.persona.id],
-            )
-
-        self.assertEqual(reply.text, "你好。")
-        transport_payload = request_mock.call_args.args[0]
-        self.assertEqual(transport_payload["response_format"]["type"], "json_schema")
-        self.assertTrue(transport_payload["response_format"]["json_schema"]["strict"])
-        schema = transport_payload["response_format"]["json_schema"]["schema"]
-        self.assertEqual(set(schema["required"]), set(schema["properties"]))
 
     def test_mock_tavern_actor_normalizes_relationship_sentence_punctuation(self) -> None:
         room = self.service.create_room(
@@ -840,66 +790,6 @@ class TavernApiTests(ContainerTestCase):
         self.assertIn("作为你的以师生协作方式陪伴学习者，我想", reply.text)
         self.assertNotIn("学习者。，", reply.text)
 
-    def test_openai_tavern_actor_falls_back_after_typed_schema_rejection(self) -> None:
-        room = self.service.create_room(
-            CreateTavernRoomRequest(
-                title="Schema Fallback Room",
-                persona_ids=[self.persona.id],
-                idempotency_key="create-room-schema-fallback-1",
-            )
-        )
-        provider = OpenAIModelProvider(
-            api_key="test-key",
-            base_url="https://example.invalid/v1",
-            plan_model="test-model",
-            chat_model="test-model",
-        )
-        raw_payload = {
-            "choices": [
-                {
-                    "finish_reason": "stop",
-                    "message": {
-                        "content": (
-                            '{"text":"回退成功。","mood":"calm","action":"点头",'
-                            '"speech_style":"warm","delivery_cue":"自然回应",'
-                            '"state_commentary":"保持身份",'
-                            '"addressed_participant_ids":[]}'
-                        )
-                    },
-                }
-            ]
-        }
-        with patch.object(
-            provider,
-            "_request_openai_chat_completion",
-            side_effect=[
-                ModelRequestError(
-                    "openai_chat_request_unsupported_params",
-                    upstream_code="unsupported_params",
-                ),
-                (raw_payload, 1),
-            ],
-        ) as request_mock:
-            reply = provider.generate_tavern_actor_reply(
-                persona=room.participants[0].persona_snapshot,
-                participants=room.participants,
-                scene_profile=None,
-                recent_messages=[],
-                user_message="你好",
-                guidance="",
-                allowed_target_ids=[self.persona.id],
-            )
-
-        self.assertEqual(reply.text, "回退成功。")
-        self.assertEqual(request_mock.call_count, 2)
-        self.assertEqual(
-            request_mock.call_args_list[0].args[0]["response_format"]["type"],
-            "json_schema",
-        )
-        self.assertEqual(
-            request_mock.call_args_list[1].args[0]["response_format"]["type"],
-            "json_object",
-        )
 
     def test_model_schema_recovery_is_merged_into_persisted_harness_trace(self) -> None:
         created = self._create_room(creation_key="create-room-model-recovery")
