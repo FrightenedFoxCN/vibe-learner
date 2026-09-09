@@ -1,5 +1,12 @@
 # Harness performance budgets v1
 
+Update: the authorized 2026-09-09 joint acceptance run used MiniMax M3 and
+reproduced the local performance gates. Joint acceptance did not pass; real
+Tavern small-sample usage/latency evidence is now available, while billed cost,
+broader samples and maximum-input acceptance remain open. See
+[the acceptance report](acceptance-wave45-2026-09-09/README.md). The no-provider
+statement below describes the earlier implementation run only.
+
 Wave 5 implementation and local measurements are complete. Independent
 acceptance is pending together with Wave 4. At the user's request, no real
 provider calls were made; live provider latency, billed tokens/cost, repair rate,

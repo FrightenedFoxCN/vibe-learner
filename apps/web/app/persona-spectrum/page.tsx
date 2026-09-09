@@ -1629,6 +1629,9 @@ export default function PersonaSpectrumPage() {
                               disabled={Boolean(slot.locked)}
                               onClick={(e) => e.stopPropagation()}
                             >
+                              {!PERSONA_SLOT_KINDS.some((kind) => kind === slot.kind) ? (
+                                <option value={slot.kind}>{slot.label || slot.kind}（自定义）</option>
+                              ) : null}
                               {PERSONA_SLOT_KINDS.map((k) => (
                                 <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
                               ))}

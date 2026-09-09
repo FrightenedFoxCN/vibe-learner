@@ -3483,7 +3483,7 @@ class PersonaPipelineTests(unittest.TestCase):
                         title="Chapter 1 Foundations",
                         page_start=1,
                         page_end=18,
-                        source_section_ids=["raw-1"],
+                        source_section_ids=["raw-1", "raw-1-1"],
                         summary="聚焦集合与命题逻辑。",
                         confidence=0.9,
                     )

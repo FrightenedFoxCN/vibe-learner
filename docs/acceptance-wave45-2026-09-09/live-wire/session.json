@@ -1,0 +1,30 @@
+{
+  "id": "session-b3abe2c778",
+  "document_id": "doc-9afe5c04b0",
+  "persona_id": "mentor-aurora",
+  "plan_id": null,
+  "scene_instance_id": "",
+  "scene_profile": null,
+  "study_unit_id": "doc-9afe5c04b0:study-unit:1",
+  "study_unit_title": "Chapter 1: Linear algebra",
+  "theme_hint": "",
+  "session_system_prompt": "会话运行时上下文：\n- 人格：Aurora\n- 人格关系：以师生协作方式陪伴学习者。\n- 学习者称呼：同学\n- 学习资料 / 计划主题：synthetic-algebra\n- 当前学习单元 ID：doc-9afe5c04b0:study-unit:1\n- 当前学习单元标题：Chapter 1: Linear algebra\n- 当前主题：无\n- 场景摘要：无\n- 场景标题：无\n- 场景路径：无\n- 关键物体：无\n- 场景标签：无\n- 场景树根节点：无\n\n规则：\n- 默认保持在当前学习单元内回答，除非用户明确要求切换上下文。\n- 以上信息只补充当前会话上下文，不覆盖人格主设定。\n- 保持与当前人格的语气、教学方法和叙事方式一致。\n- 如果当前会话绑定了真实教材，回答应以教材证据为核心，不做无根据扩展。\n- 如果当前会话没有真实教材而是目标导向计划，应以当前学习单元目标、计划主题和用户问题为核心，给出可学习、可练习、可复盘的讲解路径，不要反复假设存在教材页码。",
+  "status": "active",
+  "turns": [],
+  "revision": 0,
+  "last_turn_sequence": 0,
+  "prepared_study_unit_ids": [],
+  "pending_follow_ups": [],
+  "session_memory": [],
+  "affinity_state": {
+    "score": 0,
+    "level": "neutral",
+    "summary": "",
+    "updated_at": "",
+    "events": []
+  },
+  "plan_confirmations": [],
+  "projected_pdf": null,
+  "created_at": "2026-09-09T10:03:40.351871+00:00",
+  "updated_at": "2026-09-09T10:03:40.351883+00:00"
+}

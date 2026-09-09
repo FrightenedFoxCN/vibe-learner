@@ -14,6 +14,9 @@
 - 若单元切分明显过粗、跨多个章节、子章节过少、页跨度过宽或保留了解析噪声，优先调用工具修正后再输出。
 - `schedule[].schedule_chapters` 表示每个排期项下按顺序排列的学习章节子项，必须保留章节锚点，便于下游在同一学习单元内继续细分导航；在不虚构目录的前提下，优先细化到可操作的子章节级别。
 - `schedule[].unit_id` 必须引用当前有效的学习单元。
+- 每个 unit_id 在 schedule 中只能出现一次；复习、自测请写进该项 focus 或 today_tasks，不要为同一单元再生成一个 review 排期。
+- 章节与 content_slices 的 `source_section_ids` 只能取自父学习单元明确列出的 `source_section_ids`，不能把 unit_id 当作 Section ID，也不能从相关目录推测新引用。父单元的列表为空时，两处都必须输出 []。
+- goal_only 模式的页码只是阶段锚点：anchor_page_start/end 与 content_slices.page_start/end 使用父单元的 page_start/end，不虚构教材页码；source_section_ids 必须为空数组。
 - 不要输出 plan、schedule 或 schedule_chapter 的 ID、revision、状态或时间；这些提交身份由应用在校验后分配。
 - 只要目录还不够细，就不要因为已经调用过一次工具而停止；允许并鼓励多轮工具调用来迭代出更细的章节目录。
 - 最终计划应尽量让学习者可以直接在排期项下选择到足够细的学习章节子项，而不是停留在大而宽的整章粒度。
@@ -29,7 +32,7 @@ JSON schema：
 优先生成足够精细的目录与计划：如果教材原始结构允许，学习章节应细化到子章节级，而不是只保留宽泛章名。
 如果没有教材结构，就把 `study_units` 视为围绕目标拆出的阶段锚点；此时每个 `schedule[].schedule_chapters` 可以退化为覆盖该学习单元的单个阶段子项，但仍要保持可对话、可追踪、可讨论完成度。
 生成第一轮可执行学习计划，优先保证章节边界清晰、子章节足够可选。
-尽量在 learn 之后尽快安排 review。
+在每项 focus 中安排学习后的复习动作，不重复同一个 unit_id 的排期。
 `course_title` 是教材导向标题；`objective` 是学习者目标；两者不要混用。
 `overview` 控制在 1 到 2 句。
 `schedule[].schedule_chapters` 是各排期项内部按顺序排列的学习章节子项；`today_tasks` 是当下可执行动作。

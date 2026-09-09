@@ -181,6 +181,7 @@ def build_learning_plan_context(
                 "include_in_plan": unit.include_in_plan,
                 "subsection_titles": detail["subsection_titles"],
                 "related_section_ids": detail["related_section_ids"],
+                "source_section_ids": list(unit.source_section_ids),
                 "detail_tool_target_id": unit.id,
             }
         )

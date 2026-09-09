@@ -1,0 +1,23 @@
+[
+  {
+    "case": "persona_stale_revision",
+    "status": 409,
+    "detail": {
+      "detail": {
+        "code": "persona_revision_conflict",
+        "current_revision": 2
+      }
+    }
+  },
+  {
+    "case": "scene_stale_revision",
+    "status": 409,
+    "detail": {
+      "detail": "scene_revision_conflict"
+    }
+  },
+  {
+    "case": "stale_writes_left_records_unchanged",
+    "passed": true
+  }
+]

@@ -1,0 +1,11 @@
+{"case": "upload", "status": 200}
+{"case": "process", "status": 200}
+{"case": "document_debug", "status": 200}
+{"case": "document_context", "status": 200}
+{"case": "document_process_events", "status": 200}
+{"case": "plan", "status": 502}
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/../../docs/acceptance-wave45-2026-09-09/http_matrix.py", line 48, in <module>
+    assert status==200
+           ^^^^^^^^^^^
+AssertionError

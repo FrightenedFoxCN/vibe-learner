@@ -199,6 +199,18 @@ dependencies and shared contract ownership do not overlap.
 
 ## Wave 5 — performance and optimization gates
 
+The follow-up [remediation and desktop acceptance](acceptance-wave45-2026-09-09/remediation.md)
+fixed the observed Study catalog and Planning reference/recovery blockers and
+passed the sampled M3 and macOS main flows. Broader adoption/performance gates
+remain open, including the observed interactive-answer quality limitation.
+
+Joint acceptance on 2026-09-09 used real MiniMax M3 calls and did not pass.
+Local performance gates and Tavern live samples passed, but Study tool catalog
+drift blocked generation and the sampled goal-only plan failed its reference
+invariant. Browser/desktop and broader adoption gates remain open. See
+[`acceptance-wave45-2026-09-09/README.md`](acceptance-wave45-2026-09-09/README.md)
+for raw evidence, scope, and remaining requirements.
+
 Implementation and local gates are complete as of 2026-09-09; this is not
 independent acceptance. Per user direction, Wave 4 and Wave 5 will receive one
 joint independent acceptance pass. Real upstream Tavern measurements remain

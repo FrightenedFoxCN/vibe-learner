@@ -1,0 +1,20 @@
+{"case": "upload", "status": 200}
+{"case": "process", "status": 200}
+{"case": "document_debug", "status": 200}
+{"case": "document_context", "status": 200}
+{"case": "document_process_events", "status": 200}
+{"case": "plan", "status": 200}
+{"case": "plan_readback", "status": 200}
+{"case": "goal_plan_stream", "status": 200}
+{"case": "persona", "status": 200}
+{"case": "scene", "status": 200}
+{"case": "scene_library_before", "status": 200}
+{"case": "scene_invalid", "status": 422}
+{"case": "scene_library_after", "status": 200}
+{"case": "session", "status": 200}
+{"case": "chat", "status": 200}
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/../../docs/acceptance-wave45-2026-09-09/http_matrix.py", line 68, in <module>
+    assert status==200 and chat["status"]=="committed"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

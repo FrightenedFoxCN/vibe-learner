@@ -1,0 +1,243 @@
+{
+  "room": {
+    "id": "tavern-37bd19eae731",
+    "creation_key": "acceptance-room-b073f56a",
+    "creation_input_digest": "32f4b8cd8c214b89",
+    "title": "Wave45 acceptance b073f56a",
+    "scene_profile": null,
+    "harness_policy": {
+      "version": "tavern-harness-v1",
+      "max_character_messages": 4,
+      "max_reply_characters": 1200,
+      "context_message_limit": 18,
+      "prevent_speaker_impersonation": true
+    },
+    "status": "active",
+    "revision": 0,
+    "last_sequence": 0,
+    "created_at": "2026-09-09T10:05:10.607272+00:00",
+    "updated_at": "2026-09-09T10:05:10.607272+00:00"
+  },
+  "participants": [
+    {
+      "room_id": "tavern-37bd19eae731",
+      "persona_id": "persona-54a647dc0fb64e3fb066e63d148d4e0e",
+      "display_order": 0,
+      "display_name": "Observer 0",
+      "persona_snapshot": {
+        "id": "persona-54a647dc0fb64e3fb066e63d148d4e0e",
+        "revision": 0,
+        "name": "Observer 0",
+        "source": "user",
+        "summary": "A patient cartographer.",
+        "relationship": "同行者",
+        "learner_address": "你",
+        "system_prompt": "Only speak for yourself.",
+        "reference_hints": [],
+        "slots": [],
+        "available_emotions": [
+          "calm",
+          "encouraging",
+          "playful",
+          "serious"
+        ],
+        "available_actions": [
+          "idle",
+          "nod",
+          "point",
+          "lean_in",
+          "smile",
+          "pause",
+          "write"
+        ],
+        "default_speech_style": "warm"
+      },
+      "prompt_hash": "ec2fac6ffe100a14",
+      "joined_at": "2026-09-09T10:05:10.607272+00:00"
+    },
+    {
+      "room_id": "tavern-37bd19eae731",
+      "persona_id": "persona-91c4f7cff1c74f0fa60f69d4b884d4b8",
+      "display_order": 1,
+      "display_name": "Observer 1",
+      "persona_snapshot": {
+        "id": "persona-91c4f7cff1c74f0fa60f69d4b884d4b8",
+        "revision": 0,
+        "name": "Observer 1",
+        "source": "user",
+        "summary": "A patient cartographer.",
+        "relationship": "同行者",
+        "learner_address": "你",
+        "system_prompt": "Only speak for yourself.",
+        "reference_hints": [],
+        "slots": [],
+        "available_emotions": [
+          "calm",
+          "encouraging",
+          "playful",
+          "serious"
+        ],
+        "available_actions": [
+          "idle",
+          "nod",
+          "point",
+          "lean_in",
+          "smile",
+          "pause",
+          "write"
+        ],
+        "default_speech_style": "warm"
+      },
+      "prompt_hash": "23b3e14885273259",
+      "joined_at": "2026-09-09T10:05:10.607272+00:00"
+    },
+    {
+      "room_id": "tavern-37bd19eae731",
+      "persona_id": "persona-d3d759b70f6f4fcfa808894797127a4b",
+      "display_order": 2,
+      "display_name": "Observer 2",
+      "persona_snapshot": {
+        "id": "persona-d3d759b70f6f4fcfa808894797127a4b",
+        "revision": 0,
+        "name": "Observer 2",
+        "source": "user",
+        "summary": "A patient cartographer.",
+        "relationship": "同行者",
+        "learner_address": "你",
+        "system_prompt": "Only speak for yourself.",
+        "reference_hints": [],
+        "slots": [],
+        "available_emotions": [
+          "calm",
+          "encouraging",
+          "playful",
+          "serious"
+        ],
+        "available_actions": [
+          "idle",
+          "nod",
+          "point",
+          "lean_in",
+          "smile",
+          "pause",
+          "write"
+        ],
+        "default_speech_style": "warm"
+      },
+      "prompt_hash": "09d6b8dbd77641ff",
+      "joined_at": "2026-09-09T10:05:10.607272+00:00"
+    },
+    {
+      "room_id": "tavern-37bd19eae731",
+      "persona_id": "persona-f2584006d2514aafbe4b346637808014",
+      "display_order": 3,
+      "display_name": "Observer 3",
+      "persona_snapshot": {
+        "id": "persona-f2584006d2514aafbe4b346637808014",
+        "revision": 0,
+        "name": "Observer 3",
+        "source": "user",
+        "summary": "A patient cartographer.",
+        "relationship": "同行者",
+        "learner_address": "你",
+        "system_prompt": "Only speak for yourself.",
+        "reference_hints": [],
+        "slots": [],
+        "available_emotions": [
+          "calm",
+          "encouraging",
+          "playful",
+          "serious"
+        ],
+        "available_actions": [
+          "idle",
+          "nod",
+          "point",
+          "lean_in",
+          "smile",
+          "pause",
+          "write"
+        ],
+        "default_speech_style": "warm"
+      },
+      "prompt_hash": "88a60e17ef030e82",
+      "joined_at": "2026-09-09T10:05:10.607272+00:00"
+    },
+    {
+      "room_id": "tavern-37bd19eae731",
+      "persona_id": "persona-802b33d7430e4ae5b4ba71c4917a3006",
+      "display_order": 4,
+      "display_name": "Observer 4",
+      "persona_snapshot": {
+        "id": "persona-802b33d7430e4ae5b4ba71c4917a3006",
+        "revision": 0,
+        "name": "Observer 4",
+        "source": "user",
+        "summary": "A patient cartographer.",
+        "relationship": "同行者",
+        "learner_address": "你",
+        "system_prompt": "Only speak for yourself.",
+        "reference_hints": [],
+        "slots": [],
+        "available_emotions": [
+          "calm",
+          "encouraging",
+          "playful",
+          "serious"
+        ],
+        "available_actions": [
+          "idle",
+          "nod",
+          "point",
+          "lean_in",
+          "smile",
+          "pause",
+          "write"
+        ],
+        "default_speech_style": "warm"
+      },
+      "prompt_hash": "7b0e194950a6ebda",
+      "joined_at": "2026-09-09T10:05:10.607272+00:00"
+    },
+    {
+      "room_id": "tavern-37bd19eae731",
+      "persona_id": "persona-2f140430b2d94c2e8aaa6b42b6b40346",
+      "display_order": 5,
+      "display_name": "Observer 5",
+      "persona_snapshot": {
+        "id": "persona-2f140430b2d94c2e8aaa6b42b6b40346",
+        "revision": 0,
+        "name": "Observer 5",
+        "source": "user",
+        "summary": "A patient cartographer.",
+        "relationship": "同行者",
+        "learner_address": "你",
+        "system_prompt": "Only speak for yourself.",
+        "reference_hints": [],
+        "slots": [],
+        "available_emotions": [
+          "calm",
+          "encouraging",
+          "playful",
+          "serious"
+        ],
+        "available_actions": [
+          "idle",
+          "nod",
+          "point",
+          "lean_in",
+          "smile",
+          "pause",
+          "write"
+        ],
+        "default_speech_style": "warm"
+      },
+      "prompt_hash": "dc45fed7d58526b7",
+      "joined_at": "2026-09-09T10:05:10.607272+00:00"
+    }
+  ],
+  "messages": [],
+  "message_count": 0,
+  "next_after_sequence": null,
+  "next_before_sequence": null
+}

@@ -1,0 +1,199 @@
+{
+  "document_id": "doc-9afe5c04b0",
+  "parser_name": "pymupdf-text-pipeline",
+  "processed_at": "2026-09-09T10:00:24.976855+00:00",
+  "page_count": 3,
+  "total_characters": 6555,
+  "extraction_method": "page_text_dict",
+  "ocr_status": "completed",
+  "ocr_applied": false,
+  "ocr_language": null,
+  "ocr_engine": null,
+  "ocr_model_id": null,
+  "ocr_applied_page_count": 0,
+  "ocr_warnings": [],
+  "pages": [
+    {
+      "page_number": 1,
+      "char_count": 2185,
+      "word_count": 346,
+      "text_preview": "Chapter 1: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space",
+      "dominant_font_size": 11.0,
+      "extraction_source": "text",
+      "heading_candidates": [
+        {
+          "page_number": 1,
+          "text": "Chapter 1: Linear algebra",
+          "font_size": 11.0,
+          "confidence": 0.59
+        }
+      ]
+    },
+    {
+      "page_number": 2,
+      "char_count": 2185,
+      "word_count": 346,
+      "text_preview": "Chapter 2: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space",
+      "dominant_font_size": 11.0,
+      "extraction_source": "text",
+      "heading_candidates": [
+        {
+          "page_number": 2,
+          "text": "Chapter 2: Linear algebra",
+          "font_size": 11.0,
+          "confidence": 0.59
+        }
+      ]
+    },
+    {
+      "page_number": 3,
+      "char_count": 2185,
+      "word_count": 346,
+      "text_preview": "Chapter 3: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space",
+      "dominant_font_size": 11.0,
+      "extraction_source": "text",
+      "heading_candidates": [
+        {
+          "page_number": 3,
+          "text": "Chapter 3: Linear algebra",
+          "font_size": 11.0,
+          "confidence": 0.59
+        }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "doc-9afe5c04b0:section:l1:1",
+      "document_id": "doc-9afe5c04b0",
+      "title": "Chapter 1: Linear algebra",
+      "page_start": 1,
+      "page_end": 1,
+      "level": 1
+    },
+    {
+      "id": "doc-9afe5c04b0:section:l1:2",
+      "document_id": "doc-9afe5c04b0",
+      "title": "Chapter 2: Linear algebra",
+      "page_start": 2,
+      "page_end": 2,
+      "level": 1
+    },
+    {
+      "id": "doc-9afe5c04b0:section:l1:3",
+      "document_id": "doc-9afe5c04b0",
+      "title": "Chapter 3: Linear algebra",
+      "page_start": 3,
+      "page_end": 3,
+      "level": 1
+    }
+  ],
+  "study_units": [
+    {
+      "id": "doc-9afe5c04b0:study-unit:1",
+      "document_id": "doc-9afe5c04b0",
+      "title": "Chapter 1: Linear algebra",
+      "page_start": 1,
+      "page_end": 1,
+      "unit_kind": "chapter",
+      "include_in_plan": true,
+      "source_section_ids": [
+        "doc-9afe5c04b0:section:l1:1"
+      ],
+      "summary": "聚焦 Chapter 1: Linear algebra，覆盖教材第 1-1 页。",
+      "confidence": 0.88
+    },
+    {
+      "id": "doc-9afe5c04b0:study-unit:2",
+      "document_id": "doc-9afe5c04b0",
+      "title": "Chapter 2: Linear algebra",
+      "page_start": 2,
+      "page_end": 2,
+      "unit_kind": "chapter",
+      "include_in_plan": true,
+      "source_section_ids": [
+        "doc-9afe5c04b0:section:l1:2"
+      ],
+      "summary": "聚焦 Chapter 2: Linear algebra，覆盖教材第 2-2 页。",
+      "confidence": 0.88
+    },
+    {
+      "id": "doc-9afe5c04b0:study-unit:3",
+      "document_id": "doc-9afe5c04b0",
+      "title": "Chapter 3: Linear algebra",
+      "page_start": 3,
+      "page_end": 3,
+      "unit_kind": "chapter",
+      "include_in_plan": true,
+      "source_section_ids": [
+        "doc-9afe5c04b0:section:l1:3"
+      ],
+      "summary": "聚焦 Chapter 3: Linear algebra，覆盖教材第 3-3 页。",
+      "confidence": 0.88
+    }
+  ],
+  "chunks": [
+    {
+      "id": "doc-9afe5c04b0:chunk:1",
+      "document_id": "doc-9afe5c04b0",
+      "section_id": "doc-9afe5c04b0:section:l1:1",
+      "page_start": 1,
+      "page_end": 1,
+      "char_count": 865,
+      "text_preview": "Chapter 1: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the s",
+      "content": "Chapter 1: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space."
+    },
+    {
+      "id": "doc-9afe5c04b0:chunk:2",
+      "document_id": "doc-9afe5c04b0",
+      "section_id": "doc-9afe5c04b0:section:l1:1",
+      "page_start": 1,
+      "page_end": 1,
+      "char_count": 1320,
+      "text_preview": "A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is cl",
+      "content": "A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\n\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space."
+    },
+    {
+      "id": "doc-9afe5c04b0:chunk:3",
+      "document_id": "doc-9afe5c04b0",
+      "section_id": "doc-9afe5c04b0:section:l1:2",
+      "page_start": 2,
+      "page_end": 2,
+      "char_count": 865,
+      "text_preview": "Chapter 2: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the s",
+      "content": "Chapter 2: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space."
+    },
+    {
+      "id": "doc-9afe5c04b0:chunk:4",
+      "document_id": "doc-9afe5c04b0",
+      "section_id": "doc-9afe5c04b0:section:l1:2",
+      "page_start": 2,
+      "page_end": 2,
+      "char_count": 1320,
+      "text_preview": "A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is cl",
+      "content": "A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\n\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space."
+    },
+    {
+      "id": "doc-9afe5c04b0:chunk:5",
+      "document_id": "doc-9afe5c04b0",
+      "section_id": "doc-9afe5c04b0:section:l1:3",
+      "page_start": 3,
+      "page_end": 3,
+      "char_count": 865,
+      "text_preview": "Chapter 3: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the s",
+      "content": "Chapter 3: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space."
+    },
+    {
+      "id": "doc-9afe5c04b0:chunk:6",
+      "document_id": "doc-9afe5c04b0",
+      "section_id": "doc-9afe5c04b0:section:l1:3",
+      "page_start": 3,
+      "page_end": 3,
+      "char_count": 1320,
+      "text_preview": "A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is cl",
+      "content": "A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\n\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space. A vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space."
+    }
+  ],
+  "warnings": [],
+  "dominant_language_hint": "en"
+}

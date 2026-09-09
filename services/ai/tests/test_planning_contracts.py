@@ -30,6 +30,62 @@ from app.services.study_arrangement import StudyArrangementService
 
 
 class PlanningContractTests(unittest.TestCase):
+    def test_repair_uses_post_tool_units_and_cannot_mutate_them_again(self) -> None:
+        from types import SimpleNamespace
+        from app.models.domain import PlanGenerationTraceRecord
+
+        unit = StudyUnitRecord(id="unit-1", document_id="doc-1", title="Basics",
+            page_start=1, page_end=5, source_section_ids=["section-1"])
+        revised = unit.model_copy(update={"id": "unit-revised"})
+        provider = OpenAIModelProvider(api_key="test", base_url="https://api.openai.test/v1",
+            plan_model="test", plan_tools_enabled=True)
+        calls = []
+
+        def run(**kwargs):
+            calls.append(kwargs)
+            payload = _valid_proposal_payload()
+            if len(calls) == 1:
+                kwargs["tool_runtime"].context.study_units[:] = [revised]
+            else:
+                context = json.loads(kwargs["messages"][1]["content"])
+                self.assertEqual(context["study_units"][0]["unit_id"], revised.id)
+                self.assertFalse(kwargs["tool_runtime"].has_tools())
+                payload["schedule"][0]["unit_id"] = revised.id
+            return SimpleNamespace(content=json.dumps(payload), trace=PlanGenerationTraceRecord(
+                document_id="doc-1", model="test", created_at="2026-09-09T00:00:00+00:00"))
+
+        with patch.object(provider, "_run_plan_model", side_effect=run):
+            result = provider.generate_learning_plan(persona=_persona(), document_title="Basics",
+                goal=LearningGoalInput(document_id="doc-1", persona_id="persona-1", objective="Learn"),
+                study_units=[unit])
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(result.schedule[0].unit_id, revised.id)
+        self.assertEqual(result.revised_study_units[0].id, revised.id)
+
+    def test_duplicate_unit_repair_receives_specific_safe_invariant(self) -> None:
+        payload = _valid_proposal_payload()
+        payload["schedule"].append(dict(payload["schedule"][0]))
+        with self.assertRaises(PlanningProposalDecodeError) as raised:
+            _decode_learning_plan_proposal(json.dumps(payload))
+        self.assertEqual(raised.exception.reason, "duplicate_schedule_unit_ref")
+
+    def test_goal_only_prompt_and_projection_use_empty_section_allowlist(self) -> None:
+        from app.services.plan_prompt import build_learning_plan_messages
+        goal = LearningGoalInput(document_id="", persona_id="persona-1", objective="Learn introductory algebra.")
+        units = StudyArrangementService().build_goal_only_study_units(goal=goal, base_document_id="goal-only:test")
+        messages = build_learning_plan_messages(persona=_persona(), document_title="Algebra", goal=goal, study_units=units)
+        context = json.loads(messages[1]["content"])
+        self.assertEqual([unit["source_section_ids"] for unit in context["study_units"]], [[], [], []])
+        service = LearningPlanService(self.store, StudyArrangementService(), MockModelProvider())
+        unit = units[0]
+        chapter = PlanScheduleChapterProposalV1(title="Basics", anchor_page_start=1, anchor_page_end=1,
+            source_section_ids=[], content_slices=[PlanContentSliceProposalV1(page_start=1, page_end=1, source_section_ids=[])])
+        item = PlanScheduleItem(unit_id=unit.id, title="Learn", focus="Basics", activity_type="learn", schedule_chapters=[chapter])
+        self.assertEqual(service._build_schedule_record(index=0, item=item, unit=unit).schedule_chapters[0].source_section_ids, [])
+        chapter.source_section_ids = [unit.id]
+        with self.assertRaisesRegex(RuntimeError, "source_section_ids:unknown_ref"):
+            service._build_schedule_record(index=0, item=item, unit=unit)
+
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
         self.store = LocalJsonStore(Path(self.temp_dir.name))

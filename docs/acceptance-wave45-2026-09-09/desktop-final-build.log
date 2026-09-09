@@ -1,0 +1,23 @@
+
+> @vibe-learner/desktop@0.2.2 build
+> tauri build --bundles app --config {"build":{"beforeBuildCommand":""}}
+
+        Info Looking up installed tauri packages to check mismatched versions...
+   Compiling vibe-learner-desktop v0.2.2 (/Users/ffox/vibe-learner/apps/desktop/src-tauri)
+    Finished `release` profile [optimized] target(s) in 16.06s
+       Built application at: /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/vibe-learner-desktop
+    Bundling Vibe Learner.app (/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app)
+     Signing with identity "-"
+Signing with identity "-"
+Signing /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-sidecar
+/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-sidecar: replacing existing signature
+Signing with identity "-"
+Signing /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-desktop
+/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-desktop: replacing existing signature
+Signing with identity "-"
+Signing /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app
+/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app: replacing existing signature
+        Warn skipping app notarization, no APPLE_ID & APPLE_PASSWORD & APPLE_TEAM_ID or APPLE_API_KEY & APPLE_API_ISSUER & APPLE_API_KEY_PATH environment variables found
+    Finished 1 bundle at:
+        /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app
+

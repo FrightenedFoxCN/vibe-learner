@@ -1,0 +1,17 @@
+{
+  "actors": 6,
+  "completed_actors": 6,
+  "repaired_actors": 2,
+  "provider_calls": 8,
+  "provider_errors": 0,
+  "prompt_tokens": 130999,
+  "completion_tokens": 3671,
+  "p50_ms": 7857.531749992631,
+  "sample_p95_ms": 20645.438249979634,
+  "run_latency_ms": [
+    61379.19204198988,
+    24714.621166000143
+  ],
+  "billed_cost": null,
+  "cost_reason": "No authoritative account billing evidence collected; token usage is provider-reported, not an invoice."
+}

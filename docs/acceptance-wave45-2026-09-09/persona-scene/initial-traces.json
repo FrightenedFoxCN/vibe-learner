@@ -1,0 +1,66 @@
+[
+  {
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-5816601690ebc69369f42bd970b725d1",
+    "created_at": "2026-09-09T11:03:06.646000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-afbbb36fa32bf2f829af281a9df95ce5",
+    "created_at": "2026-09-09T11:04:34.163000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-1c52e83cba22606b03fde2384de2816e",
+    "created_at": "2026-09-09T11:05:02.912000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-26e8d5725204f1599c5ca69b7535fd2b",
+    "created_at": "2026-09-09T11:06:55.556000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "scene",
+    "stage": "scene_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-f6c20ccf4c3624f14e11096bba97e514",
+    "created_at": "2026-09-09T11:07:56.556000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-b7ee5ff5840498b31c336a21f1b7c178",
+    "created_at": "2026-09-09T11:10:11.801000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-e552020183bc6d405cd9ce0de5e93b36",
+    "created_at": "2026-09-09T11:10:58.028000+00:00",
+    "trace_status": "passed"
+  },
+  {
+    "workflow": "scene",
+    "stage": "scene_generation",
+    "state": "terminal",
+    "trace_id": "harness-trace-bcbd7cd374ab64a98d8941cfadf14b27",
+    "created_at": "2026-09-09T11:14:58.167000+00:00",
+    "trace_status": "passed"
+  }
+]

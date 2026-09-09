@@ -367,10 +367,12 @@ export default function SceneSetupPage() {
     () => (selectedObjectId ? findObjectById(sceneLayers, selectedObjectId) : null),
     [sceneLayers, selectedObjectId]
   );
+  // Editor focus may be an object or collapsed; persisted scenes still need a layer.
+  const sceneSelectionLayerId = selectedLayer?.id ?? selectedObjectTarget?.layer.id ?? sceneLayers[0]?.id ?? "";
   const selectedPath = useMemo(() => findLayerPath(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
   const sceneProfilePreview = useMemo(
-    () => deriveSceneProfile(sceneLayers, selectedLayerId, sceneName.trim(), sceneSummary.trim()),
-    [sceneLayers, selectedLayerId, sceneName, sceneSummary]
+    () => deriveSceneProfile(sceneLayers, sceneSelectionLayerId, sceneName.trim(), sceneSummary.trim()),
+    [sceneLayers, sceneSelectionLayerId, sceneName, sceneSummary]
   );
   const sceneNodeCount = useMemo(
     () => countSceneNodes(sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer))),
@@ -569,7 +571,7 @@ export default function SceneSetupPage() {
         sceneName,
         sceneSummary,
         sceneLayers,
-        selectedLayerId,
+        selectedLayerId: sceneSelectionLayerId,
         collapsedLayerIds,
       };
       try {
@@ -582,7 +584,7 @@ export default function SceneSetupPage() {
     return () => {
       globalThis.clearTimeout(timer);
     };
-  }, [sceneLayers, sceneName, sceneSummary, selectedLayerId, collapsedLayerIds]);
+  }, [sceneLayers, sceneName, sceneSummary, sceneSelectionLayerId, collapsedLayerIds]);
 
   function applySceneImport(
     imported: SceneImportPayload,
@@ -845,7 +847,7 @@ export default function SceneSetupPage() {
         sceneName: trimmedSceneName,
         sceneSummary: trimmedSceneSummary,
         sceneLayers,
-        selectedLayerId,
+        selectedLayerId: sceneSelectionLayerId,
         collapsedLayerIds,
       };
       if (mode === "upsert" && selectedSavedSceneId) {
@@ -925,7 +927,7 @@ export default function SceneSetupPage() {
         sceneName,
         sceneSummary,
         sceneLayers,
-        selectedLayerId,
+        selectedLayerId: sceneSelectionLayerId,
         collapsedLayerIds,
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -2208,7 +2210,7 @@ function RewriteStateButton({
               value={rewriteStrength}
               onChange={(event) => onRewriteStrengthChange(Number(event.target.value))}
             />
-            <p style={styles.rewritePopoverHint}>数值越高，AI 重写时越接近原始设定。</p>
+            <p style={styles.rewritePopoverHint}>数值越高，AI 对原始设定的改写幅度越大。</p>
             <button
               type="button"
               style={styles.rewritePopoverButton}

@@ -1,0 +1,709 @@
+
+> vibe-learner@0.2.2 check:release
+> npm run check && npm run test:ai && npm run build:web
+
+
+> vibe-learner@0.2.2 check
+> npm run test:contracts && npm run check:web && npm run test:web:reliability && npm run eval:harness:pr
+
+
+> vibe-learner@0.2.2 test:contracts
+> tsc -p packages/shared/tsconfig.json && tsc -p packages/shared/tsconfig.contracts.json && node packages/shared/tests/harness-policy-registry.mjs && node packages/shared/tests/harness-artifact-access.mjs && node packages/shared/tests/harness-eval-contract.mjs && node packages/shared/tests/harness-manifest.mjs && node packages/shared/tests/tool-manifest.mjs
+
+harness artifact access contract tests passed
+harness workflow manifest contract tests passed
+tool manifest contract tests passed
+
+> vibe-learner@0.2.2 check:web
+> npm --workspace @vibe-learner/web run check
+
+
+> @vibe-learner/web@0.2.2 check
+> tsc --noEmit
+
+
+> vibe-learner@0.2.2 test:web:reliability
+> npm --workspace @vibe-learner/web run test:reliability
+
+
+> @vibe-learner/web@0.2.2 test:reliability
+> node --experimental-strip-types --test tests/settings-save-lifecycle.test.cjs tests/async-result-fence.test.ts tests/debug-overlay-accessibility.test.ts tests/desktop-startup.test.ts tests/document-decode.test.ts tests/navigation-study-accessibility.test.ts tests/planning-decode.test.ts tests/persona-draft.test.ts tests/persona-scene-decode.test.ts tests/rich-text-normalize.test.ts tests/shared-adversarial-fixtures.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-dialog-empty-state.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts tests/study-real-response-decode.test.ts
+
+✔ an async result applies only to its exact operation and captured scope (1.085292ms)
+✔ cross-operation and superseded results fail closed (0.189917ms)
+✔ a newer attempt for the same server operation supersedes the older request (0.129375ms)
+✔ subject, draft revision, and field target changes reject a late result (0.10475ms)
+✔ invalid scopes and inactive tickets cannot be treated as current (0.397958ms)
+✔ Study rejects a response after the active Session or Plan changes (0.096333ms)
+✔ Persona rejects an assist result after the user edits the draft (0.088125ms)
+✔ Scene rejects a rewrite result after switching layer, object, or field (0.091417ms)
+✔ Study view keeps a newer projection for the same Session and Unit (1.444833ms)
+✔ a deferred Study refresh cannot restore a Session after switching Plan (0.317583ms)
+✔ deferred Persona and Scene imports do not apply after edit or subject switch (0.241958ms)
+✔ Debug Overlay exposes a labelled modal and focuses its collapse control (1.012042ms)
+✔ Debug Overlay isolates main content and restores page state exactly (0.184958ms)
+✔ Debug Overlay traps focus and routes every close interaction through one path (0.247625ms)
+✔ desktop navigation remains locked until the first Vault is created (2.065708ms)
+✔ desktop vault gate blocks both app links and side navigation (0.116125ms)
+✔ desktop navigation preserves the root workspace provider during route changes (0.091ms)
+✔ Document decoder accepts a coherent committed projection and list envelope (0.991917ms)
+✔ Document decoder rejects wrong identity, status, count, and scalar coercion (0.275041ms)
+✔ Document decoder rejects unordered, duplicate, reversed, and drifted projected sections (0.2025ms)
+✔ Document decoder rejects non-finite confidence (0.070667ms)
+✔ Document Debug decoder validates page order, ranges, chunk refs, and nullability (0.476666ms)
+✔ Document Debug decoder rejects duplicate and unordered chunks (0.110875ms)
+✔ mobile primary navigation keeps labelled 44px touch targets (0.45675ms)
+✔ Study question composer exposes an accessible name (0.250958ms)
+✔ Tavern mobile controls keep 44px touch targets and provider state is announced (0.291083ms)
+✔ Tavern sequence updates are announced without appearing in the transcript (0.938833ms)
+✔ model scope connection fields stay compact and new personas begin as drafts (0.194625ms)
+✔ Persona config export and import preserve every editable field (0.93575ms)
+✔ Persona config import accepts snake case aliases without coercing unsafe values (0.192708ms)
+✔ Persona draft fingerprints track edits and reset against committed snapshots (0.138291ms)
+✔ Whole-setting assist merges by slot identity and preserves locks (0.129125ms)
+✔ Destructive generated backfill clears exactly the fields named in the UI (0.137167ms)
+✔ Persona decoder accepts custom slot vocabulary and duplicate sort orders (0.941084ms)
+✔ Persona decoder rejects coercion, illegal source, URL drift, and non-finite slots (0.341791ms)
+✔ Persona card envelopes reject duplicate IDs and illegal source values (0.187417ms)
+✔ Persona generation binds mode, generated source, booleans, and recovery schema (2.557584ms)
+✔ Persona count UI states exact 1-24 semantics (0.46425ms)
+✔ Persona assist decoders require typed slots and preserve assisted slot identity (1.19925ms)
+✔ Persona assets and delete projections bind the URL identity (0.237458ms)
+✔ Scene generation accepts a coherent committed projection (0.931292ms)
+✔ Scene generation rejects contract, mode, selection, depth, child, and identity attacks (0.646ms)
+✔ Wave 4 decoders fail closed on malformed nested v3 Harness evidence (0.350375ms)
+✔ Scene Setup accepts only the exact empty initial state or a coherent committed state (0.486542ms)
+✔ Scene Profile binds title path, tags, focus objects, and committed tree (0.21975ms)
+✔ Scene Library binds config, URL, revision, profile, and list identity (0.229125ms)
+✔ Reusable Scene Node decoder enforces the discriminated node projection (0.165375ms)
+✔ Planning decoder accepts a coherent plan and list envelope (1.341834ms)
+✔ Planning decoder accepts the real goal-only synthetic Study Unit scope (0.159334ms)
+✔ Planning decoder rejects forged goal-only Study Unit scopes (0.281084ms)
+✔ Planning decoder rejects plan/document identity and illegal enums (0.145375ms)
+✔ Planning decoder rejects broken Study Unit, chapter, and slice references (0.115375ms)
+✔ Planning decoder rejects duplicate IDs, invalid numbers, and forged progress (0.18075ms)
+✔ Planning Context decoder validates identity, ordering, detail set, and references (0.49425ms)
+✔ Planning Trace decoder validates recovery versions, contracts, identity, and summary (0.322125ms)
+✔ Planning Trace decoder accepts a truthful no-trace projection only (0.0835ms)
+✔ repairs historic inline Markdown headings without exposing hash markers (0.959375ms)
+✔ preserves already-valid Markdown headings (0.081458ms)
+✔ settings preserve 900ms debounce across unrelated renders and rapid edits (1.566125ms)
+✔ settings navigation flush saves the latest edit after an in-flight save (1.495ms)
+✔ settings navigation flush continues after older request fails without retrying it (0.751042ms)
+✔ reverting to the saved value clears an unsent edit before navigation (0.303625ms)
+✔ reverting while saving still restores the original value after navigation (1.055291ms)
+✔ QG-002 shared adversarial catalog has closed domain and attack coverage (0.660542ms)
+✔ QG002-DOCUMENT-IDENTITY-001 rejects document/identity (0.243792ms)
+✔ QG002-PLAN-IDENTITY-001 rejects plan/identity (0.24ms)
+✔ QG002-PERSONA-TYPE-001 rejects persona/type (0.166166ms)
+✔ QG002-SCENE-TYPE-001 rejects scene/type (0.118333ms)
+✔ QG002-STUDY-IDENTITY-001 rejects study/identity (0.192708ms)
+✔ QG002-TAVERN-ENVELOPE-001 rejects tavern/envelope (0.07925ms)
+✔ QG002-STREAM-STATE-001 rejects stream/stream_state (0.376458ms)
+✔ document state machine accepts only the committed terminal and ignores an exact duplicate (4.378584ms)
+✔ same event identity with a different supplied digest fails closed (0.639125ms)
+✔ cross-operation, cross-subject, sequence gap, and unknown stage frames are rejected (0.397916ms)
+✔ illegal transitions and new frames after terminal are rejected while terminal replay is idempotent (0.419208ms)
+✔ EOF without a terminal is a typed failure, including a final line without newline (2.840667ms)
+✔ planning state machines bind document and goal-only request subjects (0.394417ms)
+✔ planning question tool progress remains inside the strict stream lifecycle (0.310208ms)
+✔ trimmed v1 reports remain decidable and legacy reports do not gain invented evidence (0.596583ms)
+✔ unknown versions and false committed terminals do not downgrade or succeed (0.256375ms)
+✔ only explicit pre-admission HTTP failures unlock the original operation identity (0.388375ms)
+✔ ambiguous transport and provider failures remain query-only (0.06825ms)
+✔ a missing operation GET is distinct from a missing Session POST (0.056792ms)
+✔ Study Chat operation decoder accepts every frozen status (0.837208ms)
+✔ Study Chat operation decoder requires every public field (0.287917ms)
+✔ Study Chat operation decoder rejects unregistered or coerced statuses (0.077791ms)
+✔ Study Chat operation decoder rejects empty or non-string identities (0.112708ms)
+✔ Study Chat operation decoder rejects unsafe revision and sequence evidence (0.162125ms)
+✔ committed requires complete result, Turn, revision, and terminal evidence (0.0995ms)
+✔ non-committed statuses reject fabricated result or commit evidence (0.213708ms)
+✔ safe_to_retry is true only for not_committed and never for running or uncertain (0.396125ms)
+✔ terminal timestamp nullability follows the operation state (0.257875ms)
+✔ operation timestamps reject impossible dates and reversed state time (0.405792ms)
+✔ nested committed result is delegated to the caller's existing decoder (0.920084ms)
+✔ outer receipt identity is fenced to the requested Session and request (0.285875ms)
+✔ committed result decoder is mandatory and cannot return nullish output (0.491125ms)
+✔ committed result is bound to the receipt Session, revision, and exact Turn (14.778084ms)
+✔ Study Chat operation decode errors are identifiable without trusting realms (0.074083ms)
+✔ Study Dialog replaces its disabled console with a focusable Plan CTA (0.416125ms)
+✔ attempt response decoder binds exact Session, Turn, identity, and revisions (1.486208ms)
+✔ attempt read-back accepts the exact committed result (0.34325ms)
+✔ attempt read-back rejects identity, answer, verdict, and result drift (0.111875ms)
+✔ a late lower-revision response cannot replace a newer committed snapshot (0.142917ms)
+✔ read-back applies only to the active Session and only when it advances state (0.650375ms)
+✔ an attempt read-back accepts a legitimate concurrently appended Turn (0.134416ms)
+✔ read-back rejects committed Turn prefix drift and invalid watermarks (0.064375ms)
+✔ a question with any prior committed result cannot be submitted again (0.077083ms)
+﹣ strict Study decoders accept one live committed operation read-back (1.642375ms) # SKIP
+✔ Study Session committed identity decoder accepts contiguous unique turns (0.886417ms)
+✔ Study Session committed identity decoder fails closed on missing watermarks (0.2165ms)
+✔ Study Session committed identity decoder rejects invalid numeric projections (0.103167ms)
+✔ Study Session committed identity decoder rejects duplicate, empty, or gapped turns (0.077792ms)
+✔ full Study Session decoder accepts the complete modern public projection (1.694041ms)
+✔ full Study Session decoder rejects missing, coerced, and fabricated aggregate state (0.30475ms)
+✔ attachment projection rejects private paths and broken citation references (0.331917ms)
+✔ Character Events and tool traces are closed and cross-referenced (0.186709ms)
+✔ interactive question decoder rejects grading leaks and partial result evidence (0.299042ms)
+✔ follow-up, affinity, and projected-state terminal invariants fail closed (0.268958ms)
+✔ Study Scene decoder preserves empty-tree and empty-reuse compatibility (0.564084ms)
+✔ committed Study Chat exchange must equal the exact committed last Turn (0.354167ms)
+✔ Study Session list and plan-confirmation read-back fence identities and terminal state (0.551792ms)
+✔ Study Session display ordering follows sequence rather than timestamps (0.05825ms)
+✔ Study Session decode failures use safe user notices and retain generic fallbacks (0.131792ms)
+✔ Study Session decode failures never expose a retryable chat failure (0.053209ms)
+﹣ strict Tavern decoders accept live backend room aggregates (0.282ms) # SKIP
+✔ mergeTavernMessages orders and deduplicates tail/prepend pages (0.757958ms)
+✔ Tavern Room pages append monotonically, deduplicate IDs, and retain at most 100 summaries (0.326833ms)
+✔ selected Tavern Room detail remains a visible authoritative button outside loaded summaries (0.427667ms)
+✔ Tavern creation drafts drop deleted personas and rotate request identity (0.086791ms)
+✔ mergeTavernMessages fails closed on message identity conflicts (0.102875ms)
+✔ a child retry suppresses retry on its parent (0.117791ms)
+✔ latest facilitated recovery exposes only unfinished actors (0.127333ms)
+✔ facilitated recovery hides ineligible and already retried runs (0.069459ms)
+✔ authoritative recovery follows the chain leaf instead of a recent run window (0.104167ms)
+✔ Tavern client recovery only accepts an explicit terminal replay directive (0.114542ms)
+✔ Tavern client strictly decodes the empty room update error envelope (0.080208ms)
+✔ stale room results cannot move revision or sequence backwards (0.054334ms)
+✔ late run polling cannot resurrect a terminal run (5.767334ms)
+✔ optimistic roster marks only the first eligible actor as generating (0.163ms)
+✔ server speaker steps override optimistic roster state (0.062333ms)
+✔ an admitted run without visible steps stays truthful while starting (0.048334ms)
+✔ terminal roster states are explicitly scoped to the previous round (0.05075ms)
+✔ mobile Tavern DOM order matches its primary visual flow (0.237292ms)
+✔ Tavern Session pagination exposes pending, error, and duplicate-cursor fences (0.1245ms)
+✔ mobile Tavern buttons keep a 44px minimum touch target (0.171042ms)
+✔ Interaction Composer restores focus only after a confirmed user turn settles (0.177375ms)
+✔ Interaction Composer retains Enter, Shift+Enter, and IME composition fencing (0.109959ms)
+✔ strict Tavern decoders accept the current backend wire format (0.423084ms)
+✔ strict Tavern decoder accepts retry responses without replaying the user message (0.063042ms)
+✔ strict Tavern decoder enforces trigger and input-message semantics (0.191208ms)
+✔ strict Tavern decoder accepts a legacy persona with an empty system prompt (0.040083ms)
+✔ strict Tavern decoder mirrors backend-compatible empty persona and scene strings (0.118334ms)
+✔ strict Tavern decoders fail closed on invalid identity, enums, and counters (0.145584ms)
+✔ Tavern v1 Harness trace status is not coerced from an unknown enum (0.0515ms)
+✔ strict Tavern decoder distinguishes a missing nullable field from null (0.1095ms)
+✔ strict Tavern decoder rejects malformed nested persona and scene snapshots (0.055125ms)
+✔ strict Tavern list decoders reject a malformed envelope (0.252083ms)
+✔ strict Tavern recovery and error decoders enforce identity and action (0.167917ms)
+✔ strict Tavern decoders bind responses to the requested room (0.076625ms)
+✔ strict Tavern decoders reject aggregate ownership mismatches (0.114708ms)
+✔ strict Tavern decoder binds the run schedule to ordered speaker steps (0.078666ms)
+✔ strict Tavern decoder requires exact completed-step message projections (0.103792ms)
+✔ strict Tavern decoder rejects non-finite and out-of-range evidence (0.214208ms)
+✔ Tavern decoder accepts backend-compatible v2 and committed v3 traces (0.179709ms)
+✔ Tavern v3 trace decoder rejects forged identity, ordering, and commit evidence (0.07225ms)
+ℹ tests 165
+ℹ suites 0
+ℹ pass 163
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 2
+ℹ todo 0
+ℹ duration_ms 381.191
+
+> vibe-learner@0.2.2 eval:harness:pr
+> cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr
+
+{"planning_tool_eval": {"gate": "passed", "report": "passed", "samples": 8}, "study_chat_eval": {"gate": "passed", "report": "passed", "samples": 8}, "tavern_identity_eval": {"gate": "passed", "report": "passed", "samples": 8}}
+
+> vibe-learner@0.2.2 test:ai
+> cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests
+
+[92m17:54:17 - LiteLLM:WARNING[0m: get_model_cost_map.py:271 - LiteLLM: Failed to fetch remote model cost map from https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json: [Errno 8] nodename nor servname provided, or not known. Falling back to local backup.
+2026-09-09 17:54:17,875 | INFO | alembic.runtime.migration | Context impl SQLiteImpl.
+2026-09-09 17:54:17,875 | INFO | alembic.runtime.migration | Will assume non-transactional DDL.
+2026-09-09 17:54:17,880 | INFO | alembic.runtime.migration | Running upgrade  -> 20260413_0001, pgsql rebuild
+2026-09-09 17:54:17,891 | INFO | alembic.runtime.migration | Running upgrade 20260413_0001 -> 20260812_0002, add normalized tavern schema
+2026-09-09 17:54:17,896 | INFO | alembic.runtime.migration | Running upgrade 20260812_0002 -> 20260812_0003, add tavern room creation idempotency key
+2026-09-09 17:54:17,901 | INFO | alembic.runtime.migration | Running upgrade 20260812_0003 -> 20260812_0004, add facilitated tavern run steps
+2026-09-09 17:54:17,906 | INFO | alembic.runtime.migration | Running upgrade 20260812_0004 -> 20260812_0005, add tavern speaker-step leases
+2026-09-09 17:54:17,908 | INFO | alembic.runtime.migration | Running upgrade 20260812_0005 -> 20260812_0006, add Study Session CAS and turn sequence watermarks
+2026-09-09 17:54:17,909 | INFO | alembic.runtime.migration | Running upgrade 20260812_0006 -> 20260812_0007, add durable Study Chat operation admission journal
+2026-09-09 17:54:17,912 | INFO | alembic.runtime.migration | Running upgrade 20260812_0007 -> 20260824_0008, add private Study question attempt journal
+2026-09-09 17:54:17,913 | INFO | alembic.runtime.migration | Running upgrade 20260824_0008 -> 20260824_0009, add durable Document process operation journal
+2026-09-09 17:54:17,916 | INFO | alembic.runtime.migration | Running upgrade 20260824_0009 -> 20260824_0010, add durable Learning Plan operation journal
+2026-09-09 17:54:17,918 | INFO | alembic.runtime.migration | Running upgrade 20260824_0010 -> 20260824_0011, add Scene aggregate revisions
+2026-09-09 17:54:17,919 | INFO | alembic.runtime.migration | Running upgrade 20260824_0011 -> 20260825_0012, add Tavern Room pagination index
+2026-09-09 17:54:17,920 | INFO | alembic.runtime.migration | Running upgrade 20260825_0012 -> 20260825_0013, add append-only Harness operation bindings
+2026-09-09 17:54:17,941 | INFO | alembic.runtime.migration | Running upgrade 20260825_0013 -> 20260831_0014, add durable protected Harness artifact resolver
+2026-09-09 17:54:17,953 | INFO | alembic.runtime.migration | Running upgrade 20260831_0014 -> 20260903_0015, add durable Harness effect journal and terminal evidence
+2026-09-09 17:54:17,960 | INFO | alembic.runtime.migration | Running upgrade 20260903_0015 -> 20260903_0016, add durable Harness v3 runtime execution records
+2026-09-09 17:54:17,964 | INFO | alembic.runtime.migration | Running upgrade 20260903_0016 -> 20260903_0017, Persist server only Study Chat v3 trace.
+2026-09-09 17:54:17,965 | INFO | alembic.runtime.migration | Running upgrade 20260903_0017 -> 20260903_0018, add durable admission rows for broad Harness workflows
+.2026-09-09 17:54:18,059 | INFO | alembic.runtime.migration | Context impl PostgresqlImpl.
+2026-09-09 17:54:18,060 | INFO | alembic.runtime.migration | Generating static SQL
+2026-09-09 17:54:18,060 | INFO | alembic.runtime.migration | Will assume transactional DDL.
+2026-09-09 17:54:18,062 | INFO | alembic.runtime.migration | Running upgrade  -> 20260413_0001, pgsql rebuild
+2026-09-09 17:54:18,065 | INFO | alembic.runtime.migration | Running upgrade 20260413_0001 -> 20260812_0002, add normalized tavern schema
+2026-09-09 17:54:18,067 | INFO | alembic.runtime.migration | Running upgrade 20260812_0002 -> 20260812_0003, add tavern room creation idempotency key
+2026-09-09 17:54:18,067 | INFO | alembic.runtime.migration | Running upgrade 20260812_0003 -> 20260812_0004, add facilitated tavern run steps
+2026-09-09 17:54:18,068 | INFO | alembic.runtime.migration | Running upgrade 20260812_0004 -> 20260812_0005, add tavern speaker-step leases
+2026-09-09 17:54:18,068 | INFO | alembic.runtime.migration | Running upgrade 20260812_0005 -> 20260812_0006, add Study Session CAS and turn sequence watermarks
+2026-09-09 17:54:18,069 | INFO | alembic.runtime.migration | Running upgrade 20260812_0006 -> 20260812_0007, add durable Study Chat operation admission journal
+2026-09-09 17:54:18,070 | INFO | alembic.runtime.migration | Running upgrade 20260812_0007 -> 20260824_0008, add private Study question attempt journal
+2026-09-09 17:54:18,070 | INFO | alembic.runtime.migration | Running upgrade 20260824_0008 -> 20260824_0009, add durable Document process operation journal
+2026-09-09 17:54:18,071 | INFO | alembic.runtime.migration | Running upgrade 20260824_0009 -> 20260824_0010, add durable Learning Plan operation journal
+2026-09-09 17:54:18,072 | INFO | alembic.runtime.migration | Running upgrade 20260824_0010 -> 20260824_0011, add Scene aggregate revisions
+2026-09-09 17:54:18,072 | INFO | alembic.runtime.migration | Running upgrade 20260824_0011 -> 20260825_0012, add Tavern Room pagination index
+2026-09-09 17:54:18,073 | INFO | alembic.runtime.migration | Running upgrade 20260825_0012 -> 20260825_0013, add append-only Harness operation bindings
+2026-09-09 17:54:18,074 | INFO | alembic.runtime.migration | Running upgrade 20260825_0013 -> 20260831_0014, add durable protected Harness artifact resolver
+2026-09-09 17:54:18,076 | INFO | alembic.runtime.migration | Running upgrade 20260831_0014 -> 20260903_0015, add durable Harness effect journal and terminal evidence
+2026-09-09 17:54:18,078 | INFO | alembic.runtime.migration | Running upgrade 20260903_0015 -> 20260903_0016, add durable Harness v3 runtime execution records
+2026-09-09 17:54:18,079 | INFO | alembic.runtime.migration | Running upgrade 20260903_0016 -> 20260903_0017, Persist server only Study Chat v3 trace.
+2026-09-09 17:54:18,079 | INFO | alembic.runtime.migration | Running upgrade 20260903_0017 -> 20260903_0018, add durable admission rows for broad Harness workflows
+.2026-09-09 17:54:18,123 | INFO | vibe_learner.documents | document.created id=doc-b6fae88d97 filename=identity.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmphmg7k4j0/uploads/doc-b6fae88d97.pdf
+.2026-09-09 17:54:18,168 | INFO | vibe_learner.documents | document.created id=doc-17cc736438 filename=cleanup.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpj7wx0q5v/uploads/doc-17cc736438.pdf
+2026-09-09 17:54:18,171 | INFO | vibe_learner.documents | document.processing.start id=doc-17cc736438 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpj7wx0q5v/uploads/doc-17cc736438.pdf
+2026-09-09 17:54:18,190 | ERROR | vibe_learner.documents | document.processing.failed id=doc-17cc736438
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 201, in process_document
+    runtime_prepared, harness_runtime = self.harness_service.prepare_document(
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_broad_adoption.py", line 564, in prepare_document
+    return self._prepare_existing_operation(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_broad_adoption.py", line 1145, in _prepare_existing_operation
+    raise RuntimeError(
+RuntimeError: cleanup_failed
+.2026-09-09 17:54:18,294 | INFO | vibe_learner.documents | document.created id=doc-9b1903054e filename=tamper.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpaoxxolci/uploads/doc-9b1903054e.pdf
+2026-09-09 17:54:18,297 | INFO | vibe_learner.documents | document.processing.start id=doc-9b1903054e force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpaoxxolci/uploads/doc-9b1903054e.pdf
+2026-09-09 17:54:18,370 | INFO | vibe_learner.documents | document.processing.end id=doc-9b1903054e pages=1 chunks=1 raw_sections=0 study_units=1 extraction=text ocr_applied=False warnings=0
+.2026-09-09 17:54:18,415 | INFO | vibe_learner.documents | document.created id=doc-cc44c4284a filename=ocr-unavailable.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp0owna_2e/uploads/doc-cc44c4284a.pdf
+2026-09-09 17:54:18,418 | INFO | vibe_learner.documents | document.processing.start id=doc-cc44c4284a force_ocr=True path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp0owna_2e/uploads/doc-cc44c4284a.pdf
+2026-09-09 17:54:18,489 | ERROR | vibe_learner.documents | document.processing.failed id=doc-cc44c4284a
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 397, in process_document
+    raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+RuntimeError: document_ocr_unavailable
+.2026-09-09 17:54:18,535 | INFO | vibe_learner.documents | document.created id=doc-4cefff9a0a filename=interrupt.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp988p222w/uploads/doc-4cefff9a0a.pdf
+2026-09-09 17:54:18,540 | INFO | vibe_learner.documents | document.processing.interrupted id=doc-4cefff9a0a
+..2026-09-09 17:54:18,626 | INFO | vibe_learner.documents | document.created id=doc-686b346bd5 filename=post-commit-progress.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpzkk4elwo/uploads/doc-686b346bd5.pdf
+2026-09-09 17:54:18,629 | INFO | vibe_learner.documents | document.processing.start id=doc-686b346bd5 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpzkk4elwo/uploads/doc-686b346bd5.pdf
+2026-09-09 17:54:18,706 | WARNING | vibe_learner.documents | document.processing.progress_after_commit_ignored id=doc-686b346bd5 operation_id=document-process-op-4310fa8afe514ab1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 450, in process_document
+    _emit_progress(
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 579, in _emit_progress
+    callback(stage, payload)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 252, in fail_only_after_commit
+    raise RuntimeError("progress_sink_unavailable")
+RuntimeError: progress_sink_unavailable
+2026-09-09 17:54:18,707 | INFO | vibe_learner.documents | document.processing.end id=doc-686b346bd5 pages=1 chunks=1 raw_sections=0 study_units=1 extraction=text ocr_applied=False warnings=0
+.2026-09-09 17:54:18,755 | INFO | vibe_learner.documents | document.created id=doc-9c73fc98a0 filename=before_debug_projection.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-9c73fc98a0.pdf
+2026-09-09 17:54:18,758 | INFO | vibe_learner.documents | document.processing.start id=doc-9c73fc98a0 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-9c73fc98a0.pdf
+2026-09-09 17:54:18,834 | ERROR | vibe_learner.documents | document.processing.failed id=doc-9c73fc98a0
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 398, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 177, in commit_success
+    self._inject("before_debug_projection")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:before_debug_projection
+2026-09-09 17:54:18,837 | INFO | vibe_learner.documents | document.created id=doc-8b65489d95 filename=after_debug_projection.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-8b65489d95.pdf
+2026-09-09 17:54:18,838 | INFO | vibe_learner.documents | document.processing.start id=doc-8b65489d95 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-8b65489d95.pdf
+2026-09-09 17:54:18,907 | ERROR | vibe_learner.documents | document.processing.failed id=doc-8b65489d95
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 398, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 182, in commit_success
+    self._inject("after_debug_projection")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:after_debug_projection
+2026-09-09 17:54:18,909 | INFO | vibe_learner.documents | document.created id=doc-19f96af2b7 filename=after_document_projection.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-19f96af2b7.pdf
+2026-09-09 17:54:18,910 | INFO | vibe_learner.documents | document.processing.start id=doc-19f96af2b7 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-19f96af2b7.pdf
+2026-09-09 17:54:18,978 | ERROR | vibe_learner.documents | document.processing.failed id=doc-19f96af2b7
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 398, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 186, in commit_success
+    self._inject("after_document_projection")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:after_document_projection
+2026-09-09 17:54:18,980 | INFO | vibe_learner.documents | document.created id=doc-44a74040fe filename=before_terminal_commit.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-44a74040fe.pdf
+2026-09-09 17:54:18,981 | INFO | vibe_learner.documents | document.processing.start id=doc-44a74040fe force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqkj19uu/uploads/doc-44a74040fe.pdf
+2026-09-09 17:54:19,052 | ERROR | vibe_learner.documents | document.processing.failed id=doc-44a74040fe
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 398, in process_document
+    self.process_repository.commit_success(
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 240, in commit_success
+    self._inject("before_terminal_commit")
+  File "/Users/ffox/vibe-learner/services/ai/app/persistence/document_process_operation_repository.py", line 507, in _inject
+    self.fault_injector(stage)
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 182, in <lambda>
+    _raise_fault(current) if current == expected else None
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_document_process_operation.py", line 360, in _raise_fault
+    raise RuntimeError(f"fault:{stage}")
+RuntimeError: fault:before_terminal_commit
+.2026-09-09 17:54:19,099 | INFO | vibe_learner.documents | document.created id=doc-f7da5b74f7 filename=abandoned.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpfg68erpm/uploads/doc-f7da5b74f7.pdf
+2026-09-09 17:54:19,104 | WARNING | vibe_learner.documents | document.processing.recovered_abandoned count=1
+.2026-09-09 17:54:19,151 | INFO | vibe_learner.documents | document.created id=doc-6eb776cad9 filename=success.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp2h9eeovo/uploads/doc-6eb776cad9.pdf
+2026-09-09 17:54:19,154 | INFO | vibe_learner.documents | document.processing.start id=doc-6eb776cad9 force_ocr=True path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp2h9eeovo/uploads/doc-6eb776cad9.pdf
+2026-09-09 17:54:19,236 | INFO | vibe_learner.documents | document.processing.end id=doc-6eb776cad9 pages=1 chunks=1 raw_sections=0 study_units=1 extraction=text ocr_applied=False warnings=0
+.2026-09-09 17:54:19,284 | INFO | vibe_learner.documents | document.created id=doc-d1f5f89b6d filename=metrics.pdf size_bytes=3 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpku7_g6_3/uploads/doc-d1f5f89b6d.pdf
+2026-09-09 17:54:19,287 | INFO | vibe_learner.documents | document.processing.start id=doc-d1f5f89b6d force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpku7_g6_3/uploads/doc-d1f5f89b6d.pdf
+2026-09-09 17:54:19,362 | INFO | vibe_learner.documents | document.processing.end id=doc-d1f5f89b6d pages=1 chunks=1 raw_sections=0 study_units=1 extraction=text ocr_applied=False warnings=0
+..................2026-09-09 17:54:19,840 | INFO | vibe_learner.documents | document.created id=doc-b728abd6b8 filename=child-stage.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpvroxok9y/uploads/doc-b728abd6b8.pdf
+.2026-09-09 17:54:19,918 | INFO | vibe_learner.documents | document.created id=doc-4edceada77 filename=first.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmv5v09l1/uploads/doc-4edceada77.pdf
+2026-09-09 17:54:19,937 | INFO | vibe_learner.documents | document.created id=doc-9daf4129fd filename=second.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmv5v09l1/uploads/doc-9daf4129fd.pdf
+.2026-09-09 17:54:20,001 | INFO | vibe_learner.documents | document.created id=doc-ce0f354067 filename=replacement.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpgexdv0r1/uploads/doc-ce0f354067.pdf
+..2026-09-09 17:54:20,164 | INFO | vibe_learner.documents | document.created id=doc-be7042e15c filename=child-stage-failed.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp9qgzbigx/uploads/doc-be7042e15c.pdf
+............................................/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/tempfile.py:940: ResourceWarning: Implicitly cleaning up <TemporaryDirectory '/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpb5xfpns3'>
+  _warnings.warn(warn_message, ResourceWarning)
+........................................................................................................2026-09-09 17:54:24,245 | INFO | vibe_learner.model_provider | model.request.compatibility model=gpt-5-mini adjustments=temperature_omitted,max_tokens_to_max_completion_tokens
+2026-09-09 17:54:24,245 | INFO | vibe_learner.model_provider | model.setting.request provider=litellm model=openai/gpt-5-mini tool_round=0 tools_enabled=False
+...2026-09-09 17:54:24,245 | INFO | vibe_learner.model_provider | model.setting.request provider=litellm model=openai/gpt-4.1-mini tool_round=0 tools_enabled=False
+2026-09-09 17:54:24,245 | WARNING | vibe_learner.model_provider | model.setting.unsupported_params provider=litellm status=unknown upstream_code=UnsupportedParamsError
+..........2026-09-09 17:54:24,560 | INFO | vibe_learner.documents | document.created id=doc-50ef0f93fe filename=response-shape.pdf size_bytes=1010 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp2wdt1oyv/uploads/doc-50ef0f93fe.pdf
+2026-09-09 17:54:24,563 | INFO | vibe_learner.documents | document.processing.start id=doc-50ef0f93fe force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp2wdt1oyv/uploads/doc-50ef0f93fe.pdf
+2026-09-09 17:54:24,576 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:24,577 | INFO | vibe_learner.parser | parser.result document_id=doc-50ef0f93fe pages=1 sections=1 chunks=1 total_characters=47 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=1 section_source=heuristic
+2026-09-09 17:54:24,645 | INFO | vibe_learner.documents | document.processing.end id=doc-50ef0f93fe pages=1 chunks=1 raw_sections=1 study_units=1 extraction=page_text_dict ocr_applied=False warnings=1
+...............2026-09-09 17:54:25,584 | INFO | vibe_learner.documents | document.created id=doc-138ea648d4 filename=stream-route.pdf size_bytes=1008 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpsmgypl0e/uploads/doc-138ea648d4.pdf
+2026-09-09 17:54:25,591 | INFO | vibe_learner.documents | document.processing.start id=doc-138ea648d4 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpsmgypl0e/uploads/doc-138ea648d4.pdf
+2026-09-09 17:54:25,606 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:25,609 | INFO | vibe_learner.parser | parser.result document_id=doc-138ea648d4 pages=1 sections=1 chunks=1 total_characters=44 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=1 section_source=heuristic
+2026-09-09 17:54:25,674 | INFO | vibe_learner.documents | document.processing.end id=doc-138ea648d4 pages=1 chunks=1 raw_sections=1 study_units=1 extraction=page_text_dict ocr_applied=False warnings=1
+..2026-09-09 17:54:25,794 | INFO | vibe_learner.documents | document.created id=doc-6b78745cb0 filename=stream-process.pdf size_bytes=1009 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpl1lcax5n/uploads/doc-6b78745cb0.pdf
+2026-09-09 17:54:25,799 | INFO | vibe_learner.documents | document.processing.start id=doc-6b78745cb0 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpl1lcax5n/uploads/doc-6b78745cb0.pdf
+2026-09-09 17:54:25,813 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:25,816 | INFO | vibe_learner.parser | parser.result document_id=doc-6b78745cb0 pages=1 sections=1 chunks=1 total_characters=46 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=1 section_source=heuristic
+2026-09-09 17:54:25,877 | INFO | vibe_learner.documents | document.processing.end id=doc-6b78745cb0 pages=1 chunks=1 raw_sections=1 study_units=1 extraction=page_text_dict ocr_applied=False warnings=1
+.2026-09-09 17:54:25,923 | INFO | vibe_learner.documents | document.created id=doc-b73ebd9185 filename=interruptible.pdf size_bytes=824 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpza7qz1o7/uploads/doc-b73ebd9185.pdf
+2026-09-09 17:54:25,926 | INFO | vibe_learner.documents | document.processing.start id=doc-b73ebd9185 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpza7qz1o7/uploads/doc-b73ebd9185.pdf
+2026-09-09 17:54:25,940 | INFO | vibe_learner.documents | document.processing.interrupted id=doc-b73ebd9185
+......2026-09-09 17:54:26,213 | INFO | vibe_learner.documents | document.created id=doc-fef951a9ba filename=stream-plan.pdf size_bytes=1006 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp_za5_og7/uploads/doc-fef951a9ba.pdf
+2026-09-09 17:54:26,216 | INFO | vibe_learner.documents | document.processing.start id=doc-fef951a9ba force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp_za5_og7/uploads/doc-fef951a9ba.pdf
+2026-09-09 17:54:26,228 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:26,228 | INFO | vibe_learner.parser | parser.result document_id=doc-fef951a9ba pages=1 sections=1 chunks=1 total_characters=43 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=1 section_source=heuristic
+2026-09-09 17:54:26,288 | INFO | vibe_learner.documents | document.processing.end id=doc-fef951a9ba pages=1 chunks=1 raw_sections=1 study_units=1 extraction=page_text_dict ocr_applied=False warnings=1
+...........2026-09-09 17:54:26,920 | INFO | vibe_learner.model_provider | model.chat.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:26,923 | INFO | vibe_learner.model_provider | model.chat.request provider=litellm model=openai/gpt-test tool_round=1 tools_enabled=True
+2026-09-09 17:54:26,926 | INFO | vibe_learner.model_provider | model.chat.request provider=litellm model=openai/gpt-test tool_round=2 tools_enabled=True
+.2026-09-09 17:54:26,967 | INFO | vibe_learner.model_provider | model.chat.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+.2026-09-09 17:54:27,007 | INFO | vibe_learner.model_provider | model.chat.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,008 | INFO | vibe_learner.model_provider | model.chat.request provider=litellm model=openai/gpt-test tool_round=1 tools_enabled=True
+...2026-09-09 17:54:27,129 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,131 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=2 tools_enabled=True
+.2026-09-09 17:54:27,172 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,174 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=1 tools_enabled=True
+.2026-09-09 17:54:27,214 | INFO | vibe_learner.model_provider | model.setting.request provider=litellm model=openai/gpt-setting-test tool_round=0 tools_enabled=False
+.2026-09-09 17:54:27,254 | WARNING | vibe_learner.model_provider | model.setting.web_search_fallback feature=persona_cards_from_keywords model=gpt-setting-test error=openai_setting_request_failed:400:BadRequestError
+.2026-09-09 17:54:27,294 | INFO | vibe_learner.model_provider | model.setting.responses.request provider=litellm model=openai/gpt-setting-test tools_enabled=True
+.2026-09-09 17:54:27,334 | INFO | vibe_learner.model_provider | model.setting.responses.request provider=litellm model=openai/gpt-setting-test tools_enabled=True
+.2026-09-09 17:54:27,374 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,375 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=1 tools_enabled=True
+.2026-09-09 17:54:27,417 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,418 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,418 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,419 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+.2026-09-09 17:54:27,459 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:27,461 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=1 tools_enabled=True
+2026-09-09 17:54:27,462 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=1 tools_enabled=True
+..2026-09-09 17:54:27,552 | INFO | vibe_learner.parser | parser.margin_patterns top=1 bottom=1
+2026-09-09 17:54:27,552 | INFO | vibe_learner.parser | parser.result document_id=doc-toc-dual pages=8 sections=6 chunks=6 total_characters=784 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=8 section_source=toc
+...2026-09-09 17:54:27,677 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:27,677 | INFO | vibe_learner.parser | parser.result document_id=doc-heading pages=2 sections=2 chunks=2 total_characters=113 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=0 section_source=heuristic
+.2026-09-09 17:54:27,719 | INFO | vibe_learner.parser | parser.page.ocr_applied page=1 force_ocr=True text_chars_before=0 text_chars_after=65
+2026-09-09 17:54:27,719 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:27,719 | INFO | vibe_learner.parser | parser.result document_id=doc-ocr pages=1 sections=1 chunks=1 total_characters=65 extraction=ocr_forced ocr_status=forced ocr_applied_pages=1 warnings=1 section_source=heuristic
+.2026-09-09 17:54:27,762 | WARNING | vibe_learner.parser | parser.page.ocr_unavailable page=1 reason=unsupported_ocr_engine:disabled
+2026-09-09 17:54:27,762 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:27,762 | INFO | vibe_learner.parser | parser.result document_id=doc-ocr-unavailable pages=1 sections=1 chunks=0 total_characters=0 extraction=ocr_forced ocr_status=unavailable ocr_applied_pages=0 warnings=3 section_source=heuristic
+...........2026-09-09 17:54:28,238 | INFO | vibe_learner.documents | document.created id=doc-38aebe1d88 filename=physics-notes.pdf size_bytes=1720 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp31ynxzi9/uploads/doc-38aebe1d88.pdf
+2026-09-09 17:54:28,241 | INFO | vibe_learner.documents | document.processing.start id=doc-38aebe1d88 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp31ynxzi9/uploads/doc-38aebe1d88.pdf
+2026-09-09 17:54:28,252 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:28,253 | INFO | vibe_learner.parser | parser.result document_id=doc-38aebe1d88 pages=2 sections=2 chunks=2 total_characters=269 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=0 section_source=heuristic
+2026-09-09 17:54:28,313 | INFO | vibe_learner.documents | document.processing.end id=doc-38aebe1d88 pages=2 chunks=2 raw_sections=2 study_units=1 extraction=page_text_dict ocr_applied=False warnings=0
+...................................................2026-09-09 17:54:30,966 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+2026-09-09 17:54:30,967 | INFO | vibe_learner.model_provider | model.plan.request provider=litellm model=openai/gpt-test tool_round=0 tools_enabled=True
+..................................2026-09-09 17:54:31,435 | INFO | vibe_learner.documents | document.created id=doc-48127c1802 filename=document-cancel.pdf size_bytes=1016 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqjcf566/uploads/doc-48127c1802.pdf
+2026-09-09 17:54:31,440 | INFO | vibe_learner.documents | document.processing.start id=doc-48127c1802 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpmqjcf566/uploads/doc-48127c1802.pdf
+2026-09-09 17:54:31,456 | ERROR | vibe_learner.documents | document.processing.failed id=doc-48127c1802
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 201, in process_document
+    runtime_prepared, harness_runtime = self.harness_service.prepare_document(
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_broad_adoption.py", line 564, in prepare_document
+    return self._prepare_existing_operation(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_broad_adoption.py", line 1145, in _prepare_existing_operation
+    raise RuntimeError(
+RuntimeError: parser_failed_after_cancel
+.2026-09-09 17:54:31,501 | INFO | vibe_learner.documents | document.created id=doc-046da37ed6 filename=plan-cancel.pdf size_bytes=1016 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp6jd94cdw/uploads/doc-046da37ed6.pdf
+2026-09-09 17:54:31,504 | INFO | vibe_learner.documents | document.processing.start id=doc-046da37ed6 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmp6jd94cdw/uploads/doc-046da37ed6.pdf
+2026-09-09 17:54:31,515 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:31,516 | INFO | vibe_learner.parser | parser.result document_id=doc-046da37ed6 pages=1 sections=1 chunks=1 total_characters=54 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=1 section_source=heuristic
+2026-09-09 17:54:31,617 | INFO | vibe_learner.documents | document.processing.end id=doc-046da37ed6 pages=1 chunks=1 raw_sections=1 study_units=1 extraction=page_text_dict ocr_applied=False warnings=1
+.2026-09-09 17:54:31,679 | INFO | vibe_learner.routes | learning_plans.create document_id= persona_id=mentor-aurora
+.2026-09-09 17:54:31,780 | INFO | vibe_learner.documents | document.created id=doc-70b6f53387 filename=plan-error.pdf size_bytes=1016 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpn_vll7rl/uploads/doc-70b6f53387.pdf
+2026-09-09 17:54:31,783 | INFO | vibe_learner.documents | document.processing.start id=doc-70b6f53387 force_ocr=False path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpn_vll7rl/uploads/doc-70b6f53387.pdf
+2026-09-09 17:54:31,794 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 17:54:31,795 | INFO | vibe_learner.parser | parser.result document_id=doc-70b6f53387 pages=1 sections=1 chunks=1 total_characters=54 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=1 section_source=heuristic
+2026-09-09 17:54:31,854 | INFO | vibe_learner.documents | document.processing.end id=doc-70b6f53387 pages=1 chunks=1 raw_sections=1 study_units=1 extraction=page_text_dict ocr_applied=False warnings=1
+................................2026-09-09 17:54:33,428 | INFO | vibe_learner.api | request.start id=e76eb0bc method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments query=
+2026-09-09 17:54:33,453 | ERROR | vibe_learner.routes | study_chat.error session_id=session-public-provider-failure public_detail=chat_model_network_error internal_error_code=harness_runtime_prepare_output_invalid retry_attempts=1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1979, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+2026-09-09 17:54:33,455 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-public-provider-failure operation_id=study-chat-op-48206b7a91f64e95 error_code=study_chat_uncertain_chat_model_network_error
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1979, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1571, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2015, in _run_study_chat
+    raise http_error from exc
+fastapi.exceptions.HTTPException: 502: chat_model_network_error
+2026-09-09 17:54:33,456 | INFO | vibe_learner.api | request.end id=e76eb0bc method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments status=200 duration_ms=28
+2026-09-09 17:54:33,457 | INFO | vibe_learner.api | request.start id=310bf076 method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-connection-0001 query=
+2026-09-09 17:54:33,458 | INFO | vibe_learner.api | request.end id=310bf076 method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-connection-0001 status=200 duration_ms=1
+2026-09-09 17:54:33,458 | INFO | vibe_learner.api | request.start id=8efd0c6e method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments query=
+2026-09-09 17:54:33,460 | INFO | vibe_learner.api | request.end id=8efd0c6e method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments status=200 duration_ms=1
+.2026-09-09 17:54:33,503 | INFO | vibe_learner.api | request.start id=fdaa1ea2 method=POST path=/study-sessions/session-public-provider-failure/chat query=
+2026-09-09 17:54:33,526 | ERROR | vibe_learner.routes | study_chat.error session_id=session-public-provider-failure public_detail=chat_model_timeout internal_error_code=harness_runtime_prepare_output_invalid retry_attempts=1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1979, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+2026-09-09 17:54:33,528 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-public-provider-failure operation_id=study-chat-op-ce9d2aa5f8fe4ebc error_code=study_chat_uncertain_chat_model_timeout
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1979, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1571, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2015, in _run_study_chat
+    raise http_error from exc
+fastapi.exceptions.HTTPException: 504: chat_model_timeout
+2026-09-09 17:54:33,529 | INFO | vibe_learner.api | request.end id=fdaa1ea2 method=POST path=/study-sessions/session-public-provider-failure/chat status=200 duration_ms=25
+2026-09-09 17:54:33,530 | INFO | vibe_learner.api | request.start id=a9eebe3b method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-timeout-0001 query=
+2026-09-09 17:54:33,530 | INFO | vibe_learner.api | request.end id=a9eebe3b method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-timeout-0001 status=200 duration_ms=0
+2026-09-09 17:54:33,531 | INFO | vibe_learner.api | request.start id=8c5577f7 method=POST path=/study-sessions/session-public-provider-failure/chat query=
+2026-09-09 17:54:33,532 | INFO | vibe_learner.api | request.end id=8c5577f7 method=POST path=/study-sessions/session-public-provider-failure/chat status=200 duration_ms=1
+.........2026-09-09 17:54:33,536 | INFO | vibe_learner.model_provider | model.chat.parse_fallback using_plain_text finish_reason=stop reasoning_tokens=0 completion_tokens=0 content_preview=[提示] 先看向量是否线性无关，再判断它们是否张成整个空间。
+2026-09-09 17:54:33,537 | INFO | vibe_learner.model_provider | model.chat.parse_fallback using_plain_text finish_reason=stop reasoning_tokens=0 completion_tokens=0 content_preview=[Note] This is ordinary prose, not a JSON array.
+.2026-09-09 17:54:33,537 | INFO | vibe_learner.model_provider | model.chat.parse_fallback using_plain_text finish_reason=stop reasoning_tokens=0 completion_tokens=0 content_preview=好的，我们继续！向量基是一组线性无关并张成空间的向量。
+.2026-09-09 17:54:33,537 | INFO | vibe_learner.model_provider | model.chat.parse_fallback using_plain_text finish_reason=stop reasoning_tokens=0 completion_tokens=0 content_preview=Explanation: a basis spans the space.
+2026-09-09 17:54:33,537 | INFO | vibe_learner.model_provider | model.chat.parse_fallback using_plain_text finish_reason=stop reasoning_tokens=0 completion_tokens=0 content_preview=Topic: vector spaces. Action: verify linear independence first.
+...2026-09-09 17:54:33,537 | WARNING | vibe_learner.model_provider | model.chat.recovery retry_without_tools reason=chat_model_invalid_payload
+.2026-09-09 17:54:33,539 | WARNING | vibe_learner.model_provider | model.chat.recovery retry_without_tools reason=chat_model_invalid_payload
+....2026-09-09 17:54:33,586 | INFO | vibe_learner.api | request.start id=7c1c1021 method=GET path=/study-sessions/session-invalid-reply query=
+2026-09-09 17:54:33,587 | INFO | vibe_learner.api | request.end id=7c1c1021 method=GET path=/study-sessions/session-invalid-reply status=200 duration_ms=0
+2026-09-09 17:54:33,588 | INFO | vibe_learner.api | request.start id=3c6aa18e method=GET path=/study-sessions/session-invalid-reply/chat-operations/historical-trace-request-0001 query=
+2026-09-09 17:54:33,589 | INFO | vibe_learner.api | request.end id=3c6aa18e method=GET path=/study-sessions/session-invalid-reply/chat-operations/historical-trace-request-0001 status=200 duration_ms=1
+2026-09-09 17:54:33,589 | INFO | vibe_learner.api | request.start id=f138ff83 method=POST path=/study-sessions/session-invalid-reply/chat query=
+2026-09-09 17:54:33,591 | INFO | vibe_learner.api | request.end id=f138ff83 method=POST path=/study-sessions/session-invalid-reply/chat status=200 duration_ms=1
+.2026-09-09 17:54:33,636 | WARNING | vibe_learner.model_provider | model.chat.recovery retry_without_tools reason=chat_model_invalid_payload
+2026-09-09 17:54:33,638 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-invalid-reply operation_id=study-chat-op-50eca057de534aaf error_code=study_chat_execution_uncertain
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/model_provider.py", line 3887, in _decode_study_chat_reply_proposal
+    proposal = StudyChatReplyProposalV1.model_validate(payload)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/.venv/lib/python3.12/site-packages/pydantic/main.py", line 716, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for StudyChatReplyProposalV1
+text
+  Field required [type=missing, input_value={'mood': 'calm', 'action': 'point'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.12/v/missing
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1571, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1204, in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_study_chat_reply_decode.py", line 586, in run_failed_chat
+    return provider.generate_chat(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/model_provider.py", line 1643, in generate_chat
+    recovered = _parse_chat_model_reply(
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/model_provider.py", line 3980, in _parse_chat_model_reply
+    proposal = _decode_study_chat_reply_proposal(content)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/model_provider.py", line 3889, in _decode_study_chat_reply_proposal
+    raise RuntimeError("chat_model_invalid_payload") from exc
+RuntimeError: chat_model_invalid_payload
+.2026-09-09 17:54:33,687 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-invalid-reply operation_id=study-chat-op-d0e68e3bbbb34bbe error_code=study_chat_execution_uncertain
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1571, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1204, in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/tests/test_study_chat_reply_decode.py", line 645, in fail_after_capture
+    raise RuntimeError("captured_message_kind")
+RuntimeError: captured_message_kind
+.......................2026-09-09 17:54:34,584 | ERROR | vibe_learner.routes | study_chat.error session_id=session-study-v3 public_detail=chat_generation_failed internal_error_code=harness_runtime_prepare_output_invalid retry_attempts=1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1979, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+2026-09-09 17:54:34,586 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-study-v3 operation_id=study-chat-op-73c60f9182154e64 error_code=study_chat_uncertain_chat_generation_failed
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1979, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1571, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2015, in _run_study_chat
+    raise http_error from exc
+fastapi.exceptions.HTTPException: 500: chat_generation_failed
+..2026-09-09 17:54:34,726 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-study-v3 operation_id=study-chat-op-b081e089ca0f4c8c error_code=study_chat_execution_uncertain
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1571, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2097, in _run_study_chat
+    container.study_session_repository.commit_chat_operation_turn(
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: study_commit_fixture_failure
+...........2026-09-09 17:54:35,696 | WARNING | vibe_learner.model_provider | model.tavern.recovery reason=tavern_actor_invalid_payload
+.2026-09-09 17:54:35,778 | WARNING | vibe_learner.model_provider | model.tavern.recovery reason=tavern_actor_invalid_payload
+.2026-09-09 17:54:35,843 | WARNING | vibe_learner.model_provider | model.tavern.schema_transport_fallback status= upstream_code=unsupported_params
+.............2026-09-09 17:54:39,486 | ERROR | vibe_learner.tavern_routes | tavern.turn_failed room_id=tavern-dda6d149bf2d error=planned_context_read_failure
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/tavern_routes.py", line 189, in run_tavern_turn
+    return container.tavern_service.run_turn(room_id=room_id, payload=payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/tavern.py", line 466, in run_turn
+    return self._execute_run(
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/tavern.py", line 728, in _execute_run
+    recent_messages = self.repository.list_recent_messages(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError: planned_context_read_failure
+............2026-09-09 17:54:40,991 | WARNING | vibe_learner.model_provider | model.tavern.recovery reason=tavern_actor_invalid_payload
+..............................................................
+----------------------------------------------------------------------
+Ran 528 tests in 24.843s
+
+OK
+sys:1: DeprecationWarning: builtin type swigvarlink has no __module__ attribute
+
+> vibe-learner@0.2.2 build:web
+> npm --workspace @vibe-learner/web run build
+
+
+> @vibe-learner/web@0.2.2 build
+> next build
+
+▲ Next.js 16.2.3 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1848ms
+  Running TypeScript ...
+  Finished TypeScript in 2.5s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/13) ...
+  Generating static pages using 9 workers (3/13) 
+  Generating static pages using 9 workers (6/13) 
+  Generating static pages using 9 workers (9/13) 
+✓ Generating static pages using 9 workers (13/13) in 179ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /apple-icon
+├ ○ /icon
+├ ○ /model-usage
+├ ○ /persona-spectrum
+├ ○ /plan
+├ ○ /scene-setup
+├ ○ /sensory-tools
+├ ○ /settings
+├ ○ /study
+└ ○ /tavern
+
+
+○  (Static)  prerendered as static content
+

@@ -42,6 +42,13 @@ struct ManagedSidecar {
 impl ManagedSidecar {
     fn shutdown(&mut self) {
         if let Some(mut child) = self.child.take() {
+            // The one-file PyInstaller launcher owns another Python process.
+            // Each sidecar is spawned in its own group; killing only the launcher
+            // leaves the server and its session credentials alive after exit.
+            #[cfg(unix)]
+            unsafe {
+                libc::killpg(child.id() as libc::pid_t, libc::SIGKILL);
+            }
             let _ = child.kill();
             let _ = child.wait();
         }
@@ -234,6 +241,12 @@ fn spawn_sidecar_process(
 
     if let Some(model_dir) = bundled_onnxtr_model_dir(app) {
         command.env("VIBE_LEARNER_ONNXTR_MODEL_DIR", model_dir);
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
     }
 
     command

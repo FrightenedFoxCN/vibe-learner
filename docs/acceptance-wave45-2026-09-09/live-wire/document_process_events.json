@@ -1,0 +1,518 @@
+{
+  "report_schema_version": "stream-report-v1",
+  "operation_id": "stream-19dd85a8d696",
+  "subject": {
+    "subject_type": "document",
+    "subject_id": "doc-9afe5c04b0"
+  },
+  "document_id": "doc-9afe5c04b0",
+  "stream_kind": "document_process",
+  "status": "completed",
+  "last_event_sequence": 11,
+  "created_at": "2026-09-09T10:00:24.933457+00:00",
+  "updated_at": "2026-09-09T10:00:25.041415+00:00",
+  "events": [
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:1",
+      "event_sequence": 1,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "document_processing_started",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "8910d042f7c8e2bce99894ee908d7ec921396386a95b86e90dd0802ff39beea7",
+      "payload": {
+        "document_id": "doc-9afe5c04b0",
+        "force_ocr": false,
+        "stored_path": "/tmp/wave45-acceptance-m3-live/uploads/doc-9afe5c04b0.pdf"
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.938870+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:2",
+      "event_sequence": 2,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "parser_started",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "ab63e7773a26708a54c61b88b7575caf461b55a4230da0723c1fc7edf1c2378c",
+      "payload": {
+        "document_id": "doc-9afe5c04b0",
+        "page_count": 3,
+        "force_ocr": false,
+        "toc_section_count": 0
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.953849+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:3",
+      "event_sequence": 3,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "page_parsed",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "1ea78ff99aa4a393d91df3c31b23de3380969cc1d0905483e19368c8344e0507",
+      "payload": {
+        "page_number": 1,
+        "page_count": 3,
+        "processed_pages": 1,
+        "extraction_source": "text",
+        "used_ocr": false,
+        "warning_count": 0
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.961009+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:4",
+      "event_sequence": 4,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "page_parsed",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "6fe1fe5d8b3df2fc0b4792826f248ba7211d71f2a8ff29e48a91b457720555b3",
+      "payload": {
+        "page_number": 2,
+        "page_count": 3,
+        "processed_pages": 2,
+        "extraction_source": "text",
+        "used_ocr": false,
+        "warning_count": 0
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.966286+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:5",
+      "event_sequence": 5,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "page_parsed",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "c2225f5ad957861e34f56ec65eb346ba9aee724685659585d13742314b418b95",
+      "payload": {
+        "page_number": 3,
+        "page_count": 3,
+        "processed_pages": 3,
+        "extraction_source": "text",
+        "used_ocr": false,
+        "warning_count": 0
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.971627+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:6",
+      "event_sequence": 6,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "margin_patterns_detected",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "e5ab3e0505b1d93f3b05b5e1ba88e12b9fc2d4c85710641afc23c9f6823a1a3b",
+      "payload": {
+        "top_pattern_count": 0,
+        "bottom_pattern_count": 0
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.972938+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:7",
+      "event_sequence": 7,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "sections_built",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "ff04c50115dcfabb449ba87c69673b5b1893a93e029a715a0de0cc8652cbef9b",
+      "payload": {
+        "section_count": 3,
+        "section_source": "heuristic"
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.974865+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:8",
+      "event_sequence": 8,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "chunks_built",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "fa2f57188b2d57ed94e2592bda3bb1f76c42d6af78a1e91bec86c465fb104b35",
+      "payload": {
+        "chunk_count": 6
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.975972+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:9",
+      "event_sequence": 9,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "study_units_built",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "b06b8c1b7286c6dd3a4254a9e239eac8142e20e2d91dc07d9d590492560168c3",
+      "payload": {
+        "document_id": "doc-9afe5c04b0",
+        "study_unit_count": 3,
+        "plannable_count": 3
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:24.982093+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:10",
+      "event_sequence": 10,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "document_processing_completed",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "153f7e2f21cdbefb41bb71f84385337fbc3e04961c804cc189663dec180486f9",
+      "payload": {
+        "document_id": "doc-9afe5c04b0",
+        "page_count": 3,
+        "chunk_count": 6,
+        "study_unit_count": 3,
+        "ocr_status": "completed"
+      },
+      "terminal_evidence": null,
+      "committed_projection": null,
+      "created_at": "2026-09-09T10:00:25.038409+00:00"
+    },
+    {
+      "event_schema_version": "stream-event-v1",
+      "operation_id": "stream-19dd85a8d696",
+      "event_id": "stream-19dd85a8d696:event:11",
+      "event_sequence": 11,
+      "stream_kind": "document_process",
+      "subject": {
+        "subject_type": "document",
+        "subject_id": "doc-9afe5c04b0"
+      },
+      "stage": "stream_completed",
+      "payload_contract_version": "document-process-stream-payload-v1",
+      "payload_digest": "b6a5595332d91afcbd6994fd0a169c829e446fef485a2500f21761d77083bbc7",
+      "payload": {
+        "document_id": "doc-9afe5c04b0",
+        "status": "processed"
+      },
+      "terminal_evidence": {
+        "commit_status": "committed",
+        "domain_operation_id": "document-process-op-04c07d1cad5f41ad",
+        "domain_operation_status": "committed",
+        "evidence_scope": "primary_output_only",
+        "resource_type": "document",
+        "resource_id": "doc-9afe5c04b0",
+        "commit_contract_version": "document-process-commit-v1",
+        "projection_contract_version": "document-record-v1",
+        "projection_digest": "bfdbf4c32ed2f165d9da3a2e09c5fd738ee28a480bea77e01b7e0d23e75259f0"
+      },
+      "committed_projection": {
+        "id": "doc-9afe5c04b0",
+        "title": "synthetic-algebra",
+        "original_filename": "synthetic-algebra.pdf",
+        "stored_path": "/tmp/wave45-acceptance-m3-live/uploads/doc-9afe5c04b0.pdf",
+        "status": "processed",
+        "ocr_status": "completed",
+        "created_at": "2026-09-09T10:00:24.926239+00:00",
+        "updated_at": "2026-09-09T10:00:24.983584+00:00",
+        "sections": [
+          {
+            "id": "doc-9afe5c04b0:study-unit:1",
+            "document_id": "doc-9afe5c04b0",
+            "title": "Chapter 1: Linear algebra",
+            "page_start": 1,
+            "page_end": 1,
+            "level": 1
+          },
+          {
+            "id": "doc-9afe5c04b0:study-unit:2",
+            "document_id": "doc-9afe5c04b0",
+            "title": "Chapter 2: Linear algebra",
+            "page_start": 2,
+            "page_end": 2,
+            "level": 1
+          },
+          {
+            "id": "doc-9afe5c04b0:study-unit:3",
+            "document_id": "doc-9afe5c04b0",
+            "title": "Chapter 3: Linear algebra",
+            "page_start": 3,
+            "page_end": 3,
+            "level": 1
+          }
+        ],
+        "study_units": [
+          {
+            "id": "doc-9afe5c04b0:study-unit:1",
+            "document_id": "doc-9afe5c04b0",
+            "title": "Chapter 1: Linear algebra",
+            "page_start": 1,
+            "page_end": 1,
+            "unit_kind": "chapter",
+            "include_in_plan": true,
+            "source_section_ids": [
+              "doc-9afe5c04b0:section:l1:1"
+            ],
+            "summary": "聚焦 Chapter 1: Linear algebra，覆盖教材第 1-1 页。",
+            "confidence": 0.88
+          },
+          {
+            "id": "doc-9afe5c04b0:study-unit:2",
+            "document_id": "doc-9afe5c04b0",
+            "title": "Chapter 2: Linear algebra",
+            "page_start": 2,
+            "page_end": 2,
+            "unit_kind": "chapter",
+            "include_in_plan": true,
+            "source_section_ids": [
+              "doc-9afe5c04b0:section:l1:2"
+            ],
+            "summary": "聚焦 Chapter 2: Linear algebra，覆盖教材第 2-2 页。",
+            "confidence": 0.88
+          },
+          {
+            "id": "doc-9afe5c04b0:study-unit:3",
+            "document_id": "doc-9afe5c04b0",
+            "title": "Chapter 3: Linear algebra",
+            "page_start": 3,
+            "page_end": 3,
+            "unit_kind": "chapter",
+            "include_in_plan": true,
+            "source_section_ids": [
+              "doc-9afe5c04b0:section:l1:3"
+            ],
+            "summary": "聚焦 Chapter 3: Linear algebra，覆盖教材第 3-3 页。",
+            "confidence": 0.88
+          }
+        ],
+        "study_unit_count": 3,
+        "page_count": 3,
+        "chunk_count": 6,
+        "preview_excerpt": "Chapter 1: Linear algebra\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space is closed under addition and scalar multiplication. A basis is linearly independent and\nspans the space.\nA vector space",
+        "debug_ready": true,
+        "harness_trace": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-d322be6285beeede7483020b447caa78",
+          "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+          "parent_trace_id": null,
+          "workflow": "document_parse",
+          "stage": "document_parse",
+          "status": "passed",
+          "contract": {
+            "name": "DocumentProcessRuntimeOutput",
+            "version": "document-process-runtime-output-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "document_parse",
+            "stage": "document_parse",
+            "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+            "input_contract": {
+              "name": "DocumentProcessInputManifest",
+              "version": "document-process-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "frontend_request",
+                "resource_id": "document-process-op-04c07d1cad5f41ad",
+                "revision": null
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "document_parser",
+                "version": "document-parser-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "document_upload",
+                "artifact_id": "harness-artifact-2a213e7b677973fbabc00a8935bcd5ba",
+                "contract": {
+                  "name": "DocumentProcessProtectedInput",
+                  "version": "document-process-protected-input-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "c0ddcc10e1267b88f31c626ca73724b93c694981a036a386e02272c3d2165841"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "29b9cd341bb7abbe7488bc510d8a9845c54b7688f394cd1b9cb6b7e47885d61a",
+            "context_digest": "bb977e165a705cf7f0405d0ec5489842e7ca6e9082bf87857d6992b451205e2a",
+            "policy_contract": {
+              "name": "DocumentProcessHarnessPolicy",
+              "version": "document-process-harness-v1"
+            },
+            "prompt_contract": null
+          },
+          "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+          "checks": [
+            {
+              "name": "strict_output_schema",
+              "status": "passed",
+              "code": "output_schema_valid",
+              "message": "Strict output schema passed."
+            },
+            {
+              "name": "page_coverage_and_order",
+              "status": "passed",
+              "code": "page_coverage_valid",
+              "message": "Every page is present once in source order."
+            },
+            {
+              "name": "section_chunk_study_unit_boundaries",
+              "status": "passed",
+              "code": "document_boundaries_valid",
+              "message": "Section, Chunk, and Study Unit boundaries are valid."
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-099279f584c513b5dd01d173fde713fa",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+              "error_code": "",
+              "duration_ms": 28
+            },
+            {
+              "attempt_id": "harness-attempt-e50b96533ac1eb2f90f3f1024ead7860",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-b4c2497443079e35d3ed46d803bf8bdc",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+              "error_code": "",
+              "duration_ms": 1
+            },
+            {
+              "attempt_id": "harness-attempt-83d10010ee403778a8303b81ce766b2a",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "d38bef798a4d316f704ce7dcb6f0c2bd3b41a38616c192d8b437eed4000c111d",
+              "error_code": "",
+              "duration_ms": 53
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 85,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "document-commit-document-process-op-04c07d1cad5f41ad",
+            "payload_contract": {
+              "name": "DocumentProcessCommittedProjection",
+              "version": "document-process-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "document",
+                "resource_id": "doc-9afe5c04b0",
+                "revision": null
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "document",
+                "resource_id": "doc-9afe5c04b0",
+                "expected_revision": null,
+                "committed_revision": null,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "d38bef798a4d316f704ce7dcb6f0c2bd3b41a38616c192d8b437eed4000c111d"
+              }
+            ],
+            "payload_digest": "d38bef798a4d316f704ce7dcb6f0c2bd3b41a38616c192d8b437eed4000c111d",
+            "committed_at": "2026-09-09T10:00:25.035308Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-09T10:00:24.949913Z",
+          "completed_at": "2026-09-09T10:00:25.035838Z"
+        }
+      },
+      "created_at": "2026-09-09T10:00:25.041415+00:00"
+    }
+  ]
+}

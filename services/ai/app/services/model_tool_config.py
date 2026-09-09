@@ -4,46 +4,42 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.models.domain import ModelToolConfigRecord
+from app.models.harness import HarnessStage, HarnessWorkflow
+from app.models.tool_manifest import resolve_tool_manifest_entry
 from app.services.local_store import LocalJsonStore
 
 PLAN_STAGE = "plan_generation"
 CHAT_STAGE = "study_chat"
 
-TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
+_TOOL_UI_CATALOG: dict[str, dict[str, dict[str, str]]] = {
     PLAN_STAGE: {
         "get_study_unit_detail": {
             "label": "学习单元详情",
-            "description": "读取单个学习单元的细节结构与切块摘录，用于精细规划。",
             "category": "planning",
             "category_label": "规划分析",
         },
         "ask_planning_question": {
             "label": "计划澄清提问",
-            "description": "在目标或边界不清时，向学习者提出一个具体确认问题，并保留保守假设。",
             "category": "planning",
             "category_label": "规划分析",
         },
         "estimate_plan_completion": {
             "label": "计划完成度评估",
-            "description": "根据当前学习单元与目录细度估计计划完成度，判断是否还需要继续打磨。",
             "category": "planning",
             "category_label": "规划分析",
         },
         "revise_study_units": {
             "label": "学习单元重编排",
-            "description": "在章节切分明显错误时，允许模型重写完整学习单元列表。",
             "category": "planning",
             "category_label": "规划分析",
         },
         "read_page_range_content": {
             "label": "页范围文本读取",
-            "description": "读取教材页范围文本，补充计划生成需要的上下文细节。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "read_page_range_images": {
             "label": "页范围图像读取",
-            "description": "渲染教材页图像，用于公式、图表、版式等视觉线索判断。",
             "category": "sensory",
             "category_label": "感官工具",
         },
@@ -51,191 +47,176 @@ TOOL_CATALOG: dict[str, dict[str, dict[str, str]]] = {
     CHAT_STAGE: {
         "ask_multiple_choice_question": {
             "label": "选择题生成",
-            "description": "生成章节上下文驱动的选择题。",
             "category": "assessment",
             "category_label": "练习评测",
         },
         "ask_fill_blank_question": {
             "label": "填空题生成",
-            "description": "生成章节上下文驱动的填空题。",
             "category": "assessment",
             "category_label": "练习评测",
         },
         "retrieve_memory_context": {
             "label": "跨会话记忆检索",
-            "description": "读取历史学习片段，为当前回答补充长期记忆。",
             "category": "memory",
             "category_label": "记忆工具",
         },
         "read_session_memory": {
             "label": "临时记忆读取",
-            "description": "读取当前会话内暂存的临时记忆条目。",
             "category": "memory",
             "category_label": "记忆工具",
         },
         "write_session_memory": {
             "label": "临时记忆写入",
-            "description": "向当前会话写入一条临时记忆，供后续对话直接调用。",
             "category": "memory",
             "category_label": "记忆工具",
         },
         "read_system_time": {
             "label": "系统时间读取",
-            "description": "读取当前系统时间、日期和时区信息。",
             "category": "session",
             "category_label": "会话工具",
         },
         "schedule_session_follow_up": {
             "label": "自动续接调度",
-            "description": "安排在若干秒后自动唤醒一次隐藏对话，继续当前章节互动。",
             "category": "session",
             "category_label": "会话工具",
         },
         "read_affinity_state": {
             "label": "好感度读取",
-            "description": "读取当前会话的好感度分数、等级和近期变化。",
             "category": "relationship",
             "category_label": "关系工具",
         },
         "update_affinity_state": {
             "label": "好感度更新",
-            "description": "调整当前会话的好感度分数，并记录原因。",
             "category": "relationship",
             "category_label": "关系工具",
         },
         "read_learning_plan_progress": {
             "label": "计划进度读取",
-            "description": "读取当前学习计划的整体完成度、章节完成度、排期状态和待补充规划问题。",
             "category": "planning",
             "category_label": "计划工具",
         },
         "update_learning_plan": {
             "label": "计划修改提案",
-            "description": "提出对当前学习计划标题或章节结构的修改建议；需要用户确认后才会真正应用。",
             "category": "planning",
             "category_label": "计划工具",
         },
         "update_learning_plan_progress": {
             "label": "计划进度更新",
-            "description": "提出当前学习计划排期状态修改建议；既可按 schedule_id，也可按章节对应的 unit_id 批量更新，且需要用户确认后才会真正应用。",
             "category": "planning",
             "category_label": "计划工具",
         },
         "read_page_range_content": {
             "label": "页范围文本读取",
-            "description": "读取教材页范围文本，增强章节讲解的教材依据。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "read_page_range_images": {
             "label": "页范围图像读取",
-            "description": "渲染教材页图像，辅助解释公式、图表与布局细节。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "project_uploaded_pdf": {
             "label": "投射上传 PDF",
-            "description": "把当前会话里的某个 PDF 附件投到预览窗口，并切到指定页。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "project_uploaded_image": {
             "label": "投射上传图片",
-            "description": "把当前会话里的某个图片附件投到预览窗口，作为当前视觉焦点。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "generate_projected_image": {
             "label": "生成并投射图片",
-            "description": "当当前模型支持图像生成时，生成一张教学用图片并直接投到预览窗口。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "read_projected_pdf_content": {
             "label": "投射 PDF 文本读取",
-            "description": "读取当前投射 PDF 的指定页文字内容，用于基于附件作答和精确引用。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "read_projected_pdf_images": {
             "label": "投射 PDF 图像读取",
-            "description": "渲染当前投射 PDF 的指定页图像，用于视觉判断公式、图表与布局。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "focus_projected_pdf_page": {
             "label": "投射 PDF 切页",
-            "description": "把当前投射 PDF 的预览焦点移动到某一页，并把该页加入本轮引用。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "highlight_projected_pdf_text": {
             "label": "投射 PDF 文字高亮",
-            "description": "在当前投射 PDF 某一页定位指定文字并生成高亮框。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "annotate_projected_pdf_region": {
             "label": "投射 PDF 区域框选",
-            "description": "在当前投射 PDF 某一页按归一化坐标添加框选或强调区域。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "clear_projected_pdf_overlays": {
             "label": "清空投射 PDF 标注",
-            "description": "清空当前投射 PDF 的全部标注，或只清空某一页标注。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "annotate_projected_image_region": {
             "label": "投射图片区域框选",
-            "description": "在当前投射图片上按归一化坐标添加框选或强调区域。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "clear_projected_image_overlays": {
             "label": "清空投射图片标注",
-            "description": "清空当前投射图片上的全部标注。",
             "category": "sensory",
             "category_label": "感官工具",
         },
         "read_scene_overview": {
             "label": "会话场景读取",
-            "description": "读取当前会话绑定场景的整体状态、路径与物体信息。",
             "category": "scene",
             "category_label": "场景工具",
         },
         "add_scene": {
             "label": "新增场景",
-            "description": "在当前会话绑定场景中新增一个子场景并切换过去。",
             "category": "scene",
             "category_label": "场景工具",
         },
         "move_to_scene": {
             "label": "转移至场景",
-            "description": "将当前会话焦点转移到绑定场景树中的另一处。",
             "category": "scene",
             "category_label": "场景工具",
         },
         "add_object": {
             "label": "新增物体",
-            "description": "向当前场景或指定场景加入新的物体。",
             "category": "scene",
             "category_label": "场景工具",
         },
         "update_object_description": {
             "label": "修改物体描述",
-            "description": "更新当前会话场景内某个物体的描述。",
             "category": "scene",
             "category_label": "场景工具",
         },
         "delete_object": {
             "label": "删除物体",
-            "description": "从当前会话绑定场景中删除一个物体。",
             "category": "scene",
             "category_label": "场景工具",
         },
     },
+}
+
+# Provider descriptions have one authority; UI metadata must not fork them.
+TOOL_CATALOG = {
+    stage: {
+        name: {
+            **metadata,
+            "description": resolve_tool_manifest_entry(
+                workflow=(HarnessWorkflow.PLANNING if stage == PLAN_STAGE else HarnessWorkflow.STUDY_CHAT),
+                offered_in_stage=(HarnessStage.PLAN_GENERATION if stage == PLAN_STAGE else HarnessStage.STUDY_CHAT_REPLY),
+                transport_name=name,
+            ).display.provider_description,
+        }
+        for name, metadata in entries.items()
+    }
+    for stage, entries in _TOOL_UI_CATALOG.items()
 }
 
 STAGE_META: dict[str, dict[str, str]] = {

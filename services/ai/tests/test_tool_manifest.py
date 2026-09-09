@@ -29,6 +29,22 @@ GOLDEN_PATH = REPO_ROOT / "packages/shared/fixtures/harness/tool-manifest-v1.jso
 
 
 class ToolManifestTests(unittest.TestCase):
+    def test_production_chat_projection_assembles_all_registered_tools(self) -> None:
+        from app.services.model_provider import _chat_tools
+        from app.services.model_tool_config import TOOL_CATALOG, CHAT_STAGE
+
+        class FullRuntime:
+            def available_tool_names(self):
+                return list(TOOL_CATALOG[CHAT_STAGE])
+
+        tools = _chat_tools(
+            tools_enabled=True, memory_tool_enabled=True, memory_hits=[],
+            multimodal_enabled=False, debug_report=None, document_path=None,
+            session_tool_runtime=FullRuntime(),
+        )
+        self.assertEqual(len(tools), 31)
+        self.assertEqual({tool["function"]["name"] for tool in tools}, set(TOOL_CATALOG[CHAT_STAGE]))
+
     def test_catalog_is_complete_stage_qualified_and_strict(self) -> None:
         entries = TOOL_MANIFEST_REGISTRY.tools
         self.assertEqual(len(entries), 37)

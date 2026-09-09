@@ -52,7 +52,7 @@ from app.models.study_question import (
     StudyQuestionProposalV1,
 )
 from app.models.tool_manifest import resolve_tool_manifest_entry
-from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+from app.services.model_tool_config import CHAT_STAGE, PLAN_STAGE, TOOL_CATALOG
 from app.services.model_recovery import record_model_recovery
 from app.services.harness_broad_adoption import (
     PersonaCardBatchContentProposalV1,
@@ -1891,12 +1891,12 @@ class OpenAIModelProvider(MockModelProvider):
             raise RuntimeError("setting_model_invalid_payload") from exc
         return {
             "slot": PersonaSlot(
-                kind=proposal.kind,
+                kind=slot.kind,
                 label=proposal.label,
                 content=proposal.content,
-                weight=proposal.weight,
-                locked=proposal.locked,
-                sort_order=proposal.sort_order,
+                weight=slot.weight,
+                locked=slot.locked,
+                sort_order=slot.sort_order,
             ).model_dump()
         }
 
@@ -2430,6 +2430,7 @@ class OpenAIModelProvider(MockModelProvider):
         final_trace = run_result.trace
         try:
             proposal = _decode_learning_plan_proposal(run_result.content)
+            _validate_learning_plan_proposal_refs(proposal, active_tool_runtime.current_study_units() or study_units)
         except PlanningProposalDecodeError as first_error:
             recovery = record_model_recovery(
                 category="schema_retry",
@@ -2448,14 +2449,20 @@ class OpenAIModelProvider(MockModelProvider):
                     "path": first_error.path,
                 },
             )
+            repair_units = active_tool_runtime.current_study_units() or study_units
             repair_messages = [
-                *messages,
+                *build_learning_plan_messages(
+                    persona=persona, document_title=document_title, goal=goal,
+                    study_units=repair_units, debug_report=debug_report,
+                    planning_questions=active_tool_runtime.current_planning_questions(),
+                    existing_plan=existing_plan,
+                ),
                 {"role": "assistant", "content": run_result.content},
                 {
                     "role": "user",
                     "content": (
                         "上一次最终计划未通过 learning-plan-proposal-v1 严格校验，"
-                        f"首个错误路径为 {first_error.path or '$'}。请只重新输出完整 JSON；"
+                        f"首个错误路径为 {first_error.path or '$'}，错误类型为 {first_error.reason}。请只重新输出完整 JSON；"
                         "不得输出 plan/schedule/chapter ID、revision、状态或时间，不得遗漏或丢弃章节。"
                     ),
                 },
@@ -2464,7 +2471,13 @@ class OpenAIModelProvider(MockModelProvider):
                 model=active_model,
                 document_id=goal.document_id,
                 messages=repair_messages,
-                tool_runtime=active_tool_runtime,
+                tool_runtime=self._build_plan_tool_runtime(
+                    study_units=repair_units,
+                    detail_map=build_learning_plan_context(study_units=repair_units, debug_report=debug_report)["detail_map"],
+                    debug_report=debug_report, document_path=document_path, tools_enabled=False,
+                    planning_questions=active_tool_runtime.current_planning_questions(),
+                    progress_callback=progress_callback,
+                ),
                 progress_callback=progress_callback,
                 interrupt_check=interrupt_check,
                 allow_fallback=False,
@@ -2473,6 +2486,7 @@ class OpenAIModelProvider(MockModelProvider):
                 raise RuntimeError("plan_proposal_repair_empty_response") from first_error
             try:
                 proposal = _decode_learning_plan_proposal(repaired_result.content)
+                _validate_learning_plan_proposal_refs(proposal, repair_units)
             except PlanningProposalDecodeError as repair_error:
                 raise RuntimeError(
                     f"plan_proposal_schema_invalid:{repair_error.path or '$'}:{repair_error.reason}"
@@ -2493,7 +2507,7 @@ class OpenAIModelProvider(MockModelProvider):
             )
             for item in proposal.schedule
         ]
-        active_study_units = active_tool_runtime.current_study_units()
+        active_study_units = active_tool_runtime.current_study_units() or study_units
         planning_questions = active_tool_runtime.current_planning_questions()
         return PlanModelReply(
             course_title=proposal.course_title,
@@ -2517,7 +2531,11 @@ class OpenAIModelProvider(MockModelProvider):
         progress_callback: Callable[[str, dict[str, object]], None] | None = None,
     ):
         if not tools_enabled:
-            return build_plan_tool_runtime(planning_questions=planning_questions)
+            return build_plan_tool_runtime(
+                study_units=study_units, detail_map=detail_map,
+                planning_questions=planning_questions,
+                disabled_tools=set(TOOL_CATALOG[PLAN_STAGE]),
+            )
         return build_plan_tool_runtime(
             study_units=study_units,
             detail_map=detail_map,
@@ -3539,6 +3557,29 @@ class PlanningProposalDecodeError(RuntimeError):
         self.reason = reason
 
 
+def _validate_learning_plan_proposal_refs(
+    proposal: LearningPlanProposalV1, study_units: list[StudyUnitRecord],
+) -> None:
+    """Validate against the post-tool snapshot before the one repair allowance."""
+    units = {unit.id: unit for unit in study_units}
+    for index, item in enumerate(proposal.schedule):
+        path = f"schedule.{index}"
+        unit = units.get(item.unit_id)
+        if unit is None:
+            raise PlanningProposalDecodeError(path=f"{path}.unit_id", reason="unknown_ref")
+        allowed = set(unit.source_section_ids)
+        for chapter_index, chapter in enumerate(item.schedule_chapters):
+            chapter_path = f"{path}.schedule_chapters.{chapter_index}"
+            if not set(chapter.source_section_ids).issubset(allowed):
+                raise PlanningProposalDecodeError(path=f"{chapter_path}.source_section_ids", reason="unknown_ref")
+            for slice_index, content_slice in enumerate(chapter.content_slices):
+                if not set(content_slice.source_section_ids).issubset(allowed):
+                    raise PlanningProposalDecodeError(
+                        path=f"{chapter_path}.content_slices.{slice_index}.source_section_ids",
+                        reason="unknown_ref",
+                    )
+
+
 def _decode_learning_plan_proposal(content: str) -> LearningPlanProposalV1:
     try:
         payload = _extract_json_payload(content)
@@ -3550,6 +3591,12 @@ def _decode_learning_plan_proposal(content: str) -> LearningPlanProposalV1:
         first_error = exc.errors(include_url=False)[0]
         path = ".".join(str(item) for item in first_error.get("loc", ())) or "$"
         reason = str(first_error.get("type") or "validation_error")
+        invariant = str(first_error.get("ctx", {}).get("error", ""))
+        if invariant in {
+            "duplicate_schedule_unit_ref", "duplicate_source_section_id",
+            "page_end_before_page_start", "anchor_page_end_before_start",
+        }:
+            reason = invariant
         raise PlanningProposalDecodeError(path=path, reason=reason) from exc
 
 

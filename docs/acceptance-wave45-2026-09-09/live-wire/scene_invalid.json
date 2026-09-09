@@ -1,0 +1,16 @@
+{
+  "detail": [
+    {
+      "type": "less_than_equal",
+      "loc": [
+        "body",
+        "layer_count"
+      ],
+      "msg": "Input should be less than or equal to 8",
+      "input": 9,
+      "ctx": {
+        "le": 8
+      }
+    }
+  ]
+}

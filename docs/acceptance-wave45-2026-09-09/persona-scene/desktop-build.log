@@ -1,0 +1,244 @@
+
+> @vibe-learner/desktop@0.2.2 build
+> tauri build --bundles app
+
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `cd ../../ && npm run build:desktop:web && npm run prepare:desktop:bundle`
+
+> vibe-learner@0.2.2 build:desktop:web
+> npm --workspace @vibe-learner/web run build:desktop
+
+
+> @vibe-learner/web@0.2.2 build:desktop
+> next build
+
+▲ Next.js 16.2.3 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.3s
+  Running TypeScript ...
+  Finished TypeScript in 3.1s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/13) ...
+  Generating static pages using 9 workers (3/13) 
+  Generating static pages using 9 workers (6/13) 
+  Generating static pages using 9 workers (9/13) 
+✓ Generating static pages using 9 workers (13/13) in 202ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /apple-icon
+├ ○ /icon
+├ ○ /model-usage
+├ ○ /persona-spectrum
+├ ○ /plan
+├ ○ /scene-setup
+├ ○ /sensory-tools
+├ ○ /settings
+├ ○ /study
+└ ○ /tavern
+
+
+○  (Static)  prerendered as static content
+
+
+> vibe-learner@0.2.2 prepare:desktop:bundle
+> npm --workspace @vibe-learner/desktop run prepare:bundle
+
+
+> @vibe-learner/desktop@0.2.2 prepare:bundle
+> node scripts/prepare-bundle-assets.mjs
+
+29 INFO: PyInstaller: 6.22.2, contrib hooks: 2026.7
+29 INFO: Python: 3.12.13
+37 INFO: Platform: macOS-26.6.2-arm64-arm-64bit
+37 INFO: Python environment: /var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/builds-v0/.tmpCzYiE3
+39 INFO: Removing temporary files and cleaning cache in /Users/ffox/Library/Application Support/pyinstaller
+1436 WARNING: Failed to collect submodules for 'litellm.proxy.ui_crud_endpoints' because importing 'litellm.proxy.ui_crud_endpoints' raised: ImportError: backoff is not installed. Please install it via 'pip install backoff'
+3902 INFO: Module search paths (PYTHONPATH):
+['/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python312.zip',
+ '/Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/python3.12',
+ '/Users/ffox/.local/share/uv/python/cpython-3.12-macos-aarch64-none/lib/python3.12/lib-dynload',
+ '/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/builds-v0/.tmpCzYiE3/lib/python3.12/site-packages',
+ '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages',
+ '/Users/ffox/vibe-learner/services/ai/.venv/lib/python3.12/site-packages',
+ '/Users/ffox/vibe-learner/services/ai']
+4002 INFO: Appending 'binaries' from .spec
+4002 INFO: Appending 'datas' from .spec
+4010 INFO: checking Analysis
+4010 INFO: Building Analysis because Analysis-00.toc is non existent
+4010 INFO: Looking for Python shared library...
+4012 INFO: Using Python shared library: /Users/ffox/.local/share/uv/python/cpython-3.12.13-macos-aarch64-none/lib/libpython3.12.dylib
+4012 INFO: Running Analysis Analysis-00.toc
+4012 INFO: Target bytecode optimization level: 0
+4012 INFO: Initializing module dependency graph...
+4012 INFO: Initializing module graph hook caches...
+4016 INFO: Analyzing modules for base_library.zip ...
+4425 INFO: Processing standard module hook 'hook-encodings.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+4556 INFO: Processing standard module hook 'hook-math.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+4973 INFO: Processing standard module hook 'hook-pickle.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+5295 INFO: Processing standard module hook 'hook-heapq.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+5435 INFO: Caching module dependency graph...
+5450 INFO: Analyzing /Users/ffox/vibe-learner/services/ai/app/sidecar.py
+5467 INFO: Processing standard module hook 'hook-certifi.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+5470 INFO: Processing standard module hook 'hook-uvicorn.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+5627 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+5691 INFO: Processing standard module hook 'hook-xml.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+5782 INFO: Processing standard module hook 'hook-_ctypes.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+6044 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+6045 INFO: SetuptoolsInfo: initializing cached setuptools info...
+6343 INFO: Processing standard module hook 'hook-difflib.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+6363 INFO: Processing standard module hook 'hook-platform.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+6415 INFO: Processing standard module hook 'hook-webbrowser.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+6424 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+6434 INFO: Processing standard module hook 'hook-importlib_metadata.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+6444 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+6679 INFO: Processing standard module hook 'hook-anyio.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+7033 INFO: Processing standard module hook 'hook-pydantic.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+7259 INFO: Processing standard module hook 'hook-rich.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+7505 INFO: Processing standard module hook 'hook-pygments.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+8234 INFO: Processing standard module hook 'hook-sysconfig.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+8239 INFO: Processing standard module hook 'hook-_osx_support.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+8431 INFO: Processing standard module hook 'hook-zoneinfo.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+10241 INFO: Processing standard module hook 'hook-PIL.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+10285 INFO: Processing standard module hook 'hook-PIL.Image.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+10380 INFO: Processing standard module hook 'hook-numpy.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+11346 INFO: Processing standard module hook 'hook-charset_normalizer.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+11542 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+11684 INFO: Processing standard module hook 'hook-xml.dom.domreg.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+11834 INFO: Processing standard module hook 'hook-PIL.ImageFilter.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+12067 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+12087 INFO: Processing standard module hook 'hook-cv2.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+12293 INFO: Processing standard module hook 'hook-pypdfium2.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+12298 INFO: Processing standard module hook 'hook-pypdfium2_raw.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+12401 INFO: Processing standard module hook 'hook-onnxruntime.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+12425 INFO: Processing pre-safe-import-module hook 'hook-tensorflow.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/pre_safe_import_module'
+12437 INFO: Processing standard module hook 'hook-scipy.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+12676 INFO: Processing standard module hook 'hook-scipy.special._ufuncs.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+12858 INFO: Processing standard module hook 'hook-scipy.linalg.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+13826 INFO: Processing standard module hook 'hook-scipy.spatial._ckdtree.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+14046 INFO: Processing standard module hook 'hook-scipy.spatial.transform.rotation.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+14476 INFO: Processing standard module hook 'hook-scipy.stats._stats.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+14692 INFO: Processing standard module hook 'hook-scipy.sparse.csgraph.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+15078 INFO: Processing standard module hook 'hook-scipy.special._ellip_harm_2.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+15209 INFO: Processing standard module hook 'hook-langdetect.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+15231 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+15590 INFO: Processing standard module hook 'hook-sqlite3.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+16166 INFO: Processing standard module hook 'hook-jinja2.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+16376 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16402 INFO: Processing standard module hook 'hook-fsspec.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+16602 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16603 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+16605 INFO: Processing standard module hook 'hook-setuptools.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+16610 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16622 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16622 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+16627 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16627 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+16741 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+16986 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16986 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+17199 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/pre_safe_import_module'
+17199 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+17271 INFO: Processing standard module hook 'hook-sqlalchemy.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+19072 INFO: Processing standard module hook 'hook-psycopg_binary.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+20988 INFO: Processing standard module hook 'hook-regex.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+21089 INFO: Processing standard module hook 'hook-jsonschema.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+21139 INFO: Processing standard module hook 'hook-jsonschema_specifications.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+21162 INFO: Processing standard module hook 'hook-urllib3.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+28047 INFO: Analyzing hidden import 'litellm.caching._internal_lru_cache'
+28048 INFO: Analyzing hidden import 'litellm.integrations.custom_sso_handler'
+28049 INFO: Analyzing hidden import 'litellm.integrations.generic_prompt_management'
+28055 INFO: Analyzing hidden import 'litellm.integrations.test_httpx'
+28055 INFO: Analyzing hidden import 'litellm.llms.a2a.chat.guardrail_translation'
+28061 INFO: Analyzing hidden import 'litellm.llms.anthropic.chat.guardrail_translation'
+28069 INFO: Analyzing hidden import 'litellm.llms.pass_through'
+28070 INFO: Analyzing hidden import 'litellm.llms.pass_through.guardrail_translation'
+28072 INFO: Analyzing hidden import 'litellm.llms.watsonx.completion.handler'
+28073 INFO: Analyzing hidden import 'litellm.proxy._logging'
+28074 INFO: Analyzing hidden import 'litellm.proxy.client'
+28090 INFO: Analyzing hidden import 'litellm.proxy.client.cli'
+28130 INFO: Analyzing hidden import 'litellm.proxy.custom_auth_auto'
+28131 INFO: Analyzing hidden import 'litellm.proxy.custom_prompt_management'
+28132 INFO: Analyzing hidden import 'litellm.proxy.custom_sso'
+28132 INFO: Analyzing hidden import 'litellm.proxy.custom_validate'
+28132 INFO: Analyzing hidden import 'litellm.proxy.lambda'
+28133 INFO: Analyzing hidden import 'litellm.proxy.mcp_tools'
+28133 INFO: Analyzing hidden import 'litellm.proxy.post_call_rules'
+28134 INFO: Analyzing hidden import 'litellm.proxy.prisma_migration'
+28135 INFO: Analyzing hidden import 'litellm.proxy_auth'
+28137 INFO: Analyzing hidden import 'litellm.rag.utils'
+28142 INFO: Analyzing hidden import 'litellm.timeout'
+28144 INFO: Analyzing hidden import 'sqlalchemy.dialects.mssql'
+28196 INFO: Analyzing hidden import 'sqlalchemy.dialects.mssql.provision'
+28199 INFO: Analyzing hidden import 'sqlalchemy.dialects.mysql'
+28351 INFO: Analyzing hidden import 'sqlalchemy.dialects.mysql.provision'
+28353 INFO: Analyzing hidden import 'sqlalchemy.dialects.oracle'
+28419 INFO: Analyzing hidden import 'sqlalchemy.dialects.oracle.provision'
+28422 INFO: Analyzing hidden import 'sqlalchemy.dialects.postgresql.provision'
+28424 INFO: Analyzing hidden import 'sqlalchemy.dialects.sqlite'
+28462 INFO: Analyzing hidden import 'sqlalchemy.dialects.sqlite.provision'
+28465 INFO: Analyzing hidden import 'tiktoken_ext.openai_public'
+28470 INFO: Processing module hooks (post-graph stage)...
+28823 WARNING: Hidden import "scipy.special._cdflib" not found!
+28977 INFO: Processing standard module hook 'hook-PIL.SpiderImagePlugin.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+28994 INFO: Processing standard module hook 'hook-sqlalchemy.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks'
+29126 WARNING: Hidden import "pysqlite2" not found!
+29126 WARNING: Hidden import "MySQLdb" not found!
+30076 INFO: Performing binary vs. data reclassification (1083 entries)
+30190 INFO: Looking for ctypes DLLs
+30280 INFO: Analyzing run-time hooks ...
+30294 INFO: Including run-time hook 'pyi_rth_inspect.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/rthooks'
+30296 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/rthooks'
+30297 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/rthooks'
+30298 INFO: Including run-time hook 'pyi_rth_setuptools.py' from '/private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/hooks/rthooks'
+30360 INFO: Creating base_library.zip...
+30373 INFO: Looking for dynamic libraries
+30904 INFO: Warnings written to /Users/ffox/vibe-learner/services/ai/build/pyinstaller/work/sidecar/warn-sidecar.txt
+31102 INFO: Graph cross-reference written to /Users/ffox/vibe-learner/services/ai/build/pyinstaller/work/sidecar/xref-sidecar.html
+31398 INFO: checking PYZ
+31398 INFO: Building PYZ because PYZ-00.toc is non existent
+31398 INFO: Building PYZ (ZlibArchive) /Users/ffox/vibe-learner/services/ai/build/pyinstaller/work/sidecar/PYZ-00.pyz
+33961 INFO: Building PYZ (ZlibArchive) /Users/ffox/vibe-learner/services/ai/build/pyinstaller/work/sidecar/PYZ-00.pyz completed successfully.
+34006 INFO: EXE target arch: arm64
+34006 INFO: Code signing identity: None
+34021 INFO: checking PKG
+34021 INFO: Building PKG because PKG-00.toc is non existent
+34021 INFO: Building PKG (CArchive) vibe-learner-sidecar.pkg
+62546 INFO: Building PKG (CArchive) vibe-learner-sidecar.pkg completed successfully.
+62557 INFO: Bootloader /private/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-learner-uv-cache/archive-v0/zOj7XpKfObbX6M9q/lib/python3.12/site-packages/PyInstaller/bootloader/Darwin-64bit/run
+62557 INFO: checking EXE
+62557 INFO: Building EXE because EXE-00.toc is non existent
+62557 INFO: Building EXE from EXE-00.toc
+62557 INFO: Copying bootloader EXE to /Users/ffox/vibe-learner/services/ai/build/pyinstaller/dist/vibe-learner-sidecar
+62557 INFO: Converting EXE to target arch (arm64)
+62575 INFO: Removing signature(s) from EXE
+62589 INFO: Modifying Mach-O image UUID(s) in EXE
+62677 INFO: Appending PKG archive to EXE
+62719 INFO: Fixing EXE headers for code signing
+62723 INFO: Rewriting the executable's macOS SDK version (26.2.0) to match the SDK version of the Python library (15.5.0) in order to avoid inconsistent behavior and potential UI issues in the frozen application.
+62723 INFO: Re-signing the EXE
+62889 INFO: Building EXE from EXE-00.toc completed successfully.
+62900 INFO: Build complete! The results are available in: /Users/ffox/vibe-learner/services/ai/build/pyinstaller/dist
+Prepared desktop sidecar: apps/desktop/src-tauri/binaries/vibe-learner-sidecar-aarch64-apple-darwin
+No local OnnxTR model directory found. Preview bundle will rely on runtime defaults.
+   Compiling vibe-learner-desktop v0.2.2 (/Users/ffox/vibe-learner/apps/desktop/src-tauri)
+    Finished `release` profile [optimized] target(s) in 18.27s
+       Built application at: /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/vibe-learner-desktop
+    Bundling Vibe Learner.app (/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app)
+     Signing with identity "-"
+Signing with identity "-"
+Signing /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-sidecar
+/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-sidecar: replacing existing signature
+Signing with identity "-"
+Signing /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-desktop
+/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-desktop: replacing existing signature
+Signing with identity "-"
+Signing /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app
+/Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app: replacing existing signature
+        Warn skipping app notarization, no APPLE_ID & APPLE_PASSWORD & APPLE_TEAM_ID or APPLE_API_KEY & APPLE_API_ISSUER & APPLE_API_KEY_PATH environment variables found
+    Finished 1 bundle at:
+        /Users/ffox/vibe-learner/apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app
+

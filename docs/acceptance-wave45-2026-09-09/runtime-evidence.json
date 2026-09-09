@@ -1,0 +1,3841 @@
+[
+  {
+    "trace_id": "harness-trace-d322be6285beeede7483020b447caa78",
+    "workflow": "document_parse",
+    "stage": "document_parse",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "strict_output_schema",
+        "status": "passed",
+        "code": "output_schema_valid",
+        "message": "Strict output schema passed."
+      },
+      {
+        "name": "page_coverage_and_order",
+        "status": "passed",
+        "code": "page_coverage_valid",
+        "message": "Every page is present once in source order."
+      },
+      {
+        "name": "section_chunk_study_unit_boundaries",
+        "status": "passed",
+        "code": "document_boundaries_valid",
+        "message": "Section, Chunk, and Study Unit boundaries are valid."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-d322be6285beeede7483020b447caa78",
+      "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+      "parent_trace_id": null,
+      "workflow": "document_parse",
+      "stage": "document_parse",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentProcessRuntimeOutput",
+        "version": "document-process-runtime-output-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "document_parse",
+        "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+        "input_contract": {
+          "name": "DocumentProcessInputManifest",
+          "version": "document-process-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-04c07d1cad5f41ad",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_parser",
+            "version": "document-parser-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-2a213e7b677973fbabc00a8935bcd5ba",
+            "contract": {
+              "name": "DocumentProcessProtectedInput",
+              "version": "document-process-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "c0ddcc10e1267b88f31c626ca73724b93c694981a036a386e02272c3d2165841"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "29b9cd341bb7abbe7488bc510d8a9845c54b7688f394cd1b9cb6b7e47885d61a",
+        "context_digest": "bb977e165a705cf7f0405d0ec5489842e7ca6e9082bf87857d6992b451205e2a",
+        "policy_contract": {
+          "name": "DocumentProcessHarnessPolicy",
+          "version": "document-process-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+      "checks": [
+        {
+          "name": "strict_output_schema",
+          "status": "passed",
+          "code": "output_schema_valid",
+          "message": "Strict output schema passed."
+        },
+        {
+          "name": "page_coverage_and_order",
+          "status": "passed",
+          "code": "page_coverage_valid",
+          "message": "Every page is present once in source order."
+        },
+        {
+          "name": "section_chunk_study_unit_boundaries",
+          "status": "passed",
+          "code": "document_boundaries_valid",
+          "message": "Section, Chunk, and Study Unit boundaries are valid."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-099279f584c513b5dd01d173fde713fa",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+          "error_code": "",
+          "duration_ms": 28
+        },
+        {
+          "attempt_id": "harness-attempt-e50b96533ac1eb2f90f3f1024ead7860",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-b4c2497443079e35d3ed46d803bf8bdc",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "53c8b6cafeac100f9fc99e14e77179f6ed4acd81cb649674e0c9e729f8413351",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-83d10010ee403778a8303b81ce766b2a",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "d38bef798a4d316f704ce7dcb6f0c2bd3b41a38616c192d8b437eed4000c111d",
+          "error_code": "",
+          "duration_ms": 53
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 85,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "document-commit-document-process-op-04c07d1cad5f41ad",
+        "payload_contract": {
+          "name": "DocumentProcessCommittedProjection",
+          "version": "document-process-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "document",
+            "resource_id": "doc-9afe5c04b0",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "document",
+            "resource_id": "doc-9afe5c04b0",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": null,
+            "last_sequence": null,
+            "payload_digest": "d38bef798a4d316f704ce7dcb6f0c2bd3b41a38616c192d8b437eed4000c111d"
+          }
+        ],
+        "payload_digest": "d38bef798a4d316f704ce7dcb6f0c2bd3b41a38616c192d8b437eed4000c111d",
+        "committed_at": "2026-09-09T10:00:25.035308Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:24.949913Z",
+      "completed_at": "2026-09-09T10:00:25.035838Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-f76da8c6ae36879cc5d9fca43709662f",
+    "workflow": "document_parse",
+    "stage": "page_extraction",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "passed",
+        "code": "stage_evidence_valid",
+        "message": "Stage output evidence passed strict validation."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-f76da8c6ae36879cc5d9fca43709662f",
+      "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+      "parent_trace_id": "harness-trace-d322be6285beeede7483020b447caa78",
+      "workflow": "document_parse",
+      "stage": "page_extraction",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "page_extraction",
+        "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-04c07d1cad5f41ad",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_page_extractor",
+            "version": "document-page-extractor-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-28ed78704fbb5abda64c660db07d9c6f",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "3b1dd6c445c3497150b2f45fb177e403f60318b1efa89b21e8beb1dc9586690a"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "12410bd6ad1e35aec47e13e61bdedea3a2f7092b726e41f58383177c5cf0f816",
+        "context_digest": "f21ac56c3136142e9a86bae04e1868fd4f197e251c6c226cb23854739e1c40f8",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "b263bb1e74c2b8a85c27663c8062c955fc24da1b72b562760254e34fb883b2d3",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-b035cb9589fb62e2f299be1d9b5bbef8",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "b263bb1e74c2b8a85c27663c8062c955fc24da1b72b562760254e34fb883b2d3",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-7cd1b315a2edacc054bbad37ec3263a4",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "b263bb1e74c2b8a85c27663c8062c955fc24da1b72b562760254e34fb883b2d3",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-1161afa772e1d5a15f6a9715728e132b",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "b263bb1e74c2b8a85c27663c8062c955fc24da1b72b562760254e34fb883b2d3",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:24.988435Z",
+      "completed_at": "2026-09-09T10:00:24.992246Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-a26d2c6cd815d5cfdcaadda335c85dbe",
+    "workflow": "document_parse",
+    "stage": "section_detection",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "passed",
+        "code": "stage_evidence_valid",
+        "message": "Stage output evidence passed strict validation."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-a26d2c6cd815d5cfdcaadda335c85dbe",
+      "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+      "parent_trace_id": "harness-trace-d322be6285beeede7483020b447caa78",
+      "workflow": "document_parse",
+      "stage": "section_detection",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "section_detection",
+        "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-04c07d1cad5f41ad",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_section_detector",
+            "version": "document-section-detector-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-3eea5d09f75e8769ace6a3494cbdacfa",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "4298315041debf9a6a11cc955e5b2eac12b411306f9c6ae9a83f05efe17ab36c"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "bc7a26aa948d6dc3266f79a3dea79d1f503c3fa47233294a97729105805f69ec",
+        "context_digest": "71b9f5a02001257c2c93528799c99b8b52aa9bd2a628fb2a4c5a738b76b5b186",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "80e56d1fa33293245878bb8e203c151ad1262895aa65e52584ece129f6b04018",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-ab797ea2672ef95d73ee90daa3693e83",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "80e56d1fa33293245878bb8e203c151ad1262895aa65e52584ece129f6b04018",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-933c05a58b7886e9a5e9b3e615aa5b38",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "80e56d1fa33293245878bb8e203c151ad1262895aa65e52584ece129f6b04018",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-69e041850c4ce6e74632351b40ed1424",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "80e56d1fa33293245878bb8e203c151ad1262895aa65e52584ece129f6b04018",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 4,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:24.997701Z",
+      "completed_at": "2026-09-09T10:00:25.001822Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-e5ded8fc972d3a3f0e94f17095da2b09",
+    "workflow": "document_parse",
+    "stage": "chunk_building",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "passed",
+        "code": "stage_evidence_valid",
+        "message": "Stage output evidence passed strict validation."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-e5ded8fc972d3a3f0e94f17095da2b09",
+      "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+      "parent_trace_id": "harness-trace-d322be6285beeede7483020b447caa78",
+      "workflow": "document_parse",
+      "stage": "chunk_building",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "chunk_building",
+        "operation_id": "harness-operation-99c1113aaf004814bbe35f6d1b1e4641",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-04c07d1cad5f41ad",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_chunk_builder",
+            "version": "document-chunk-builder-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-a6738ee05ede24a09b903f4ff99327b5",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "25ab088163a023790363dd3da76a97b8a906c7bac7ba0c62acdaa084138ab6cf"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "e364c23d673cc8fd32e350726e0e3700ee22815b3bd59f64be077a5147c4195c",
+        "context_digest": "b002139ff9e7e1551a870bca2290eb491823d161ae49cee5e626ee678c90fdff",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "35214b1427cb1d2c5f4f443ed56ede4d7d1f10405a0079c73c8b1585657aa991",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-04b0223badfac6e42758d277f0c4b92a",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "35214b1427cb1d2c5f4f443ed56ede4d7d1f10405a0079c73c8b1585657aa991",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-c3e39bd913b935cabecd47162f2b802c",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "35214b1427cb1d2c5f4f443ed56ede4d7d1f10405a0079c73c8b1585657aa991",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-326d4c9c458485898fa9e07925c56f43",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "35214b1427cb1d2c5f4f443ed56ede4d7d1f10405a0079c73c8b1585657aa991",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:25.007283Z",
+      "completed_at": "2026-09-09T10:00:25.010887Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-eb901b8bb87434605fa55123a16fe96c",
+    "workflow": "ocr",
+    "stage": "ocr_page",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "passed",
+        "code": "stage_evidence_valid",
+        "message": "Stage output evidence passed strict validation."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-eb901b8bb87434605fa55123a16fe96c",
+      "operation_id": "harness-operation-4d364b5647b74600999891f0575e1c52",
+      "parent_trace_id": null,
+      "workflow": "ocr",
+      "stage": "ocr_page",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "ocr",
+        "stage": "ocr_page",
+        "operation_id": "harness-operation-4d364b5647b74600999891f0575e1c52",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document_ocr-op-9196d10d922140778f1c3ee38f43e921",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "ocr_engine",
+            "version": "ocr-engine-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "ocr_page",
+            "artifact_id": "harness-artifact-91cab523b43259594872177c50c5722e",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "b2ae468f539350d6947aad5326e2d523e7ea76d4e9cbde2e74d8216b3b33c7fa"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "00e6f94ecf33f35852ae3e8404065eaa195fcde248b25d4caf16377a37c13d02",
+        "context_digest": "c2b805bbf44251291d24500bfc39d584b07d2a076b686476fdb85df28a1cf417",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "c719c3e6086a94f1241a621a4b13b78cb2e5184fcd919524f44ae9a8da7e1723",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-dcaddff52137934aee357d94a0ed6508",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "c719c3e6086a94f1241a621a4b13b78cb2e5184fcd919524f44ae9a8da7e1723",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-6620fba23c957273537de54c26eb5505",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "c719c3e6086a94f1241a621a4b13b78cb2e5184fcd919524f44ae9a8da7e1723",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-fa8eb2771d5f7b4858d8550548ae22db",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "c719c3e6086a94f1241a621a4b13b78cb2e5184fcd919524f44ae9a8da7e1723",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:25.017103Z",
+      "completed_at": "2026-09-09T10:00:25.020958Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-cb53f7d45e8ef34cb3bbb5ad440a7a97",
+    "workflow": "study_unit_cleanup",
+    "stage": "study_unit_cleanup",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "passed",
+        "code": "stage_evidence_valid",
+        "message": "Stage output evidence passed strict validation."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-cb53f7d45e8ef34cb3bbb5ad440a7a97",
+      "operation_id": "harness-operation-2f6033bfe46240e4a54150385f434a76",
+      "parent_trace_id": null,
+      "workflow": "study_unit_cleanup",
+      "stage": "study_unit_cleanup",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "study_unit_cleanup",
+        "stage": "study_unit_cleanup",
+        "operation_id": "harness-operation-2f6033bfe46240e4a54150385f434a76",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "study_unit_cleanup-op-da0c52f8e8214fba9608ece38a0884f0",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "study_unit_cleaner",
+            "version": "study-unit-cleaner-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "study_unit_input",
+            "artifact_id": "harness-artifact-0ab33db9a8dc19ab16142b99627648ea",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "b25b880da3908020b348611d836682bfcaa1dee4142c07bc3495e2202388b854"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "61db79796061db5b13decb438182e46135adafe0f487fe464a0413e578843eb4",
+        "context_digest": "0ff704c523bc91c197a6bb1a30fd671ba3a3ac8c50ceb720335451d676584ce1",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "bab7cc75bc02db943423c72a2e1de307137fbc5e51e0ad509a76ea0bad36cb4b",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-3734a59905115325a2fca63de00a4107",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "bab7cc75bc02db943423c72a2e1de307137fbc5e51e0ad509a76ea0bad36cb4b",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-de067b1ad98800151f5cf2a30b780498",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "bab7cc75bc02db943423c72a2e1de307137fbc5e51e0ad509a76ea0bad36cb4b",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-9cf1ab614af2fbd01ec0a9aaa553949d",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "bab7cc75bc02db943423c72a2e1de307137fbc5e51e0ad509a76ea0bad36cb4b",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:25.027209Z",
+      "completed_at": "2026-09-09T10:00:25.031133Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+    "workflow": "planning",
+    "stage": "plan_generation",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "strict_output_schema",
+        "status": "passed",
+        "code": "output_schema_valid",
+        "message": "Strict output schema passed."
+      },
+      {
+        "name": "plan_grounding_and_references",
+        "status": "passed",
+        "code": "plan_grounding_valid",
+        "message": "Schedule references resolve to the supplied Study Units."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": null,
+      "workflow": "planning",
+      "stage": "plan_generation",
+      "status": "passed",
+      "contract": {
+        "name": "LearningPlanRuntimeOutput",
+        "version": "learning-plan-runtime-output-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "plan_generation",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "LearningPlanInputManifest",
+          "version": "learning-plan-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_prompt",
+            "version": "planning-prompt-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-b886a40014a55f7e2bfabaede4b90835",
+            "contract": {
+              "name": "LearningPlanProtectedInput",
+              "version": "learning-plan-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "7c9e26f7deb237b71154dfc90fdeb252f4691bf93f5c5392682cfed909ed98a0"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "c817d6ea8ab229b079a33f7486dd0021b20fa15d0f30541bc214bb30495373c4",
+        "context_digest": "b7e6708f4e117cc0ada1c3f6db21449a4c225c83740a068f3a9a439c5a5e584c",
+        "policy_contract": {
+          "name": "LearningPlanHarnessPolicy",
+          "version": "learning-plan-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "LearningPlanPrompt",
+          "version": "planning-prompt-v1"
+        }
+      },
+      "output_digest": "5088fd5f163647554bf95d4ecc77d5882346a8c5370b9eec3c26b6c1ea73859a",
+      "checks": [
+        {
+          "name": "strict_output_schema",
+          "status": "passed",
+          "code": "output_schema_valid",
+          "message": "Strict output schema passed."
+        },
+        {
+          "name": "plan_grounding_and_references",
+          "status": "passed",
+          "code": "plan_grounding_valid",
+          "message": "Schedule references resolve to the supplied Study Units."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-8a74b428b3f0aca67c8f18df8942fb3f",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "5088fd5f163647554bf95d4ecc77d5882346a8c5370b9eec3c26b6c1ea73859a",
+          "error_code": "",
+          "duration_ms": 21686
+        },
+        {
+          "attempt_id": "harness-attempt-234778c13582d57c21fcf189f4db05cf",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "5088fd5f163647554bf95d4ecc77d5882346a8c5370b9eec3c26b6c1ea73859a",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-8ba1c76a5c70621a5daf78ec79cf0b01",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "5088fd5f163647554bf95d4ecc77d5882346a8c5370b9eec3c26b6c1ea73859a",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-893981e9c204d0401f9e3e6913f1079c",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "a99f02f24d13143667d25338eb16b8d4e0eeb0bb371690e47126039108d3b1ba",
+          "error_code": "",
+          "duration_ms": 85
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 21782,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "learning-plan-commit-learning-plan-op-4031859fda204c1e",
+        "payload_contract": {
+          "name": "LearningPlanCommittedProjection",
+          "version": "learning-plan-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "learning_plan",
+            "resource_id": "plan-0f95ee5110",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "learning_plan",
+            "resource_id": "plan-0f95ee5110",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": null,
+            "last_sequence": null,
+            "payload_digest": "a99f02f24d13143667d25338eb16b8d4e0eeb0bb371690e47126039108d3b1ba"
+          }
+        ],
+        "payload_digest": "a99f02f24d13143667d25338eb16b8d4e0eeb0bb371690e47126039108d3b1ba",
+        "committed_at": "2026-09-09T10:00:46.848096Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:25.065988Z",
+      "completed_at": "2026-09-09T10:00:46.848750Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-61be74ca94cc970e3b9d5d98328816b8",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-61be74ca94cc970e3b9d5d98328816b8",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-7f27eaeaa3b76713e514cdf4bd4ec25c",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "8ad23612afbe91962e1dd7d1dc791c413f7e3cc01a569676af9c4b4c5c2f7576"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "bcd30c9b4959412abd8c52075ea24401ccc20e4280ae9d184085e35fa4e98a97",
+        "context_digest": "56189941e0aeaef676063cc2f9350b9d5424958a66ab2eaeac1fb670e41366b1",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-440c1d1d5afca92ff1646c7d8d9f100c",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "3cbf27e69f08bbf69c796c8aec2f51d7ba7c2c95cef1aeb4e40c78a1da39e434",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-7ae71ad7827fc36fa8b66fcd1254fdda",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "3cbf27e69f08bbf69c796c8aec2f51d7ba7c2c95cef1aeb4e40c78a1da39e434",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-177b21720666c0b42c3ff273220a859c",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 6,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.773175Z",
+      "completed_at": "2026-09-09T10:00:46.779723Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-cff5bbf0e012e419447edd96626ad3a7",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-cff5bbf0e012e419447edd96626ad3a7",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-4c9c1fe53df6b386f81987fe01c375c9",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "28d1fe0b47e9dcda4b319e047564ad1e27ed57d5dd855dc686720f0c4adf5293"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "e7719667dc314061ae97d4313576963d7d5f5588cc4d0a9b586ddf7764598f8e",
+        "context_digest": "17d92abf81aa4ea3889a3cb0ecb4beb8b066dbaeab9c950e696f5b480662185d",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-039ca1e969f7e184197f164d452a07c9",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "74baba7e5732526dd5387fa14d4149503c2d7c9162f7a8e9c3ffc5a0ecda5db7",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-2c6a813b18fa9cb81f51d9baf3f730e1",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "74baba7e5732526dd5387fa14d4149503c2d7c9162f7a8e9c3ffc5a0ecda5db7",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-1d46ddb9da4d31085e7fe8f6901b13de",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 4,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.789437Z",
+      "completed_at": "2026-09-09T10:00:46.794219Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-b58842eec8208ca462871af43f815223",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-b58842eec8208ca462871af43f815223",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-0192fe037cc5f8d372d70d54e97cfe0e",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "8e45fe2e1ed659b3594839c2ae2b73ece46283502e89a80594d3a908381a1b5d"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "8d3046428670ed2abd6d72987e850ff39b1e3e84881982dc0cc81e6e81bf5bb3",
+        "context_digest": "c70c816a35301c9cc33a1440bb806d5158c27c672c02bffc6bb0038c4431d62e",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-018425516827d9b78eac9bb89907a5df",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "b0a63ad790df0633ccdb2985b50d0401d89580fb22b8dc875ff0aff8a19cd612",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-118f63b5f982bf0981d3e8a200136e8d",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "b0a63ad790df0633ccdb2985b50d0401d89580fb22b8dc875ff0aff8a19cd612",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-3543ebf66b42b8a6f233ad580722006b",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 4,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.800840Z",
+      "completed_at": "2026-09-09T10:00:46.805236Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-20cd867999fa7961ef43ea1a3581a3be",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-20cd867999fa7961ef43ea1a3581a3be",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-ed7342601f4a25c25c32520ed822988d",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "5903b456ac66e73a07a264a43824b83669c2a57c97d03481f74cee2685fee770"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "6be3af99c0d1dd7af2fd5e34bd61b53f93cdf82812e647693bba954bf34f2249",
+        "context_digest": "d94a467d8b2fcf67341f5cdc73a8410157b353aeb942c4ccbcabbd066f446dd9",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-c47dcb3ff1df7d09cd6e895a3901e0d1",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "5ddd79fedfdf4011874f52289337f4555d938a784c020c82f7ced1eb64850e46",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-d3fff69ac67b6c257e24cfb682b8f70b",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "5ddd79fedfdf4011874f52289337f4555d938a784c020c82f7ced1eb64850e46",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-b4bfb0031ff4fac7a4d539b9df044637",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.811021Z",
+      "completed_at": "2026-09-09T10:00:46.814931Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-338623d981eb58063cba27a457e472a4",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-338623d981eb58063cba27a457e472a4",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-b6be23616df50ef5aa1889463dcc6199",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "4f2ccf20e80e9dc2a23a1d65d141d078a09f6d55878d5430a6192335d2933252"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "e290430b0b4f0a14c820fe2503004068ba999124cc165850f2d0291b151c27b2",
+        "context_digest": "01ec46ab04232e91050597b91b162379aee12ba816f2452c502df82c7ad879b5",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-da83ff19704b75517fb883afed122d66",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "0319e1e553d7c3b64fe8dee057b90b137b76e8f28134e1c7609e15bb7e337806",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-bd42671fc6211c524e33c971ad76b240",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "0319e1e553d7c3b64fe8dee057b90b137b76e8f28134e1c7609e15bb7e337806",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-15c71f8e3f0a19a3376b61ca7ad2be48",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.821111Z",
+      "completed_at": "2026-09-09T10:00:46.824783Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-aa128de2dc01a0ddb11290e53f40531a",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-aa128de2dc01a0ddb11290e53f40531a",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-de8e56e467609a5aee2f672ffab9fd21",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "8954cd877ff7dfec4c3526e144d4db169015608a4823a22638cf830a1f259e3e"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "bbdcadbd31bf5098c3ca5ecd2fef52d5f30c9dd265fdd788ac07aba4070cea4c",
+        "context_digest": "f6ac400ea87286fd44e4b09b7bd9cd365a7099badf00f8d065ad21bbae4efe30",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-73d2878dd344a498f527e2d12139e8f0",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "fcd7bd40e100c8887aa08989e3ce4de746d2a0c65a413d424e14075c391882d2",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-0a2702b0b64eb135a82629e22bba51ba",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "fcd7bd40e100c8887aa08989e3ce4de746d2a0c65a413d424e14075c391882d2",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-0333ec13cacce52e22192db31961e283",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.830027Z",
+      "completed_at": "2026-09-09T10:00:46.834006Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-1d697fe590a05cf4b2c1d10cead4e14e",
+    "workflow": "planning",
+    "stage": "planning_tool_execution",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "stage_output_and_invariants",
+        "status": "failed",
+        "code": "stage_evidence_failed",
+        "message": "The observed stage reported outcome=failed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-1d697fe590a05cf4b2c1d10cead4e14e",
+      "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+      "parent_trace_id": "harness-trace-6196bdfeb74d8d92e04541157a5b413f",
+      "workflow": "planning",
+      "stage": "planning_tool_execution",
+      "status": "failed",
+      "contract": {
+        "name": "PlanningToolExecutionEvidence",
+        "version": "planning-tool-execution-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "planning_tool_execution",
+        "operation_id": "harness-operation-981a908ebf3f463b8a709c55a6f6b81f",
+        "input_contract": {
+          "name": "PlanningToolExecutionInputManifest",
+          "version": "planning-tool-execution-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-4031859fda204c1e",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_tool_runtime",
+            "version": "planning-tool-runtime-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-e5ff52b7d8f232a7aae191e03251343d",
+            "contract": {
+              "name": "PlanningToolExecutionProtectedInput",
+              "version": "planning-tool-execution-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "76da653ed0a2fb82101fd498a9d3d9437532d9915c444402912ad3fa0857815f"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "474954ec9f0cc1c5f8acda76a72ed730db49c549044a637801d161ff1cd40d8c",
+        "context_digest": "369ba3464891f54eca234792f444581657220ca6bc4e8fd33448848fc290b9b7",
+        "policy_contract": {
+          "name": "PlanningToolExecutionHarnessPolicy",
+          "version": "planning-tool-execution-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": null,
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "failed",
+          "code": "stage_evidence_failed",
+          "message": "The observed stage reported outcome=failed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-3268fc2cd46fb5c8e0c42f444f43581f",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "a7b6828696e173da5fbcc3a9d4aee09fa17c689eccdff797916b8201f4c1c1c1",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-f5a3a49802c187c2d5e46311bb8ea807",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "a7b6828696e173da5fbcc3a9d4aee09fa17c689eccdff797916b8201f4c1c1c1",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-3521f7bd5dcdb9bfb638922f2a181e00",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "stage_evidence_failed",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "stage_evidence_failed",
+      "duration_ms": 3,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.839441Z",
+      "completed_at": "2026-09-09T10:00:46.842816Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-2e0e9c730314f3748177b4eb75ce73f9",
+    "workflow": "planning",
+    "stage": "plan_generation",
+    "state": "terminal",
+    "checks": [],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-2e0e9c730314f3748177b4eb75ce73f9",
+      "operation_id": "harness-operation-12f04be1abde42149ea4fbdc1fc66810",
+      "parent_trace_id": null,
+      "workflow": "planning",
+      "stage": "plan_generation",
+      "status": "failed",
+      "contract": {
+        "name": "LearningPlanRuntimeOutput",
+        "version": "learning-plan-runtime-output-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "planning",
+        "stage": "plan_generation",
+        "operation_id": "harness-operation-12f04be1abde42149ea4fbdc1fc66810",
+        "input_contract": {
+          "name": "LearningPlanInputManifest",
+          "version": "learning-plan-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "learning-plan-op-ad24117f42f64fae",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "planning_prompt",
+            "version": "planning-prompt-v1"
+          },
+          {
+            "name": "planning_toolset",
+            "version": "planning-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "planning_context",
+            "artifact_id": "harness-artifact-887b4831a3dac9f85e00dcef41ba3b29",
+            "contract": {
+              "name": "LearningPlanProtectedInput",
+              "version": "learning-plan-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "be8594de624b72949a7a5c9b2302fb8b0edf08d3884765dcef50f72ed673e533"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "4b32feaafff4a71c16acaabddfa55051eedc7d2c00592b6c1391ab2c44ac5c89",
+        "context_digest": "c07d9903e0563c67d10d50589c8b6227004e30e83847c48d0e159ed382c5383c",
+        "policy_contract": {
+          "name": "LearningPlanHarnessPolicy",
+          "version": "learning-plan-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "LearningPlanPrompt",
+          "version": "planning-prompt-v1"
+        }
+      },
+      "output_digest": null,
+      "checks": [],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-4dec0accd802f8c92c8b0e29422ffcc4",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "plan_proposal_invariant_failed:schedule_chapters.0.source_section_ids:unknown_ref",
+          "duration_ms": 40223
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "plan_proposal_invariant_failed:schedule_chapters.0.source_section_ids:unknown_ref",
+      "duration_ms": 40229,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:00:46.875964Z",
+      "completed_at": "2026-09-09T10:01:27.105239Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-1d93dbc5151a32e69c789089493ed15d",
+    "workflow": "persona",
+    "stage": "persona_generation",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "proposal_schema_and_invariants",
+        "status": "passed",
+        "code": "proposal_valid",
+        "message": "Strict proposal schema and domain invariants passed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-1d93dbc5151a32e69c789089493ed15d",
+      "operation_id": "harness-operation-d1769b142aca4190a99ab24e037f9b75",
+      "parent_trace_id": null,
+      "workflow": "persona",
+      "stage": "persona_generation",
+      "status": "passed",
+      "contract": {
+        "name": "PersonaGenerationProposal",
+        "version": "persona-generation-proposal-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "persona",
+        "stage": "persona_generation",
+        "operation_id": "harness-operation-d1769b142aca4190a99ab24e037f9b75",
+        "input_contract": {
+          "name": "PersonaGenerationInputManifest",
+          "version": "persona-generation-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "persona_generation-op-9c2ced461510496bae7a6d80b2ad8cd8",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "persona_compiler",
+            "version": "persona-compiler-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "persona_snapshot",
+            "artifact_id": "harness-artifact-56dd436a2e07bfed36ac9ea9c3a37bd6",
+            "contract": {
+              "name": "PersonaGenerationProtectedInput",
+              "version": "persona-generation-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "e44bff7b11314b73aca3170e06a228d4e2564d852274b94b632c8fb60291f977"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "3e25595763a0438c1c36d7a278cf61e6a7540dd8c5b016e727cd5c702dbd59db",
+        "context_digest": "9993382ba241a8278702cd99660b4945e42e6632c2171f2e7e9b85a34a2b5538",
+        "policy_contract": {
+          "name": "PersonaGenerationHarnessPolicy",
+          "version": "persona-generation-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "PersonaGenerationPrompt",
+          "version": "persona-generation-prompt-v1"
+        }
+      },
+      "output_digest": "32d904168fbc0cd10a971aa7b7f7606cefd739642c631feca5880e61a970298f",
+      "checks": [
+        {
+          "name": "proposal_schema_and_invariants",
+          "status": "passed",
+          "code": "proposal_valid",
+          "message": "Strict proposal schema and domain invariants passed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-08ce037e9eae42783abb68d1d70300d7",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "32d904168fbc0cd10a971aa7b7f7606cefd739642c631feca5880e61a970298f",
+          "error_code": "",
+          "duration_ms": 11425
+        },
+        {
+          "attempt_id": "harness-attempt-e12c6602afb9975c9a3572e8ca277311",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "32d904168fbc0cd10a971aa7b7f7606cefd739642c631feca5880e61a970298f",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-8398e21c65478a63e5872531b82f92f9",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "32d904168fbc0cd10a971aa7b7f7606cefd739642c631feca5880e61a970298f",
+          "error_code": "",
+          "duration_ms": 2
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 11437,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:01:27.134268Z",
+      "completed_at": "2026-09-09T10:01:38.572112Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-b7904989359b3f3076808041baf59570",
+    "workflow": "scene",
+    "stage": "scene_generation",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "proposal_schema_and_invariants",
+        "status": "passed",
+        "code": "proposal_valid",
+        "message": "Strict proposal schema and domain invariants passed."
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-b7904989359b3f3076808041baf59570",
+      "operation_id": "harness-operation-268e9b50fbb54e4dbb3bb3ff293234e6",
+      "parent_trace_id": null,
+      "workflow": "scene",
+      "stage": "scene_generation",
+      "status": "passed",
+      "contract": {
+        "name": "SceneTreeProposal",
+        "version": "scene-tree-proposal-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "scene",
+        "stage": "scene_generation",
+        "operation_id": "harness-operation-268e9b50fbb54e4dbb3bb3ff293234e6",
+        "input_contract": {
+          "name": "SceneGenerationInputManifest",
+          "version": "scene-generation-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "scene_generation-op-74763a91b81f49d1b303f65af76b4192",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "scene_compiler",
+            "version": "scene-compiler-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "scene_snapshot",
+            "artifact_id": "harness-artifact-e5f7d37c8baa42d02d38700dac9145d9",
+            "contract": {
+              "name": "SceneGenerationProtectedInput",
+              "version": "scene-generation-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "987c59d8c48cd575bd0fdd0095f62be660a7e26b2a8fcbc689333cc66fc3db6d"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "bdb571665b7f43bf464cd657914f1ef33c008199ef9279b85726eafa53ecb1a5",
+        "context_digest": "c69028cda924a3e64ffdb950a051255e00760af26ed732309672471018e870b5",
+        "policy_contract": {
+          "name": "SceneGenerationHarnessPolicy",
+          "version": "scene-generation-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "SceneGenerationPrompt",
+          "version": "scene-generation-prompt-v1"
+        }
+      },
+      "output_digest": "6071b954dd0255e82afa12073ea72f5055c75e392a79cd13172475a91724d886",
+      "checks": [
+        {
+          "name": "proposal_schema_and_invariants",
+          "status": "passed",
+          "code": "proposal_valid",
+          "message": "Strict proposal schema and domain invariants passed."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-0acbace9c701c4ea18dd4c3ccba21174",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "6071b954dd0255e82afa12073ea72f5055c75e392a79cd13172475a91724d886",
+          "error_code": "",
+          "duration_ms": 121703
+        },
+        {
+          "attempt_id": "harness-attempt-6ed1940cc47a246df32c11514fd694f2",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "6071b954dd0255e82afa12073ea72f5055c75e392a79cd13172475a91724d886",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-6cc2ccf47eed167cd176571ee14fcbf2",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "6071b954dd0255e82afa12073ea72f5055c75e392a79cd13172475a91724d886",
+          "error_code": "",
+          "duration_ms": 2
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 121714,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:01:38.595862Z",
+      "completed_at": "2026-09-09T10:03:40.310423Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-31d7f220b71ddd35372f1b0d19702cd1",
+    "workflow": "study_chat",
+    "stage": "study_chat_reply",
+    "state": "terminal",
+    "checks": [],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-31d7f220b71ddd35372f1b0d19702cd1",
+      "operation_id": "harness-operation-5b7a3b7150a147c8a7d0021a8b1f4de2",
+      "parent_trace_id": null,
+      "workflow": "study_chat",
+      "stage": "study_chat_reply",
+      "status": "failed",
+      "contract": {
+        "name": "StudyChatReply",
+        "version": "study-chat-reply-trace-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "study_chat",
+        "stage": "study_chat_reply",
+        "operation_id": "harness-operation-5b7a3b7150a147c8a7d0021a8b1f4de2",
+        "input_contract": {
+          "name": "StudyChatInputManifest",
+          "version": "study-chat-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "study_session",
+            "resource_id": "session-b3abe2c778",
+            "revision": 0
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "study_chat_prompt",
+            "version": "study-chat-prompt-v1"
+          },
+          {
+            "name": "study_chat_toolset",
+            "version": "study-chat-toolset-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "study_session_snapshot",
+            "artifact_id": "harness-artifact-d411ad9c8929a4a91400a11318626287",
+            "contract": {
+              "name": "StudyChatProtectedSnapshot",
+              "version": "study-chat-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "4f396350511953b3370405cb673ed22469146857b49537e9f8752593f956b81a"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "85d3d449ac8015871156a02b9ca9314fd834c81be43e6bf9f0ce0138022aae61",
+        "context_digest": "567305b750064c0bf273d89f468d6eeded549f22033429e8e463dfca40bda426",
+        "policy_contract": {
+          "name": "StudyChatHarnessPolicy",
+          "version": "study-chat-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "StudyChatPrompt",
+          "version": "study-chat-prompt-v1"
+        }
+      },
+      "output_digest": null,
+      "checks": [],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-457f86b8c6cc7c667fa20ee3ff8f6728",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "failed",
+          "output_digest": null,
+          "error_code": "study_tool_description_manifest_mismatch",
+          "duration_ms": 112
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "study_tool_description_manifest_mismatch",
+      "duration_ms": 113,
+      "commit_evidence": {
+        "status": "not_committed",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:03:40.391252Z",
+      "completed_at": "2026-09-09T10:03:40.504441Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-299bdcc0f6f973cb8ad5dee2677467fb",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      },
+      {
+        "name": "model_recovery",
+        "status": "warning",
+        "code": "semantic_retry:tavern_actor_invalid_payload",
+        "message": "模型输出通过 retry_strict_actor_reply 完成有界恢复。"
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-299bdcc0f6f973cb8ad5dee2677467fb",
+      "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+      "parent_trace_id": null,
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "status": "repaired",
+      "contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "tavern",
+        "stage": "actor_reply",
+        "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+        "input_contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "tavern_room",
+            "resource_id": "tavern-37bd19eae731",
+            "revision": 1
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "tavern_actor_prompt",
+            "version": "tavern-actor-v1"
+          },
+          {
+            "name": "tavern_persona_compiler",
+            "version": "tavern-persona-compiler-v1"
+          },
+          {
+            "name": "tavern_scheduler",
+            "version": "tavern-schedule-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "tavern_room_snapshot",
+            "artifact_id": "harness-artifact-0eedc2b300852ce05645856419e2a12c",
+            "contract": {
+              "name": "TavernActorProtectedSnapshot",
+              "version": "tavern-actor-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "6ac6ae81fbf07beda81bbde6a5b947060e593cdd78947a20254a194fb4ee7f04"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "ca025abe3a84821b6a56d0dcc4dadaed913bf5efa4037088436e9173a1a806f0",
+        "context_digest": "33246862e967f1377a01c2c74241c8d6f6335f13268c6c075f2651331fb7c26c",
+        "policy_contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "output_digest": "83c92a1affd9390a6443a7cde8970a6547b916c9576c16790994c41662373486",
+      "checks": [
+        {
+          "name": "speaker_identity",
+          "status": "passed",
+          "code": "",
+          "message": "说话者归属有效。"
+        },
+        {
+          "name": "addressed_participants",
+          "status": "passed",
+          "code": "",
+          "message": "回应目标有效。"
+        },
+        {
+          "name": "reply_length",
+          "status": "passed",
+          "code": "",
+          "message": "回复长度有效。"
+        },
+        {
+          "name": "prompt_confidentiality",
+          "status": "passed",
+          "code": "",
+          "message": "未检测到内部提示材料泄漏。"
+        },
+        {
+          "name": "non_empty_reply",
+          "status": "passed",
+          "code": "",
+          "message": "回复包含可展示内容。"
+        },
+        {
+          "name": "model_recovery",
+          "status": "warning",
+          "code": "semantic_retry:tavern_actor_invalid_payload",
+          "message": "模型输出通过 retry_strict_actor_reply 完成有界恢复。"
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-789ecc75f64bd9d47f7b879fce2782bc",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "83c92a1affd9390a6443a7cde8970a6547b916c9576c16790994c41662373486",
+          "error_code": "",
+          "duration_ms": 13921
+        },
+        {
+          "attempt_id": "harness-attempt-60bf652a9b0cdd012fe9429633f4397a",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "83c92a1affd9390a6443a7cde8970a6547b916c9576c16790994c41662373486",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-eea168a07f41373a58b7341acee32c6d",
+          "attempt_index": 3,
+          "phase": "repair",
+          "status": "passed",
+          "output_digest": "83c92a1affd9390a6443a7cde8970a6547b916c9576c16790994c41662373486",
+          "error_code": "",
+          "duration_ms": 29
+        },
+        {
+          "attempt_id": "harness-attempt-34d5e4ee87af2cbff4f39afa1bf83fa0",
+          "attempt_index": 4,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "83c92a1affd9390a6443a7cde8970a6547b916c9576c16790994c41662373486",
+          "error_code": "",
+          "duration_ms": 30
+        },
+        {
+          "attempt_id": "harness-attempt-0c58ab903a728120824074ad349bd0df",
+          "attempt_index": 5,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "4d807932955d27b55c97e394df3e55182d27fc4a3f4f1fd1014a247f2a1460e9",
+          "error_code": "",
+          "duration_ms": 5
+        }
+      ],
+      "recovery_strategy": "retry_strict_actor_reply",
+      "error_code": "",
+      "duration_ms": 13966,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "effect-tavern-message-ead7c8eb1977",
+        "payload_contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-ead7c8eb1977",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-ead7c8eb1977",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": 2,
+            "last_sequence": 2,
+            "payload_digest": "4d807932955d27b55c97e394df3e55182d27fc4a3f4f1fd1014a247f2a1460e9"
+          }
+        ],
+        "payload_digest": "4d807932955d27b55c97e394df3e55182d27fc4a3f4f1fd1014a247f2a1460e9",
+        "committed_at": "2026-09-09T10:05:24.601113Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:05:10.635539Z",
+      "completed_at": "2026-09-09T10:05:24.602397Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-52a20952c6d2ca0fa60ce96f5b0c6f03",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      },
+      {
+        "name": "model_recovery",
+        "status": "warning",
+        "code": "semantic_retry:tavern_actor_invalid_payload",
+        "message": "模型输出通过 retry_strict_actor_reply 完成有界恢复。"
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-52a20952c6d2ca0fa60ce96f5b0c6f03",
+      "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+      "parent_trace_id": "harness-trace-299bdcc0f6f973cb8ad5dee2677467fb",
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "status": "repaired",
+      "contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "tavern",
+        "stage": "actor_reply",
+        "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+        "input_contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "tavern_room",
+            "resource_id": "tavern-37bd19eae731",
+            "revision": 1
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "tavern_actor_prompt",
+            "version": "tavern-actor-v1"
+          },
+          {
+            "name": "tavern_persona_compiler",
+            "version": "tavern-persona-compiler-v1"
+          },
+          {
+            "name": "tavern_scheduler",
+            "version": "tavern-schedule-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "tavern_room_snapshot",
+            "artifact_id": "harness-artifact-1994ecb7026a2d420eb00d64283c47db",
+            "contract": {
+              "name": "TavernActorProtectedSnapshot",
+              "version": "tavern-actor-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "c3cfb915225f451c90067293a5e8d3dac67c8b9d5129dcd1eb1a6216e71174f1"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "ca025abe3a84821b6a56d0dcc4dadaed913bf5efa4037088436e9173a1a806f0",
+        "context_digest": "878f9e47219821893ec5de917c19a437c6c4321ca7d5182f5e3dbc1d5e7b6aff",
+        "policy_contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "output_digest": "9d1101f30f0c4037a55da5300c70140d68caec888878ed9d75c15c3bfa86ee78",
+      "checks": [
+        {
+          "name": "speaker_identity",
+          "status": "passed",
+          "code": "",
+          "message": "说话者归属有效。"
+        },
+        {
+          "name": "addressed_participants",
+          "status": "passed",
+          "code": "",
+          "message": "回应目标有效。"
+        },
+        {
+          "name": "reply_length",
+          "status": "passed",
+          "code": "",
+          "message": "回复长度有效。"
+        },
+        {
+          "name": "prompt_confidentiality",
+          "status": "passed",
+          "code": "",
+          "message": "未检测到内部提示材料泄漏。"
+        },
+        {
+          "name": "non_empty_reply",
+          "status": "passed",
+          "code": "",
+          "message": "回复包含可展示内容。"
+        },
+        {
+          "name": "model_recovery",
+          "status": "warning",
+          "code": "semantic_retry:tavern_actor_invalid_payload",
+          "message": "模型输出通过 retry_strict_actor_reply 完成有界恢复。"
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-af929e2e740a3bcfc98623d071b8cb34",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "9d1101f30f0c4037a55da5300c70140d68caec888878ed9d75c15c3bfa86ee78",
+          "error_code": "",
+          "duration_ms": 14024
+        },
+        {
+          "attempt_id": "harness-attempt-01ba27f7f3bd53654846b2bd568ba9be",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "9d1101f30f0c4037a55da5300c70140d68caec888878ed9d75c15c3bfa86ee78",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-438363547231c275ca8014469057a2cf",
+          "attempt_index": 3,
+          "phase": "repair",
+          "status": "passed",
+          "output_digest": "9d1101f30f0c4037a55da5300c70140d68caec888878ed9d75c15c3bfa86ee78",
+          "error_code": "",
+          "duration_ms": 21
+        },
+        {
+          "attempt_id": "harness-attempt-551a0a0bc63b713c587e4b44373b121b",
+          "attempt_index": 4,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "9d1101f30f0c4037a55da5300c70140d68caec888878ed9d75c15c3bfa86ee78",
+          "error_code": "",
+          "duration_ms": 22
+        },
+        {
+          "attempt_id": "harness-attempt-a7f860705ce967db5b68069ec45df8a6",
+          "attempt_index": 5,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "e43ea16a08db3a1b61b528bb7c45980d54a29e1a522998476b4cf25fb4890763",
+          "error_code": "",
+          "duration_ms": 6
+        }
+      ],
+      "recovery_strategy": "retry_strict_actor_reply",
+      "error_code": "",
+      "duration_ms": 14063,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "effect-tavern-message-e58f18d703d9",
+        "payload_contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-e58f18d703d9",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-e58f18d703d9",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": 3,
+            "last_sequence": 3,
+            "payload_digest": "e43ea16a08db3a1b61b528bb7c45980d54a29e1a522998476b4cf25fb4890763"
+          }
+        ],
+        "payload_digest": "e43ea16a08db3a1b61b528bb7c45980d54a29e1a522998476b4cf25fb4890763",
+        "committed_at": "2026-09-09T10:05:38.683648Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:05:24.620999Z",
+      "completed_at": "2026-09-09T10:05:38.684767Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-a5f178a4ac5a3dbbb03b19d33ac475da",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-a5f178a4ac5a3dbbb03b19d33ac475da",
+      "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+      "parent_trace_id": "harness-trace-52a20952c6d2ca0fa60ce96f5b0c6f03",
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "status": "passed",
+      "contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "tavern",
+        "stage": "actor_reply",
+        "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+        "input_contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "tavern_room",
+            "resource_id": "tavern-37bd19eae731",
+            "revision": 1
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "tavern_actor_prompt",
+            "version": "tavern-actor-v1"
+          },
+          {
+            "name": "tavern_persona_compiler",
+            "version": "tavern-persona-compiler-v1"
+          },
+          {
+            "name": "tavern_scheduler",
+            "version": "tavern-schedule-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "tavern_room_snapshot",
+            "artifact_id": "harness-artifact-63e1d4a32418b4f191fd449e2cd85eed",
+            "contract": {
+              "name": "TavernActorProtectedSnapshot",
+              "version": "tavern-actor-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "69c0b425b0bcf1cc463643cc1905bc0d7fdf9e17717503715dec48acc5f89c71"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "ca025abe3a84821b6a56d0dcc4dadaed913bf5efa4037088436e9173a1a806f0",
+        "context_digest": "581baa2310560980f8f6893f204e60c759693e937f1488d35cffcea86a0c0e7c",
+        "policy_contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "output_digest": "748cc5379e2384db258e25730fa8b1460314bbeeb207f31a98d7b40ac2175052",
+      "checks": [
+        {
+          "name": "speaker_identity",
+          "status": "passed",
+          "code": "",
+          "message": "说话者归属有效。"
+        },
+        {
+          "name": "addressed_participants",
+          "status": "passed",
+          "code": "",
+          "message": "回应目标有效。"
+        },
+        {
+          "name": "reply_length",
+          "status": "passed",
+          "code": "",
+          "message": "回复长度有效。"
+        },
+        {
+          "name": "prompt_confidentiality",
+          "status": "passed",
+          "code": "",
+          "message": "未检测到内部提示材料泄漏。"
+        },
+        {
+          "name": "non_empty_reply",
+          "status": "passed",
+          "code": "",
+          "message": "回复包含可展示内容。"
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-4e87032bb90c5bf94f4358b14e289b60",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "748cc5379e2384db258e25730fa8b1460314bbeeb207f31a98d7b40ac2175052",
+          "error_code": "",
+          "duration_ms": 12634
+        },
+        {
+          "attempt_id": "harness-attempt-b82ab633e08d0d0321376f94d953275d",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "748cc5379e2384db258e25730fa8b1460314bbeeb207f31a98d7b40ac2175052",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-21a59c74a1c9d658d2649a7cf4ad42aa",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "748cc5379e2384db258e25730fa8b1460314bbeeb207f31a98d7b40ac2175052",
+          "error_code": "",
+          "duration_ms": 22
+        },
+        {
+          "attempt_id": "harness-attempt-f33512254af1a01ffb522e81f82b0bef",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "990b1360d3693ba912480afb6047d88905f11653321344d1631a4bb4db953125",
+          "error_code": "",
+          "duration_ms": 6
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 12672,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "effect-tavern-message-5158b97a0d91",
+        "payload_contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-5158b97a0d91",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-5158b97a0d91",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": 4,
+            "last_sequence": 4,
+            "payload_digest": "990b1360d3693ba912480afb6047d88905f11653321344d1631a4bb4db953125"
+          }
+        ],
+        "payload_digest": "990b1360d3693ba912480afb6047d88905f11653321344d1631a4bb4db953125",
+        "committed_at": "2026-09-09T10:05:51.374563Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:05:38.702974Z",
+      "completed_at": "2026-09-09T10:05:51.375478Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-2ff6eb6fb50b481d563e95c9ae70ebc3",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-2ff6eb6fb50b481d563e95c9ae70ebc3",
+      "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+      "parent_trace_id": "harness-trace-a5f178a4ac5a3dbbb03b19d33ac475da",
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "status": "passed",
+      "contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "tavern",
+        "stage": "actor_reply",
+        "operation_id": "harness-operation-08b9ddae7c8444019d9e7503952b0d52",
+        "input_contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "tavern_room",
+            "resource_id": "tavern-37bd19eae731",
+            "revision": 1
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "tavern_actor_prompt",
+            "version": "tavern-actor-v1"
+          },
+          {
+            "name": "tavern_persona_compiler",
+            "version": "tavern-persona-compiler-v1"
+          },
+          {
+            "name": "tavern_scheduler",
+            "version": "tavern-schedule-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "tavern_room_snapshot",
+            "artifact_id": "harness-artifact-2b9e92549c04e741385ffd32ed2a57d8",
+            "contract": {
+              "name": "TavernActorProtectedSnapshot",
+              "version": "tavern-actor-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "53e289cd70f9612756583bb0db893b8cb97b4a20ba9bbdb0d568fc74239c55b1"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "ca025abe3a84821b6a56d0dcc4dadaed913bf5efa4037088436e9173a1a806f0",
+        "context_digest": "07b4b7be961c4d6fe4d9f612b6d5d1336f5327a4bb9ffb64789079d52bea0d7e",
+        "policy_contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "output_digest": "ce641ab0766aae5e1d9405ab26fa90f5bee0f3157b1b8c97a75ea7ef1608d749",
+      "checks": [
+        {
+          "name": "speaker_identity",
+          "status": "passed",
+          "code": "",
+          "message": "说话者归属有效。"
+        },
+        {
+          "name": "addressed_participants",
+          "status": "passed",
+          "code": "",
+          "message": "回应目标有效。"
+        },
+        {
+          "name": "reply_length",
+          "status": "passed",
+          "code": "",
+          "message": "回复长度有效。"
+        },
+        {
+          "name": "prompt_confidentiality",
+          "status": "passed",
+          "code": "",
+          "message": "未检测到内部提示材料泄漏。"
+        },
+        {
+          "name": "non_empty_reply",
+          "status": "passed",
+          "code": "",
+          "message": "回复包含可展示内容。"
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-42968192b56335273b5309ac1f07250e",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "ce641ab0766aae5e1d9405ab26fa90f5bee0f3157b1b8c97a75ea7ef1608d749",
+          "error_code": "",
+          "duration_ms": 9026
+        },
+        {
+          "attempt_id": "harness-attempt-c3cb43247f11559ece7b4f97640eec36",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "ce641ab0766aae5e1d9405ab26fa90f5bee0f3157b1b8c97a75ea7ef1608d749",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-1cfaed8407590059b3cc5ada718f6283",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "ce641ab0766aae5e1d9405ab26fa90f5bee0f3157b1b8c97a75ea7ef1608d749",
+          "error_code": "",
+          "duration_ms": 19
+        },
+        {
+          "attempt_id": "harness-attempt-4cabc2d72c657cb6b2e52ff23acb49a2",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "44abedb4055718d36805d54fa3c92d7934fe37c35037d94cc64c2d4cf2ac0f51",
+          "error_code": "",
+          "duration_ms": 6
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 9063,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "effect-tavern-message-7ac96263514d",
+        "payload_contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-7ac96263514d",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-7ac96263514d",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": 5,
+            "last_sequence": 5,
+            "payload_digest": "44abedb4055718d36805d54fa3c92d7934fe37c35037d94cc64c2d4cf2ac0f51"
+          }
+        ],
+        "payload_digest": "44abedb4055718d36805d54fa3c92d7934fe37c35037d94cc64c2d4cf2ac0f51",
+        "committed_at": "2026-09-09T10:06:00.456755Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:05:51.394726Z",
+      "completed_at": "2026-09-09T10:06:00.457799Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-f63790ab45ccf3e3bcbe72a391800f22",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-f63790ab45ccf3e3bcbe72a391800f22",
+      "operation_id": "harness-operation-e481f8f299314429b78b256b0aa8e1c8",
+      "parent_trace_id": null,
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "status": "passed",
+      "contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "tavern",
+        "stage": "actor_reply",
+        "operation_id": "harness-operation-e481f8f299314429b78b256b0aa8e1c8",
+        "input_contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "tavern_room",
+            "resource_id": "tavern-37bd19eae731",
+            "revision": 2
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "tavern_actor_prompt",
+            "version": "tavern-actor-v1"
+          },
+          {
+            "name": "tavern_persona_compiler",
+            "version": "tavern-persona-compiler-v1"
+          },
+          {
+            "name": "tavern_scheduler",
+            "version": "tavern-schedule-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "tavern_room_snapshot",
+            "artifact_id": "harness-artifact-5fc6cecedb09df7a27b180b8326b0256",
+            "contract": {
+              "name": "TavernActorProtectedSnapshot",
+              "version": "tavern-actor-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "7b1e08410a2f5f7bc0cb5b971525f6e96915850ffc89c152517e08395bbd1ba6"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "157481a8f33ff9e15ab6fced9baa3ddcdefc62da381a0afa8eef34bd5410ebb4",
+        "context_digest": "de9d7801bf57032a4f173218a5724dd37756d41d558e17168958d35fedbbf6b3",
+        "policy_contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "output_digest": "179d25b52f4d224e44a4da6fa651171fde33394e1327a5f4afabfd1af9e0a3ab",
+      "checks": [
+        {
+          "name": "speaker_identity",
+          "status": "passed",
+          "code": "",
+          "message": "说话者归属有效。"
+        },
+        {
+          "name": "addressed_participants",
+          "status": "passed",
+          "code": "",
+          "message": "回应目标有效。"
+        },
+        {
+          "name": "reply_length",
+          "status": "passed",
+          "code": "",
+          "message": "回复长度有效。"
+        },
+        {
+          "name": "prompt_confidentiality",
+          "status": "passed",
+          "code": "",
+          "message": "未检测到内部提示材料泄漏。"
+        },
+        {
+          "name": "non_empty_reply",
+          "status": "passed",
+          "code": "",
+          "message": "回复包含可展示内容。"
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-316d37bd0c3267a2eebe301c8f1a9ea3",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "179d25b52f4d224e44a4da6fa651171fde33394e1327a5f4afabfd1af9e0a3ab",
+          "error_code": "",
+          "duration_ms": 9663
+        },
+        {
+          "attempt_id": "harness-attempt-69510c156640f1aada49594b83f631e9",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "179d25b52f4d224e44a4da6fa651171fde33394e1327a5f4afabfd1af9e0a3ab",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-f41d6350364738c8055f8e5c73742754",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "179d25b52f4d224e44a4da6fa651171fde33394e1327a5f4afabfd1af9e0a3ab",
+          "error_code": "",
+          "duration_ms": 22
+        },
+        {
+          "attempt_id": "harness-attempt-a6f5028d6ab2802b49baef58602727c7",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "3de9256f32322c8fcbf670f4549787d3f6443caf4d77df5b5ec53946a44fab76",
+          "error_code": "",
+          "duration_ms": 4
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 9699,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "effect-tavern-message-b67b8d5da309",
+        "payload_contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-b67b8d5da309",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-b67b8d5da309",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": 7,
+            "last_sequence": 7,
+            "payload_digest": "3de9256f32322c8fcbf670f4549787d3f6443caf4d77df5b5ec53946a44fab76"
+          }
+        ],
+        "payload_digest": "3de9256f32322c8fcbf670f4549787d3f6443caf4d77df5b5ec53946a44fab76",
+        "committed_at": "2026-09-09T10:06:10.220509Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:06:00.522186Z",
+      "completed_at": "2026-09-09T10:06:10.221623Z"
+    }
+  },
+  {
+    "trace_id": "harness-trace-7d95a015fc059de8a49b3617260fcd10",
+    "workflow": "tavern",
+    "stage": "actor_reply",
+    "state": "terminal",
+    "checks": [
+      {
+        "name": "speaker_identity",
+        "status": "passed",
+        "code": "",
+        "message": "说话者归属有效。"
+      },
+      {
+        "name": "addressed_participants",
+        "status": "passed",
+        "code": "",
+        "message": "回应目标有效。"
+      },
+      {
+        "name": "reply_length",
+        "status": "passed",
+        "code": "",
+        "message": "回复长度有效。"
+      },
+      {
+        "name": "prompt_confidentiality",
+        "status": "passed",
+        "code": "",
+        "message": "未检测到内部提示材料泄漏。"
+      },
+      {
+        "name": "non_empty_reply",
+        "status": "passed",
+        "code": "",
+        "message": "回复包含可展示内容。"
+      }
+    ],
+    "terminal_trace": {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-7d95a015fc059de8a49b3617260fcd10",
+      "operation_id": "harness-operation-e481f8f299314429b78b256b0aa8e1c8",
+      "parent_trace_id": "harness-trace-f63790ab45ccf3e3bcbe72a391800f22",
+      "workflow": "tavern",
+      "stage": "actor_reply",
+      "status": "passed",
+      "contract": {
+        "name": "TavernActorReply",
+        "version": "tavern-actor-reply-v2"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "tavern",
+        "stage": "actor_reply",
+        "operation_id": "harness-operation-e481f8f299314429b78b256b0aa8e1c8",
+        "input_contract": {
+          "name": "TavernActorInputManifest",
+          "version": "tavern-actor-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "tavern_room",
+            "resource_id": "tavern-37bd19eae731",
+            "revision": 2
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "tavern_actor_prompt",
+            "version": "tavern-actor-v1"
+          },
+          {
+            "name": "tavern_persona_compiler",
+            "version": "tavern-persona-compiler-v1"
+          },
+          {
+            "name": "tavern_scheduler",
+            "version": "tavern-schedule-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "tavern_room_snapshot",
+            "artifact_id": "harness-artifact-8988462e8921181c733d60ded19771f6",
+            "contract": {
+              "name": "TavernActorProtectedSnapshot",
+              "version": "tavern-actor-protected-snapshot-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "b9d6753bfed52c7416e301e24b9d6b8acc8097ff786b5bb71bc95b39b84fc372"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "157481a8f33ff9e15ab6fced9baa3ddcdefc62da381a0afa8eef34bd5410ebb4",
+        "context_digest": "f789a923a2fed34ee38ed018090026f04eb346a8d11897a8729def30f2592bae",
+        "policy_contract": {
+          "name": "TavernHarnessPolicy",
+          "version": "tavern-harness-v1"
+        },
+        "prompt_contract": {
+          "name": "TavernActorPrompt",
+          "version": "tavern-actor-v1"
+        }
+      },
+      "output_digest": "1bf958ac2ee3029504d4dab062b96666020ec51b9d9a9b2647ea0baf601e7ba1",
+      "checks": [
+        {
+          "name": "speaker_identity",
+          "status": "passed",
+          "code": "",
+          "message": "说话者归属有效。"
+        },
+        {
+          "name": "addressed_participants",
+          "status": "passed",
+          "code": "",
+          "message": "回应目标有效。"
+        },
+        {
+          "name": "reply_length",
+          "status": "passed",
+          "code": "",
+          "message": "回复长度有效。"
+        },
+        {
+          "name": "prompt_confidentiality",
+          "status": "passed",
+          "code": "",
+          "message": "未检测到内部提示材料泄漏。"
+        },
+        {
+          "name": "non_empty_reply",
+          "status": "passed",
+          "code": "",
+          "message": "回复包含可展示内容。"
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-5b2d87c2a1d291a7b2434282eb8fb568",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "1bf958ac2ee3029504d4dab062b96666020ec51b9d9a9b2647ea0baf601e7ba1",
+          "error_code": "",
+          "duration_ms": 25567
+        },
+        {
+          "attempt_id": "harness-attempt-88ae179987934af00cda6a6a8b052462",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "1bf958ac2ee3029504d4dab062b96666020ec51b9d9a9b2647ea0baf601e7ba1",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-b45851d129c440cfb4a3188599a5b34d",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "1bf958ac2ee3029504d4dab062b96666020ec51b9d9a9b2647ea0baf601e7ba1",
+          "error_code": "",
+          "duration_ms": 22
+        },
+        {
+          "attempt_id": "harness-attempt-b5cff6f9a3de08aeedcf92abbf0669e1",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "cefe764a27e5c9b0195655698a40c8a10aa683ba32097274aad1e6b6884073a3",
+          "error_code": "",
+          "duration_ms": 6
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 25607,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "effect-tavern-message-bde637f25015",
+        "payload_contract": {
+          "name": "TavernPersonaMessageCommittedProjection",
+          "version": "tavern-persona-message-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-bde637f25015",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "tavern_message",
+            "resource_id": "tavern-message-bde637f25015",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": 8,
+            "last_sequence": 8,
+            "payload_digest": "cefe764a27e5c9b0195655698a40c8a10aa683ba32097274aad1e6b6884073a3"
+          }
+        ],
+        "payload_digest": "cefe764a27e5c9b0195655698a40c8a10aa683ba32097274aad1e6b6884073a3",
+        "committed_at": "2026-09-09T10:06:35.848240Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T10:06:10.241656Z",
+      "completed_at": "2026-09-09T10:06:35.849337Z"
+    }
+  }
+]

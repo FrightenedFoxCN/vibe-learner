@@ -1,0 +1,27 @@
+✔ Persona config export and import preserve every editable field (1.291083ms)
+✔ Persona config import accepts snake case aliases without coercing unsafe values (0.225041ms)
+✔ Persona draft fingerprints track edits and reset against committed snapshots (0.978875ms)
+✔ Whole-setting assist merges by slot identity and preserves locks (0.350916ms)
+✔ Destructive generated backfill clears exactly the fields named in the UI (0.087583ms)
+✔ Persona decoder accepts custom slot vocabulary and duplicate sort orders (0.952417ms)
+✔ Persona decoder rejects coercion, illegal source, URL drift, and non-finite slots (0.374791ms)
+✔ Persona card envelopes reject duplicate IDs and illegal source values (0.260666ms)
+✔ Persona generation binds mode, generated source, booleans, and recovery schema (2.152042ms)
+✔ Persona count UI states exact 1-24 semantics (0.200584ms)
+✔ Persona assist decoders require typed slots and preserve assisted slot identity (0.408584ms)
+✔ Persona assets and delete projections bind the URL identity (0.0975ms)
+✔ Scene generation accepts a coherent committed projection (0.38075ms)
+✔ Scene generation rejects contract, mode, selection, depth, child, and identity attacks (0.432875ms)
+✔ Wave 4 decoders fail closed on malformed nested v3 Harness evidence (0.314125ms)
+✔ Scene Setup accepts only the exact empty initial state or a coherent committed state (0.635416ms)
+✔ Scene Profile binds title path, tags, focus objects, and committed tree (0.235417ms)
+✔ Scene Library binds config, URL, revision, profile, and list identity (0.241417ms)
+✔ Reusable Scene Node decoder enforces the discriminated node projection (0.171083ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.748625

@@ -1,0 +1,10 @@
+{
+  "services/ai/app/services/model_provider.py": "8a8020fb19fcda7f0bad2fab09ec93d3af4a789f27546c97d2bd397813804203",
+  "services/ai/app/services/model_tool_config.py": "bf6faa6239f323558fc503dddcf101e3974cfe068f1188f835e7097fb01f3017",
+  "services/ai/app/services/plan_prompt.py": "9f6d08c74853bb78f87230af420d1f524485bdd5ed8425575647a23490c7944e",
+  "services/ai/app/prompts/learning_plan_prompt.txt": "c847cd86d4ce9054f95ac8735213c15f369432bbb03dc39a72aa0ed254608851",
+  "apps/desktop/src-tauri/src/lib.rs": "765b8bfde47f8b94c901dff574a1c367bf3c8ad5dbc235e21bded116854a91a3",
+  "apps/desktop/src-tauri/Cargo.toml": "0dff9a8f72ccc46d53ea9893b2eda46941c6709617d0400d02beafb0a73a9bf9",
+  "apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-desktop": "b88066121312f332f0c5cfdee47c51bd4a36d0d6f22f45ad645900036f3d626c",
+  "apps/desktop/src-tauri/target/release/bundle/macos/Vibe Learner.app/Contents/MacOS/vibe-learner-sidecar": "c4578ddc3e6f7162a757aee0dca64b9ec7371f296bf9ace4a7730cadacfe4728"
+}

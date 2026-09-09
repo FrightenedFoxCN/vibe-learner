@@ -1,0 +1,9 @@
+{
+  "tested_port": 62856,
+  "lsof_exit": 1,
+  "listener_after_exit": false,
+  "codesign_exit": 0,
+  "platform": "macOS arm64",
+  "settings_restored": true,
+  "vault_unchanged": true
+}
