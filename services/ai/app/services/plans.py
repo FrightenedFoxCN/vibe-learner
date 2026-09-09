@@ -46,7 +46,7 @@ from app.persistence.learning_plan_operation_repository import (
     LearningPlanTerminalReplayBlocked,
 )
 from app.services.local_store import LocalJsonStore
-from app.services.model_provider import ModelProvider
+from app.services.provider_capabilities import PlanningModelCapability
 from app.services.stream_interrupts import StreamInterruptedError
 from app.services.study_arrangement import StudyArrangementService
 from app.services.harness_broad_adoption import (
@@ -66,7 +66,7 @@ class LearningPlanService:
         self,
         store: LocalJsonStore,
         arrangement_service: StudyArrangementService,
-        model_provider: ModelProvider,
+        model_provider: PlanningModelCapability,
         operation_repository: LearningPlanOperationRepository | None = None,
         harness_service: HarnessProposalRuntimeService | None = None,
     ) -> None:

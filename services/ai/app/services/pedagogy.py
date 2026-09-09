@@ -16,7 +16,7 @@ from app.models.domain import (
     SubmissionGradeResult,
     persona_sorted_slots,
 )
-from app.services.model_provider import ModelProvider
+from app.services.provider_capabilities import TeachingModelCapability
 from app.services.performance import PerformanceMapper
 from app.services.study_memory import build_memory_context, retrieve_memory_hits
 from app.models.study_question import project_study_question_proposal
@@ -25,7 +25,7 @@ from app.models.study_chat_operation import StudyChatMessageKind
 
 class PedagogyOrchestrator:
     def __init__(
-        self, *, model_provider: ModelProvider, performance_mapper: PerformanceMapper
+        self, *, model_provider: TeachingModelCapability, performance_mapper: PerformanceMapper
     ) -> None:
         self.model_provider = model_provider
         self.performance_mapper = performance_mapper

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from app.services.provider_capabilities import ModelProvider, ModelReply, PlanModelReply, PlanScheduleItem
+from app.services.provider_exercises import LocalExerciseProvider
+
 import json
 import re
 import time
-from dataclasses import dataclass
 from typing import Callable
 from typing import Any
 
@@ -564,192 +566,7 @@ def _build_persona_event_guidance(persona: PersonaProfile) -> str:
     )
 
 
-@dataclass
-class ModelReply:
-    text: str
-    mood: str
-    action: str
-    speech_style: str = ""
-    delivery_cue: str = ""
-    state_commentary: str = ""
-    rich_blocks: list[RichTextBlockRecord] | None = None
-    interactive_question: StudyQuestionProposalV1 | None = None
-    memory_trace: list[dict[str, Any]] | None = None
-    tool_calls: list[ChatToolCallTraceRecord] | None = None
-    scene_profile: SceneProfileRecord | None = None
-
-
-@dataclass
-class PlanScheduleItem:
-    unit_id: str
-    title: str
-    focus: str
-    activity_type: str
-    schedule_chapters: list[PlanScheduleChapterProposalV1]
-
-
-@dataclass
-class PlanModelReply:
-    course_title: str
-    overview: str
-    today_tasks: list[str]
-    schedule: list[PlanScheduleItem]
-    revised_study_units: list[StudyUnitRecord] | None = None
-    planning_questions: list[PlanningQuestionRecord] | None = None
-    debug_trace: PlanGenerationTraceRecord | None = None
-
-
-class ModelProvider:
-    def generate_chat(
-        self,
-        *,
-        persona: PersonaProfile,
-        section_id: str,
-        message: str,
-        message_kind: StudyChatMessageKind = "learner",
-        session_prompt: str = "",
-        section_context: str = "",
-        memory_context: str = "",
-        attachment_context: str = "",
-        learner_multimodal_parts: list[dict[str, Any]] | None = None,
-        scene_context: str = "",
-        active_plan_context: str = "",
-        session_state_context: str = "",
-        session_tool_runtime: Any | None = None,
-        scene_tool_runtime: Any | None = None,
-        plan_tool_runtime: Any | None = None,
-        memory_trace_hits: list[dict[str, Any]] | None = None,
-        conversation_history: list[dict[str, str]] | None = None,
-        debug_report: DocumentDebugRecord | None = None,
-        document_path: str | None = None,
-    ) -> ModelReply:
-        raise NotImplementedError
-
-    def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        return []
-
-    def generate_tavern_actor_reply(
-        self,
-        *,
-        persona: PersonaProfile,
-        participants: list[TavernParticipantRecord],
-        scene_profile: SceneProfileRecord | None,
-        recent_messages: list[TavernMessageRecord],
-        user_message: str,
-        guidance: str,
-        allowed_target_ids: list[str],
-        turn_kind: str = "user_message",
-        required_target_id: str = "",
-        should_continue: Callable[[], bool] | None = None,
-    ) -> TavernActorReply:
-        raise NotImplementedError
-
-    def generate_exercise(
-        self, *, persona: PersonaProfile, section_id: str, topic: str
-    ) -> ModelReply:
-        raise NotImplementedError
-
-    def grade_submission(
-        self, *, persona: PersonaProfile, exercise_id: str, answer: str
-    ) -> ModelReply:
-        raise NotImplementedError
-
-    def generate_learning_plan(
-        self,
-        *,
-        persona: PersonaProfile,
-        document_title: str,
-        goal: LearningGoalInput,
-        study_units: list[StudyUnitRecord],
-        document_path: str | None = None,
-        debug_report: DocumentDebugRecord | None = None,
-        planning_questions: list[PlanningQuestionRecord] | None = None,
-        existing_plan: LearningPlanRecord | None = None,
-        progress_callback: Callable[[str, dict[str, object]], None] | None = None,
-        interrupt_check: Callable[[], None] | None = None,
-    ) -> PlanModelReply:
-        raise NotImplementedError
-
-    def supports_page_image_tools(self) -> bool:
-        return False
-
-    def supports_chat_page_image_tools(self) -> bool:
-        return False
-
-    def supports_chat_generated_image_tools(self) -> bool:
-        return False
-
-    def plan_tools_runtime_enabled(self) -> bool:
-        return False
-
-    def chat_tools_runtime_enabled(self) -> bool:
-        return False
-
-    def chat_memory_tool_runtime_enabled(self) -> bool:
-        return False
-
-    def assist_persona_setting(
-        self,
-        *,
-        name: str,
-        summary: str,
-        slots: list[PersonaSlot],
-        rewrite_strength: float,
-    ) -> dict[str, object]:
-        raise NotImplementedError
-
-    def assist_persona_slot(
-        self,
-        *,
-        name: str,
-        summary: str,
-        slot: PersonaSlot,
-        rewrite_strength: float,
-    ) -> dict[str, object]:
-        raise NotImplementedError
-
-    def generate_persona_cards_from_keywords(
-        self,
-        *,
-        keywords: str,
-        count: int | None,
-    ) -> dict[str, object]:
-        raise NotImplementedError
-
-    def generate_persona_cards_from_text(
-        self,
-        *,
-        text: str,
-        count: int | None,
-    ) -> dict[str, object]:
-        raise NotImplementedError
-
-    def generate_scene_tree_from_keywords(
-        self,
-        *,
-        keywords: str,
-        layer_count: int | None,
-    ) -> dict[str, object]:
-        raise NotImplementedError
-
-    def generate_scene_tree_from_text(
-        self,
-        *,
-        text: str,
-        layer_count: int | None,
-    ) -> dict[str, object]:
-        raise NotImplementedError
-
-    def generate_projected_image(
-        self,
-        *,
-        prompt: str,
-        size: str = "1024x1024",
-    ) -> dict[str, str]:
-        raise RuntimeError("chat_image_generation_unsupported")
-
-
-class MockModelProvider(ModelProvider):
+class MockModelProvider(LocalExerciseProvider, ModelProvider):
     def generate_chat(
         self,
         *,
@@ -800,22 +617,6 @@ class MockModelProvider(ModelProvider):
             memory_trace=memory_trace_hits or [],
         )
 
-    def generate_exercise(
-        self, *, persona: PersonaProfile, section_id: str, topic: str
-    ) -> ModelReply:
-        text = (
-            f"围绕 {section_id} 的 {topic}，请你先用三句话概括概念，"
-            "再举一个教材中的例子。"
-        )
-        return ModelReply(
-            text=text,
-            mood="encouraging",
-            action="lean_in",
-            speech_style=persona.default_speech_style,
-            delivery_cue="提问时把语气往前推一点，给学习者明确的答题起点。",
-            state_commentary=f"正在把 {topic} 转成可作答的小练习。",
-            rich_blocks=[],
-        )
 
     def generate_tavern_actor_reply(
         self,
@@ -859,25 +660,6 @@ class MockModelProvider(ModelProvider):
             addressed_participant_ids=[required_target_id] if required_target_id else [],
         )
 
-    def grade_submission(
-        self, *, persona: PersonaProfile, exercise_id: str, answer: str
-    ) -> ModelReply:
-        quality = "完整" if len(answer.strip()) > 24 else "偏短"
-        text = (
-            f"针对练习 {exercise_id}，你的回答{quality}。"
-            " 我会指出遗漏点，并给出下一步复习建议。"
-        )
-        mood = "excited" if quality == "完整" else "concerned"
-        action = "smile" if quality == "完整" else "pause"
-        return ModelReply(
-            text=text,
-            mood=mood,
-            action=action,
-            speech_style=persona.default_speech_style,
-            delivery_cue="先给判断，再补原因，末尾留一个可执行的修正动作。",
-            state_commentary="正在根据答题完整度切换鼓励或纠偏反馈。",
-            rich_blocks=[],
-        )
 
     def generate_learning_plan(
         self,
@@ -1224,7 +1006,10 @@ class MockModelProvider(ModelProvider):
         )
 
 
-class OpenAIModelProvider(MockModelProvider):
+class OpenAIModelProvider(ModelProvider):
+    # Implementation identity, distinct from credential/model readiness probes.
+    exercise_implementation = LocalExerciseProvider.exercise_implementation
+
     def __init__(
         self,
         *,
@@ -1289,6 +1074,13 @@ class OpenAIModelProvider(MockModelProvider):
         self.plan_disabled_tools_provider = plan_disabled_tools_provider
         self.chat_disabled_tools_provider = chat_disabled_tools_provider
         self.token_usage_service = token_usage_service
+        self._local_exercises = LocalExerciseProvider()
+
+    def generate_exercise(self, *, persona: PersonaProfile, section_id: str, topic: str) -> ModelReply:
+        return self._local_exercises.generate_exercise(persona=persona, section_id=section_id, topic=topic)
+
+    def grade_submission(self, *, persona: PersonaProfile, exercise_id: str, answer: str) -> ModelReply:
+        return self._local_exercises.grade_submission(persona=persona, exercise_id=exercise_id, answer=answer)
 
     def supports_page_image_tools(self) -> bool:
         return self.multimodal_enabled
@@ -2333,7 +2125,6 @@ class OpenAIModelProvider(MockModelProvider):
             used_model=self.setting_model,
             used_web_search=False,
         )
-
 
 
     def generate_learning_plan(

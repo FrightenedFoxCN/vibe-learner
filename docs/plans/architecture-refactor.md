@@ -82,3 +82,12 @@
 - 领域适配器拆为四个 `*_harness_adapter.py`，经 `HarnessDomainExecutionPort` 使用共享执行设施；旧 manifest decoder-route anchors 保持为 façade，不修改注册/golden fixtures。
 - Document/Planning Repository 通过 `HarnessTransactionFinalizer` 在调用方 Session 内读取执行状态、finalize 或记录失败；prepared/finalize DTO 归入 models，不再导入 `app.services.harness_runtime` 或 broad orchestration。
 - `test:ai:harness:contracts` 的 5 项模块测试（含 48 个 schema/constant 子项）与 `test:ai:harness:commit` 的 44 项绑定/提交/故障回归通过。benchmark 源码身份清单纳入拆出的文件。2026-09-10 阶段门禁通过：`check:release`（后端 598 项、共享/Web、13 个 eval suite、生产构建）与 `test:acceptance:recovery-limits`（后端 195 项、Web 169 通过/2 条环境相关跳过）。
+
+### ARCH-PROVIDER-001
+
+- [x] 拆出 Planning、Study、Tavern、Persona、Scene、Embedding、Image、Exercise 能力接口与 reply DTO；Planning/Tavern/Pedagogy 消费方收窄依赖。聚合 `ModelProvider` 保留兼容入口。
+- [x] 真实 provider 不再继承 Mock。独立练习生成与提交评价显式委托 `LocalExerciseProvider`，标记 `exercise_implementation=local_heuristic`，保留原文本和长度启发式，不调用传输。
+- [ ] 将真实 provider 各能力实现与共享传输/usage/错误/有界重试拆分，逐能力验证配置快照、调用上限和取消边界。
+- [ ] 完成 provider 阶段 release/recovery 门禁后关闭主任务。
+
+首个子任务验证：原 provider 审计、Study 解码、Tavern 安全模块 38 项通过；新增能力/练习契约连同 provider 审计与 Persona 流程共 122 项通过。测试能力导入无需 LiteLLM、真实 provider 无 Mock 继承、本地练习输出兼容及无传输调用。

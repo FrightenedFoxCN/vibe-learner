@@ -95,7 +95,7 @@ from app.services.model_recovery import (
     consume_model_recovery_state,
     reset_model_recovery_state,
 )
-from app.services.model_provider import ModelProvider
+from app.services.provider_capabilities import TavernModelCapability
 from app.services.persona import PersonaEngine
 from app.services.tavern_harness import (
     TavernActorHarness,
@@ -128,7 +128,7 @@ class TavernService:
         *,
         repository: TavernRepository,
         persona_engine: PersonaEngine,
-        model_provider: ModelProvider,
+        model_provider: TavernModelCapability,
         step_lease_seconds: int = TAVERN_STEP_LEASE_SECONDS,
         max_step_claims: int = TAVERN_MAX_STEP_CLAIMS,
     ) -> None:
