@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.services.model_recovery import get_model_recovery_state
+
 from datetime import UTC, datetime, timedelta
 import json
 from typing import Callable, ClassVar, Literal, Mapping
@@ -937,12 +939,20 @@ class HarnessProposalRuntimeService:
                 policy_contract=policy_contract,
             )
             captured: dict[str, BaseModel] = {}
+            structured_retry_observed = False
 
             def generate_from_snapshot(_context, artifacts: Mapping[str, object]) -> BaseModel:
+                nonlocal structured_retry_observed
                 payload = _decode_protected_json(
                     artifacts[snapshot.artifact_id], artifact_contract
                 )
-                return generate(payload)
+                previous = {item.recovery_id for item in get_model_recovery_state()}
+                output = generate(payload)
+                structured_retry_observed = any(
+                    item.recovery_id not in previous and item.strategy == "retry_structured_json"
+                    for item in get_model_recovery_state()
+                )
+                return output
 
             def validate(output: BaseModel) -> HarnessRuntimeValidationResult:
                 strict = output_type.model_validate(
@@ -950,6 +960,8 @@ class HarnessProposalRuntimeService:
                 )
                 captured["output"] = strict
                 recovery = str(getattr(strict, "recovery_strategy", "none"))
+                if recovery == "none" and structured_retry_observed:
+                    recovery = "structured_json_retry"
                 checks = [
                     HarnessCheckV2(
                         name="proposal_schema_and_invariants",
@@ -964,7 +976,7 @@ class HarnessProposalRuntimeService:
                             name="bounded_recovery",
                             status=HarnessCheckStatus.WARNING,
                             code=f"{recovery}_applied",
-                            message="The proposal was produced by a bounded local recovery path.",
+                            message="The proposal was produced after a bounded recovery path.",
                         )
                     )
                 return HarnessRuntimeValidationResult(

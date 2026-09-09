@@ -2,8 +2,12 @@
 
 Update: the authorized 2026-09-09 joint acceptance run used MiniMax M3 and
 reproduced the local performance gates. Joint acceptance did not pass; real
-Tavern small-sample usage/latency evidence is now available, while billed cost,
-broader samples and maximum-input acceptance remain open. See
+Tavern usage/latency evidence now includes 30 scheduled steps before and after
+prompt repair. After repair, 28 completed, one failed with upstream 529 and one
+was blocked; 29 provider requests had empirical p50/p95 of 6981/20169 ms and
+456051 usage tokens. This is one repeated synthetic configuration, not a
+maximum-input or representative-population gate. Billed cost remains unknown.
+See also [the follow-up evidence](acceptance-wave45-2026-09-09/remaining/README.md). See
 [the acceptance report](acceptance-wave45-2026-09-09/README.md). The no-provider
 statement below describes the earlier implementation run only.
 

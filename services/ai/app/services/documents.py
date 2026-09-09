@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import base64
+
 from pathlib import Path
 import time
 from typing import Callable
@@ -20,6 +21,7 @@ from app.persistence.document_process_operation_repository import (
     DocumentProcessOperationRepository,
     DocumentProcessStateConflict,
 )
+from app.services.document_stage_metrics import collect_parser_measurements, parser_stage_evidence
 from app.services.document_parser import DocumentParser
 from app.services.local_store import LocalJsonStore
 from app.services.stream_interrupts import StreamInterruptedError
@@ -135,6 +137,7 @@ class DocumentService:
                 document.stored_path,
             )
             _call_interrupt(interrupt_check)
+            parser_measurements: dict[str, dict[str, int]] = {}
             def generate_document(
                 protected: dict[str, object],
             ) -> DocumentProcessRuntimeOutputV1:
@@ -167,14 +170,15 @@ class DocumentService:
                         handle.write(upload)
                         temp_path = Path(handle.name)
                     try:
-                        report = self.parser.parse(
-                            document_id=source_document.id,
-                            title=source_document.title,
-                            stored_path=str(temp_path),
-                            force_ocr=source_force_ocr,
-                            progress_callback=progress_callback,
-                            interrupt_check=interrupt_check,
-                        )
+                        with collect_parser_measurements(parser_measurements):
+                            report = self.parser.parse(
+                                document_id=source_document.id,
+                                title=source_document.title,
+                                stored_path=str(temp_path),
+                                force_ocr=source_force_ocr,
+                                progress_callback=progress_callback,
+                                interrupt_check=interrupt_check,
+                            )
                     except fitz.FileDataError as error:
                         raise RuntimeError("document_process_invalid_pdf") from error
                     units = []
@@ -267,6 +271,7 @@ class DocumentService:
                 ),
                 evidence=DocumentStageEvidenceV1(
                     stage="page_extraction",
+                    **parser_stage_evidence(parser_measurements, "page_extraction"),
                     outcome="passed",
                     item_count=debug_report.page_count,
                     warning_count=len(debug_report.warnings),
@@ -293,6 +298,7 @@ class DocumentService:
                 ),
                 evidence=DocumentStageEvidenceV1(
                     stage="section_detection",
+                    **parser_stage_evidence(parser_measurements, "section_detection"),
                     outcome="passed",
                     item_count=len(debug_report.sections),
                     warning_count=len(debug_report.warnings),
@@ -319,6 +325,7 @@ class DocumentService:
                 ),
                 evidence=DocumentStageEvidenceV1(
                     stage="chunk_building",
+                    **parser_stage_evidence(parser_measurements, "chunk_building"),
                     outcome="passed",
                     item_count=len(debug_report.chunks),
                     warning_count=len(debug_report.warnings),
@@ -342,6 +349,7 @@ class DocumentService:
                 ),
                 evidence=DocumentStageEvidenceV1(
                     stage="ocr_page",
+                    **parser_stage_evidence(parser_measurements, "ocr_page"),
                     outcome=(
                         "applied"
                         if debug_report.ocr_applied

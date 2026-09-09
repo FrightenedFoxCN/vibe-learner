@@ -1,0 +1,28 @@
+{
+  "native_vault_unlock_passed": true,
+  "native_vault_lock_passed": true,
+  "runtime_secret_configured": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "restored_models": [
+    "gemini-3.7-flash",
+    "gemini-3.7-flash",
+    "gemini-3.7-flash"
+  ],
+  "codesign_deep_strict_passed": true,
+  "release_backend_tests": 543,
+  "release_exit_code": 0,
+  "vault_file_preserved": true,
+  "own_sidecar_exited": true,
+  "vibe-learner-desktop": {
+    "sha256": "9491731719931aaac665f234985dc0012543a8cdda84d448f12c8010a07a158d",
+    "installed_equals_build": true
+  },
+  "vibe-learner-sidecar": {
+    "sha256": "1817da1d287208abe0657cde99ad17fc872b1fee6c58bc6c53d5992c877699a7",
+    "installed_equals_build": true
+  }
+}

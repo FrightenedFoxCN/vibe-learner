@@ -23,6 +23,7 @@ from app.services.tavern_prompt import preflight_tavern_actor_prompt
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--output", type=Path, required=True)
+parser.add_argument("--rounds", type=int, choices=range(1, 6), default=1)
 args = parser.parse_args()
 logging.disable(logging.CRITICAL)
 samples = []
@@ -34,7 +35,7 @@ provider = OpenAIModelProvider(api_key=os.environ["K3_API_KEY"],
 original = provider._request_openai_chat_completion
 
 def observed(payload, **kwargs):
-    if len(samples) >= 15:
+    if len(samples) >= 15 * args.rounds:
         raise RuntimeError("acceptance_provider_call_ceiling")
     sample = {"index": len(samples), "prompt_bytes": canonical_byte_count(payload["messages"]),
               "response_format": payload.get("response_format", {}).get("type"),
@@ -43,6 +44,14 @@ def observed(payload, **kwargs):
     started = time.perf_counter()
     try:
         result, elapsed = original(payload, **kwargs)
+        from app.services.model_provider import _parse_tavern_actor_reply, _extract_choice_content
+        try:
+            _parse_tavern_actor_reply(result)
+        except RuntimeError as diagnostic:
+            sample["invalid_synthetic_reply"] = _extract_choice_content(result)
+            sample["validation_cause"] = type(diagnostic.__cause__).__name__
+            if hasattr(diagnostic.__cause__, "errors"):
+                sample["validation_errors"] = diagnostic.__cause__.errors(include_input=False, include_url=False)
         sample.update(status="success", usage=result.get("usage"),
                       returned_model=result.get("model"),
                       finish_reasons=[c.get("finish_reason") for c in result.get("choices", [])])
@@ -76,7 +85,7 @@ with TemporaryDirectory(prefix="wave45-live-tavern-") as root:
         return original_actor(**kwargs)
     provider.generate_tavern_actor_reply = observed_actor
     try:
-        for batch in (fixture["participants"][:4], fixture["participants"][4:]):
+        for batch in (fixture["participants"][:4], fixture["participants"][4:]) * args.rounds:
             detail = repository.require_room(room.id)
             request = TavernTurnRequest.model_validate({
                 "input": {"kind": "user_message", "content": "请依次简短讨论古城地图，保留各自立场。"},
@@ -112,8 +121,10 @@ report = {"base_commit": subprocess.check_output(["git","rev-parse","HEAD"],text
     "samples": samples,"runs":runs,"preflights":preflights,
     "p50_ms":latencies[math.ceil(len(latencies)*.5)-1] if latencies else None,
     "p95_ms":latencies[math.ceil(len(latencies)*.95)-1] if latencies else None,
-    "statistical_scope":"small-sample smoke; no population p95 or quality-rate acceptance",
-    "passed":len(preflights)==6 and all(r["run"]["status"]=="completed" for r in runs)}
+    "statistical_scope":"Synthetic long-history repeated-round sample; empirical quantiles only, no population or maximum-combination claim",
+    "actor_sample_target":6 * args.rounds,
+    "billed_cost":None,
+    "passed":len(preflights)==6 * args.rounds and all(r["run"]["status"]=="completed" for r in runs)}
 args.output.parent.mkdir(parents=True,exist_ok=True)
 args.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n")
 print(json.dumps({"passed":report["passed"],"provider_calls":len(samples)}))

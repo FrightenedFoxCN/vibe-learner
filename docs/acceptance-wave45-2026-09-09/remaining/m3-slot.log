@@ -1,0 +1,4 @@
+{"sample": 0, "trace_status": "passed", "provider_calls": 1, "recoveries": []}
+{"sample": 1, "trace_status": "passed", "provider_calls": 1, "recoveries": []}
+model.setting.json_retry model=MiniMax-M3 reason=setting_model_invalid_json
+{"sample": 2, "trace_status": "passed", "provider_calls": 2, "recoveries": ["retry_structured_json"]}

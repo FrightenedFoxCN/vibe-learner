@@ -1,0 +1,15 @@
+WARNING:vibe_learner.ocr:ocr.onnxtr_predictor_init_failed error=[ONNXRuntimeError] : 1 : FAIL : Error compiling model: Failed to create a working directory appropriate for URL: file:///var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/
+WARNING:vibe_learner.parser:parser.page.ocr_unavailable page=1 reason=onnxtr_predictor_init_failed:[ONNXRuntimeError] : 1 : FAIL : Error compiling model: Failed to create a working directory appropriate for URL: file:///var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/
+WARNING:vibe_learner.parser:parser.page.ocr_unavailable page=2 reason=onnxtr_predictor_init_failed:[ONNXRuntimeError] : 1 : FAIL : Error compiling model: Failed to create a working directory appropriate for URL: file:///var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/
+ERROR:vibe_learner.documents:document.processing.failed id=doc-1ad7eafcc4
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 405, in process_document
+    raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+RuntimeError: document_ocr_unavailable
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/../../docs/acceptance-wave45-2026-09-09/remaining/ocr_acceptance.py", line 41, in <module>
+    processed = service.process_document(document.id, force_ocr=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 405, in process_document
+    raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+RuntimeError: document_ocr_unavailable

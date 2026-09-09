@@ -126,7 +126,7 @@ from app.persistence.study_chat_operation_repository import (
 from app.persistence.harness_artifact_repository import HarnessArtifactRepository
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.learning_plan_chat_runtime import LearningPlanChatToolRuntime
-from app.services.model_recovery import consume_model_recovery_state, reset_model_recovery_state
+from app.services.model_recovery import consume_model_recovery_state, record_model_recovery, reset_model_recovery_state
 from app.services.model_provider import OpenAIModelProvider
 from app.services.study_chat_attachments import (
     cleanup_staged_study_chat_operation_attachments,
@@ -195,8 +195,14 @@ def _into_response_with_model_recoveries(
 ) -> BaseModel:
     payload = value.model_dump() if isinstance(value, BaseModel) else dict(value)
     recoveries = consume_model_recovery_state()
-    if recoveries and "model_recoveries" not in payload:
-        payload["model_recoveries"] = [item.model_dump(mode="json") for item in recoveries]
+    if recoveries:
+        existing = list(payload.get("model_recoveries") or [])
+        identities = {item["recovery_id"] for item in existing}
+        payload["model_recoveries"] = existing + [
+            item.model_dump(mode="json")
+            for item in recoveries
+            if item.recovery_id not in identities
+        ]
     return response_model.model_validate(payload)
 
 
@@ -1276,11 +1282,20 @@ def assist_persona_setting(payload: PersonaSettingAssistRequest) -> PersonaSetti
             except RuntimeError as exc:
                 logger.warning("persona.assist_setting.model_failed internal_error_code=%s fallback=local", str(exc))
                 reset_model_recovery_state()
+                record_model_recovery(
+                    category="persona_setting_assist",
+                    reason="setting_model_unavailable_or_invalid",
+                    strategy="local_fallback",
+                    note="模型润色未完成，已使用本地规则；请检查结果后再保存。",
+                )
                 result = container.persona_engine.assist_setting(
                     name=str(protected["name"]),
                     summary=str(protected["summary"]),
                     slots=protected_slots,
                 )
+                # A failed model call must not merge away biography slots or
+                # replace locked/user-authored content with canned prose.
+                result["slots"] = [item.model_dump(mode="json") for item in protected_slots]
                 recovery_strategy = "local_fallback"
                 used_model = "local"
             raw_slots = result.get("slots")
@@ -1346,6 +1361,12 @@ def assist_persona_slot(payload: PersonaSlotAssistRequest) -> PersonaSlotAssistR
             except RuntimeError as exc:
                 logger.warning("persona.assist_slot.model_failed internal_error_code=%s fallback=local", str(exc))
                 reset_model_recovery_state()
+                record_model_recovery(
+                    category="persona_slot_assist",
+                    reason="setting_model_unavailable_or_invalid",
+                    strategy="local_fallback",
+                    note="模型润色未完成，已使用本地规则；请检查结果后再保存。",
+                )
                 result = {"slot": container.persona_engine.assist_slot(
                     name=str(protected["name"]),
                     summary=str(protected["summary"]),

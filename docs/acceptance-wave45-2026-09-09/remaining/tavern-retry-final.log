@@ -1,0 +1,1 @@
+{"passed": true, "injected_failure": "before second actor provider call", "original_status": "partial", "child_status": "completed", "completed_message_unchanged": true, "retry_targets": ["benchmark-persona-1", "benchmark-persona-2"], "replay_provider_calls": 0}

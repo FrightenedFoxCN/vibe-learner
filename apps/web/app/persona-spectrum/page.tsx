@@ -23,9 +23,11 @@ import {
   renderPersonaRuntimeInstruction,
 } from "@vibe-learner/shared";
 
+import { exportJson } from "../../lib/export-json";
 import { TopNav } from "../../components/top-nav";
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
+import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
 import {
   assistPersonaSlot,
@@ -104,6 +106,7 @@ const BASIC_PANE_WIDTH = 300;
 const SIDEBAR_PANE_WIDTH = 360;
 
 export default function PersonaSpectrumPage() {
+  const configImportInputRef = useRef<HTMLInputElement>(null);
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const selectedPersonaIdRef = useRef("");
@@ -892,32 +895,26 @@ export default function PersonaSpectrumPage() {
     }
   }
 
-  function handleExportConfig() {
+  async function handleExportConfig() {
     setConfigError(""); setConfigMessage("");
-    const payload = draftToCreatePersonaInput(draft);
-    const json = JSON.stringify(payload, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const baseName = (payload.name || "persona-config").trim().toLowerCase().replace(/\s+/g, "-");
-    link.href = url;
-    link.download = `${baseName || "persona-config"}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setConfigMessage("已导出当前配置。");
+    try {
+      const payload = draftToCreatePersonaInput(draft);
+      const baseName = (payload.name || "persona-config").trim().toLowerCase().replace(/\s+/g, "-");
+      const saved = await exportJson(`${baseName || "persona-config"}.json`, payload);
+      setConfigMessage(saved ? "已导出当前配置。" : "已取消导出。");
+    } catch {
+      setConfigError("导出失败，请检查保存位置后重试。");
+    }
   }
 
-  function handleDownloadTemplate() {
+  async function handleDownloadTemplate() {
     setConfigError(""); setConfigMessage("");
-    const json = JSON.stringify(DEFAULT_CONFIG_TEMPLATE, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "persona-config-template.json";
-    link.click();
-    URL.revokeObjectURL(url);
-    setConfigMessage("已下载配置模板，可直接导入后编辑。");
+    try {
+      const saved = await exportJson("persona-config-template.json", DEFAULT_CONFIG_TEMPLATE);
+      setConfigMessage(saved ? "已下载配置模板，可直接导入后编辑。" : "已取消下载。");
+    } catch {
+      setConfigError("模板下载失败，请检查保存位置后重试。");
+    }
   }
 
   async function handleImportConfig(event: ChangeEvent<HTMLInputElement>) {
@@ -936,6 +933,7 @@ export default function PersonaSpectrumPage() {
       currentPersonaAsyncScope(fieldTarget),
     );
     try {
+      if (file.size > 8 * 1024 * 1024) throw new Error("persona_import_file_too_large");
       const raw = await file.text();
       const parsed = JSON.parse(raw) as Record<string, unknown>;
       const normalized = normalizeImportedPersonaConfig(parsed);
@@ -1487,7 +1485,8 @@ export default function PersonaSpectrumPage() {
                 </div>
               </div>
 
-              {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
+              <ModelFallbackNotice recoveries={assistModelRecoveries} />
+        {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
                 </div>
 
               <div style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
@@ -1539,10 +1538,8 @@ export default function PersonaSpectrumPage() {
                 <div style={styles.actionsRow}>
                   <button style={styles.ghostBtn} type="button" onClick={handleDownloadTemplate}>下载模板</button>
                   <button style={styles.ghostBtn} type="button" onClick={handleExportConfig}>导出配置</button>
-                  <label style={styles.ghostBtn}>
-                    导入配置
-                    <input type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
-                  </label>
+                  <button type="button" style={styles.ghostBtn} onClick={() => configImportInputRef.current?.click()}>导入配置</button>
+                  <input ref={configImportInputRef} type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
                 </div>
                 {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
                 {isReadonlyPersona ? (

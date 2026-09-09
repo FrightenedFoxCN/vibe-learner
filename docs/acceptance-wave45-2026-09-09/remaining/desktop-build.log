@@ -1,0 +1,91 @@
+
+> @vibe-learner/desktop@0.2.2 build
+> tauri build --bundles app
+
+        Info Looking up installed tauri packages to check mismatched versions...
+     Running beforeBuildCommand `cd ../../ && npm run build:desktop:web && npm run prepare:desktop:bundle`
+
+> vibe-learner@0.2.2 build:desktop:web
+> npm --workspace @vibe-learner/web run build:desktop
+
+
+> @vibe-learner/web@0.2.2 build:desktop
+> next build
+
+▲ Next.js 16.2.3 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1834ms
+  Running TypeScript ...
+  Finished TypeScript in 2.6s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/13) ...
+  Generating static pages using 9 workers (3/13) 
+  Generating static pages using 9 workers (6/13) 
+  Generating static pages using 9 workers (9/13) 
+✓ Generating static pages using 9 workers (13/13) in 180ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /apple-icon
+├ ○ /icon
+├ ○ /model-usage
+├ ○ /persona-spectrum
+├ ○ /plan
+├ ○ /scene-setup
+├ ○ /sensory-tools
+├ ○ /settings
+├ ○ /study
+└ ○ /tavern
+
+
+○  (Static)  prerendered as static content
+
+
+> vibe-learner@0.2.2 prepare:desktop:bundle
+> npm --workspace @vibe-learner/desktop run prepare:bundle
+
+
+> @vibe-learner/desktop@0.2.2 prepare:bundle
+> node scripts/prepare-bundle-assets.mjs
+
+WARN Retry attempt #0. Sleeping 1.639419149s before the next attempt
+WARN Retry attempt #1. Sleeping 3.278304765s before the next attempt
+WARN Retry attempt #2. Sleeping 5.341732418s before the next attempt
+error: Request failed after 3 retries in 10.3s
+  Caused by: Failed to fetch: `https://pypi.org/simple/pyinstaller/`
+  Caused by: error sending request for url (https://pypi.org/simple/pyinstaller/)
+  Caused by: client error (Connect)
+  Caused by: dns error
+  Caused by: failed to lookup address information: nodename nor servname provided, or not known
+file:///Users/ffox/vibe-learner/apps/desktop/scripts/prepare-bundle-assets.mjs:73
+    throw new Error(`desktop_sidecar_pyinstaller_failed:${result.status ?? "unknown"}`);
+          ^
+
+Error: desktop_sidecar_pyinstaller_failed:2
+    at buildSidecar (file:///Users/ffox/vibe-learner/apps/desktop/scripts/prepare-bundle-assets.mjs:73:11)
+    at main (file:///Users/ffox/vibe-learner/apps/desktop/scripts/prepare-bundle-assets.mjs:30:3)
+    at file:///Users/ffox/vibe-learner/apps/desktop/scripts/prepare-bundle-assets.mjs:18:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:569:25)
+    at async node:internal/modules/esm/loader:650:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v26.8.1
+npm error Lifecycle script `prepare:bundle` failed with error:
+npm error code 1
+npm error path /Users/ffox/vibe-learner/apps/desktop
+npm error workspace @vibe-learner/desktop@0.2.2
+npm error location /Users/ffox/vibe-learner/apps/desktop
+npm error command failed
+npm error command sh -c node scripts/prepare-bundle-assets.mjs
+beforeBuildCommand `cd ../../ && npm run build:desktop:web && npm run prepare:desktop:bundle` failed with exit code 1
+       Error beforeBuildCommand `cd ../../ && npm run build:desktop:web && npm run prepare:desktop:bundle` failed with exit code 1
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path /Users/ffox/vibe-learner/apps/desktop
+npm error workspace @vibe-learner/desktop@0.2.2
+npm error location /Users/ffox/vibe-learner/apps/desktop
+npm error command failed
+npm error command sh -c tauri build --bundles app

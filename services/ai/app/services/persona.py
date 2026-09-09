@@ -316,10 +316,15 @@ class PersonaEngine:
         elif slot.kind == "narrative_mode":
             rewritten = "稳态导学"
         else:
-            rewritten = f"{identity_name}：{summary_text}。{base or '请补充该插槽内容。'}"
+            # Custom and Scene fields have no reviewed local rewrite rule.
+            # Preserve their content instead of wrapping it again on every retry.
+            return slot.model_copy(deep=True)
 
+        if slot.locked:
+            return slot.model_copy(deep=True)
         if base and strength < 0.45:
-            content = f"{base}\n\n润色补充：{rewritten}"
+            supplement = f"润色补充：{rewritten}"
+            content = base if supplement in base or base == rewritten else f"{base}\n\n{supplement}"
         else:
             content = rewritten
         return PersonaSlot(

@@ -1,0 +1,11 @@
+WARNING:vibe_learner.ocr:ocr.onnxtr_accelerator_init_failed fallback=cpu
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/../../docs/acceptance-wave45-2026-09-09/remaining/ocr_acceptance.py", line 43, in <module>
+    extracted = " ".join(chunk.text for chunk in report.chunks).casefold()
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/../../docs/acceptance-wave45-2026-09-09/remaining/ocr_acceptance.py", line 43, in <genexpr>
+    extracted = " ".join(chunk.text for chunk in report.chunks).casefold()
+                         ^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/.venv/lib/python3.12/site-packages/pydantic/main.py", line 1026, in __getattr__
+    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+AttributeError: 'DocumentChunkRecord' object has no attribute 'text'

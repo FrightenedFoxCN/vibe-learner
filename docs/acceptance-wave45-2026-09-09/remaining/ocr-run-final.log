@@ -1,0 +1,2 @@
+WARNING:vibe_learner.ocr:ocr.onnxtr_accelerator_init_failed fallback=cpu
+{"fixture": "two-page-image-only-two-column-english", "model": "db_mobilenet_v3_large+parseq", "ocr_status": "forced", "status": "processed", "pages": 2, "ocr_pages": 2, "anchor_recall": 1.0, "duration_ms": 4216, "limitations": ["English synthetic fixture only", "No maximum-size or multilingual claim", "Local ONNX OCR, no MiniMax call"]}

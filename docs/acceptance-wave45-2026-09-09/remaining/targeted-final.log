@@ -1,0 +1,86 @@
+[92m20:09:43 - LiteLLM:WARNING[0m: get_model_cost_map.py:271 - LiteLLM: Failed to fetch remote model cost map from https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json: [Errno 8] nodename nor servname provided, or not known. Falling back to local backup.
+.2026-09-09 20:09:44,437 | INFO | vibe_learner.documents | document.created id=doc-87acaabdae filename=child-stage.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpb79ov89w/uploads/doc-87acaabdae.pdf
+.2026-09-09 20:09:44,510 | INFO | vibe_learner.documents | document.created id=doc-6d52da7265 filename=first.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpa3kk5c1i/uploads/doc-6d52da7265.pdf
+2026-09-09 20:09:44,529 | INFO | vibe_learner.documents | document.created id=doc-302adc11c9 filename=second.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpa3kk5c1i/uploads/doc-302adc11c9.pdf
+.2026-09-09 20:09:44,587 | INFO | vibe_learner.documents | document.created id=doc-f2b87baa7a filename=replacement.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpp6m4txah/uploads/doc-f2b87baa7a.pdf
+..2026-09-09 20:09:44,696 | INFO | vibe_learner.documents | document.created id=doc-ad08e49355 filename=child-stage-failed.pdf size_bytes=33 stored_path=/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/tmpb351uegn/uploads/doc-ad08e49355.pdf
+.....2026-09-09 20:09:45,130 | WARNING | vibe_learner.routes | persona.assist_setting.model_failed internal_error_code=setting_model_invalid_json fallback=local
+2026-09-09 20:09:45,145 | WARNING | vibe_learner.routes | persona.assist_slot.model_failed internal_error_code=setting_model_invalid_json fallback=local
+....2026-09-09 20:09:45,152 | WARNING | vibe_learner.model_provider | model.setting.json_retry model=test reason=setting_model_invalid_payload
+2026-09-09 20:09:45,152 | WARNING | vibe_learner.model_provider | model.setting.json_retry model=test reason=setting_model_invalid_payload
+.2026-09-09 20:09:45,196 | INFO | vibe_learner.api | request.start id=e084cc01 method=POST path=/study-sessions/session-public-provider-failure/chat query=
+2026-09-09 20:09:45,203 | INFO | vibe_learner.api | request.end id=e084cc01 method=POST path=/study-sessions/session-public-provider-failure/chat status=200 duration_ms=6
+.2026-09-09 20:09:45,247 | INFO | vibe_learner.api | request.start id=e1327f83 method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments query=
+2026-09-09 20:09:45,282 | ERROR | vibe_learner.routes | study_chat.error session_id=session-public-provider-failure public_detail=chat_model_network_error internal_error_code=harness_runtime_prepare_output_invalid retry_attempts=1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2000, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+2026-09-09 20:09:45,285 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-public-provider-failure operation_id=study-chat-op-961edba91f0f4d8a error_code=study_chat_uncertain_chat_model_network_error
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2000, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1592, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2036, in _run_study_chat
+    raise http_error from exc
+fastapi.exceptions.HTTPException: 502: chat_model_network_error
+2026-09-09 20:09:45,285 | INFO | vibe_learner.api | request.end id=e1327f83 method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments status=200 duration_ms=37
+2026-09-09 20:09:45,286 | INFO | vibe_learner.api | request.start id=1027601c method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-connection-0001 query=
+2026-09-09 20:09:45,287 | INFO | vibe_learner.api | request.end id=1027601c method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-connection-0001 status=200 duration_ms=1
+2026-09-09 20:09:45,288 | INFO | vibe_learner.api | request.start id=915f6934 method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments query=
+2026-09-09 20:09:45,290 | INFO | vibe_learner.api | request.end id=915f6934 method=POST path=/study-sessions/session-public-provider-failure/chat-with-attachments status=200 duration_ms=2
+.2026-09-09 20:09:45,336 | INFO | vibe_learner.api | request.start id=cfc4728a method=POST path=/study-sessions/session-public-provider-failure/chat query=
+2026-09-09 20:09:45,367 | ERROR | vibe_learner.routes | study_chat.error session_id=session-public-provider-failure public_detail=chat_model_timeout internal_error_code=harness_runtime_prepare_output_invalid retry_attempts=1
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2000, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+2026-09-09 20:09:45,369 | ERROR | vibe_learner.routes | study_chat.operation_uncertain session_id=session-public-provider-failure operation_id=study-chat-op-977129e93efc4338 error_code=study_chat_uncertain_chat_model_timeout
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2000, in _run_study_chat
+    runtime_prepared = study_runtime.prepare_output(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/harness_runtime.py", line 552, in prepare_output
+    raise HarnessRuntimeError("harness_runtime_prepare_output_invalid")
+app.persistence.harness_runtime_repository.HarnessRuntimeError: harness_runtime_prepare_output_invalid
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 1592, in _admit_and_run_study_chat
+    response_payload = _run_study_chat(
+                       ^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/api/routes.py", line 2036, in _run_study_chat
+    raise http_error from exc
+fastapi.exceptions.HTTPException: 504: chat_model_timeout
+2026-09-09 20:09:45,370 | INFO | vibe_learner.api | request.end id=cfc4728a method=POST path=/study-sessions/session-public-provider-failure/chat status=200 duration_ms=34
+2026-09-09 20:09:45,371 | INFO | vibe_learner.api | request.start id=d4cd619f method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-timeout-0001 query=
+2026-09-09 20:09:45,371 | INFO | vibe_learner.api | request.end id=d4cd619f method=GET path=/study-sessions/session-public-provider-failure/chat-operations/request-public-timeout-0001 status=200 duration_ms=0
+2026-09-09 20:09:45,372 | INFO | vibe_learner.api | request.start id=71144dd6 method=POST path=/study-sessions/session-public-provider-failure/chat query=
+2026-09-09 20:09:45,373 | INFO | vibe_learner.api | request.end id=71144dd6 method=POST path=/study-sessions/session-public-provider-failure/chat status=200 duration_ms=1
+.2026-09-09 20:09:45,380 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 20:09:45,382 | INFO | vibe_learner.parser | parser.result document_id=test pages=1 sections=1 chunks=1 total_characters=126 extraction=page_text_dict ocr_status=completed ocr_applied_pages=0 warnings=0 section_source=heuristic
+2026-09-09 20:09:45,384 | INFO | vibe_learner.parser | parser.page.ocr_applied page=1 force_ocr=True text_chars_before=126 text_chars_after=1899
+2026-09-09 20:09:45,384 | INFO | vibe_learner.parser | parser.margin_patterns top=0 bottom=0
+2026-09-09 20:09:45,385 | INFO | vibe_learner.parser | parser.result document_id=test pages=1 sections=1 chunks=2 total_characters=1899 extraction=ocr_forced ocr_status=forced ocr_applied_pages=1 warnings=1 section_source=heuristic
+.
+----------------------------------------------------------------------
+Ran 19 tests in 1.074s
+
+OK

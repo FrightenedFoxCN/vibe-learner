@@ -1881,6 +1881,7 @@ class OpenAIModelProvider(MockModelProvider):
         parsed = self._request_setting_json_chat(
             payload,
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，字段保持与 schema 一致，不要添加额外说明。",
+            validate_payload=_validate_setting_slot_payload,
         )
         slot_raw = parsed.get("slot")
         if not isinstance(slot_raw, dict):
@@ -2151,6 +2152,7 @@ class OpenAIModelProvider(MockModelProvider):
         payload: dict[str, Any],
         *,
         retry_instruction: str,
+        validate_payload: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         raw_payload, _ = self._request_openai_chat_completion(
             payload,
@@ -2164,11 +2166,14 @@ class OpenAIModelProvider(MockModelProvider):
             content = _extract_choice_content(raw_payload).strip()
             if not content:
                 raise RuntimeError("setting_model_empty_response")
-            return _extract_json_payload(
+            parsed = _extract_json_payload(
                 content,
                 invalid_json_code="setting_model_invalid_json",
                 invalid_payload_code="setting_model_invalid_payload",
             )
+            if validate_payload is not None:
+                validate_payload(parsed)
+            return parsed
         except RuntimeError as exc:
             recovery_reason = str(exc)
             if recovery_reason not in {
@@ -2217,6 +2222,8 @@ class OpenAIModelProvider(MockModelProvider):
                 invalid_json_code="setting_model_invalid_json",
                 invalid_payload_code="setting_model_invalid_payload",
             )
+            if validate_payload is not None:
+                validate_payload(parsed)
             record_model_recovery(
                 category="semantic_retry",
                 reason=recovery_reason,
@@ -2918,6 +2925,13 @@ class OpenAIModelProvider(MockModelProvider):
                 if isinstance(mapped_error, ModelRequestError):
                     mapped_error.attempts = attempt
                 raise mapped_error from exc
+
+
+def _validate_setting_slot_payload(payload: dict[str, Any]) -> None:
+    try:
+        PersonaSlotContentProposalV1.model_validate(payload.get("slot"), strict=True)
+    except ValidationError as exc:
+        raise RuntimeError("setting_model_invalid_payload") from exc
 
 
 def _chat_tools(

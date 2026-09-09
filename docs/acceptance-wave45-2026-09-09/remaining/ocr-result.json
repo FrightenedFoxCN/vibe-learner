@@ -1,0 +1,771 @@
+{
+  "fixture": "two-page-image-only-two-column-english",
+  "model": "db_mobilenet_v3_large+parseq",
+  "ocr_status": "forced",
+  "status": "processed",
+  "pages": 2,
+  "ocr_pages": 2,
+  "anchor_recall": 1.0,
+  "duration_ms": 4216,
+  "traces": [
+    {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-f41180bfb3c3a79df65ea97e1e820a88",
+      "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+      "parent_trace_id": null,
+      "workflow": "document_parse",
+      "stage": "document_parse",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentProcessRuntimeOutput",
+        "version": "document-process-runtime-output-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "document_parse",
+        "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+        "input_contract": {
+          "name": "DocumentProcessInputManifest",
+          "version": "document-process-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-1e609948620c4f0d",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_parser",
+            "version": "document-parser-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-b32d9d0e512bf08ca0de7f30b328f7c7",
+            "contract": {
+              "name": "DocumentProcessProtectedInput",
+              "version": "document-process-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "489c40b2228a58ebef640ef04e6dbf0fd45fbb8b2cd2f22e084540317d261a81"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "b18c92a82738ab8fc075e11cc19679a95acba259645c66429d57568908af1c6f",
+        "context_digest": "db4c37f7b2a85f33ba4d2fc08f978ba97fb4dd4e51bc2209cf591a20e1483733",
+        "policy_contract": {
+          "name": "DocumentProcessHarnessPolicy",
+          "version": "document-process-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "556f320b396e8cfa7618fafd906c0d7e60c9e58273606292cf14840fd0b2d7c6",
+      "checks": [
+        {
+          "name": "strict_output_schema",
+          "status": "passed",
+          "code": "output_schema_valid",
+          "message": "Strict output schema passed."
+        },
+        {
+          "name": "page_coverage_and_order",
+          "status": "passed",
+          "code": "page_coverage_valid",
+          "message": "Every page is present once in source order."
+        },
+        {
+          "name": "section_chunk_study_unit_boundaries",
+          "status": "passed",
+          "code": "document_boundaries_valid",
+          "message": "Section, Chunk, and Study Unit boundaries are valid."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-5cb057304b772134689ef301e1d9a70e",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "556f320b396e8cfa7618fafd906c0d7e60c9e58273606292cf14840fd0b2d7c6",
+          "error_code": "",
+          "duration_ms": 4040
+        },
+        {
+          "attempt_id": "harness-attempt-1940ebad3d4cacdee99def7b8cf4dc6c",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "556f320b396e8cfa7618fafd906c0d7e60c9e58273606292cf14840fd0b2d7c6",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-d54a34d5a27a4b19011e18fd17319508",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "556f320b396e8cfa7618fafd906c0d7e60c9e58273606292cf14840fd0b2d7c6",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-d35c94ae8ce8fb884bfe90c4e30295a8",
+          "attempt_index": 4,
+          "phase": "commit",
+          "status": "passed",
+          "output_digest": "e538e2bd8735e9ef8aa48a94a019b955c6e7058ff8635ee446b8801e30177b05",
+          "error_code": "",
+          "duration_ms": 68
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 4117,
+      "commit_evidence": {
+        "status": "committed",
+        "effect_batch_id": "document-commit-document-process-op-1e609948620c4f0d",
+        "payload_contract": {
+          "name": "DocumentProcessCommittedProjection",
+          "version": "document-process-committed-projection-v1"
+        },
+        "digest_algorithm": "sha256",
+        "digest_scope": "committed_projection",
+        "attempted_resource_refs": [
+          {
+            "resource_type": "document",
+            "resource_id": "doc-ba1e954ba1",
+            "revision": null
+          }
+        ],
+        "committed_resources": [
+          {
+            "resource_type": "document",
+            "resource_id": "doc-ba1e954ba1",
+            "expected_revision": null,
+            "committed_revision": null,
+            "first_sequence": null,
+            "last_sequence": null,
+            "payload_digest": "e538e2bd8735e9ef8aa48a94a019b955c6e7058ff8635ee446b8801e30177b05"
+          }
+        ],
+        "payload_digest": "e538e2bd8735e9ef8aa48a94a019b955c6e7058ff8635ee446b8801e30177b05",
+        "committed_at": "2026-09-09T12:25:34.748194Z",
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T12:25:30.631664Z",
+      "completed_at": "2026-09-09T12:25:34.748947Z"
+    },
+    {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-1660499198903fbffac8b718af2f481b",
+      "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+      "parent_trace_id": "harness-trace-f41180bfb3c3a79df65ea97e1e820a88",
+      "workflow": "document_parse",
+      "stage": "page_extraction",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "page_extraction",
+        "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-1e609948620c4f0d",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_page_extractor",
+            "version": "document-page-extractor-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-594bea2ffce8e197589fa24a09e50270",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "91ee0d793a292fc451b85ec4af0456e262ed003fb1aab6d6ccdb1726e4c802c7"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "cdcef45cc2128b9235269804adce6e7a5892271bd5a0748ff325d854504242d3",
+        "context_digest": "1bfd998f2513fcda203b4d470167aa654667f632299775dc7d983673d84a65be",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "19acde4c319719a3d9f0a631231cb63dde985309f1ef3a53aba3f1bcc852e425",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-1f47b5ba40ce3a28d285975db72757b4",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "19acde4c319719a3d9f0a631231cb63dde985309f1ef3a53aba3f1bcc852e425",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-e63af2de384abb225d3bdceb9d77c86f",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "19acde4c319719a3d9f0a631231cb63dde985309f1ef3a53aba3f1bcc852e425",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-b8ebd02531e39650bd709109de66268c",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "19acde4c319719a3d9f0a631231cb63dde985309f1ef3a53aba3f1bcc852e425",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 5,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T12:25:34.687813Z",
+      "completed_at": "2026-09-09T12:25:34.693542Z"
+    },
+    {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-7540bbd0753d3c8bc5571a7a04a04b80",
+      "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+      "parent_trace_id": "harness-trace-f41180bfb3c3a79df65ea97e1e820a88",
+      "workflow": "document_parse",
+      "stage": "section_detection",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "section_detection",
+        "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-1e609948620c4f0d",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_section_detector",
+            "version": "document-section-detector-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-27fa2abd02769685833d0b34fbaa1562",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "d4cb54b33dcbe4103e9858223676fe941d7a6562b4dc3176548a02484832f514"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "ac76ed15e92050897aa03581ab3b3a3b2c779bd960652560362d4d37aa248c99",
+        "context_digest": "ad95ab277b2eeca7bd21c8fc6dc6ebadbce362afd33a6ef0d341b3d15ed17b3d",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "0ac4e9940c7332931f3f7ac09bfce58bf76a4a77e5792e2fd536746357f8d599",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-cd898706408f683d5e6b1362d5e29bcd",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "0ac4e9940c7332931f3f7ac09bfce58bf76a4a77e5792e2fd536746357f8d599",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-9ceb041db4e6a252002bd9e4707a1314",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "0ac4e9940c7332931f3f7ac09bfce58bf76a4a77e5792e2fd536746357f8d599",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-194b31a4ea99ba1795f9e150d35a0cc4",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "0ac4e9940c7332931f3f7ac09bfce58bf76a4a77e5792e2fd536746357f8d599",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 4,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T12:25:34.701203Z",
+      "completed_at": "2026-09-09T12:25:34.706041Z"
+    },
+    {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-2ff5eded2494bcb3cadbcb424de50ca3",
+      "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+      "parent_trace_id": "harness-trace-f41180bfb3c3a79df65ea97e1e820a88",
+      "workflow": "document_parse",
+      "stage": "chunk_building",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "document_parse",
+        "stage": "chunk_building",
+        "operation_id": "harness-operation-4d36a492c26d43a99158804ba3dcaf1a",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document-process-op-1e609948620c4f0d",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "document_chunk_builder",
+            "version": "document-chunk-builder-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "document_upload",
+            "artifact_id": "harness-artifact-a56c1e44ec922d5b486d5744f8afe4ee",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "0e2cdf98717ddfbe343eb16a28f831ceefa848594a141bc43c341abf4bc223d6"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "877ec8306d5330d531675ade94dbc48043fc983c312d89ee8752df26e50e489a",
+        "context_digest": "6a6411f521dee299cdd6c33ab4e1aed1eb06cb284da029f53a5b4684d8386ca4",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "60f026c8c34b97e3ae9402e58493f700cce71525b7770358d9aba9db3df39292",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-beb3fe08e9dac3fbc69b6e64a48981fc",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "60f026c8c34b97e3ae9402e58493f700cce71525b7770358d9aba9db3df39292",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-517d6d90eff14d11cd8a8521d2c37894",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "60f026c8c34b97e3ae9402e58493f700cce71525b7770358d9aba9db3df39292",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-70f29173286a4b2583c771d118440446",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "60f026c8c34b97e3ae9402e58493f700cce71525b7770358d9aba9db3df39292",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 5,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T12:25:34.712522Z",
+      "completed_at": "2026-09-09T12:25:34.717673Z"
+    },
+    {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-dfa852b5de0e0565bc04d70e7793b2b0",
+      "operation_id": "harness-operation-dda8dec33d054029baab7ae52d3b5590",
+      "parent_trace_id": null,
+      "workflow": "ocr",
+      "stage": "ocr_page",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "ocr",
+        "stage": "ocr_page",
+        "operation_id": "harness-operation-dda8dec33d054029baab7ae52d3b5590",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "document_ocr-op-138c04fe23004948bb3cd8be9103b0ef",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "ocr_engine",
+            "version": "ocr-engine-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "ocr_page",
+            "artifact_id": "harness-artifact-3cafaad10b85de52c979378ae87cd84e",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "fdca32406efce42f290a393ae677a8048f4d6cb0bb235faab841e6eb48f2b13d"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "10117b7b4237edca3e512453e9f9affea84231cd7a9b092f09cd4594ca4a9f70",
+        "context_digest": "82e152e84a9f1938ec621244990984c872db470f629671f6c91081de17048f64",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "8c2d2403421285dd769d07757c555947768bc5064d6ecc8b4854f16289c8f75a",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-bf9a42ff6512bdc038567819e35c1583",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "8c2d2403421285dd769d07757c555947768bc5064d6ecc8b4854f16289c8f75a",
+          "error_code": "",
+          "duration_ms": 1
+        },
+        {
+          "attempt_id": "harness-attempt-985438e336ec18761bde9534d1320346",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "8c2d2403421285dd769d07757c555947768bc5064d6ecc8b4854f16289c8f75a",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-b9efa5ad98fa0dade669aa043e00a3e4",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "8c2d2403421285dd769d07757c555947768bc5064d6ecc8b4854f16289c8f75a",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 4,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T12:25:34.724971Z",
+      "completed_at": "2026-09-09T12:25:34.729475Z"
+    },
+    {
+      "trace_schema_version": "harness-trace-v3",
+      "trace_id": "harness-trace-4a99035d85e5eae5070ead6e4c96c56c",
+      "operation_id": "harness-operation-eae2b9217a394dca8bd6516fb73ccf3c",
+      "parent_trace_id": null,
+      "workflow": "study_unit_cleanup",
+      "stage": "study_unit_cleanup",
+      "status": "passed",
+      "contract": {
+        "name": "DocumentStageEvidence",
+        "version": "document-stage-evidence-v1"
+      },
+      "context": {
+        "context_contract": {
+          "name": "HarnessContextEnvelopeV3",
+          "version": "harness-context-v3"
+        },
+        "workflow": "study_unit_cleanup",
+        "stage": "study_unit_cleanup",
+        "operation_id": "harness-operation-eae2b9217a394dca8bd6516fb73ccf3c",
+        "input_contract": {
+          "name": "DocumentStageInputManifest",
+          "version": "document-stage-input-manifest-v1"
+        },
+        "subject_refs": [
+          {
+            "resource_type": "frontend_request",
+            "resource_id": "study_unit_cleanup-op-31a92e3aedf34738870a126ee47e8cc6",
+            "revision": null
+          }
+        ],
+        "component_versions": [
+          {
+            "name": "study_unit_cleaner",
+            "version": "study-unit-cleaner-v1"
+          }
+        ],
+        "snapshot_refs": [
+          {
+            "artifact_type": "study_unit_input",
+            "artifact_id": "harness-artifact-97f263b26472700ceedbc630cbd8cabc",
+            "contract": {
+              "name": "DocumentStageProtectedInput",
+              "version": "document-stage-protected-input-v1"
+            },
+            "digest_algorithm": "sha256",
+            "payload_digest": "93807e0cc8366d518417ff10fd6f562eb4fd0cdadc318fea5566a70db60b4794"
+          }
+        ],
+        "digest_algorithm": "sha256",
+        "digest_contract": {
+          "name": "HarnessContextManifestDigest",
+          "version": "harness-context-manifest-digest-v1"
+        },
+        "input_digest": "000422c044a8aec455681d5ff5b18510d6c851469adfaf49bbf03ae7558d1f13",
+        "context_digest": "9c6398b76e4cd5980114dadf76902444056f2a0166b4c9bd8de9bef6a7e8f300",
+        "policy_contract": {
+          "name": "DocumentStageHarnessPolicy",
+          "version": "document-stage-harness-v1"
+        },
+        "prompt_contract": null
+      },
+      "output_digest": "e2e1cd1b5c5771c5d654e203f247405e95bb6f60757ba7a2b7d97d4ab0676eb8",
+      "checks": [
+        {
+          "name": "stage_output_and_invariants",
+          "status": "passed",
+          "code": "stage_evidence_valid",
+          "message": "Stage output evidence passed strict validation."
+        }
+      ],
+      "attempt_records": [
+        {
+          "attempt_id": "harness-attempt-96f206ab34553926be9bc783f496e1c8",
+          "attempt_index": 1,
+          "phase": "generate",
+          "status": "passed",
+          "output_digest": "e2e1cd1b5c5771c5d654e203f247405e95bb6f60757ba7a2b7d97d4ab0676eb8",
+          "error_code": "",
+          "duration_ms": 2
+        },
+        {
+          "attempt_id": "harness-attempt-8721a40530dca961ffb643fb3eca1aef",
+          "attempt_index": 2,
+          "phase": "decode",
+          "status": "passed",
+          "output_digest": "e2e1cd1b5c5771c5d654e203f247405e95bb6f60757ba7a2b7d97d4ab0676eb8",
+          "error_code": "",
+          "duration_ms": 0
+        },
+        {
+          "attempt_id": "harness-attempt-b91ef2448e720b849c1d43e2991dad71",
+          "attempt_index": 3,
+          "phase": "validate",
+          "status": "passed",
+          "output_digest": "e2e1cd1b5c5771c5d654e203f247405e95bb6f60757ba7a2b7d97d4ab0676eb8",
+          "error_code": "",
+          "duration_ms": 0
+        }
+      ],
+      "recovery_strategy": "none",
+      "error_code": "",
+      "duration_ms": 5,
+      "commit_evidence": {
+        "status": "not_applicable",
+        "effect_batch_id": null,
+        "payload_contract": null,
+        "digest_algorithm": null,
+        "digest_scope": null,
+        "attempted_resource_refs": [],
+        "committed_resources": [],
+        "payload_digest": null,
+        "committed_at": null,
+        "rollback_reason_code": "",
+        "rolled_back_at": null
+      },
+      "started_at": "2026-09-09T12:25:34.738391Z",
+      "completed_at": "2026-09-09T12:25:34.743411Z"
+    }
+  ],
+  "limitations": [
+    "English synthetic fixture only",
+    "No maximum-size or multilingual claim",
+    "Local ONNX OCR, no MiniMax call"
+  ]
+}

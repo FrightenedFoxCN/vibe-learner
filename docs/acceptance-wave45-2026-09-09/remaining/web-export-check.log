@@ -1,0 +1,8 @@
+
+> vibe-learner@0.2.2 check:web
+> npm --workspace @vibe-learner/web run check
+
+
+> @vibe-learner/web@0.2.2 check
+> tsc --noEmit
+

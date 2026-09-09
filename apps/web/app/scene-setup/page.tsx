@@ -5,7 +5,10 @@ import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, SetStateA
 import type { ModelRecovery, SceneProfile } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
+import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
+import { validateSceneImportStructure } from "../../lib/scene-import-structure";
+import { exportJson } from "../../lib/export-json";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { assistPersonaSlot } from "../../lib/data/personas";
@@ -919,7 +922,7 @@ export default function SceneSetupPage() {
     }
   }
 
-  function exportScene() {
+  async function exportScene() {
     try {
       const payload = {
         version: 1,
@@ -930,16 +933,8 @@ export default function SceneSetupPage() {
         selectedLayerId: sceneSelectionLayerId,
         collapsedLayerIds,
       };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `scene-setup-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      setSceneIoMessage("场景已导出为 JSON 文件。");
+      const saved = await exportJson(`scene-setup-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`, payload);
+      setSceneIoMessage(saved ? "场景已导出为 JSON 文件。" : "已取消导出。");
     } catch {
       setSceneIoMessage("导出失败，请稍后重试。");
     }
@@ -956,12 +951,13 @@ export default function SceneSetupPage() {
     }
     const fieldTarget = "scene-file-import";
     const ticket = sceneImportFenceRef.current.begin(
-      currentSceneAsyncScope(fieldTarget),
+        currentSceneAsyncScope(fieldTarget),
     );
     try {
+      if (file.size > 8 * 1024 * 1024) throw new Error("scene_import_file_too_large");
       const content = await file.text();
       const parsed = JSON.parse(content);
-      const imported = parseSceneImportPayload(parsed);
+      const imported = parseSceneImportPayload(parsed, true);
       const decision = applyAsyncResult({
         fence: sceneImportFenceRef.current,
         ticket,
@@ -1247,6 +1243,7 @@ export default function SceneSetupPage() {
 
     return (
       <>
+        <ModelFallbackNotice recoveries={rewriteModelRecoveries} />
         {rewriteError ? (
           <div style={styles.rewriteControlRow}>
             <span style={styles.errorText}>{rewriteError}</span>
@@ -1384,6 +1381,7 @@ export default function SceneSetupPage() {
   function renderObjectEditor(layerId: string, object: SceneObject): ReactNode {
     return (
       <>
+        <ModelFallbackNotice recoveries={rewriteModelRecoveries} />
         {rewriteError ? (
           <div style={styles.rewriteControlRow}>
             <span style={styles.errorText}>{rewriteError}</span>
@@ -2328,7 +2326,8 @@ function collectLayerIds(layers: SceneLayer[]): string[] {
   return result;
 }
 
-function parseSceneImportPayload(input: unknown): SceneImportPayload {
+function parseSceneImportPayload(input: unknown, strictFile = false): SceneImportPayload {
+  if (strictFile) validateSceneImportStructure(input);
   const container = input as {
     sceneName?: unknown;
     scene_name?: unknown;
@@ -2397,7 +2396,7 @@ function normalizeSceneLayer(input: unknown): SceneLayer {
     atmosphere: typeof record.atmosphere === "string" ? record.atmosphere : "",
     rules: typeof record.rules === "string" ? record.rules : "",
     entrance: typeof record.entrance === "string" ? record.entrance : "",
-    tags: typeof record.tags === "string" ? record.tags : "",
+    tags: typeof record.tags === "string" ? record.tags : Array.isArray(record.tags) ? record.tags.join(",") : "",
     reuseId: typeof record.reuseId === "string"
       ? record.reuseId
       : typeof record.reuse_id === "string" && record.reuse_id
@@ -2427,7 +2426,7 @@ function normalizeSceneObject(input: unknown): SceneObject {
     name: typeof record.name === "string" ? record.name : "未命名物体",
     description: typeof record.description === "string" ? record.description : "",
     interaction: typeof record.interaction === "string" ? record.interaction : "",
-    tags: typeof record.tags === "string" ? record.tags : "",
+    tags: typeof record.tags === "string" ? record.tags : Array.isArray(record.tags) ? record.tags.join(",") : "",
     reuseId: typeof record.reuseId === "string"
       ? record.reuseId
       : typeof record.reuse_id === "string" && record.reuse_id

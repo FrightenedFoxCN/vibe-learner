@@ -1,0 +1,3 @@
+{"sample": 0, "trace_status": "passed", "provider_calls": 1, "recoveries": []}
+{"sample": 1, "trace_status": "passed", "provider_calls": 1, "recoveries": []}
+{"sample": 2, "trace_status": "passed", "provider_calls": 1, "recoveries": []}

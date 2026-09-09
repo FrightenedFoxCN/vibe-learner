@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "exportedAt": "2026-09-09T13:02:35.148Z",
+  "sceneName": "Wave45 M3 Observatory Text",
+  "sceneSummary": "一座安静的山地初学者天文学校：庭院陈列气象观测工具并作为过渡前区，穹顶内安置望远镜与红光夜视环境，学习者在比对观测与预测、记录不确定度后，由向导带领穿过庭院进入穹顶。",
+  "sceneLayers": [
+    {
+      "id": "scene-layer-526d8149da2d426f",
+      "title": "庭院",
+      "scopeLabel": "山地天文台 · 露天庭院",
+      "summary": "在山路入口与穹顶舱体之间铺展开的露天石板空地，承担进入穹顶前的过渡与基础气象观测功能。相对入口庭院，此处新增了天气板、雨量计与面朝穹顶方向的长椅，为学习者提供在进入半暗室之前核对当日天气与可见星区的预观察位。",
+      "atmosphere": "开阔、安静、日光下的山地清晨气息，偶有风掠过石板与松林边缘；声场以远处风声与自身脚步声为主，没有室内回声。",
+      "rules": "庭院为自由通行区，可在天气板与雨量计处抄录或更新读数；不得携带庭院杂物与强光照明物进入穹顶；长椅仅供短暂停驻与整理笔记，不进行长时间驻留。",
+      "entrance": "从山路或校门跨过石阶进入庭院，地面由碎砾变为平整石板，视线由远山收束至中央的圆顶舱体。",
+      "tags": "outdoor,courtyard,weather-station,transit,daylight",
+      "reuseId": "scene-layer-reuse-3a96dcf3b8824cdf",
+      "reuseHint": "保留“露天庭院 + 气象观测工具 + 朝向核心舱体的长椅”骨架，可在自然学校、天文台前置区或灯塔外围等场景中复用为观察与等候空间。",
+      "objects": [
+        {
+          "id": "scene-object-12a4ed3a072240d6",
+          "name": "天气板",
+          "description": "立在庭院一侧的木质记录板，绘有云量、风向与温标刻度，标注当日气象读数。",
+          "interaction": "学习者在板前核对或更新读数，并将天气板上的云量、风向与穹顶内可见星区进行对照预测。",
+          "tags": "weather,board,record,wood",
+          "reuseId": "scene-object-reuse-3e788defd3694c4e",
+          "reuseHint": "作为户外气象记录节点保留，可在不同学校场景中替换为数字屏或石刻碑。"
+        },
+        {
+          "id": "scene-object-a796a203cd354ef0",
+          "name": "雨量计",
+          "description": "安放在庭院角落立柱上的玻璃量筒，刻度精细，可读出最近一次降水的累计毫米数。",
+          "interaction": "学习者弯腰读取刻度并口述数据，作为预测与实测对照的输入。",
+          "tags": "weather,gauge,measurement,glass",
+          "reuseId": "scene-object-reuse-c0e11cca1ca04d93",
+          "reuseHint": "保留立式玻璃量筒与可读毫米刻度的设定，便于迁移至其他观测学校的湿度/降水记录点。"
+        },
+        {
+          "id": "scene-object-ee73589c06c3413f",
+          "name": "长椅",
+          "description": "面朝天气板与穹顶入口方向的旧木长椅，提供短暂停驻与书写位置。",
+          "interaction": "学习者坐在此处整理观测笔记，观望穹顶入口，等待向导带领入场。",
+          "tags": "seating,rest,transition,wood",
+          "reuseId": "scene-object-reuse-1c53e407f30d4290",
+          "reuseHint": "作为庭院的等候与笔记节点，保留“面朝核心舱体入口”的方向感，可替换为石凳或木墩。"
+        }
+      ],
+      "children": [
+        {
+          "id": "scene-layer-5fdb81e69c744bf7",
+          "title": "望远镜穹顶",
+          "scopeLabel": "庭院 → 望远镜穹顶 · 红光半暗室",
+          "summary": "庭院中央独立矗立的圆顶舱体，通过厚重的隔热门在露天与半暗室之间制造光线、声场与温度的明显切换。相对庭院，此处新增了赤经滑轨、红光夜视照明与暗适应纪律，集中陈列望远镜、星图与红色台灯，将活动从抄录气象收束为对天体的单点观测与不确定度记录。",
+          "atmosphere": "安静、昏暗、以红色台灯为唯一主光源的夜视环境；空气微凉，混合金属滑轨、漆面与陈年木料气味；几乎没有回声，只有低声耳语与机械转动的轻响。",
+          "rules": "进入穹顶前需关闭一切强光照明，仅保留红色台灯；任何观测结论必须先写下不确定度再下结论；不得在穹顶内臆造或修改测量值；保持低声，不在穹顶内进行长时间交谈。",
+          "entrance": "从庭院沿石板踏上一段矮阶，推开穹顶的厚木隔热门，由日光露天转入以红光为主的半暗室，视线从远山收束到镜筒与天窗。",
+          "tags": "indoor,dome,red-light,dark-adaptation,quiet,observation",
+          "reuseId": "scene-layer-reuse-35e8fb3ba3cc4158",
+          "reuseHint": "保留“圆顶舱体 + 红光夜视 + 望远镜居中 + 厚门隔光”的三件套骨架，可作为天文台、灯塔观测室或暗室摄影棚的通用模板。",
+          "objects": [
+            {
+              "id": "scene-object-d4d1a8ea24574700",
+              "name": "望远镜",
+              "description": "安装在穹顶赤经滑轨上的折射式望远镜，可沿水平方向旋转并对向穹顶天窗处的星区。",
+              "interaction": "学习者在向导指导下转动镜筒对准目标，复述观测结果，由向导与既有星图核对。",
+              "tags": "telescope,optics,mount,observation",
+              "reuseId": "scene-object-reuse-573dcbb13e724419",
+              "reuseHint": "保留可旋转赤经滑轨与折射式镜筒的设定，便于在多目标巡天或行星观测场景中复用。"
+            },
+            {
+              "id": "scene-object-ba4e4a9ac0fa41dd",
+              "name": "星图",
+              "description": "铺在矮桌上的大幅纸质星图，标注主要星座、亮星与赤经赤纬网格。",
+              "interaction": "学习者用指尖在图上指出当前望远镜所对的天区与星座，并记录对应编号与亮度。",
+              "tags": "star-map,paper,reference,chart",
+              "reuseId": "scene-object-reuse-1ed1b85409424c8c",
+              "reuseHint": "保留纸面大幅星图与赤经赤纬网格的低技术设定，方便迁移至无电子设备的教学天文台。"
+            },
+            {
+              "id": "scene-object-09ff3ba168c14780",
+              "name": "红色台灯",
+              "description": "放置在矮桌角上的红色灯泡台灯，是穹顶内唯一允许使用的照明光源。",
+              "interaction": "Switch on the dim red lamp and write the observation time in the notebook. Wave45 saved from object editor.",
+              "tags": "lamp,red-light,dark-adaptation,desk",
+              "reuseId": "scene-object-reuse-50f3ff1c6504441c",
+              "reuseHint": "保留“单盏可调红色台灯 + 桌面位置”的最小化夜视照明方案，可在任何暗适应场景中复用。"
+            }
+          ],
+          "children": []
+        }
+      ]
+    }
+  ],
+  "selectedLayerId": "scene-layer-5fdb81e69c744bf7",
+  "collapsedLayerIds": []
+}

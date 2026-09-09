@@ -253,6 +253,29 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
         self.assertEqual(trace.status.value, "repaired")
         self.assertTrue(any(item.status.value == "warning" for item in trace.checks))
 
+    def test_current_structured_retry_is_repaired_but_prior_recovery_is_not(self):
+        from app.services.model_recovery import record_model_recovery, reset_model_recovery_state
+
+        proposal = PersonaGenerationProposalV1(
+            request_kind="slot_assist",
+            slot=PersonaSlotContentProposalV1(kind="custom", label="Tone", content="Patient"),
+        )
+        def generate(_):
+            record_model_recovery(category="semantic_retry", reason="setting_model_invalid_payload", strategy="retry_structured_json", attempts=2)
+            return proposal
+
+        reset_model_recovery_state()
+        try:
+            for callback, expected in ((generate, "repaired"), (lambda _: proposal, "passed")):
+                _, trace = self.documents.harness_service.run_persona(
+                    manifest=PersonaGenerationInputManifest(request_kind="slot_assist", mode="assist", requested_count=1, input_char_count=8),
+                    protected_input={"synthetic": "patient"},
+                    generate=callback,
+                )
+                self.assertEqual(trace.status.value, expected)
+        finally:
+            reset_model_recovery_state()
+
     def test_document_child_stage_trace_is_fenced_to_parent(self):
         operation, document, report, prepared, _runtime = self._prepare_document("child-stage")
         binding = self.documents.process_repository.require_harness_operation(operation.operation_id)

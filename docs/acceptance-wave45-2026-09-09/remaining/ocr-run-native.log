@@ -1,0 +1,15 @@
+WARNING:vibe_learner.ocr:ocr.onnxtr_predictor_init_failed error=[ONNXRuntimeError] : 1 : FAIL : model_builder.cc:851 RegisterModelInputOutput Unable to get shape for output: /Squeeze_output_0
+WARNING:vibe_learner.parser:parser.page.ocr_unavailable page=1 reason=onnxtr_predictor_init_failed:[ONNXRuntimeError] : 1 : FAIL : model_builder.cc:851 RegisterModelInputOutput Unable to get shape for output: /Squeeze_output_0
+WARNING:vibe_learner.parser:parser.page.ocr_unavailable page=2 reason=onnxtr_predictor_init_failed:[ONNXRuntimeError] : 1 : FAIL : model_builder.cc:851 RegisterModelInputOutput Unable to get shape for output: /Squeeze_output_0
+ERROR:vibe_learner.documents:document.processing.failed id=doc-f3d5f05983
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 405, in process_document
+    raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+RuntimeError: document_ocr_unavailable
+Traceback (most recent call last):
+  File "/Users/ffox/vibe-learner/services/ai/../../docs/acceptance-wave45-2026-09-09/remaining/ocr_acceptance.py", line 41, in <module>
+    processed = service.process_document(document.id, force_ocr=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ffox/vibe-learner/services/ai/app/services/documents.py", line 405, in process_document
+    raise RuntimeError(f"document_ocr_{debug_report.ocr_status}")
+RuntimeError: document_ocr_unavailable

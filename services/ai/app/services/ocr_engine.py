@@ -30,6 +30,7 @@ class OnnxtrOcrEngine:
         self._model_id: str | None = None
         self._load_error = ""
         self._load_attempted = False
+        self._initialization_warning = ""
 
     @property
     def engine_name(self) -> str:
@@ -82,7 +83,7 @@ class OnnxtrOcrEngine:
                 status="completed" if text.strip() else "failed",
                 engine_name=self.engine_name,
                 model_id=self._model_id,
-                warning="" if text.strip() else "onnxtr_empty_result",
+                warning=self._initialization_warning if text.strip() else "onnxtr_empty_result",
                 language_hint="multilingual",
             )
         except Exception as exc:
@@ -115,33 +116,52 @@ class OnnxtrOcrEngine:
             logger.warning("ocr.onnxtr_import_failed error=%s", exc)
             return None
 
-        try:
+        def build_predictor(engine_cfg=None):
             if self._model_dir is not None:
                 detector_path = self._model_dir / "detector.onnx"
                 recognizer_path = self._model_dir / "recognizer.onnx"
                 vocab_path = self._model_dir / "recognizer_vocab.txt"
                 if detector_path.exists() and recognizer_path.exists() and vocab_path.exists():
                     vocab = vocab_path.read_text(encoding="utf-8")
-                    self._predictor = ocr_predictor(
-                        det_arch=linknet_resnet18(str(detector_path)),
-                        reco_arch=parseq(str(recognizer_path), vocab=vocab),
+                    predictor = ocr_predictor(
+                        det_arch=linknet_resnet18(str(detector_path), engine_cfg=engine_cfg),
+                        reco_arch=parseq(str(recognizer_path), vocab=vocab, engine_cfg=engine_cfg),
                         assume_straight_pages=True,
                         straighten_pages=False,
                         resolve_blocks=False,
                     )
                     self._model_id = "custom:linknet_resnet18+parseq"
                     logger.info("ocr.onnxtr_loaded model_id=%s model_dir=%s", self._model_id, self._model_dir)
-                    return self._predictor
+                    return predictor
 
-            self._predictor = ocr_predictor(
+            predictor = ocr_predictor(
                 det_arch="db_mobilenet_v3_large",
                 reco_arch="parseq",
+                det_engine_cfg=engine_cfg,
+                reco_engine_cfg=engine_cfg,
                 assume_straight_pages=True,
                 straighten_pages=False,
                 resolve_blocks=False,
             )
             self._model_id = "db_mobilenet_v3_large+parseq"
             logger.info("ocr.onnxtr_loaded model_id=%s", self._model_id)
+            return predictor
+
+        try:
+            try:
+                self._predictor = build_predictor()
+            except Exception:
+                from onnxruntime import get_available_providers
+                from onnxtr.models.engine import EngineConfig
+
+                if not any(provider in get_available_providers() for provider in ("CoreMLExecutionProvider", "CUDAExecutionProvider")):
+                    raise
+                # An installed accelerator may reject this graph. Retry once
+                # with the same model on CPU; do not make OCR permanently
+                # unavailable merely because hardware compilation failed.
+                logger.warning("ocr.onnxtr_accelerator_init_failed fallback=cpu")
+                self._predictor = build_predictor(EngineConfig(providers=["CPUExecutionProvider"]))
+                self._initialization_warning = "onnxtr_cpu_fallback"
             return self._predictor
         except Exception as exc:
             self._load_error = f"onnxtr_predictor_init_failed:{exc}"

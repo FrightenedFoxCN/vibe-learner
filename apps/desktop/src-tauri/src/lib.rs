@@ -11,6 +11,7 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use serde::Serialize;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{Emitter, Manager, Runtime};
+use tauri_plugin_dialog::DialogExt;
 
 const DESKTOP_VIEW_MENU_ID: &str = "desktop-view-menu";
 const DESKTOP_VIEW_TOGGLE_NAV_ID: &str = "desktop-view-toggle-sidebar";
@@ -81,6 +82,23 @@ impl DesktopAppState {
 #[tauri::command]
 fn desktop_runtime_config(state: tauri::State<'_, DesktopAppState>) -> DesktopRuntimeConfig {
     runtime_config_from_state(state.inner())
+}
+
+#[tauri::command]
+async fn desktop_export_json(app: tauri::AppHandle, filename: String, contents: String) -> Result<bool, String> {
+    // The renderer supplies content and a suggestion, never a writable path.
+    if contents.len() > 8 * 1024 * 1024 {
+        return Err("export_json_too_large".into());
+    }
+    serde_json::from_str::<serde_json::Value>(&contents).map_err(|_| "export_json_invalid")?;
+    let suggested = Path::new(&filename).file_name().and_then(|name| name.to_str()).unwrap_or("export.json").to_owned();
+    tauri::async_runtime::spawn_blocking(move || {
+        let selected = app.dialog().file().add_filter("JSON", &["json"]).set_file_name(suggested).blocking_save_file();
+        let Some(selected) = selected else { return Ok(false); };
+        let path = selected.into_path().map_err(|_| "export_path_invalid")?;
+        fs::write(path, contents.as_bytes()).map_err(|_| "export_write_failed")?;
+        Ok(true)
+    }).await.map_err(|_| "export_dialog_failed".to_owned())?
 }
 
 fn runtime_config_from_state(state: &DesktopAppState) -> DesktopRuntimeConfig {
@@ -439,13 +457,14 @@ fn emit_desktop_view_event<R: Runtime>(app: &tauri::AppHandle<R>, event_name: &s
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_stronghold::Builder::new(|password| {
                 stronghold_key_deriver(password.as_ref())
             })
             .build(),
         )
-        .invoke_handler(tauri::generate_handler![desktop_runtime_config])
+        .invoke_handler(tauri::generate_handler![desktop_runtime_config, desktop_export_json])
         .setup(|app| {
             install_desktop_menu(&app.handle())?;
             let state = build_desktop_state(&app.handle())

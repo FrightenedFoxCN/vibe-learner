@@ -1,0 +1,5 @@
+{
+  "native_import_export_equal": true,
+  "slots": 5,
+  "scope": "Built-in Aurora editor import/export, no database save"
+}

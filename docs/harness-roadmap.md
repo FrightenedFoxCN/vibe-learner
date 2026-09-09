@@ -199,6 +199,16 @@ dependencies and shared contract ownership do not overlap.
 
 ## Wave 5 — performance and optimization gates
 
+Latest follow-up after checkpoint `6d9ce05`: [remaining remediation evidence](acceptance-wave45-2026-09-09/remaining/README.md).
+Native Persona/Scene import-export roundtrips and invalid Scene import protection
+passed. Actual image-only English OCR recovered 8/8 anchor terms after a bounded
+CPU fallback fixed a CoreML initialization failure. The post-prompt-fix Tavern
+sample completed 28/30 scheduled steps; one upstream 529 failed and blocked one
+later actor, so joint acceptance still has no passing certificate. Ten stage eval
+registrations, independent quality/replay review and broader recovery/maximum-input
+coverage remain open. The checked implementation boxes below do not close these
+evidence requirements.
+
 The follow-up [remediation and desktop acceptance](acceptance-wave45-2026-09-09/remediation.md)
 fixed the observed Study catalog and Planning reference/recovery blockers and
 passed the sampled M3 and macOS main flows. Broader adoption/performance gates
@@ -213,8 +223,8 @@ for raw evidence, scope, and remaining requirements.
 
 Implementation and local gates are complete as of 2026-09-09; this is not
 independent acceptance. Per user direction, Wave 4 and Wave 5 will receive one
-joint independent acceptance pass. Real upstream Tavern measurements remain
-open and were not authorized for this implementation run. See
+joint independent acceptance pass. The earlier implementation run did not include authorized upstream calls;
+subsequent authorized M3 measurements are linked above, with their remaining gaps. See
 `harness-performance-budgets-v1.md` for limits, raw samples, and remaining gates.
 
 - [x] `HRN-CTX-PERF-001` `[P2]` establish context/artifact/runtime budgets;

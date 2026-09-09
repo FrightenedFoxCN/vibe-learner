@@ -16,6 +16,7 @@ from app.models.study_question import (
     StudyQuestionAttemptResponseV1,
     StudyQuestionProposalV1,
     project_study_question_proposal,
+    grade_study_question,
     study_question_attempt_response_digest,
 )
 from app.models.study_chat_operation import (
@@ -367,6 +368,17 @@ class StudyQuestionAttemptTests(unittest.TestCase):
             self.service.require_session(session.id).revision,
             session.revision + 1,
         )
+
+    def test_fill_blank_alternatives_are_question_scoped_and_mismatch_is_explicit(self) -> None:
+        for accepted, expected in ((["成功", "成立"], True), (["成功"], False)):
+            question = project_study_question_proposal(StudyQuestionProposalV1(
+                question_type="fill_blank", prompt="使用题目规定的词填写结论。", accepted_answers=accepted,
+            ))
+            _, correct, feedback, _ = grade_study_question(question, "成立")
+            self.assertEqual(correct, expected)
+            if not expected:
+                self.assertIn("未匹配预设答案", feedback)
+                self.assertNotIn("回答不正确", feedback)
 
     def test_same_key_different_answer_and_same_turn_different_key_fail_closed(self) -> None:
         session = self._question_session(session_id="session-attempt-conflicts")

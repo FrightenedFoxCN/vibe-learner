@@ -9,6 +9,8 @@ from typing import Callable, Iterable
 
 import fitz
 
+from app.services.document_stage_metrics import measure_parser_stage
+
 from app.core.harness_component_versions import (
     DOCUMENT_CHUNK_BUILDER_CONTRACT_VERSION,
     DOCUMENT_PAGE_EXTRACTOR_CONTRACT_VERSION,
@@ -102,12 +104,13 @@ class DocumentParser:
         heading_seed: list[tuple[int, str, float, float]] = []
         total_characters = 0
         ocr_applied_page_count = 0
-        toc_sections = self._build_sections_from_toc(
-            document_id=document_id,
-            stored_path=stored_path,
-            page_count=pdf.page_count,
-            fallback_title=title,
-        )
+        with measure_parser_stage("section_detection"):
+            toc_sections = self._build_sections_from_toc(
+                document_id=document_id,
+                stored_path=stored_path,
+                page_count=pdf.page_count,
+                fallback_title=title,
+            )
         _emit_progress(
             progress_callback,
             "parser_started",
@@ -119,108 +122,110 @@ class DocumentParser:
             },
         )
 
-        for index, page in enumerate(pdf, start=1):
-            _call_interrupt(interrupt_check)
-            parsed_page = self._parse_page(
-                page_number=index,
-                page=page,
-                force_ocr=force_ocr,
-            )
-            parsed_pages.append(parsed_page)
-            warnings.extend(parsed_page.warnings)
-            if parsed_page.used_ocr:
-                ocr_applied_page_count += 1
-            if _should_emit_page_progress(page_number=index, page_count=pdf.page_count):
-                _emit_progress(
-                    progress_callback,
-                    "page_parsed",
-                    {
-                        "page_number": index,
-                        "page_count": pdf.page_count,
-                        "processed_pages": index,
-                        "extraction_source": parsed_page.extraction_source,
-                        "used_ocr": parsed_page.used_ocr,
-                        "warning_count": len(parsed_page.warnings),
-                    },
+        with measure_parser_stage("page_extraction"):
+            for index, page in enumerate(pdf, start=1):
+                _call_interrupt(interrupt_check)
+                parsed_page = self._parse_page(
+                    page_number=index,
+                    page=page,
+                    force_ocr=force_ocr,
                 )
-
-        top_margin_patterns, bottom_margin_patterns = self._detect_margin_patterns(parsed_pages)
-        logger.info(
-            "parser.margin_patterns top=%s bottom=%s",
-            len(top_margin_patterns),
-            len(bottom_margin_patterns),
-        )
-        _emit_progress(
-            progress_callback,
-            "margin_patterns_detected",
-            {
-                "top_pattern_count": len(top_margin_patterns),
-                "bottom_pattern_count": len(bottom_margin_patterns),
-            },
-        )
-
-        for parsed_page in parsed_pages:
-            _call_interrupt(interrupt_check)
-            stripped_lines, stripped_count = self._strip_margin_lines(
-                parsed_page.line_entries,
-                top_patterns=top_margin_patterns,
-                bottom_patterns=bottom_margin_patterns,
-            )
-            page_text = "\n".join(text for text, _font_size in stripped_lines)
-            total_characters += len(page_text)
-            page_texts.append(page_text)
-
-            heading_candidates = self._extract_heading_candidates(
-                page_number=parsed_page.page_number,
-                line_entries=stripped_lines,
-                dominant_font_size=parsed_page.dominant_font_size,
-            )
-            if parsed_page.extraction_source in {"ocr", "ocr_attempted"}:
-                heading_candidates = self._merge_heading_candidates(
-                    heading_candidates,
-                    self._extract_ocr_heading_candidates(
-                        page_number=parsed_page.page_number,
-                        page_text=page_text,
-                    ),
-                )
-
-            if stripped_count:
-                warnings.append(
-                    ParseWarning(
-                        code="header_footer_stripped",
-                        message=f"Stripped {stripped_count} recurring header/footer lines from this page.",
-                        page_number=parsed_page.page_number,
+                parsed_pages.append(parsed_page)
+                warnings.extend(parsed_page.warnings)
+                if parsed_page.used_ocr:
+                    ocr_applied_page_count += 1
+                if _should_emit_page_progress(page_number=index, page_count=pdf.page_count):
+                    _emit_progress(
+                        progress_callback,
+                        "page_parsed",
+                        {
+                            "page_number": index,
+                            "page_count": pdf.page_count,
+                            "processed_pages": index,
+                            "extraction_source": parsed_page.extraction_source,
+                            "used_ocr": parsed_page.used_ocr,
+                            "warning_count": len(parsed_page.warnings),
+                        },
                     )
-                )
 
-            for candidate in heading_candidates:
-                heading_seed.append(
-                    (
-                        candidate.page_number,
-                        candidate.text,
-                        candidate.font_size,
-                        candidate.confidence,
-                    )
-                )
+            top_margin_patterns, bottom_margin_patterns = self._detect_margin_patterns(parsed_pages)
+            logger.info(
+                "parser.margin_patterns top=%s bottom=%s",
+                len(top_margin_patterns),
+                len(bottom_margin_patterns),
+            )
+            _emit_progress(
+                progress_callback,
+                "margin_patterns_detected",
+                {
+                    "top_pattern_count": len(top_margin_patterns),
+                    "bottom_pattern_count": len(bottom_margin_patterns),
+                },
+            )
 
-            pages.append(
-                DocumentPageRecord(
+            for parsed_page in parsed_pages:
+                _call_interrupt(interrupt_check)
+                stripped_lines, stripped_count = self._strip_margin_lines(
+                    parsed_page.line_entries,
+                    top_patterns=top_margin_patterns,
+                    bottom_patterns=bottom_margin_patterns,
+                )
+                page_text = "\n".join(text for text, _font_size in stripped_lines)
+                total_characters += len(page_text)
+                page_texts.append(page_text)
+
+                heading_candidates = self._extract_heading_candidates(
                     page_number=parsed_page.page_number,
-                    char_count=len(page_text),
-                    word_count=len(page_text.split()),
-                    text_preview=page_text[:400],
+                    line_entries=stripped_lines,
                     dominant_font_size=parsed_page.dominant_font_size,
-                    extraction_source=parsed_page.extraction_source,
-                    heading_candidates=heading_candidates,
                 )
-            )
+                if parsed_page.extraction_source in {"ocr", "ocr_attempted"}:
+                    heading_candidates = self._merge_heading_candidates(
+                        heading_candidates,
+                        self._extract_ocr_heading_candidates(
+                            page_number=parsed_page.page_number,
+                            page_text=page_text,
+                        ),
+                    )
 
-        sections = toc_sections or self._build_sections(
-            document_id=document_id,
-            fallback_title=title,
-            page_count=len(pages),
-            heading_seed=heading_seed,
-        )
+                if stripped_count:
+                    warnings.append(
+                        ParseWarning(
+                            code="header_footer_stripped",
+                            message=f"Stripped {stripped_count} recurring header/footer lines from this page.",
+                            page_number=parsed_page.page_number,
+                        )
+                    )
+
+                for candidate in heading_candidates:
+                    heading_seed.append(
+                        (
+                            candidate.page_number,
+                            candidate.text,
+                            candidate.font_size,
+                            candidate.confidence,
+                        )
+                    )
+
+                pages.append(
+                    DocumentPageRecord(
+                        page_number=parsed_page.page_number,
+                        char_count=len(page_text),
+                        word_count=len(page_text.split()),
+                        text_preview=page_text[:400],
+                        dominant_font_size=parsed_page.dominant_font_size,
+                        extraction_source=parsed_page.extraction_source,
+                        heading_candidates=heading_candidates,
+                    )
+                )
+
+        with measure_parser_stage("section_detection", count_attempt=False):
+            sections = toc_sections or self._build_sections(
+                document_id=document_id,
+                fallback_title=title,
+                page_count=len(pages),
+                heading_seed=heading_seed,
+            )
         _call_interrupt(interrupt_check)
         _emit_progress(
             progress_callback,
@@ -230,11 +235,12 @@ class DocumentParser:
                 "section_source": "toc" if toc_sections else "heuristic",
             },
         )
-        chunks = self._build_chunks(
-            document_id=document_id,
-            sections=sections,
-            page_texts=page_texts,
-        )
+        with measure_parser_stage("chunk_building"):
+            chunks = self._build_chunks(
+                document_id=document_id,
+                sections=sections,
+                page_texts=page_texts,
+            )
         _emit_progress(
             progress_callback,
             "chunks_built",
@@ -330,7 +336,8 @@ class DocumentParser:
 
         if force_ocr or len(page_text) < TEXT_DENSITY_THRESHOLD:
             original_text_length = len(page_text)
-            ocr_result = self._run_ocr(page)
+            with measure_parser_stage("ocr_page"):
+                ocr_result = self._run_ocr(page)
             cleaned_ocr = _clean_page_text(ocr_result.text)
             if cleaned_ocr and len(cleaned_ocr) > len(page_text):
                 page_text = cleaned_ocr

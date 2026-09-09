@@ -392,7 +392,7 @@ def grade_study_question(
         }
         is_correct = normalized in accepted
         reference = " / ".join(grading.accepted_answers)
-        feedback = "回答正确" if is_correct else f"回答不正确，参考答案：{reference}"
+        feedback = "回答正确" if is_correct else f"未匹配预设答案，请核对题目要求的措辞与格式。参考答案：{reference}"
     return normalized, is_correct, feedback, grading.explanation
 
 

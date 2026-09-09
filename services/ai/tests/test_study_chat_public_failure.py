@@ -26,6 +26,30 @@ from app.services.study_sessions import StudySessionService
 
 
 class StudyChatPublicProviderFailureTests(unittest.TestCase):
+    def test_catalog_failure_is_not_committed_before_claim_or_provider(self) -> None:
+        from app.services.model_tool_config import CHAT_STAGE, TOOL_CATALOG
+
+        request_id = "request-public-catalog-0001"
+        provider_call = Mock()
+        with (
+            patch.object(routes.container, "study_chat_operation_repository", self.operations),
+            patch.object(routes.container, "study_session_service", self.session_service),
+            patch.object(routes.container, "pedagogy_orchestrator", SimpleNamespace(generate_chat_reply=provider_call)),
+            patch.dict(TOOL_CATALOG[CHAT_STAGE]["ask_fill_blank_question"], {"description": "drifted"}),
+            TestClient(app) as client,
+        ):
+            response = self._post_chat(client, client_request_id=request_id, with_attachment=False)
+            self.assertEqual(response.status_code, 200)
+            receipt = response.json()
+            self.assertEqual(receipt["status"], "not_committed")
+            self.assertTrue(receipt["safe_to_retry"])
+            self.assertEqual(receipt["error_code"], "study_chat_not_committed_study_tool_catalog_invalid")
+        provider_call.assert_not_called()
+        record = self.operations.require(session_id=self.session_id, client_request_id=request_id)
+        self.assertEqual(record.claim_count, 0)
+        self.assertFalse(record.provider_started_at)
+        self.assertEqual(self.sessions.require(self.session_id).revision, 0)
+
     def setUp(self) -> None:
         self.temp = TemporaryDirectory()
         self.database = Database(f"sqlite:///{Path(self.temp.name) / 'test.db'}")

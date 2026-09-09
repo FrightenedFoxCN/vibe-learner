@@ -1,0 +1,512 @@
+{
+  "model": "MiniMax-M3",
+  "samples": [
+    {
+      "index": 0,
+      "duration_ms": 3107,
+      "calls": [
+        {
+          "duration_ms": 3077,
+          "usage": {
+            "completion_tokens": 439,
+            "prompt_tokens": 937,
+            "total_tokens": 1376,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 317,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 128
+            },
+            "total_characters": 0
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "response": {
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Synthetic observation method",
+          "content": "合成观测教学方法：先请学生记录红灯下的观测时间，再说明‘假设、观察、结论’三者的区别；每轮只提出一个可验证的问题；保留学生原话中的引号，不虚构学生的经历或身份；在比较两次读数之前，须先检查单位和仪器刻度；若数据不足，应明确说明还需要补充哪项观测，再决定是否推进，不擅自给出结论。",
+          "weight": 50.0,
+          "locked": false,
+          "sort_order": 0
+        },
+        "model_recoveries": [],
+        "harness_trace": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-225dea20fbd369d7c723633e186ce6c4",
+          "operation_id": "harness-operation-bee047ff98f640c99a276f6d33e4ad12",
+          "parent_trace_id": null,
+          "workflow": "persona",
+          "stage": "persona_generation",
+          "status": "passed",
+          "contract": {
+            "name": "PersonaGenerationProposal",
+            "version": "persona-generation-proposal-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "persona",
+            "stage": "persona_generation",
+            "operation_id": "harness-operation-bee047ff98f640c99a276f6d33e4ad12",
+            "input_contract": {
+              "name": "PersonaGenerationInputManifest",
+              "version": "persona-generation-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "frontend_request",
+                "resource_id": "persona_generation-op-ad498e5cf6914d3b97485cd04f1c0c94",
+                "revision": null
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "persona_compiler",
+                "version": "persona-compiler-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "persona_snapshot",
+                "artifact_id": "harness-artifact-91eb18bf3dc8735f7619ed2385d3c76f",
+                "contract": {
+                  "name": "PersonaGenerationProtectedInput",
+                  "version": "persona-generation-protected-input-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "09d680b25614eda7f08e0e9c313c667394b06d77a5a305edde27ff1f863bbfd8"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "1f8d0df1072e66b7731cc71899c526c6972e5955d54be1a24fdb65d2343826fe",
+            "context_digest": "07b0aa9ac5f3a1c9042b0644cc2f4d196fa32363530db668c88ad0e52c5dedec",
+            "policy_contract": {
+              "name": "PersonaGenerationHarnessPolicy",
+              "version": "persona-generation-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "PersonaGenerationPrompt",
+              "version": "persona-generation-prompt-v1"
+            }
+          },
+          "output_digest": "72b1b8115808869d399bb9df7b82b3fb4ce9037e6c5b45f0e8ae8c9b7f1cded8",
+          "checks": [
+            {
+              "name": "proposal_schema_and_invariants",
+              "status": "passed",
+              "code": "proposal_valid",
+              "message": "Strict proposal schema and domain invariants passed."
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-7cfc7bb1c98eb690e32292f1deaf9eb2",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "72b1b8115808869d399bb9df7b82b3fb4ce9037e6c5b45f0e8ae8c9b7f1cded8",
+              "error_code": "",
+              "duration_ms": 3081
+            },
+            {
+              "attempt_id": "harness-attempt-efa0a452c0fb8254ee339f80cffd99fa",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "72b1b8115808869d399bb9df7b82b3fb4ce9037e6c5b45f0e8ae8c9b7f1cded8",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-35c8ae833f6b2fa78059505cd1976d72",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "72b1b8115808869d399bb9df7b82b3fb4ce9037e6c5b45f0e8ae8c9b7f1cded8",
+              "error_code": "",
+              "duration_ms": 1
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 3089,
+          "commit_evidence": {
+            "status": "not_applicable",
+            "effect_batch_id": null,
+            "payload_contract": null,
+            "digest_algorithm": null,
+            "digest_scope": null,
+            "attempted_resource_refs": [],
+            "committed_resources": [],
+            "payload_digest": null,
+            "committed_at": null,
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-09T12:07:08.119238Z",
+          "completed_at": "2026-09-09T12:07:11.208471Z"
+        }
+      }
+    },
+    {
+      "index": 1,
+      "duration_ms": 4453,
+      "calls": [
+        {
+          "duration_ms": 4422,
+          "usage": {
+            "completion_tokens": 640,
+            "prompt_tokens": 937,
+            "total_tokens": 1577,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 509,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 936
+            },
+            "total_characters": 0
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "response": {
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Synthetic observation method",
+          "content": "采用分轮次、可验证的合成观测教学法：每轮先请学生在红灯环境下记录观测时间，并帮助其区分'假设、观察、结论'三个环节；每轮只提出一个可验证的小问题，引用学生原话时保留引号，不臆造其经历或身份。在比较两次读数之前，先核对单位与仪器刻度的一致性；若数据不足以支撑判断，应明确指出还需补充哪一项观测，再决定是否推进，不擅自给出结论。",
+          "weight": 50.0,
+          "locked": false,
+          "sort_order": 0
+        },
+        "model_recoveries": [],
+        "harness_trace": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-2edf993256bcf429ae5ad2b3e454fe9e",
+          "operation_id": "harness-operation-dbc2c2b04ddf4c5db7ba9b92d82e1724",
+          "parent_trace_id": null,
+          "workflow": "persona",
+          "stage": "persona_generation",
+          "status": "passed",
+          "contract": {
+            "name": "PersonaGenerationProposal",
+            "version": "persona-generation-proposal-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "persona",
+            "stage": "persona_generation",
+            "operation_id": "harness-operation-dbc2c2b04ddf4c5db7ba9b92d82e1724",
+            "input_contract": {
+              "name": "PersonaGenerationInputManifest",
+              "version": "persona-generation-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "frontend_request",
+                "resource_id": "persona_generation-op-52ef535cc9da4404b9ebff103931d259",
+                "revision": null
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "persona_compiler",
+                "version": "persona-compiler-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "persona_snapshot",
+                "artifact_id": "harness-artifact-5b15fa0057ff25b54f453070e399053f",
+                "contract": {
+                  "name": "PersonaGenerationProtectedInput",
+                  "version": "persona-generation-protected-input-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "09d680b25614eda7f08e0e9c313c667394b06d77a5a305edde27ff1f863bbfd8"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "1f8d0df1072e66b7731cc71899c526c6972e5955d54be1a24fdb65d2343826fe",
+            "context_digest": "8be5f09e162b625ef0a8ea3876cb67811c3545f09bfa3736834de6403c974b81",
+            "policy_contract": {
+              "name": "PersonaGenerationHarnessPolicy",
+              "version": "persona-generation-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "PersonaGenerationPrompt",
+              "version": "persona-generation-prompt-v1"
+            }
+          },
+          "output_digest": "3edbd0ab3070edef7ddb5cfe2910013ae3f93ba98c737bba90a415f2d269f2c1",
+          "checks": [
+            {
+              "name": "proposal_schema_and_invariants",
+              "status": "passed",
+              "code": "proposal_valid",
+              "message": "Strict proposal schema and domain invariants passed."
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-c200b03a4d1f89de59cf2f39aa82f55d",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "3edbd0ab3070edef7ddb5cfe2910013ae3f93ba98c737bba90a415f2d269f2c1",
+              "error_code": "",
+              "duration_ms": 4424
+            },
+            {
+              "attempt_id": "harness-attempt-571111459a54137728b23cd4005b9111",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "3edbd0ab3070edef7ddb5cfe2910013ae3f93ba98c737bba90a415f2d269f2c1",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-e028f5a83d41c209949d01af87ac99ea",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "3edbd0ab3070edef7ddb5cfe2910013ae3f93ba98c737bba90a415f2d269f2c1",
+              "error_code": "",
+              "duration_ms": 2
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 4437,
+          "commit_evidence": {
+            "status": "not_applicable",
+            "effect_batch_id": null,
+            "payload_contract": null,
+            "digest_algorithm": null,
+            "digest_scope": null,
+            "attempted_resource_refs": [],
+            "committed_resources": [],
+            "payload_digest": null,
+            "committed_at": null,
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-09T12:07:11.222602Z",
+          "completed_at": "2026-09-09T12:07:15.659865Z"
+        }
+      }
+    },
+    {
+      "index": 2,
+      "duration_ms": 7577,
+      "calls": [
+        {
+          "duration_ms": 3842,
+          "usage": {
+            "completion_tokens": 478,
+            "prompt_tokens": 937,
+            "total_tokens": 1415,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 362,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 936
+            },
+            "total_characters": 0
+          },
+          "finish_reason": "stop"
+        },
+        {
+          "duration_ms": 3712,
+          "usage": {
+            "completion_tokens": 300,
+            "prompt_tokens": 967,
+            "total_tokens": 1267,
+            "completion_tokens_details": {
+              "accepted_prediction_tokens": null,
+              "audio_tokens": null,
+              "reasoning_tokens": 190,
+              "rejected_prediction_tokens": null
+            },
+            "prompt_tokens_details": {
+              "audio_tokens": null,
+              "cached_tokens": 128
+            },
+            "total_characters": 0
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "response": {
+        "slot": {
+          "kind": "teaching_method",
+          "label": "Synthetic observation method",
+          "content": "合成教学示例：先请学生在红灯条件下记录观测时间，再引导学生区分‘假设、观察、结论’三者关系。每轮只提出一个可验证的问题；保留学生原话中的引号，不虚构其经历或身份。在比较两次读数之前，须先核对单位与仪器刻度；若数据不足，应明确指出还需补充哪项观测，避免擅自给出结论。",
+          "weight": 50.0,
+          "locked": false,
+          "sort_order": 0
+        },
+        "model_recoveries": [
+          {
+            "recovery_id": "recovery-6c33bcf414",
+            "category": "semantic_retry",
+            "reason": "setting_model_invalid_json",
+            "strategy": "retry_structured_json",
+            "attempts": 2,
+            "note": "",
+            "created_at": "2026-09-09T12:07:23.238791+00:00"
+          }
+        ],
+        "harness_trace": {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-3a52bbebcf870fe1996d39bde53944ac",
+          "operation_id": "harness-operation-c4412b8a9ce446f08ddb318703801406",
+          "parent_trace_id": null,
+          "workflow": "persona",
+          "stage": "persona_generation",
+          "status": "passed",
+          "contract": {
+            "name": "PersonaGenerationProposal",
+            "version": "persona-generation-proposal-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "persona",
+            "stage": "persona_generation",
+            "operation_id": "harness-operation-c4412b8a9ce446f08ddb318703801406",
+            "input_contract": {
+              "name": "PersonaGenerationInputManifest",
+              "version": "persona-generation-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "frontend_request",
+                "resource_id": "persona_generation-op-ebf8b3579d4b41e7bc1f811368ba1fa0",
+                "revision": null
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "persona_compiler",
+                "version": "persona-compiler-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "persona_snapshot",
+                "artifact_id": "harness-artifact-07458804ece81d31eea46cd0c8752470",
+                "contract": {
+                  "name": "PersonaGenerationProtectedInput",
+                  "version": "persona-generation-protected-input-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "09d680b25614eda7f08e0e9c313c667394b06d77a5a305edde27ff1f863bbfd8"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "1f8d0df1072e66b7731cc71899c526c6972e5955d54be1a24fdb65d2343826fe",
+            "context_digest": "0e7c1932db6b4f27831387c451e09a42e128d3fd3019c6f09496df22579cb3cc",
+            "policy_contract": {
+              "name": "PersonaGenerationHarnessPolicy",
+              "version": "persona-generation-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "PersonaGenerationPrompt",
+              "version": "persona-generation-prompt-v1"
+            }
+          },
+          "output_digest": "6a0df423eb2b0904193afa2d331d8d9b47dd60b8f1ee8121c327710126c94a18",
+          "checks": [
+            {
+              "name": "proposal_schema_and_invariants",
+              "status": "passed",
+              "code": "proposal_valid",
+              "message": "Strict proposal schema and domain invariants passed."
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-fe9eeeac64565e9f126d33ece94a4c59",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "6a0df423eb2b0904193afa2d331d8d9b47dd60b8f1ee8121c327710126c94a18",
+              "error_code": "",
+              "duration_ms": 7559
+            },
+            {
+              "attempt_id": "harness-attempt-642870b28af795f447a53345059149ad",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "6a0df423eb2b0904193afa2d331d8d9b47dd60b8f1ee8121c327710126c94a18",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-e2964f7d6b89ee6a3da826c34d00941e",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "6a0df423eb2b0904193afa2d331d8d9b47dd60b8f1ee8121c327710126c94a18",
+              "error_code": "",
+              "duration_ms": 0
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 7562,
+          "commit_evidence": {
+            "status": "not_applicable",
+            "effect_batch_id": null,
+            "payload_contract": null,
+            "digest_algorithm": null,
+            "digest_scope": null,
+            "attempted_resource_refs": [],
+            "committed_resources": [],
+            "payload_digest": null,
+            "committed_at": null,
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-09T12:07:15.679808Z",
+          "completed_at": "2026-09-09T12:07:23.242781Z"
+        }
+      }
+    }
+  ]
+}
