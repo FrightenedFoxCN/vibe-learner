@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Vibe Learner",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "identifier": "com.vibelearner.desktop",
   "build": {
     "beforeDevCommand": "cd ../../ && npm run dev:web",
