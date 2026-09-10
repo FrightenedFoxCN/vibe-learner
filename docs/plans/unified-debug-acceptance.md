@@ -877,3 +877,18 @@ See [complete methods and both raw populations](../performance/diagnostic-scene-
 Original failures remain archived. This supplies isolated first-chain evidence
 and explains a measured source of cross-sample variance. It makes no long-lived
 GC guarantee; remaining domain/native performance acceptance stays open.
+
+## Document → Planning full request-chain overhead
+
+Thirty isolated pairs now upload and actually parse a synthetic one-page text
+PDF, reload Document state, generate a mock Learning Plan over its Study Unit,
+and reload the saved Plan. Stream evidence and full committed projections agree
+with persisted read-back. All 4 operation references resolve to 7 canonical
+terminal traces, with Document/Planning parents committed. Every enabled sample
+has 25 correlated content-free events and zero drop/read/write failure counts.
+The unchanged paired P95 overhead gate passed at 10.92 ms, maximum 12.12 ms.
+[Method and raw report](../performance/diagnostic-document-plan-workflow-v1.md)
+retain all pairs and stage/GC observations. Text parsing and mock Planning are
+measured here; actual OCR recognition and live-provider/tool latency remain
+outside this sample. Existing Persona/Scene paths received compatibility smokes.
+Study/Tavern, native/rendering and final acceptance continue.
