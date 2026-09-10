@@ -47,9 +47,15 @@ class DiagnosticWriterCoverage:
         with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
             db.row_factory = sqlite3.Row
             db.execute("BEGIN")
-            rows = db.execute("SELECT * FROM diagnostic_writers WHERE sequence>? ORDER BY sequence LIMIT ?", (after, limit + 1)).fetchall()
-            total = dict(db.execute("SELECT * FROM diagnostic_writer_totals WHERE singleton=1").fetchone())
-            aggregate = db.execute("SELECT count(*) AS retained_epochs,coalesce(sum(closed_at IS NULL),0) AS unclosed_epochs,coalesce(sum(observed_dropped),0) AS observed_dropped,coalesce(sum(observed_write_failures),0) AS observed_write_failures,coalesce(sum(observed_read_failures),0) AS observed_read_failures FROM diagnostic_writers").fetchone()
+            return self.read_snapshot(db, after, limit)
+
+    def read_snapshot(self, db, after=0, limit=100):
+        """Caller owns the read transaction; pagination stays on that snapshot."""
+        if after < 0 or not 1 <= limit <= 100:
+            raise ValueError("diagnostic_writer_query_bounds")
+        rows = db.execute("SELECT * FROM diagnostic_writers WHERE sequence>? ORDER BY sequence LIMIT ?", (after, limit + 1)).fetchall()
+        total = dict(db.execute("SELECT * FROM diagnostic_writer_totals WHERE singleton=1").fetchone())
+        aggregate = db.execute("SELECT count(*) AS retained_epochs,coalesce(sum(closed_at IS NULL),0) AS unclosed_epochs,coalesce(sum(observed_dropped),0) AS observed_dropped,coalesce(sum(observed_write_failures),0) AS observed_write_failures,coalesce(sum(observed_read_failures),0) AS observed_read_failures FROM diagnostic_writers").fetchone()
         total.pop("singleton")
         for key in ("observed_dropped", "observed_write_failures", "observed_read_failures"):
             total[key] += aggregate[key]

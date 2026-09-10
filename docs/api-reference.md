@@ -1455,3 +1455,15 @@ epoch cannot be reconstructed. Consequently `counts_are_lower_bounds`,
 The global Debug “采集覆盖” view reads this endpoint only when selected. It
 explicitly separates observed counters from unknown collection coverage and does
 not apply event filters to installation-level epoch records.
+
+
+### Diagnostic export
+
+`POST /diagnostics/export` takes a strict JSON object containing the optional
+`/diagnostics/events` filters (no cursor/limit), returning a no-store JSON
+attachment with schema `diagnostic-export-v1`. It includes raw safe event and
+metric observations, related index/link records, writer/retention coverage and
+P50/P95 groups. Events and coverage share a snapshot; the Harness index uses an
+independent snapshot. HTTP/export success is not a business commit assertion.
+Limits return fixed 413, invalid filters fixed 422 and read/validation failures
+fixed 503. See [snapshot scope and limits](diagnostic-audit.md#stored-snapshot-export).

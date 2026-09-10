@@ -89,6 +89,30 @@ class DiagnosticQueryUnavailable(RuntimeError):
     pass
 
 
+def diagnostic_event_predicate(after: int, filters: dict):
+    paths = {key: key for key in ("request_id", "action_id", "page_view_id", "flow_id", "source", "page_path", "severity")}
+    paths.update(resource_id="resource.resource_id", resource_type="resource.resource_type")
+    clauses = ["e.sequence > ?"]
+    values = [after]
+    for key, path in paths.items():
+        if filters.get(key) is not None:
+            clauses.append(f"json_extract(e.payload, '$.{path}') = ?")
+            values.append(filters[key])
+    for key in ("operation_id", "workflow", "stage"):
+        if filters.get(key) is None:
+            continue
+        # Canonical references and durable request links cover transport/provider/tool events.
+        clauses.append(f"(json_extract(e.payload, '$.harness.{key}') = ? OR EXISTS (SELECT 1 FROM operation_links l WHERE "
+                       + ("l.operation_id = ?" if key == "operation_id" else f"json_extract(l.payload, '$.{key}') = ?")
+                       + " AND l.request_id=json_extract(e.payload, '$.request_id')))")
+        values.extend([filters[key], filters[key]])
+    for key, operator in (("since", ">="), ("until", "<")):
+        if filters.get(key) is not None:
+            clauses.append(f"julianday(json_extract(e.payload, '$.timestamp')) {operator} julianday(?)")
+            values.append(filters[key])
+    return " AND ".join(clauses), values
+
+
 class DiagnosticStore:
     def __init__(self, path: Path, capacity: int = 1000, *, retention=None):
         from app.core.diagnostic_retention import DiagnosticEventRetention
@@ -163,32 +187,13 @@ class DiagnosticStore:
         from contextlib import closing
         if not 0 <= after or not 1 <= limit <= 101:
             raise ValueError("diagnostic_query_bounds")
-        paths = {key: key for key in ("request_id", "action_id", "page_view_id", "flow_id", "source", "page_path", "severity")}
-        paths.update(resource_id="resource.resource_id", resource_type="resource.resource_type")
-        clauses = ["e.sequence > ?"]
-        values = [after]
-        for key, path in paths.items():
-            if filters.get(key) is not None:
-                clauses.append(f"json_extract(e.payload, '$.{path}') = ?")
-                values.append(filters[key])
-        for key in ("operation_id", "workflow", "stage"):
-            if filters.get(key) is None:
-                continue
-            # Canonical references and durable request links cover transport/provider/tool events.
-            clauses.append(f"(json_extract(e.payload, '$.harness.{key}') = ? OR EXISTS (SELECT 1 FROM operation_links l WHERE "
-                           + ("l.operation_id = ?" if key == "operation_id" else f"json_extract(l.payload, '$.{key}') = ?")
-                           + " AND l.request_id=json_extract(e.payload, '$.request_id')))")
-            values.extend([filters[key], filters[key]])
-        for key, operator in (("since", ">="), ("until", "<")):
-            if filters.get(key) is not None:
-                clauses.append(f"julianday(json_extract(e.payload, '$.timestamp')) {operator} julianday(?)")
-                values.append(filters[key])
+        predicate, values = diagnostic_event_predicate(after, filters)
         try:
             with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
                 db.execute("BEGIN")
                 coverage = self.retention.coverage(db, after) if with_coverage else None
                 rows = db.execute("SELECT e.sequence,e.payload FROM events e WHERE " +
-                                  " AND ".join(clauses) + " ORDER BY e.sequence LIMIT ?",
+                                  predicate + " ORDER BY e.sequence LIMIT ?",
                                   [*values, limit]).fetchall()
             # Revalidate stored bytes before returning anything to a global viewer/exporter.
             items = [{"sequence": seq, "event": DiagnosticEventV1.model_validate_json(payload).model_dump(mode="json")} for seq, payload in rows]

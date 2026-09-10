@@ -1,0 +1,95 @@
+import type { DiagnosticEventV1, DiagnosticEventFilters, DiagnosticEventRetentionV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1, DiagnosticWriterCoverageV1 } from "./diagnostic";
+import type { HarnessWorkflow, HarnessStage, HarnessAttemptPhase } from "./harness";
+
+export type DiagnosticMetricGap = "missing_start" | "missing_terminal" | "missing_span" | "conflicting_span_records" | "harness_reference_missing" | "component_context_unavailable" | "endpoint_configuration_not_recorded" | "provider_cost_evidence_unavailable" | "usage_not_returned" | "usage_partial_or_invalid" | "usage_not_additive" | "source_unavailable" | "duration_unavailable" | "model_label_unreviewed" | "metric_missing";
+export interface DiagnosticAuditGroupKeyV1 {
+  kind: "provider_call" | "provider_attempt" | "tool_call" | "harness_stage" | "harness_attempt";
+  workflow: HarnessWorkflow | null;
+  stage: HarnessStage | null;
+  phase: HarnessAttemptPhase | null;
+  provider: "litellm" | null;
+  request_kind: "plan" | "chat" | "setting" | "embedding" | "other" | null;
+  model: string | null;
+  provider_contract: "diagnostic-provider-transport-v1" | null;
+  timeout_ms: number | null;
+  retry_limit: number | null;
+  tool_name: string | null;
+  input_contract: string | null;
+  result_contract: string | null;
+  tool_max_calls_operation: number | null;
+  tool_max_calls_round: number | null;
+  components: { name: string; version: string }[];
+}
+export interface DiagnosticAuditObservationV1 {
+  sample_id: string;
+  group: DiagnosticAuditGroupKeyV1;
+  event_ids: string[];
+  operation_id: string | null;
+  trace_id: string | null;
+  span_id: string | null;
+  parent_span_id: string | null;
+  outcome: "completed" | "failed" | "cancelled" | "unknown" | "skipped";
+  duration_ms: number | null;
+  recovered: boolean;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  gaps: DiagnosticMetricGap[];
+}
+export interface DiagnosticAuditGroupV1 {
+  key: DiagnosticAuditGroupKeyV1;
+  sample_count: number;
+  completed_count: number;
+  failed_count: number;
+  cancelled_count: number;
+  unknown_count: number;
+  skipped_count: number;
+  recovered_count: number;
+  duration_sample_count: number;
+  p50_ms: number | null;
+  p95_ms: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  input_token_sample_count: number;
+  output_token_sample_count: number;
+  total_token_sample_count: number;
+  gaps: { gap: DiagnosticMetricGap; count: number }[];
+}
+export interface DiagnosticAuditV1 {
+  schema_version: "diagnostic-audit-v1";
+  observations: DiagnosticAuditObservationV1[];
+  groups: DiagnosticAuditGroupV1[];
+  input_event_count: number;
+  input_trace_count: number;
+  duplicate_event_count: number;
+  percentile_method: "nearest_rank";
+  duration_aggregation: "per_kind_inclusive_never_additive";
+  token_aggregation: "provider_attempts_only";
+  commit_claim: "none";
+  coverage_gap: "bounded_inputs_not_complete_installation";
+}
+export type DiagnosticExportFiltersV1 = { [K in keyof DiagnosticEventFilters]?: DiagnosticEventFilters[K] | null };
+export interface DiagnosticExportV1 {
+  schema_version: "diagnostic-export-v1";
+  app_version: string;
+  created_at: string;
+  filters: DiagnosticExportFiltersV1;
+  snapshot_consistency: "events_links_retention_writers_atomic_index_independent";
+  complete_collection_claim: false;
+  events: { sequence: number; event: DiagnosticEventV1 }[];
+  operation_links: DiagnosticOperationLinkV1[];
+  retention: DiagnosticEventRetentionV1;
+  writer_pages: DiagnosticWriterCoverageV1[];
+  index: DiagnosticHarnessIndexV1[];
+  index_coverage: {
+    freshness: "eventual" | "unavailable";
+    cursor: string | null;
+    completed_sweeps: number | null;
+    canonical_read_back_required: true;
+    scope: "all_retained" | "workflow_stage" | "related_operations";
+    missing_operation_count: number;
+    time_and_event_filters_apply_to_traces: false;
+  };
+  audit: DiagnosticAuditV1;
+}

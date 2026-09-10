@@ -58,6 +58,8 @@
 
   - 2026-09-10 审计统计核心切片：版本化 report 保留原始 metric observation，按 provider call/attempt、tool、Harness stage/attempt 分组，结合实际模型、可用配置/契约及组件版本；nearest-rank P50/P95 与失败/恢复/unknown、用量样本数/缺口分开输出。父子耗时不相加，token 只聚合 provider attempt 的已报告值；冲突 span 不声明指标，缺失保持未知。14 项 audit/provider/tool/index 测试通过，含真实 ProviderObservation 重试输入。详见 `docs/diagnostic-audit.md`；一致快照导出、统计 UI 和开销量测尚未接入。
 
+  - 2026-09-10 诊断导出后端切片：新增 `POST /diagnostics/export`，事件/关联/留存/writer 分页取同一只读快照，Harness 索引/checkpoint 使用独立快照并明确范围与缺口；重验嵌套 DTO 和数据库身份，超限整体拒绝。导出包含版本、筛选条件、白名单记录、原始指标与统计，不包含受保护内容。37 项后端诊断回归及 shared contracts 门通过，涵盖并发删除/索引更新/writer 多页、损坏记录、身份错配、留存后关联与请求/输出边界。浏览器下载、统计 UI、总体磁盘治理及开销验收仍待完成。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
@@ -66,7 +68,8 @@ exists under `storage_root/diagnostics/events.sqlite3`; it retains at most 10,00
 rows using a 1,000-event queue. Browser ingestion and cursor query are available at `/diagnostics/events`,
 including writer health counters. Event payload retention now uses seven days,
 10,000 rows or 64 MiB, with durable removal coverage; global UI health is visible.
-Aggregate disk retention, other diagnostic-table retention and exports remain pending. Console logging intentionally excludes
+Aggregate disk retention and other diagnostic-table retention remain pending.
+Snapshot export is available through the backend; its browser UI remains pending. Console logging intentionally excludes
 unreviewed formatted messages and exception text.
 
 ```mermaid

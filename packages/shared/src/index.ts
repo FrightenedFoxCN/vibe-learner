@@ -10,3 +10,4 @@ export * from "./harness-eval";
 export * from "./harness-manifest";
 export * from "./tool-manifest";
 export * from "./diagnostic";
+export * from "./diagnostic-export";

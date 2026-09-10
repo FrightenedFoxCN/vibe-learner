@@ -1,0 +1,2660 @@
+{
+  "$defs": {
+    "DiagnosticAttemptMetricV1": {
+      "additionalProperties": false,
+      "properties": {
+        "attempt_id": {
+          "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "attempt_index": {
+          "minimum": 1,
+          "title": "Attempt Index",
+          "type": "integer"
+        },
+        "phase": {
+          "$ref": "#/$defs/HarnessAttemptPhase"
+        },
+        "status": {
+          "$ref": "#/$defs/HarnessAttemptStatus"
+        },
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "attempt_id",
+        "attempt_index",
+        "phase",
+        "status",
+        "duration_ms"
+      ],
+      "title": "DiagnosticAttemptMetricV1",
+      "type": "object"
+    },
+    "DiagnosticAuditGapCountV1": {
+      "additionalProperties": false,
+      "properties": {
+        "gap": {
+          "enum": [
+            "missing_start",
+            "missing_terminal",
+            "missing_span",
+            "conflicting_span_records",
+            "harness_reference_missing",
+            "component_context_unavailable",
+            "endpoint_configuration_not_recorded",
+            "provider_cost_evidence_unavailable",
+            "usage_not_returned",
+            "usage_partial_or_invalid",
+            "usage_not_additive",
+            "source_unavailable",
+            "duration_unavailable",
+            "model_label_unreviewed",
+            "metric_missing"
+          ],
+          "title": "Gap",
+          "type": "string"
+        },
+        "count": {
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "gap",
+        "count"
+      ],
+      "title": "DiagnosticAuditGapCountV1",
+      "type": "object"
+    },
+    "DiagnosticAuditGroupKeyV1": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "provider_call",
+            "provider_attempt",
+            "tool_call",
+            "harness_stage",
+            "harness_attempt"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "workflow": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessWorkflow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessStage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "enum": [
+                "generate",
+                "decode",
+                "validate",
+                "repair",
+                "commit",
+                "rollback"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "const": "litellm",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider"
+        },
+        "request_kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "plan",
+                "chat",
+                "setting",
+                "embedding",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Request Kind"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "provider_contract": {
+          "anyOf": [
+            {
+              "const": "diagnostic-provider-transport-v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Contract"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        },
+        "retry_limit": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retry Limit"
+        },
+        "tool_name": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Name"
+        },
+        "input_contract": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Contract"
+        },
+        "result_contract": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Contract"
+        },
+        "tool_max_calls_operation": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Max Calls Operation"
+        },
+        "tool_max_calls_round": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Max Calls Round"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/HarnessContractRef"
+          },
+          "maxItems": 64,
+          "title": "Components",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "DiagnosticAuditGroupKeyV1",
+      "type": "object"
+    },
+    "DiagnosticAuditGroupV1": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/DiagnosticAuditGroupKeyV1"
+        },
+        "sample_count": {
+          "minimum": 1,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "completed_count": {
+          "minimum": 0,
+          "title": "Completed Count",
+          "type": "integer"
+        },
+        "failed_count": {
+          "minimum": 0,
+          "title": "Failed Count",
+          "type": "integer"
+        },
+        "cancelled_count": {
+          "minimum": 0,
+          "title": "Cancelled Count",
+          "type": "integer"
+        },
+        "unknown_count": {
+          "minimum": 0,
+          "title": "Unknown Count",
+          "type": "integer"
+        },
+        "skipped_count": {
+          "minimum": 0,
+          "title": "Skipped Count",
+          "type": "integer"
+        },
+        "recovered_count": {
+          "minimum": 0,
+          "title": "Recovered Count",
+          "type": "integer"
+        },
+        "duration_sample_count": {
+          "minimum": 0,
+          "title": "Duration Sample Count",
+          "type": "integer"
+        },
+        "p50_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "P50 Ms"
+        },
+        "p95_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "P95 Ms"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Output Tokens"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Total Tokens"
+        },
+        "input_token_sample_count": {
+          "minimum": 0,
+          "title": "Input Token Sample Count",
+          "type": "integer"
+        },
+        "output_token_sample_count": {
+          "minimum": 0,
+          "title": "Output Token Sample Count",
+          "type": "integer"
+        },
+        "total_token_sample_count": {
+          "minimum": 0,
+          "title": "Total Token Sample Count",
+          "type": "integer"
+        },
+        "gaps": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticAuditGapCountV1"
+          },
+          "title": "Gaps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "sample_count",
+        "completed_count",
+        "failed_count",
+        "cancelled_count",
+        "unknown_count",
+        "skipped_count",
+        "recovered_count",
+        "duration_sample_count",
+        "p50_ms",
+        "p95_ms",
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+        "input_token_sample_count",
+        "output_token_sample_count",
+        "total_token_sample_count",
+        "gaps"
+      ],
+      "title": "DiagnosticAuditGroupV1",
+      "type": "object"
+    },
+    "DiagnosticAuditObservationV1": {
+      "additionalProperties": false,
+      "properties": {
+        "sample_id": {
+          "maxLength": 200,
+          "title": "Sample Id",
+          "type": "string"
+        },
+        "group": {
+          "$ref": "#/$defs/DiagnosticAuditGroupKeyV1"
+        },
+        "event_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "title": "Event Ids",
+          "type": "array"
+        },
+        "operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 96,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation Id"
+        },
+        "trace_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trace Id"
+        },
+        "span_id": {
+          "anyOf": [
+            {
+              "maxLength": 96,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Span Id"
+        },
+        "parent_span_id": {
+          "anyOf": [
+            {
+              "maxLength": 96,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Span Id"
+        },
+        "outcome": {
+          "enum": [
+            "completed",
+            "failed",
+            "cancelled",
+            "unknown",
+            "skipped"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "duration_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Ms"
+        },
+        "recovered": {
+          "default": false,
+          "title": "Recovered",
+          "type": "boolean"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        },
+        "gaps": {
+          "items": {
+            "enum": [
+              "missing_start",
+              "missing_terminal",
+              "missing_span",
+              "conflicting_span_records",
+              "harness_reference_missing",
+              "component_context_unavailable",
+              "endpoint_configuration_not_recorded",
+              "provider_cost_evidence_unavailable",
+              "usage_not_returned",
+              "usage_partial_or_invalid",
+              "usage_not_additive",
+              "source_unavailable",
+              "duration_unavailable",
+              "model_label_unreviewed",
+              "metric_missing"
+            ],
+            "type": "string"
+          },
+          "maxItems": 16,
+          "title": "Gaps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "sample_id",
+        "group",
+        "outcome"
+      ],
+      "title": "DiagnosticAuditObservationV1",
+      "type": "object"
+    },
+    "DiagnosticAuditV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "diagnostic-audit-v1",
+          "default": "diagnostic-audit-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "observations": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticAuditObservationV1"
+          },
+          "maxItems": 20000,
+          "title": "Observations",
+          "type": "array"
+        },
+        "groups": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticAuditGroupV1"
+          },
+          "maxItems": 20000,
+          "title": "Groups",
+          "type": "array"
+        },
+        "input_event_count": {
+          "minimum": 0,
+          "title": "Input Event Count",
+          "type": "integer"
+        },
+        "input_trace_count": {
+          "minimum": 0,
+          "title": "Input Trace Count",
+          "type": "integer"
+        },
+        "duplicate_event_count": {
+          "minimum": 0,
+          "title": "Duplicate Event Count",
+          "type": "integer"
+        },
+        "percentile_method": {
+          "const": "nearest_rank",
+          "default": "nearest_rank",
+          "title": "Percentile Method",
+          "type": "string"
+        },
+        "duration_aggregation": {
+          "const": "per_kind_inclusive_never_additive",
+          "default": "per_kind_inclusive_never_additive",
+          "title": "Duration Aggregation",
+          "type": "string"
+        },
+        "token_aggregation": {
+          "const": "provider_attempts_only",
+          "default": "provider_attempts_only",
+          "title": "Token Aggregation",
+          "type": "string"
+        },
+        "commit_claim": {
+          "const": "none",
+          "default": "none",
+          "title": "Commit Claim",
+          "type": "string"
+        },
+        "coverage_gap": {
+          "const": "bounded_inputs_not_complete_installation",
+          "default": "bounded_inputs_not_complete_installation",
+          "title": "Coverage Gap",
+          "type": "string"
+        }
+      },
+      "required": [
+        "observations",
+        "groups",
+        "input_event_count",
+        "input_trace_count",
+        "duplicate_event_count"
+      ],
+      "title": "DiagnosticAuditV1",
+      "type": "object"
+    },
+    "DiagnosticDesktopMetricV1": {
+      "additionalProperties": false,
+      "properties": {
+        "instance_id": {
+          "pattern": "^desktop-[a-f0-9-]{1,88}$",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exit Code"
+        },
+        "dropped_before": {
+          "minimum": 0,
+          "title": "Dropped Before",
+          "type": "integer"
+        },
+        "write_failures_before": {
+          "minimum": 0,
+          "title": "Write Failures Before",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "instance_id",
+        "dropped_before",
+        "write_failures_before"
+      ],
+      "title": "DiagnosticDesktopMetricV1",
+      "type": "object"
+    },
+    "DiagnosticEventV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "diagnostic-event-v1",
+          "default": "diagnostic-event-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "server",
+            "browser",
+            "desktop"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "name": {
+          "enum": [
+            "decode_failed",
+            "page_entered",
+            "page_left",
+            "request_started",
+            "response_headers",
+            "request_finished",
+            "request_failed",
+            "request_cancelled",
+            "lifecycle_started",
+            "lifecycle_stopped",
+            "harness_reference",
+            "resource_reference",
+            "provider_started",
+            "provider_finished",
+            "provider_failed",
+            "provider_attempt_started",
+            "provider_attempt_finished",
+            "provider_attempt_failed",
+            "tool_started",
+            "tool_finished",
+            "tool_failed",
+            "tool_unknown",
+            "action_started",
+            "action_finished",
+            "action_failed",
+            "action_cancelled",
+            "desktop_started",
+            "sidecar_spawned",
+            "sidecar_ready",
+            "sidecar_startup_failed",
+            "sidecar_exited",
+            "desktop_shutdown_requested",
+            "sidecar_stopped",
+            "sidecar_shutdown_unknown",
+            "desktop_stopped"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "page_path": {
+          "anyOf": [
+            {
+              "enum": [
+                "/",
+                "/plan",
+                "/study",
+                "/persona-spectrum",
+                "/scene-setup",
+                "/tavern",
+                "/settings",
+                "/sensory-tools",
+                "/model-usage"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Path"
+        },
+        "desktop_metric": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticDesktopMetricV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "action_name": {
+          "anyOf": [
+            {
+              "enum": [
+                "json_import_read_persona",
+                "json_import_read_scene",
+                "json_export_handoff",
+                "settings_save",
+                "vault_create",
+                "vault_unlock",
+                "vault_lock",
+                "vault_load_secrets",
+                "vault_save_secrets",
+                "vault_clear_secrets"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Name"
+        },
+        "span_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Span Id"
+        },
+        "parent_span_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Span Id"
+        },
+        "tool_metric": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticToolMetricV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provider_metric": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticProviderMetricV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "harness": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticHarnessReferenceV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticResourceReferenceV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "category": {
+          "enum": [
+            "transport",
+            "lifecycle",
+            "harness",
+            "resource",
+            "provider",
+            "tool",
+            "action",
+            "desktop",
+            "page",
+            "decode"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "started",
+            "headers_received",
+            "completed",
+            "failed",
+            "cancelled",
+            "observed",
+            "unknown"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "error_code": {
+          "anyOf": [
+            {
+              "enum": [
+                "transport_failure",
+                "http_error",
+                "cancelled",
+                "provider_failure",
+                "tool_failure",
+                "action_failure",
+                "desktop_failure",
+                "decode_failure"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Error Code"
+        },
+        "timestamp": {
+          "maxLength": 40,
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "request_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Request Id"
+        },
+        "client_instance_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Client Instance Id"
+        },
+        "page_view_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page View Id"
+        },
+        "flow_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flow Id"
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        },
+        "duration_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Ms"
+        },
+        "status_code": {
+          "anyOf": [
+            {
+              "maximum": 599,
+              "minimum": 100,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status Code"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS",
+                "HEAD"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "route": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "pattern": "^/[a-zA-Z0-9_/{\\}-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Route"
+        }
+      },
+      "required": [
+        "event_id",
+        "source",
+        "name",
+        "category",
+        "severity",
+        "outcome",
+        "error_code",
+        "timestamp"
+      ],
+      "title": "DiagnosticEventV1",
+      "type": "object"
+    },
+    "DiagnosticExportEventV1": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "event": {
+          "$ref": "#/$defs/DiagnosticEventV1"
+        }
+      },
+      "required": [
+        "sequence",
+        "event"
+      ],
+      "title": "DiagnosticExportEventV1",
+      "type": "object"
+    },
+    "DiagnosticExportFiltersV1": {
+      "additionalProperties": false,
+      "properties": {
+        "request_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Request Id"
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        },
+        "page_view_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page View Id"
+        },
+        "flow_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flow Id"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "enum": [
+                "browser",
+                "server",
+                "desktop"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        },
+        "page_path": {
+          "anyOf": [
+            {
+              "enum": [
+                "/",
+                "/plan",
+                "/study",
+                "/persona-spectrum",
+                "/scene-setup",
+                "/tavern",
+                "/settings",
+                "/sensory-tools",
+                "/model-usage"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page Path"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "enum": [
+                "info",
+                "warning",
+                "error"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Severity"
+        },
+        "operation_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation Id"
+        },
+        "workflow": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessWorkflow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessStage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resource_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Id"
+        },
+        "resource_type": {
+          "anyOf": [
+            {
+              "const": "persona",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource Type"
+        },
+        "since": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Since"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Until"
+        }
+      },
+      "title": "DiagnosticExportFiltersV1",
+      "type": "object"
+    },
+    "DiagnosticExportIndexCoverageV1": {
+      "additionalProperties": false,
+      "properties": {
+        "freshness": {
+          "enum": [
+            "eventual",
+            "unavailable"
+          ],
+          "title": "Freshness",
+          "type": "string"
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cursor"
+        },
+        "completed_sweeps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed Sweeps"
+        },
+        "canonical_read_back_required": {
+          "const": true,
+          "default": true,
+          "title": "Canonical Read Back Required",
+          "type": "boolean"
+        },
+        "scope": {
+          "enum": [
+            "all_retained",
+            "workflow_stage",
+            "related_operations"
+          ],
+          "title": "Scope",
+          "type": "string"
+        },
+        "missing_operation_count": {
+          "minimum": 0,
+          "title": "Missing Operation Count",
+          "type": "integer"
+        },
+        "time_and_event_filters_apply_to_traces": {
+          "const": false,
+          "default": false,
+          "title": "Time And Event Filters Apply To Traces",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "freshness",
+        "scope",
+        "missing_operation_count"
+      ],
+      "title": "DiagnosticExportIndexCoverageV1",
+      "type": "object"
+    },
+    "DiagnosticExportRetentionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "diagnostic-event-retention-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "retained_events": {
+          "minimum": 0,
+          "title": "Retained Events",
+          "type": "integer"
+        },
+        "retained_payload_bytes": {
+          "minimum": 0,
+          "title": "Retained Payload Bytes",
+          "type": "integer"
+        },
+        "removed_events": {
+          "minimum": 0,
+          "title": "Removed Events",
+          "type": "integer"
+        },
+        "removed_through_sequence": {
+          "minimum": 0,
+          "title": "Removed Through Sequence",
+          "type": "integer"
+        },
+        "legacy_timestamp_rows": {
+          "minimum": 0,
+          "title": "Legacy Timestamp Rows",
+          "type": "integer"
+        },
+        "cursor_gap": {
+          "title": "Cursor Gap",
+          "type": "boolean"
+        },
+        "max_age_seconds": {
+          "minimum": 1,
+          "title": "Max Age Seconds",
+          "type": "integer"
+        },
+        "max_rows": {
+          "minimum": 1,
+          "title": "Max Rows",
+          "type": "integer"
+        },
+        "max_payload_bytes": {
+          "minimum": 1,
+          "title": "Max Payload Bytes",
+          "type": "integer"
+        },
+        "storage_scope": {
+          "const": "event_payloads",
+          "title": "Storage Scope",
+          "type": "string"
+        },
+        "disk_size_limit_certified": {
+          "const": false,
+          "title": "Disk Size Limit Certified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "retained_events",
+        "retained_payload_bytes",
+        "removed_events",
+        "removed_through_sequence",
+        "legacy_timestamp_rows",
+        "cursor_gap",
+        "max_age_seconds",
+        "max_rows",
+        "max_payload_bytes",
+        "storage_scope",
+        "disk_size_limit_certified"
+      ],
+      "title": "DiagnosticExportRetentionV1",
+      "type": "object"
+    },
+    "DiagnosticHarnessIndexV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "diagnostic-harness-index-v1",
+          "default": "diagnostic-harness-index-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "trace_id": {
+          "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+          "title": "Trace Id",
+          "type": "string"
+        },
+        "parent_trace_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Trace Id"
+        },
+        "operation_id": {
+          "anyOf": [
+            {
+              "pattern": "^harness-operation-[0-9a-f]{32}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Operation Id"
+        },
+        "workflow": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessWorkflow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessStage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state": {
+          "anyOf": [
+            {
+              "enum": [
+                "prepared",
+                "claimed",
+                "terminal"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "State"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "commit_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessCommitStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "duration_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Ms"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed At"
+        },
+        "source_updated_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Updated At"
+        },
+        "gap": {
+          "anyOf": [
+            {
+              "enum": [
+                "source_removed",
+                "source_invalid_or_unavailable",
+                "terminal_trace_not_available"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gap"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/HarnessContractRef"
+          },
+          "maxItems": 64,
+          "title": "Components",
+          "type": "array"
+        },
+        "attempts": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticAttemptMetricV1"
+          },
+          "maxItems": 128,
+          "title": "Attempts",
+          "type": "array"
+        },
+        "provider": {
+          "default": null,
+          "title": "Provider",
+          "type": "null"
+        },
+        "model": {
+          "default": null,
+          "title": "Model",
+          "type": "null"
+        },
+        "tokens": {
+          "default": null,
+          "title": "Tokens",
+          "type": "null"
+        },
+        "cost": {
+          "default": null,
+          "title": "Cost",
+          "type": "null"
+        },
+        "usage_gap": {
+          "const": "not_recorded_in_canonical_trace",
+          "default": "not_recorded_in_canonical_trace",
+          "title": "Usage Gap",
+          "type": "string"
+        },
+        "correlation_gap": {
+          "const": "resolve_request_links_separately",
+          "default": "resolve_request_links_separately",
+          "title": "Correlation Gap",
+          "type": "string"
+        }
+      },
+      "required": [
+        "trace_id"
+      ],
+      "title": "DiagnosticHarnessIndexV1",
+      "type": "object"
+    },
+    "DiagnosticHarnessReferenceV1": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "pattern": "^harness-operation-[0-9a-f]{32}$",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "workflow": {
+          "$ref": "#/$defs/HarnessWorkflow"
+        },
+        "stage": {
+          "$ref": "#/$defs/HarnessStage"
+        },
+        "trace_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trace Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "attempt_index": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Index"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessAttemptPhase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "attempt_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessAttemptStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "operation_id",
+        "workflow",
+        "stage"
+      ],
+      "title": "DiagnosticHarnessReferenceV1",
+      "type": "object"
+    },
+    "DiagnosticOperationLinkV1": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "pattern": "^harness-operation-[0-9a-f]{32}$",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "request_id": {
+          "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "client_instance_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Client Instance Id"
+        },
+        "page_view_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page View Id"
+        },
+        "flow_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Flow Id"
+        },
+        "action_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9_-]{1,96}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Action Id"
+        },
+        "workflow": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessWorkflow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessStage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "operation_id",
+        "request_id"
+      ],
+      "title": "DiagnosticOperationLinkV1",
+      "type": "object"
+    },
+    "DiagnosticProviderMetricV1": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "const": "litellm",
+          "default": "litellm",
+          "title": "Adapter",
+          "type": "string"
+        },
+        "adapter_contract": {
+          "const": "diagnostic-provider-transport-v1",
+          "default": "diagnostic-provider-transport-v1",
+          "title": "Adapter Contract",
+          "type": "string"
+        },
+        "request_kind": {
+          "enum": [
+            "plan",
+            "chat",
+            "setting",
+            "embedding",
+            "other"
+          ],
+          "title": "Request Kind",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,159}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "model_gap": {
+          "anyOf": [
+            {
+              "const": "model_label_unreviewed",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Gap"
+        },
+        "timeout_seconds": {
+          "minimum": 0,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "max_attempts": {
+          "const": 3,
+          "default": 3,
+          "title": "Max Attempts",
+          "type": "integer"
+        },
+        "attempt_index": {
+          "anyOf": [
+            {
+              "maximum": 3,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Index"
+        },
+        "attempts_used": {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Attempts Used",
+          "type": "integer"
+        },
+        "recovered": {
+          "default": false,
+          "title": "Recovered",
+          "type": "boolean"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "total_tokens": {
+          "anyOf": [
+            {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Tokens"
+        },
+        "usage_source": {
+          "enum": [
+            "provider_reported",
+            "unavailable"
+          ],
+          "title": "Usage Source",
+          "type": "string"
+        },
+        "usage_gap": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_returned",
+                "partial_or_invalid",
+                "aggregate_not_additive"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usage Gap"
+        },
+        "cost": {
+          "default": null,
+          "title": "Cost",
+          "type": "null"
+        },
+        "cost_gap": {
+          "const": "provider_cost_evidence_unavailable",
+          "default": "provider_cost_evidence_unavailable",
+          "title": "Cost Gap",
+          "type": "string"
+        },
+        "configuration_gap": {
+          "const": "endpoint_configuration_not_recorded",
+          "default": "endpoint_configuration_not_recorded",
+          "title": "Configuration Gap",
+          "type": "string"
+        }
+      },
+      "required": [
+        "request_kind",
+        "timeout_seconds",
+        "attempts_used",
+        "usage_source"
+      ],
+      "title": "DiagnosticProviderMetricV1",
+      "type": "object"
+    },
+    "DiagnosticResourceReferenceV1": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_type": {
+          "const": "persona",
+          "title": "Resource Type",
+          "type": "string"
+        },
+        "resource_id": {
+          "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        }
+      },
+      "required": [
+        "resource_type",
+        "resource_id"
+      ],
+      "title": "DiagnosticResourceReferenceV1",
+      "type": "object"
+    },
+    "DiagnosticToolMetricV1": {
+      "additionalProperties": false,
+      "properties": {
+        "workflow": {
+          "$ref": "#/$defs/HarnessWorkflow"
+        },
+        "offered_in_stage": {
+          "$ref": "#/$defs/HarnessStage"
+        },
+        "execution_stage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HarnessStage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "manifest_key": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manifest Key"
+        },
+        "canonical_name": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_]{0,79}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Canonical Name"
+        },
+        "input_contract_version": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Contract Version"
+        },
+        "result_contract_version": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Contract Version"
+        },
+        "provider_tool_call_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_-]{1,160}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Provider Tool Call Id"
+        },
+        "max_calls_per_operation": {
+          "anyOf": [
+            {
+              "maximum": 64,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Calls Per Operation"
+        },
+        "max_calls_per_round": {
+          "anyOf": [
+            {
+              "maximum": 8,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Calls Per Round"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "maximum": 120000,
+              "minimum": 100,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        },
+        "manifest_gap": {
+          "anyOf": [
+            {
+              "const": "unregistered_tool",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Manifest Gap"
+        },
+        "effect_commit_claim": {
+          "const": "none",
+          "default": "none",
+          "title": "Effect Commit Claim",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflow",
+        "offered_in_stage"
+      ],
+      "title": "DiagnosticToolMetricV1",
+      "type": "object"
+    },
+    "DiagnosticWriterCoverageV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "diagnostic-writer-coverage-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticWriterEpochV1"
+          },
+          "maxItems": 100,
+          "title": "Items",
+          "type": "array"
+        },
+        "next_cursor": {
+          "minimum": 0,
+          "title": "Next Cursor",
+          "type": "integer"
+        },
+        "has_more": {
+          "title": "Has More",
+          "type": "boolean"
+        },
+        "totals": {
+          "$ref": "#/$defs/DiagnosticWriterTotalsV1"
+        },
+        "counts_are_lower_bounds": {
+          "const": true,
+          "title": "Counts Are Lower Bounds",
+          "type": "boolean"
+        },
+        "unpersisted_queue_gap": {
+          "const": true,
+          "title": "Unpersisted Queue Gap",
+          "type": "boolean"
+        },
+        "startup_before_epoch_gap": {
+          "const": true,
+          "title": "Startup Before Epoch Gap",
+          "type": "boolean"
+        },
+        "unclosed_meaning": {
+          "const": "active_or_interrupted",
+          "title": "Unclosed Meaning",
+          "type": "string"
+        },
+        "complete_collection_claim": {
+          "const": false,
+          "title": "Complete Collection Claim",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "items",
+        "next_cursor",
+        "has_more",
+        "totals",
+        "counts_are_lower_bounds",
+        "unpersisted_queue_gap",
+        "startup_before_epoch_gap",
+        "unclosed_meaning",
+        "complete_collection_claim"
+      ],
+      "title": "DiagnosticWriterCoverageV1",
+      "type": "object"
+    },
+    "DiagnosticWriterEpochV1": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "epoch_id": {
+          "pattern": "^[0-9a-f]{32}$",
+          "title": "Epoch Id",
+          "type": "string"
+        },
+        "started_at": {
+          "minimum": 0,
+          "title": "Started At",
+          "type": "integer"
+        },
+        "observed_at": {
+          "minimum": 0,
+          "title": "Observed At",
+          "type": "integer"
+        },
+        "closed_at": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Closed At"
+        },
+        "observed_dropped": {
+          "minimum": 0,
+          "title": "Observed Dropped",
+          "type": "integer"
+        },
+        "observed_write_failures": {
+          "minimum": 0,
+          "title": "Observed Write Failures",
+          "type": "integer"
+        },
+        "observed_read_failures": {
+          "minimum": 0,
+          "title": "Observed Read Failures",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sequence",
+        "epoch_id",
+        "started_at",
+        "observed_at",
+        "closed_at",
+        "observed_dropped",
+        "observed_write_failures",
+        "observed_read_failures"
+      ],
+      "title": "DiagnosticWriterEpochV1",
+      "type": "object"
+    },
+    "DiagnosticWriterTotalsV1": {
+      "additionalProperties": false,
+      "properties": {
+        "retired_epochs": {
+          "minimum": 0,
+          "title": "Retired Epochs",
+          "type": "integer"
+        },
+        "retired_unclosed": {
+          "minimum": 0,
+          "title": "Retired Unclosed",
+          "type": "integer"
+        },
+        "retained_epochs": {
+          "minimum": 0,
+          "title": "Retained Epochs",
+          "type": "integer"
+        },
+        "unclosed_epochs": {
+          "minimum": 0,
+          "title": "Unclosed Epochs",
+          "type": "integer"
+        },
+        "observed_dropped": {
+          "minimum": 0,
+          "title": "Observed Dropped",
+          "type": "integer"
+        },
+        "observed_write_failures": {
+          "minimum": 0,
+          "title": "Observed Write Failures",
+          "type": "integer"
+        },
+        "observed_read_failures": {
+          "minimum": 0,
+          "title": "Observed Read Failures",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "retired_epochs",
+        "retired_unclosed",
+        "retained_epochs",
+        "unclosed_epochs",
+        "observed_dropped",
+        "observed_write_failures",
+        "observed_read_failures"
+      ],
+      "title": "DiagnosticWriterTotalsV1",
+      "type": "object"
+    },
+    "HarnessAttemptPhase": {
+      "enum": [
+        "generate",
+        "decode",
+        "validate",
+        "repair",
+        "commit",
+        "rollback"
+      ],
+      "title": "HarnessAttemptPhase",
+      "type": "string"
+    },
+    "HarnessAttemptStatus": {
+      "enum": [
+        "passed",
+        "failed",
+        "skipped"
+      ],
+      "title": "HarnessAttemptStatus",
+      "type": "string"
+    },
+    "HarnessCommitStatus": {
+      "enum": [
+        "not_applicable",
+        "not_committed",
+        "committed",
+        "rolled_back"
+      ],
+      "title": "HarnessCommitStatus",
+      "type": "string"
+    },
+    "HarnessContractRef": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "title": "HarnessContractRef",
+      "type": "object"
+    },
+    "HarnessStage": {
+      "enum": [
+        "document_parse",
+        "page_extraction",
+        "section_detection",
+        "chunk_building",
+        "ocr_page",
+        "study_unit_cleanup",
+        "plan_generation",
+        "planning_tool_execution",
+        "persona_generation",
+        "scene_generation",
+        "study_chat_reply",
+        "actor_reply",
+        "response_decode"
+      ],
+      "title": "HarnessStage",
+      "type": "string"
+    },
+    "HarnessStatus": {
+      "enum": [
+        "passed",
+        "repaired",
+        "failed",
+        "skipped"
+      ],
+      "title": "HarnessStatus",
+      "type": "string"
+    },
+    "HarnessWorkflow": {
+      "enum": [
+        "document_parse",
+        "ocr",
+        "study_unit_cleanup",
+        "planning",
+        "persona",
+        "scene",
+        "study_chat",
+        "tavern",
+        "frontend_decode"
+      ],
+      "title": "HarnessWorkflow",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "diagnostic-export-v1",
+      "default": "diagnostic-export-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "app_version": {
+      "maxLength": 80,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9.+_-]+$",
+      "title": "App Version",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "filters": {
+      "$ref": "#/$defs/DiagnosticExportFiltersV1"
+    },
+    "snapshot_consistency": {
+      "const": "events_links_retention_writers_atomic_index_independent",
+      "default": "events_links_retention_writers_atomic_index_independent",
+      "title": "Snapshot Consistency",
+      "type": "string"
+    },
+    "complete_collection_claim": {
+      "const": false,
+      "default": false,
+      "title": "Complete Collection Claim",
+      "type": "boolean"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticExportEventV1"
+      },
+      "maxItems": 10000,
+      "title": "Events",
+      "type": "array"
+    },
+    "operation_links": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticOperationLinkV1"
+      },
+      "maxItems": 5000,
+      "title": "Operation Links",
+      "type": "array"
+    },
+    "retention": {
+      "$ref": "#/$defs/DiagnosticExportRetentionV1"
+    },
+    "writer_pages": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticWriterCoverageV1"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Writer Pages",
+      "type": "array"
+    },
+    "index": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticHarnessIndexV1"
+      },
+      "maxItems": 5000,
+      "title": "Index",
+      "type": "array"
+    },
+    "index_coverage": {
+      "$ref": "#/$defs/DiagnosticExportIndexCoverageV1"
+    },
+    "audit": {
+      "$ref": "#/$defs/DiagnosticAuditV1"
+    }
+  },
+  "required": [
+    "app_version",
+    "created_at",
+    "filters",
+    "events",
+    "operation_links",
+    "retention",
+    "writer_pages",
+    "index",
+    "index_coverage",
+    "audit"
+  ],
+  "title": "DiagnosticExportV1",
+  "type": "object"
+}

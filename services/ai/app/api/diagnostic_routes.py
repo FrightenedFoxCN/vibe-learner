@@ -89,3 +89,29 @@ def query_writers(request: Request, after: int = Query(0, ge=0), limit: int = Qu
     except Exception:
         request.app.state.diagnostics.read_failures += 1
         raise HTTPException(503, "diagnostic_writer_coverage_unavailable") from None
+
+
+@router.post("/export")
+async def export_diagnostics(request: Request):
+    from starlette.concurrency import run_in_threadpool
+    from starlette.responses import Response
+    from app.models.diagnostic_export import DiagnosticExportFiltersV1
+    from app.services.diagnostic_export import build_diagnostic_export, DiagnosticExportTooLarge, DiagnosticExportUnavailable
+    raw = bytearray()
+    async for chunk in request.stream():
+        raw.extend(chunk)
+        if len(raw) > 8192:
+            raise HTTPException(413, "diagnostic_export_filter_too_large")
+    try:
+        filters = DiagnosticExportFiltersV1.model_validate_json(raw)
+    except ValidationError:
+        raise HTTPException(422, "invalid_diagnostic_export_filter") from None
+    try:
+        data = await run_in_threadpool(build_diagnostic_export, request.app.state.diagnostics,
+            getattr(request.app.state, "diagnostic_index", None), filters, request.app.version)
+    except DiagnosticExportTooLarge:
+        raise HTTPException(413, "diagnostic_export_too_large") from None
+    except DiagnosticExportUnavailable:
+        raise HTTPException(503, "diagnostic_export_unavailable") from None
+    return Response(data, media_type="application/json", headers={
+        "Content-Disposition": 'attachment; filename="vibe-learner-diagnostics.json"', "Cache-Control": "no-store"})
