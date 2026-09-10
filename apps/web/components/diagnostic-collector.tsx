@@ -8,7 +8,7 @@ import { getAiBaseUrl } from "../lib/runtime-config";
 export function DiagnosticCollector() {
   const pathname = usePathname();
   useEffect(() => {
-    const page = registerDiagnosticPage();
+    const page = registerDiagnosticPage(pathname);
     return page.dispose;
   }, [pathname]);
   useEffect(() => {

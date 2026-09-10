@@ -27,6 +27,8 @@
 
   - 2026-09-10 桌面切片：Rust 在 sidecar 就绪前写入 256 文件有界 spool，记录启动、就绪、异常退出与关闭；后端严格校验后持久化，再删除原文件，离线/重启沿用事件 ID 并去重。Rust/Python 共享协议样本，5 项 Rust 测试（含真实 Unix 子进程退出/清理）、20 项后端专项测试及 shared/Web 类型和 9 项客户端诊断测试通过。写盘/线程启动失败不阻断业务；日志不包含路径、命令参数或异常原文。当前验收限本机 Unix；跨平台、真实 native Vault 成功路径及 crash-safe 多进程丢失计数仍未认证。
 
+  - 2026-09-10 页面切片：全部九个现有路由使用固定 page_path 白名单和独立 page-view 记录进入/离开；异步请求保留捕获时的页面，重复清理不会覆盖新页面。查询支持 page_path；不持久化任意 URL/query。21 项后端测试、11 项客户端诊断测试、实际 React Collector StrictMode/路由切换/卸载测试及 shared/Web 类型门通过；崩溃缺少离开事件不推断成功，缺口审计仍由第四阶段负责。
+
 - [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。

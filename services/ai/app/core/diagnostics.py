@@ -124,7 +124,7 @@ class DiagnosticStore:
 
     def query(self, after: int, limit: int, filters: dict):
         # Query is read-only, short-lived and never scans business transaction tables.
-        allowed = {"request_id", "action_id", "page_view_id", "flow_id", "source"}
+        allowed = {"request_id", "action_id", "page_view_id", "flow_id", "source", "page_path"}
         clauses = ["sequence > ?"]
         values = [after]
         for key, value in filters.items():

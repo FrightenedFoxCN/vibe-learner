@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from app.models.diagnostic import DiagnosticEventV1, Identity
+from app.models.diagnostic import DiagnosticEventV1, Identity, DiagnosticPagePath
 
 router = APIRouter(prefix="/diagnostics", tags=["diagnostics"])
 
@@ -38,10 +38,10 @@ async def ingest(request: Request):
 def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100),
                  request_id: Identity | None = None, action_id: Identity | None = None,
                  page_view_id: Identity | None = None, flow_id: Identity | None = None,
-                 source: Literal["browser", "server", "desktop"] | None = None):
+                 source: Literal["browser", "server", "desktop"] | None = None, page_path: DiagnosticPagePath | None = None):
     store = request.app.state.diagnostics
     rows = store.query(after, limit, {"request_id": request_id, "action_id": action_id,
-                       "page_view_id": page_view_id, "flow_id": flow_id, "source": source})
+                       "page_view_id": page_view_id, "flow_id": flow_id, "source": source, "page_path": page_path})
     spool = getattr(request.app.state, "desktop_diagnostic_spool", None)
     return {"desktop_spool": {"rejected": spool.rejected, "failures": spool.failures} if spool else None, "items": rows, "next_cursor": rows[-1]["sequence"] if rows else after,
             "health": store.health()}

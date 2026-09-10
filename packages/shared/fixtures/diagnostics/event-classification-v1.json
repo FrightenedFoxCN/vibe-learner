@@ -1,5 +1,85 @@
 [
   {
+    "name": "page_entered",
+    "status_code": null,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_entered",
+    "status_code": 200,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_entered",
+    "status_code": 409,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_entered",
+    "status_code": 503,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_left",
+    "status_code": null,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_left",
+    "status_code": 200,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_left",
+    "status_code": 409,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "page_left",
+    "status_code": 503,
+    "classification": {
+      "category": "page",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
     "name": "request_started",
     "status_code": null,
     "classification": {

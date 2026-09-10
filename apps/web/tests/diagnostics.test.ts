@@ -62,3 +62,36 @@ test("shared diagnostic classification stays aligned and distinguishes HTTP fail
   assert.equal(classifyDiagnostic("request_finished", 200).outcome, "completed");
   assert.equal(classifyDiagnostic("request_finished", 503).outcome, "failed");
 });
+
+test("page lifetimes retain captured ownership, route and request context across navigation", async () => {
+  const old = registerDiagnosticPage("/plan");
+  const captured = diagnosticContext("planning_flow");
+  const next = registerDiagnosticPage("/study");
+  old.dispose();
+  old.dispose();
+  assert.equal(diagnosticContext().page_view_id, next.id);
+  assert.equal(diagnosticContext().page_path, "/study");
+  const fetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("done");
+  try { await (await diagnosticFetch("http://service/anything", undefined, captured)).text(); }
+  finally { globalThis.fetch = fetch; }
+  const oldEvents = diagnosticSnapshot().events.filter(event => event.page_view_id === old.id);
+  assert.equal(oldEvents.filter(event => event.name === "page_left").length, 1);
+  assert.ok(oldEvents.every(event => event.page_path === "/plan"));
+  assert.equal(oldEvents.find(event => event.name === "page_left")?.action_id,
+    oldEvents.find(event => event.name === "page_entered")?.action_id);
+  assert.ok(oldEvents.find(event => event.name === "request_finished"));
+  next.dispose();
+  assert.equal(diagnosticContext().page_view_id, null);
+});
+
+test("page paths are a closed vocabulary; private URL material never enters events", () => {
+  const view = registerDiagnosticPage("/PRIVATE_PATH?token=PRIVATE_SECRET");
+  const context = diagnosticContext();
+  emitDiagnostic("request_started", { ...context, page_path: "/PRIVATE_PATH" as never },
+    { request_id: null, status_code: null, method: null, duration_ms: null });
+  view.dispose();
+  const events = diagnosticSnapshot().events.filter(event => event.page_view_id === view.id);
+  assert.ok(events.every(event => event.page_path === null));
+  assert.ok(!JSON.stringify(events).includes("PRIVATE"));
+});

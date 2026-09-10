@@ -16,6 +16,21 @@ from app.models.diagnostic import DiagnosticEventV1
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_page_path_whitelist_and_persisted_filter(self):
+        base = dict(event_id="page_event", source="browser", name="page_entered", timestamp="2026-09-10", page_view_id="page")
+        with self.assertRaises(ValidationError):
+            DiagnosticEventV1(**base, page_path="/private?secret=hidden")
+        with TemporaryDirectory() as directory:
+            store = DiagnosticStore(Path(directory) / "events.sqlite3")
+            store.start()
+            try:
+                store.enqueue(DiagnosticEventV1(**base, page_path="/plan"))
+                store.queue.join()
+                self.assertEqual(len(store.query(0, 100, {"page_path": "/plan"})), 1)
+                self.assertEqual(store.query(0, 100, {"page_path": "/study"}), [])
+            finally:
+                store.close()
+
     def test_python_formatter_drops_unreviewed_content(self):
         from app.core.logging import DiagnosticJsonFormatter
         record = logging.LogRecord("provider", logging.ERROR, "", 0,

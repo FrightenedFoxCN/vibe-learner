@@ -1,10 +1,10 @@
 import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
-import type { DiagnosticEventV1 } from "@vibe-learner/shared";
+import type { DiagnosticEventV1, DiagnosticPagePath } from "@vibe-learner/shared";
 
-export type DiagnosticContext = Pick<DiagnosticEventV1, "client_instance_id" | "page_view_id" | "flow_id" | "action_id"> & { local_span_id?: string | null };
+export type DiagnosticContext = Pick<DiagnosticEventV1, "client_instance_id" | "page_view_id" | "flow_id" | "action_id"> & { page_path?: DiagnosticPagePath | null; local_span_id?: string | null };
 const CAPACITY = 1000;
 let clientId: string | null = null;
-let page: { owner: symbol; id: string } | null = null;
+let page: { owner: symbol; id: string; path: DiagnosticPagePath | null } | null = null;
 let events: DiagnosticEventV1[] = [];
 let pending: DiagnosticEventV1[] = [];
 let dropped = 0;
@@ -14,15 +14,30 @@ export function createDiagnosticId(): string | null {
   try { return crypto.randomUUID(); } catch { return null; }
 }
 
-export function registerDiagnosticPage() {
-  const registration = { owner: Symbol("page-view"), id: createDiagnosticId() ?? "" };
+const PAGE_PATHS = new Set<string>(["/", "/plan", "/study", "/persona-spectrum", "/scene-setup", "/tavern", "/settings", "/sensory-tools", "/model-usage"]);
+function reviewedPagePath(path: unknown): DiagnosticPagePath | null {
+  return typeof path === "string" && PAGE_PATHS.has(path) ? path as DiagnosticPagePath : null;
+}
+
+export function registerDiagnosticPage(pathname?: string) {
+  const registration = { owner: Symbol("page-view"), id: createDiagnosticId() ?? "", path: reviewedPagePath(pathname) };
   page = registration;
-  return { id: registration.id, dispose: () => { if (page?.owner === registration.owner) page = null; } };
+  const context = diagnosticContext();
+  const started = performance.now();
+  let disposed = false;
+  const fields = { request_id: null, status_code: null, method: null };
+  if (registration.id) emitDiagnostic("page_entered", context, { ...fields, duration_ms: null });
+  return { id: registration.id, dispose: () => {
+    if (disposed) return;
+    disposed = true;
+    if (registration.id) emitDiagnostic("page_left", context, { ...fields, duration_ms: performance.now() - started });
+    if (page?.owner === registration.owner) page = null;
+  } };
 }
 
 export function diagnosticContext(flowId: string | null = null): DiagnosticContext {
   clientId ??= createDiagnosticId();
-  return { client_instance_id: clientId, page_view_id: page?.id || null, flow_id: flowId,
+  return { client_instance_id: clientId, page_view_id: page?.id || null, page_path: page?.path ?? null, flow_id: flowId,
     action_id: createDiagnosticId() };
 }
 
@@ -39,7 +54,7 @@ export function emitDiagnostic(name: DiagnosticEventV1["name"], context: Diagnos
     schema_version: "diagnostic-event-v1", event_id: eventId, source: "browser", name,
     ...classifyDiagnostic(name, fields.status_code),
     action_name: fields.action_name ?? null, span_id: fields.span_id ?? null, parent_span_id: fields.parent_span_id ?? null,
-    timestamp: new Date().toISOString(), route: null,
+    timestamp: new Date().toISOString(), route: null, page_path: reviewedPagePath(context.page_path),
     client_instance_id: context.client_instance_id, page_view_id: context.page_view_id,
     flow_id: context.flow_id, action_id: context.action_id,
     request_id: fields.request_id, duration_ms: fields.duration_ms,

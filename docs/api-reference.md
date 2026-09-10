@@ -1235,7 +1235,7 @@ rejected with a fixed error code without echoing inputs.
 
 `GET /diagnostics/events?after=0&limit=100` returns ordered `{sequence,event}`
 items, `next_cursor`, and writer health. Optional filters: `request_id`,
-`action_id`, `page_view_id`, `flow_id`, `source`. Diagnostic requests do not
+`action_id`, `page_view_id`, `flow_id`, `source`, `page_path`. Diagnostic requests do not
 recursively collect events. Source `browser` correlation fields are untrusted
 hints; source `server` request IDs are allocated anew for each HTTP request.
 A transport `request_finished` (including HTTP 200) does not prove domain commit.
@@ -1340,3 +1340,14 @@ rejected. Event queries expose `desktop_spool: {rejected, failures}` health
 (or null when unavailable). These counters are process-local; spool eviction
 counters do not yet certify crash-safe or multi-process loss accounting.
 Sidecar exit observations prove process lifecycle only, never business outcomes.
+
+
+Browser page lifetimes emit `page_entered`/`page_left` with a unique page-view
+identity and captured action. `page_path` is a closed vocabulary of the nine
+current frontend routes; unknown paths become null before browser persistence
+and unknown uploaded values are rejected. No query strings or dynamic URL
+content are collected. Requests with captured contexts keep their originating
+page after navigation. Cleanup is idempotent and cannot clear a newer view;
+StrictMode replay produces separate balanced lifetimes. Page-left duration is
+observed mounted lifetime, not foreground attention or domain execution time.
+A browser crash may omit page-left; absence does not establish completion.
