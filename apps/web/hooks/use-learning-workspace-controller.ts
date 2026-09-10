@@ -3,6 +3,7 @@
 import { createStudyChatRequestId } from "../lib/client-request-id";
 
 import { useState } from "react";
+import { useStudySessionNavigation } from "./use-study-session-navigation";
 import { useStudyChatRecovery } from "./use-study-chat-recovery";
 import { studyOperationStore, presentStudyChatOperation, type StudyChatDraft } from "../lib/study-operation-state";
 
@@ -30,13 +31,10 @@ import { listPersonas } from "../lib/data/personas";
 import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
 import {
   cancelStudySessionFollowUps,
-  createStudySession,
   getStudyChatOperation,
-  listStudySessions,
   resolveStudyPlanConfirmation,
   sendStudyMessage,
   submitStudyQuestionAttempt,
-  updateStudySessionStudyUnit,
   type StudyChatOperationResponse,
 } from "../lib/data/study-sessions";
 import { mockPersonas } from "../lib/mock-data";
@@ -46,7 +44,6 @@ import {
   findLearningPlan
 } from "../lib/plan-panel-data";
 import {
-  buildInitialStudySessionInput,
   resolveWorkspaceSnapshot,
   type WorkspaceSnapshot,
 } from "../lib/learning-workspace-state";
@@ -69,7 +66,6 @@ import {
 import {
   CONNECTED_NOTICE,
   DISCONNECTED_NOTICE,
-  SESSION_CREATED_NOTICE,
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
@@ -120,9 +116,6 @@ export function useLearningWorkspaceController({
   const selectedPlanIdRef = useRef(state.selectedPlanId);
   const preludeInFlightRef = useRef<Set<string>>(new Set());
   const preludeFailedRef = useRef<Set<string>>(new Set());
-  const sectionSwitchInFlightRef = useRef<Map<string, Promise<void>>>(new Map());
-  const sectionSwitchQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const latestSectionSwitchRef = useRef("");
   const snapshotLoaderRef = useRef<WorkspaceSnapshotLoader | null>(null);
   if (snapshotLoaderRef.current === null) {
     snapshotLoaderRef.current = new WorkspaceSnapshotLoader({ listDocuments, listLearningPlans, listPersonas });
@@ -283,26 +276,6 @@ export function useLearningWorkspaceController({
     return activePlan.schedule[0]?.scheduleChapters[0]?.title ?? activePlan.objective;
   };
 
-  const fetchLatestSessionForPlan = async (): Promise<StudySessionRecord | null> => {
-    if (!activePlan) {
-      return null;
-    }
-    const sessions = await listStudySessions({
-      documentId: activeDocument?.id,
-      personaId: activePlan.personaId,
-      planId: activePlan.id,
-    });
-    if (!sessions.length) {
-      return null;
-    }
-    const sorted = [...sessions].sort((a, b) => {
-      const aTime = Date.parse(a.updatedAt || "") || 0;
-      const bTime = Date.parse(b.updatedAt || "") || 0;
-      return bTime - aTime;
-    });
-    return sorted[0] ?? null;
-  };
-
   const refreshSceneLibrary = async () => {
     try {
       const items = await listSceneLibrary();
@@ -424,63 +397,6 @@ export function useLearningWorkspaceController({
     },
   });
 
-  const createSessionForActivePlan = async () => {
-    if (!activePlan) {
-      return;
-    }
-    const targetPlanId = activePlan.id;
-    transitionStudyView(`study-plan:${targetPlanId}:session-create`, true);
-    const targetViewRevision = studyViewFenceRef.current.viewRevision;
-    try {
-      dispatch({ type: "busy_started" });
-      const nextSession = await createStudySession(
-        {
-          ...buildInitialStudySessionInput({
-            plan: activePlan,
-            document: activeDocument,
-            planId: activePlan.id,
-            personaId: activePlan.personaId
-          }),
-          sceneProfile: resolveActiveSceneProfile(),
-        }
-      );
-      if (
-        selectedPlanIdRef.current !== targetPlanId ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision
-      ) {
-        return;
-      }
-      activateStudySessionView(nextSession);
-      dispatch({
-        type: "study_session_set",
-        studySession: nextSession,
-        clearResponse: true
-      });
-      dispatch({
-        type: "notice_set",
-        notice: SESSION_CREATED_NOTICE
-      });
-    } catch (error) {
-      if (
-        selectedPlanIdRef.current !== targetPlanId ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision
-      ) {
-        return;
-      }
-      dispatch({
-        type: "notice_set",
-        notice: resolveStudySessionErrorNotice(
-          error,
-          `创建会话失败：${String(error)}`,
-          "update",
-        )
-      });
-      logWorkspaceError("workflow:session_create:error", error);
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
   const { renamePlanTitle, removePlan, renameStudyUnitTitle, updatePlanProgress, answerPlanQuestion, isMutating } = usePlanMutations({
     onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
     onDocumentAndPlans: (payload) => dispatch({ type: "document_and_plans_updated", ...payload }),
@@ -525,6 +441,19 @@ export function useLearningWorkspaceController({
       dispatch({ type: "study_session_set", studySession, clearResponse });
     },
     onResetView: () => transitionStudyView(`study-plan:${selectedPlanIdRef.current || "none"}`, true),
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+  });
+
+  const { createSessionForActivePlan, ensureSessionForSection, handleSwitchSection, isNavigating } = useStudySessionNavigation({
+    plan: activePlan, document: activeDocument, view: studyViewFenceRef.current,
+    getSelectedPlanId: () => selectedPlanIdRef.current,
+    resolveSceneProfile: resolveActiveSceneProfile,
+    resolveStudyUnitTitle, resolveThemeHint: resolveThemeHintByStudyUnitId,
+    onTransition: transitionStudyView,
+    onSession: (studySession, clearResponse) => {
+      if (studySession) activateStudySessionView(studySession);
+      dispatch({ type: "study_session_set", studySession, clearResponse });
+    },
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
@@ -663,77 +592,6 @@ export function useLearningWorkspaceController({
     return handleAskForSection(message, state.studySession.studyUnitId, attachments);
   };
 
-  const ensureSessionForSection = async (
-    studyUnitId: string,
-    options: {
-      clearResponseOnSwitch?: boolean;
-      isStillCurrent?: () => boolean;
-    } = {}
-  ): Promise<StudySessionRecord | null> => {
-    if (!activePlan || !studyUnitId || options.isStillCurrent?.() === false) {
-      return null;
-    }
-
-    const targetPlanId = activePlan.id;
-    const currentSessionAtStart = studyViewFenceRef.current.session;
-    if (
-      currentSessionAtStart?.planId !== targetPlanId ||
-      currentSessionAtStart.studyUnitId !== studyUnitId
-    ) {
-      transitionStudyView(
-        `study-plan:${targetPlanId}:unit:${studyUnitId}`,
-        false,
-      );
-    }
-    const targetViewRevision = studyViewFenceRef.current.viewRevision;
-
-    let workingSession = studyViewFenceRef.current.session;
-    if (!workingSession) {
-      workingSession = await fetchLatestSessionForPlan();
-      if (
-        selectedPlanIdRef.current !== targetPlanId ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision ||
-        options.isStillCurrent?.() === false
-      ) {
-        return null;
-      }
-    }
-
-    const activeSceneProfile = resolveActiveSceneProfile();
-    if (!workingSession) {
-      workingSession = await createStudySession({
-        documentId: activeDocument?.id ?? activePlan.documentId ?? "",
-        personaId: activePlan.personaId,
-        planId: activePlan.id,
-        sceneProfile: activeSceneProfile ?? null,
-        studyUnitId,
-        studyUnitTitle: resolveStudyUnitTitle(studyUnitId),
-        themeHint: resolveThemeHintByStudyUnitId(studyUnitId),
-      });
-    } else if (workingSession.studyUnitId !== studyUnitId) {
-      workingSession = await updateStudySessionStudyUnit({
-        sessionId: workingSession.id,
-        studyUnitId,
-      });
-    }
-
-    if (
-      selectedPlanIdRef.current !== targetPlanId ||
-      studyViewFenceRef.current.viewRevision !== targetViewRevision ||
-      options.isStillCurrent?.() === false
-    ) {
-      return null;
-    }
-
-    activateStudySessionView(workingSession);
-    dispatch({
-      type: "study_session_set",
-      studySession: workingSession,
-      clearResponse: options.clearResponseOnSwitch ?? true,
-    });
-    return workingSession;
-  };
-
   const handleAskForSection = async (message: string, studyUnitId: string, attachments: File[] = []) => {
     setChatFailure(null);
     let targetSession: StudySessionRecord | null;
@@ -847,74 +705,6 @@ export function useLearningWorkspaceController({
     } finally {
       studyViewFenceRef.current.settle(ticket);
       dispatch({ type: "busy_finished" });
-    }
-  };
-
-  const handleSwitchSection = async (studyUnitId: string) => {
-    const normalizedStudyUnitId = studyUnitId.trim();
-    if (!normalizedStudyUnitId) {
-      return;
-    }
-    latestSectionSwitchRef.current = normalizedStudyUnitId;
-    const existing = sectionSwitchInFlightRef.current.get(normalizedStudyUnitId);
-    if (existing) {
-      return existing;
-    }
-    const run = async () => {
-      if (latestSectionSwitchRef.current !== normalizedStudyUnitId) {
-        return;
-      }
-      try {
-        dispatch({ type: "busy_started" });
-        const beforeSessionId = studyViewFenceRef.current.session?.id ?? "";
-        const nextSession = await ensureSessionForSection(normalizedStudyUnitId, {
-          clearResponseOnSwitch: true,
-          isStillCurrent: () =>
-            latestSectionSwitchRef.current === normalizedStudyUnitId,
-        });
-        if (!nextSession) {
-          return;
-        }
-        if (latestSectionSwitchRef.current !== normalizedStudyUnitId) {
-          return;
-        }
-        dispatch({
-          type: "notice_set",
-          notice:
-            beforeSessionId === nextSession.id
-              ? "已切换章节。"
-              : "已切换章节，并打开对应会话。"
-        });
-        logWorkspaceInfo("workflow:study_session:section_switched", {
-          sessionId: nextSession.id,
-          studyUnitId: nextSession.studyUnitId
-        });
-      } catch (error) {
-        if (latestSectionSwitchRef.current !== normalizedStudyUnitId) {
-          return;
-        }
-        dispatch({
-          type: "notice_set",
-          notice: resolveStudySessionErrorNotice(
-            error,
-            `切换章节失败：${String(error)}`,
-            "update",
-          )
-        });
-        logWorkspaceError("workflow:study_session:section_switch_error", error);
-      } finally {
-        dispatch({ type: "busy_finished" });
-      }
-    };
-    const operation = sectionSwitchQueueRef.current.then(run, run);
-    sectionSwitchQueueRef.current = operation.catch(() => undefined);
-    sectionSwitchInFlightRef.current.set(normalizedStudyUnitId, operation);
-    try {
-      await operation;
-    } finally {
-      if (sectionSwitchInFlightRef.current.get(normalizedStudyUnitId) === operation) {
-        sectionSwitchInFlightRef.current.delete(normalizedStudyUnitId);
-      }
     }
   };
 
@@ -1335,50 +1125,12 @@ export function useLearningWorkspaceController({
   }, []);
 
   useEffect(() => {
-    let active = true;
-    const hydrateSessions = async () => {
-      // Goal-only plans intentionally have no bound document, but they still
-      // own study sessions that should be restored on desktop app relaunch.
-      if (!activePlan) {
-        return;
-      }
-      try {
-        const latest = await fetchLatestSessionForPlan();
-        if (!active) {
-          return;
-        }
-        if (latest) {
-          activateStudySessionView(latest);
-        }
-        dispatch({
-          type: "study_session_set",
-          studySession: latest,
-          clearResponse: true,
-        });
-      } catch (error) {
-        const notice = resolveStudySessionErrorNotice(error, "", "history");
-        if (active && notice) {
-          dispatch({
-            type: "notice_set",
-            notice,
-          });
-        }
-        logWorkspaceError("workflow:study_session:hydrate_error", error);
-      }
-    };
-    void hydrateSessions();
-    return () => {
-      active = false;
-    };
-  }, [activeDocument?.id, activePlan?.id, activePlan?.personaId]);
-
-  useEffect(() => {
     if (!state.studySession) {
       return;
     }
     const session = state.studySession;
     const studyUnitId = session.studyUnitId;
-    if (!studyUnitId || state.isBusy || isMutating || isQuerying) {
+    if (!studyUnitId || state.isBusy || isMutating || isQuerying || isNavigating) {
       return;
     }
     void runSessionPrelude({
@@ -1388,7 +1140,7 @@ export function useLearningWorkspaceController({
       themeHint: session.themeHint ?? "",
       force: false,
     });
-  }, [state.isBusy, isMutating, isQuerying, state.studySession]);
+  }, [state.isBusy, isMutating, isQuerying, isNavigating, state.studySession]);
 
   useEffect(() => {
     const session = state.studySession;
@@ -1463,7 +1215,7 @@ export function useLearningWorkspaceController({
         }, delay);
         timers.set(item.id, timer);
       });
-  }, [state.isBusy, isMutating, isQuerying, state.studySession]);
+  }, [state.isBusy, isMutating, isQuerying, isNavigating, state.studySession]);
 
   useEffect(() => {
     return () => {
@@ -1498,7 +1250,7 @@ export function useLearningWorkspaceController({
     studySession: state.studySession,
     response: state.response,
     notice: state.notice,
-    isBusy: state.isBusy || isMutating || isQuerying,
+    isBusy: state.isBusy || isMutating || isQuerying || isNavigating,
     chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
     isInterruptingPlan,
@@ -1679,5 +1431,3 @@ function buildSessionPreludeMessage(input: {
     "4. 不要提到这是隐藏消息、预处理消息或内部流程。"
   ].join("\n");
 }
-
-

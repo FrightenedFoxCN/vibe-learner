@@ -30,6 +30,7 @@
 | `npm --workspace @vibe-learner/web run test:workspace:mutations` | Plan/Study Unit 写入验证、资源级并发守卫、busy、反馈归属、最新导航回调与卸载 |
 | `npm --workspace @vibe-learner/web run test:workspace:recovery` | 操作身份存储/重试策略、完整查询恢复 Hook、过期回复、卸载和 revision 单调性 |
 | `npm --workspace @vibe-learner/web run test:workspace:recovery:browser` | 历史 Plan/Session、uncertain 刷新恢复、POST 在途离页后只查询原请求；先构建 |
+| `npm --workspace @vibe-learner/web run test:workspace:sessions` | 历史 Session、重复创建、串行章节切换、Scene 快照与导航/卸载边界 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |
