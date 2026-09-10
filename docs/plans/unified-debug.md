@@ -228,3 +228,8 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 更换文件后重新提交创建新 Document/flow，成功链四个请求共享该 flow。失败解析
 无保存成功资源引用且诊断排除文件名、内容和目标。11 项生产 Chromium 场景通过，
 见[验收记录](unified-debug-acceptance.md)；其余 OCR/Tavern/原生/性能项继续。
+
+2026-09-10 Tavern 部分失败 HTTP 验收：第二演员失败后父运行保留第一条提交，
+原请求读回不再次调用 provider，子重试仅执行剩余演员。诊断引用匹配真实父子
+operation/trace 和消息 identity/sequence；502 不被解释为整轮无提交。36 项
+专项测试通过；浏览器重试及取消/重启诊断关联仍需验收，详见验收记录。

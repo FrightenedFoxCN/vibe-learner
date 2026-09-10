@@ -451,3 +451,25 @@ used the initial file label after selection; the final test follows the actual
 14.2 seconds; `/tmp/diagnostic-document-browser.log`. No production change was
 required. Real OCR-engine success, Tavern faults, native and performance acceptance
 remain open.
+
+## Tavern partial-run replay and child-retry HTTP acceptance
+
+A disposable full application now runs three real admitted actor slots with a
+scripted provider failure on the second call. The HTTP 502 parent retains the first
+committed Message; replay of the exact request returns `partial` with completed,
+failed and blocked steps without another provider call. Child retry executes only
+the second and third actors, adds no input Message, and finishes `completed`.
+Diagnostic references match the real parent/child Harness bindings and canonical
+trace IDs. The parent includes both committed and not-committed actor evidence;
+HTTP failure is not treated as evidence that no actor committed. Failed response
+has no direct saved-resource observation, while replay and retry observations
+match precisely their returned Message IDs, per-room sequence points and Room
+scope. Supplied flow remains shared with separate actions and server request IDs.
+Persona/Room/message/guidance content and provider exception text are excluded.
+
+All 36 diagnostic and Tavern facilitated tests passed in 7.343 seconds; log:
+`/tmp/diagnostic-tavern-fault-python.log`. Existing facilitated tests exercise
+cancel/lease/recovery behavior, but this added diagnostic acceptance specifically
+covers partial/replay/child retry. Browser retry flow ownership and diagnostic
+cancel/restart correlation still need direct verification. No production behavior
+changed; native/OCR/performance and deferred independent review remain open.
