@@ -135,6 +135,8 @@
 
 - [x] Persona 路由缩为工作区装配，组合 controller、展示视图、库卡片和样式各自独立；导入与卡片删除的旧异步结果在卸载/后续操作后失效。补齐图标名称与异步 status/alert，源码位置断言迁为卡片交互和创建草稿浏览器行为。2 项独立卡片测试、Web 类型/可靠性/生产构建及 18 项 Chromium 验收通过；广泛 UX 验收仍按 TODO 单独跟踪。
 
+- [x] Plan 标题/进度/问题回答/删除与 Study Unit 改名归入 `usePlanMutations`，通过显式持久化 port 返回权威投影。写入守卫按资源隔离，busy 保留到全部在途修改结束，旧错误不替换新反馈；删除完成使用最新选择，避免覆盖期间发生的计划切换。5 项独立 Hook 并发/卸载/读回测试及 Web 类型、可靠性聚合通过。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

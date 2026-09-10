@@ -3,6 +3,7 @@
 import { createStudyChatRequestId } from "../lib/client-request-id";
 
 import { useState } from "react";
+import { usePlanMutations } from "./use-plan-mutations";
 import { usePlanGeneration } from "./use-plan-generation";
 import { useEffect, useMemo, useReducer, useRef } from "react";
 import type {
@@ -17,14 +18,9 @@ import type {
 
 import {
   listDocuments,
-  updateDocumentStudyUnitTitle as updateDocumentStudyUnitTitleRequest,
 } from "../lib/data/documents";
 import {
-  answerLearningPlanQuestion,
-  deleteLearningPlan as deleteLearningPlanRequest,
   listLearningPlans,
-  updateLearningPlanProgress as updateLearningPlanProgressRequest,
-  updateLearningPlanTitle as updateLearningPlanTitleRequest,
 } from "../lib/data/learning-plans";
 import { WorkspaceSnapshotLoader } from "../lib/workspace-snapshot-loader";
 import { listPersonas } from "../lib/data/personas";
@@ -536,177 +532,22 @@ export function useLearningWorkspaceController({
     }
   };
 
-  const renamePlanTitle = async (planId: string, courseTitle: string) => {
-    const normalizedTitle = courseTitle.trim();
-    if (!planId || !normalizedTitle) {
-      return false;
-    }
-    try {
-      dispatch({ type: "busy_started" });
-      const updatedPlan = await updateLearningPlanTitleRequest(planId, normalizedTitle);
-      dispatch({
-        type: "plan_updated",
-        plan: updatedPlan
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "题目已更新。"
-      });
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: `更新题目失败：${String(error)}`
-      });
-      logWorkspaceError("workflow:plan_title_update:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
-  const removePlan = async (planId: string) => {
-    if (!planId) {
-      return false;
-    }
-    const preferredPlanId =
-      state.selectedPlanId === planId
+  const { renamePlanTitle, removePlan, renameStudyUnitTitle, updatePlanProgress, answerPlanQuestion, isMutating } = usePlanMutations({
+    onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
+    onDocumentAndPlans: (payload) => dispatch({ type: "document_and_plans_updated", ...payload }),
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+    onDeleted: (planId) => {
+      const selected = selectedPlanIdRef.current;
+      const preferredPlanId = selected === planId
         ? state.planHistory.find((plan) => plan.id !== planId)?.id ?? ""
-        : state.selectedPlanId;
-    try {
-      dispatch({ type: "busy_started" });
-      await deleteLearningPlanRequest(planId);
-      if (state.selectedPlanId === planId) {
+        : selected;
+      if (selected === planId) {
         selectedPlanIdRef.current = preferredPlanId;
-        transitionStudyView(
-          `study-plan:${preferredPlanId || "none"}`,
-          true,
-        );
+        transitionStudyView(`study-plan:${preferredPlanId || "none"}`, true);
       }
-      dispatch({
-        type: "plan_deleted",
-        planId,
-        preferredPlanId
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "计划已删除。"
-      });
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: `删除计划失败：${String(error)}`
-      });
-      logWorkspaceError("workflow:plan_delete:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
-  const renameStudyUnitTitle = async (
-    documentId: string,
-    studyUnitId: string,
-    title: string
-  ) => {
-    const normalizedTitle = title.trim();
-    if (!documentId || !studyUnitId || !normalizedTitle) {
-      return false;
-    }
-    try {
-      dispatch({ type: "busy_started" });
-      const payload = await updateDocumentStudyUnitTitleRequest(
-        documentId,
-        studyUnitId,
-        normalizedTitle
-      );
-      dispatch({
-        type: "document_and_plans_updated",
-        document: payload.document,
-        plans: payload.plans
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "学习单元已更新。"
-      });
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: `更新学习单元失败：${String(error)}`
-      });
-      logWorkspaceError("workflow:study_unit_title_update:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
-  const updatePlanProgress = async (input: {
-    planId: string;
-    scheduleIds: string[];
-    status: string;
-    note?: string;
-  }) => {
-    if (!input.planId || !input.scheduleIds.length || !input.status.trim()) {
-      return false;
-    }
-    try {
-      dispatch({ type: "busy_started" });
-      const updatedPlan = await updateLearningPlanProgressRequest(input);
-      dispatch({
-        type: "plan_updated",
-        plan: updatedPlan
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "完成度已更新。"
-      });
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: `更新完成度失败：${String(error)}`
-      });
-      logWorkspaceError("workflow:plan_progress_update:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
-  const answerPlanQuestion = async (input: {
-    planId: string;
-    questionId: string;
-    answer: string;
-  }) => {
-    if (!input.planId || !input.questionId || !input.answer.trim()) {
-      return false;
-    }
-    try {
-      dispatch({ type: "busy_started" });
-      const updatedPlan = await answerLearningPlanQuestion(input);
-      dispatch({
-        type: "plan_updated",
-        plan: updatedPlan
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "回答已保存，计划已更新。"
-      });
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: `保存回答失败：${String(error)}`
-      });
-      logWorkspaceError("workflow:plan_question_answer:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
+      dispatch({ type: "plan_deleted", planId, preferredPlanId });
+    },
+  });
 
   const applyChatExchange = (next: StudyChatResponse & { session: StudySessionRecord }) => {
     activateStudySessionView(next.session);
@@ -1759,7 +1600,7 @@ export function useLearningWorkspaceController({
     }
     const session = state.studySession;
     const studyUnitId = session.studyUnitId;
-    if (!studyUnitId || state.isBusy) {
+    if (!studyUnitId || state.isBusy || isMutating) {
       return;
     }
     void runSessionPrelude({
@@ -1769,7 +1610,7 @@ export function useLearningWorkspaceController({
       themeHint: session.themeHint ?? "",
       force: false,
     });
-  }, [state.isBusy, state.studySession]);
+  }, [state.isBusy, isMutating, state.studySession]);
 
   useEffect(() => {
     const session = state.studySession;
@@ -1844,7 +1685,7 @@ export function useLearningWorkspaceController({
         }, delay);
         timers.set(item.id, timer);
       });
-  }, [state.isBusy, state.studySession]);
+  }, [state.isBusy, isMutating, state.studySession]);
 
   useEffect(() => {
     return () => {
@@ -1946,7 +1787,7 @@ export function useLearningWorkspaceController({
     studySession: state.studySession,
     response: state.response,
     notice: state.notice,
-    isBusy: state.isBusy,
+    isBusy: state.isBusy || isMutating,
     chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
     isInterruptingPlan,
