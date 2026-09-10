@@ -21,6 +21,8 @@
 
   - 2026-09-10 Provider 切片：统一 LiteLLM transport 记录父调用和逐次重试 span、monotonic 耗时、timeout/max-attempts、恢复次数及严格 provider-reported token；缺失/非法 token 保持 null，父调用不重复携带子 usage。指标引用已 prepare 的真实 Harness trace，退出 runtime 后恢复上下文。37 项 provider/SDK/diagnostic/runtime 测试、4 项客户端分类测试及 shared contracts/Web 类型门通过；没有真实上游费用证据，不声明 cost 或完整 endpoint 配置覆盖。
 
+  - 2026-09-10 Tool 切片：Planning 六工具与 Study 三十一工具在原 decode/budget/runtime/result 边界记录 start/finish/failure、Manifest 契约/预算及耗时；未知名称脱敏，参数/结果/评分材料不记录，provider tool-call ID 只作独立关联。嵌套 provider span 归属工具 span，工具成功明确不声明效果提交。34 项后端专项测试（含全部 37 工具拒绝路径）和完整 `npm run check` 通过，包含全部 13 个 Harness suite。其余前端/桌面事件及完整配置、审计指标仍待完成。
+
 - [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。

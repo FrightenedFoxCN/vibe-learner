@@ -4,7 +4,7 @@ import re
 import time
 from uuid import uuid4
 
-from app.core.diagnostics import active_store, active_harness
+from app.core.diagnostics import active_store, active_harness, active_span
 from app.models.diagnostic_provider import DiagnosticProviderMetricV1
 
 
@@ -13,6 +13,7 @@ class ProviderObservation:
         self.kind = request_kind if request_kind in {"plan", "chat", "setting", "embedding"} else "other"
         self.model = model if isinstance(model, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,159}", model) else None
         self.timeout = timeout_seconds
+        self.parent_span = active_span.get()
         self.span = uuid4().hex
         self.started = time.perf_counter()
         self.attempt_span = None
@@ -59,7 +60,7 @@ class ProviderObservation:
             )
             store.emit(name, harness=active_harness.get(), provider_metric=metric,
                        span_id=self.attempt_span if child else self.span,
-                       parent_span_id=self.span if child else None,
+                       parent_span_id=self.span if child else self.parent_span,
                        duration_ms=(time.perf_counter() - (self.attempt_started if child else self.started)) * 1000 if terminal else None)
         except Exception:
             # Diagnostics never change transport retry, errors or successful output.

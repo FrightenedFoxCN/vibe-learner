@@ -1297,3 +1297,16 @@ endpoint configuration remain explicitly unavailable. `span_id` and
 the actual prepared execution and never a provider tool-call ID. Browser ingestion
 rejects provider metrics and event names. Existing TokenUsageService bookkeeping
 is unchanged; this observer does not create another usage receipt.
+
+
+Server `tool_started`, `tool_finished`, `tool_failed`, and `tool_unknown` events
+wrap the existing Planning and Study tool execution boundaries. Their
+`tool_metric` contains only resolved Tool Manifest workflow/stage/name,
+input/result contract versions, call ceilings, timeout and bounded provider
+call correlation. Unknown names produce an explicit manifest gap and are not
+persisted. Arguments, result bodies, error detail and private grading material
+are excluded. A successful tool result has `effect_commit_claim: "none"`;
+prepared or external effects still require their canonical receipts. Provider
+calls made inside a tool link their parent span to that tool, so audit consumers
+must not add inclusive tool and provider durations together. Browser ingestion
+rejects server tool names and metric fields.

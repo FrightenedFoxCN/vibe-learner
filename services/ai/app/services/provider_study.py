@@ -1,6 +1,8 @@
 """Study model generation, strict decoding, and bounded tool execution."""
 from __future__ import annotations
 
+from app.core.diagnostic_tool import observe_tool_call
+
 from dataclasses import dataclass
 from app.services.provider_capabilities import StudyModelCapability
 from app.services.provider_capabilities import ModelReply
@@ -631,6 +633,7 @@ def _chat_tools(
 
 
 
+@observe_tool_call(HarnessWorkflow.STUDY_CHAT, HarnessStage.STUDY_CHAT_REPLY)
 def _execute_chat_tool_call(
     tool_call: dict[str, Any],
     *,

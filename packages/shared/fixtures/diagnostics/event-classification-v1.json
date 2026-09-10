@@ -598,5 +598,165 @@
       "outcome": "failed",
       "error_code": "provider_failure"
     }
+  },
+  {
+    "name": "tool_started",
+    "status_code": null,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_started",
+    "status_code": 200,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_started",
+    "status_code": 409,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_started",
+    "status_code": 503,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_finished",
+    "status_code": null,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_finished",
+    "status_code": 200,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_finished",
+    "status_code": 409,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_finished",
+    "status_code": 503,
+    "classification": {
+      "category": "tool",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_failed",
+    "status_code": null,
+    "classification": {
+      "category": "tool",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "tool_failure"
+    }
+  },
+  {
+    "name": "tool_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "tool",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "tool_failure"
+    }
+  },
+  {
+    "name": "tool_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "tool",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "tool_failure"
+    }
+  },
+  {
+    "name": "tool_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "tool",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "tool_failure"
+    }
+  },
+  {
+    "name": "tool_unknown",
+    "status_code": null,
+    "classification": {
+      "category": "tool",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_unknown",
+    "status_code": 200,
+    "classification": {
+      "category": "tool",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_unknown",
+    "status_code": 409,
+    "classification": {
+      "category": "tool",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "tool_unknown",
+    "status_code": 503,
+    "classification": {
+      "category": "tool",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
   }
 ]

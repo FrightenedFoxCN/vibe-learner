@@ -5,16 +5,17 @@ export interface DiagnosticEventV1 {
   schema_version: "diagnostic-event-v1";
   event_id: string;
   source: "server" | "browser" | "desktop";
-  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed";
+  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed" | "tool_started" | "tool_finished" | "tool_failed" | "tool_unknown";
   span_id?: string | null;
   parent_span_id?: string | null;
+  tool_metric?: DiagnosticToolMetricV1 | null;
   provider_metric?: DiagnosticProviderMetricV1 | null;
   resource?: { resource_type: "persona"; resource_id: string; revision: number | null } | null;
   harness?: { operation_id: string; workflow: HarnessWorkflow; stage: HarnessStage; trace_id: string | null; attempt_id?: string | null; attempt_index?: number | null; phase?: HarnessAttemptPhase | null; attempt_status?: HarnessAttemptStatus | null } | null;
-  category: "transport" | "lifecycle" | "harness" | "resource" | "provider";
+  category: "transport" | "lifecycle" | "harness" | "resource" | "provider" | "tool";
   severity: "info" | "warning" | "error";
-  outcome: "started" | "headers_received" | "completed" | "failed" | "cancelled" | "observed";
-  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | null;
+  outcome: "started" | "headers_received" | "completed" | "failed" | "cancelled" | "observed" | "unknown";
+  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | "tool_failure" | null;
   timestamp: string;
   request_id: string | null;
   client_instance_id: string | null;
@@ -43,6 +44,10 @@ export const DIAGNOSTIC_EVENT_CATALOG = {
   provider_attempt_started: ["provider", "info", "started", null],
   provider_attempt_finished: ["provider", "info", "completed", null],
   provider_attempt_failed: ["provider", "error", "failed", "provider_failure"],
+  tool_started: ["tool", "info", "started", null],
+  tool_finished: ["tool", "info", "completed", null],
+  tool_failed: ["tool", "error", "failed", "tool_failure"],
+  tool_unknown: ["tool", "warning", "unknown", null],
 } as const;
 
 export function classifyDiagnostic(name: DiagnosticEventV1["name"], statusCode: number | null = null):
@@ -101,4 +106,21 @@ export interface DiagnosticProviderMetricV1 {
   cost: null;
   cost_gap: "provider_cost_evidence_unavailable";
   configuration_gap: "endpoint_configuration_not_recorded";
+}
+
+
+export interface DiagnosticToolMetricV1 {
+  workflow: HarnessWorkflow;
+  offered_in_stage: HarnessStage;
+  execution_stage: HarnessStage | null;
+  manifest_key: string | null;
+  canonical_name: string | null;
+  input_contract_version: string | null;
+  result_contract_version: string | null;
+  provider_tool_call_id: string | null;
+  max_calls_per_operation: number | null;
+  max_calls_per_round: number | null;
+  timeout_ms: number | null;
+  manifest_gap: "unregistered_tool" | null;
+  effect_commit_claim: "none";
 }

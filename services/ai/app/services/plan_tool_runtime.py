@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.core.diagnostic_tool import observe_tool_call
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -114,6 +116,7 @@ class PlanToolRuntime:
             for definition in self._definitions.values()
         ]
 
+    @observe_tool_call(HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION, method=True)
     def execute_tool_call(self, tool_call: dict[str, Any]) -> PlanToolExecution:
         tool_call_id = tool_call.get("id") if isinstance(tool_call.get("id"), str) else ""
         try:

@@ -15,6 +15,8 @@ from app.models.diagnostic import DiagnosticEventV1, DiagnosticHarnessReferenceV
 
 correlation: ContextVar[dict[str, str]] = ContextVar("diagnostic_correlation", default={})
 
+active_span: ContextVar[str | None] = ContextVar("active_diagnostic_span", default=None)
+
 active_harness: ContextVar[DiagnosticHarnessReferenceV1 | None] = ContextVar("active_diagnostic_harness", default=None)
 
 
