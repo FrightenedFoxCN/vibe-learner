@@ -57,13 +57,13 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
-| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Native saturated spool still has the original 25.21 ms failure against 25 ms; rejected sorting/sync experiments do not close it. Native WebView measurement remains outstanding. |
+| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Native saturated spool still has the original 25.21 ms failure against 25 ms; rejected sorting/sync experiments do not close it. Native Tauri WebView small/wide event populations now pass their scoped rendering budgets. |
 | Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
 ## Remaining completion work
 
-1. Resolve the native saturated-spool performance failure and complete native
-   WebView overhead evidence. Keep all failed observations; do not weaken
+1. Resolve the native saturated-spool performance failure. Native WebView
+   small/wide event overhead evidence is now complete within its stated scope. Keep all failed observations; do not weaken
    durability or widen budgets solely to produce a passing result.
 2. Complete current release/native/browser gates, reconcile each top-level plan
    item against the evidence and archive the final result. Deferred independent
@@ -951,3 +951,15 @@ recovery exceptions in the linked storage policy; no installation hard-cap claim
 is made. Remaining actual blockers are native saturated-spool performance,
 native WebView overhead and the final requirement-by-requirement closure audit.
 The goal remains active; no top-level completion box is changed by this checkpoint.
+
+## Native WebView overhead completion
+
+The isolated Cargo example uses an actual visible Tauri WebView and the same
+production React timeline/strict decoder and extracted measurement functions as
+Chromium. Both small and wide nested event populations pass 30-sample gates at
+500 rows, with actual viewport/visibility and bundle/native-binary digests.
+Rich P95 mount/append/expand/unmount is 51/51/33/35 ms, within unchanged
+150/150/100/100 ms budgets. [Method and both raw reports](../performance/diagnostic-native-render-v1.md)
+distinguish native engine rendering from production-shell startup and GPU
+completion. This closes the named native WebView measurement gap; saturated-spool
+I/O and the final requirement closure audit remain open.
