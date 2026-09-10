@@ -72,21 +72,22 @@ class DiagnosticHarnessIndex:
             db.commit()
             return len(ids)
 
-    def query(self, after="", limit=100, operation_id=None):
+    def query(self, after="", limit=100, operation_id=None, workflow=None, stage=None):
         if not 1 <= limit <= 100:
             raise ValueError("diagnostic_index_page_limit")
         try:
-            with self._connect() as db:
-                rows = db.execute("SELECT payload FROM projections WHERE trace_id > ? AND (? IS NULL OR operation_id=?) ORDER BY trace_id LIMIT ?",
-                                  (after, operation_id, operation_id, limit)).fetchall()
+            from contextlib import closing
+            with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
+                rows = db.execute("SELECT payload FROM projections WHERE trace_id > ? AND (? IS NULL OR operation_id=?) AND (? IS NULL OR workflow=?) AND (? IS NULL OR stage=?) ORDER BY trace_id LIMIT ?",
+                                  (after, operation_id, operation_id, workflow, workflow, stage, stage, limit + 1)).fetchall()
                 cursor, sweeps = db.execute("SELECT cursor,sweeps FROM checkpoint WHERE name='runtime'").fetchone()
-            items = [DiagnosticHarnessIndexV1.model_validate_json(row[0]).model_dump(mode="json") for row in rows]
-            return {"items": items, "next_cursor": items[-1]["trace_id"] if items else after,
+            items = [DiagnosticHarnessIndexV1.model_validate_json(row[0]).model_dump(mode="json") for row in rows[:limit]]
+            return {"items": items, "has_more": len(rows) > limit, "next_cursor": items[-1]["trace_id"] if items else after,
                     "coverage": {"cursor": cursor, "completed_sweeps": sweeps, "failures": self.failures,
                                  "freshness": "eventual", "canonical_read_back_required": True}}
         except (sqlite3.Error, OSError, ValueError):
             self.failures += 1
-            return {"items": [], "next_cursor": after, "coverage": {"failures": self.failures, "freshness": "unavailable", "canonical_read_back_required": True}}
+            return {"items": [], "has_more": False, "next_cursor": after, "coverage": {"failures": self.failures, "freshness": "unavailable", "canonical_read_back_required": True}}
 
     def start(self):
         def run():

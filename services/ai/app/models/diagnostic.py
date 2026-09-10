@@ -130,3 +130,15 @@ class DiagnosticEventV1(BaseModel):
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"] | None = None
     # Reviewed route templates only; raw paths, query strings and bodies are excluded.
     route: Annotated[str, Field(max_length=160, pattern=r"^/[a-zA-Z0-9_/{\}-]*$")] | None = None
+
+
+class DiagnosticOperationLinkV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    operation_id: Annotated[str, Field(pattern=HARNESS_OPERATION_ID_PATTERN)]
+    request_id: Identity
+    client_instance_id: Identity | None = None
+    page_view_id: Identity | None = None
+    flow_id: Identity | None = None
+    action_id: Identity | None = None
+    workflow: HarnessWorkflow | None = None
+    stage: HarnessStage | None = None

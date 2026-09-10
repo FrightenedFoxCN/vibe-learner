@@ -1234,8 +1234,9 @@ the local diagnostic database deduplicates persisted IDs. Invalid content is
 rejected with a fixed error code without echoing inputs.
 
 `GET /diagnostics/events?after=0&limit=100` returns ordered `{sequence,event}`
-items, `next_cursor`, and writer health. Optional filters: `request_id`,
-`action_id`, `page_view_id`, `flow_id`, `source`, `page_path`. Diagnostic requests do not
+items, `next_cursor`, `has_more`, and writer/read health. Optional filters: `request_id`,
+`action_id`, `page_view_id`, `flow_id`, `source`, `page_path`, `severity`,
+`operation_id`, `workflow`, `stage`, `resource_id`, `resource_type`, `since`, `until`. Diagnostic requests do not
 recursively collect events. Source `browser` correlation fields are untrusted
 hints; source `server` request IDs are allocated anew for each HTTP request.
 A transport `request_finished` (including HTTP 200) does not prove domain commit.
@@ -1364,3 +1365,27 @@ additional additive stage. A successful transport can coexist with a failed
 decode; neither event establishes domain commit. Tavern query-only terminal
 replay remains bounded to the original explicit server directive; decoder
 rejection after replay refers to that replay's distinct request ID.
+
+
+Diagnostic time filters use source timestamps with explicit timezones: `since`
+is inclusive and `until` exclusive; equivalent UTC offsets compare as instants.
+Unknown/invalid stored timestamps do not match time filters. Cursor paging is
+ascending ingest sequence with a bounded lookahead for `has_more`; it is not a
+frozen audit snapshot and later events can appear after an empty page. Corrupt
+or unavailable event reads return HTTP 503 `diagnostic_query_unavailable`, never
+an apparently successful empty result. `health.read_failures` is separate from
+writer failure counts. Stored events and operation links are revalidated before
+return; invalid content and exception text are not echoed.
+
+Operation/workflow/stage event filters match direct Harness references or the
+same server request via durable operation links. New links retain canonical
+workflow/stage labels; older links without these labels remain queryable by
+operation ID but cannot certify complete historical workflow/stage coverage.
+Resource filters currently select directly referenced Persona events, while
+page-path filters select events carrying the reviewed browser page label.
+These filters are diagnostic projections, not authorization or commit proof.
+
+Harness index queries additionally accept `workflow` and `stage` and return
+`has_more`. Query uses a read-only connection: absent/unavailable index storage
+reports `coverage.freshness=unavailable` and never creates a blank index as a
+side effect. The worker remains responsible for index creation/rebuild.

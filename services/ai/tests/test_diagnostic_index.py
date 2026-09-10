@@ -31,6 +31,9 @@ class DiagnosticIndexTests(unittest.TestCase):
                 self.assertEqual(index.step(1), 1)
                 first = index.query()["items"][0]
                 self.assertEqual(first["gap"], None)
+                self.assertEqual(index.query(workflow=first["workflow"], stage=first["stage"])["items"], [first])
+                self.assertEqual(index.query(workflow="not_the_workflow")["items"], [])
+                self.assertFalse(index.query()["has_more"])
                 self.assertTrue(first["attempts"])
                 self.assertEqual(first["usage_gap"], "not_recorded_in_canonical_trace")
                 self.assertIsNone(first["model"])

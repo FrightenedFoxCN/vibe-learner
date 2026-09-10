@@ -38,6 +38,8 @@
 
   - 2026-09-10 快照归属切片：Learning 与其他页面的快照共用稳定注册接口，按真实 page-view 与 owner fencing 发布；旧 owner 更新/卸载不可覆盖新页，路由变化立即隐藏不匹配快照。修复 PageDebug Context 更新反馈循环，以及设置加载前误清空浮窗打开偏好的问题。5 项 React 快照/StrictMode/路由测试、完整 Web reliability、生产构建及 Chromium Persona→Settings→Model Usage 切换/刷新验证通过；关闭浮窗仍记录的 Persona 纵向样例保持通过。全局诊断 timeline、关联筛选与 lazy query 尚待接入，本阶段保持未完成。
 
+  - 2026-09-10 查询切片：事件查询新增 operation/workflow/stage、资源、severity 与显式时区范围筛选，持久 request 关联支持跨事件查询，游标增加有界 has_more。事件/关联内容读取重验，故障返回明确不可用状态并区分 read/write failure；索引查询只读并支持 workflow/stage。24 项后端诊断/index/生命周期测试及 shared/Web 类型门通过。历史关联缺少 workflow/stage 的覆盖限制、源时间语义与资源筛选范围已写入 API 文档；前端严格查询适配器和 timeline 尚待完成。
+
 - [ ] `OBS-AUDIT-001` `[P2]` 完成诊断留存、导出与性能审计验收；依赖 `OBS-DEBUG-001`。
   - 本地 append 存储、游标分页、轮转/清理及诊断包导出；内容按白名单脱敏，受保护内容仍走 artifact resolver，凭据及未提交评分材料不得进入全局日志。
   - 样本按 workflow/stage、模型、配置/组件版本分组；输出原始指标、P50/P95、失败/恢复/unknown 数和缺口，父子耗时不能重复相加。

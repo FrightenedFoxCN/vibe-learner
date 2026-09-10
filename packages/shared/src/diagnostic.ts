@@ -153,3 +153,41 @@ export interface DiagnosticDesktopMetricV1 {
   dropped_before: number;
   write_failures_before: number;
 }
+
+/** Query filters are diagnostic hints. Dates require an explicit timezone. */
+export interface DiagnosticEventFilters {
+  request_id?: string;
+  action_id?: string;
+  flow_id?: string;
+  page_view_id?: string;
+  page_path?: DiagnosticPagePath;
+  source?: DiagnosticEventV1["source"];
+  severity?: DiagnosticEventV1["severity"];
+  operation_id?: string;
+  workflow?: HarnessWorkflow;
+  stage?: HarnessStage;
+  resource_id?: string;
+  resource_type?: "persona";
+  since?: string;
+  until?: string;
+}
+
+export interface DiagnosticEventPageV1 {
+  items: { sequence: number; event: DiagnosticEventV1 }[];
+  next_cursor: number;
+  has_more: boolean;
+  health: { dropped: number; write_failures: number; read_failures: number; queued: number; writer_alive: boolean };
+  desktop_spool: { rejected: number; failures: number } | null;
+}
+
+
+export interface DiagnosticOperationLinkV1 {
+  operation_id: string;
+  request_id: string;
+  client_instance_id?: string | null;
+  page_view_id?: string | null;
+  flow_id?: string | null;
+  action_id?: string | null;
+  workflow?: HarnessWorkflow | null;
+  stage?: HarnessStage | null;
+}
