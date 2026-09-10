@@ -511,3 +511,29 @@ and user Message. Two diagnostic Tavern scenarios passed in 0.503 seconds; log:
 `/tmp/diagnostic-tavern-restart-python.log`. This is orderly application restart and
 terminal read-back evidence, not process-crash recovery or live lease takeover.
 Those fault boundaries and browser flow ownership remain required follow-up work.
+
+## Tavern abrupt process exit and expired-lease diagnostic recovery
+
+`test_diagnostic_tavern_crash.py` starts a child with the full HTTP application,
+commits the first actor, and calls `os._exit(73)` inside the second provider call.
+The parent opens a fresh application against the same installation, verifies the
+completed/generating steps and first immutable Message, expires only that run's
+abandoned generating lease using the existing recovery-test technique, and resumes
+through HTTP. The second step's claim count becomes two; exactly one provider call
+finishes the remaining actor. First Message bytes and admitted operation binding
+remain unchanged.
+
+The persisted original diagnostic prefix has real operation/trace references and
+no request-finished event. Recovery uses a new server request identity with the
+explicitly supplied flow and the same admitted operation. Both requests' trace IDs
+resolve against the canonical runtime; recovered resource references match returned
+Message IDs/sequence points. Room/message content is excluded. The child explicitly
+drains the diagnostic queue before abrupt exit so this verifies recovery of a known
+persisted prefix, not survival of an unwritten queue tail. Lease expiry is advanced
+in test data, not awaited in wall-clock time. Browser flow ownership and real
+upstream provider idempotency are outside this scenario.
+
+All nine diagnostic Tavern and cross-domain process-recovery tests passed in
+15.569 seconds; `/tmp/diagnostic-tavern-crash-python.log`. No production changes
+were necessary. Browser Tavern branches, successful OCR/native paths, performance
+and consolidated final acceptance remain open.
