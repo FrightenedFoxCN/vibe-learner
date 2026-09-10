@@ -46,7 +46,7 @@ def measure(callback):
 
 def files(path):
     result = {}
-    for key, suffix in (("database", ""), ("wal", "-wal"), ("shm", "-shm"), ("journal", "-journal")):
+    for key, suffix in (("database", ""), ("wal", "-wal"), ("shm", "-shm"), ("journal", "-journal"), ("quota_lock", ".quota-lock")):
         candidate = Path(str(path) + suffix)
         result[key + "_bytes"] = candidate.stat().st_size if candidate.exists() else 0
     result["total_bytes"] = sum(result.values())
@@ -166,7 +166,7 @@ def storage_workload(root, samples, event_count, trace_count):
         with index._connect() as db:
             index_coverage = index.retention.coverage(db)
             index.disk_maintenance.maintain(db, force=True)
-        return dict(synthetic_fixture="diagnostic-local-load-v1", inserted_events=event_count, inserted_projections=trace_count,
+        return dict(synthetic_fixture="diagnostic-local-load-v1", quota_limits_bytes=dict(events=store.quota.max_bytes, index=index.quota.max_bytes), inserted_events=event_count, inserted_projections=trace_count,
             enqueue_raw_ms=enqueue_samples, enqueue_summary=summary(enqueue_samples),
             paced_batch_raw_ms=batch_samples, paced_batch_summary=summary(batch_samples),
             batch_size=100, raw_ms=raw, summaries={name: summary(values) for name, values in raw.items()},

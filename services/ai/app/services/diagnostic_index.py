@@ -24,6 +24,9 @@ class DiagnosticHarnessIndex:
         self.disk_maintenance = DiagnosticDiskMaintenance()
         self.repository = repository
         self.path = path
+        from app.core.diagnostic_quota import DiagnosticDatabaseQuota
+        self.quota = DiagnosticDatabaseQuota(path, max_bytes=64 * 1024 * 1024)
+        self.disk_maintenance.quota = self.quota
         self.failures = 0
         self._stop = threading.Event()
         self._thread = None
@@ -33,18 +36,24 @@ class DiagnosticHarnessIndex:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         db = sqlite3.connect(self.path, timeout=0.1)
         try:
-            self.disk_maintenance.configure(db)
-            db.execute("PRAGMA journal_mode=WAL")
-            db.execute("CREATE TABLE IF NOT EXISTS projections (trace_id TEXT PRIMARY KEY, operation_id TEXT, workflow TEXT, stage TEXT, payload TEXT NOT NULL)")
-            if "last_seen_sweep" not in {row[1] for row in db.execute("PRAGMA table_info(projections)")}:
-                db.execute("ALTER TABLE projections ADD COLUMN last_seen_sweep INTEGER NOT NULL DEFAULT -1")
-            db.execute("CREATE INDEX IF NOT EXISTS projections_operation ON projections(operation_id,trace_id)")
-            db.execute("CREATE TABLE IF NOT EXISTS checkpoint (name TEXT PRIMARY KEY, cursor TEXT NOT NULL, sweeps INTEGER NOT NULL)")
-            db.execute("INSERT OR IGNORE INTO checkpoint VALUES ('runtime','',0)")
-            self.retention.initialize(db)
-            db.commit()
+            with self.quota.lock():
+                self.quota.reserve(db)
+                self.disk_maintenance.configure(db)
+                db.execute("PRAGMA journal_mode=WAL")
+            with self.quota.transaction(db):
+                db.execute("CREATE TABLE IF NOT EXISTS projections (trace_id TEXT PRIMARY KEY, operation_id TEXT, workflow TEXT, stage TEXT, payload TEXT NOT NULL)")
+                if "last_seen_sweep" not in {row[1] for row in db.execute("PRAGMA table_info(projections)")}:
+                    db.execute("ALTER TABLE projections ADD COLUMN last_seen_sweep INTEGER NOT NULL DEFAULT -1")
+                db.execute("CREATE INDEX IF NOT EXISTS projections_operation ON projections(operation_id,trace_id)")
+                db.execute("CREATE TABLE IF NOT EXISTS checkpoint (name TEXT PRIMARY KEY, cursor TEXT NOT NULL, sweeps INTEGER NOT NULL)")
+                db.execute("INSERT OR IGNORE INTO checkpoint VALUES ('runtime','',0)")
+                self.retention.initialize(db)
             self.disk_maintenance.maintain(db)
             yield db
+        except Exception:
+            db.rollback()
+            self.disk_maintenance.maintain(db, force=True)
+            raise
         finally:
             db.close()
 
@@ -68,20 +77,20 @@ class DiagnosticHarnessIndex:
                     self.failures += 1
                     projection = {"schema_version": "diagnostic-harness-index-v1", "trace_id": trace_id, "gap": "source_invalid_or_unavailable"}
                 projections.append(projection)
-            for value in projections:
-                value = DiagnosticHarnessIndexV1.model_validate(value).model_dump(mode="json")
-                retained_at = self.retention.source_time(db, value.get("source_updated_at"))
-                if retained_at is not None and db.execute("SELECT ? < unixepoch('now')-?", (retained_at, self.retention.max_age_seconds)).fetchone()[0]:
-                    db.execute("DELETE FROM projections WHERE trace_id=?", (value["trace_id"],))
-                    continue
-                db.execute("INSERT INTO projections(trace_id,operation_id,workflow,stage,payload,last_seen_sweep,retained_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(trace_id) DO UPDATE SET operation_id=excluded.operation_id,workflow=excluded.workflow,stage=excluded.stage,payload=excluded.payload,last_seen_sweep=excluded.last_seen_sweep,retained_at=CASE WHEN ? IS NOT NULL AND projections.payload != excluded.payload THEN excluded.retained_at ELSE projections.retained_at END WHERE projections.payload != excluded.payload OR projections.last_seen_sweep != excluded.last_seen_sweep",
-                           (value["trace_id"], value.get("operation_id"), value.get("workflow"), value.get("stage"), json.dumps(value, sort_keys=True), sweep, retained_at or 0, retained_at))
-            exhausted = len(ids) < limit
-            if exhausted:
-                db.execute("UPDATE projections SET payload=json_set(payload,'$.gap','source_removed','$.state',NULL,'$.status',NULL,'$.commit_status',NULL) WHERE last_seen_sweep < ?", (sweep,))
-            self.retention.prune(db)
-            db.execute("UPDATE checkpoint SET cursor=?, sweeps=sweeps+? WHERE name='runtime'", ("" if exhausted else ids[-1], int(exhausted)))
-            db.commit()
+            with self.quota.transaction(db):
+                for value in projections:
+                    value = DiagnosticHarnessIndexV1.model_validate(value).model_dump(mode="json")
+                    retained_at = self.retention.source_time(db, value.get("source_updated_at"))
+                    if retained_at is not None and db.execute("SELECT ? < unixepoch('now')-?", (retained_at, self.retention.max_age_seconds)).fetchone()[0]:
+                        db.execute("DELETE FROM projections WHERE trace_id=?", (value["trace_id"],))
+                        continue
+                    db.execute("INSERT INTO projections(trace_id,operation_id,workflow,stage,payload,last_seen_sweep,retained_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(trace_id) DO UPDATE SET operation_id=excluded.operation_id,workflow=excluded.workflow,stage=excluded.stage,payload=excluded.payload,last_seen_sweep=excluded.last_seen_sweep,retained_at=CASE WHEN ? IS NOT NULL AND projections.payload != excluded.payload THEN excluded.retained_at ELSE projections.retained_at END WHERE projections.payload != excluded.payload OR projections.last_seen_sweep != excluded.last_seen_sweep",
+                               (value["trace_id"], value.get("operation_id"), value.get("workflow"), value.get("stage"), json.dumps(value, sort_keys=True), sweep, retained_at or 0, retained_at))
+                exhausted = len(ids) < limit
+                if exhausted:
+                    db.execute("UPDATE projections SET payload=json_set(payload,'$.gap','source_removed','$.state',NULL,'$.status',NULL,'$.commit_status',NULL) WHERE last_seen_sweep < ?", (sweep,))
+                self.retention.prune(db)
+                db.execute("UPDATE checkpoint SET cursor=?, sweeps=sweeps+? WHERE name='runtime'", ("" if exhausted else ids[-1], int(exhausted)))
             self.disk_maintenance.maintain(db)
             return len(ids)
 

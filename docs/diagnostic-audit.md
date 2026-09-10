@@ -172,3 +172,41 @@ query/export timing, file-size observations and a bounded pinned-reader WAL
 experiment. See the [baseline and limitations](performance/diagnostic-local-baseline-v1.md)
 and its raw samples. These measurements inform the remaining quota and performance
 gates; they do not certify full-workflow or native UI overhead.
+
+## Per-database quota admission
+
+Diagnostic event storage reserves 128 MiB and Harness index storage 64 MiB of
+file-length budget. These partitions include each database, WAL, SHM, rollback
+journal and stable quota lock file. A conservative reservation includes a full
+logical-database rewrite plus possible checkpoint growth and WAL-index space.
+This can reject a small write before the files reach the numerical limit. It is
+an admission envelope, not a promise that all payload/row limits can be filled.
+
+All production schema/retention/writer/receipt/checkpoint transactions use a
+process lock and SQLite `BEGIN IMMEDIATE`, require WAL mode, disable cache spill,
+and check the envelope before work and again before commit. In-memory staging
+also has a SQLite page-count ceiling. Rejection rolls back diagnostic work;
+native spool acknowledgement stays false until a diagnostic commit succeeds.
+The stable lock inode is retained; process exit releases the operating-system
+lock. Lock contention is best-effort refusal rather than an unbounded wait.
+
+Maintenance shares the same lock. A nonblocking checkpoint can first release
+pressure; VACUUM migration needs additional temporary/rebuild headroom. Incremental
+vacuum runs in one explicitly reserved transaction so multiple vacuum steps do
+not append repeated metadata transactions outside the reservation. A later
+checkpoint/retry can restore admission after a pinned reader exits. Quota refusal
+and lock availability counters are process-local; existing writer drop/failure
+checkpoints continue to expose their observed lower bounds after writes recover.
+Dedicated quota-state projection remains pending.
+
+The implementation/test evidence covers cooperating Python writers and measured
+file lengths on this local Unix environment. Existing oversized files are
+refused without truncation; they need separate recovery/retention treatment.
+External writers, allocated filesystem blocks/metadata, desktop spool concurrency,
+Windows/native acceptance and an installation-wide 200 MiB assertion are not
+certified by this slice. Current export `disk_size_limit_certified` flags therefore
+remain false. Tests cover pinned WAL pressure/refusal/recovery, no spill on staged
+oversize, process-crash lock release, guarded vacuum, oversized legacy refusal,
+non-WAL rejection and successful real Persona/Harness results during pressure.
+
+Post-admission measurements and raw samples: [quota measurement](performance/diagnostic-quota-admission-v1.md).

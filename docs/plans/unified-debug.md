@@ -68,6 +68,8 @@
 
   - 2026-09-10 本地量测切片：新增 `npm run bench:diagnostics`，100 样本覆盖真实 middleware 开关/队列满对照、12,000 合成事件写入与 10,000 行保留、1,000 索引、查询及快照导出，记录源代码 digest、环境和原始时长；另测读快照占用 WAL。结果见 [基线](../performance/diagnostic-local-baseline-v1.md)：事件页 P95 1.61ms、operation 筛选 15.96ms、限定导出 16.82ms；完整包单次约 302ms/19.8MB。500 条小事件在读快照占用期间使 WAL 达到 23MB，释放后回收，证明总体配额仍需覆盖 WAL。2 项基准结构/真实路径测试通过；此为本机合成量测，不代替全流程、原生 UI 或性能门认证。
 
+  - 2026-09-10 数据库配额准入切片：事件库 128 MiB、索引库 64 MiB，提交前按主文件/WAL/SHM/journal/锁文件及最坏整库改写保守预留；进程锁、BEGIN IMMEDIATE、禁用 cache spill 和提交前复验覆盖正式写入口及维护。低配额下读快照占用触发拒绝，释放/回收后恢复；超限事务不新增 WAL，旧超限文件不被截断。57 项后端回归及 3 项 Chromium 场景通过，含真实业务/Harness 在配额压力下完成。Windows、多进程桌面 spool、旧超限文件恢复及配额状态投影仍待完成，因此安装目录 200 MiB 总体上限保持未认证。新开销原始样本见 [配额量测](../performance/diagnostic-quota-admission-v1.md)。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
@@ -77,7 +79,8 @@ rows using a 1,000-event queue. Browser ingestion and cursor query are available
 including writer health counters. Event payload retention now uses seven days,
 10,000 rows or 64 MiB, with durable removal coverage; global UI health is visible.
 Operation links and Harness index projections now have independent age/row/payload retention.
-Aggregate physical disk retention and WAL reclamation remain pending.
+WAL reclamation and per-database quota admission are implemented;
+the aggregate installation budget remains uncertified.
 Snapshot export and grouped statistics are available on demand in global Debug. Console logging intentionally excludes
 unreviewed formatted messages and exception text.
 

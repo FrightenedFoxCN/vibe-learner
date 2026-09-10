@@ -124,6 +124,9 @@ class DiagnosticStore:
         from app.core.diagnostic_disk import DiagnosticDiskMaintenance
         self.disk_maintenance = DiagnosticDiskMaintenance()
         self.path = path
+        from app.core.diagnostic_quota import DiagnosticDatabaseQuota
+        self.quota = DiagnosticDatabaseQuota(path)
+        self.disk_maintenance.quota = self.quota
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
         self.dropped = 0
         self.write_failures = 0
@@ -214,8 +217,10 @@ class DiagnosticStore:
         try:
             payload = event.model_dump_json()
             with closing(sqlite3.connect(self.path, timeout=0.1)) as db:
-                self.disk_maintenance.configure(db)
-                with db:
+                with self.quota.lock():
+                    self.quota.reserve(db)
+                    self.disk_maintenance.configure(db)
+                with self.quota.transaction(db):
                     existing = db.execute("SELECT payload FROM events WHERE event_id=?", (event.event_id,)).fetchone()
                     if existing is not None:
                         return DiagnosticEventV1.model_validate_json(existing[0]) == event
@@ -248,18 +253,20 @@ class DiagnosticStore:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with sqlite3.connect(self.path, timeout=0.1) as db:
-                self.disk_maintenance.configure(db)
-                db.execute("PRAGMA journal_mode=WAL")
-                db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
-                db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
-                db.execute("CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)")
-                for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
-                    db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
-                self.retention.initialize(db)
-                self.link_retention.initialize(db)
-                self.writer_coverage.initialize(db)
-                self._observe_writer(db)
-                db.commit()
+                with self.quota.lock():
+                    self.quota.reserve(db)
+                    self.disk_maintenance.configure(db)
+                    db.execute("PRAGMA journal_mode=WAL")
+                with self.quota.transaction(db):
+                    db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
+                    db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
+                    db.execute("CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)")
+                    for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
+                        db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
+                    self.retention.initialize(db)
+                    self.link_retention.initialize(db)
+                    self.writer_coverage.initialize(db)
+                    self._observe_writer(db)
                 self.disk_maintenance.maintain(db)
                 last_cleanup = 0.0
                 while not self._stop.is_set() or not self.queue.empty():
@@ -270,10 +277,10 @@ class DiagnosticStore:
                         import time
                         if time.monotonic() - last_cleanup >= 60:
                             try:
-                                self.retention.prune(db)
-                                self.link_retention.prune(db)
-                                self._observe_writer(db)
-                                db.commit()
+                                with self.quota.transaction(db):
+                                    self.retention.prune(db)
+                                    self.link_retention.prune(db)
+                                    self._observe_writer(db)
                                 self.disk_maintenance.maintain(db)
                             except Exception:
                                 db.rollback()
@@ -281,28 +288,29 @@ class DiagnosticStore:
                             last_cleanup = time.monotonic()
                         continue
                     try:
-                        db.execute("INSERT OR IGNORE INTO events(event_id,payload) VALUES (?,?)", (event.event_id, event.model_dump_json()))
-                        if event.source == "server" and event.harness is not None and event.request_id is not None:
-                            link = {"operation_id": event.harness.operation_id, "request_id": event.request_id,
-                                    "client_instance_id": event.client_instance_id, "page_view_id": event.page_view_id,
-                                    "flow_id": event.flow_id, "action_id": event.action_id,
-                                    "workflow": event.harness.workflow, "stage": event.harness.stage}
-                            db.execute("INSERT INTO operation_links(operation_id,request_id,payload) VALUES (?,?,?) ON CONFLICT(operation_id,request_id) DO UPDATE SET payload=excluded.payload",
-                                       (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
-                        # Retention and loss evidence commit with the event.
-                        self.retention.prune(db)
-                        self.link_retention.prune(db)
-                        self._observe_writer(db)
-                        db.commit()
+                        with self.quota.transaction(db):
+                            db.execute("INSERT OR IGNORE INTO events(event_id,payload) VALUES (?,?)", (event.event_id, event.model_dump_json()))
+                            if event.source == "server" and event.harness is not None and event.request_id is not None:
+                                link = {"operation_id": event.harness.operation_id, "request_id": event.request_id,
+                                        "client_instance_id": event.client_instance_id, "page_view_id": event.page_view_id,
+                                        "flow_id": event.flow_id, "action_id": event.action_id,
+                                        "workflow": event.harness.workflow, "stage": event.harness.stage}
+                                db.execute("INSERT INTO operation_links(operation_id,request_id,payload) VALUES (?,?,?) ON CONFLICT(operation_id,request_id) DO UPDATE SET payload=excluded.payload",
+                                           (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
+                            # Retention and loss evidence commit with the event.
+                            self.retention.prune(db)
+                            self.link_retention.prune(db)
+                            self._observe_writer(db)
                         self.disk_maintenance.maintain(db)
                     except Exception:
                         self.write_failures += 1
                         self.dropped += 1
                         db.rollback()
+                        self.disk_maintenance.maintain(db, force=True)
                     finally:
                         self.queue.task_done()
-                self._observe_writer(db, closed=True)
-                db.commit()
+                with self.quota.transaction(db):
+                    self._observe_writer(db, closed=True)
                 self.disk_maintenance.maintain(db, force=True)
         except Exception:
             self.write_failures += 1

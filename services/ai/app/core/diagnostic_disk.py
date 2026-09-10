@@ -4,6 +4,7 @@ This reduces reclaimable space; it is not a hard aggregate disk quota. Readers
 can pin WAL frames. Busy/failed work is retried by a later maintenance cycle.
 """
 import time
+from contextlib import nullcontext
 
 
 class DiagnosticDiskMaintenance:
@@ -39,23 +40,43 @@ class DiagnosticDiskMaintenance:
         self.last_run = now
         previous_timeout = None
         try:
-            previous_timeout = db.execute("PRAGMA busy_timeout").fetchone()[0]
-            db.execute("PRAGMA busy_timeout=0")
-            deadline = now + self.budget_seconds
-            db.set_progress_handler(lambda: int(time.monotonic() >= deadline), 100)
-            if db.execute("PRAGMA auto_vacuum").fetchone()[0] != 2:
-                db.execute("PRAGMA auto_vacuum=INCREMENTAL")
-                db.execute("VACUUM")
-                self.legacy_migrations += 1
-            # Drain the cursor: incremental vacuum can emit one result per page.
-            db.execute(f"PRAGMA incremental_vacuum({self.vacuum_pages})").fetchall()
-            # TRUNCATE is nonblocking with busy_timeout=0. A reader can defer it
-            # without being cancelled or changing any committed record.
-            result = db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
-            if result and result[0]:
-                self.busy += 1
-            else:
-                self.completed += 1
+            quota = getattr(self, "quota", None)
+            with quota.lock() if quota is not None else nullcontext():
+                previous_timeout = db.execute("PRAGMA busy_timeout").fetchone()[0]
+                db.execute("PRAGMA busy_timeout=0")
+                deadline = now + self.budget_seconds
+                db.set_progress_handler(lambda: int(time.monotonic() >= deadline), 100)
+                # Checkpoint first can release pressure without adding WAL.
+                if quota is not None:
+                    db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                    db.execute("PRAGMA cache_spill=OFF")
+                    quota.reserve(db, migration=db.execute("PRAGMA auto_vacuum").fetchone()[0] != 2)
+                if db.execute("PRAGMA auto_vacuum").fetchone()[0] != 2:
+                    db.execute("PRAGMA auto_vacuum=INCREMENTAL")
+                    db.execute("VACUUM")
+                    self.legacy_migrations += 1
+                # Drain the cursor: incremental vacuum can emit one result per page.
+                if quota is not None:
+                    # One transaction prevents a multi-step incremental vacuum
+                    # from appending repeated metadata frames per freed page.
+                    db.execute("BEGIN IMMEDIATE")
+                    initial_pages = db.execute("PRAGMA page_count").fetchone()[0]
+                    try:
+                        db.execute(f"PRAGMA incremental_vacuum({self.vacuum_pages})").fetchall()
+                        quota.reserve(db, initial_pages=initial_pages)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
+                        raise
+                else:
+                    db.execute(f"PRAGMA incremental_vacuum({self.vacuum_pages})").fetchall()
+                # TRUNCATE is nonblocking with busy_timeout=0. A reader can defer it
+                # without being cancelled or changing any committed record.
+                result = db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+                if result and result[0]:
+                    self.busy += 1
+                else:
+                    self.completed += 1
         except Exception:
             self.failures += 1
         finally:
