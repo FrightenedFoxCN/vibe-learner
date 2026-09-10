@@ -31,3 +31,5 @@
 0.3.1（2026-09-10）登记七项代码解耦重构：事务作用域、应用生命周期、Study 应用服务、Harness 契约、Provider 能力、前端职责和模块化测试边界。包含 Persona/Scene 编辑反馈与 Study 恢复相关改进。最终验收通过 635 项后端测试、13 个 eval suite、共享/Web 检查与生产构建、193 项恢复测试、23 项生产浏览器测试，以及事务阶段 22 项本机 PostgreSQL 17 测试。桌面安装包以远端发布流水线结果为准；独立 UX 复核仍在 TODO 跟踪。
 
 统一 Logging 与 Debug 的进度由对应计划维护。产品及其他验收任务继续维护在根 TODO。
+
+- [Diagnostic local measurement baseline](performance/diagnostic-local-baseline-v1.md): reproducible middleware/storage/export timings and pinned-reader WAL observations.

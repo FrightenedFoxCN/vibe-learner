@@ -22,6 +22,7 @@
     "eval:harness:pr": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr && npm run eval:harness:stages",
     "eval:harness:manual": "npm run eval:harness -- --profile manual",
     "eval:harness:nightly": "npm run eval:harness -- --profile nightly",
+    "bench:diagnostics": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.diagnostic_benchmark",
     "bench:harness": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_performance_benchmark",
     "test:acceptance:recovery-limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery tests.test_wave45_input_limits tests.test_document_process_operation tests.test_learning_plan_operation tests.test_harness_runtime tests.test_harness_performance tests.test_harness_recovery_migration tests.test_harness_effect_journal tests.test_harness_artifact_resolver tests.test_study_chat_operation tests.test_study_chat_application tests.test_study_chat_projection tests.test_study_chat_public_failure tests.test_study_v3_runtime tests.test_study_chat_effects tests.test_tavern_facilitated tests.test_tavern_api tests.test_tavern_prompt_safety tests.test_scene_schema_ownership tests.test_persona_lifecycle && npm run test:web:reliability",
     "test:ai": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest discover -s tests",

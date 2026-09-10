@@ -66,6 +66,8 @@
 
   - 2026-09-10 SQLite 回收切片：新诊断库启用 incremental auto-vacuum，写连接设置 WAL checkpoint/复用目标；提交后按周期回收空闲页并非阻塞尝试 TRUNCATE。旧库 VACUUM 转换有 SQLite progress 协作预算，忙/中断留待重试；维护不接管已有事务，失败不改写事件或业务提交结论。44 项后端回归通过，真实文件测试验证空间缩减、读快照占用后的恢复、迁移中断重试，以及维护失败时 Persona/Harness 仍完成。总体磁盘配额、维护状态对外投影和开销量测仍待完成，尚不声明 200 MiB 总体上限。
 
+  - 2026-09-10 本地量测切片：新增 `npm run bench:diagnostics`，100 样本覆盖真实 middleware 开关/队列满对照、12,000 合成事件写入与 10,000 行保留、1,000 索引、查询及快照导出，记录源代码 digest、环境和原始时长；另测读快照占用 WAL。结果见 [基线](../performance/diagnostic-local-baseline-v1.md)：事件页 P95 1.61ms、operation 筛选 15.96ms、限定导出 16.82ms；完整包单次约 302ms/19.8MB。500 条小事件在读快照占用期间使 WAL 达到 23MB，释放后回收，证明总体配额仍需覆盖 WAL。2 项基准结构/真实路径测试通过；此为本机合成量测，不代替全流程、原生 UI 或性能门认证。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

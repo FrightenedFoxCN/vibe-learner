@@ -162,3 +162,13 @@ Regression tests use real SQLite files and verify freelist/file/WAL reduction,
 pinned-reader recovery, interrupted legacy migration, active-transaction
 preservation and a successful application/Harness result during maintenance
 failures.
+
+
+## Reproducible local measurement
+
+Run `npm run bench:diagnostics -- --samples 100 --output /tmp/diagnostic-benchmark.json`
+for provider-free paired middleware probes, a retained writer/index fixture,
+query/export timing, file-size observations and a bounded pinned-reader WAL
+experiment. See the [baseline and limitations](performance/diagnostic-local-baseline-v1.md)
+and its raw samples. These measurements inform the remaining quota and performance
+gates; they do not certify full-workflow or native UI overhead.
