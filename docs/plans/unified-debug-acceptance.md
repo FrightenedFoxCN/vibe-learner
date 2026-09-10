@@ -57,7 +57,7 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
-| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Native saturated spool still has the original 25.21 ms failure against 25 ms; rejected sorting/sync experiments do not close it. Native Tauri WebView small/wide event populations now pass their scoped rendering budgets. |
+| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Native saturated spool has the original 25.21 ms development and a 25.06 ms optimized-build failure against 25 ms; rejected sorting/sync experiments do not close it. Native Tauri WebView small/wide event populations now pass their scoped rendering budgets. |
 | Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
 ## Remaining completion work
@@ -963,3 +963,12 @@ Rich P95 mount/append/expand/unmount is 51/51/33/35 ms, within unchanged
 distinguish native engine rendering from production-shell startup and GPU
 completion. This closes the named native WebView measurement gap; saturated-spool
 I/O and the final requirement closure audit remain open.
+
+## Optimized native spool still exceeds its gate
+
+The actual native spool benchmark was rebuilt with `--release`, preserving all
+writer semantics and the original budget. Saturated P95 is 25.06 ms against 25 ms;
+sparse and contention pass. [Complete release-profile evidence](../performance/diagnostic-native-spool-release-v1.md)
+retains all observations. This excludes a compiler-profile-only fix and keeps
+native I/O acceptance open. A counter-checkpoint redesign requires explicit
+crash/torn-write/migration proof before adoption; no production change was made.
