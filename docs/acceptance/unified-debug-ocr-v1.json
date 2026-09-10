@@ -1,0 +1,27 @@
+{
+  "schema_version": "diagnostic-real-ocr-probe-v1",
+  "ocr_applied": true,
+  "model_id": "db_mobilenet_v3_large+parseq",
+  "ocr_status": "forced",
+  "duration_seconds": 3.02,
+  "event_count": 14,
+  "stages": [
+    "chunk_building",
+    "document_parse",
+    "ocr_page",
+    "page_extraction",
+    "section_detection",
+    "study_unit_cleanup"
+  ],
+  "models": [
+    {
+      "file": "db_mobilenet_v3_large-4987e7bd.onnx",
+      "sha256": "4987e7bdea372559808bd5add85fda10e179dc639696fb489e59a197a25b4c64"
+    },
+    {
+      "file": "parseq-00b40714.onnx",
+      "sha256": "00b40714e00039c8c04891e5fd98ad5cb46c34fa7133ba09e2a55d4b28d42a68"
+    }
+  ],
+  "scope": "One synthetic image-only page; real local cached OCR models; no model-quality or latency gate claim."
+}

@@ -577,3 +577,26 @@ All thirteen production Chromium scenarios passed in 17.8 seconds; log:
 partial/retry/cancel cases identified in the preceding Tavern slices. Successful
 real OCR/native paths, performance and consolidated full-scope acceptance remain
 open; no top-level goal item is closed by this checkpoint.
+
+## Real local OCR success acceptance
+
+The opt-in `tests.diagnostic_ocr_probe` uses installed ONNXTR and the existing local
+`db_mobilenet_v3_large`/`parseq` models, without a fake OCR result. It rasterizes
+synthetic text into a one-page image-only PDF (asserting no embedded PDF text),
+uploads through HTTP, forces OCR through the real stream route, and reads persisted
+Document/debug records. OCR is applied to one page and the synthetic heading is
+actually recognized; the Document parse parent has canonical committed evidence.
+Diagnostic references resolve to real parse/extraction/section/chunk/OCR/cleanup
+traces and the saved Document request. File name, text sentinels and recognizable
+content are excluded from the diagnostic events.
+
+The successful local observation took 3.020 seconds and returned 14 flow events;
+this is a single functional sample, not a latency gate or representative OCR quality
+measurement. Model SHA-256 fingerprints and result are archived in
+[raw OCR report](../acceptance/unified-debug-ocr-v1.json). Reproduce from repo root:
+`UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run --directory services/ai python -m tests.diagnostic_ocr_probe --output /tmp/diagnostic-real-ocr.json`.
+The probe requires the named cached models and fails if they are absent; it is
+separate from ordinary deterministic unit tests. Log: `/tmp/diagnostic-real-ocr.log`.
+The initial probe used the wrong owner for `ocr_applied`; the final check reads the
+persisted debug record where that field belongs. Native success, overhead and
+consolidated acceptance remain open; no independent quality claim is made.
