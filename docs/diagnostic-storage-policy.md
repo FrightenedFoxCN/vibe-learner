@@ -53,3 +53,7 @@ Do not describe the installation as capped at 200 MiB, guarantee lossless loggin
 or equate payload retention with physical disk use. The candidate hard-cap claim
 is unsupported and remains explicitly uncertified; no performance result changes
 that conclusion.
+
+Native counter metadata now uses two bounded checksummed slots; see the
+[versioned protocol](diagnostic-native-counter.md) for migration and downgrade
+behavior. This changes checkpoint persistence, not event retention or quotas.

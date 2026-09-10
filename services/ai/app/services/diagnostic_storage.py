@@ -50,7 +50,7 @@ def observe_spool(root):
                 if re.fullmatch(r"desktop-[a-f0-9-]{1,88}\.(json|pending)", entry.name):
                     value["event_files"] += 1
                     value["event_bytes"] += size
-                elif entry.name in {"drops.count", "drops.pending", "spool.quota-lock"}:
+                elif entry.name in {"drops.count", "drops.alternate", "drops.pending", "spool.quota-lock"}:
                     value["metadata_bytes"] += size
                 else:
                     value["other_files"] += 1

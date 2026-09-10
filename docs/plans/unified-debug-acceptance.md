@@ -57,7 +57,7 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
-| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Native saturated spool has the original 25.21 ms development and a 25.06 ms optimized-build failure against 25 ms; rejected sorting/sync experiments do not close it. Native Tauri WebView small/wide event populations now pass their scoped rendering budgets. |
+| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Original native failures remain archived. Integrated versioned counter checkpoints now pass saturated P95 at 20.03 ms development / 20.07 ms optimized against the unchanged 25 ms budget; migration/crash and cross-runtime pressure checks pass. Native Tauri WebView small/wide event populations now pass their scoped rendering budgets. |
 | Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
 ## Remaining completion work
@@ -984,3 +984,18 @@ versus 8.41 ms for rename checkpoints; all pairs are retained in
 Production writer remains unchanged. Legacy/pending migration, older-binary
 fail-closed behavior and full-spool integration/performance must be verified
 before adoption. The overall native gate is still open.
+
+## Native counter journal integration and full gate
+
+The tested two-slot protocol is now integrated under the unchanged spool lock.
+Legacy/pending migration, old-reader fail-closed behavior, prefix/slot damage and
+actual migration/overwrite process exits are covered. Python storage observation
+recognizes the bounded alternate metadata slot; event wire contracts are unchanged.
+Twenty-two native and twenty Python targeted tests pass. Full emit P95 is
+20.03 ms development and 20.07 ms optimized, both passing the unchanged 25 ms
+budget. The actual cross-runtime installation pressure probe passes as well.
+[Protocol](../diagnostic-native-counter.md) and
+[complete performance/integration evidence](../performance/diagnostic-native-journal-v1.md)
+retain original failures and explicit downgrade/cold-migration limits. This
+resolves the measured saturated-spool gate through an implementation change;
+final release and requirement closure audit are still required.

@@ -63,14 +63,14 @@ class DiagnosticStorageTests(unittest.TestCase):
             root = Path(directory) / "desktop-spool"
             root.mkdir()
             for name, content in [("desktop-ab.json", b"PRIVATE"), ("desktop-cd.pending", b"12"),
-                                  ("drops.count", b"19"), ("spool.quota-lock", b""), ("legacy-private.txt", b"abc")]:
+                                  ("drops.count", b"19"), ("drops.alternate", b"counter-checkpoint"), ("spool.quota-lock", b""), ("legacy-private.txt", b"abc")]:
                 (root / name).write_bytes(content)
             value = observe_diagnostic_storage(store, None).desktop_spool
             self.assertEqual(value.status, "observed")
-            self.assertEqual((value.event_files, value.event_bytes, value.metadata_bytes, value.other_files, value.other_bytes, value.total_bytes), (2, 9, 2, 1, 3, 14))
+            self.assertEqual((value.event_files, value.event_bytes, value.metadata_bytes, value.other_files, value.other_bytes, value.total_bytes), (2, 9, 20, 1, 3, 32))
             self.assertNotIn("PRIVATE", value.model_dump_json())
             self.assertNotIn("legacy-private", value.model_dump_json())
-            self.assertEqual(len(list(root.iterdir())), 5)
+            self.assertEqual(len(list(root.iterdir())), 6)
 
     def test_spool_never_follows_symlinks_or_reports_partial_scan_as_complete(self):
         with TemporaryDirectory() as directory:

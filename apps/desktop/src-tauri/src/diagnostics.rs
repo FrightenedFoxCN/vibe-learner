@@ -11,6 +11,9 @@ const MAX_EVENTS: usize = 256;
 const MAX_AGE: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 const MAX_EVENT_BYTES: u64 = 16 * 1024;
 const MAX_SPOOL_BYTES: u64 = MAX_EVENTS as u64 * MAX_EVENT_BYTES;
+#[path = "diagnostic_counter.rs"]
+mod counter;
+
 static UNIQUE: AtomicU64 = AtomicU64::new(0);
 
 #[cfg(test)]
@@ -124,16 +127,16 @@ impl DesktopDiagnostics {
             }
             std::thread::sleep(Duration::from_millis(1));
         }
-        let drops_path = self.root.join("drops.count");
         #[cfg(test)]
         timing_checkpoint("lock_admission");
         let pending_count = self.root.join("drops.pending");
-        let mut drops = read_counter(&drops_path)?.unwrap_or(0);
+        let mut journal = counter::Journal::load(&self.root)?;
+        self.failures.fetch_add(journal.damaged as u64, Ordering::Relaxed);
         match read_counter(&pending_count) {
-            Ok(Some(pending)) if pending >= drops => {
-                fs::rename(&pending_count, &drops_path)?;
+            Ok(Some(pending)) if pending >= journal.count => {
+                journal.checkpoint(pending)?;
+                fs::remove_file(&pending_count)?;
                 sync_directory(&self.root)?;
-                drops = pending;
             }
             Ok(Some(_)) => {
                 // A stale checkpoint cannot lower the last durable count.
@@ -151,6 +154,7 @@ impl DesktopDiagnostics {
             Ok(None) => {}
             Err(error) => return Err(error),
         }
+        let mut drops = journal.count;
         let original_drops = drops;
         #[cfg(test)]
         timing_checkpoint("counter_recovery");
@@ -210,18 +214,10 @@ impl DesktopDiagnostics {
             // Persist deletions before a checkpoint can claim those evictions.
             sync_directory(&self.root)?;
         }
-        if drops != original_drops || !drops_path.exists() {
+        if drops != original_drops || journal.needs_checkpoint() {
             #[cfg(test)]
             timing_checkpoint("eviction_sync");
-            let mut file = fs::OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&pending_count)?;
-            file.write_all(drops.to_string().as_bytes())?;
-            file.sync_all()?;
-            drop(file);
-            fs::rename(&pending_count, &drops_path)?;
-            sync_directory(&self.root)?;
+            journal.checkpoint(drops)?;
         }
         let event_id = identity();
         #[cfg(test)]
@@ -402,7 +398,7 @@ mod tests {
             }
         }
         assert_eq!(diagnostics.failures.load(Ordering::Relaxed), 0);
-        assert_eq!(read_counter(&diagnostics.root.join("drops.count")).unwrap(), Some(33));
+        assert_eq!(Some(counter::Journal::load(&diagnostics.root).unwrap().count), Some(33));
         let held = fs::OpenOptions::new().read(true).write(true)
             .open(diagnostics.root.join("spool.quota-lock")).unwrap();
         held.lock().unwrap();
@@ -475,7 +471,7 @@ mod tests {
             .collect();
         assert_eq!(files.len(), MAX_EVENTS);
         assert_eq!(
-            fs::read_to_string(root.join("diagnostics/desktop-spool/drops.count")).unwrap(),
+            counter::Journal::load(&root.join("diagnostics/desktop-spool")).unwrap().count.to_string(),
             "4"
         );
         let text = fs::read_to_string(files[0].path()).unwrap();
@@ -505,7 +501,7 @@ mod tests {
             .write(DesktopEvent::DesktopStarted, None, None)
             .unwrap();
         assert_eq!(
-            read_counter(&diagnostics.root.join("drops.count")).unwrap(),
+            Some(counter::Journal::load(&diagnostics.root).unwrap().count),
             Some(9)
         );
         fs::write(diagnostics.root.join("drops.pending"), "").unwrap();
@@ -513,7 +509,7 @@ mod tests {
             .write(DesktopEvent::DesktopStarted, None, None)
             .unwrap();
         assert_eq!(
-            read_counter(&diagnostics.root.join("drops.count")).unwrap(),
+            Some(counter::Journal::load(&diagnostics.root).unwrap().count),
             Some(9)
         );
         assert_eq!(diagnostics.failures.load(Ordering::Relaxed), 1);
@@ -582,7 +578,7 @@ mod tests {
             .collect();
         assert_eq!(events.len(), MAX_EVENTS);
         assert_eq!(
-            read_counter(&diagnostics.root.join("drops.count")).unwrap(),
+            Some(counter::Journal::load(&diagnostics.root).unwrap().count),
             Some(24)
         );
         assert!(
@@ -649,7 +645,7 @@ mod tests {
         assert!(!old.exists());
         assert!(!oversized.exists());
         assert_eq!(
-            read_counter(&diagnostics.root.join("drops.count")).unwrap(),
+            Some(counter::Journal::load(&diagnostics.root).unwrap().count),
             Some(2)
         );
         fs::remove_dir_all(root).unwrap();
