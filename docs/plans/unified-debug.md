@@ -304,3 +304,9 @@ Debug 摘要仍发现原始凭据字段暴露，正作为下一项修复，不�
 读回和日志关联核对，零丢弃/读写失败；配对 P95 67.74ms 超过原定 50ms，
 失败原始结果保留，下一步分解请求阶段定位。Persona 分支兼容 smoke 通过。
 性能验收仍开放，详见 diagnostic-scene-workflow-v1.md。
+
+2026-09-10 原生创建/清空验收完成：用户创建隔离 Vault，创建事件 762ms；合成
+密钥保存并重启解锁后恢复。真实清空首次暴露 Stronghold 删除记录权限缺失，
+补充 main-window 对应权限后重建，清空 705ms 成功；再次重启解锁四项配置标志
+均为 false。170 条事件严格校验并保留失败/成功记录，原测试 Vault 未修改。
+证据见 unified-debug-native-create-clear-v1.json；性能与最终审计仍继续。

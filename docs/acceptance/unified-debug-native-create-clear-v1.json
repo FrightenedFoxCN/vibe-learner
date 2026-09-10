@@ -1,0 +1,165 @@
+{
+  "schema_version": "native-vault-create-clear-acceptance-v1",
+  "platform": "macOS",
+  "isolated_bundle_identifier": "com.vibelearner.diagnostic-creation-acceptance",
+  "original_vault_untouched": true,
+  "creation_performed_by_user": true,
+  "synthetic_secret_saved_and_reloaded_after_restart": true,
+  "clear_persisted_after_restart_and_unlock": true,
+  "configured_before_clear": true,
+  "configured_after_restart": {
+    "openai_api_key_configured": false,
+    "openai_plan_api_key_configured": false,
+    "openai_setting_api_key_configured": false,
+    "openai_chat_api_key_configured": false
+  },
+  "event_count": 170,
+  "events_strictly_validated": true,
+  "synthetic_secret_excluded": true,
+  "terminal_start_correlation_verified": true,
+  "initial_failure": "Missing stronghold:allow-remove-store-record capability",
+  "fix": "Add only stronghold:allow-remove-store-record to main-window capabilities",
+  "actions": [
+    {
+      "event_id": "fbcbfa7c-0f33-4fad-8268-680d77d09b40",
+      "action_name": "vault_create",
+      "outcome": "completed",
+      "duration_ms": 762.0,
+      "flow_id": "dcc7bb2a-6d67-4afb-ac4d-07b9ff2393e7",
+      "action_id": "ac847b5e-0322-491a-a84b-d109ac535e6a",
+      "span_id": "55bf3356-26b0-4e35-82b7-c76a945e9823",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "d2c7e474-b0ad-40d3-856a-fb4ae6f01dc7",
+      "action_name": "vault_save_secrets",
+      "outcome": "completed",
+      "duration_ms": 643.0,
+      "flow_id": "d93dbfef-57c7-4e59-98cd-b20dbf09086b",
+      "action_id": "10dc7e03-7080-4d3c-88fc-6d223134bf9a",
+      "span_id": "be4e462c-1f31-433f-8f69-a5fb86af2565",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "1c8cc37f-158e-4fc0-9961-20cb3afe352c",
+      "action_name": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1.0,
+      "flow_id": "914cb70f-68f1-40b1-91dc-fd1d5b15f520",
+      "action_id": "668fd7a5-cc22-44e3-99b3-42cd23da6ad2",
+      "span_id": "1485435d-59f2-4909-8fd0-0d1c4024d03f",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "3f61a878-49e0-4a98-b794-ae11c017f0bf",
+      "action_name": "vault_save_secrets",
+      "outcome": "completed",
+      "duration_ms": 778.0000000000582,
+      "flow_id": "1976ed41-dc8a-4c4b-b7f3-bc81adc77b50",
+      "action_id": "d53acb69-3c58-48e1-b928-14121cb70581",
+      "span_id": "48fa436f-bc1d-4a76-80f9-12332168d8d5",
+      "parent_span_id": "e0e935cf-8b59-44d6-aff4-f4d10b889f66"
+    },
+    {
+      "event_id": "262bde6b-354a-4592-b2ba-3720bf07185d",
+      "action_name": "settings_save",
+      "outcome": "completed",
+      "duration_ms": 789.0,
+      "flow_id": "1976ed41-dc8a-4c4b-b7f3-bc81adc77b50",
+      "action_id": "d53acb69-3c58-48e1-b928-14121cb70581",
+      "span_id": "e0e935cf-8b59-44d6-aff4-f4d10b889f66",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "3de08dcd-d39e-4235-bbc7-1a8c6d0de736",
+      "action_name": "vault_lock",
+      "outcome": "completed",
+      "duration_ms": 758.0,
+      "flow_id": "76bca309-6ce8-4245-b113-a58bfcfb11fd",
+      "action_id": "d9a1f884-1086-462f-a210-acf763416022",
+      "span_id": "ed5c7db3-7b2e-4f5f-9d73-b9bb4cdf42b0",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "612add01-2ea3-4b72-ae25-9f5c96305eb2",
+      "action_name": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 791.0,
+      "flow_id": "22ef3074-53d9-48fc-a4f3-bcabcbe7734f",
+      "action_id": "168c908c-91b5-4484-b158-891cdc5aecd3",
+      "span_id": "fc558147-727d-449f-97cc-f60bf9ce1dd2",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "0e39e99d-727c-4ca6-a864-b16daea71b5d",
+      "action_name": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 2.0000000001164153,
+      "flow_id": "ef474eb6-0070-4efc-bb0a-335f28722ad6",
+      "action_id": "d9268836-a59e-4288-8e44-1adcacca7a5d",
+      "span_id": "1039aafe-0421-4cdb-af12-a64cbb36541f",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "01fc7387-26cd-44bc-ac82-a7c08987b741",
+      "action_name": "vault_clear_secrets",
+      "outcome": "failed",
+      "duration_ms": 2.0,
+      "flow_id": "be79ed76-47fa-4566-a600-198a99ce6df2",
+      "action_id": "57b48c8f-af81-4559-a16a-9572a259ec0f",
+      "span_id": "342fc1ff-8a99-45b9-8a1f-556cee56f45f",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "d1cdf897-9cf6-4e0a-90a8-a80ff848fedd",
+      "action_name": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 833.0,
+      "flow_id": "a41099f5-b919-458f-96d6-ec5afbb2c9fa",
+      "action_id": "606b63e7-d438-414e-ad01-67ad57aa41df",
+      "span_id": "3e1cb926-d040-4261-b9fc-02215a469692",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "01f14ae6-f52e-46ab-97a7-56dab36e030e",
+      "action_name": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1.0,
+      "flow_id": "78588536-6941-4c64-9bcf-886957ec7f0e",
+      "action_id": "b96d336f-185b-4c2c-b0aa-1390f3dddd75",
+      "span_id": "c924d4bc-3a8b-4fc1-96e1-4e50047d4314",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "4d1c3852-0b49-4396-8fa1-84dfcc3ae048",
+      "action_name": "vault_clear_secrets",
+      "outcome": "completed",
+      "duration_ms": 705.0000000000073,
+      "flow_id": "9e8bb6f6-c864-476d-b695-0677814f68e9",
+      "action_id": "3c0b659f-d2ea-4052-a8d6-5982ed573512",
+      "span_id": "20aacfc3-de93-4501-a559-119c56b9a6b7",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "941c1c29-124d-4964-9cb4-0e2d6fdbfbd0",
+      "action_name": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 812.0,
+      "flow_id": "6b476222-ccf5-44ff-b1e3-b1ce75208c29",
+      "action_id": "470113a5-5381-46e5-89ce-08e11fcc2568",
+      "span_id": "702057ec-f1f6-49c3-ae2d-dee0b4d8afe8",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "7d013795-90b3-4bcf-be38-5b82865c72a6",
+      "action_name": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1.0,
+      "flow_id": "10d6887e-b4ab-46e3-8a61-e17c96aea77b",
+      "action_id": "79ec6e47-7d75-402b-ae3c-d0bd5ab5d6ca",
+      "span_id": "e3271dae-8d5b-457b-bd88-ca050383c604",
+      "parent_span_id": null
+    }
+  ],
+  "scope": "Actual native UI; saved secret read-back uses configured flags, not plaintext equality. No live provider call or cross-platform claim."
+}

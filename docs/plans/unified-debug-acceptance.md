@@ -45,7 +45,7 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Persona and Scene | Actual mock-backend Chromium generation/application/save/reload/CAS conflict; Persona/Scene hook diagnostic tests | Tested chains have editor-owned flows, separate actions and persisted resource identity; no generated content copied into global events. |
 | Study, attachments and interactive questions | Chromium lost-reply reload recovery, multipart success/rejection, answer CAS conflict/retry and automatic callback recovery | These branches have persisted read-back, callback flow retention and grading/content exclusion checks. No provider exactly-once claim. |
 | Tavern direct, partial/retry, cancellation and restart | Chromium direct/recovery, partial child retry and cancel; `test_diagnostic_tavern_flows.py`, `test_diagnostic_tavern_crash.py` | Canonical IDs and committed Message sequence inspected; actual child process exit and expired-lease takeover covered. Unflushed crash events remain unknown. |
-| Settings and native Vault | Safe-projection adversarial tests and actual controller Chromium test; native UI/save package plus `unified-debug-native-v1.json` and `unified-debug-native-save-v1.json` | Existing Vault unlock/read-back, two settings/Vault saves, lock and subsequent unlock verified on macOS. Successful creation and clear-secrets diagnostic chains remain unverified; locked/unavailable helper tests do not close them. |
+| Settings and native Vault | Safe-projection adversarial tests and actual controller Chromium test; native UI/save package plus `unified-debug-native-v1.json` and `unified-debug-native-save-v1.json` | Existing Vault unlock/read-back, two settings/Vault saves, lock and subsequent unlock verified on macOS. Isolated native creation and clear-secrets now verified, including restart/unlock read-back; missing Stronghold remove permission was fixed. See the create/clear evidence below. |
 | JSON import and export actions | `bounded-json-import.ts`, `diagnostic-actions.test.ts`, `export-json.ts`; browser package download and native save-dialog file validated against `DiagnosticExportV1` | Read/JSON syntax/size outcomes and export handoff verified. Full Persona/Scene import actions now include domain validation and guarded draft application; both actual-browser cases verify failed/completed/cancelled terminal events and no save request. |
 | Native startup/sidecar exit and offline spool | `src/diagnostics.rs`, `diagnostic_desktop_spool.py`, real sidecar exit tests, native saved startup/shutdown events | Local Unix lifecycle and retry/acknowledgement verified. Spool empty and stable refusal counters indicate recovery, not proof of complete collection. Other platforms/power-loss semantics unverified. |
 | Provider timing, usage source, retry and configuration | `test_diagnostic_provider.py` plus `test_diagnostic_audit.py` real observer retry input | Parent/attempt identity, measured duration, reported-token-only aggregation and explicit missing fields verified. No current live MiniMax request or cost evidence; missing endpoint/configuration evidence is retained. |
@@ -61,10 +61,10 @@ their described cases; an unavailable measurement or platform remains unknown.
 
 ## Remaining completion work
 
-1. Obtain native creation and clear-secrets success evidence in a separate
-   disposable test Vault, preserving the existing test Vault. Creation through
-   the UI requires the user to enter and submit the new credential under the
-   computer-use policy; synthetic library tests alone cannot certify that UI.
+1. Native creation and clear-secrets success evidence is now complete for the
+   isolated macOS test Vault (see below), including the capability fix and
+   restart/read-back. Preserve this evidence in the final native/release audit;
+   it does not certify other platforms.
 2. Complete whole-workflow and remaining native/rendering overhead comparisons.
    Retain the failed saturated-spool sample; do not weaken durability or widen
    budgets solely to produce a passing result.
@@ -840,3 +840,28 @@ The Persona branch passed a one-pair compatibility smoke after three warmups.
 No production code changed in this slice; the earlier full release result remains
 scoped to its recorded revision. Remaining native functional and performance work
 is not closed by these measurements.
+
+## Native creation and clear-secrets completion
+
+The user created the isolated Vault, and actual persisted `vault_create` start and
+completed events share action/flow/span identity; duration was 762 ms. A synthetic
+API key was then saved through Settings. Lock/unlock and a full app restart/unlock
+restored all four effective configured flags, proving data existed before clearing.
+
+The first actual Clear action failed: Tauri rejected `remove_store_record` because
+`stronghold:default` does not grant it. Added only
+`stronghold:allow-remove-store-record` to the main-window capability. The isolated
+application rebuilt successfully (`/tmp/diagnostic-clear-build.log`) and was
+replaced/restarted with the same test storage. Clear then completed in 705 ms.
+After another complete app restart and authorized unlock, the UI reported no API
+key and all four backend configured flags remained false. The original acceptance
+Vault was not modified; this disposable Vault remains configured but empty/unlocked.
+
+[Native create/clear evidence](../acceptance/unified-debug-native-create-clear-v1.json)
+archives 170-event validation count and only safe action metadata, retaining both
+failed and completed clear outcomes. Every terminal action has matching start
+identity. All stored events passed `DiagnosticEventV1`; the synthetic secret was
+absent. Read-back proves configured state, not a plaintext API comparison. No live
+provider call was made. The actual rebuilt native UI verifies the capability fix;
+prior full release tests remain historical, and final broad acceptance plus open
+Scene/saturated-spool and other performance work remain outstanding.
