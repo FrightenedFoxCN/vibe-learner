@@ -400,7 +400,6 @@ class HarnessProposalRuntimeService:
             kind=kind,
             request_manifest=manifest.model_dump(mode="json", exclude_none=False),
         )
-        reference_harness(binding)
         try:
             snapshot, grant_id = self._register_snapshot(
                 binding=binding,

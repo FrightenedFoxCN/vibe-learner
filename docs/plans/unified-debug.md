@@ -17,6 +17,7 @@
   - 覆盖 Document/OCR/清洗、Planning/tools、Persona/Scene、Study/题目/附件、Tavern、Settings/Vault、导入导出及桌面启动/sidecar 退出。
   - Harness/operation receipt 保持事实来源；诊断索引引用真实记录，不复制完整 trace 或把 HTTP 200 当提交成功。
   - 记录阶段、尝试、provider/tool 耗时、token 来源、预算、恢复和缺失数据；关联与终态索引支持重启补建和幂等去重。
+  - 2026-09-10 索引切片：新增独立 `harness-index.sqlite3`，分页扫描 canonical runtime、原子保存 checkpoint 和受限指标投影，重启去重并周期补扫晚到提交；来源删除/异常有明确缺口。request→operation 关联单独持久化，事件列表清理后仍可查询。37 项诊断/index/生命周期/Harness runtime/commit 测试及 shared contracts/Web 类型门通过。模型、usage、费用当前诚实标记未被 canonical trace 记录；provider/tool 指标、完整流程覆盖、查询 UI 与性能量测仍待后续切片。
 
 - [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。

@@ -1,4 +1,4 @@
-import type { HarnessWorkflow, HarnessStage, HarnessAttemptPhase, HarnessAttemptStatus } from "./harness";
+import type { HarnessWorkflow, HarnessStage, HarnessAttemptPhase, HarnessAttemptStatus, HarnessStatus, HarnessCommitStatus } from "./harness";
 
 /** Diagnostic hints only; HTTP completion never establishes domain commit. */
 export interface DiagnosticEventV1 {
@@ -46,4 +46,28 @@ export function classifyDiagnostic(name: DiagnosticEventV1["name"], statusCode: 
     if (name === "request_finished") result.outcome = "failed";
   }
   return result;
+}
+
+
+/** Eventually consistent diagnostic projection. Resolve canonical records for commit truth. */
+export interface DiagnosticHarnessIndexV1 {
+  schema_version: "diagnostic-harness-index-v1";
+  trace_id: string;
+  parent_trace_id: string | null;
+  operation_id: string | null;
+  workflow: HarnessWorkflow | null;
+  stage: HarnessStage | null;
+  state: "prepared" | "claimed" | "terminal" | null;
+  status: HarnessStatus | null;
+  commit_status: HarnessCommitStatus | null;
+  duration_ms: number | null;
+  started_at: string | null;
+  completed_at: string | null;
+  source_updated_at: string | null;
+  gap: "source_removed" | "source_invalid_or_unavailable" | "terminal_trace_not_available" | null;
+  components: { name: string; version: string }[];
+  attempts: { attempt_id: string; attempt_index: number; phase: HarnessAttemptPhase; status: HarnessAttemptStatus; duration_ms: number }[];
+  provider: null; model: null; tokens: null; cost: null;
+  usage_gap: "not_recorded_in_canonical_trace";
+  correlation_gap: "resolve_request_links_separately";
 }

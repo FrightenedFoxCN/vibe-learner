@@ -1263,3 +1263,23 @@ claim about domain commit. `harness_reference.harness` can identify an individua
 canonical attempt with `attempt_id`, `attempt_index`, `phase`, and
 `attempt_status`. Its event duration is that attempt's duration, never an added
 parent-plus-child total. Canonical trace/error/content remain in Harness storage.
+
+
+`GET /diagnostics/harness-index?after=&limit=100&operation_id=...` returns bounded
+`diagnostic-harness-index-v1` projections and index coverage. `after` is the last
+trace ID; the optional operation filter selects one admitted operation. The
+separate index database stores a durable sweep cursor and one row per trace,
+revisits earlier keys to catch late commits, and records missing/invalid sources
+as explicit gaps. It copies only reviewed identity, registered component
+versions, status and attempt metrics, not the complete trace or protected input.
+`coverage.canonical_read_back_required` is always true; this eventually consistent
+index is not a receipt. Trace contexts currently lack provider/model/usage/cost
+bindings; these values remain null with `usage_gap`, never inferred from defaults.
+
+`GET /diagnostics/operation-links?operation_id=...&after=&limit=100` returns
+server-recorded request/client/page-view/flow/action links. Here `after` is the
+last request ID. Links are written atomically with server reference events and
+retained separately from the bounded event list. Missing links are reported as
+`no_correlation_recorded_or_retained`; historical requests are never fabricated
+from a recovered Harness trace. Index and link retention budgets remain part of
+the diagnostic audit stage.

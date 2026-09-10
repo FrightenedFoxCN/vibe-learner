@@ -44,3 +44,17 @@ def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Que
                        "page_view_id": page_view_id, "flow_id": flow_id, "source": source})
     return {"items": rows, "next_cursor": rows[-1]["sequence"] if rows else after,
             "health": store.health()}
+
+
+@router.get("/harness-index")
+def query_harness_index(request: Request, after: str = Query("", max_length=160),
+                        limit: int = Query(100, ge=1, le=100), operation_id: Identity | None = None):
+    index = getattr(request.app.state, "diagnostic_index", None)
+    if index is None:
+        raise HTTPException(503, "diagnostic_index_unavailable")
+    return index.query(after=after, limit=limit, operation_id=operation_id)
+
+
+@router.get("/operation-links")
+def query_operation_links(request: Request, operation_id: Identity, after: str = Query("", max_length=96), limit: int = Query(100, ge=1, le=100)):
+    return request.app.state.diagnostics.operation_links(operation_id, after, limit)

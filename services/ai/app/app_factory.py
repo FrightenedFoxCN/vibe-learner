@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 from collections.abc import Callable
 
 from app.core.diagnostics import DiagnosticStore
+from app.services.diagnostic_index import DiagnosticHarnessIndex
+from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
+from app.persistence.database import Database
 from app.api.diagnostic_middleware import DiagnosticMiddleware
 
 from fastapi import FastAPI
@@ -28,13 +31,20 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
         diagnostics.start()
         diagnostics.emit("lifecycle_started")
         container = None
+        index = None
         try:
             container = container_factory(settings)
             container.start()
             app.state.container = container
+            if isinstance(container.database, Database):
+                index = DiagnosticHarnessIndex(HarnessRuntimeRepository(container.database), settings.resolved_storage_root / "diagnostics" / "harness-index.sqlite3")
+                app.state.diagnostic_index = index
+                index.start()
             yield
         finally:
             app.state.container = None
+            if index is not None:
+                index.close()
             try:
                 if container is not None:
                     container.close()

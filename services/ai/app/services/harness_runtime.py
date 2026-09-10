@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.core.diagnostics import reference_harness
+
 from app.models.harness_runtime_commit import HarnessRuntimePreparedOutput, HarnessRuntimeFinalizeResult
 
 from dataclasses import dataclass
@@ -194,7 +196,9 @@ class HarnessOperationRuntime:
             context=request.context,
             parent_trace_id=request.parent_trace_id,
         )
+        reference_harness(request.operation_binding)
         if execution.terminal_trace is not None:
+            reference_harness(request.operation_binding, execution.terminal_trace)
             return execution
         recovery = self.repository.inspect_recovery(execution.trace_id)
         if recovery.disposition == HarnessRuntimeRecoveryDisposition.READ_BACK_REQUIRED:

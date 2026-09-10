@@ -157,6 +157,15 @@ class HarnessRuntimeRepository:
         row = session.get(HarnessRuntimeExecutionRow, trace_id)
         return _from_row(row) if row is not None else None
 
+    def list_trace_ids(self, *, after: str = "", limit: int = 25) -> tuple[str, ...]:
+        """Bounded primary-key scan for disposable diagnostic projections."""
+        if not 1 <= limit <= 100:
+            raise ValueError("harness_trace_scan_limit")
+        with self.database.session() as session:
+            return tuple(session.scalars(select(HarnessRuntimeExecutionRow.trace_id)
+                .where(HarnessRuntimeExecutionRow.trace_id > after)
+                .order_by(HarnessRuntimeExecutionRow.trace_id).limit(limit)))
+
     def list_operation_traces(
         self,
         harness_operation_id: str,

@@ -114,12 +114,26 @@ class DiagnosticStore:
             self.write_failures += 1
             return []
 
+    def operation_links(self, operation_id: str, after: str = "", limit: int = 100):
+        if not 1 <= limit <= 100:
+            raise ValueError("diagnostic_link_page_limit")
+        try:
+            from contextlib import closing
+            with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
+                rows = db.execute("SELECT payload FROM operation_links WHERE operation_id=? AND request_id>? ORDER BY request_id LIMIT ?", (operation_id, after, limit)).fetchall()
+            items = [json.loads(row[0]) for row in rows]
+            return {"items": items, "next_cursor": items[-1]["request_id"] if items else after,
+                    "gap": None if items else "no_correlation_recorded_or_retained"}
+        except (sqlite3.Error, OSError):
+            return {"items": [], "next_cursor": after, "gap": "diagnostic_store_unavailable"}
+
     def _run(self):
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with sqlite3.connect(self.path, timeout=0.1) as db:
                 db.execute("PRAGMA journal_mode=WAL")
                 db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
+                db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
                 for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
                     db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
                 while not self._stop.is_set() or not self.queue.empty():
@@ -129,6 +143,12 @@ class DiagnosticStore:
                         continue
                     try:
                         db.execute("INSERT OR IGNORE INTO events(event_id,payload) VALUES (?,?)", (event.event_id, event.model_dump_json()))
+                        if event.source == "server" and event.harness is not None and event.request_id is not None:
+                            link = {"operation_id": event.harness.operation_id, "request_id": event.request_id,
+                                    "client_instance_id": event.client_instance_id, "page_view_id": event.page_view_id,
+                                    "flow_id": event.flow_id, "action_id": event.action_id}
+                            db.execute("INSERT OR IGNORE INTO operation_links VALUES (?,?,?)",
+                                       (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
                         # Initial hard bound. Time/byte retention and export follow in OBS-AUDIT.
                         db.execute("DELETE FROM events WHERE sequence <= (SELECT COALESCE(MAX(sequence),0)-10000 FROM events)")
                         db.commit()
