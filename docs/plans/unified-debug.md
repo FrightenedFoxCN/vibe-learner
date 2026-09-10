@@ -40,6 +40,8 @@
 
   - 2026-09-10 查询切片：事件查询新增 operation/workflow/stage、资源、severity 与显式时区范围筛选，持久 request 关联支持跨事件查询，游标增加有界 has_more。事件/关联内容读取重验，故障返回明确不可用状态并区分 read/write failure；索引查询只读并支持 workflow/stage。24 项后端诊断/index/生命周期测试及 shared/Web 类型门通过。历史关联缺少 workflow/stage 的覆盖限制、源时间语义与资源筛选范围已写入 API 文档；前端严格查询适配器和 timeline 尚待完成。
 
+  - 2026-09-10 前端查询适配器切片：events/index/operation-links 使用后端模型生成的共享白名单，严格验证嵌套字段、分类、attempt 完整性及单页游标/重复身份；传输上限 2 MiB、5 秒 timeout 与调用方 abort 共存，查询不递归记录，故障不回显原文。6 项前端查询测试、3 项后端查询/模型漂移测试及 Web 类型门通过，覆盖真实 Python provider/tool/attempt/desktop DTO 样本。适配器尚未接入浮窗，timeline 与跨页结果合并仍待后续切片。
+
 - [ ] `OBS-AUDIT-001` `[P2]` 完成诊断留存、导出与性能审计验收；依赖 `OBS-DEBUG-001`。
   - 本地 append 存储、游标分页、轮转/清理及诊断包导出；内容按白名单脱敏，受保护内容仍走 artifact resolver，凭据及未提交评分材料不得进入全局日志。
   - 样本按 workflow/stage、模型、配置/组件版本分组；输出原始指标、P50/P95、失败/恢复/unknown 数和缺口，父子耗时不能重复相加。

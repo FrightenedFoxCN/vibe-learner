@@ -1389,3 +1389,16 @@ Harness index queries additionally accept `workflow` and `stage` and return
 `has_more`. Query uses a read-only connection: absent/unavailable index storage
 reports `coverage.freshness=unavailable` and never creates a blank index as a
 side effect. The worker remains responsible for index creation/rebuild.
+
+
+The browser query adapter (`apps/web/lib/diagnostic-query.ts`) validates event,
+index and operation-link DTOs against the checked-in Pydantic schema whitelist
+in `packages/shared/fixtures/diagnostics/query-schemas-v1.json`; the backend
+query test checks schema drift. The adapter additionally checks classification,
+attempt completeness, ascending unique identities and exact cursor continuity.
+It rejects unknown nested properties rather than displaying them. Event/link
+queries request 100 rows; Harness index queries request 25. Responses are bounded
+to 2 MiB and five seconds, including with a caller cancellation signal. These
+queries bypass collection and expose fixed failure codes without server or
+network exception content. They are a validated read boundary, not a claim that
+the global timeline UI or multi-page audit snapshot is complete.

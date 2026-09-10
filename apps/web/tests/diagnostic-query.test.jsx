@@ -1,0 +1,88 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+import { decodeDiagnosticEvents, decodeDiagnosticIndex, decodeDiagnosticLinks, queryDiagnosticEvents, DiagnosticQueryError } from "../lib/diagnostic-query.ts";
+import { diagnosticSnapshot } from "../lib/diagnostics.ts";
+const fixture = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/query-pages-v1.json", import.meta.url), "utf8"));
+const copy = name => structuredClone(fixture[name]);
+const operation = fixture.links.items[0].operation_id;
+
+test("Python-produced event/index/link pages pass strict browser decoding", () => {
+  assert.deepEqual(decodeDiagnosticEvents(copy("events")), fixture.events);
+  assert.deepEqual(decodeDiagnosticIndex(copy("index")), fixture.index);
+  assert.deepEqual(decodeDiagnosticLinks(copy("links"), operation), fixture.links);
+});
+
+test("nested content, classification drift and incoherent pagination fail closed", () => {
+  for (const mutate of [
+    page => { page.PRIVATE = "secret"; },
+    page => { page.items[0].event.prompt = "PRIVATE"; },
+    page => { page.items[0].event.outcome = "failed"; },
+    page => { page.items[0].event.provider_metric = { secret: "PRIVATE" }; },
+    page => { page.items[0].event.desktop_metric = { instance_id: "desktop-abc", exit_code: 0, dropped_before: -1, write_failures_before: 0 }; },
+    page => { page.items.push({ ...page.items[0], sequence: 2 }); page.next_cursor = 2; },
+    page => { page.next_cursor = 2; },
+    page => { page.health.queued = NaN; },
+    page => { page.items[0].sequence = 0; },
+  ]) {
+    const page = copy("events"); mutate(page);
+    assert.throws(() => decodeDiagnosticEvents(page), error => error instanceof DiagnosticQueryError && !error.message.includes("PRIVATE"));
+  }
+  const index = copy("index"); index.items[0].attempts = [{ attempt_id: "a", attempt_index: 0, phase: "invented", status: "passed", duration_ms: 0 }];
+  assert.throws(() => decodeDiagnosticIndex(index), DiagnosticQueryError);
+  const links = copy("links"); links.items[0].operation_id = "harness-operation-" + "b".repeat(32);
+  assert.throws(() => decodeDiagnosticLinks(links, operation), DiagnosticQueryError);
+});
+
+test("empty results retain cursors and distinguish unavailable index/link responses", () => {
+  const events = copy("events"); events.items = []; events.next_cursor = 23;
+  assert.equal(decodeDiagnosticEvents(events, 23).next_cursor, 23);
+  events.has_more = true;
+  assert.throws(() => decodeDiagnosticEvents(events, 23), DiagnosticQueryError);
+  assert.equal(decodeDiagnosticIndex({ items: [], next_cursor: "last", has_more: false, coverage: { failures: 1, freshness: "unavailable", canonical_read_back_required: true } }, "last").coverage.freshness, "unavailable");
+  assert.equal(decodeDiagnosticLinks({ items: [], next_cursor: "", gap: "diagnostic_store_unavailable" }, operation).gap, "diagnostic_store_unavailable");
+});
+
+test("queries stay nonrecursive, encode filters and cancel oversized responses", async () => {
+  const original = globalThis.fetch;
+  const before = diagnosticSnapshot();
+  const controller = new AbortController();
+  try {
+    globalThis.fetch = async (url, init) => {
+      const parsed = new URL(url);
+      assert.equal(parsed.searchParams.get("page_path"), "/plan");
+      assert.equal(parsed.searchParams.get("since"), "2026-09-10T08:00:00+08:00");
+      assert.equal(init.signal.aborted, controller.signal.aborted);
+      return Response.json(copy("events"));
+    };
+    await queryDiagnosticEvents({ page_path: "/plan", since: "2026-09-10T08:00:00+08:00" }, 0, controller.signal);
+    assert.deepEqual(diagnosticSnapshot(), before);
+    globalThis.fetch = async () => new Response("PRIVATE_SERVER_ERROR", { status: 503 });
+    await assert.rejects(queryDiagnosticEvents(), error => error.code === "unavailable" && !error.message.includes("PRIVATE"));
+    globalThis.fetch = async () => { throw new Error("PRIVATE_NETWORK_ERROR"); };
+    await assert.rejects(queryDiagnosticEvents(), error => error.code === "unavailable" && !error.message.includes("PRIVATE"));
+    let cancelled = false;
+    globalThis.fetch = async () => new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(2 * 1024 * 1024 + 1)); }, cancel() { cancelled = true; } }));
+    await assert.rejects(queryDiagnosticEvents(), error => error.code === "response_too_large");
+    assert.equal(cancelled, true);
+  } finally { globalThis.fetch = original; }
+});
+
+test("actual Python provider/tool/attempt/desktop DTOs retain reviewed nested metrics", () => {
+  for (const event of fixture.metrics) {
+    const page = copy("events"); page.items[0].event = event;
+    assert.deepEqual(decodeDiagnosticEvents(page).items[0].event, event);
+  }
+});
+
+
+test("caller abort cancels the combined timeout signal and remains distinguishable", async () => {
+  const original = globalThis.fetch;
+  const controller = new AbortController();
+  globalThis.fetch = async (_url, init) => new Promise((_resolve, reject) => {
+    init.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+    controller.abort();
+  });
+  try { await assert.rejects(queryDiagnosticEvents({}, 0, controller.signal), error => error.name === "AbortError"); }
+  finally { globalThis.fetch = original; }
+});
