@@ -36,6 +36,8 @@
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。
   - 浮窗关闭不停止记录，不预拉取全部领域数据；检查路由切换卸载竞争、StrictMode 和过期页面快照。
 
+  - 2026-09-10 快照归属切片：Learning 与其他页面的快照共用稳定注册接口，按真实 page-view 与 owner fencing 发布；旧 owner 更新/卸载不可覆盖新页，路由变化立即隐藏不匹配快照。修复 PageDebug Context 更新反馈循环，以及设置加载前误清空浮窗打开偏好的问题。5 项 React 快照/StrictMode/路由测试、完整 Web reliability、生产构建及 Chromium Persona→Settings→Model Usage 切换/刷新验证通过；关闭浮窗仍记录的 Persona 纵向样例保持通过。全局诊断 timeline、关联筛选与 lazy query 尚待接入，本阶段保持未完成。
+
 - [ ] `OBS-AUDIT-001` `[P2]` 完成诊断留存、导出与性能审计验收；依赖 `OBS-DEBUG-001`。
   - 本地 append 存储、游标分页、轮转/清理及诊断包导出；内容按白名单脱敏，受保护内容仍走 artifact resolver，凭据及未提交评分材料不得进入全局日志。
   - 样本按 workflow/stage、模型、配置/组件版本分组；输出原始指标、P50/P95、失败/恢复/unknown 数和缺口，父子耗时不能重复相加。

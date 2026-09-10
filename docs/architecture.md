@@ -325,3 +325,17 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 ## Planned changes
 
 Version 0.3.1 includes the seven completed tasks in [Architecture refactor](plans/architecture-refactor.md), including modular test boundaries and local PostgreSQL transaction acceptance. [Unified diagnostics](plans/unified-debug.md) remains a separate, unimplemented plan.
+
+
+### Debug snapshot ownership
+
+The global Debug Overlay consumes in-memory page adapters through
+`components/owned-debug-snapshot.tsx`. Learning and general page providers share
+the same ownership protocol: registration binds the current diagnostic page-view
+and a private owner token; only that owner can update or clear its projection.
+Replacing a publisher fences its later updates and cleanup. Consumers immediately
+hide registrations whose page-view/path no longer matches navigation, without
+restoring older page snapshots. Stable subscription/publish APIs avoid snapshot
+updates re-triggering registration. The adapter does not load learning data or
+persist its rich content into diagnostic events. Diagnostic collection keeps its
+independent application lifetime when the overlay is closed.

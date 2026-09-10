@@ -1,7 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { createOwnedDebugSnapshot } from "./owned-debug-snapshot";
 import type { useLearningWorkspaceController } from "../hooks/use-learning-workspace-controller";
 
 // Debug consumes only a published projection; it never initializes learning data.
@@ -11,27 +10,8 @@ export type LearningDebugSnapshot = Pick<ReturnType<typeof useLearningWorkspaceC
   | "planStreamDocumentId" | "planStreamEvents" | "planStreamStatus"
 >;
 
-const SnapshotContext = createContext<LearningDebugSnapshot | null>(null);
-const PublishContext = createContext<Dispatch<SetStateAction<LearningDebugSnapshot | null>> | null>(null);
-
-export function DebugProvider({ children }: { children: ReactNode }) {
-  const [snapshot, setSnapshot] = useState<LearningDebugSnapshot | null>(null);
-  return (
-    <PublishContext.Provider value={setSnapshot}>
-      <SnapshotContext.Provider value={snapshot}>{children}</SnapshotContext.Provider>
-    </PublishContext.Provider>
-  );
-}
-
-export function useLearningDebugSnapshot() {
-  return useContext(SnapshotContext);
-}
-
-export function usePublishLearningDebugSnapshot(snapshot: LearningDebugSnapshot) {
-  const publish = useContext(PublishContext);
-  useEffect(() => {
-    if (!publish) return;
-    publish(snapshot);
-    return () => publish(null);
-  }, [publish, snapshot]);
-}
+const learning = createOwnedDebugSnapshot<LearningDebugSnapshot>();
+export const DebugProvider = learning.Provider;
+export const useLearningDebugSnapshot = learning.useSnapshot;
+export const useLearningDebugRegistration = learning.useRegistration;
+export const usePublishLearningDebugSnapshot = learning.usePublish;

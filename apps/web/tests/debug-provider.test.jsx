@@ -1,12 +1,19 @@
 import { dom } from "./support/dom.js";
 import assert from "node:assert/strict";
-import { after, afterEach, test } from "node:test";
+import { after, afterEach, beforeEach, test } from "node:test";
 import { StrictMode } from "react";
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 
 import { DebugProvider, useLearningDebugSnapshot, usePublishLearningDebugSnapshot } from "../components/debug-provider.tsx";
 
-afterEach(cleanup);
+import { registerDiagnosticPage } from "../lib/diagnostics.ts";
+import { PageDebugProvider, usePageDebugSnapshot, useCurrentPageDebugSnapshot } from "../components/page-debug-context.tsx";
+import { PathnameContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime.js";
+import { DiagnosticCollector } from "../components/diagnostic-collector.tsx";
+
+let page;
+beforeEach(() => { page = registerDiagnosticPage(); });
+afterEach(() => { cleanup(); page.dispose(); });
 after(() => dom.window.close());
 
 function Reader() {
@@ -50,4 +57,49 @@ test("Published snapshots update and are cleared when the learning owner leaves"
   assert.equal(view.getByRole("status").textContent, "no-learning-owner");
   view.rerender(renderTree(snapshot("restored")));
   assert.equal(view.getByRole("status").textContent, "restored");
+});
+
+
+for (const [name, Provider, publish, read, value, label] of [
+  ["learning", DebugProvider, usePublishLearningDebugSnapshot, useLearningDebugSnapshot, snapshot, state => state?.processStreamStatus],
+  ["page", PageDebugProvider, usePageDebugSnapshot, useCurrentPageDebugSnapshot, title => ({ title }), state => state?.title],
+]) {
+  test(`${name} snapshot ignores replaced owner's updates and cleanup under StrictMode`, () => {
+    function Owner({ state }) { publish(state); return null; }
+    function Output() { return <output role="status">{label(read()) ?? "empty"}</output>; }
+    const old = value("old");
+    const next = value("next");
+    const tree = (oldState, nextState) => <StrictMode><Provider>
+      {oldState && <Owner key="old" state={oldState} />}
+      {nextState && <Owner key="next" state={nextState} />}
+      <Output />
+    </Provider></StrictMode>;
+    const view = render(tree(old, null));
+    assert.equal(view.getByRole("status").textContent, "old");
+    view.rerender(tree(old, next));
+    assert.equal(view.getByRole("status").textContent, "next");
+    view.rerender(tree(value("late-old"), next));
+    assert.equal(view.getByRole("status").textContent, "next");
+    view.rerender(tree(null, next));
+    assert.equal(view.getByRole("status").textContent, "next");
+    view.rerender(tree(null, null));
+    assert.equal(view.getByRole("status").textContent, "empty");
+  });
+}
+
+test("actual route lifecycle hides stale page snapshots and publishes the replacement page", () => {
+  function Owner({ title }) { usePageDebugSnapshot({ title }); return null; }
+  function Output() { return <output role="status">{useCurrentPageDebugSnapshot()?.title ?? "empty"}</output>; }
+  const tree = (path, title) => <StrictMode><PathnameContext.Provider value={path}>
+    <DiagnosticCollector /><PageDebugProvider>{title && <Owner key={path} title={title} />}<Output /></PageDebugProvider>
+  </PathnameContext.Provider></StrictMode>;
+  const view = render(tree("/plan", "plan"));
+  assert.equal(view.getByRole("status").textContent, "plan");
+  view.rerender(tree("/settings", null));
+  assert.equal(view.getByRole("status").textContent, "empty");
+  view.rerender(tree("/settings", "settings"));
+  assert.equal(view.getByRole("status").textContent, "settings");
+  // Registration replacement invalidates the old page immediately, without requiring an unmount.
+  act(() => { const replaced = registerDiagnosticPage("/tavern"); replaced.dispose(); });
+  assert.equal(view.getByRole("status").textContent, "empty");
 });

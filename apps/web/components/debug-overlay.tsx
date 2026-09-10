@@ -20,7 +20,7 @@ import {
 
 export function DebugOverlay() {
   const pathname = usePathname();
-  const { showDebugInfo } = useRuntimeSettings();
+  const { showDebugInfo, settings } = useRuntimeSettings();
   const workspace = useLearningDebugSnapshot();
   const pageSnapshot = useCurrentPageDebugSnapshot();
   const [open, setOpen] = useState(false);
@@ -62,10 +62,10 @@ export function DebugOverlay() {
   }, [open, openPreferenceLoaded]);
 
   useEffect(() => {
-    if (!showDebugInfo) {
+    if (settings && !showDebugInfo) {
       closeOverlay();
     }
-  }, [closeOverlay, showDebugInfo]);
+  }, [closeOverlay, showDebugInfo, settings]);
 
   useEffect(() => {
     const handleToggle = () => {

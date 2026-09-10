@@ -8,6 +8,13 @@ let page: { owner: symbol; id: string; path: DiagnosticPagePath | null } | null 
 let events: DiagnosticEventV1[] = [];
 let pending: DiagnosticEventV1[] = [];
 let dropped = 0;
+const pageListeners = new Set<() => void>();
+export function currentDiagnosticPage() { return page; }
+export function subscribeDiagnosticPage(listener: () => void) {
+  pageListeners.add(listener);
+  return () => { pageListeners.delete(listener); };
+}
+function notifyPage() { for (const listener of pageListeners) listener(); }
 let uploading = false;
 const responseContexts = new WeakMap<Response, { context: DiagnosticContext; method: DiagnosticEventV1["method"] }>();
 
@@ -44,6 +51,7 @@ function reviewedPagePath(path: unknown): DiagnosticPagePath | null {
 export function registerDiagnosticPage(pathname?: string) {
   const registration = { owner: Symbol("page-view"), id: createDiagnosticId() ?? "", path: reviewedPagePath(pathname) };
   page = registration;
+  notifyPage();
   const context = diagnosticContext();
   const started = performance.now();
   let disposed = false;
@@ -53,7 +61,7 @@ export function registerDiagnosticPage(pathname?: string) {
     if (disposed) return;
     disposed = true;
     if (registration.id) emitDiagnostic("page_left", context, { ...fields, duration_ms: performance.now() - started });
-    if (page?.owner === registration.owner) page = null;
+    if (page?.owner === registration.owner) { page = null; notifyPage(); }
   } };
 }
 

@@ -39,3 +39,30 @@ test("closed Debug still records a real Persona generate/save/reload chain witho
   expect(JSON.stringify(events)).not.toContain("Diagnostic browser persona");
   expect(events.every(item => item.category && item.severity && item.outcome)).toBe(true);
 });
+
+test("production Debug shows only the current page adapter across client navigation", async ({ page, request }) => {
+  const response = await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: true } });
+  expect(response.ok()).toBe(true);
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/persona-spectrum");
+  await page.getByRole("button", { name: /Debug/ }).click();
+  await expect(page.getByRole("dialog").getByText("人格页调试面板", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.locator('a[href="/settings"]').click();
+  await page.getByRole("button", { name: /Debug/ }).click();
+  await expect(page.getByRole("dialog").getByText("设置页调试面板", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("人格页调试面板", { exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.locator('a[href="/model-usage"]').click();
+  await page.getByRole("button", { name: /Debug/ }).click();
+  await expect(page.getByRole("dialog").getByText("用量审计调试面板", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("设置页调试面板", { exact: true })).toHaveCount(0);
+  // The stored open preference survives the initial settings-loading state.
+  await page.reload();
+  await expect(page.getByRole("dialog").getByText("用量审计调试面板", { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
