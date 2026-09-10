@@ -689,3 +689,35 @@ Logs: `/tmp/settings-debug-tests.log`, `/tmp/settings-debug-check.log`,
 Native create/save/lock evidence, remaining performance and consolidated scope
 audit remain open. Current native spool failure counters also require inspection;
 successful export does not certify complete collection.
+
+## Native save, lock and subsequent unlock
+
+The isolated native Settings page toggled Debug off, waited for saved state, then
+restored Debug on and waited for saved state. Each normal settings save executes
+the real Vault save, session-secret synchronization and settings HTTP update.
+Both Vault child spans share their enclosing settings action/flow and point to
+the correct parent span. Observed settings/Vault durations were 766/754 ms and
+735/728 ms. Lock completed in 731 ms, the UI showed locked, and a subsequent
+unlock restored the configured-key state. Desktop settings GET deliberately
+returns blank keys, so this read-back checks configured flags and UI state rather
+than claiming an HTTP plaintext equality test.
+
+The native download handoff also has its matching completed event; its 18.643 s
+includes the human/UI save-dialog interval and is not serialization latency.
+All six named action kinds have completed events. Their diagnostic records omit
+the actual synthetic key. [Save-chain metadata](../acceptance/unified-debug-native-save-v1.json)
+archives identities, parent links and measured times.
+
+The five desktop-spool failures match five event-database `quota_unavailable`
+observations. They remained unchanged across these subsequent saves and reads;
+the native spool contains zero pending event files, writer queue is zero, writer
+is alive, read failures and quota-refusals are zero, and maintenance succeeded.
+The consumer retries a refused external persistence call without acknowledging or
+deleting the spool file. These observations support recovered admission contention,
+not five proven lost events. Exact historical per-attempt causes were not logged;
+the lower-bound/unknown coverage labels remain. No speculative counter reset or
+storage mutation was performed.
+
+Native creation diagnostics, performance coverage and the consolidated audit
+remain required. The earlier raw Settings projection issue is fixed, and native
+save/lock and diagnostic save-dialog paths now have concrete evidence.

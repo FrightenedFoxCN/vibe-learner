@@ -1,0 +1,104 @@
+{
+  "schema_version": "native-vault-save-acceptance-v1",
+  "platform": "macOS",
+  "settings_toggle_restored": true,
+  "native_ui_relocked_then_unlocked": true,
+  "read_back_scope": "Session-secret configured flags restored; desktop GET deliberately returns blank keys, not plaintext comparison.",
+  "synthetic_secret_excluded": true,
+  "event_count": 61,
+  "save_parent_child_correlation_verified": true,
+  "health": {
+    "dropped": 0,
+    "write_failures": 5,
+    "read_failures": 0,
+    "queued": 0,
+    "writer_alive": true
+  },
+  "desktop_spool": {
+    "rejected": 0,
+    "failures": 5
+  },
+  "actions": [
+    {
+      "event_id": "e1a44d58-6320-405e-9f29-371f965e71f6",
+      "action_name": "json_export_handoff",
+      "outcome": "completed",
+      "duration_ms": 18643.0,
+      "flow_id": "c8fa6a9a-d022-4f97-9df5-1e7aa6e7f226",
+      "action_id": "a189f6c6-343a-4924-bc9e-78ba462c3c1c",
+      "span_id": "c456aa7d-bcbe-457f-8b22-284c080a4e31",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "9cf006a5-5b89-4bac-a57e-285858bb7f9b",
+      "action_name": "vault_save_secrets",
+      "outcome": "completed",
+      "duration_ms": 753.9999999999418,
+      "flow_id": "f3f4d682-1865-4fae-8cdf-85e82f019784",
+      "action_id": "752d478e-17ba-4c6e-bde0-ee34f19883f7",
+      "span_id": "4c5b015a-2899-40dd-a8f5-0673d3059697",
+      "parent_span_id": "a045b3d1-4af3-4360-ab49-c34ac1315694"
+    },
+    {
+      "event_id": "9ce5f867-87c3-426c-b821-f6501e71d271",
+      "action_name": "settings_save",
+      "outcome": "completed",
+      "duration_ms": 766.0,
+      "flow_id": "f3f4d682-1865-4fae-8cdf-85e82f019784",
+      "action_id": "752d478e-17ba-4c6e-bde0-ee34f19883f7",
+      "span_id": "a045b3d1-4af3-4360-ab49-c34ac1315694",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "3665f688-0bfe-49fd-9b31-42c194038435",
+      "action_name": "vault_save_secrets",
+      "outcome": "completed",
+      "duration_ms": 728.0,
+      "flow_id": "fc97dd75-8b99-493c-a3f0-961320ca853d",
+      "action_id": "e6e6f727-db84-4ff5-acd7-ae851d7cb122",
+      "span_id": "ce48a7bf-7ae5-47aa-90a1-6fa47f1e1531",
+      "parent_span_id": "e5054cbd-1dfe-4b3e-be98-c1fe32d86f14"
+    },
+    {
+      "event_id": "b2634fb4-79f1-4c5d-89a0-258a4ce9c744",
+      "action_name": "settings_save",
+      "outcome": "completed",
+      "duration_ms": 735.0,
+      "flow_id": "fc97dd75-8b99-493c-a3f0-961320ca853d",
+      "action_id": "e6e6f727-db84-4ff5-acd7-ae851d7cb122",
+      "span_id": "e5054cbd-1dfe-4b3e-be98-c1fe32d86f14",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "5ee11aa0-e5df-4c74-8cbb-b8f795b73e99",
+      "action_name": "vault_lock",
+      "outcome": "completed",
+      "duration_ms": 731.0,
+      "flow_id": "190f4924-bf34-4db7-b2ec-1cafbc164e97",
+      "action_id": "8eb958e8-4a3f-430b-968a-9c33ed8990fe",
+      "span_id": "6f0cb964-35f7-42e6-b110-1a876dba11f4",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "065050ed-e2b2-4b49-a0f7-5a0f37e033f8",
+      "action_name": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 836.9999999999418,
+      "flow_id": "0b0675b7-3664-45c5-93c9-9264a1438976",
+      "action_id": "afe8b945-9bc6-4cec-a46c-4873aa5a9c83",
+      "span_id": "212de8f1-11cc-4cef-b7ac-f2d54a8381c5",
+      "parent_span_id": null
+    },
+    {
+      "event_id": "45f784d0-e6fa-4eec-9c04-f13c12d1a96e",
+      "action_name": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1.0,
+      "flow_id": "1d5ee719-86ce-419a-b84d-10c70918ef6e",
+      "action_id": "ee922b35-2527-45ec-8afe-a6867a06ef4a",
+      "span_id": "566b6962-6f1b-4268-9d78-34de9a1c612c",
+      "parent_span_id": null
+    }
+  ],
+  "remaining": "Native create diagnostic evidence, overhead and consolidated audit."
+}
