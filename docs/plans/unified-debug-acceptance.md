@@ -498,3 +498,16 @@ resource-set and canonical trace assertions, both diagnostic Tavern tests passed
 again in 0.448 seconds. Logs: `/tmp/diagnostic-tavern-cancel-{python,final}.log`.
 No production change was needed. Browser cancellation ownership, restart/lease
 correlation, OCR/native success and performance gates remain open.
+
+## Canceled Tavern application restart read-back
+
+The concurrent-cancel test now closes the entire FastAPI application and creates a
+fresh Container, database connections, diagnostics store and provider against the
+same temporary installation. Resume still reads back `canceled` with zero new
+provider calls and the immutable admitted binding unchanged. Every original turn
+diagnostic event ID survives; the new read-back has distinct event/request IDs,
+retains its explicitly supplied flow and observes exactly the persisted Room, Run
+and user Message. Two diagnostic Tavern scenarios passed in 0.503 seconds; log:
+`/tmp/diagnostic-tavern-restart-python.log`. This is orderly application restart and
+terminal read-back evidence, not process-crash recovery or live lease takeover.
+Those fault boundaries and browser flow ownership remain required follow-up work.

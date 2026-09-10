@@ -175,3 +175,23 @@ class DiagnosticTavernFlowTests(TestCase):
                 self.assertTrue(all(trace.commit_evidence.status.value == "not_committed" for trace in terminal))
                 for secret in ("PRIVATE_CANCEL_ROOM", "PRIVATE_CANCEL_MESSAGE", "PRIVATE_CANCEL_WAIT_TIMEOUT"):
                     self.assertNotIn(secret, json.dumps(all_events))
+            restarted = create_app(settings=Settings(database_url=f"sqlite:///{root / 'domain.db'}",
+                storage_root=str(root / "data"), plan_provider="mock", ocr_engine="disabled"),
+                container_factory=TavernDiagnosticContainer)
+            with TestClient(restarted) as client:
+                read_back = client.post(f"/tavern/rooms/{room_id}/runs/{run.id}/resume",
+                    headers={"X-Debug-Flow-Id": "cancel_flow", "X-Debug-Action-Id": "restart_resume"})
+                self.assertEqual(read_back.status_code, 200, read_back.text)
+                self.assertEqual(read_back.json()["run"]["status"], "canceled")
+                self.assertEqual(read_back.json()["generated_messages"], [])
+                self.assertEqual(restarted.state.container.tavern_service.model_provider.calls, [])
+                self.assertEqual(restarted.state.container.tavern_service.repository.require_harness_operation(run.id), binding)
+                restarted.state.diagnostics.queue.join()
+                old_events = [item["event"] for item in restarted.state.diagnostics.query(0, 100, {"action_id": "turn"})]
+                self.assertEqual({event["event_id"] for event in old_events}, {event["event_id"] for event in all_events if event["action_id"] == "turn"})
+                new_events = [item["event"] for item in restarted.state.diagnostics.query(0, 100, {"action_id": "restart_resume"})]
+                self.assertTrue(new_events)
+                self.assertTrue(all(event["request_id"] == read_back.headers["x-request-id"] and event["flow_id"] == "cancel_flow" for event in new_events))
+                self.assertEqual({event["resource"]["resource_id"] for event in new_events if event.get("resource")}, {room_id, run.id, room.messages[0].id})
+                self.assertTrue({event["event_id"] for event in new_events}.isdisjoint({event["event_id"] for event in all_events}))
+                self.assertNotIn("PRIVATE_CANCEL_MESSAGE", json.dumps(new_events))
