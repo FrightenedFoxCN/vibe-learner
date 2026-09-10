@@ -111,6 +111,8 @@
 
 - [x] 计划生成归入 `usePlanGeneration`，以显式 API port 注入上传/解析/计划/Session 请求，主 controller 只保留选择与视图投影。每轮生成持有独立响应归属，旧进度和 finally 不清空新任务；Scene 在生成入口捕获并用于初始 Session。独立 `test:workspace:generation` 6 项真实 Hook 行为测试通过，Web 类型、可靠性门禁、生产构建与 12 项 Chromium 路由验收通过。
 
+- [x] Scene 草稿结构、树操作、导入与 Profile 投影归入 `scene-editor-model`；候选生成归入 `useSceneGeneration`，以独立 port 调用生成 API。请求身份覆盖长文本文件读取，卸载/新请求/草稿变更/导入均阻止旧候选回写，成功结果仍需用户显式应用。独立 `test:scene:generation` 5 项真实 Hook 测试通过，Web 类型、可靠性门禁、生产构建与 12 项 Chromium 路由验收通过。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。
