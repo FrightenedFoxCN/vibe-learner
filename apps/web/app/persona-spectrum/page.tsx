@@ -8,7 +8,6 @@ import {
   useState,
   type ChangeEvent,
   type DragEvent as ReactDragEvent,
-  type SetStateAction,
 } from "react";
 import type { CSSProperties } from "react";
 import {
@@ -46,8 +45,8 @@ import { broadcastPersonaLibraryUpdated } from "../../lib/persona-library-sync";
 import {
   applyAsyncResult,
   AsyncResultFence,
-  type AsyncResultScope,
 } from "../../lib/async-result-fence";
+import { usePersonaDraft } from "../../hooks/use-persona-draft";
 import { usePersonaCardGeneration } from "../../hooks/use-persona-card-generation";
 import { matchesPersonaCard, matchesPersonaProfile } from "../../lib/persona-editor-model";
 import { isApiHttpError } from "../../lib/http-error";
@@ -60,7 +59,6 @@ import {
   mergePersonaAssistSlots,
   mergeReferenceHints,
   normalizeImportedPersonaConfig,
-  personaDraftFingerprint,
   personaToDraft,
   type PersonaDraft,
 } from "../../lib/persona-draft";
@@ -101,18 +99,34 @@ const SIDEBAR_PANE_WIDTH = 360;
 export default function PersonaSpectrumPage() {
   const configImportInputRef = useRef<HTMLInputElement>(null);
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
-  const [selectedPersonaId, setSelectedPersonaId] = useState("");
-  const selectedPersonaIdRef = useRef("");
-  const draftRevisionRef = useRef(0);
   const assistFenceRef = useRef(new AsyncResultFence());
   const configImportFenceRef = useRef(new AsyncResultFence());
   const saveFenceRef = useRef(new AsyncResultFence());
   const reloadFenceRef = useRef(new AsyncResultFence());
 
-  const [draft, setDraft] = useState<PersonaDraft>(EMPTY_PERSONA_DRAFT);
-  const [draftBaselineFingerprint, setDraftBaselineFingerprint] = useState(
-    personaDraftFingerprint(EMPTY_PERSONA_DRAFT),
-  );
+  const {
+    selectedPersonaId,
+    draft,
+    isDraftDirty,
+    currentPersonaSubject,
+    currentPersonaAsyncScope,
+    updatePersonaDraft,
+    replacePersonaDraft,
+    selectPersonaDraft,
+    confirmDiscardPersonaDraft,
+    activatePersonaDraft,
+    updatePersonaAssistInput,
+    markPersonaDraftSaved,
+    initializePersonaFromLibrary,
+    getSelectedPersonaId,
+  } = usePersonaDraft({
+    personas,
+    onSelectionChange: () => {
+      assistFenceRef.current.invalidate(); reloadFenceRef.current.invalidate();
+      setAssistPending(false); setSlotAssistIndex(null); resetCardGeneration();
+    },
+    onPromptDismiss: dismissSystemPromptSuggestion,
+  });
   const [savingPersona, setSavingPersona] = useState(false);
 
   const [loadError, setLoadError] = useState("");
@@ -168,120 +182,6 @@ export default function PersonaSpectrumPage() {
   const [personaLibraryMessage, setPersonaLibraryMessage] = useState("");
   const [personaLibraryError, setPersonaLibraryError] = useState("");
   const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
-  const isDraftDirty = useMemo(
-    () => personaDraftFingerprint(draft) !== draftBaselineFingerprint,
-    [draft, draftBaselineFingerprint],
-  );
-
-  function currentPersonaSubject(): string {
-    return selectedPersonaIdRef.current || "persona-draft:new";
-  }
-
-  function currentPersonaAsyncScope(fieldTarget: string): AsyncResultScope {
-    return {
-      subjectId: currentPersonaSubject(),
-      draftRevision: draftRevisionRef.current,
-      fieldTarget,
-    };
-  }
-
-  function updatePersonaDraft(next: SetStateAction<PersonaDraft>): void {
-    draftRevisionRef.current += 1;
-    setDraft(next);
-  }
-
-  function replacePersonaDraft(next: PersonaDraft, markClean: boolean): void {
-    updatePersonaDraft(next);
-    if (markClean) {
-      setDraftBaselineFingerprint(personaDraftFingerprint(next));
-    }
-  }
-
-  function selectPersonaDraft(personaId: string): void {
-    const normalizedPersonaId = personaId.trim();
-    if (selectedPersonaIdRef.current !== normalizedPersonaId) {
-      draftRevisionRef.current += 1;
-      assistFenceRef.current.invalidate();
-      reloadFenceRef.current.invalidate();
-      setAssistPending(false);
-      setSlotAssistIndex(null);
-      resetCardGeneration();
-    }
-    selectedPersonaIdRef.current = normalizedPersonaId;
-    setSelectedPersonaId(normalizedPersonaId);
-  }
-
-  function confirmDiscardPersonaDraft(action: string): boolean {
-    if (!isDraftDirty) {
-      return true;
-    }
-    return window.confirm(`当前人格有未保存修改。${action}会丢弃这些修改，是否继续？`);
-  }
-
-  function activatePersonaDraft(personaId: string, action = "切换人格"): boolean {
-    const normalizedPersonaId = personaId.trim();
-    if (normalizedPersonaId === selectedPersonaIdRef.current) {
-      return true;
-    }
-    if (!confirmDiscardPersonaDraft(action)) {
-      return false;
-    }
-    const nextPersona = personas.find((persona) => persona.id === normalizedPersonaId) ?? null;
-    const nextDraft = nextPersona ? personaToDraft(nextPersona) : { ...EMPTY_PERSONA_DRAFT };
-    selectPersonaDraft(normalizedPersonaId);
-    replacePersonaDraft(nextDraft, true);
-    dismissSystemPromptSuggestion();
-    return true;
-  }
-
-  function updatePersonaAssistInput(update: () => void): void {
-    draftRevisionRef.current += 1;
-    update();
-  }
-
-  useEffect(() => {
-    selectedPersonaIdRef.current = selectedPersonaId;
-  }, [selectedPersonaId]);
-
-  useEffect(() => {
-    if (!isDraftDirty) {
-      return;
-    }
-    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-    };
-    const guardLinkNavigation = (event: MouseEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) {
-        return;
-      }
-      const target = event.target;
-      const anchor = target instanceof Element ? target.closest("a[href]") : null;
-      if (!(anchor instanceof HTMLAnchorElement) || anchor.hasAttribute("download")) {
-        return;
-      }
-      const destination = new URL(anchor.href, window.location.href);
-      if (destination.href === window.location.href) {
-        return;
-      }
-      if (!window.confirm("当前人格有未保存修改。离开页面会丢弃这些修改，是否继续？")) {
-        event.preventDefault();
-      }
-    };
-    window.addEventListener("beforeunload", warnBeforeUnload);
-    document.addEventListener("click", guardLinkNavigation, true);
-    return () => {
-      window.removeEventListener("beforeunload", warnBeforeUnload);
-      document.removeEventListener("click", guardLinkNavigation, true);
-    };
-  }, [isDraftDirty]);
-
   useEffect(() => {
     if (!movePulse) {
       return;
@@ -328,11 +228,7 @@ export default function PersonaSpectrumPage() {
       if (personaResult.status === "fulfilled") {
         const personaList = personaResult.value;
         setPersonas(personaList);
-        const initialPersona = personaList[0];
-        if (initialPersona && !selectedPersonaIdRef.current) {
-          selectPersonaDraft(initialPersona.id);
-          replacePersonaDraft(personaToDraft(initialPersona), true);
-        }
+        initializePersonaFromLibrary(personaList[0]);
       } else {
         setLoadError(String(personaResult.reason));
       }
@@ -750,11 +646,11 @@ export default function PersonaSpectrumPage() {
         selectPersonaDraft(created.id);
         replacePersonaDraft(personaToDraft(created), true);
         dismissSystemPromptSuggestion();
-      } else if (selectedPersonaIdRef.current === "") {
+      } else if (getSelectedPersonaId() === "") {
         // The create committed, but the user kept editing the same new draft.
         // Bind that draft to the new record without replacing the newer edits.
         selectPersonaDraft(created.id);
-        setDraftBaselineFingerprint(personaDraftFingerprint(personaToDraft(created)));
+        markPersonaDraftSaved(personaToDraft(created));
       }
       setPersonaLibraryMessage(`已创建人格「${created.name}」。`);
       setPersonaLibraryError("");
@@ -794,7 +690,7 @@ export default function PersonaSpectrumPage() {
     setSaveError("");
     setPersonaLibraryError("");
     selectPersonaDraft("");
-    setDraftBaselineFingerprint(personaDraftFingerprint(EMPTY_PERSONA_DRAFT));
+    markPersonaDraftSaved(EMPTY_PERSONA_DRAFT);
     updatePersonaDraft(duplicated);
     dismissSystemPromptSuggestion();
     setPersonaLibraryMessage(`已复制为新草稿「${duplicated.name}」，保存后创建新人格。`);
@@ -808,7 +704,7 @@ export default function PersonaSpectrumPage() {
       return;
     }
     setLoadError("");
-    const targetPersonaId = selectedPersonaIdRef.current;
+    const targetPersonaId = getSelectedPersonaId();
     const reloadScope = currentPersonaAsyncScope("persona-reload");
     const ticket = reloadFenceRef.current.begin(reloadScope);
     try {
@@ -863,10 +759,10 @@ export default function PersonaSpectrumPage() {
       if (decision === "apply") {
         replacePersonaDraft(personaToDraft(updated), true);
         dismissSystemPromptSuggestion();
-      } else if (selectedPersonaIdRef.current === updated.id) {
+      } else if (getSelectedPersonaId() === updated.id) {
         // Preserve edits made while PATCH was in flight, but advance the
         // comparison baseline to the exact committed response.
-        setDraftBaselineFingerprint(personaDraftFingerprint(personaToDraft(updated)));
+        markPersonaDraftSaved(personaToDraft(updated));
       }
       setPersonaLibraryMessage(`已更新人格「${updated.name}」。`);
       setPersonaLibraryError("");
@@ -1289,8 +1185,8 @@ export default function PersonaSpectrumPage() {
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>名称</label>
-                <input style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
+                <label htmlFor="persona-draft-name" style={styles.fieldLabel}>名称</label>
+                <input id="persona-draft-name" style={styles.input} value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} />
               </div>
 
               <div style={styles.summaryFieldGroup}>

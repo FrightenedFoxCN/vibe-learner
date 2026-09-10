@@ -19,6 +19,8 @@
 | `npm --workspace @vibe-learner/web run test:scene:components` | 场景树展示按钮事件隔离、禁用态与编辑内容投影；不初始化领域 controller |
 | `npm --workspace @vibe-learner/web run test:persona:generation` | Persona 卡片候选生成、文件竞争、切换/卸载、显式回填与去重、清空确认和数量边界 |
 | `npm --workspace @vibe-learner/web run test:persona:generation:browser` | 真实数量输入的名称、1–24 上下限与可选语义；不检查源码字符串 |
+| `npm --workspace @vibe-learner/web run test:persona:draft` | Persona 草稿/基线/身份、迟到初始化、未保存确认与事件监听清理 |
+| `npm --workspace @vibe-learner/web run test:persona:draft:browser` | 未保存 Persona 输入在拒绝离页后保留，确认后正常导航 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |
