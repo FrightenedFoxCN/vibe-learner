@@ -3,8 +3,6 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from collections.abc import Callable
 
-from pathlib import Path
-
 from app.core.diagnostics import DiagnosticStore
 from app.api.diagnostic_middleware import DiagnosticMiddleware
 
@@ -25,7 +23,7 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        diagnostics = DiagnosticStore(Path(settings.storage_root) / "diagnostics" / "events.sqlite3")
+        diagnostics = DiagnosticStore(settings.resolved_storage_root / "diagnostics" / "events.sqlite3")
         app.state.diagnostics = diagnostics
         diagnostics.start()
         diagnostics.emit("lifecycle_started")

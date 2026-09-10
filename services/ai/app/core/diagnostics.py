@@ -31,6 +31,13 @@ def reference_harness(binding, trace=None):
             stage=trace.stage if trace is not None else binding.entry_stage,
             trace_id=trace.trace_id if trace is not None else None,
         ))
+        if trace is not None:
+            for attempt in trace.attempt_records:
+                store.emit("harness_reference", duration_ms=float(attempt.duration_ms), harness=DiagnosticHarnessReferenceV1(
+                    operation_id=trace.operation_id, workflow=trace.workflow, stage=trace.stage,
+                    trace_id=trace.trace_id, attempt_id=attempt.attempt_id,
+                    attempt_index=attempt.attempt_index, phase=attempt.phase, attempt_status=attempt.status,
+                ))
     except Exception:
         # No diagnostic validation/storage failure may change the domain outcome.
         if active_store.get() is not None:

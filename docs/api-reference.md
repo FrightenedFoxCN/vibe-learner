@@ -1254,3 +1254,12 @@ Server-only `harness_reference` events point to admitted operations and canonica
 terminal traces. `resource_reference` events identify saved Persona records with
 the actual revision. Both are diagnostic references, not substitutes for receipt
 or resource read-back. Browser ingestion rejects these names and reference fields.
+
+Event classification uses the shared `event-classification-v1.json` fixture.
+`category`, `severity`, `outcome`, and bounded `error_code` are derived from the
+closed event name and HTTP status, and conflicting uploads are rejected. HTTP
+errors have a failed transport outcome; successful transport still makes no
+claim about domain commit. `harness_reference.harness` can identify an individual
+canonical attempt with `attempt_id`, `attempt_index`, `phase`, and
+`attempt_status`. Its event duration is that attempt's duration, never an added
+parent-plus-child total. Canonical trace/error/content remain in Harness storage.

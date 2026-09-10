@@ -1,10 +1,33 @@
 """Content-free diagnostic hints; never authorization or commit evidence."""
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field
-from app.models.harness import HarnessStage, HarnessWorkflow
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from app.models.harness import HarnessStage, HarnessWorkflow, HarnessAttemptPhase, HarnessAttemptStatus
 from app.models.harness_operation import HARNESS_OPERATION_ID_PATTERN
 
 Identity = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]{1,96}$")]
+
+
+DIAGNOSTIC_EVENT_CATALOG = {
+    "request_started": ("transport", "info", "started", None),
+    "response_headers": ("transport", "info", "headers_received", None),
+    "request_finished": ("transport", "info", "completed", None),
+    "request_failed": ("transport", "error", "failed", "transport_failure"),
+    "request_cancelled": ("transport", "warning", "cancelled", "cancelled"),
+    "lifecycle_started": ("lifecycle", "info", "started", None),
+    "lifecycle_stopped": ("lifecycle", "info", "completed", None),
+    "harness_reference": ("harness", "info", "observed", None),
+    "resource_reference": ("resource", "info", "observed", None),
+}
+
+
+def classify_diagnostic(name, status_code=None):
+    category, severity, outcome, error_code = DIAGNOSTIC_EVENT_CATALOG[name]
+    if name in {"response_headers", "request_finished"} and isinstance(status_code, int) and status_code >= 400:
+        severity, error_code = "error" if status_code >= 500 else "warning", "http_error"
+        if name == "request_finished":
+            outcome = "failed"
+    return dict(category=category, severity=severity, outcome=outcome, error_code=error_code)
+
 
 
 class DiagnosticHarnessReferenceV1(BaseModel):
@@ -13,6 +36,18 @@ class DiagnosticHarnessReferenceV1(BaseModel):
     workflow: HarnessWorkflow
     stage: HarnessStage
     trace_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9:._-]{1,160}$")] | None = None
+    attempt_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9:._-]{1,160}$")] | None = None
+    attempt_index: Annotated[int, Field(ge=1)] | None = None
+    phase: HarnessAttemptPhase | None = None
+    attempt_status: HarnessAttemptStatus | None = None
+
+    @model_validator(mode="after")
+    def coherent_attempt(self):
+        fields = (self.attempt_id, self.attempt_index, self.phase, self.attempt_status)
+        if any(value is not None for value in fields) and (self.trace_id is None or any(value is None for value in fields)):
+            raise ValueError("diagnostic_attempt_reference_incomplete")
+        return self
+
     # A reference is an index hint; clients must resolve canonical records for truth.
 
 
@@ -31,6 +66,21 @@ class DiagnosticEventV1(BaseModel):
     name: Literal["request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference"]
     harness: DiagnosticHarnessReferenceV1 | None = None
     resource: DiagnosticResourceReferenceV1 | None = None
+    category: Literal["transport", "lifecycle", "harness", "resource"]
+    severity: Literal["info", "warning", "error"]
+    outcome: Literal["started", "headers_received", "completed", "failed", "cancelled", "observed"]
+    error_code: Literal["transport_failure", "http_error", "cancelled"] | None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reviewed_classification(cls, value):
+        if isinstance(value, dict) and isinstance(value.get("name"), str) and value.get("name") in DIAGNOSTIC_EVENT_CATALOG:
+            expected = classify_diagnostic(value["name"], value.get("status_code"))
+            if any(key in value and value[key] != item for key, item in expected.items()):
+                raise ValueError("diagnostic_classification_mismatch")
+            value = {**value, **expected}
+        return value
+
     timestamp: Annotated[str, Field(max_length=40)]
     request_id: Identity | None = None
     client_instance_id: Identity | None = None

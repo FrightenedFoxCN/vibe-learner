@@ -58,9 +58,7 @@ class Container:
             raise
 
     def _initialize(self) -> None:
-        data_root = Path(self.base_settings.storage_root).expanduser() if self.base_settings.storage_root else (
-            Path(__file__).resolve().parents[2] / "data"
-        )
+        data_root = self.base_settings.resolved_storage_root
         self.storage = StorageManager(data_root)
         self.database = Database(self.base_settings.database_url)
         self.database.create_schema()

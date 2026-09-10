@@ -1,0 +1,362 @@
+[
+  {
+    "name": "request_started",
+    "status_code": null,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "request_started",
+    "status_code": 200,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "request_started",
+    "status_code": 409,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "request_started",
+    "status_code": 503,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "response_headers",
+    "status_code": null,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "headers_received",
+      "error_code": null
+    }
+  },
+  {
+    "name": "response_headers",
+    "status_code": 200,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "headers_received",
+      "error_code": null
+    }
+  },
+  {
+    "name": "response_headers",
+    "status_code": 409,
+    "classification": {
+      "category": "transport",
+      "severity": "warning",
+      "outcome": "headers_received",
+      "error_code": "http_error"
+    }
+  },
+  {
+    "name": "response_headers",
+    "status_code": 503,
+    "classification": {
+      "category": "transport",
+      "severity": "error",
+      "outcome": "headers_received",
+      "error_code": "http_error"
+    }
+  },
+  {
+    "name": "request_finished",
+    "status_code": null,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "request_finished",
+    "status_code": 200,
+    "classification": {
+      "category": "transport",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "request_finished",
+    "status_code": 409,
+    "classification": {
+      "category": "transport",
+      "severity": "warning",
+      "outcome": "failed",
+      "error_code": "http_error"
+    }
+  },
+  {
+    "name": "request_finished",
+    "status_code": 503,
+    "classification": {
+      "category": "transport",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "http_error"
+    }
+  },
+  {
+    "name": "request_failed",
+    "status_code": null,
+    "classification": {
+      "category": "transport",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "transport_failure"
+    }
+  },
+  {
+    "name": "request_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "transport",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "transport_failure"
+    }
+  },
+  {
+    "name": "request_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "transport",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "transport_failure"
+    }
+  },
+  {
+    "name": "request_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "transport",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "transport_failure"
+    }
+  },
+  {
+    "name": "request_cancelled",
+    "status_code": null,
+    "classification": {
+      "category": "transport",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "request_cancelled",
+    "status_code": 200,
+    "classification": {
+      "category": "transport",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "request_cancelled",
+    "status_code": 409,
+    "classification": {
+      "category": "transport",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "request_cancelled",
+    "status_code": 503,
+    "classification": {
+      "category": "transport",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "lifecycle_started",
+    "status_code": null,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_started",
+    "status_code": 200,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_started",
+    "status_code": 409,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_started",
+    "status_code": 503,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_stopped",
+    "status_code": null,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_stopped",
+    "status_code": 200,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_stopped",
+    "status_code": 409,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "lifecycle_stopped",
+    "status_code": 503,
+    "classification": {
+      "category": "lifecycle",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "harness_reference",
+    "status_code": null,
+    "classification": {
+      "category": "harness",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "harness_reference",
+    "status_code": 200,
+    "classification": {
+      "category": "harness",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "harness_reference",
+    "status_code": 409,
+    "classification": {
+      "category": "harness",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "harness_reference",
+    "status_code": 503,
+    "classification": {
+      "category": "harness",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "resource_reference",
+    "status_code": null,
+    "classification": {
+      "category": "resource",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "resource_reference",
+    "status_code": 200,
+    "classification": {
+      "category": "resource",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "resource_reference",
+    "status_code": 409,
+    "classification": {
+      "category": "resource",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "resource_reference",
+    "status_code": 503,
+    "classification": {
+      "category": "resource",
+      "severity": "info",
+      "outcome": "observed",
+      "error_code": null
+    }
+  }
+]

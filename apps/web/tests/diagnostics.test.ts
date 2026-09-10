@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { diagnosticContext, diagnosticFetch, diagnosticSnapshot, emitDiagnostic, flushDiagnostics, registerDiagnosticPage } from "../lib/diagnostics.ts";
@@ -52,4 +54,11 @@ test("offline uploads retain identities; buffers stay bounded and report losses"
     assert.equal(batches[0], batches[1]);
     assert.equal(diagnosticSnapshot().pending, 900);
   } finally { globalThis.fetch = original; }
+});
+
+test("shared diagnostic classification stays aligned and distinguishes HTTP failure", () => {
+  const cases = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/event-classification-v1.json", import.meta.url), "utf8"));
+  for (const item of cases) assert.deepEqual(classifyDiagnostic(item.name, item.status_code), item.classification);
+  assert.equal(classifyDiagnostic("request_finished", 200).outcome, "completed");
+  assert.equal(classifyDiagnostic("request_finished", 503).outcome, "failed");
 });

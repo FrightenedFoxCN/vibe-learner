@@ -1,3 +1,4 @@
+import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
 import type { DiagnosticEventV1 } from "@vibe-learner/shared";
 
 export type DiagnosticContext = Pick<DiagnosticEventV1, "client_instance_id" | "page_view_id" | "flow_id" | "action_id">;
@@ -30,6 +31,7 @@ export function emitDiagnostic(name: DiagnosticEventV1["name"], context: Diagnos
   // Explicit projection: no URLs, bodies, exception strings or arbitrary object spreads.
   const event: DiagnosticEventV1 = {
     schema_version: "diagnostic-event-v1", event_id: crypto.randomUUID(), source: "browser", name,
+    ...classifyDiagnostic(name, fields.status_code),
     timestamp: new Date().toISOString(), route: null,
     client_instance_id: context.client_instance_id, page_view_id: context.page_view_id,
     flow_id: context.flow_id, action_id: context.action_id,

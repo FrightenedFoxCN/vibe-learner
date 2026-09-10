@@ -57,6 +57,10 @@ class Settings:
     def has_chat_api_key(self) -> bool:
         return bool(self.openai_chat_api_key.strip() or self.openai_api_key.strip())
 
+    @property
+    def resolved_storage_root(self) -> Path:
+        return Path(self.storage_root).expanduser() if self.storage_root else Path(__file__).resolve().parents[2] / "data"
+
     @classmethod
     def from_env(cls) -> "Settings":
         _load_dotenv()

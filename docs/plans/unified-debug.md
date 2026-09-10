@@ -4,13 +4,14 @@
 
 ### 统一 logging 与 Debug（按 1 → 2 → 3 → 4 实施）
 
-- [ ] `OBS-FOUNDATION-001` `[P1]` 建立统一诊断事件和关联上下文。
+- [x] `OBS-FOUNDATION-001` `[P1]` 建立统一诊断事件和关联上下文。
   - Python/TypeScript 共用版本化事件契约；区分客户端 action/page view、服务端 request、真实 Harness operation/trace/attempt 与持久资源身份。
   - 结构化 Python logging、前端请求入口及有界事件存储；在容器构造前初始化 logging。先打通 Persona 生成 → 保存 → 重载的纵向样例。
   - 关联 ID 仅用于诊断，不参与授权或幂等判断；跨线程、流式结束、取消和请求重放都必须正确关联。
-  - 2026-09-10 基础切片 A：已建立封闭 Python/TypeScript 事件契约、独立 SQLite 有界异步写入、结构化脱敏 Python 输出及 ASGI 请求/流式终态关联；原生 stream worker 显式复制上下文。10 项诊断/生命周期测试和 shared contracts 门通过。尚待浏览器采集、Persona 纵向关联、摄取/查询及更完整故障门；本项保持未完成。
-  - 2026-09-10 基础切片 B：浏览器统一请求采集、关闭浮窗持续记录、100 条批量上传与原 ID 离线重试、摄取白名单、游标查询及 request/action/page-view/flow/source 索引已接入。11 项后端诊断/生命周期测试、Web 类型检查及完整 Web reliability 门通过（原有两个 live-backend 用例按配置跳过）。Persona 跨动作 flow 与真实 Harness 引用仍待接入。
-  - 2026-09-10 基础切片 C：Persona 草稿归属 flow，生成/保存/重载分配独立 action，保存后刷新继承已捕获上下文；切换/新建/复制草稿重置 flow。服务端从真实 admission/terminal trace 写入受限 Harness 引用，并记录保存 Persona 的真实 ID/revision；浏览器不能上传权威引用。28 项后端诊断/生命周期/commit 测试、30 项 Persona 回归及 1 项组合关联测试、shared contracts/Web 类型检查通过。尚待完整事件分类/attempt 关联与浏览器端到端验收，第一阶段不提前关闭。
+  - 2026-09-10 完成：事件分类及 severity/outcome/error code 有 Python/TypeScript 共享样本；诊断 request、flow/action/page-view 与真实 Harness operation/trace/attempt、保存后的 Persona ID/revision 分开记录。浏览器上传不能伪造权威引用。
+  - 验收：31 项后端诊断/生命周期/commit/Persona 测试、4 项客户端诊断测试、Persona 组合关联测试、shared contracts/Web 类型检查及生产构建通过。Chromium 使用独立临时数据库与真实 mock 后端走通生成→保存→刷新→重载；Debug 关闭仍记录，日志无提示词/人格正文。重放读请求分配新 request ID，取消与 worker context 传播有回归门。
+  - 可复跑：`npm --workspace @vibe-learner/web run test:diagnostics:browser`（先 `npm run build:web`）；`services/ai/tests/test_diagnostics.py`、`apps/web/tests/diagnostics.test.ts` 与 `persona-diagnostics.test.jsx`。分步实现记录通过 Git 历史查询。跨流程重启索引、留存/导出与性能验收仍由后续三项负责。
+
 
 - [ ] `OBS-FLOWS-001` `[P1]` 覆盖全部功能流程和 Harness 性能记录；依赖 `OBS-FOUNDATION-001`。
   - 覆盖 Document/OCR/清洗、Planning/tools、Persona/Scene、Study/题目/附件、Tavern、Settings/Vault、导入导出及桌面启动/sidecar 退出。
