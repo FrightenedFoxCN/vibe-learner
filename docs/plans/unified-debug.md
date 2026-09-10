@@ -1,6 +1,6 @@
 # 统一 Logging 与 Debug 实施计划
 
-状态：实施中；按基础、流程、Debug 视图、审计四阶段分步提交。以下四项以本文件为唯一详细任务来源，根 TODO 仅链接。质量复核仍按用户要求暂缓。
+状态：已完成并归档（2026-09-10）；基础、流程、Debug 视图、审计四阶段已逐项核对并分步提交。最终实现为 `b271536`，验收范围见[最终归档](unified-debug-completion.md)及[验收矩阵](unified-debug-acceptance.md)。质量复核仍按用户要求暂缓，不计作本次独立验收。下方日期记录保留当时状态，当前状态以此处为准。
 
 ### 统一 logging 与 Debug（按 1 → 2 → 3 → 4 实施）
 
@@ -13,7 +13,7 @@
   - 可复跑：`npm --workspace @vibe-learner/web run test:diagnostics:browser`（先 `npm run build:web`）；`services/ai/tests/test_diagnostics.py`、`apps/web/tests/diagnostics.test.ts` 与 `persona-diagnostics.test.jsx`。分步实现记录通过 Git 历史查询。跨流程重启索引、留存/导出与性能验收仍由后续三项负责。
 
 
-- [ ] `OBS-FLOWS-001` `[P1]` 覆盖全部功能流程和 Harness 性能记录；依赖 `OBS-FOUNDATION-001`。
+- [x] `OBS-FLOWS-001` `[P1]` 覆盖全部功能流程和 Harness 性能记录；依赖 `OBS-FOUNDATION-001`。
   - 覆盖 Document/OCR/清洗、Planning/tools、Persona/Scene、Study/题目/附件、Tavern、Settings/Vault、导入导出及桌面启动/sidecar 退出。
   - Harness/operation receipt 保持事实来源；诊断索引引用真实记录，不复制完整 trace 或把 HTTP 200 当提交成功。
   - 记录阶段、尝试、provider/tool 耗时、token 来源、预算、恢复和缺失数据；关联与终态索引支持重启补建和幂等去重。
@@ -31,7 +31,7 @@
 
   - 2026-09-10 解码切片：API 响应以 Response 实例保留关联，JSON 语法、现有领域解码器和 Document/Planning 流契约拒绝记录独立 decode_failed；标量/null、页面切换后返回也关联原请求。原异常与 Tavern 明确终态重放边界保持，正文/异常/评分内容不进入诊断。5 项实际 API 诊断测试、21 项后端测试、完整 Web reliability、stream decoder 回归及 shared/Web 类型门通过；这些测试不证明尚未接入严格解码器的遗留 normalizer 已具备严格契约。
 
-- [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
+- [x] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。
   - 浮窗关闭不停止记录，不预拉取全部领域数据；检查路由切换卸载竞争、StrictMode 和过期页面快照。
@@ -44,7 +44,7 @@
 
   - 2026-09-10 时间线 UI 切片：Debug 新增当前页面/全局视图，页面请求按需展开；全局事件支持页面、来源、级别、workflow/stage、operation/request/action/flow、资源与本地时间筛选，Harness 索引单独按需加载。operation→request→events 可展开；事件/索引分别最多显示 500/250 条，分页去重，切换/关闭中止请求且 fence 迟到响应。4 项 React 时间线测试、完整 Web reliability、生产构建和 3 项 Chromium 场景通过；浏览器发现的三行布局与控件标签问题已修复，390px 无横向溢出且截图已检查。全流程覆盖和独立总验收仍未结束，本阶段暂不关闭。
 
-- [ ] `OBS-AUDIT-001` `[P2]` 完成诊断留存、导出与性能审计验收；依赖 `OBS-DEBUG-001`。
+- [x] `OBS-AUDIT-001` `[P2]` 完成诊断留存、导出与性能审计验收；依赖 `OBS-DEBUG-001`。
   - 本地 append 存储、游标分页、轮转/清理及诊断包导出；内容按白名单脱敏，受保护内容仍走 artifact resolver，凭据及未提交评分材料不得进入全局日志。
   - 样本按 workflow/stage、模型、配置/组件版本分组；输出原始指标、P50/P95、失败/恢复/unknown 数和缺口，父子耗时不能重复相加。
   - 注入离线、断进程、写盘失败、队列溢出、重复上传和大日志量；诊断故障不能改变业务提交结论，性能开销须量测。
@@ -366,3 +366,5 @@ P95 从 8.41ms 到 4.12ms；生产写入器未改变，须先完成真实旧格�
 22 项原生/20 项 Python 测试及真实跨运行时压力探针通过；完整 spool 满载 P95
 开发/优化 20.03/20.07ms，通过原定 25ms。旧失败完整保留；最终 release 和逐项
 关闭审计继续，详见 diagnostic-native-counter.md。
+
+2026-09-10 最终关闭：`b271536` 完成计数优化及全部集成门，四项要求逐条映射至验收矩阵并关闭；结果与限制见 unified-debug-completion.md。历史失败样本和阶段记录保留，独立质量复核仍暂缓。

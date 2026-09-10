@@ -1,26 +1,26 @@
 # Unified Debug implementation and acceptance checkpoint
 
-This is a requirement audit of [the active plan](unified-debug.md), not a
-replacement scope. The overall goal remains active. Independent quality review
-is deferred as requested; implementer tests are not presented as that review.
+This is the final requirement audit of [the implementation plan](unified-debug.md).
+The four implementation items are complete within the documented local acceptance
+scope; [the completion archive](unified-debug-completion.md) records disposition.
+Independent quality review remains deferred as requested; implementer tests are
+not presented as independent review. Chronological sections retain their original
+open/failed status as history, not current blockers.
 
-## Current evidence checkpoint (2026-09-10)
+## Final evidence checkpoint (2026-09-10)
 
-Audited source revision: `c20ef1f` (current requirement reconciliation). This replaces the old summary matrix;
-chronological sections below remain historical evidence with their original scope.
-Only `OBS-FOUNDATION-001` is checked in the implementation plan. The other three
-items remain open; implemented slices are distinguished from final acceptance.
-
-The current complete release run is `/tmp/diagnostic-release-c20ef1f.log` on
-`c20ef1f`: all 745 backend tests passed in 62.455 seconds, shared/Web reliability
-and type gates, all 13 Harness PR suites, and the production build passed.
-The current real Chromium suite passed all 16 cases in 24.9 seconds
-(`/tmp/diagnostic-browser-c20ef1f.log`). All 11 ordinary native tests passed in
-4.66 seconds, with four opt-in probes ignored (`/tmp/diagnostic-native-c20ef1f.log`).
+Audited implementation: `b271536`. Final integration gates passed on its source:
+`npm run check:release` with 745 backend tests in 62.758 seconds, shared/Web
+reliability and types, all 13 Harness PR suites and production Web build;
+16 actual Chromium cases in 24.2 seconds; 22 ordinary native tests in 4.57 seconds
+(five opt-in probes ignored); 20 targeted Python tests in 1.220 seconds; normal
+native build in 5.46 seconds. Opt-in native performance and cross-runtime pressure
+probes were separately executed and passed, as linked below.
+Logs: `/tmp/diagnostic-journal-release-gate.log`,
+`/tmp/diagnostic-journal-browser.log`, `/tmp/diagnostic-counter-final-native-tests.log`,
+`/tmp/diagnostic-counter-python-tests.log`, `/tmp/diagnostic-journal-native-build.log`.
 Actual macOS Vault creation, save/lock/unlock, clear/restart/read-back and native
-save-dialog export have their separately scoped evidence below. These fresh
-checks do not close the failed native saturated-spool budget or missing native
-WebView overhead measurement.
+save-dialog export retain their separately scoped evidence below.
 
 The earlier targeted audit `uv run --directory services/ai python -m unittest discover -s
 tests -p 'test_diagnostic*.py'` passed all 110 diagnostic tests in 9.976 seconds
@@ -58,26 +58,22 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
 | Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Original native failures remain archived. Integrated versioned counter checkpoints now pass saturated P95 at 20.03 ms development / 20.07 ms optimized against the unchanged 25 ms budget; migration/crash and cross-runtime pressure checks pass. Native Tauri WebView small/wide event populations now pass their scoped rendering budgets. |
-| Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
+| Final checks, commits and archive | Git history and named raw reports/logs | Final implementation `b271536` passed fresh release/native/browser gates. All four plan items map to this matrix and the completion archive; historical failures and deferred independent review remain explicit. |
 
-## Remaining completion work
+## Completion disposition
 
-1. Resolve the native saturated-spool performance failure. Native WebView
-   small/wide event overhead evidence is now complete within its stated scope. Keep all failed observations; do not weaken
-   durability or widen budgets solely to produce a passing result.
-2. Complete current release/native/browser gates, reconcile each top-level plan
-   item against the evidence and archive the final result. Deferred independent
-   review remains separate.
+No implementation or named local acceptance gate remains open in this plan.
+Foundation, flows, Debug ownership/query UI and audit/storage/fault/performance
+requirements map to the rows above. The previously failing saturated-spool gate
+now passes after the versioned counter implementation; native WebView small/wide
+event measurements also pass. All prior failed observations remain archived.
 
-Native creation/clear, the six scoped backend workflow populations and wide
-nested-event Chromium measurement are completed evidence, not pending tasks.
-Storage claim reconciliation is recorded in [the storage policy](../diagnostic-storage-policy.md):
-owner-specific quotas and recovery are verified, while a 200 MiB installation
-hard cap is not certified. This distinction follows the original candidate-default
-language and does not change implementation limits or erase their exceptions.
-
-The table does not reopen verified chains merely because unrelated gates are
-unfinished, and it does not narrow any requirement to the subset already tested.
+The [storage policy](../diagnostic-storage-policy.md) retains owner-specific quotas
+and recovery exceptions: 200 MiB is not a certified installation hard cap.
+The [counter protocol](../diagnostic-native-counter.md) documents that downgraded
+native writers reject the migrated checkpoint format. Live MiniMax quality,
+other platforms, power-loss guarantees and independent review are not certified.
+These boundaries do not claim lossless or complete-history diagnostic collection.
 
 ## Canonical resource projection slice
 
