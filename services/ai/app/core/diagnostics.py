@@ -121,6 +121,8 @@ class DiagnosticStore:
         self.retention = retention or DiagnosticEventRetention()
         from app.core.diagnostic_record_retention import DiagnosticRecordRetention
         self.link_retention = DiagnosticRecordRetention("operation_links")
+        from app.core.diagnostic_disk import DiagnosticDiskMaintenance
+        self.disk_maintenance = DiagnosticDiskMaintenance()
         self.path = path
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
         self.dropped = 0
@@ -212,12 +214,14 @@ class DiagnosticStore:
         try:
             payload = event.model_dump_json()
             with closing(sqlite3.connect(self.path, timeout=0.1)) as db:
+                self.disk_maintenance.configure(db)
                 with db:
                     existing = db.execute("SELECT payload FROM events WHERE event_id=?", (event.event_id,)).fetchone()
                     if existing is not None:
                         return DiagnosticEventV1.model_validate_json(existing[0]) == event
                     db.execute("INSERT INTO events(event_id,payload) VALUES (?,?)", (event.event_id, payload))
                     self.retention.prune(db)
+                self.disk_maintenance.maintain(db)
             return True
         except Exception:
             self.write_failures += 1
@@ -244,6 +248,7 @@ class DiagnosticStore:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with sqlite3.connect(self.path, timeout=0.1) as db:
+                self.disk_maintenance.configure(db)
                 db.execute("PRAGMA journal_mode=WAL")
                 db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
                 db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
@@ -255,6 +260,7 @@ class DiagnosticStore:
                 self.writer_coverage.initialize(db)
                 self._observe_writer(db)
                 db.commit()
+                self.disk_maintenance.maintain(db)
                 last_cleanup = 0.0
                 while not self._stop.is_set() or not self.queue.empty():
                     try:
@@ -268,6 +274,7 @@ class DiagnosticStore:
                                 self.link_retention.prune(db)
                                 self._observe_writer(db)
                                 db.commit()
+                                self.disk_maintenance.maintain(db)
                             except Exception:
                                 db.rollback()
                                 self.write_failures += 1
@@ -287,6 +294,7 @@ class DiagnosticStore:
                         self.link_retention.prune(db)
                         self._observe_writer(db)
                         db.commit()
+                        self.disk_maintenance.maintain(db)
                     except Exception:
                         self.write_failures += 1
                         self.dropped += 1
@@ -295,6 +303,7 @@ class DiagnosticStore:
                         self.queue.task_done()
                 self._observe_writer(db, closed=True)
                 db.commit()
+                self.disk_maintenance.maintain(db, force=True)
         except Exception:
             self.write_failures += 1
         finally:

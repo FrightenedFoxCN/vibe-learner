@@ -20,6 +20,8 @@ class DiagnosticHarnessIndex:
     def __init__(self, repository: HarnessRuntimeRepository, path: Path, *, retention=None):
         from app.core.diagnostic_record_retention import DiagnosticRecordRetention
         self.retention = retention or DiagnosticRecordRetention("projections")
+        from app.core.diagnostic_disk import DiagnosticDiskMaintenance
+        self.disk_maintenance = DiagnosticDiskMaintenance()
         self.repository = repository
         self.path = path
         self.failures = 0
@@ -31,6 +33,7 @@ class DiagnosticHarnessIndex:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         db = sqlite3.connect(self.path, timeout=0.1)
         try:
+            self.disk_maintenance.configure(db)
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("CREATE TABLE IF NOT EXISTS projections (trace_id TEXT PRIMARY KEY, operation_id TEXT, workflow TEXT, stage TEXT, payload TEXT NOT NULL)")
             if "last_seen_sweep" not in {row[1] for row in db.execute("PRAGMA table_info(projections)")}:
@@ -40,6 +43,7 @@ class DiagnosticHarnessIndex:
             db.execute("INSERT OR IGNORE INTO checkpoint VALUES ('runtime','',0)")
             self.retention.initialize(db)
             db.commit()
+            self.disk_maintenance.maintain(db)
             yield db
         finally:
             db.close()
@@ -78,6 +82,7 @@ class DiagnosticHarnessIndex:
             self.retention.prune(db)
             db.execute("UPDATE checkpoint SET cursor=?, sweeps=sweeps+? WHERE name='runtime'", ("" if exhausted else ids[-1], int(exhausted)))
             db.commit()
+            self.disk_maintenance.maintain(db)
             return len(ids)
 
     def query(self, after="", limit=100, operation_id=None, workflow=None, stage=None):

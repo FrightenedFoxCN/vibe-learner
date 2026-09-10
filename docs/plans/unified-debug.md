@@ -64,6 +64,8 @@
 
   - 2026-09-10 关联/索引留存切片：request→operation 关联按首次入库七天/一万行/4 MiB 留存；Harness 索引按可用 canonical 更新时间或首次观察七天/五千行/32 MiB 留存，过期源记录在重复补扫时不重新入库，后续真实更新可重新纳入。清理/计数同事务，旧库未知时间有迁移计数；诊断包及 Debug 展示清理缺口。40 项后端回归（含真实进程在清理提交前后退出）、共享契约、10 项查询/7 项时间线、生产构建和 3 项 Chromium 场景通过。限制只覆盖正文/行数，物理 DB/WAL 回收、总体磁盘上限与开销测量仍待完成。
 
+  - 2026-09-10 SQLite 回收切片：新诊断库启用 incremental auto-vacuum，写连接设置 WAL checkpoint/复用目标；提交后按周期回收空闲页并非阻塞尝试 TRUNCATE。旧库 VACUUM 转换有 SQLite progress 协作预算，忙/中断留待重试；维护不接管已有事务，失败不改写事件或业务提交结论。44 项后端回归通过，真实文件测试验证空间缩减、读快照占用后的恢复、迁移中断重试，以及维护失败时 Persona/Harness 仍完成。总体磁盘配额、维护状态对外投影和开销量测仍待完成，尚不声明 200 MiB 总体上限。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

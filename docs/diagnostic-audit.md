@@ -131,3 +131,34 @@ shares the independent index snapshot. The strict browser decoder validates
 these records and Debug displays cleanup counts and legacy-time gaps. No domain
 rows or canonical traces are removed. These are payload/row retention budgets;
 physical SQLite files, freelists and WAL reclamation remain separate work.
+
+
+## SQLite reclamation
+
+New diagnostic SQLite files enable incremental auto-vacuum before schema
+creation. Writer connections use a 256-page WAL autocheckpoint and a 1 MiB
+journal reuse target. The event writer, desktop spool persistence and index
+worker perform best-effort maintenance **after** diagnostic commits, at most
+once per minute per maintenance object; normal event-writer close also attempts
+maintenance. It skips active transactions and never commits or rolls back its
+caller's work.
+
+A maintenance cycle incrementally vacuums up to 256 free pages and attempts a
+nonblocking WAL TRUNCATE checkpoint. Long-lived readers can defer truncation;
+their snapshot is preserved and a later cycle retries. Legacy non-auto-vacuum
+files require a SQLite VACUUM migration. Migration/reclamation has a cooperative
+250 ms budget checked by SQLite progress callbacks, with zero busy timeout;
+interruption leaves the database valid and retries later. This is not a hard
+wall-clock bound on filesystem calls. Busy timeout/progress handlers are restored.
+A large/slow legacy migration may remain deferred across cycles.
+
+Maintenance failures do not relabel committed diagnostics or business results.
+Internal maintenance counters are process-local observations, separate from
+writer drop/write-failure counters. Physical total size is not certified by
+these settings: a pinned reader can retain WAL, live records consume pages,
+and multiple databases/spool files require aggregate budget enforcement. That
+aggregate admission/quota and performance measurement remain in the active plan.
+Regression tests use real SQLite files and verify freelist/file/WAL reduction,
+pinned-reader recovery, interrupted legacy migration, active-transaction
+preservation and a successful application/Harness result during maintenance
+failures.
