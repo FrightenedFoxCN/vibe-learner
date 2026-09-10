@@ -1,0 +1,61 @@
+{
+  "schema_version": "diagnostic-storage-v1",
+  "observed_at": "2026-09-10T09:13:39.548811Z",
+  "databases": [
+    {
+      "name": "events",
+      "max_bytes": 134217728,
+      "files": {
+        "database": 94208,
+        "wal": 41232,
+        "shm": 32768,
+        "journal": 0,
+        "lock": 0,
+        "total_bytes": 168208
+      },
+      "counters": {
+        "quota_refusals": 0,
+        "quota_unavailable": 0,
+        "maintenance_busy": 0,
+        "maintenance_failures": 0,
+        "maintenance_completed": 2,
+        "legacy_migrations": 0
+      },
+      "status": "within_observed_limit",
+      "gap": null
+    },
+    {
+      "name": "index",
+      "max_bytes": 67108864,
+      "files": {
+        "database": 40960,
+        "wal": 0,
+        "shm": 32768,
+        "journal": 0,
+        "lock": 0,
+        "total_bytes": 73728
+      },
+      "counters": {
+        "quota_refusals": 0,
+        "quota_unavailable": 0,
+        "maintenance_busy": 0,
+        "maintenance_failures": 0,
+        "maintenance_completed": 1,
+        "legacy_migrations": 0
+      },
+      "status": "within_observed_limit",
+      "gap": null
+    }
+  ],
+  "observation_scope": "independent_live_file_lengths_and_process_counters",
+  "sizes_are_atomic": false,
+  "counters_are_process_local": true,
+  "admission_guarantee": false,
+  "installation_disk_limit_certified": false,
+  "unmeasured": [
+    "desktop_spool",
+    "filesystem_allocation_and_metadata",
+    "external_writers",
+    "vacuum_temporary_files"
+  ]
+}

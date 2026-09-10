@@ -4,6 +4,7 @@ import type { DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIn
 import { queryDiagnosticEvents, queryDiagnosticIndex, queryDiagnosticLinks, queryDiagnosticWriters } from "../lib/diagnostic-query";
 import { currentDiagnosticPage, subscribeDiagnosticPage } from "../lib/diagnostics";
 import { useDiagnosticPages } from "../hooks/use-diagnostic-pages";
+import { DiagnosticStoragePanel } from "./diagnostic-storage-panel";
 import { DiagnosticAuditPanel } from "./diagnostic-audit-panel";
 import schemas from "../../../packages/shared/fixtures/diagnostics/query-schemas-v1.json";
 
@@ -101,7 +102,7 @@ function WriterResults() {
 export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnly?: boolean }) {
   const page = useSyncExternalStore(subscribeDiagnosticPage, currentDiagnosticPage, emptyPage);
   const [filters, setFilters] = useState<DiagnosticEventFilters>({});
-  const [mode, setMode] = useState<"events" | "index" | "writers" | "audit">("events");
+  const [mode, setMode] = useState<"events" | "index" | "writers" | "audit" | "storage">("events");
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
@@ -124,8 +125,8 @@ export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnl
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>开始时间（本地）<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} type="datetime-local" name="since" /></label><label style={{ display: "grid", gap: 4, minWidth: 0 }}>结束时间（本地）<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} type="datetime-local" name="until" /></label>
         <button style={button} type="submit">应用筛选</button>
       </form>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}><button style={button} aria-pressed={mode === "events"} onClick={() => setMode("events")}>事件时间线</button><button style={button} aria-pressed={mode === "index"} onClick={() => setMode("index")}>Harness 索引</button><button style={button} aria-pressed={mode === "writers"} onClick={() => setMode("writers")}>采集覆盖</button><button style={button} aria-pressed={mode === "audit"} onClick={() => setMode("audit")}>统计与导出</button></div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}><button style={button} aria-pressed={mode === "events"} onClick={() => setMode("events")}>事件时间线</button><button style={button} aria-pressed={mode === "index"} onClick={() => setMode("index")}>Harness 索引</button><button style={button} aria-pressed={mode === "writers"} onClick={() => setMode("writers")}>采集覆盖</button><button style={button} aria-pressed={mode === "audit"} onClick={() => setMode("audit")}>统计与导出</button><button style={button} aria-pressed={mode === "storage"} onClick={() => setMode("storage")}>存储状态</button></div>
     </>}
-    {currentPageOnly && !page?.id ? <p>当前页面尚未注册诊断身份。</p> : mode === "events" || currentPageOnly ? <EventResults key={JSON.stringify(effective)} filters={effective} /> : mode === "index" ? <IndexResults key={JSON.stringify(filters)} filters={filters} />  : mode === "writers" ? <WriterResults /> : <DiagnosticAuditPanel key={JSON.stringify(filters)} filters={filters} />}
+    {currentPageOnly && !page?.id ? <p>当前页面尚未注册诊断身份。</p> : mode === "events" || currentPageOnly ? <EventResults key={JSON.stringify(effective)} filters={effective} /> : mode === "index" ? <IndexResults key={JSON.stringify(filters)} filters={filters} />  : mode === "writers" ? <WriterResults /> : mode === "storage" ? <DiagnosticStoragePanel /> : <DiagnosticAuditPanel key={JSON.stringify(filters)} filters={filters} />}
   </section>;
 }

@@ -139,3 +139,20 @@ test("audit snapshot is explicit, reports statistics, and stale replies cannot s
   view.unmount();
   assert.equal(exports[2].signal.aborted, true);
 });
+
+test("storage view loads lazily and fences responses after leaving the view", async () => {
+  const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/storage-sample-v1.json", import.meta.url), "utf8"));
+  const pending = [];
+  globalThis.fetch = (url, init) => url.includes("/storage") ? new Promise(resolve => pending.push({ resolve, signal: init.signal })) : Promise.resolve(Response.json(fixture.events));
+  const view = render(<DiagnosticTimeline />);
+  assert.equal(pending.length, 0);
+  fireEvent.click(view.getByRole("button", { name: "存储状态" }));
+  await act(async () => pending[0].resolve(Response.json(sample)));
+  assert.ok(view.container.textContent.includes("已观察文件大小在预算内"));
+  assert.ok(view.container.textContent.includes("诊断拒绝不等于业务提交失败"));
+  fireEvent.click(view.getByRole("button", { name: "刷新存储状态" }));
+  fireEvent.click(view.getByRole("button", { name: "事件时间线" }));
+  assert.equal(pending[1].signal.aborted, true);
+  await act(async () => pending[1].resolve(Response.json(sample)));
+  assert.equal(view.queryByRole("heading", { name: "诊断存储状态" }), null);
+});

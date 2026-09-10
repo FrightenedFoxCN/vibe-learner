@@ -1474,3 +1474,20 @@ Diagnostic exports also contain `link_retention` and nullable `index_retention`
 They expose retained bytes/rows, deletion occurrences, limits and unknown legacy
 observation times. Deletion counts are not unique record counts; source-age
 exclusions are possible for the index. See [retention semantics](diagnostic-audit.md#link-and-index-retention).
+
+
+### Diagnostic storage observations
+
+`GET /diagnostics/storage` returns a no-store `diagnostic-storage-v1` observation
+of the events and index databases: database/WAL/SHM/journal/lock file lengths,
+configured per-database budgets, quota refusal/lock-unavailability counters and
+maintenance counters. It reads no database rows, does not create missing files
+and exposes no paths. Missing configuration/files and filesystem-read failures
+remain explicit gaps; malformed internal observations return fixed 503.
+
+Sizes and counters are independent live reads, not an atomic snapshot. Counters
+are process-local and do not establish current admission or complete collection.
+`within_observed_limit` only compares observed lengths with the configured
+budget; a conservative write reservation can still fail. Installation-wide disk
+certification remains false. Diagnostic export embeds the same independent
+observation as `storage_observation`, separate from its pinned database snapshots.

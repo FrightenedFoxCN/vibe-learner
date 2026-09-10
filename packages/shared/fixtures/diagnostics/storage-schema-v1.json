@@ -1,0 +1,249 @@
+{
+  "$defs": {
+    "DiagnosticStorageCountersV1": {
+      "additionalProperties": false,
+      "properties": {
+        "quota_refusals": {
+          "minimum": 0,
+          "title": "Quota Refusals",
+          "type": "integer"
+        },
+        "quota_unavailable": {
+          "minimum": 0,
+          "title": "Quota Unavailable",
+          "type": "integer"
+        },
+        "maintenance_busy": {
+          "minimum": 0,
+          "title": "Maintenance Busy",
+          "type": "integer"
+        },
+        "maintenance_failures": {
+          "minimum": 0,
+          "title": "Maintenance Failures",
+          "type": "integer"
+        },
+        "maintenance_completed": {
+          "minimum": 0,
+          "title": "Maintenance Completed",
+          "type": "integer"
+        },
+        "legacy_migrations": {
+          "minimum": 0,
+          "title": "Legacy Migrations",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "quota_refusals",
+        "quota_unavailable",
+        "maintenance_busy",
+        "maintenance_failures",
+        "maintenance_completed",
+        "legacy_migrations"
+      ],
+      "title": "DiagnosticStorageCountersV1",
+      "type": "object"
+    },
+    "DiagnosticStorageDatabaseV1": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "events",
+            "index"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "max_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max Bytes"
+        },
+        "files": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticStorageFilesV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "counters": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticStorageCountersV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "within_observed_limit",
+            "over_observed_limit",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "gap": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_configured",
+                "database_absent",
+                "filesystem_unavailable"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gap"
+        }
+      },
+      "required": [
+        "name",
+        "max_bytes",
+        "files",
+        "counters",
+        "status",
+        "gap"
+      ],
+      "title": "DiagnosticStorageDatabaseV1",
+      "type": "object"
+    },
+    "DiagnosticStorageFilesV1": {
+      "additionalProperties": false,
+      "properties": {
+        "database": {
+          "minimum": 0,
+          "title": "Database",
+          "type": "integer"
+        },
+        "wal": {
+          "minimum": 0,
+          "title": "Wal",
+          "type": "integer"
+        },
+        "shm": {
+          "minimum": 0,
+          "title": "Shm",
+          "type": "integer"
+        },
+        "journal": {
+          "minimum": 0,
+          "title": "Journal",
+          "type": "integer"
+        },
+        "lock": {
+          "minimum": 0,
+          "title": "Lock",
+          "type": "integer"
+        },
+        "total_bytes": {
+          "minimum": 0,
+          "title": "Total Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "database",
+        "wal",
+        "shm",
+        "journal",
+        "lock",
+        "total_bytes"
+      ],
+      "title": "DiagnosticStorageFilesV1",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "diagnostic-storage-v1",
+      "default": "diagnostic-storage-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "databases": {
+      "items": {
+        "$ref": "#/$defs/DiagnosticStorageDatabaseV1"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Databases",
+      "type": "array"
+    },
+    "observation_scope": {
+      "const": "independent_live_file_lengths_and_process_counters",
+      "default": "independent_live_file_lengths_and_process_counters",
+      "title": "Observation Scope",
+      "type": "string"
+    },
+    "sizes_are_atomic": {
+      "const": false,
+      "default": false,
+      "title": "Sizes Are Atomic",
+      "type": "boolean"
+    },
+    "counters_are_process_local": {
+      "const": true,
+      "default": true,
+      "title": "Counters Are Process Local",
+      "type": "boolean"
+    },
+    "admission_guarantee": {
+      "const": false,
+      "default": false,
+      "title": "Admission Guarantee",
+      "type": "boolean"
+    },
+    "installation_disk_limit_certified": {
+      "const": false,
+      "default": false,
+      "title": "Installation Disk Limit Certified",
+      "type": "boolean"
+    },
+    "unmeasured": {
+      "items": {
+        "enum": [
+          "desktop_spool",
+          "filesystem_allocation_and_metadata",
+          "external_writers",
+          "vacuum_temporary_files"
+        ],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "title": "Unmeasured",
+      "type": "array"
+    }
+  },
+  "required": [
+    "observed_at",
+    "databases",
+    "unmeasured"
+  ],
+  "title": "DiagnosticStorageV1",
+  "type": "object"
+}

@@ -8,6 +8,7 @@ from app.models.diagnostic import DiagnosticEventV1, DiagnosticOperationLinkV1, 
 from app.models.diagnostic_audit import AuditModel, DiagnosticAuditV1
 from app.models.diagnostic_index import DiagnosticHarnessIndexV1
 from app.models.diagnostic_retention import DiagnosticRecordRetentionV1
+from app.models.diagnostic_storage import DiagnosticStorageV1
 from app.models.diagnostic_writer import DiagnosticWriterCoverageV1
 from app.models.harness import HarnessWorkflow, HarnessStage
 
@@ -69,6 +70,7 @@ class DiagnosticExportIndexCoverageV1(AuditModel):
 
 class DiagnosticExportV1(AuditModel):
     schema_version: Literal["diagnostic-export-v1"] = "diagnostic-export-v1"
+    storage_observation: DiagnosticStorageV1
     app_version: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9.+_-]+$")
     created_at: datetime
     filters: DiagnosticExportFiltersV1

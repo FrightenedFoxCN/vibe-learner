@@ -197,7 +197,7 @@ not append repeated metadata transactions outside the reservation. A later
 checkpoint/retry can restore admission after a pinned reader exits. Quota refusal
 and lock availability counters are process-local; existing writer drop/failure
 checkpoints continue to expose their observed lower bounds after writes recover.
-Dedicated quota-state projection remains pending.
+The dedicated quota-state projection is described below.
 
 The implementation/test evidence covers cooperating Python writers and measured
 file lengths on this local Unix environment. Existing oversized files are
@@ -210,3 +210,21 @@ oversize, process-crash lock release, guarded vacuum, oversized legacy refusal,
 non-WAL rejection and successful real Persona/Harness results during pressure.
 
 Post-admission measurements and raw samples: [quota measurement](performance/diagnostic-quota-admission-v1.md).
+
+
+## Storage state in Debug
+
+Global Debug → 存储状态 reads `/diagnostics/storage` on demand. Closing or leaving
+the view aborts/fences pending replies; refresh removes the earlier observation.
+The tab ignores event filters. It displays observed file lengths/budgets,
+quota-refusal and lock-availability counts, maintenance busy/failure/completion
+counts and legacy migration counts. Positive past counts do not mean a current
+block, and a within-budget observation is not a successful-admission promise.
+
+Exports embed `storage_observation`; the audit view exposes it in a collapsed
+section without another read. This sampling is independent of the event/index
+SQLite snapshots and explicitly excludes desktop spool, filesystem allocation
+and metadata, external writers and VACUUM temporary files. The strict browser
+schema/decoder checks database identity/order, totals, gap/state coherence and
+false certification flags. Counts remain process-local; cross-crash writer
+coverage is a separate existing view.

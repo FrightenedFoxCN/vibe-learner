@@ -204,3 +204,6 @@ export async function queryDiagnosticWriters(after = 0, signal?: AbortSignal) {
 export async function requestDiagnosticExport(filters: DiagnosticEventFilters, signal?: AbortSignal): Promise<unknown> {
   return query("export", {}, signal, filters);
 }
+export async function requestDiagnosticStorage(signal?: AbortSignal): Promise<unknown> {
+  return query("storage", {}, signal);
+}

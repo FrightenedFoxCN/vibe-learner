@@ -162,3 +162,22 @@ test("export POST uses bounded nonrecursive transport and caller abort", async (
     assert.equal(cancelled, true);
   } finally { globalThis.fetch = previous; }
 });
+
+test("storage observations retain gaps and reject fake totals or admission claims", async () => {
+  const { decodeDiagnosticStorage, queryDiagnosticStorage } = await import("../lib/diagnostic-storage.ts");
+  const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/storage-sample-v1.json", import.meta.url), "utf8"));
+  assert.deepEqual(decodeDiagnosticStorage(sample), sample);
+  for (const mutate of [
+    x => { x.admission_guarantee = true; },
+    x => { x.databases[0].files.total_bytes++; },
+    x => { x.databases[0].name = "index"; },
+    x => { x.databases[0].status = "over_observed_limit"; },
+    x => { x.databases[0].counters.path = "PRIVATE"; },
+    x => { x.unmeasured[1] = x.unmeasured[0]; },
+  ]) { const value = structuredClone(sample); mutate(value); assert.throws(() => decodeDiagnosticStorage(value), DiagnosticQueryError); }
+  const before = globalThis.fetch;
+  try {
+    globalThis.fetch = async url => { assert.ok(url.includes("/diagnostics/storage")); return Response.json(sample); };
+    assert.deepEqual(await queryDiagnosticStorage(), sample);
+  } finally { globalThis.fetch = before; }
+});

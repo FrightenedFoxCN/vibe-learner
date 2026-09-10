@@ -9,6 +9,7 @@ from app.core.diagnostics import diagnostic_event_predicate
 from app.models.diagnostic import DiagnosticEventV1, DiagnosticOperationLinkV1
 from app.models.diagnostic_export import DiagnosticExportFiltersV1, DiagnosticExportV1
 from app.models.diagnostic_index import DiagnosticHarnessIndexV1
+from app.services.diagnostic_storage import observe_diagnostic_storage
 from app.services.diagnostic_audit import build_diagnostic_audit
 
 MAX_EXPORT_BYTES = 32 * 1024 * 1024
@@ -146,7 +147,7 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
             if str(error) in {"diagnostic_audit_input_limit", "diagnostic_audit_sample_limit"}:
                 raise DiagnosticExportTooLarge("diagnostic_export_too_large") from None
             raise
-        result = DiagnosticExportV1(app_version=app_version, created_at=datetime.now(timezone.utc), filters=filters,
+        result = DiagnosticExportV1(storage_observation=observe_diagnostic_storage(store, index), app_version=app_version, created_at=datetime.now(timezone.utc), filters=filters,
             events=events, operation_links=links, retention=retention, link_retention=link_retention, index_retention=index_retention, writer_pages=writer_pages,
             index=traces, index_coverage=coverage, audit=audit).model_dump_json().encode("utf-8")
         budget.check()

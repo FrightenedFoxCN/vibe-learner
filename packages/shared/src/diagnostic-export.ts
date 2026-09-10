@@ -72,6 +72,7 @@ export interface DiagnosticAuditV1 {
 export type DiagnosticExportFiltersV1 = { [K in keyof DiagnosticEventFilters]?: DiagnosticEventFilters[K] | null };
 export interface DiagnosticExportV1 {
   schema_version: "diagnostic-export-v1";
+  storage_observation: DiagnosticStorageV1;
   app_version: string;
   created_at: string;
   filters: DiagnosticExportFiltersV1;
@@ -112,4 +113,25 @@ export interface DiagnosticRecordRetentionV1 {
   source_age_exclusions_possible: boolean;
   complete_history_claim: false;
   disk_size_limit_certified: false;
+}
+
+
+export interface DiagnosticStorageDatabaseV1 {
+  name: "events" | "index";
+  max_bytes: number | null;
+  files: { database: number; wal: number; shm: number; journal: number; lock: number; total_bytes: number } | null;
+  counters: { quota_refusals: number; quota_unavailable: number; maintenance_busy: number; maintenance_failures: number; maintenance_completed: number; legacy_migrations: number } | null;
+  status: "within_observed_limit" | "over_observed_limit" | "unavailable";
+  gap: "not_configured" | "database_absent" | "filesystem_unavailable" | null;
+}
+export interface DiagnosticStorageV1 {
+  schema_version: "diagnostic-storage-v1";
+  observed_at: string;
+  databases: DiagnosticStorageDatabaseV1[];
+  observation_scope: "independent_live_file_lengths_and_process_counters";
+  sizes_are_atomic: false;
+  counters_are_process_local: true;
+  admission_guarantee: false;
+  installation_disk_limit_certified: false;
+  unmeasured: ("desktop_spool" | "filesystem_allocation_and_metadata" | "external_writers" | "vacuum_temporary_files")[];
 }

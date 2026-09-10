@@ -70,6 +70,8 @@
 
   - 2026-09-10 数据库配额准入切片：事件库 128 MiB、索引库 64 MiB，提交前按主文件/WAL/SHM/journal/锁文件及最坏整库改写保守预留；进程锁、BEGIN IMMEDIATE、禁用 cache spill 和提交前复验覆盖正式写入口及维护。低配额下读快照占用触发拒绝，释放/回收后恢复；超限事务不新增 WAL，旧超限文件不被截断。57 项后端回归及 3 项 Chromium 场景通过，含真实业务/Harness 在配额压力下完成。Windows、多进程桌面 spool、旧超限文件恢复及配额状态投影仍待完成，因此安装目录 200 MiB 总体上限保持未认证。新开销原始样本见 [配额量测](../performance/diagnostic-quota-admission-v1.md)。
 
+  - 2026-09-10 存储状态切片：新增只读、no-store `/diagnostics/storage` 与独立 Debug「存储状态」，展示两库文件长度/预算、配额拒绝/锁不可用及维护观察；缺失文件、未配置索引和文件读取失败有明确缺口。诊断包纳入独立 live observation，不混同其数据库快照；前端严格验证总数、身份、状态与未认证标志，关闭/切换 fence 迟到响应。18 项后端、11 项查询、8 项时间线、共享契约、生产构建与 3 项 Chromium 场景通过。桌面 spool、旧超限恢复和安装目录总体配额仍待完成。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

@@ -115,3 +115,13 @@ async def export_diagnostics(request: Request):
         raise HTTPException(503, "diagnostic_export_unavailable") from None
     return Response(data, media_type="application/json", headers={
         "Content-Disposition": 'attachment; filename="vibe-learner-diagnostics.json"', "Cache-Control": "no-store"})
+
+
+@router.get("/storage")
+def query_storage(request: Request):
+    from starlette.responses import JSONResponse
+    from app.services.diagnostic_storage import observe_diagnostic_storage
+    try:
+        return JSONResponse(observe_diagnostic_storage(request.app.state.diagnostics, getattr(request.app.state, "diagnostic_index", None)).model_dump(mode="json"), headers={"Cache-Control": "no-store"})
+    except Exception:
+        raise HTTPException(503, "diagnostic_storage_unavailable") from None

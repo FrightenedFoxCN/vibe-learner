@@ -1,4 +1,5 @@
 import type { DiagnosticEventFilters, DiagnosticExportV1 } from "@vibe-learner/shared";
+import { decodeDiagnosticStorage } from "./diagnostic-storage";
 import schema from "../../../packages/shared/fixtures/diagnostics/export-schema-v1.json";
 import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
 import { DiagnosticQueryError, decodeDiagnosticWriters, requestDiagnosticExport, validateDiagnosticExportSchema } from "./diagnostic-query";
@@ -7,6 +8,7 @@ const invalid = (): never => { throw new DiagnosticQueryError("invalid_response"
 export function decodeDiagnosticExport(raw: unknown, filters: DiagnosticEventFilters): DiagnosticExportV1 {
   validateDiagnosticExportSchema(raw, schema);
   const value = raw as DiagnosticExportV1;
+  decodeDiagnosticStorage(value.storage_observation);
   const normalize = (input: object) => JSON.stringify(Object.entries(input).filter(([, v]) => v != null && v !== "").sort(([a], [b]) => a.localeCompare(b)).map(([key, v]) => [key, key === "since" || key === "until" ? new Date(v as string).toISOString() : v]));
   if (normalize(value.filters) !== normalize(filters)) invalid();
   const ids = new Set<string>();

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { DiagnosticEventFilters, DiagnosticExportV1 } from "@vibe-learner/shared";
 import { queryDiagnosticExport } from "../lib/diagnostic-export";
 import { DiagnosticQueryError } from "../lib/diagnostic-query";
+import { DiagnosticStorageObservation } from "./diagnostic-storage-panel";
 import { exportJson } from "../lib/export-json";
 
 const button: CSSProperties = { padding: "8px 12px", minHeight: 44, border: "1px solid var(--border)", borderRadius: 8, background: "var(--bg)" };
@@ -49,6 +50,7 @@ export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilt
       <p>事件、关联和采集覆盖来自同一快照；Harness 索引使用独立快照，可能滞后。时间、页面和级别条件筛选事件，关联阶段可能超出该时间范围。此包不证明完整采集或业务提交。</p>
       <p>已清理事件 {result.retention.removed_events}；索引{result.index_coverage.freshness === "unavailable" ? "不可用" : "可用但可能滞后"}；缺少索引的关联 operation {result.index_coverage.missing_operation_count}。已观察丢弃下限 {result.writer_pages[0].totals.observed_dropped}，未落盘队列及启动前损失仍未知。</p>
       <p>关联记录已清理 {result.link_retention.removed_rows} 次；索引清理 {result.index_retention?.removed_rows ?? "未知"} 次。清理次数不是不同记录的数量；过期源记录可能在索引前被排除。{result.link_retention.legacy_timestamp_rows > 0 || (result.index_retention?.legacy_timestamp_rows ?? 0) > 0 ? "部分历史记录的首次保留时间未知。" : ""}留存统计只描述记录正文；总体磁盘上限尚未认证。</p>
+      <details><summary>独立采样的存储状态</summary><DiagnosticStorageObservation value={result.storage_observation} /></details>
       {!result.audit.groups.length && <p>当前范围没有可统计的指标样本；不代表流程没有执行。</p>}
       <p>以下展示前 100 组；完整分组和原始指标保存在诊断包中。P50/P95 使用各组已测量样本，包含失败耗时。</p>
       {result.audit.groups.slice(0, 100).map((group, i) => <details key={i} style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
