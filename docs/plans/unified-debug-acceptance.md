@@ -312,3 +312,40 @@ was inspected (`/tmp/unified-debug-directory.png`) and no horizontal overflow wa
 observed. Logs: `/tmp/diagnostic-directory-{python,query,timeline,build,check,browser}.log`.
 The full backend release checkpoint remains the preceding recovery slice; this
 read-only inventory slice used the targeted backend verification listed above.
+
+## Combined storage / cross-runtime pressure slice
+
+Same-directory legacy recovery owners now share a stable process-lock inode before
+taking their per-DB lock. One recovery workspace proceeds at a time; ordinary
+writes in other DBs remain independently admitted. Existing crash tests also
+exercise release of this shared lock. The event writer now explicitly closes its
+SQLite connection on thread exit rather than waiting for garbage collection;
+the installation probe exposed the previous lock retention during setup.
+
+A reproducible Python/Rust probe uses the real default event/index budgets, pinned
+60/28 MiB legacy freelists, a full native spool and concurrent native writes,
+event/index updates and spool consumption. It requires actual quota refusals,
+checks sampled 200 MiB reference usage, releases readers and verifies both SQLite
+files. Missing-source index rows are intentional storage load, not canonical
+commit evidence. See [combined probe](../performance/diagnostic-installation-v1.md)
+and its raw report with source and binary hashes. Normal limits total 196 MiB plus bounded
+metadata; this is neither an atomic peak measurement nor control of unknown files
+or a 200 MiB transient recovery cap. Broad certification is not inferred.
+
+Targeted validation passed 42 backend tests and all 11 Rust library tests before
+the final cross-runtime probe. New regressions cover two competing recovery owners,
+ordinary writes during recovery, and explicit connection release without GC.
+The full gate and final probe results follow. Workflow fault/alternate-flow,
+native Vault/export success, frontend/native performance and deferred independent
+review remain open.
+
+Final verification passed: `npm run check:release` completed shared/Web checks,
+all 13 Harness PR suites, 739 backend tests in 61.046 seconds and production Web
+build; all 11 Rust library tests passed. The final cross-runtime probe completed
+with 1,880 raw samples and a maximum observed 108,231,185 bytes (about 103.22 MiB).
+Both DB quota counters recorded real refusals; intentional overload produced
+reported drops and consumer failures, not an assertion of complete collection.
+Final inventory was complete and both SQLite integrity checks passed. Logs:
+`/tmp/diagnostic-installation-{release,native,python}.log`; the probe's raw report
+is archived with the implementation. This does not certify an atomic disk peak,
+unknown external files, Windows behavior or transient recovery below 200 MiB.

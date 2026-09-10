@@ -8,13 +8,16 @@ No rename/unlink/replacement of an open database or canonical source is used.
 import shutil
 import time
 
-from app.core.diagnostic_quota import DiagnosticQuotaExceeded
+from app.core.diagnostic_quota import DiagnosticDatabaseQuota, DiagnosticQuotaExceeded
 
 
 class DiagnosticOversizeRecovery:
     def __init__(self, quota, prune, *, pressure_prune=None, interval_seconds=60, budget_seconds=5,
                  workspace_bytes=512 * 1024 * 1024):
         self.quota = quota
+        # One transient recovery workspace per diagnostic directory. Use the
+        # stable process-lock inode; normal per-database admission stays separate.
+        self.installation_lock = DiagnosticDatabaseQuota(quota.path.parent / "recovery")
         self.prune = prune
         self.pressure_prune = pressure_prune
         self.interval_seconds = interval_seconds
@@ -38,7 +41,7 @@ class DiagnosticOversizeRecovery:
         previous_pages = None
         previous_temp_store = None
         try:
-            with self.quota.lock():
+            with self.installation_lock.lock(), self.quota.lock():
                 previous_timeout = db.execute("PRAGMA busy_timeout").fetchone()[0]
                 db.execute("PRAGMA busy_timeout=0")
                 db.set_progress_handler(lambda: int(time.monotonic() - now >= self.budget_seconds), 100)

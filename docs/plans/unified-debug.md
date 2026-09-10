@@ -193,3 +193,12 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 `npm run check`、生产构建与 7 项 Chromium 场景通过，390px 界面已检查。
 这完成文件长度观察，组合写入预算与恢复临时超额验证仍继续，详见
 [验收记录](unified-debug-acceptance.md)。
+
+2026-09-10 组合存储验证：同一诊断目录的旧库恢复共享进程锁，临时恢复串行执行，
+普通数据库写入继续独立准入；writer 退出显式关闭 SQLite 连接，避免依赖 GC
+释放锁。真实 Rust 暂存写入与 Python 事件/索引/消费并发探针通过，两库均实际
+触发配额拒绝；1,880 个样本中最大已观察长度约 103.22 MiB，保留了丢弃/拒绝和
+不完整扫描证据，不声称原子峰值或未知文件、临时恢复均受 200 MiB 硬限制。
+最终 release gate（739 项后端测试、13 个 Harness suite、共享/Web 门与构建）
+及 11 项 Rust 测试通过，见[组合存储报告](../performance/diagnostic-installation-v1.md)。
+异常/分支流程、原生 Vault/导出成功路径和前端/原生开销验收继续进行。

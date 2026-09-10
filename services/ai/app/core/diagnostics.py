@@ -1,6 +1,7 @@
 """Best-effort bounded diagnostic writer isolated from business transactions."""
 from __future__ import annotations
 
+from contextlib import closing
 from contextvars import ContextVar
 from functools import wraps
 from datetime import datetime, timezone
@@ -327,7 +328,7 @@ class DiagnosticStore:
     def _run(self):
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(self.path, timeout=0.1) as db:
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as db:
                 while True:
                     try:
                         self._configure_database(db)

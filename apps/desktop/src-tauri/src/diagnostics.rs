@@ -385,6 +385,27 @@ mod tests {
         }
     }
 
+    // Invoked only by the cross-runtime installation probe. Ordinary cargo
+    // tests leave the environment unset and do not touch any runtime directory.
+    #[test]
+    fn installation_spool_child_process() {
+        let Ok(root) = std::env::var("DIAGNOSTIC_INSTALLATION_TEST_ROOT") else {
+            return;
+        };
+        let diagnostics = DesktopDiagnostics::new(Path::new(&root));
+        for _ in 0..1200 {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while diagnostics
+                .write(DesktopEvent::DesktopStarted, None, None)
+                .is_err()
+            {
+                assert!(Instant::now() < deadline);
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            std::thread::sleep(Duration::from_millis(1));
+        }
+    }
+
     #[test]
     fn two_process_writers_share_ring_and_eviction_counter() {
         let root = std::env::temp_dir().join(identity());

@@ -254,3 +254,63 @@ raise SystemExit(99)
                 self.assertEqual(db.execute("SELECT retained_events,removed_events FROM event_retention").fetchone(), (64, 1936))
                 self.assertEqual(db.execute("SELECT event_id FROM events ORDER BY sequence LIMIT 1").fetchone()[0], "legacy-1936")
                 self.assertLess(sum(store.quota.sizes().values()), store.quota.max_bytes)
+
+    def test_same_directory_recoveries_share_one_workspace_without_blocking_normal_writes(self):
+        import threading
+        from app.core.diagnostic_quota import DiagnosticDatabaseQuota
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            first_path, second_path = root / "events.db", root / "index.db"
+            self.seed_events(first_path); self.seed_events(second_path)
+            first = DiagnosticStore(first_path); first.quota.max_bytes = 1024 * 1024
+            second = DiagnosticStore(second_path); second.quota.max_bytes = 1024 * 1024
+            second.oversize_recovery.interval_seconds = 0
+            entered, release = threading.Event(), threading.Event()
+            result = []
+            prune = first.oversize_recovery.prune
+            def hold(db):
+                entered.set()
+                if not release.wait(3):
+                    raise RuntimeError("test_recovery_timeout")
+                prune(db)
+            first.oversize_recovery.prune = hold
+            def run():
+                with sqlite3.connect(first_path) as db:
+                    result.append(first.oversize_recovery.recover(db))
+            worker = threading.Thread(target=run); worker.start()
+            try:
+                self.assertTrue(entered.wait(1))
+                with sqlite3.connect(second_path) as db:
+                    self.assertFalse(second.oversize_recovery.recover(db))
+                    self.assertEqual(second.oversize_recovery.deferred, 1)
+                    self.assertEqual(db.execute("SELECT count(*) FROM events").fetchone()[0], 200)
+                normal_path = root / "normal.db"
+                with sqlite3.connect(normal_path) as db:
+                    db.execute("PRAGMA journal_mode=WAL")
+                    with DiagnosticDatabaseQuota(normal_path).transaction(db):
+                        db.execute("CREATE TABLE normal(value INTEGER)")
+                    self.assertEqual(db.execute("SELECT count(*) FROM normal").fetchone()[0], 0)
+            finally:
+                release.set(); worker.join(5)
+            self.assertEqual(result, [True])
+            self.assertFalse(worker.is_alive())
+            with sqlite3.connect(second_path) as db:
+                self.assertTrue(second.oversize_recovery.recover(db))
+            self.assertTrue((root / "recovery.quota-lock").exists())
+
+    def test_writer_close_releases_sqlite_handle_without_waiting_for_garbage_collection(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "events.db"
+            connect = sqlite3.connect
+            retained_handles = []
+            def track(*args, **kwargs):
+                db = connect(*args, **kwargs)
+                retained_handles.append(db)
+                return db
+            with patch("app.core.diagnostics.sqlite3.connect", side_effect=track):
+                store = DiagnosticStore(path)
+                store.start(); store.emit("lifecycle_started"); store.queue.join(); store.close()
+            self.assertTrue(retained_handles)
+            with connect(path) as db:
+                self.assertEqual(db.execute("PRAGMA journal_mode=DELETE").fetchone()[0], "delete")
+                self.assertEqual(db.execute("SELECT count(*) FROM events").fetchone()[0], 1)
