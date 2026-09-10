@@ -122,6 +122,7 @@ class DiagnosticExportTests(unittest.TestCase):
     def test_schema_fixture_and_index_snapshot_do_not_drift(self):
         fixture = Path(__file__).parents[3] / "packages/shared/fixtures/diagnostics/export-schema-v1.json"
         self.assertEqual(json.loads(fixture.read_text()), DiagnosticExportV1.model_json_schema())
+        DiagnosticExportV1.model_validate_json(fixture.with_name("export-sample-v1.json").read_text())
         from app.services.diagnostic_export import _connect
         index_path = self.index.path
         class ConcurrentIndexWrite:

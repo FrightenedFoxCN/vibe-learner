@@ -115,3 +115,27 @@ test("writer coverage is lazy and explains unrecorded closure without claiming a
   assert.ok(calls.at(-1).includes("/writers?"));
   assert.ok(view.container.textContent.includes("计数为已观察下限"));
 });
+
+test("audit snapshot is explicit, reports statistics, and stale replies cannot survive filters or unmount", async () => {
+  const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/export-sample-v1.json", import.meta.url), "utf8"));
+  const exports = [];
+  globalThis.fetch = (url, init) => url.includes("/export") ? new Promise(resolve => exports.push({ resolve, signal: init.signal })) : Promise.resolve(Response.json(fixture.events));
+  const view = render(<DiagnosticTimeline />);
+  fireEvent.click(view.getByRole("button", { name: "统计与导出" }));
+  assert.equal(exports.length, 0);
+  fireEvent.click(view.getByRole("button", { name: "生成诊断快照" }));
+  await act(async () => exports[0].resolve(Response.json(sample)));
+  assert.ok(view.getByRole("button", { name: "下载诊断包" }));
+  assert.ok(view.container.textContent.includes("P95 40.0 ms"));
+  assert.ok(view.container.textContent.includes("已报告总 token 20"));
+  fireEvent.click(view.getByRole("button", { name: "生成诊断快照" }));
+  assert.equal(view.queryByRole("button", { name: "下载诊断包" }), null);
+  fireEvent.change(view.getByLabelText("页面"), { target: { value: "/study" } });
+  fireEvent.click(view.getByRole("button", { name: "应用筛选" }));
+  assert.equal(exports[1].signal.aborted, true);
+  await act(async () => exports[1].resolve(Response.json(sample)));
+  assert.equal(view.queryByRole("button", { name: "下载诊断包" }), null);
+  fireEvent.click(view.getByRole("button", { name: "生成诊断快照" }));
+  view.unmount();
+  assert.equal(exports[2].signal.aborted, true);
+});

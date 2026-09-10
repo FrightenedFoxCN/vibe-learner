@@ -3,7 +3,7 @@
 `services/ai/app/services/diagnostic_audit.py` aggregates already validated,
 bounded diagnostic inputs. `models/diagnostic_audit.py` owns the closed
 `diagnostic-audit-v1` report. The aggregation core and stored snapshot export are implemented;
-browser/UI integration and performance-overhead measurements remain in
+performance-overhead measurements and full acceptance remain in
 [the unified Debug plan](plans/unified-debug.md).
 
 The report retains metric observations and their event/operation/trace/span
@@ -78,5 +78,28 @@ pages, 16 MiB input payload and 32 MiB serialized output. Limits fail with 413,
 never a partial package. Reads have a cooperative five-second deadline including
 SQLite progress cancellation; CPU aggregation/serialization checks the deadline
 at its boundaries. Missing/corrupt storage returns 503 and invalid filters 422,
-without raw exception/input text. This endpoint does not yet imply a browser
-export/metric UI or full disk/performance acceptance.
+without raw exception/input text. Full disk/performance acceptance remains separate from this endpoint.
+
+
+## Debug snapshot UI
+
+Global Debug → 统计与导出 → 生成诊断快照 explicitly reads the currently applied
+event filters. Entering the tab alone performs no export read. Changing applied
+filters, leaving the view or closing Debug aborts/fences pending results; refresh
+removes the old downloadable snapshot. The download uses the validated displayed
+snapshot without another backend read. Browser download/native save handoff does
+not certify that a browser download reached permanent storage.
+
+The strict browser decoder uses the Python-generated export schema, requires
+complete serialized nested DTOs and verifies filter echo, identity uniqueness,
+writer pagination/coverage, event classification and audit sample/count bounds.
+The nonrecursive POST transport caps responses at 32 MiB with a 15-second client
+timeout plus caller cancellation. Malformed/oversized responses never become
+downloads. JSON export stays compact to preserve the backend byte budget.
+
+The view displays up to 100 metric groups with separate outcomes, duration and
+usage sample counts, P50/P95, available configuration and gaps; all groups and raw
+observations remain in the package. Coverage text distinguishes independent
+index timing, event/trace scope and incomplete collection. Chromium acceptance
+covers a real mock-provider Persona chain, downloaded JSON and 390px rendering;
+this does not certify native save dialogs or all platforms.

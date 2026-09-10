@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 
 test("closed Debug still records a real Persona generate/save/reload chain without protected content", async ({ page, request }) => {
@@ -96,6 +97,31 @@ test("global timeline loads on demand, expands canonical links and reports unava
   await timeline.getByRole("button", { name: "采集覆盖", exact: true }).click();
   await expect(timeline.getByRole("region", { name: "采集覆盖" })).toContainText("计数为已观察下限");
   await expect.poll(() => reads.some(url => url.includes("/diagnostics/writers?"))).toBe(true);
+  await timeline.getByRole("button", { name: "统计与导出", exact: true }).click();
+  await timeline.getByRole("button", { name: "生成诊断快照" }).click();
+  await expect(timeline.getByRole("button", { name: "下载诊断包" })).toBeEnabled();
+  const downloading = page.waitForEvent("download");
+  await timeline.getByRole("button", { name: "下载诊断包" }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe("vibe-learner-diagnostics.json");
+  const contents = await readFile((await download.path())!, "utf8");
+  const exported = JSON.parse(contents);
+  expect(exported.schema_version).toBe("diagnostic-export-v1");
+  expect(exported.filters.workflow).toBe("persona");
+  expect(exported.events.length).toBeGreaterThan(0);
+  expect(exported.audit.observations.length).toBeGreaterThan(0);
+  expect(exported.audit.commit_claim).toBe("none");
+  expect(contents).not.toContain("PRIVATE_DIAGNOSTIC_PROMPT_SENTINEL");
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await timeline.getByRole("heading", { name: "诊断统计与导出", exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "/tmp/unified-debug-audit.png" });
+  const metric = timeline.getByRole("region", { name: "诊断统计与导出" }).locator("details").first();
+  await metric.locator("summary").click();
+  await metric.scrollIntoViewIfNeeded();
+  await expect(metric).toContainText("P95");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/unified-debug-audit-metrics.png" });
   await timeline.getByRole("button", { name: "事件时间线", exact: true }).click();
   await expect(timeline.getByRole("button", { name: "刷新诊断" })).toBeEnabled();
   await page.setViewportSize({ width: 390, height: 844 });

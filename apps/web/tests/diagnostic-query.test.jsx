@@ -113,3 +113,48 @@ test("writer coverage keeps lower-bound and unclosed semantics strict", () => {
     assert.throws(() => decodeDiagnosticWriters(page), DiagnosticQueryError);
   }
 });
+
+test("export decodes Python snapshot and rejects nested secrets, drift and incomplete coverage", async () => {
+  const { decodeDiagnosticExport } = await import("../lib/diagnostic-export.ts");
+  const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/export-sample-v1.json", import.meta.url), "utf8"));
+  assert.deepEqual(decodeDiagnosticExport(sample, {}), sample);
+  for (const mutate of [
+    x => { x.audit.observations[0].prompt = "PRIVATE"; },
+    x => { x.events[0].event.outcome = "failed"; },
+    x => { x.events[1].sequence = x.events[0].sequence; },
+    x => { x.audit.input_event_count++; },
+    x => { x.audit.groups[0].sample_count++; },
+    x => { x.writer_pages[0].has_more = true; },
+    x => { x.index.push(x.index[0]); },
+    x => { x.created_at = "2026-09-10"; },
+    x => { delete x.audit.groups[0].key.model; },
+    x => { x.filters.source = "browser"; },
+  ]) {
+    const value = structuredClone(sample); mutate(value);
+    assert.throws(() => decodeDiagnosticExport(value, {}), DiagnosticQueryError);
+  }
+});
+
+test("export POST uses bounded nonrecursive transport and caller abort", async () => {
+  const { queryDiagnosticExport } = await import("../lib/diagnostic-export.ts");
+  const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/export-sample-v1.json", import.meta.url), "utf8"));
+  const previous = globalThis.fetch;
+  const before = diagnosticSnapshot();
+  try {
+    globalThis.fetch = async (url, init) => {
+      assert.ok(url.includes("/diagnostics/export")); assert.equal(init.method, "POST"); assert.equal(init.body, "{}");
+      return Response.json(sample);
+    };
+    assert.deepEqual(await queryDiagnosticExport({}), sample);
+    assert.deepEqual(diagnosticSnapshot(), before);
+    globalThis.fetch = async () => new Response("PRIVATE", { status: 413 });
+    await assert.rejects(queryDiagnosticExport({}), error => error.code === "response_too_large" && !error.message.includes("PRIVATE"));
+    const controller = new AbortController(); controller.abort();
+    globalThis.fetch = async () => Response.json(sample);
+    await assert.rejects(queryDiagnosticExport({}, controller.signal));
+    let cancelled = false;
+    globalThis.fetch = async () => new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(32 * 1024 * 1024 + 1)); }, cancel() { cancelled = true; } }));
+    await assert.rejects(queryDiagnosticExport({}), error => error.code === "response_too_large");
+    assert.equal(cancelled, true);
+  } finally { globalThis.fetch = previous; }
+});

@@ -60,6 +60,8 @@
 
   - 2026-09-10 诊断导出后端切片：新增 `POST /diagnostics/export`，事件/关联/留存/writer 分页取同一只读快照，Harness 索引/checkpoint 使用独立快照并明确范围与缺口；重验嵌套 DTO 和数据库身份，超限整体拒绝。导出包含版本、筛选条件、白名单记录、原始指标与统计，不包含受保护内容。37 项后端诊断回归及 shared contracts 门通过，涵盖并发删除/索引更新/writer 多页、损坏记录、身份错配、留存后关联与请求/输出边界。浏览器下载、统计 UI、总体磁盘治理及开销验收仍待完成。
 
+  - 2026-09-10 诊断导出 UI 切片：全局 Debug 新增按需生成快照、分组统计和诊断包下载；共享后端 schema 严格校验嵌套 DTO、关联身份、writer 分页及统计计数，32 MiB/15 秒边界和调用方取消不递归采集。刷新清除旧包，筛选/关闭 fence 迟到响应；最多显示 100 组，完整原始指标保留在下载包。10 项查询/7 项 React 时间线测试、完整 Web reliability、7 项后端导出测试、生产构建和 3 项 Chromium 场景通过；真实 Persona 包下载、正文 sentinel 排除及 390px 渲染已验证。原生保存对话框、多平台、总体磁盘及开销验收仍未认证。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
@@ -69,7 +71,7 @@ rows using a 1,000-event queue. Browser ingestion and cursor query are available
 including writer health counters. Event payload retention now uses seven days,
 10,000 rows or 64 MiB, with durable removal coverage; global UI health is visible.
 Aggregate disk retention and other diagnostic-table retention remain pending.
-Snapshot export is available through the backend; its browser UI remains pending. Console logging intentionally excludes
+Snapshot export and grouped statistics are available on demand in global Debug. Console logging intentionally excludes
 unreviewed formatted messages and exception text.
 
 ```mermaid

@@ -8,19 +8,19 @@ export class DiagnosticQueryError extends Error {
 }
 const invalid = (): never => { throw new DiagnosticQueryError("invalid_response"); };
 type Schema = Record<string, any>;
-const keywords = new Set(["$ref", "$defs", "title", "description", "default", "type", "anyOf", "const", "enum", "properties", "required", "additionalProperties", "items", "minItems", "maxItems", "minLength", "maxLength", "pattern", "minimum", "maximum"]);
+const keywords = new Set(["$ref", "$defs", "title", "description", "default", "type", "anyOf", "const", "enum", "properties", "required", "additionalProperties", "items", "minItems", "maxItems", "minLength", "maxLength", "pattern", "minimum", "maximum", "format"]);
 
 /** Only the checked-in Pydantic schema subset is executable; unknown keywords fail closed. */
-function validate(value: unknown, schema: Schema, root: Schema, depth = 0): void {
+function validate(value: unknown, schema: Schema, root: Schema, depth = 0, complete = false): void {
   if (depth > 32 || Object.keys(schema).some(key => !keywords.has(key))) invalid();
   if (schema.$ref) {
     const match = /^#\/\$defs\/([A-Za-z0-9_]+)$/.exec(schema.$ref);
     if (!match || !Object.hasOwn(root.$defs ?? {}, match[1])) invalid();
-    return validate(value, root.$defs[match![1]], root, depth + 1);
+    return validate(value, root.$defs[match![1]], root, depth + 1, complete);
   }
   if (schema.anyOf) {
     for (const branch of schema.anyOf) {
-      try { validate(value, branch, root, depth + 1); return; } catch (error) { if (!(error instanceof DiagnosticQueryError)) throw error; }
+      try { validate(value, branch, root, depth + 1, complete); return; } catch (error) { if (!(error instanceof DiagnosticQueryError)) throw error; }
     }
     invalid();
   }
@@ -31,20 +31,21 @@ function validate(value: unknown, schema: Schema, root: Schema, depth = 0): void
     case "boolean": if (typeof value !== "boolean") invalid(); break;
     case "string":
       if (typeof value !== "string" || value.length > (schema.maxLength ?? 4096) || value.length < (schema.minLength ?? 0) || (schema.pattern && !new RegExp(schema.pattern).test(value))) invalid();
+      if (schema.format && (schema.format !== "date-time" || typeof value !== "string" || !/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value) || !Number.isFinite(Date.parse(value)))) invalid();
       break;
     case "integer": case "number":
       if (typeof value !== "number" || !Number.isFinite(value) || (schema.type === "integer" && !Number.isSafeInteger(value)) || value < (schema.minimum ?? -Number.MAX_SAFE_INTEGER) || value > (schema.maximum ?? Number.MAX_SAFE_INTEGER)) invalid();
       break;
     case "array":
       if (!Array.isArray(value) || value.length > (schema.maxItems ?? 1000) || value.length < (schema.minItems ?? 0)) invalid();
-      for (const item of value as unknown[]) validate(item, schema.items, root, depth + 1);
+      for (const item of value as unknown[]) validate(item, schema.items, root, depth + 1, complete);
       break;
     case "object": {
       const object = record(value);
       if (schema.additionalProperties !== false) invalid();
       if (Object.keys(object).some(key => !Object.hasOwn(schema.properties, key))) invalid();
-      for (const key of schema.required ?? []) if (!Object.hasOwn(object, key)) invalid();
-      for (const [key, item] of Object.entries(object)) validate(item, schema.properties[key], root, depth + 1);
+      for (const key of complete ? Object.keys(schema.properties) : schema.required ?? []) if (!Object.hasOwn(object, key)) invalid();
+      for (const [key, item] of Object.entries(object)) validate(item, schema.properties[key], root, depth + 1, complete);
       break;
     }
     case undefined: if (!Object.hasOwn(schema, "const") && !schema.enum) invalid(); break;
@@ -135,14 +136,17 @@ export function decodeDiagnosticLinks(raw: unknown, operationId: string, after =
   if (value.next_cursor !== previous || ![null, "no_correlation_recorded_or_retained", "diagnostic_store_unavailable"].includes(value.gap) || (value.items.length > 0 && value.gap !== null) || (!value.items.length && value.gap === null)) invalid();
   return value as DiagnosticLinkPage;
 }
-async function query(path: string, parameters: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+export function validateDiagnosticExportSchema(value: unknown, schema: Schema): void { validate(value, schema, schema, 0, true); }
+async function query(path: string, parameters: Record<string, unknown>, signal?: AbortSignal, body?: unknown): Promise<unknown> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(parameters)) if (value !== undefined && value !== "") params.set(key, String(value));
   // Deliberately bypass diagnosticFetch: querying diagnostics cannot recursively collect itself.
-  const timeout = AbortSignal.timeout(5000);
+  const timeout = AbortSignal.timeout(body === undefined ? 5000 : 15000);
   let response: Response;
-  try { response = await fetch(`${getAiBaseUrl()}/diagnostics/${path}?${params}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout }); }
+  try { response = await fetch(`${getAiBaseUrl()}/diagnostics/${path}?${params}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout, ...(body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }) }); }
   catch (error) { if (signal?.aborted) throw error; throw new DiagnosticQueryError("unavailable"); }
+  signal?.throwIfAborted();
+  if (response.status === 413) throw new DiagnosticQueryError("response_too_large");
   if (!response.ok) throw new DiagnosticQueryError("unavailable");
   if (!response.body) invalid();
   const reader = response.body!.getReader();
@@ -150,10 +154,11 @@ async function query(path: string, parameters: Record<string, unknown>, signal?:
   let size = 0;
   try {
     while (true) {
+      signal?.throwIfAborted();
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 2 * 1024 * 1024) throw new DiagnosticQueryError("response_too_large");
+      if (size > (body === undefined ? 2 : 32) * 1024 * 1024) throw new DiagnosticQueryError("response_too_large");
       chunks.push(value);
     }
   } catch (error) {
@@ -194,4 +199,8 @@ export function decodeDiagnosticWriters(raw: unknown, after = 0): DiagnosticWrit
 }
 export async function queryDiagnosticWriters(after = 0, signal?: AbortSignal) {
   return decodeDiagnosticWriters(await query("writers", { after, limit: 100 }, signal), after);
+}
+
+export async function requestDiagnosticExport(filters: DiagnosticEventFilters, signal?: AbortSignal): Promise<unknown> {
+  return query("export", {}, signal, filters);
 }

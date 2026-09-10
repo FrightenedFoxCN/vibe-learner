@@ -3,9 +3,9 @@
 import { observeLocalAction } from "./diagnostic-actions.ts";
 import { getDesktopRuntimeConfig } from "./runtime-config";
 
-export async function exportJson(filename: string, payload: unknown): Promise<boolean> {
+export async function exportJson(filename: string, payload: unknown, options: { compact?: boolean } = {}): Promise<boolean> {
   return observeLocalAction("json_export_handoff", async () => {
-    const contents = JSON.stringify(payload, null, 2);
+    const contents = JSON.stringify(payload, null, options.compact ? undefined : 2);
     if (getDesktopRuntimeConfig()?.isDesktop) {
       const { invoke } = await import("@tauri-apps/api/core");
       return invoke<boolean>("desktop_export_json", { filename, contents });
