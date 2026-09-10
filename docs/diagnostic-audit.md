@@ -41,7 +41,17 @@ are not report fields. Metrics establish no business commit proof.
 The caller must supply a coherent snapshot and its retention/writer coverage.
 The core caps inputs at 10,000 events / 5,000 trace projections and output at
 20,000 observations. It does not certify complete installation history or
-silently truncate excess input. Run:
+silently truncate excess input.
+
+Local import actions distinguish JSON reading from draft application:
+`json_import_persona_draft` / `json_import_scene_draft` own nested
+`json_import_read_persona` / `json_import_read_scene` spans on the same action and
+flow. Read completion is not domain-format acceptance. Outer completion means
+the guarded editor callback applied the draft, not a persisted resource commit;
+domain rejection fails the outer action, while a superseded valid result cancels
+it. Import content, filenames and raw errors are excluded from those events.
+
+Run the audit tests:
 
 ```bash
 cd services/ai

@@ -688,6 +688,8 @@
         "anyOf": [
           {
             "enum": [
+              "json_import_persona_draft",
+              "json_import_scene_draft",
               "json_import_read_persona",
               "json_import_read_scene",
               "json_export_handoff",

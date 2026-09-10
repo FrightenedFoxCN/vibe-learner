@@ -10,7 +10,7 @@ export interface DiagnosticEventV1 {
   name: "decode_failed" | "page_entered" | "page_left" | "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed" | "tool_started" | "tool_finished" | "tool_failed" | "tool_unknown" | "action_started" | "action_finished" | "action_failed" | "action_cancelled" | "desktop_started" | "sidecar_spawned" | "sidecar_ready" | "sidecar_startup_failed" | "sidecar_exited" | "desktop_shutdown_requested" | "sidecar_stopped" | "sidecar_shutdown_unknown" | "desktop_stopped";
   page_path?: DiagnosticPagePath | null;
   desktop_metric?: DiagnosticDesktopMetricV1 | null;
-  action_name?: "json_import_read_persona" | "json_import_read_scene" | "json_export_handoff" | "settings_save" | "vault_create" | "vault_unlock" | "vault_lock" | "vault_load_secrets" | "vault_save_secrets" | "vault_clear_secrets" | null;
+  action_name?: "json_import_persona_draft" | "json_import_scene_draft" | "json_import_read_persona" | "json_import_read_scene" | "json_export_handoff" | "settings_save" | "vault_create" | "vault_unlock" | "vault_lock" | "vault_load_secrets" | "vault_save_secrets" | "vault_clear_secrets" | null;
   span_id?: string | null;
   parent_span_id?: string | null;
   tool_metric?: DiagnosticToolMetricV1 | null;

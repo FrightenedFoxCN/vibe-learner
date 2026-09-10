@@ -20,7 +20,7 @@ import {
 import { useSceneLibrary } from "./use-scene-library";
 import { useSceneDraft } from "./use-scene-draft";
 import { useSceneGeneration } from "./use-scene-generation";
-import { readBoundedJsonImport } from "../lib/bounded-json-import";
+import { importJsonDraft } from "../lib/bounded-json-import";
 import { exportJson } from "../lib/export-json";
 import { usePageDebugSnapshot } from "../components/page-debug-context";
 import { useSceneRewrite } from "./use-scene-rewrite";
@@ -508,18 +508,14 @@ export function useSceneWorkspaceController() {
         currentSceneAsyncScope(fieldTarget),
     );
     try {
-      const parsed = await readBoundedJsonImport(file, "scene");
-      const imported = parseSceneImportPayload(parsed, true);
-      const decision = applyAsyncResult({
-        fence: sceneImportFenceRef.current,
-        ticket,
-        currentScope: currentSceneAsyncScope(fieldTarget),
-        value: imported,
-        apply: (next) => applySceneImport(next, "场景导入成功。"),
-      });
-      if (decision !== "apply") {
-        return;
-      }
+      await importJsonDraft(file, "scene", raw => parseSceneImportPayload(raw, true),
+        value => applyAsyncResult({
+          fence: sceneImportFenceRef.current,
+          ticket,
+          currentScope: currentSceneAsyncScope(fieldTarget),
+          value,
+          apply: (next) => applySceneImport(next, "场景导入成功。"),
+        }) === "apply");
     } catch {
       if (
         sceneImportFenceRef.current.decide(

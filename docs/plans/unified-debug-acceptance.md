@@ -47,7 +47,7 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Study, attachments and interactive questions | Chromium lost-reply reload recovery, multipart success/rejection, answer CAS conflict/retry and automatic callback recovery | These branches have persisted read-back, callback flow retention and grading/content exclusion checks. No provider exactly-once claim. |
 | Tavern direct, partial/retry, cancellation and restart | Chromium direct/recovery, partial child retry and cancel; `test_diagnostic_tavern_flows.py`, `test_diagnostic_tavern_crash.py` | Canonical IDs and committed Message sequence inspected; actual child process exit and expired-lease takeover covered. Unflushed crash events remain unknown. |
 | Settings and native Vault | Safe-projection adversarial tests and actual controller Chromium test; native UI/save package plus `unified-debug-native-v1.json` and `unified-debug-native-save-v1.json` | Existing Vault unlock/read-back, two settings/Vault saves, lock and subsequent unlock verified on macOS. Successful creation and clear-secrets diagnostic chains remain unverified; locked/unavailable helper tests do not close them. |
-| JSON import and export actions | `bounded-json-import.ts`, `diagnostic-actions.test.ts`, `export-json.ts`; browser package download and native save-dialog file validated against `DiagnosticExportV1` | Read/JSON syntax/size outcomes and export handoff verified. **Gap found:** Persona/Scene domain normalization and stale-result rejection occur after the read span finishes; no complete import action currently records those outcomes. |
+| JSON import and export actions | `bounded-json-import.ts`, `diagnostic-actions.test.ts`, `export-json.ts`; browser package download and native save-dialog file validated against `DiagnosticExportV1` | Read/JSON syntax/size outcomes and export handoff verified. Full Persona/Scene import actions now include domain validation and guarded draft application; both actual-browser cases verify failed/completed/cancelled terminal events and no save request. |
 | Native startup/sidecar exit and offline spool | `src/diagnostics.rs`, `diagnostic_desktop_spool.py`, real sidecar exit tests, native saved startup/shutdown events | Local Unix lifecycle and retry/acknowledgement verified. Spool empty and stable refusal counters indicate recovery, not proof of complete collection. Other platforms/power-loss semantics unverified. |
 | Provider timing, usage source, retry and configuration | `test_diagnostic_provider.py` plus `test_diagnostic_audit.py` real observer retry input | Parent/attempt identity, measured duration, reported-token-only aggregation and explicit missing fields verified. No current live MiniMax request or cost evidence; missing endpoint/configuration evidence is retained. |
 | Canonical index rebuild, late commits and resource links | `test_diagnostic_index.py`, query/export tests, browser operation → request → event drilldown | Source-owned projection, restart deduplication, late updates, deletion/unavailability and bounded resource vocabulary covered. Index is never substituted for current commit read-back. |
@@ -62,20 +62,17 @@ their described cases; an unavailable measurement or platform remains unknown.
 
 ## Remaining completion work
 
-1. Record complete Persona/Scene import actions through domain validation and
-   guarded draft application, including cancellation/stale-result outcomes. Keep
-   the existing read subspan distinct from importing a valid draft or saving it.
-2. Obtain native creation and clear-secrets success evidence in a separate
+1. Obtain native creation and clear-secrets success evidence in a separate
    disposable test Vault, preserving the existing test Vault. Creation through
    the UI requires the user to enter and submit the new credential under the
    computer-use policy; synthetic library tests alone cannot certify that UI.
-3. Complete whole-workflow and remaining native/rendering overhead comparisons.
+2. Complete whole-workflow and remaining native/rendering overhead comparisons.
    Retain the failed saturated-spool sample; do not weaken durability or widen
    budgets solely to produce a passing result.
-4. Reconcile the documented physical-storage exceptions with final acceptance
+3. Reconcile the documented physical-storage exceptions with final acceptance
    claims; never certify an installation-wide 200 MiB hard limit from partial
    scans or the normal-envelope arithmetic.
-5. Run the appropriate final release/native/browser gates, update the four
+4. Run the appropriate final release/native/browser gates, update the four
    top-level plan items only to the extent proven, and archive the final result.
    Deferred independent review stays separately identified.
 
@@ -768,3 +765,30 @@ Test-only stage instrumentation and both raw reports are retained in the
 [investigation](../performance/diagnostic-native-spool-stages-v1.md). The original
 25.21 ms failed observation remains part of the evidence; no runtime durability
 change or performance-acceptance closure is claimed.
+
+## Complete Persona and Scene import actions
+
+`json_import_persona_draft` and `json_import_scene_draft` now wrap bounded JSON
+reading, the existing domain normalizer and the existing guarded draft-application
+callback. The original read action is a child span on the same captured action,
+flow and page view. JSON reading can complete while the enclosing import fails
+validation. A valid but superseded import returns false from the original fence
+and records cancellation; only successful draft application records completion.
+This is not a persisted Persona/Scene commit, and emits no saved-resource claim.
+Original exceptions and UI handling are preserved. Python/TypeScript action names
+and generated query/export schema fixtures changed together.
+
+Three targeted tests use the real normalizers, verify rejection before mutation,
+parent/child correlation, content exclusion and the original page during a delayed
+cancelled import. Two new production Chromium cases exercise actual file inputs
+for Persona and Scene: valid JSON with invalid domain structure, valid import,
+a delayed valid read superseded by a replacement, and no business save requests.
+All four terminal outcomes are read back from the real diagnostic backend; all
+read children have matching parent identity and input filenames/content are absent.
+
+Verification: 3 targeted import tests, 23 backend diagnostic/query/export tests,
+`npm run check` (shared/Web reliability/type gates and all 13 Harness PR suites),
+production Web build, and all 16 Chromium diagnostic scenarios passed (24.8 s).
+Logs: `/tmp/diagnostic-import-{tests,backend,check,build,browser}.log`.
+The prior import-action audit gap is resolved. Remaining native creation/clear,
+whole-workflow overhead and final acceptance requirements stay open.

@@ -1,6 +1,64 @@
 import { readFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 
+for (const kind of ["persona", "scene"] as const) {
+  test(`${kind} full import records domain rejection, draft application and superseded reads`, async ({ page, request }) => {
+    await page.addInitScript(() => {
+      window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+      const original = File.prototype.text;
+      File.prototype.text = function () {
+        if (this.name === "delayed-private-import.json") {
+          return new Promise(resolve => { (window as any).__releaseDiagnosticImport = async () => resolve(await original.call(this)); });
+        }
+        return original.call(this);
+      };
+    });
+    page.on("dialog", dialog => dialog.accept());
+    const flows = new Set<string>();
+    const mutations: string[] = [];
+    page.on("request", item => {
+      if (!item.url().startsWith("http://127.0.0.1:18998") || item.method() === "GET") return;
+      if (item.url().endsWith("/diagnostics/events")) {
+        for (const event of item.postDataJSON().events) {
+          if (event.action_name === `json_import_${kind}_draft`) flows.add(event.flow_id);
+        }
+      } else mutations.push(item.url());
+    });
+    await page.goto(kind === "persona" ? "/persona-spectrum" : "/scene-setup");
+    if (kind === "persona") await page.getByRole("button", { name: "新建人格草稿", exact: true }).click();
+    const input = page.locator('input[type="file"][accept="application/json,.json"]').first();
+    const valid = kind === "persona" ? { name: "PRIVATE_IMPORT_NAME", systemPrompt: "PRIVATE_IMPORT_PROMPT", slots: [] }
+      : { sceneName: "PRIVATE_IMPORT_NAME", sceneLayers: [{ title: "PRIVATE_IMPORT_LAYER", children: [] }] };
+    const upload = (name: string, payload: unknown) => input.setInputFiles({ name, mimeType: "application/json", buffer: Buffer.from(JSON.stringify(payload)) });
+    await upload("invalid-private-import.json", null);
+    await expect(page.getByText(/导入失败/).first()).toBeVisible();
+    await upload("valid-private-import.json", valid);
+    await expect(page.getByText(kind === "persona" ? "配置导入成功，已应用到当前编辑区。" : "场景导入成功。", { exact: true })).toBeVisible();
+    await upload("delayed-private-import.json", valid);
+    await expect.poll(() => page.evaluate(() => typeof (window as any).__releaseDiagnosticImport)).toBe("function");
+    await upload("replacement-private-import.json", valid);
+    await page.evaluate(() => (window as any).__releaseDiagnosticImport());
+    let persisted: any[] = [];
+    await expect.poll(async () => {
+      persisted = (await Promise.all([...flows].map(async flow => {
+        const response = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${flow}`);
+        return (await response.json()).items.map((row: any) => row.event);
+      }))).flat();
+      return persisted.filter(e => e.action_name === `json_import_${kind}_draft` && e.name !== "action_started").length;
+    }).toBe(4);
+    const terminals = persisted.filter(e => e.action_name === `json_import_${kind}_draft` && e.name !== "action_started");
+    expect(terminals.map(e => e.name).sort()).toEqual(["action_cancelled", "action_failed", "action_finished", "action_finished"]);
+    for (const parent of terminals) {
+      const children = persisted.filter(e => e.parent_span_id === parent.span_id);
+      expect(children.map(e => e.name).sort()).toEqual(["action_finished", "action_started"]);
+      expect(children.every(e => e.action_id === parent.action_id && e.flow_id === parent.flow_id)).toBe(true);
+    }
+    expect(JSON.stringify(persisted)).not.toContain("PRIVATE_IMPORT");
+    expect(JSON.stringify(persisted)).not.toContain("private-import.json");
+    expect(mutations).toEqual([]);
+  });
+}
+
 test("Settings current-page Debug excludes secrets from actual controller state and probe cache", async ({ page }) => {
   const sentinel = "PRIVATE_SETTINGS_BROWSER_SENTINEL";
   await page.addInitScript(() => {

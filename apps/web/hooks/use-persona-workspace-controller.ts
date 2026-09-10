@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent as ReactDragEvent } from "react";
 import { PERSONA_SLOT_KIND_LABELS, type CreatePersonaInput, type PersonaProfile, type PersonaSlot, type PersonaSlotKind, renderPersonaRuntimeInstruction } from "@vibe-learner/shared";
-import { readBoundedJsonImport } from "../lib/bounded-json-import";
+import { importJsonDraft } from "../lib/bounded-json-import";
 import { exportJson } from "../lib/export-json";
 import { usePageDebugSnapshot } from "../components/page-debug-context";
 import { usePersonaPersistence } from "./use-persona-persistence";
@@ -538,18 +538,16 @@ export function usePersonaWorkspaceController() {
       currentPersonaAsyncScope(fieldTarget),
     );
     try {
-      const parsed = await readBoundedJsonImport(file, "persona") as Record<string, unknown>;
-      const normalized = normalizeImportedPersonaConfig(parsed);
-      const decision = applyAsyncResult({
-        fence: configImportFenceRef.current,
-        ticket,
-        currentScope: currentPersonaAsyncScope(fieldTarget),
-        value: createPersonaInputToDraft(normalized),
-        apply: updatePersonaDraft,
-      });
-      if (decision !== "apply") {
-        return;
-      }
+      const applied = await importJsonDraft(file, "persona",
+        raw => createPersonaInputToDraft(normalizeImportedPersonaConfig(raw as Record<string, unknown>)),
+        value => applyAsyncResult({
+          fence: configImportFenceRef.current,
+          ticket,
+          currentScope: currentPersonaAsyncScope(fieldTarget),
+          value,
+          apply: updatePersonaDraft,
+        }) === "apply");
+      if (!applied) return;
       setConfigMessage("配置导入成功，已应用到当前编辑区。");
     } catch (error) {
       if (
