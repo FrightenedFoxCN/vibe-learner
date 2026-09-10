@@ -1,0 +1,4995 @@
+{
+  "schema_version": "diagnostic-scene-workflow-benchmark-v1",
+  "timestamp": "2026-09-10T13:57:38.228397+00:00",
+  "stage_profiling": true,
+  "isolated_sample_processes": true,
+  "gc_policy": "Python default; no forced collection or disabling",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.12.13",
+  "warmup_pairs": 3,
+  "sample_pairs": 30,
+  "scope": "Actual in-process ASGI scene generation with mock provider, application of generated contents to a domain save, and persisted reload. Fresh app/storage per sample; timing excludes startup, post-response drain, browser/native UI, network and live provider. Structured console logging remains the same in both modes.",
+  "disabled_control": "Test-only null event sink, middleware bypass, index/spool workers not started; canonical Harness lifecycle unchanged.",
+  "budget_ms": 50,
+  "gate": "P95 paired enabled-minus-disabled request-chain overhead <=50 ms; signed deltas retained.",
+  "passed": true,
+  "summary": {
+    "enabled": {
+      "sample_count": 30,
+      "p50_ms": 33.445125,
+      "p95_ms": 35.95525,
+      "max_ms": 38.035083
+    },
+    "disabled": {
+      "sample_count": 30,
+      "p50_ms": 29.57925,
+      "p95_ms": 30.6415,
+      "max_ms": 31.704458
+    },
+    "paired_delta": {
+      "sample_count": 30,
+      "p50_ms": 3.763749999999998,
+      "p95_ms": 6.234583000000001,
+      "max_ms": 8.283792000000002
+    },
+    "post_response_drain": {
+      "sample_count": 30,
+      "p50_ms": 1.261792,
+      "p95_ms": 1.272375,
+      "max_ms": 1.273833
+    }
+  },
+  "raw": [
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 33.264042,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.290292,
+            "gc_overlap_ms": 0.970458
+          },
+          "save": {
+            "elapsed_ms": 4.664625,
+            "gc_overlap_ms": 0.188125
+          },
+          "reload": {
+            "elapsed_ms": 1.21375,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057417
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.451125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.140292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047833
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.264792,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.578583,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 23.993083,
+            "gc_overlap_ms": 0.972876
+          },
+          "save": {
+            "elapsed_ms": 3.613,
+            "gc_overlap_ms": 0.109
+          },
+          "reload": {
+            "elapsed_ms": 0.888125,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.050334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056417
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.478542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.109
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.685459000000005
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 33.080125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.58475,
+            "gc_overlap_ms": 0.989958
+          },
+          "save": {
+            "elapsed_ms": 4.204,
+            "gc_overlap_ms": 0.159459
+          },
+          "reload": {
+            "elapsed_ms": 1.195667,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.044791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058166
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.46175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.111917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047542
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.260875,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.945584,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.303625,
+            "gc_overlap_ms": 0.927332
+          },
+          "save": {
+            "elapsed_ms": 3.491625,
+            "gc_overlap_ms": 0.100958
+          },
+          "reload": {
+            "elapsed_ms": 1.059208,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051709
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.443209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.100958
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.134541000000002
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 31.923541,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.729,
+            "gc_overlap_ms": 0.987416
+          },
+          "save": {
+            "elapsed_ms": 4.794584,
+            "gc_overlap_ms": 0.18325
+          },
+          "reload": {
+            "elapsed_ms": 1.303208,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063625
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.463917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.1345
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04875
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.259125,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.524375,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.892458,
+            "gc_overlap_ms": 0.972082
+          },
+          "save": {
+            "elapsed_ms": 3.540875,
+            "gc_overlap_ms": 0.106958
+          },
+          "reload": {
+            "elapsed_ms": 1.00725,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.076666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05525
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.449
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106958
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 2.399166000000001
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 32.144125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.341959,
+            "gc_overlap_ms": 0.971082
+          },
+          "save": {
+            "elapsed_ms": 4.433166,
+            "gc_overlap_ms": 0.164709
+          },
+          "reload": {
+            "elapsed_ms": 1.27575,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061833
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.462541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.114959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04975
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.266875,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.821792,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.196625,
+            "gc_overlap_ms": 0.948209
+          },
+          "save": {
+            "elapsed_ms": 3.6615,
+            "gc_overlap_ms": 0.107583
+          },
+          "reload": {
+            "elapsed_ms": 0.87775,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.039583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053459
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.441584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.107583
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.322333000000004
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 33.832125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.793583,
+            "gc_overlap_ms": 0.998752
+          },
+          "save": {
+            "elapsed_ms": 4.671791,
+            "gc_overlap_ms": 0.183333
+          },
+          "reload": {
+            "elapsed_ms": 1.274458,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.03625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066792
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.474417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.129458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053875
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.258334,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.384125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 23.911792,
+            "gc_overlap_ms": 0.943335
+          },
+          "save": {
+            "elapsed_ms": 4.424,
+            "gc_overlap_ms": 0.1795
+          },
+          "reload": {
+            "elapsed_ms": 0.957833,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.043584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060709
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.435292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.1795
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.447999999999997
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 31.391417,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.724333,
+            "gc_overlap_ms": 0.98496
+          },
+          "save": {
+            "elapsed_ms": 4.356417,
+            "gc_overlap_ms": 0.160749
+          },
+          "reload": {
+            "elapsed_ms": 1.21925,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066209
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.490167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.105416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055333
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.255584,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.57925,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.945291,
+            "gc_overlap_ms": 0.996834
+          },
+          "save": {
+            "elapsed_ms": 3.607291,
+            "gc_overlap_ms": 0.098875
+          },
+          "reload": {
+            "elapsed_ms": 0.942625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.073584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059209
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.491792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.098875
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 1.8121670000000023
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 34.351208,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 28.651833,
+            "gc_overlap_ms": 1.014083
+          },
+          "save": {
+            "elapsed_ms": 4.388416,
+            "gc_overlap_ms": 0.157668
+          },
+          "reload": {
+            "elapsed_ms": 1.21475,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.488709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.105584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052084
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.259791,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.116625,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 23.71175,
+            "gc_overlap_ms": 0.91821
+          },
+          "save": {
+            "elapsed_ms": 3.457375,
+            "gc_overlap_ms": 0.103583
+          },
+          "reload": {
+            "elapsed_ms": 0.86525,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.039917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0525
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.428917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0505
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103583
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 6.234583000000001
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 32.110083,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.434834,
+            "gc_overlap_ms": 1.026126
+          },
+          "save": {
+            "elapsed_ms": 4.289875,
+            "gc_overlap_ms": 0.144834
+          },
+          "reload": {
+            "elapsed_ms": 1.292167,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.048125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065709
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.497541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.09975
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045084
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.266125,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.348208,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 23.9105,
+            "gc_overlap_ms": 0.937081
+          },
+          "save": {
+            "elapsed_ms": 3.452125,
+            "gc_overlap_ms": 0.10525
+          },
+          "reload": {
+            "elapsed_ms": 0.902458,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.040583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0525
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055208
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.438125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.10525
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.7618750000000034
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 33.691292,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.93925,
+            "gc_overlap_ms": 1.006085
+          },
+          "save": {
+            "elapsed_ms": 4.431792,
+            "gc_overlap_ms": 0.158834
+          },
+          "reload": {
+            "elapsed_ms": 1.220459,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060167
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.46875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.111042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047792
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.268125,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.921125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.165708,
+            "gc_overlap_ms": 1.034333
+          },
+          "save": {
+            "elapsed_ms": 3.648667,
+            "gc_overlap_ms": 0.105375
+          },
+          "reload": {
+            "elapsed_ms": 1.020792,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.047667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.073833
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.50675
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.105375
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.770166999999997
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 33.519375,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.790625,
+            "gc_overlap_ms": 1.01704
+          },
+          "save": {
+            "elapsed_ms": 4.317375,
+            "gc_overlap_ms": 0.184167
+          },
+          "reload": {
+            "elapsed_ms": 1.315792,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.046875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056833
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.487333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05475
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.133833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050334
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.271333,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 31.704458,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.909292,
+            "gc_overlap_ms": 1.134836
+          },
+          "save": {
+            "elapsed_ms": 3.744708,
+            "gc_overlap_ms": 0.097792
+          },
+          "reload": {
+            "elapsed_ms": 0.962833,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.046709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071583
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.5805
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03425
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.097792
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 1.8149169999999977
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 32.101333,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.306459,
+            "gc_overlap_ms": 0.974668
+          },
+          "save": {
+            "elapsed_ms": 4.554459,
+            "gc_overlap_ms": 0.183083
+          },
+          "reload": {
+            "elapsed_ms": 1.142792,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062666
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.450583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.035334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05475
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0645
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.133458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049625
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.271458,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.647292,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.051833,
+            "gc_overlap_ms": 1.26771
+          },
+          "save": {
+            "elapsed_ms": 3.596083,
+            "gc_overlap_ms": 0.099833
+          },
+          "reload": {
+            "elapsed_ms": 0.912958,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.04375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060958
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.755042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0505
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.099833
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 2.4540409999999966
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 33.889708,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.570291,
+            "gc_overlap_ms": 1.004379
+          },
+          "save": {
+            "elapsed_ms": 4.969209,
+            "gc_overlap_ms": 0.217083
+          },
+          "reload": {
+            "elapsed_ms": 1.247542,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056625
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.466792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.165958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051125
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.259833,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.445417,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.78575,
+            "gc_overlap_ms": 1.008958
+          },
+          "save": {
+            "elapsed_ms": 3.648292,
+            "gc_overlap_ms": 0.103
+          },
+          "reload": {
+            "elapsed_ms": 0.920083,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.04175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.506125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.444291
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 32.0315,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.917125,
+            "gc_overlap_ms": 1.00175
+          },
+          "save": {
+            "elapsed_ms": 4.799417,
+            "gc_overlap_ms": 0.188333
+          },
+          "reload": {
+            "elapsed_ms": 1.222959,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05475
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054958
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.495042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0505
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.135875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052458
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.259875,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.932125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.1265,
+            "gc_overlap_ms": 0.920085
+          },
+          "save": {
+            "elapsed_ms": 3.56425,
+            "gc_overlap_ms": 0.099667
+          },
+          "reload": {
+            "elapsed_ms": 1.146542,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054667
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.437125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0455
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.099667
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.099375000000002
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 32.190666,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.00925,
+            "gc_overlap_ms": 0.965916
+          },
+          "save": {
+            "elapsed_ms": 4.7035,
+            "gc_overlap_ms": 0.155167
+          },
+          "reload": {
+            "elapsed_ms": 1.379625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.041333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060291
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.457041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049084
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.272375,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.390417,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.77375,
+            "gc_overlap_ms": 1.096413
+          },
+          "save": {
+            "elapsed_ms": 3.629417,
+            "gc_overlap_ms": 0.103375
+          },
+          "reload": {
+            "elapsed_ms": 0.901125,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.041833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075041
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.547541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103375
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 2.800249000000001
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 33.504541,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.894458,
+            "gc_overlap_ms": 1.037002
+          },
+          "save": {
+            "elapsed_ms": 4.348459,
+            "gc_overlap_ms": 0.158375
+          },
+          "reload": {
+            "elapsed_ms": 1.172708,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.525333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.108584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049791
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.268833,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.590458,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.824084,
+            "gc_overlap_ms": 1.036336
+          },
+          "save": {
+            "elapsed_ms": 3.740875,
+            "gc_overlap_ms": 0.102125
+          },
+          "reload": {
+            "elapsed_ms": 0.937334,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.044375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053375
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.510042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.102125
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.9140830000000015
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 32.221375,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.370125,
+            "gc_overlap_ms": 0.946999
+          },
+          "save": {
+            "elapsed_ms": 4.580292,
+            "gc_overlap_ms": 0.180041
+          },
+          "reload": {
+            "elapsed_ms": 1.178459,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.445708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03675
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.132
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048041
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.258,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.245834,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.535042,
+            "gc_overlap_ms": 0.943709
+          },
+          "save": {
+            "elapsed_ms": 3.638625,
+            "gc_overlap_ms": 0.102083
+          },
+          "reload": {
+            "elapsed_ms": 0.975667,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053375
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.452875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.102083
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 2.9755410000000033
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 34.084792,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.918458,
+            "gc_overlap_ms": 0.985583
+          },
+          "save": {
+            "elapsed_ms": 4.7045,
+            "gc_overlap_ms": 0.153666
+          },
+          "reload": {
+            "elapsed_ms": 1.366625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.044375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05675
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.453917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0485
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.110416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04325
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.264875,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.957834,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.234416,
+            "gc_overlap_ms": 0.999044
+          },
+          "save": {
+            "elapsed_ms": 3.648833,
+            "gc_overlap_ms": 0.104167
+          },
+          "reload": {
+            "elapsed_ms": 0.987458,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.041375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0585
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.482792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104167
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.126958000000002
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 33.04825,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.273541,
+            "gc_overlap_ms": 1.096919
+          },
+          "save": {
+            "elapsed_ms": 4.523,
+            "gc_overlap_ms": 0.15725
+          },
+          "reload": {
+            "elapsed_ms": 1.159958,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.566709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.109209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048041
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.270083,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.622708,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.879375,
+            "gc_overlap_ms": 0.958168
+          },
+          "save": {
+            "elapsed_ms": 3.694625,
+            "gc_overlap_ms": 0.100916
+          },
+          "reload": {
+            "elapsed_ms": 0.963375,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054125
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.448709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02975
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.100916
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.4255420000000036
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 38.035083,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 31.235333,
+            "gc_overlap_ms": 1.01371
+          },
+          "save": {
+            "elapsed_ms": 5.090042,
+            "gc_overlap_ms": 0.181042
+          },
+          "reload": {
+            "elapsed_ms": 1.612459,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.486209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.128
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053042
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.260542,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.751291,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.073834,
+            "gc_overlap_ms": 0.944372
+          },
+          "save": {
+            "elapsed_ms": 3.575875,
+            "gc_overlap_ms": 0.106
+          },
+          "reload": {
+            "elapsed_ms": 1.004709,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.043041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049708
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.449541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 8.283792000000002
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 33.445125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.779375,
+            "gc_overlap_ms": 1.054832
+          },
+          "save": {
+            "elapsed_ms": 4.403666,
+            "gc_overlap_ms": 0.166542
+          },
+          "reload": {
+            "elapsed_ms": 1.169708,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.040208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064917
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.507708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0505
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.113042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0535
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.263875,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.615208,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.483625,
+            "gc_overlap_ms": 1.074332
+          },
+          "save": {
+            "elapsed_ms": 4.164083,
+            "gc_overlap_ms": 0.116083
+          },
+          "reload": {
+            "elapsed_ms": 0.878208,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.044167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058167
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.575458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.116083
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.8299169999999982
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 34.411042,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 28.734792,
+            "gc_overlap_ms": 0.985168
+          },
+          "save": {
+            "elapsed_ms": 4.367959,
+            "gc_overlap_ms": 0.179333
+          },
+          "reload": {
+            "elapsed_ms": 1.21875,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.041792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0525
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.459375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.130542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048791
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.261167,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.619916,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 23.995458,
+            "gc_overlap_ms": 0.942376
+          },
+          "save": {
+            "elapsed_ms": 3.666375,
+            "gc_overlap_ms": 0.115083
+          },
+          "reload": {
+            "elapsed_ms": 0.870667,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055583
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.457667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.115083
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 5.791126000000002
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 32.282375,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.610125,
+            "gc_overlap_ms": 1.084083
+          },
+          "save": {
+            "elapsed_ms": 4.393583,
+            "gc_overlap_ms": 0.179125
+          },
+          "reload": {
+            "elapsed_ms": 1.184416,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0505
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047291
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.578833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.131042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048083
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.258708,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 30.6415,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.604,
+            "gc_overlap_ms": 0.967791
+          },
+          "save": {
+            "elapsed_ms": 3.976083,
+            "gc_overlap_ms": 0.122625
+          },
+          "reload": {
+            "elapsed_ms": 0.961417,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.039583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057917
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.437875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.073708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.122625
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 1.6408750000000012
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 33.466,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.751083,
+            "gc_overlap_ms": 1.027418
+          },
+          "save": {
+            "elapsed_ms": 4.361667,
+            "gc_overlap_ms": 0.149
+          },
+          "reload": {
+            "elapsed_ms": 1.258875,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063333
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.4865
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0715
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044708
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.273833,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 30.501083,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.858583,
+            "gc_overlap_ms": 1.030208
+          },
+          "save": {
+            "elapsed_ms": 3.646875,
+            "gc_overlap_ms": 0.097584
+          },
+          "reload": {
+            "elapsed_ms": 0.912625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058792
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.5095
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.097584
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 2.964917
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 35.95525,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 28.945958,
+            "gc_overlap_ms": 1.049792
+          },
+          "save": {
+            "elapsed_ms": 5.554584,
+            "gc_overlap_ms": 0.193084
+          },
+          "reload": {
+            "elapsed_ms": 1.354709,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.043
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058333
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.4855
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.14275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050334
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.258791,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.871458,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.681708,
+            "gc_overlap_ms": 0.932999
+          },
+          "save": {
+            "elapsed_ms": 3.992125,
+            "gc_overlap_ms": 0.101
+          },
+          "reload": {
+            "elapsed_ms": 1.108917,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.04
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057875
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.432209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04425
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.101
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 6.083791999999999
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 34.009625,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 28.352,
+            "gc_overlap_ms": 0.999127
+          },
+          "save": {
+            "elapsed_ms": 4.378167,
+            "gc_overlap_ms": 0.163666
+          },
+          "reload": {
+            "elapsed_ms": 1.1835,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06425
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.467667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0505
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.117791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045875
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.258333,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.600417,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.913958,
+            "gc_overlap_ms": 0.971375
+          },
+          "save": {
+            "elapsed_ms": 3.583166,
+            "gc_overlap_ms": 0.109708
+          },
+          "reload": {
+            "elapsed_ms": 1.018917,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.044
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065708
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.45875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.032584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0695
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.109708
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 4.409208
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 33.591292,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.478875,
+            "gc_overlap_ms": 1.091417
+          },
+          "save": {
+            "elapsed_ms": 4.564291,
+            "gc_overlap_ms": 0.163041
+          },
+          "reload": {
+            "elapsed_ms": 1.4505,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.043709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058833
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.506292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.115209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.113833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049208
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.261167,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 30.000167,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.01125,
+            "gc_overlap_ms": 0.943587
+          },
+          "save": {
+            "elapsed_ms": 3.905041,
+            "gc_overlap_ms": 0.122
+          },
+          "reload": {
+            "elapsed_ms": 0.988625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.038834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056167
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.432917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0605
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.122
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.5911250000000017
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 33.492,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.921625,
+            "gc_overlap_ms": 0.987957
+          },
+          "save": {
+            "elapsed_ms": 4.3315,
+            "gc_overlap_ms": 0.159458
+          },
+          "reload": {
+            "elapsed_ms": 1.146417,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047416
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.479417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0445
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0525
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.080458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056041
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.269583,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 29.629333,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 24.965791,
+            "gc_overlap_ms": 0.997125
+          },
+          "save": {
+            "elapsed_ms": 3.620708,
+            "gc_overlap_ms": 0.101
+          },
+          "reload": {
+            "elapsed_ms": 0.957958,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.039333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070667
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.482709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.101
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.8626669999999983
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 32.663,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 26.943292,
+            "gc_overlap_ms": 1.028084
+          },
+          "save": {
+            "elapsed_ms": 4.416709,
+            "gc_overlap_ms": 0.178126
+          },
+          "reload": {
+            "elapsed_ms": 1.209292,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.036084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.500084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.126959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051167
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.261792,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 28.89925,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 23.898708,
+            "gc_overlap_ms": 0.936001
+          },
+          "save": {
+            "elapsed_ms": 3.866625,
+            "gc_overlap_ms": 0.098417
+          },
+          "reload": {
+            "elapsed_ms": 1.038208,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.039042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.4305
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.098417
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.763749999999998
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 32.752459,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 27.151125,
+            "gc_overlap_ms": 1.051709
+          },
+          "save": {
+            "elapsed_ms": 4.359041,
+            "gc_overlap_ms": 0.166876
+          },
+          "reload": {
+            "elapsed_ms": 1.144292,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.0385
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068583
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.527875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.119667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047209
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.269208,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 30.326875,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.643292,
+            "gc_overlap_ms": 1.147749
+          },
+          "save": {
+            "elapsed_ms": 3.646208,
+            "gc_overlap_ms": 0.103125
+          },
+          "reload": {
+            "elapsed_ms": 0.952,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063042
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.628542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04525
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103125
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 2.4255840000000006
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 34.352125,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 28.383125,
+            "gc_overlap_ms": 1.020332
+          },
+          "save": {
+            "elapsed_ms": 4.672375,
+            "gc_overlap_ms": 0.186751
+          },
+          "reload": {
+            "elapsed_ms": 1.200833,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.037417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058458
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.481125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.140959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045792
+          }
+        ],
+        "generated_root_layers": 1,
+        "post_response_drain_ms": 1.27075,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 30.465541,
+        "saved_revision": 1,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "generate": {
+            "elapsed_ms": 25.693417,
+            "gc_overlap_ms": 1.026875
+          },
+          "save": {
+            "elapsed_ms": 3.731917,
+            "gc_overlap_ms": 0.104792
+          },
+          "reload": {
+            "elapsed_ms": 0.949042,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.0465
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057292
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.5005
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.045584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0635
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0465
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104792
+          }
+        ],
+        "generated_root_layers": 1
+      },
+      "delta_ms": 3.886583999999999
+    }
+  ],
+  "probe_sha256": "f933809134e09729f677ad79b672d8de5eb8a5daf1100cc90a85bc7ff304b66a"
+}

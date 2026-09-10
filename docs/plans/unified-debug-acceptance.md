@@ -56,7 +56,7 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
-| Performance overhead | Backend baseline/quota reports; Chromium collector and actual React timeline reports; native spool stages and Vault measurements | Collection and bounded transport-row rendering pass local budgets. Native saturated spool has both failed 25.21 ms and passing later observations; no acceptance closure from selected reruns. Persona paired overhead passed; Scene paired P95 overhead failed at 67.74 ms versus 50 ms. Remaining workflow comparisons and maximum nested-record/native WebView overhead remain unmeasured. |
+| Performance overhead | Backend baseline/quota reports; Chromium collector and actual React timeline reports; native spool stages and Vault measurements | Collection and bounded transport-row rendering pass local budgets. Native saturated spool has both failed 25.21 ms and passing later observations; no acceptance closure from selected reruns. Persona paired overhead passed; Original Scene paired P95 failed at 67.74 ms versus 50 ms; stage profiling found GC overlap, and a distinct process-isolated population passed at 6.23 ms (original retained). Remaining workflow comparisons and maximum nested-record/native WebView overhead remain unmeasured. |
 | Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
 ## Remaining completion work
@@ -865,3 +865,15 @@ absent. Read-back proves configured state, not a plaintext API comparison. No li
 provider call was made. The actual rebuilt native UI verifies the capability fix;
 prior full release tests remain historical, and final broad acceptance plus open
 Scene/saturated-spool and other performance work remain outstanding.
+
+## Scene overhead attribution and sample isolation
+
+Optional request-stage timing and GC callbacks found all four >50 ms chains in
+a new shared-process run overlapped generation-2 collections during generation
+(46–62 ms), in both diagnostic modes. Identical process isolation for each sample
+retains default GC and all domain/diagnostic assertions; 30 pairs passed the same
+50 ms gate at P95 6.23 ms, max 8.28 ms, without measured generation-2 collections.
+See [complete methods and both raw populations](../performance/diagnostic-scene-stages-v1.md).
+Original failures remain archived. This supplies isolated first-chain evidence
+and explains a measured source of cross-sample variance. It makes no long-lived
+GC guarantee; remaining domain/native performance acceptance stays open.
