@@ -77,6 +77,28 @@
     "max_event_bytes": 4194304,
     "scan_limit": 1024
   },
+  "directory": {
+    "scope": "diagnostics_directory_regular_file_lengths",
+    "status": "unavailable",
+    "gaps": [
+      "not_configured"
+    ],
+    "budget_state": "unknown",
+    "database_bytes": 0,
+    "spool_bytes": 0,
+    "other_bytes": 0,
+    "total_bytes": 0,
+    "database_files": 0,
+    "spool_files": 0,
+    "other_files": 0,
+    "scanned_entries": 0,
+    "visited_directories": 0,
+    "skipped_entries": 0,
+    "max_bytes": 209715200,
+    "scan_limit": 4096,
+    "max_depth": 4,
+    "scan_budget_ms": 100
+  },
   "observation_scope": "independent_live_file_lengths_and_process_counters",
   "sizes_are_atomic": false,
   "counters_are_process_local": true,

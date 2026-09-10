@@ -167,6 +167,14 @@ test("storage observations retain gaps and reject fake totals or admission claim
   const { decodeDiagnosticStorage, queryDiagnosticStorage } = await import("../lib/diagnostic-storage.ts");
   const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/storage-sample-v1.json", import.meta.url), "utf8"));
   assert.deepEqual(decodeDiagnosticStorage(sample), sample);
+  const directoryObserved = structuredClone(sample);
+  Object.assign(directoryObserved.directory, { status: "observed", gaps: [], budget_state: "within_observed_limit", database_bytes: 10, database_files: 1, other_bytes: 3, other_files: 1, total_bytes: 13, scanned_entries: 2, visited_directories: 1 });
+  assert.deepEqual(decodeDiagnosticStorage(directoryObserved), directoryObserved);
+  const directoryPartial = structuredClone(directoryObserved);
+  Object.assign(directoryPartial.directory, { status: "incomplete", gaps: ["depth_limit"], budget_state: "unknown" });
+  assert.deepEqual(decodeDiagnosticStorage(directoryPartial), directoryPartial);
+  Object.assign(directoryPartial.directory, { other_bytes: 210000000, total_bytes: 210000010, budget_state: "over_observed_limit" });
+  assert.deepEqual(decodeDiagnosticStorage(directoryPartial), directoryPartial);
   const observed = structuredClone(sample);
   Object.assign(observed.desktop_spool, { status: "observed", gap: null, event_files: 2, event_bytes: 9, metadata_bytes: 2, other_files: 1, other_bytes: 3, total_bytes: 14 });
   assert.deepEqual(decodeDiagnosticStorage(observed), observed);
@@ -181,6 +189,11 @@ test("storage observations retain gaps and reject fake totals or admission claim
     x => { x.databases[0].recovery = null; },
     x => { x.databases[0].recovery.temporary_overage_possible = false; },
     x => { x.databases[0].counters.path = "PRIVATE"; },
+    x => { x.directory.total_bytes++; },
+    x => { x.directory.budget_state = "within_observed_limit"; },
+    x => { x.directory.gaps.push(x.directory.gaps[0]); },
+    x => { x.directory.path = "PRIVATE"; },
+    x => { x.directory.database_files = 1; },
     x => { x.desktop_spool.total_bytes++; },
     x => { x.desktop_spool.status = "observed"; },
     x => { x.desktop_spool.path = "PRIVATE"; },

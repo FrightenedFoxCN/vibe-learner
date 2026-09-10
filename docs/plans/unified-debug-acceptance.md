@@ -278,3 +278,37 @@ storage view and diagnostic download (`/tmp/diagnostic-recovery-browser.log`).
 This closes this bounded recovery implementation slice; the overall goal and the
 remaining installation, workflow-fault, native and performance acceptance remain
 active.
+
+## Diagnostic directory accounting slice
+
+The storage query/export now includes a separate no-follow recursive inventory of
+the diagnostic directory. It counts regular-file lengths for configured database
+families, the desktop-spool subtree and other files, including unknown nested
+files, without returning names/paths or reading/deleting content. This inventory
+is not a sum of the independently sampled database/spool panels. A configured
+index outside this directory is an explicit coverage gap.
+
+The scan has a global 4,096-entry bound, four levels below the root, and a
+cooperative 100 ms deadline. Descriptor-pinned directories and inode checks avoid
+following replaced directory links. Filesystem errors, links/special files,
+depth/time/entry limits preserve explicit gaps. Partial observations can prove
+that observed lengths already exceed the 200 MiB reference, but cannot certify
+that complete usage is below it. Sparse files use logical file length; physical
+blocks, external changes and transient recovery workspace remain uncertified.
+
+Verification: 19 backend directory/storage/export tests, 13 browser query tests,
+10 Timeline tests and production Web build passed. Cases include real database,
+spool and unknown nested files; sparse files above 200 MiB; directory/file links;
+external database configuration; all scan bounds; absence and unavailable roots;
+strict totals, classification and gap/budget-state decoding. The directory total
+is an observation, not aggregate admission enforcement. Combined writer budget
+and recovery-overage validation, remaining workflow/native/performance acceptance
+and deferred independent review are still open.
+
+`npm run check` also passed, including shared/Web reliability/type checks and all
+13 Harness PR suites. All seven production Chromium scenarios passed with the
+new directory totals in storage and exported JSON. The 390px directory screenshot
+was inspected (`/tmp/unified-debug-directory.png`) and no horizontal overflow was
+observed. Logs: `/tmp/diagnostic-directory-{python,query,timeline,build,check,browser}.log`.
+The full backend release checkpoint remains the preceding recovery slice; this
+read-only inventory slice used the targeted backend verification listed above.

@@ -3,6 +3,7 @@ import re
 import stat
 from datetime import datetime, timezone
 from app.models.diagnostic_storage import DiagnosticStorageV1
+from app.services.diagnostic_directory_storage import observe_diagnostic_directory
 
 
 def observe_spool(root):
@@ -86,5 +87,6 @@ def observe_diagnostic_storage(store, index):
                 value.update(gap="filesystem_unavailable")
         databases.append(value)
     return DiagnosticStorageV1(observed_at=datetime.now(timezone.utc), databases=databases,
+        directory=observe_diagnostic_directory(store, index),
         desktop_spool=observe_spool(store.path.parent / "desktop-spool" if store is not None else None),
         unmeasured=["filesystem_allocation_and_metadata", "external_writers", "vacuum_temporary_files"])

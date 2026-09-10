@@ -60,11 +60,33 @@ class DiagnosticSpoolStorageV1(StorageModel):
     scan_limit: Literal[1024] = 1024
 
 
+class DiagnosticDirectoryStorageV1(StorageModel):
+    scope: Literal["diagnostics_directory_regular_file_lengths"]
+    status: Literal["observed", "absent", "incomplete", "unavailable"]
+    gaps: list[Literal["not_configured", "filesystem_unavailable", "configured_database_outside_directory", "scan_limit", "depth_limit", "time_limit", "unsupported_entry"]] = Field(max_length=7)
+    budget_state: Literal["within_observed_limit", "over_observed_limit", "unknown"]
+    database_bytes: int = Field(ge=0)
+    spool_bytes: int = Field(ge=0)
+    other_bytes: int = Field(ge=0)
+    total_bytes: int = Field(ge=0)
+    database_files: int = Field(ge=0, le=4096)
+    spool_files: int = Field(ge=0, le=4096)
+    other_files: int = Field(ge=0, le=4096)
+    scanned_entries: int = Field(ge=0, le=4096)
+    visited_directories: int = Field(ge=0, le=4097)
+    skipped_entries: int = Field(ge=0, le=4096)
+    max_bytes: Literal[209715200] = 209715200
+    scan_limit: Literal[4096] = 4096
+    max_depth: Literal[4] = 4
+    scan_budget_ms: Literal[100] = 100
+
+
 class DiagnosticStorageV1(StorageModel):
     schema_version: Literal["diagnostic-storage-v1"] = "diagnostic-storage-v1"
     observed_at: datetime
     databases: list[DiagnosticStorageDatabaseV1] = Field(min_length=2, max_length=2)
     desktop_spool: DiagnosticSpoolStorageV1
+    directory: DiagnosticDirectoryStorageV1
     observation_scope: Literal["independent_live_file_lengths_and_process_counters"] = "independent_live_file_lengths_and_process_counters"
     sizes_are_atomic: Literal[False] = False
     counters_are_process_local: Literal[True] = True

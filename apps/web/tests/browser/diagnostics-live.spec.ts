@@ -123,11 +123,16 @@ test("global timeline loads on demand, expands canonical links and reports unava
   await timeline.getByRole("button", { name: "存储状态", exact: true }).click();
   const storage = timeline.getByRole("region", { name: "诊断存储状态" });
   await expect(storage).toContainText("事件数据库");
+  await expect(storage.getByRole("heading", { name: "诊断目录合计", exact: true })).toBeVisible();
+  await expect(storage).toContainText("不跟随链接、不读取内容、不删除文件");
   await expect(storage).toContainText("诊断拒绝不等于业务提交失败");
   await page.setViewportSize({ width: 390, height: 844 });
   await storage.getByRole("heading", { name: "诊断存储状态", exact: true }).scrollIntoViewIfNeeded();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: "/tmp/unified-debug-storage.png" });
+  await storage.getByRole("heading", { name: "诊断目录合计", exact: true }).scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/unified-debug-directory.png" });
   await expect.poll(() => reads.some(url => url.includes("/diagnostics/storage"))).toBe(true);
   await timeline.getByRole("button", { name: "统计与导出", exact: true }).click();
   await timeline.getByRole("button", { name: "生成诊断快照" }).click();
@@ -140,6 +145,11 @@ test("global timeline loads on demand, expands canonical links and reports unava
   const exported = JSON.parse(contents);
   expect(exported.schema_version).toBe("diagnostic-export-v1");
   expect(exported.storage_observation.installation_disk_limit_certified).toBe(false);
+  const directory = exported.storage_observation.directory;
+  expect(directory.scope).toBe("diagnostics_directory_regular_file_lengths");
+  expect(directory.max_bytes).toBe(200 * 1024 * 1024);
+  expect(directory.database_bytes + directory.spool_bytes + directory.other_bytes).toBe(directory.total_bytes);
+  expect(directory.scanned_entries).toBeLessThanOrEqual(directory.scan_limit);
   expect(exported.filters.workflow).toBe("persona");
   expect(exported.events.length).toBeGreaterThan(0);
   expect(exported.audit.observations.length).toBeGreaterThan(0);

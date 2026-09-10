@@ -1,5 +1,149 @@
 {
   "$defs": {
+    "DiagnosticDirectoryStorageV1": {
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "const": "diagnostics_directory_regular_file_lengths",
+          "title": "Scope",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "observed",
+            "absent",
+            "incomplete",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "gaps": {
+          "items": {
+            "enum": [
+              "not_configured",
+              "filesystem_unavailable",
+              "configured_database_outside_directory",
+              "scan_limit",
+              "depth_limit",
+              "time_limit",
+              "unsupported_entry"
+            ],
+            "type": "string"
+          },
+          "maxItems": 7,
+          "title": "Gaps",
+          "type": "array"
+        },
+        "budget_state": {
+          "enum": [
+            "within_observed_limit",
+            "over_observed_limit",
+            "unknown"
+          ],
+          "title": "Budget State",
+          "type": "string"
+        },
+        "database_bytes": {
+          "minimum": 0,
+          "title": "Database Bytes",
+          "type": "integer"
+        },
+        "spool_bytes": {
+          "minimum": 0,
+          "title": "Spool Bytes",
+          "type": "integer"
+        },
+        "other_bytes": {
+          "minimum": 0,
+          "title": "Other Bytes",
+          "type": "integer"
+        },
+        "total_bytes": {
+          "minimum": 0,
+          "title": "Total Bytes",
+          "type": "integer"
+        },
+        "database_files": {
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Database Files",
+          "type": "integer"
+        },
+        "spool_files": {
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Spool Files",
+          "type": "integer"
+        },
+        "other_files": {
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Other Files",
+          "type": "integer"
+        },
+        "scanned_entries": {
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Scanned Entries",
+          "type": "integer"
+        },
+        "visited_directories": {
+          "maximum": 4097,
+          "minimum": 0,
+          "title": "Visited Directories",
+          "type": "integer"
+        },
+        "skipped_entries": {
+          "maximum": 4096,
+          "minimum": 0,
+          "title": "Skipped Entries",
+          "type": "integer"
+        },
+        "max_bytes": {
+          "const": 209715200,
+          "default": 209715200,
+          "title": "Max Bytes",
+          "type": "integer"
+        },
+        "scan_limit": {
+          "const": 4096,
+          "default": 4096,
+          "title": "Scan Limit",
+          "type": "integer"
+        },
+        "max_depth": {
+          "const": 4,
+          "default": 4,
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "scan_budget_ms": {
+          "const": 100,
+          "default": 100,
+          "title": "Scan Budget Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scope",
+        "status",
+        "gaps",
+        "budget_state",
+        "database_bytes",
+        "spool_bytes",
+        "other_bytes",
+        "total_bytes",
+        "database_files",
+        "spool_files",
+        "other_files",
+        "scanned_entries",
+        "visited_directories",
+        "skipped_entries"
+      ],
+      "title": "DiagnosticDirectoryStorageV1",
+      "type": "object"
+    },
     "DiagnosticSpoolStorageV1": {
       "additionalProperties": false,
       "properties": {
@@ -353,6 +497,9 @@
     "desktop_spool": {
       "$ref": "#/$defs/DiagnosticSpoolStorageV1"
     },
+    "directory": {
+      "$ref": "#/$defs/DiagnosticDirectoryStorageV1"
+    },
     "observation_scope": {
       "const": "independent_live_file_lengths_and_process_counters",
       "default": "independent_live_file_lengths_and_process_counters",
@@ -402,6 +549,7 @@
     "observed_at",
     "databases",
     "desktop_spool",
+    "directory",
     "unmeasured"
   ],
   "title": "DiagnosticStorageV1",

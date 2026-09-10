@@ -8,6 +8,13 @@ const mib = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(2)} MiB`;
 export function DiagnosticStorageObservation({ value }: { value: DiagnosticStorageV1 }) {
   return <div style={{ overflowWrap: "anywhere" }}>
     <p>观察时间 {value.observed_at}。文件大小分别读取，计数仅覆盖当前进程；未包括文件系统分配/元数据、外部写入和 VACUUM 临时文件，尚不证明整个安装目录满足磁盘上限。</p>
+    <article style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 12, marginBottom: 8 }}>
+      <h4>诊断目录合计</h4>
+      <p>{value.directory.budget_state === "over_observed_limit" ? "已观察用量超过参考预算" : value.directory.budget_state === "within_observed_limit" ? "本次目录扫描用量在参考预算内" : "目录总量尚不能完整确认"}：{mib(value.directory.total_bytes)} / {mib(value.directory.max_bytes)}。</p>
+      <p>数据库及附属文件 {mib(value.directory.database_bytes)}；桌面暂存目录 {mib(value.directory.spool_bytes)}；其他文件 {mib(value.directory.other_bytes)}。扫描 {value.directory.scanned_entries} 项，跳过 {value.directory.skipped_entries} 项。</p>
+      <p>这是独立目录扫描，不能与下方分别采样的大小直接对账，也不代表已执行整个目录的配额控制。目录内未知文件计入大小；不跟随链接、不读取内容、不删除文件。</p>
+      {value.directory.gaps.length > 0 && <p>扫描缺口：{value.directory.gaps.map(gap => ({ not_configured: "未配置", filesystem_unavailable: "文件读取不可用", configured_database_outside_directory: "数据库位于其他目录", scan_limit: "达到项目上限", depth_limit: "达到目录深度上限", time_limit: "达到扫描时限", unsupported_entry: "存在链接或特殊文件" })[gap]).join("、")}。最多 {value.directory.scan_limit} 项、{value.directory.max_depth} 层，协作式时限 {value.directory.scan_budget_ms} 毫秒。</p>}
+    </article>
     {value.databases.map(row => <article key={row.name} style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 12, marginBottom: 8 }}>
       <h4>{row.name === "events" ? "事件数据库" : "Harness 索引数据库"}</h4>
       <p>{row.status === "over_observed_limit" ? "观察到文件超出预算" : row.status === "within_observed_limit" ? "已观察文件大小在预算内" : "空间状态不可用"}；预算 {row.max_bytes === null ? "未知" : mib(row.max_bytes)}。</p>

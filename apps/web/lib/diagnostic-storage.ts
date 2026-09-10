@@ -7,6 +7,18 @@ export function decodeDiagnosticStorage(raw: unknown): DiagnosticStorageV1 {
   const value = raw as DiagnosticStorageV1;
   const invalid = (): never => { throw new DiagnosticQueryError("invalid_response"); };
   if (value.databases[0].name !== "events" || value.databases[1].name !== "index" || new Set(value.unmeasured).size !== 3) invalid();
+  const directory = value.directory;
+  const directoryTotal = directory.database_bytes + directory.spool_bytes + directory.other_bytes;
+  if (!Number.isSafeInteger(directoryTotal) || directoryTotal !== directory.total_bytes ||
+      directory.database_files + directory.spool_files + directory.other_files > directory.scanned_entries ||
+      directory.skipped_entries > directory.scanned_entries || new Set(directory.gaps).size !== directory.gaps.length ||
+      ((directory.status === "observed" || directory.status === "absent") !== (directory.gaps.length === 0)) ||
+      (directory.status === "observed" && (directory.skipped_entries !== 0 || directory.visited_directories < 1)) ||
+      (directory.status === "absent" && (directoryTotal !== 0 || directory.scanned_entries !== 0 || directory.visited_directories !== 0)) ||
+      directory.budget_state !== (directoryTotal > directory.max_bytes ? "over_observed_limit" : directory.status === "observed" ? "within_observed_limit" : "unknown")) invalid();
+  for (const [bytes, files] of [[directory.database_bytes, directory.database_files], [directory.spool_bytes, directory.spool_files], [directory.other_bytes, directory.other_files]]) {
+    if (bytes > 0 && files === 0) invalid();
+  }
   const spool = value.desktop_spool;
   const spoolTotal = spool.event_bytes + spool.metadata_bytes + spool.other_bytes;
   if (!Number.isSafeInteger(spoolTotal) || spoolTotal !== spool.total_bytes ||

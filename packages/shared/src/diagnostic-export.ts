@@ -125,10 +125,21 @@ export interface DiagnosticStorageDatabaseV1 {
   status: "within_observed_limit" | "over_observed_limit" | "unavailable";
   gap: "not_configured" | "database_absent" | "filesystem_unavailable" | null;
 }
+export interface DiagnosticDirectoryStorageV1 {
+  scope: "diagnostics_directory_regular_file_lengths";
+  status: "observed" | "absent" | "incomplete" | "unavailable";
+  gaps: ("not_configured" | "filesystem_unavailable" | "configured_database_outside_directory" | "scan_limit" | "depth_limit" | "time_limit" | "unsupported_entry")[];
+  budget_state: "within_observed_limit" | "over_observed_limit" | "unknown";
+  database_bytes: number; spool_bytes: number; other_bytes: number; total_bytes: number;
+  database_files: number; spool_files: number; other_files: number;
+  scanned_entries: number; visited_directories: number; skipped_entries: number;
+  max_bytes: 209715200; scan_limit: 4096; max_depth: 4; scan_budget_ms: 100;
+}
 export interface DiagnosticStorageV1 {
   schema_version: "diagnostic-storage-v1";
   observed_at: string;
   databases: DiagnosticStorageDatabaseV1[];
+  directory: DiagnosticDirectoryStorageV1;
   desktop_spool: {
     status: "observed" | "absent" | "incomplete" | "unavailable";
     gap: "not_configured" | "filesystem_unavailable" | "scan_limit" | "unsupported_entry" | null;
