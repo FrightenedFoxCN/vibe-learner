@@ -587,7 +587,7 @@ return (
           }}
         >
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
+            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("generate")} onClick={() => toggleSidebarSection("generate")}>
               <span style={styles.panelTitle}>生成卡片</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
@@ -716,7 +716,7 @@ return (
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("results")}>
+            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("results")} onClick={() => toggleSidebarSection("results")}>
               <span style={styles.panelTitle}>卡片库</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("results") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
@@ -738,7 +738,7 @@ return (
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("persona-library")}>
+            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("persona-library")} onClick={() => toggleSidebarSection("persona-library")}>
               <span style={styles.panelTitle}>人格库</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("persona-library") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>

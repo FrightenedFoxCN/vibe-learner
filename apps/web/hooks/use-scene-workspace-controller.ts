@@ -103,7 +103,7 @@ export function useSceneWorkspaceController() {
   const sceneImportFenceRef = useRef(new AsyncResultFence());
   useEffect(() => () => sceneImportFenceRef.current.invalidate(), []);
 
-  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
+  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>(["reuse", "saved"]);
   const [collapsedNodeEditorSectionsByLayer, setCollapsedNodeEditorSectionsByLayer] = useState<Record<string, string[]>>({});
   const [isCompactLayout, setIsCompactLayout] = useState(false);
 
@@ -594,6 +594,8 @@ export function useSceneWorkspaceController() {
     setSceneSummary,
     selectedLayerId,
     selectedObjectId,
+    collapsedLayerIds,
+    toggleLayerChildren: (id: string) => setCollapsedLayerIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]),
     updateSceneGenerationInput,
     selectedLayer,
     sceneNodeCount,

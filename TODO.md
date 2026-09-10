@@ -41,7 +41,7 @@
 
 - [ ] `PERF-WEB-PROVIDER-001` `[P2]` 建立路由级 Provider ownership。
   - 已实现：学习 Provider 限于 Plan/Study，Debug Overlay 独立；默认教师/空业务数据下，十个顶级页面及 focus 的 Chromium 网络清单通过。
-  - 剩余：有历史 Plan/Session、在途操作和离页恢复的完整路由矩阵；不以空数据初始化验收代替恢复场景。
+  - 已补充：历史 goal-only Plan/Session、未准备章节的 uncertain 刷新恢复、聊天 POST 在途离页后查询原身份；浏览器断言没有额外 POST。最终架构阶段门禁完成后收口。
   - 验收：为每个顶级路由冻结允许请求清单，并以浏览器网络记录和自动化测试验证。
 
 ## Next（已定义、待排期）
@@ -60,7 +60,9 @@ Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` �
 
 - [ ] `UX-DENSITY-SENSORY-001` `[P2]` 为 Sensory Tools 增加搜索、筛选和渐进披露；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
 - [ ] `UX-DENSITY-PERSONA-001` `[P2]` 收口 Persona 的默认折叠、搜索/筛选和主次动作；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
+  - 重构同步进展：人格库默认折叠，展开状态具有 ARIA 语义；草稿/保存/模型辅助与展示已分离。完整筛选、危险动作分层与独立 UX 复核仍待完成。
 - [ ] `UX-DENSITY-SCENE-001` `[P2]` 收口 Scene 的默认折叠、搜索/筛选和危险操作分层；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
+  - 重构同步进展：复用/存档区与示例深层树默认折叠，树折叠接入原草稿存储，树操作控件扩大到 44px；删除采用独立模态。完整搜索筛选、错误焦点定位与独立设备复核仍待完成。
 
 - [ ] `DOC-USER-001` `[P2]` 补齐并独立走查用户手册。
   - 覆盖 goal-only、mock/real 首次使用路线，Document/Plan/Study/Persona/Scene/Tavern 主任务、恢复语义、数据位置与留存，以及产品限制。

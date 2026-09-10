@@ -45,3 +45,5 @@
 路由请求基线在 `apps/web/tests/browser/route-request-contract.ts`：默认教师、无 Document/Plan/Session/Room、关闭 Debug 展开。每个路由初次请求必须与其清单一致，一次 focus 后每种资源最多请求两次；只能 GET。显式 Debug 展开、已存在资源读回、用户提交和离页取消不属于这份初始清单，需单独验证。
 
 2026-09-10 已通过 12 项生产 Chromium 测试：十个顶级路由（含 404）、Plan/Study 共用 owner 和离开后的 focus 隔离，以及目标/PDF 草稿经 Settings 返回后的可见恢复。每次运行的 JSON 报告写入 `/tmp/vibe-learner-route-report.json`，包含 API 请求记录附件；失败 trace 位于 `/tmp/vibe-learner-browser-results`。这不是完整桌面或有历史数据的恢复认证；历史 Plan/Session 与在途请求另由 `learning-recovery.spec.ts` 验收；设备级 UX 仍在专项计划/TODO 中跟踪。
+
+2026-09-10 重构最终阶段：23 项生产 Chromium 测试通过，覆盖路由请求基线、历史 goal-only Plan/Session、uncertain 刷新查询、聊天 POST 在途离页、Persona 保存/离页、Scene 模态/草稿，以及编辑器渐进展示。390×844 仅量测本次 Scene 树折叠控件，不代表整页触控、屏幕阅读或设备级 UX 已获独立认证。前端聚合与后端 release/recovery 门同时通过。

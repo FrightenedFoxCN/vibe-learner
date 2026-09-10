@@ -13,6 +13,8 @@ export function SceneLayerCard({
   index,
   selectedLayerId,
   selectedObjectId,
+  collapsedLayerIds = [],
+  onToggleChildren,
   onSelect,
   onToggleEditor,
   onAddChild,
@@ -31,6 +33,8 @@ export function SceneLayerCard({
   index: number;
   selectedLayerId: string;
   selectedObjectId: string;
+  collapsedLayerIds?: string[];
+  onToggleChildren?: (layerId: string) => void;
   onSelect: (layerId: string) => void;
   onToggleEditor: (layerId: string) => void;
   onAddChild: (layerId: string) => void;
@@ -46,7 +50,7 @@ export function SceneLayerCard({
   renderObjectEditor: (layerId: string, object: SceneObject) => ReactNode;
 }) {
   const isSelected = layer.id === selectedLayerId;
-  const isCollapsed = false;
+  const isCollapsed = collapsedLayerIds.includes(layer.id);
   const hasChildren = layer.children.length > 0;
   const hasObjects = layer.objects.length > 0;
   const stopCardAction = (handler: () => void) => (event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -87,6 +91,14 @@ export function SceneLayerCard({
         ) : null}
 
         <div style={styles.cardActions}>
+          {(hasChildren || hasObjects) && onToggleChildren ? (
+            <button type="button" aria-expanded={!isCollapsed}
+              aria-label={`${isCollapsed ? "展开" : "收起"}${layer.title}的子层和物体`}
+              style={{ ...styles.iconButton, minWidth: 44, minHeight: 44 }}
+              onClick={stopCardAction(() => onToggleChildren(layer.id))}>
+              <MaterialIcon name={isCollapsed ? "chevron_right" : "expand_more"} size={18} />
+            </button>
+          ) : null}
           <SceneIconButton icon="add_circle" label="添加子层" size="micro" variant="accent" onClick={stopCardAction(() => onAddChild(layer.id))} />
           <SceneIconButton icon="category" label="添加物体" size="micro" onClick={stopCardAction(() => onAddObject(layer.id))} />
           <SceneIconButton
@@ -135,6 +147,8 @@ export function SceneLayerCard({
               key={child.id}
               layer={child}
               index={childIndex}
+              collapsedLayerIds={collapsedLayerIds}
+              onToggleChildren={onToggleChildren}
               selectedLayerId={selectedLayerId}
               selectedObjectId={selectedObjectId}
               onSelect={onSelect}
@@ -271,6 +285,8 @@ export function SceneIconButton({
           ? styles.iconButtonMicroDanger
           : styles.iconButtonDanger
         : {}),
+    minWidth: 44,
+    minHeight: 44,
   };
   return (
     <button type="button" aria-label={label} title={label} style={style} onClick={onClick} disabled={disabled}>

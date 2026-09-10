@@ -106,6 +106,8 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     toggleSidebarSection,
     toggleNodeEditorSection,
     toggleLayerEditor,
+    collapsedLayerIds,
+    toggleLayerChildren,
     toggleObjectEditor,
     handleSelectLayer,
   } = controller;
@@ -415,6 +417,8 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 key={layer.id}
                 layer={layer}
                 index={index}
+                collapsedLayerIds={collapsedLayerIds}
+                onToggleChildren={toggleLayerChildren}
                 selectedLayerId={selectedLayerId}
                 selectedObjectId={selectedObjectId}
                 onSelect={handleSelectLayer}
@@ -475,7 +479,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("generate")}>
+            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("generate")} onClick={() => toggleSidebarSection("generate")}>
               <span style={styles.panelTitle}>场景树生成器</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("generate") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
@@ -584,7 +588,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("reuse")}>
+            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("reuse")} onClick={() => toggleSidebarSection("reuse")}>
               <span style={styles.panelTitle}>可复用节点库</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("reuse") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>
@@ -644,7 +648,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           </div>
 
           <div style={styles.sidebarSection}>
-            <button type="button" style={styles.sidebarSectionHeader} onClick={() => toggleSidebarSection("saved")}>
+            <button type="button" style={styles.sidebarSectionHeader} aria-expanded={!collapsedSidebarSections.includes("saved")} onClick={() => toggleSidebarSection("saved")}>
               <span style={styles.panelTitle}>已保存场景</span>
               <span style={styles.sidebarToggleIcon}><MaterialIcon name={collapsedSidebarSections.includes("saved") ? "chevron_right" : "expand_more"} size={16} /></span>
             </button>

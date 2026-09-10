@@ -149,6 +149,8 @@
 
 - [x] 学习工作区 Persona/Scene 库刷新归入 `useWorkspaceLibraries`，查询序号隔离迟到结果、临时失败保留已知 Scene 选择、事件订阅仅随学习 owner 存活。标题/主题/章节目录与配置提示归入纯 `learning-workspace-model`；主 controller 约 450 行，负责组合 owners 和 reducer/页面投影。4 项库刷新 Hook 测试、Web 类型及可靠性聚合通过。
 
+- [x] 同步实现编辑器渐进展示：Persona 人格库、Scene 复用/存档区默认折叠，Scene 示例深层树默认折叠并接通原草稿存储；展开控件有 ARIA 状态，树操作按钮为 44px。新增树卡片行为测试与 2 项 Chromium 验收，包含 390×844 控件实际量测、导航/完整刷新后的折叠恢复。相关广泛 UX checkbox 保留独立复核及剩余范围。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

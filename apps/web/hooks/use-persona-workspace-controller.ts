@@ -122,7 +122,7 @@ export function usePersonaWorkspaceController() {
   const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [isRewritePopoverOpen, setIsRewritePopoverOpen] = useState(false);
   const [isSystemPromptExpanded, setIsSystemPromptExpanded] = useState(false);
-  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
+  const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>(["persona-library"]);
   const [personaLibraryQuery, setPersonaLibraryQuery] = useState("");
   const {
     savingPersona, saveError, setSaveError, loadError, setLoadError,

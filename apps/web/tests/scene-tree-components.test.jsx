@@ -20,7 +20,7 @@ function fixture(overrides = {}) {
   };
   const view = render(<SceneLayerCard {...props} />);
   const card = within(view.getByRole("heading", { name: layer.title, exact: true }).closest("article"));
-  return { ...view, getByRole: card.getByRole, calls, layer };
+  return { ...view, getByRole: card.getByRole, calls, layer, props };
 }
 
 test("tree action controls do not bubble into selecting another editor", () => {
@@ -39,4 +39,19 @@ test("protected root deletion and pending reusable save remain disabled in the e
   assert.ok(h.getByText("Selected editor"));
   h.getByRole("button", { name: "删除当前层级", exact: true }).click();
   assert.deepEqual(h.calls, []);
+});
+
+
+test("controlled tree disclosure hides descendants without selecting or deleting the node", () => {
+  const toggled = [];
+  const layer = INITIAL_SCENE[0];
+  const h = fixture({ collapsedLayerIds: [layer.id], onToggleChildren: id => toggled.push(id) });
+  assert.equal(h.queryByRole("heading", { name: layer.children[0].title, exact: true }), null);
+  const toggle = h.getByRole("button", { name: `展开${layer.title}的子层和物体`, exact: true });
+  assert.equal(toggle.getAttribute("aria-expanded"), "false");
+  fireEvent.click(toggle);
+  assert.deepEqual(toggled, [layer.id]);
+  assert.deepEqual(h.calls, []);
+  h.rerender(<SceneLayerCard {...h.props} collapsedLayerIds={[]} />);
+  assert.ok(h.queryByRole("heading", { name: layer.children[0].title, exact: true }));
 });

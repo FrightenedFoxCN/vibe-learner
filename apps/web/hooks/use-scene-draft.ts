@@ -44,7 +44,7 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
   const [sceneName, setSceneName] = useState("示例场景");
   const [sceneSummary, setSceneSummary] = useState("从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。");
   const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
-  const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>([]);
+  const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>(() => collectLayerIds(INITIAL_SCENE).filter(id => !INITIAL_SCENE.some(layer => layer.id === id)));
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const sceneDraftRevisionRef = useRef(0);
   const sceneSubjectIdRef = useRef("scene-editor:local");

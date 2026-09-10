@@ -18,11 +18,20 @@ When changing this area, preserve the separation below unless there is a clear a
 
 `/plan` and `/study` share one runtime state source through `LearningWorkspaceProvider`.
 
-They now also share one page-cache bridge through the same provider:
+The learning provider lives in the `(learning)` route group. Settings, Model Usage,
+Persona, Scene and Tavern do not initialize learning data. The global
+`DebugProvider` receives a narrow read-only learning projection and clears it
+when the learning owner leaves.
 
-- in-memory cache keeps page-local drafts alive across route changes without interrupting ongoing calls
-- `sessionStorage` persists serializable page state for same-tab refresh recovery
-- browser `File` objects are intentionally memory-only, so uploaded PDFs and unsent attachments survive page switching but still cannot be restored after a hard refresh
+A lightweight root `LearningPageCacheProvider` preserves page-local drafts:
+
+- in-memory files and text survive navigation out of Plan/Study;
+- `sessionStorage` preserves serializable state across same-tab refresh;
+- `File` objects remain memory-only and cannot be restored after hard refresh.
+
+Leaving the learning route invalidates response tickets and stops local stream
+reading. Known stream operations receive cancellation requests; ambiguous Study
+Chat writes retain their original identity and recover by query on return.
 
 ## Boundary Map
 
@@ -52,25 +61,34 @@ File:
 
 - `apps/web/hooks/use-learning-workspace-controller.ts`
 
-Responsibilities:
+The controller composes module owners and projects reducer state for pages. API
+writes, recovery, timers and draft lifecycles have explicit independently tested
+boundaries:
 
-- orchestrate async workflows:
-  - initial snapshot load
-  - focus-triggered snapshot refresh
-  - document upload and processing
-  - learning plan generation
-  - study session creation
-- study chat send/reply
-- study session chapter switching
-- translate backend results into reducer actions
-- expose page-ready derived state and actions
-- expose page-cache read/write hooks used by `/plan` and `/study` local draft state
+| Owner | Responsibility |
+| --- | --- |
+| `WorkspaceSnapshotLoader` | Initial/focus/manual learning snapshots and stale query suppression |
+| `useWorkspaceLibraries` | Persona/Scene refresh identity, selection and event subscriptions |
+| `usePlanGeneration` | Upload, parse/plan streams, cancellation and initial Session |
+| `usePlanMutations` | Plan/Study Unit writes, per-resource admission and feedback |
+| `useStudySessionNavigation` | Session history, creation and serialized chapter switching |
+| `useStudyMessages` | Learner/hidden messages, automatic request identity and admission failures |
+| `useStudyChatRecovery` | Query-only restore/read-back, explicit retry eligibility and view tickets |
+| `useStudyCommitActions` | Answer/confirmation committed projections and callback eligibility |
+| `useStudyContinuation` | Prelude, scheduled follow-up, pause and deferred answer callbacks |
+| `learning-workspace-model` | Pure directory, theme, Scene and configuration projections |
 
-Must not own:
+Each asynchronous owner accepts a narrow API/storage/clock port where needed.
+A pending operation blocks new automatic generation during restore. Timers read
+the current Session revision when firing; failed timers wait for an authoritative
+Session refresh instead of re-polling on busy-state changes. Learner completion
+consumes only deferred callbacks captured before its request, preserving answers
+queued while it was in flight.
 
-- JSX rendering
-- inline style definitions
-- complex pure state transition rules that can be expressed without side effects
+Persona Spectrum and Scene Setup similarly use route composition, domain-owned
+library/draft/generation/rewrite/persistence hooks, and separate presentation
+components. See [frontend test boundaries](frontend-test-boundaries.md) for the
+independent module and production-browser commands.
 
 ### Reducer State Layer
 
