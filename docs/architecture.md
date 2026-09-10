@@ -324,4 +324,4 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 
 ## Planned changes
 
-The next incremental releases are planned in [Architecture refactor](plans/architecture-refactor.md) and [Unified diagnostics](plans/unified-debug.md). These plans are not implemented behavior in 0.3.0.
+Version 0.3.1 includes the seven completed tasks in [Architecture refactor](plans/architecture-refactor.md), including modular test boundaries and local PostgreSQL transaction acceptance. [Unified diagnostics](plans/unified-debug.md) remains a separate, unimplemented plan.

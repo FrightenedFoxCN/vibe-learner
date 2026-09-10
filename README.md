@@ -104,7 +104,7 @@ Warning: still under heavy development. See [TODO.md](./TODO.md) for more inform
 
 前端应用（`apps/web/package.json`）运行时依赖：
 
-- @vibe-learner/shared: 0.3.0
+- @vibe-learner/shared: 0.3.1
 - @tauri-apps/api: ^2.8.0
 - @tauri-apps/plugin-stronghold: ^2.3.1
 - mermaid: ^11.14.0
