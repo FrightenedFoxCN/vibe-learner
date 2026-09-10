@@ -22,3 +22,14 @@ tauri-plugin-dialog = "2"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+# Stronghold's snapshot scrypt is prohibitively slow without optimization.
+# Keep application debugging enabled and preserve all cryptographic parameters.
+[profile.dev.package.scrypt]
+opt-level = 3
+
+[profile.dev.package.salsa20]
+opt-level = 3
+
+[profile.dev.package.argon2]
+opt-level = 3

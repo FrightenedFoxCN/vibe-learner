@@ -641,3 +641,14 @@ production Web build. Log: `/tmp/diagnostic-schema-release.log`. Continued nativ
 inspection found a separate Settings current-page debug projection exposing raw
 runtime secret/probe endpoint fields; only a synthetic invalid key was used in the
 isolated app. That projection requires correction before native/full acceptance.
+
+## Native Vault unlock latency investigation
+
+The observed 45.953-second unlock was reproduced in a standalone Stronghold
+snapshot probe without application tables. Optimizing three development crypto
+dependencies reduced real existing-Vault native unlock to 972 ms; read-back took
+1 ms. The UI confirmed unlocked state after restart. Cryptographic settings and
+snapshot compatibility are unchanged. See [measurements and reproduction](../performance/desktop-vault-dev-v1.md).
+All 11 ordinary native tests and both opt-in timing probes passed. This closes the
+specific slow-unlock investigation, not the remaining Settings debug projection,
+native export, full overhead or consolidated acceptance work.

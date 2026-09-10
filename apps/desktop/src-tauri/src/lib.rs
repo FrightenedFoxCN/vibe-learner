@@ -583,3 +583,36 @@ mod sidecar_diagnostic_tests {
         fs::remove_dir_all(root).unwrap();
     }
 }
+
+#[cfg(test)]
+mod vault_performance_probe {
+    #[test]
+    #[ignore = "opt-in real Stronghold snapshot timing; synthetic data only"]
+    fn stronghold_snapshot_timing() {
+        use tauri_plugin_stronghold::stronghold::Stronghold;
+        let path = std::env::temp_dir().join(format!("diagnostic-vault-{}.hold", std::process::id()));
+        assert!(!path.exists());
+        let key = super::stronghold_key_deriver("synthetic-vault-benchmark-only");
+        let instance = Stronghold::new(&path, key.clone()).unwrap();
+        instance.create_client(b"diagnostic-client".to_vec()).unwrap();
+        let started = std::time::Instant::now();
+        instance.save().unwrap();
+        println!("stronghold_snapshot_save_ms={}", started.elapsed().as_millis());
+        drop(instance);
+        let started = std::time::Instant::now();
+        let reloaded = Stronghold::new(&path, key).unwrap();
+        println!("stronghold_snapshot_load_ms={}", started.elapsed().as_millis());
+        reloaded.load_client(b"diagnostic-client".to_vec()).unwrap();
+        drop(reloaded);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    #[ignore = "opt-in real Argon2 timing; uses a synthetic password"]
+    fn stronghold_key_derivation_timing() {
+        let started = std::time::Instant::now();
+        let key = super::stronghold_key_deriver("synthetic-vault-benchmark-only");
+        assert_eq!(key.len(), 32);
+        println!("stronghold_key_derivation_ms={}", started.elapsed().as_millis());
+    }
+}
