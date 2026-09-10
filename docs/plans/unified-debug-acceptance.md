@@ -892,3 +892,15 @@ retain all pairs and stage/GC observations. Text parsing and mock Planning are
 measured here; actual OCR recognition and live-provider/tool latency remain
 outside this sample. Existing Persona/Scene paths received compatibility smokes.
 Study/Tavern, native/rendering and final acceptance continue.
+
+## Tavern direct/facilitated full request-chain overhead
+
+Separate 30-pair isolated populations create Room → run user turn → reload Room
+messages → reload Run. Actual mock-provider direct and three-actor facilitated
+paths retain real operation admission and canonical commit. Full typed Run and
+Message read-backs, actor order, contiguous sequences and diagnostic room/sequence
+references match. P95 signed overhead is 5.74 ms direct and 10.26 ms facilitated;
+both pass 50 ms. Every enabled sample has zero drops/read/write failures.
+[Method and both raw populations](../performance/diagnostic-tavern-workflow-v1.md)
+retain all samples and code digests. This does not certify live-provider latency
+or reopen separately tested fault paths. Study/native performance remains open.

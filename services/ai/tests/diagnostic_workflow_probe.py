@@ -52,6 +52,9 @@ def sample(enabled, workflow="persona", profile_stages=False):
             if workflow == "document_plan":
                 from tests.diagnostic_document_plan_probe import prepare, chain
                 prepared = prepare(client)
+            elif workflow.startswith("tavern_"):
+                from tests.diagnostic_tavern_workflow_probe import prepare, chain
+                prepared = prepare(client, workflow)
             stages = {}
             collections = []
             active_collections = {}
@@ -172,9 +175,20 @@ def sample(enabled, workflow="persona", profile_stages=False):
                         assert len(parents) == 1 and parents[0].commit_evidence.status.value == "committed"
                     assert refs <= {t.trace_id for t in terminals}
                     measured["canonical_operations_verified"] = len(operations)
+                elif workflow.startswith("tavern_"):
+                    operations = {e["harness"]["operation_id"] for e in events if e["harness"]}
+                    assert len(operations) == 1
+                    linked = canonical.list_operation_traces(next(iter(operations)))
+                    assert {t.trace_id for t in linked} == {t.trace_id for t in terminals}
+                    assert len(terminals) == domain_result["actors"]
+                    assert all(t.commit_evidence.status.value == "committed" for t in terminals)
+                    assert refs <= {t.trace_id for t in terminals}
+                    assert {e["resource"]["resource_id"]: (e["resource"]["sequence"], e["resource"]["parent_resource_id"])
+                            for e in events if e["resource"] and e["resource"]["resource_type"] == "tavern_message"} == prepared["message_positions"]
+                    measured["canonical_operations_verified"] = len(operations)
                 else:
                     assert refs and refs <= {t.trace_id for t in terminals}
-                assert all(value not in json.dumps(events) for value in ("PRIVATE_WORKFLOW_PROMPT", "PRIVATE_DOCUMENT_CONTENT", "PRIVATE_WORKFLOW_FILENAME"))
+                assert all(value not in json.dumps(events) for value in ("PRIVATE_WORKFLOW_PROMPT", "PRIVATE_DOCUMENT_CONTENT", "PRIVATE_WORKFLOW_FILENAME", "PRIVATE_TAVERN"))
                 measured.update(events=len(events), health=store.health())
                 assert measured["health"]["dropped"] == 0
             else:
@@ -221,7 +235,9 @@ def run(samples, workflow="persona", profile_stages=False, isolate_samples=False
         passed=summaries["paired_delta"]["p95_ms"] <= budget_ms, summary=summaries, raw=raw,
         probe_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         helper_sha256=(hashlib.sha256(Path(__file__).with_name("diagnostic_document_plan_probe.py").read_bytes()).hexdigest()
-                       if workflow == "document_plan" else None))
+                       if workflow == "document_plan" else
+                       hashlib.sha256(Path(__file__).with_name("diagnostic_tavern_workflow_probe.py").read_bytes()).hexdigest()
+                       if workflow.startswith("tavern_") else None))
 
 
 if __name__ == "__main__":
@@ -229,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument("--isolate-samples", action="store_true")
     parser.add_argument("--single-mode", choices=("enabled", "disabled"), help=argparse.SUPPRESS)
     parser.add_argument("--profile-stages", action="store_true")
-    parser.add_argument("--workflow", choices=("persona", "scene", "document_plan"), default="persona")
+    parser.add_argument("--workflow", choices=("persona", "scene", "document_plan", "tavern_direct", "tavern_facilitated"), default="persona")
     parser.add_argument("--samples", type=int, default=30)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
