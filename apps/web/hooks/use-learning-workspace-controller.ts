@@ -3,6 +3,9 @@
 import { createStudyChatRequestId } from "../lib/client-request-id";
 
 import { useState } from "react";
+import { useStudyChatRecovery } from "./use-study-chat-recovery";
+import { studyOperationStore, presentStudyChatOperation, type StudyChatDraft } from "../lib/study-operation-state";
+
 import { usePlanMutations } from "./use-plan-mutations";
 import { usePlanGeneration } from "./use-plan-generation";
 import { useEffect, useMemo, useReducer, useRef } from "react";
@@ -77,51 +80,17 @@ import {
 } from "../lib/learning-workspace-telemetry";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
 import { useRuntimeSettings } from "../components/runtime-settings-provider";
-import type { StudyChatOperationStatus } from "../lib/study-chat-operation-decode";
 import {
   isDefiniteStudyChatPreAdmissionError,
-  isMissingStudyChatOperationError,
   studyChatPreAdmissionNotice,
 } from "../lib/http-error";
 import {
   StudyAsyncViewFence,
-  type AsyncResultTicket,
 } from "../lib/async-result-fence";
 
+const { getOrCreateAutomaticRequestId, forgetAutomaticStudyRequestId, persistPendingStudyOperation, clearPendingStudyOperation } = studyOperationStore;
+
 export type { GeneratePlanInput } from "./use-plan-generation";
-
-type ChatFailureState = {
-  message: string;
-  studyUnitId: string;
-  detail: string;
-  attachments: File[];
-  sessionId: string;
-  clientRequestId: string;
-  expectedSessionRevision: number;
-  messageKind: string;
-  followUpId?: string;
-  hiddenMessagePrefix?: string;
-  operationStatus: StudyChatOperationStatus | "unresolved";
-  canQuery: boolean;
-  canResend: boolean;
-  canRefreshSession: boolean;
-};
-
-type StudyChatDraft = Omit<
-  ChatFailureState,
-  "detail" | "operationStatus" | "canQuery" | "canResend" | "canRefreshSession"
->;
-
-type PendingStudyOperationIdentity = Pick<
-  StudyChatDraft,
-  "sessionId" | "clientRequestId" | "expectedSessionRevision"
-> & {
-  messageKind?: string;
-  studyUnitId?: string;
-};
-
-const PENDING_STUDY_OPERATION_STORAGE_KEY = "vibe-learner:pending-study-chat-operation:v1";
-const AUTOMATIC_STUDY_REQUEST_STORAGE_KEY = "vibe-learner:automatic-study-chat-requests:v1";
 
 interface UseLearningWorkspaceControllerOptions {
   initialSelection?: { planId: string; personaId: string; sceneLibraryId: string };
@@ -143,7 +112,6 @@ export function useLearningWorkspaceController({
       initialPersonas
     })
   );
-  const [chatFailure, setChatFailure] = useState<ChatFailureState | null>(null);
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState(initialSelection?.sceneLibraryId ?? "");
   const [interruptedDialogueSessionId, setInterruptedDialogueSessionId] = useState("");
@@ -170,7 +138,6 @@ export function useLearningWorkspaceController({
       session: state.studySession,
     }),
   );
-  const restoredStudyOperationRef = useRef("");
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
   const planGenerationBlockedReason = resolvePlanGenerationBlockedReason({
     runtimeSettings: runtimeSettings.settings,
@@ -207,32 +174,14 @@ export function useLearningWorkspaceController({
 
   const transitionStudyView = (fieldTarget: string, clearSession = false) => {
     studyViewFenceRef.current.transition(fieldTarget, clearSession);
-    restoredStudyOperationRef.current = "";
-    setChatFailure(null);
+    resetStudyRecovery();
   };
 
   const activateStudySessionView = (session: StudySessionRecord) => {
     if (studyViewFenceRef.current.activateSession(session)) {
-      restoredStudyOperationRef.current = "";
-      setChatFailure(null);
+      resetStudyRecovery();
     }
   };
-
-  const beginStudyResponseTicket = (draft: StudyChatDraft): AsyncResultTicket =>
-    studyViewFenceRef.current.begin(
-      draft.sessionId,
-      draft.clientRequestId,
-    );
-
-  const isCurrentStudyResponseTicket = (
-    ticket: AsyncResultTicket,
-    resultOperationId = ticket.operationId,
-  ) =>
-    mountedRef.current && studyViewFenceRef.current.decide(
-      ticket,
-      selectedPlanIdRef.current,
-      resultOperationId,
-    ) === "apply";
 
   useEffect(() => {
     mountedRef.current = true;
@@ -562,193 +511,22 @@ export function useLearningWorkspaceController({
     });
   };
 
-  const applyStudyChatOperation = (
-    receipt: StudyChatOperationResponse,
-    draft: StudyChatDraft,
-    ticket?: AsyncResultTicket,
-  ): boolean => {
-    const learnerOperation = draft.messageKind === "learner";
-    try {
-      if (
-        ticket &&
-        !isCurrentStudyResponseTicket(ticket, receipt.clientRequestId)
-      ) {
-        if (learnerOperation && receipt.status === "committed") {
-          clearPendingStudyOperation(receipt);
-        }
-        logWorkspaceInfo("workflow:study_chat:stale_result_discarded", {
-          sessionId: receipt.sessionId,
-          clientRequestId: receipt.clientRequestId,
-        });
-        return false;
-      }
-      if (receipt.status === "committed" && receipt.result) {
-        const currentSession = studyViewFenceRef.current.session;
-        if (currentSession?.id !== receipt.sessionId) {
-          if (learnerOperation) {
-            clearPendingStudyOperation(receipt);
-          }
-          return false;
-        }
-        if (currentSession.revision <= receipt.result.session.revision) {
-          applyChatExchange(receipt.result);
-        }
-        setChatFailure(null);
-        if (learnerOperation) {
-          clearPendingStudyOperation(receipt);
-        }
-        return true;
-      }
-
-      const presentation = presentStudyChatOperation(receipt);
-      const canResend = presentation.canResend &&
-        draft.messageKind === "learner" &&
-        Boolean(draft.message.trim());
-      setChatFailure({
-        ...draft,
-        detail: presentation.canResend && !canResend
-          ? draft.messageKind === "learner"
-            ? "已确认本次请求没有写入会话。刷新后原消息或附件不可恢复，请重新填写后再发送。"
-            : "已确认这次自动消息没有写入会话；流程继续时会使用新的请求身份安全重试。"
-          : presentation.detail,
-        operationStatus: receipt.status,
-        canQuery: presentation.canQuery,
-        canResend,
-        canRefreshSession: false,
-      });
-      if (learnerOperation) {
-        if (receipt.status === "not_committed") {
-          clearPendingStudyOperation(receipt);
-        } else {
-          persistPendingStudyOperation(draft);
-        }
-      }
-      return false;
-    } finally {
-      if (ticket) {
-        studyViewFenceRef.current.settle(ticket);
-      }
-    }
-  };
-
-  const queryStudyChatOperation = async () => {
-    if (!chatFailure?.canQuery) {
-      return false;
-    }
-    const ticket = beginStudyResponseTicket(chatFailure);
-    try {
-      dispatch({ type: "busy_started" });
-      const receipt = await getStudyChatOperation({
-        sessionId: chatFailure.sessionId,
-        clientRequestId: chatFailure.clientRequestId,
-      });
-      const applied = applyStudyChatOperation(receipt, chatFailure, ticket);
-      if (applied) {
-        dispatch({ type: "notice_set", notice: "已找回并载入本次回复。" });
-      }
-      return applied;
-    } catch (error) {
-      if (!isCurrentStudyResponseTicket(ticket)) {
-        return false;
-      }
-      if (isMissingStudyChatOperationError(error)) {
-        clearPendingStudyOperation(chatFailure);
-        setChatFailure((current) => current ? {
-          ...current,
-          detail: "服务器确认没有找到这次请求。请刷新会话状态后重新发送。",
-          canQuery: false,
-          canResend: false,
-          canRefreshSession: true,
-        } : current);
-        dispatch({
-          type: "notice_set",
-          notice: "没有找到这次请求；请先刷新会话状态。",
-        });
-        return false;
-      }
-      setChatFailure((current) => current ? {
-        ...current,
-        detail: "暂时无法确认本次请求结果。请稍后继续查询，不要重新发送。",
-        canQuery: true,
-        canResend: false,
-        canRefreshSession: false,
-      } : current);
-      dispatch({
-        type: "notice_set",
-        notice: "暂时无法查询本次请求；已保留请求身份，请不要重复发送。",
-      });
-      logWorkspaceError("workflow:study_chat:operation_query_error", error);
-      return false;
-    } finally {
-      studyViewFenceRef.current.settle(ticket);
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
-  useEffect(() => {
-    const session = state.studySession;
-    const pending = readPendingStudyOperation();
-    if (
-      !session ||
-      !pending ||
-      pending.sessionId !== session.id ||
-      Boolean(
-        pending.studyUnitId &&
-        pending.studyUnitId !== session.studyUnitId
-      ) ||
-      restoredStudyOperationRef.current === pending.clientRequestId
-    ) {
-      return;
-    }
-    restoredStudyOperationRef.current = pending.clientRequestId;
-    const restoredDraft: StudyChatDraft = {
-      ...pending,
-      message: "",
-      studyUnitId: pending.studyUnitId || session.studyUnitId,
-      attachments: [],
-      messageKind: pending.messageKind || "learner",
-    };
-    setChatFailure({
-      ...restoredDraft,
-      detail: "正在查询刷新前尚未确认的请求结果，请不要重新发送。",
-      operationStatus: "unresolved",
-      canQuery: true,
-      canResend: false,
-      canRefreshSession: false,
-    });
-    const ticket = beginStudyResponseTicket(restoredDraft);
-    void (async () => {
-      try {
-        const receipt = await getStudyChatOperation(pending);
-        applyStudyChatOperation(receipt, restoredDraft, ticket);
-      } catch (error) {
-        if (!isCurrentStudyResponseTicket(ticket)) {
-          return;
-        }
-        if (isMissingStudyChatOperationError(error)) {
-          clearPendingStudyOperation(pending);
-          setChatFailure((current) => current ? {
-            ...current,
-            detail: "服务器没有找到刷新前的请求。请刷新会话状态后重新发送。",
-            canQuery: false,
-            canResend: false,
-            canRefreshSession: true,
-          } : current);
-          return;
-        }
-        setChatFailure((current) => current ? {
-          ...current,
-          detail: "尚未确认刷新前请求的结果。请点击“查询本次请求结果”，不要重新发送。",
-          canQuery: true,
-          canResend: false,
-          canRefreshSession: false,
-        } : current);
-        logWorkspaceError("workflow:study_chat:operation_restore_error", error);
-      } finally {
-        studyViewFenceRef.current.settle(ticket);
-      }
-    })();
-  }, [state.studySession?.id, state.studySession?.studyUnitId]);
+  const {
+    chatFailure, setChatFailure, resetStudyRecovery, beginStudyResponseTicket,
+    isCurrentStudyResponseTicket, applyStudyChatOperation, queryStudyChatOperation,
+    refreshStudySessionAfterRejectedAdmission, isQuerying,
+  } = useStudyChatRecovery({
+    session: state.studySession,
+    view: studyViewFenceRef.current,
+    getSelectedPlanId: () => selectedPlanIdRef.current,
+    onExchange: applyChatExchange,
+    onSession: (studySession, clearResponse) => {
+      if (studySession) activateStudySessionView(studySession);
+      dispatch({ type: "study_session_set", studySession, clearResponse });
+    },
+    onResetView: () => transitionStudyView(`study-plan:${selectedPlanIdRef.current || "none"}`, true),
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+  });
 
   const sendHiddenSessionMessage = async (input: {
     session: StudySessionRecord;
@@ -1600,7 +1378,7 @@ export function useLearningWorkspaceController({
     }
     const session = state.studySession;
     const studyUnitId = session.studyUnitId;
-    if (!studyUnitId || state.isBusy || isMutating) {
+    if (!studyUnitId || state.isBusy || isMutating || isQuerying) {
       return;
     }
     void runSessionPrelude({
@@ -1610,7 +1388,7 @@ export function useLearningWorkspaceController({
       themeHint: session.themeHint ?? "",
       force: false,
     });
-  }, [state.isBusy, isMutating, state.studySession]);
+  }, [state.isBusy, isMutating, isQuerying, state.studySession]);
 
   useEffect(() => {
     const session = state.studySession;
@@ -1685,7 +1463,7 @@ export function useLearningWorkspaceController({
         }, delay);
         timers.set(item.id, timer);
       });
-  }, [state.isBusy, isMutating, state.studySession]);
+  }, [state.isBusy, isMutating, isQuerying, state.studySession]);
 
   useEffect(() => {
     return () => {
@@ -1702,73 +1480,6 @@ export function useLearningWorkspaceController({
     await handleAskForSection(chatFailure.message, chatFailure.studyUnitId, chatFailure.attachments);
   };
 
-  const refreshStudySessionAfterRejectedAdmission = async () => {
-    const failure = chatFailure;
-    const currentSession = studyViewFenceRef.current.session;
-    if (!failure?.canRefreshSession || !currentSession) {
-      return false;
-    }
-    const ticket = beginStudyResponseTicket(failure);
-    try {
-      dispatch({ type: "busy_started" });
-      const sessions = await listStudySessions({
-        documentId: currentSession.planId ? undefined : currentSession.documentId,
-        planId: currentSession.planId ?? undefined,
-        personaId: currentSession.personaId,
-        studyUnitId: currentSession.studyUnitId,
-      });
-      if (!isCurrentStudyResponseTicket(ticket)) {
-        return false;
-      }
-      const refreshed = sessions.find((item) => item.id === currentSession.id) ?? null;
-      clearPendingStudyOperation(failure);
-      setChatFailure(null);
-      if (!refreshed) {
-        transitionStudyView(
-          `study-plan:${selectedPlanIdRef.current || "none"}`,
-          true,
-        );
-        dispatch({
-          type: "study_session_set",
-          studySession: null,
-          clearResponse: true,
-        });
-        dispatch({
-          type: "notice_set",
-          notice: "原学习会话已不存在。请先创建或选择会话，再重新发送保留的草稿。",
-        });
-        return false;
-      }
-      activateStudySessionView(refreshed);
-      dispatch({
-        type: "study_session_set",
-        studySession: refreshed,
-        clearResponse: false,
-      });
-      dispatch({
-        type: "notice_set",
-        notice: "会话状态已刷新。请确认草稿后重新发送；新发送会使用新的请求身份。",
-      });
-      return true;
-    } catch (error) {
-      if (!isCurrentStudyResponseTicket(ticket)) {
-        return false;
-      }
-      setChatFailure((current) => current ? {
-        ...current,
-        detail: "刷新会话状态失败，草稿仍保留。请稍后重试刷新。",
-        canQuery: false,
-        canResend: false,
-        canRefreshSession: true,
-      } : current);
-      dispatch({ type: "notice_set", notice: "刷新会话状态失败，草稿仍保留。" });
-      logWorkspaceError("workflow:study_chat:refresh_after_rejection_error", error);
-      return false;
-    } finally {
-      studyViewFenceRef.current.settle(ticket);
-      dispatch({ type: "busy_finished" });
-    }
-  };
 
   return {
     personas: state.personas,
@@ -1787,7 +1498,7 @@ export function useLearningWorkspaceController({
     studySession: state.studySession,
     response: state.response,
     notice: state.notice,
-    isBusy: state.isBusy || isMutating,
+    isBusy: state.isBusy || isMutating || isQuerying,
     chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
     isInterruptingPlan,
@@ -1970,186 +1681,3 @@ function buildSessionPreludeMessage(input: {
 }
 
 
-function getOrCreateAutomaticRequestId(
-  requests: Map<string, string>,
-  key: string,
-  scope: string,
-): { clientRequestId: string; queryExisting: boolean } {
-  const existing = requests.get(key);
-  if (existing) {
-    return { clientRequestId: existing, queryExisting: true };
-  }
-  const persisted = readAutomaticStudyRequestIds();
-  const persistedId = persisted[key];
-  if (persistedId) {
-    requests.set(key, persistedId);
-    return { clientRequestId: persistedId, queryExisting: true };
-  }
-  const created = createStudyChatRequestId(scope);
-  requests.set(key, created);
-  persistAutomaticStudyRequestId(key, created, persisted);
-  return { clientRequestId: created, queryExisting: false };
-}
-
-function forgetAutomaticStudyRequestId(requests: Map<string, string>, key: string): void {
-  requests.delete(key);
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    const persisted = readAutomaticStudyRequestIds();
-    delete persisted[key];
-    window.localStorage.setItem(
-      AUTOMATIC_STUDY_REQUEST_STORAGE_KEY,
-      JSON.stringify(persisted),
-    );
-  } catch {
-    // A fresh page may rediscover the terminal receipt before creating a new request.
-  }
-}
-
-function readAutomaticStudyRequestIds(): Record<string, string> {
-  if (typeof window === "undefined") {
-    return {};
-  }
-  try {
-    const raw = window.localStorage.getItem(AUTOMATIC_STUDY_REQUEST_STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return Object.fromEntries(
-      Object.entries(parsed).filter((entry): entry is [string, string] =>
-        Boolean(entry[0] && typeof entry[1] === "string" && entry[1].trim())
-      ),
-    );
-  } catch {
-    return {};
-  }
-}
-
-function persistAutomaticStudyRequestId(
-  key: string,
-  requestId: string,
-  current: Record<string, string>,
-): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    const entries = Object.entries({ ...current, [key]: requestId }).slice(-64);
-    window.localStorage.setItem(
-      AUTOMATIC_STUDY_REQUEST_STORAGE_KEY,
-      JSON.stringify(Object.fromEntries(entries)),
-    );
-  } catch {
-    // The mounted controller Map still preserves identity for this page lifetime.
-  }
-}
-
-function presentStudyChatOperation(receipt: StudyChatOperationResponse): {
-  detail: string;
-  canQuery: boolean;
-  canResend: boolean;
-} {
-  switch (receipt.status) {
-    case "admitted":
-      return {
-        detail: "本次请求已接收，尚未开始生成。请查询本次请求结果，不要重新发送。",
-        canQuery: true,
-        canResend: false,
-      };
-    case "running":
-      return {
-        detail: "本次回复仍在生成。请稍后查询本次请求结果，不要重新发送。",
-        canQuery: true,
-        canResend: false,
-      };
-    case "uncertain":
-      return {
-        detail: "系统暂时无法确认本次请求是否已产生影响。请继续查询，不要重新发送。",
-        canQuery: true,
-        canResend: false,
-      };
-    case "not_committed":
-      return {
-        detail: receipt.safeToRetry
-          ? "已确认本次请求没有写入会话。你可以重新发送，新发送会使用新的请求身份。"
-          : "本次请求未写入会话，但当前不允许重新发送。",
-        canQuery: false,
-        canResend: receipt.safeToRetry,
-      };
-    case "committed":
-      return { detail: "本次回复已完成。", canQuery: false, canResend: false };
-  }
-}
-
-function persistPendingStudyOperation(operation: PendingStudyOperationIdentity): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    window.localStorage.setItem(
-      PENDING_STUDY_OPERATION_STORAGE_KEY,
-      JSON.stringify({
-        sessionId: operation.sessionId,
-        clientRequestId: operation.clientRequestId,
-        expectedSessionRevision: operation.expectedSessionRevision,
-        messageKind: operation.messageKind,
-        studyUnitId: operation.studyUnitId,
-      }),
-    );
-  } catch {
-    // Recovery remains available for this mounted page even when storage is unavailable.
-  }
-}
-
-function readPendingStudyOperation(): PendingStudyOperationIdentity | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(PENDING_STUDY_OPERATION_STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    const value = JSON.parse(raw) as Record<string, unknown>;
-    if (
-      typeof value.sessionId !== "string" ||
-      !value.sessionId.trim() ||
-      typeof value.clientRequestId !== "string" ||
-      !value.clientRequestId.trim() ||
-      !Number.isSafeInteger(value.expectedSessionRevision) ||
-      Number(value.expectedSessionRevision) < 0
-    ) {
-      return null;
-    }
-    return {
-      sessionId: value.sessionId,
-      clientRequestId: value.clientRequestId,
-      expectedSessionRevision: Number(value.expectedSessionRevision),
-      messageKind: typeof value.messageKind === "string" ? value.messageKind : undefined,
-      studyUnitId: typeof value.studyUnitId === "string" ? value.studyUnitId : undefined,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function clearPendingStudyOperation(operation: Pick<PendingStudyOperationIdentity, "sessionId" | "clientRequestId">): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  const pending = readPendingStudyOperation();
-  if (
-    pending?.sessionId !== operation.sessionId ||
-    pending.clientRequestId !== operation.clientRequestId
-  ) {
-    return;
-  }
-  try {
-    window.localStorage.removeItem(PENDING_STUDY_OPERATION_STORAGE_KEY);
-  } catch {
-    // Ignore storage failures after the in-memory state has already converged.
-  }
-}

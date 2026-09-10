@@ -28,6 +28,8 @@
 | `npm --workspace @vibe-learner/web run test:persona:persistence:browser` | 创建请求在途时继续编辑，服务端读回绑定记录并保留新输入 |
 | `npm --workspace @vibe-learner/web run test:persona:components` | Persona 库卡片插入、拖拽、载入、内置删除边界及 pending 禁用态；不初始化领域 controller |
 | `npm --workspace @vibe-learner/web run test:workspace:mutations` | Plan/Study Unit 写入验证、资源级并发守卫、busy、反馈归属、最新导航回调与卸载 |
+| `npm --workspace @vibe-learner/web run test:workspace:recovery` | 操作身份存储/重试策略、完整查询恢复 Hook、过期回复、卸载和 revision 单调性 |
+| `npm --workspace @vibe-learner/web run test:workspace:recovery:browser` | 历史 Plan/Session、uncertain 刷新恢复、POST 在途离页后只查询原请求；先构建 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |
@@ -37,4 +39,4 @@
 
 路由请求基线在 `apps/web/tests/browser/route-request-contract.ts`：默认教师、无 Document/Plan/Session/Room、关闭 Debug 展开。每个路由初次请求必须与其清单一致，一次 focus 后每种资源最多请求两次；只能 GET。显式 Debug 展开、已存在资源读回、用户提交和离页取消不属于这份初始清单，需单独验证。
 
-2026-09-10 已通过 12 项生产 Chromium 测试：十个顶级路由（含 404）、Plan/Study 共用 owner 和离开后的 focus 隔离，以及目标/PDF 草稿经 Settings 返回后的可见恢复。每次运行的 JSON 报告写入 `/tmp/vibe-learner-route-report.json`，包含 API 请求记录附件；失败 trace 位于 `/tmp/vibe-learner-browser-results`。这不是完整桌面或有历史数据的恢复认证；历史 Plan/Session、在途请求和设备级 UX 仍在专项计划/TODO 中跟踪。
+2026-09-10 已通过 12 项生产 Chromium 测试：十个顶级路由（含 404）、Plan/Study 共用 owner 和离开后的 focus 隔离，以及目标/PDF 草稿经 Settings 返回后的可见恢复。每次运行的 JSON 报告写入 `/tmp/vibe-learner-route-report.json`，包含 API 请求记录附件；失败 trace 位于 `/tmp/vibe-learner-browser-results`。这不是完整桌面或有历史数据的恢复认证；历史 Plan/Session 与在途请求另由 `learning-recovery.spec.ts` 验收；设备级 UX 仍在专项计划/TODO 中跟踪。

@@ -1,3 +1,4 @@
+import { fullWireTurn, fullWireSession, fullChatExchange, createdAt, committedAt } from "./support/learning-wire.ts";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -17,98 +18,6 @@ import {
   StudySessionDecodeError,
 } from "../lib/study-session-decode.ts";
 
-const createdAt = "2026-08-24T10:00:00+08:00";
-const committedAt = "2026-08-24T10:00:01+08:00";
-
-function fullWireTurn(): Record<string, any> {
-  return {
-    id: "turn-1",
-    sequence: 1,
-    learner_message: "Explain the chapter",
-    learner_message_kind: "learner",
-    learner_attachments: [],
-    assistant_reply: "Start with the invariant.",
-    citations: [{
-      section_id: "unit-1",
-      title: "Unit 1",
-      page_start: 1,
-      page_end: 2,
-      source_kind: "document",
-      source_id: "",
-    }],
-    character_events: [{
-      emotion: "calm",
-      action: "points to the diagram",
-      speech_style: "steady",
-      scene_hint: "Unit 1, pages 1-2",
-      line_segment_id: "session-1:chat:0",
-      timing_hint: "instant",
-      tool_name: "",
-      tool_summary: "",
-      delivery_cue: "slowly",
-      commentary: "",
-    }],
-    rich_blocks: [],
-    interactive_question: null,
-    persona_slot_trace: [],
-    memory_trace: [],
-    tool_calls: [],
-    scene_profile: null,
-    model_recoveries: [],
-    created_at: committedAt,
-  };
-}
-
-function fullWireSession(): Record<string, any> {
-  return {
-    id: "session-1",
-    document_id: "document-1",
-    persona_id: "persona-1",
-    plan_id: null,
-    scene_instance_id: "",
-    scene_profile: null,
-    study_unit_id: "unit-1",
-    study_unit_title: "Unit 1",
-    theme_hint: "invariants",
-    session_system_prompt: "Teach from the cited pages.",
-    status: "active",
-    revision: 1,
-    last_turn_sequence: 1,
-    turns: [fullWireTurn()],
-    prepared_study_unit_ids: [],
-    pending_follow_ups: [],
-    session_memory: [],
-    affinity_state: {
-      score: 0,
-      level: "neutral",
-      summary: "",
-      updated_at: "",
-      events: [],
-    },
-    plan_confirmations: [],
-    projected_pdf: null,
-    created_at: createdAt,
-    updated_at: committedAt,
-  };
-}
-
-function fullChatExchange(): Record<string, any> {
-  const session = fullWireSession();
-  const turn = session.turns[0]!;
-  return {
-    reply: turn.assistant_reply,
-    citations: turn.citations,
-    character_events: turn.character_events,
-    rich_blocks: turn.rich_blocks,
-    interactive_question: turn.interactive_question,
-    persona_slot_trace: turn.persona_slot_trace,
-    memory_trace: turn.memory_trace,
-    tool_calls: turn.tool_calls,
-    scene_profile: turn.scene_profile,
-    model_recoveries: turn.model_recoveries,
-    session,
-  };
-}
 
 function emptyStudySceneProfile(): Record<string, any> {
   return {

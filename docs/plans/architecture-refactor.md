@@ -105,7 +105,7 @@
 - [x] 引入 React Testing Library/jsdom/TSX 的完整组件执行入口（不切片源码），以及后续路由浏览器验收所需 Playwright。`test:web:debug` 2 项真实生命周期测试、Web 类型检查和可靠性回归（169 通过/2 条环境相关跳过）通过；组件测试已加入常规 reliability 门禁。
 - [x] 学习 Provider 迁到 `(learning)` 路由组，Plan/Study 共享实例；根布局仅保留不发请求的草稿缓存。文件草稿、目标与所选 Plan/Persona/Scene 跨路由保留，重新进入后仍从服务端恢复学习资源。离开时废弃旧 Study response ticket、停止本地流读取并请求取消已知 stream。
 - [x] 生产 Chromium 的 12 项路由/导航测试通过：十个顶级页面初始请求清单、focus 请求上限、Plan/Study 切换不重复初始化、离开后不刷新学习数据、目标/PDF 草稿跨 Settings 导航。`test:web:workspace` 2 项组件/选择初始化测试通过；Web 类型检查、可靠性门禁和生产构建通过。请求 JSON 附件输出到 `/tmp/vibe-learner-route-report.json`；范围详见 `docs/frontend-test-boundaries.md`。
-- [ ] 补充有历史 Plan/Session 和在途操作的浏览器恢复验收；路由网络基线通过不替代这些恢复场景。
+- [x] 补充历史 goal-only Plan/Session、在途聊天离页与 uncertain 刷新恢复的生产浏览器验收；断言已提交内容与草稿恢复、查询原身份、禁止额外 POST。路由网络基线与恢复矩阵分别运行。
 - [x] 学习快照查询归入 `WorkspaceSnapshotLoader`，首次/focus/手动刷新共享响应归属判断；卸载后禁止新查询和旧结果投影，初始化被刷新取代时仍加载 Persona。独立 `test:workspace:data` 4 项并发/失败/卸载测试通过，Web 类型、可靠性回归、生产构建及 12 项 Chromium 路由验收通过。
 - [ ] 继续拆分学习动作/恢复、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。
 
@@ -136,6 +136,8 @@
 - [x] Persona 路由缩为工作区装配，组合 controller、展示视图、库卡片和样式各自独立；导入与卡片删除的旧异步结果在卸载/后续操作后失效。补齐图标名称与异步 status/alert，源码位置断言迁为卡片交互和创建草稿浏览器行为。2 项独立卡片测试、Web 类型/可靠性/生产构建及 18 项 Chromium 验收通过；广泛 UX 验收仍按 TODO 单独跟踪。
 
 - [x] Plan 标题/进度/问题回答/删除与 Study Unit 改名归入 `usePlanMutations`，通过显式持久化 port 返回权威投影。写入守卫按资源隔离，busy 保留到全部在途修改结束，旧错误不替换新反馈；删除完成使用最新选择，避免覆盖期间发生的计划切换。5 项独立 Hook 并发/卸载/读回测试及 Web 类型、可靠性聚合通过。
+
+- [x] `useStudyChatRecovery` 独立负责操作查询、刷新恢复、失败资格与 Session read-back，使用明确 API/storage port；恢复入口没有 POST。`study-operation-state` 保存身份而非消息/附件，自动请求跨刷新复用身份；响应 ticket 必填，旧 committed 回复只清理匹配的 pending 身份且不降低 Session revision。4 项存储/策略及 6 项完整 Hook 测试、Web 类型/可靠性/生产构建和 21 项 Chromium 验收通过。新增浏览器矩阵包含历史 Plan/Session、uncertain 刷新后手动找回及聊天 POST 在途离页后只查询恢复。
 
 ### ARCH-TEST-SEAMS-001
 
