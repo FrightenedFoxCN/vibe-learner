@@ -29,6 +29,10 @@ DIAGNOSTIC_EVENT_CATALOG = {
     "tool_finished": ("tool", "info", "completed", None),
     "tool_failed": ("tool", "error", "failed", "tool_failure"),
     "tool_unknown": ("tool", "warning", "unknown", None),
+    "action_started": ("action", "info", "started", None),
+    "action_finished": ("action", "info", "completed", None),
+    "action_failed": ("action", "error", "failed", "action_failure"),
+    "action_cancelled": ("action", "warning", "cancelled", "cancelled"),
 }
 
 
@@ -75,17 +79,18 @@ class DiagnosticEventV1(BaseModel):
     schema_version: Literal["diagnostic-event-v1"] = "diagnostic-event-v1"
     event_id: Identity
     source: Literal["server", "browser", "desktop"]
-    name: Literal["request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference", "provider_started", "provider_finished", "provider_failed", "provider_attempt_started", "provider_attempt_finished", "provider_attempt_failed", "tool_started", "tool_finished", "tool_failed", "tool_unknown"]
+    name: Literal["request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference", "provider_started", "provider_finished", "provider_failed", "provider_attempt_started", "provider_attempt_finished", "provider_attempt_failed", "tool_started", "tool_finished", "tool_failed", "tool_unknown", "action_started", "action_finished", "action_failed", "action_cancelled"]
+    action_name: Literal["json_import_read_persona", "json_import_read_scene", "json_export_handoff", "settings_save", "vault_create", "vault_unlock", "vault_lock", "vault_load_secrets", "vault_save_secrets", "vault_clear_secrets"] | None = None
     span_id: Identity | None = None
     parent_span_id: Identity | None = None
     tool_metric: DiagnosticToolMetricV1 | None = None
     provider_metric: DiagnosticProviderMetricV1 | None = None
     harness: DiagnosticHarnessReferenceV1 | None = None
     resource: DiagnosticResourceReferenceV1 | None = None
-    category: Literal["transport", "lifecycle", "harness", "resource", "provider", "tool"]
+    category: Literal["transport", "lifecycle", "harness", "resource", "provider", "tool", "action"]
     severity: Literal["info", "warning", "error"]
     outcome: Literal["started", "headers_received", "completed", "failed", "cancelled", "observed", "unknown"]
-    error_code: Literal["transport_failure", "http_error", "cancelled", "provider_failure", "tool_failure"] | None
+    error_code: Literal["transport_failure", "http_error", "cancelled", "provider_failure", "tool_failure", "action_failure"] | None
 
     @model_validator(mode="before")
     @classmethod

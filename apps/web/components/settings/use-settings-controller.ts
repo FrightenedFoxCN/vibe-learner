@@ -194,16 +194,16 @@ export function useSettingsController(): SettingsController {
     initializedRef.current && !runtimeSettings.loading,
     {
       serialize: serializeSettings,
-      persist: async (snapshot: RuntimeSettings) => {
+      persist: async (snapshot: RuntimeSettings, context) => {
         const security = desktopSecurityRef.current;
         const shouldPersistSecrets = security.enabled && security.vaultState === "unlocked";
         if (shouldPersistSecrets) {
           const secrets = extractSecretPatch(snapshot);
-          await saveDesktopVaultSecrets(secrets);
-          await applyRuntimeSessionSecrets(secrets);
+          await saveDesktopVaultSecrets(secrets, context);
+          await applyRuntimeSessionSecrets(secrets, context);
         }
         const backendNext = await updateRuntimeSettings(
-          buildRuntimeSettingsPatch(snapshot, { includeSecrets: !security.enabled })
+          buildRuntimeSettingsPatch(snapshot, { includeSecrets: !security.enabled }), context
         );
         return shouldPersistSecrets
           ? mergeRuntimeSettingsWithSecrets(backendNext, extractSecretPatch(snapshot))

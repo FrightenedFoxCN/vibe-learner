@@ -1,8 +1,11 @@
+import { observeLocalAction } from "./diagnostic-actions.ts";
+import type { DiagnosticContext } from "./diagnostics";
+
 export type SavePhase = "idle" | "pending" | "saving" | "saved" | "error";
 
 export interface SaveCoordinatorPort<T> {
   serialize: (snapshot: T) => string;
-  persist: (snapshot: T) => Promise<T>;
+  persist: (snapshot: T, context?: DiagnosticContext) => Promise<T>;
   saved: (snapshot: T, submittedKey: string) => void;
   status: (phase: SavePhase, error: string) => void;
 }
@@ -93,7 +96,7 @@ export class SettingsSaveCoordinator<T> {
     this.runningKey = pending.key;
     this.port.status("saving", "");
     try {
-      const next = await this.port.persist(pending.snapshot);
+      const next = await observeLocalAction("settings_save", context => this.port.persist(pending.snapshot, context));
       this.savedKey = this.port.serialize(next);
       this.blockedKey = "";
       this.port.saved(next, pending.key);

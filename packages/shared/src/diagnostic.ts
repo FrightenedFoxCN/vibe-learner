@@ -5,17 +5,18 @@ export interface DiagnosticEventV1 {
   schema_version: "diagnostic-event-v1";
   event_id: string;
   source: "server" | "browser" | "desktop";
-  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed" | "tool_started" | "tool_finished" | "tool_failed" | "tool_unknown";
+  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed" | "tool_started" | "tool_finished" | "tool_failed" | "tool_unknown" | "action_started" | "action_finished" | "action_failed" | "action_cancelled";
+  action_name?: "json_import_read_persona" | "json_import_read_scene" | "json_export_handoff" | "settings_save" | "vault_create" | "vault_unlock" | "vault_lock" | "vault_load_secrets" | "vault_save_secrets" | "vault_clear_secrets" | null;
   span_id?: string | null;
   parent_span_id?: string | null;
   tool_metric?: DiagnosticToolMetricV1 | null;
   provider_metric?: DiagnosticProviderMetricV1 | null;
   resource?: { resource_type: "persona"; resource_id: string; revision: number | null } | null;
   harness?: { operation_id: string; workflow: HarnessWorkflow; stage: HarnessStage; trace_id: string | null; attempt_id?: string | null; attempt_index?: number | null; phase?: HarnessAttemptPhase | null; attempt_status?: HarnessAttemptStatus | null } | null;
-  category: "transport" | "lifecycle" | "harness" | "resource" | "provider" | "tool";
+  category: "transport" | "lifecycle" | "harness" | "resource" | "provider" | "tool" | "action";
   severity: "info" | "warning" | "error";
   outcome: "started" | "headers_received" | "completed" | "failed" | "cancelled" | "observed" | "unknown";
-  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | "tool_failure" | null;
+  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | "tool_failure" | "action_failure" | null;
   timestamp: string;
   request_id: string | null;
   client_instance_id: string | null;
@@ -48,6 +49,10 @@ export const DIAGNOSTIC_EVENT_CATALOG = {
   tool_finished: ["tool", "info", "completed", null],
   tool_failed: ["tool", "error", "failed", "tool_failure"],
   tool_unknown: ["tool", "warning", "unknown", null],
+  action_started: ["action", "info", "started", null],
+  action_finished: ["action", "info", "completed", null],
+  action_failed: ["action", "error", "failed", "action_failure"],
+  action_cancelled: ["action", "warning", "cancelled", "cancelled"],
 } as const;
 
 export function classifyDiagnostic(name: DiagnosticEventV1["name"], statusCode: number | null = null):

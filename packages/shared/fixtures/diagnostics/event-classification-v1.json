@@ -758,5 +758,165 @@
       "outcome": "unknown",
       "error_code": null
     }
+  },
+  {
+    "name": "action_started",
+    "status_code": null,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_started",
+    "status_code": 200,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_started",
+    "status_code": 409,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_started",
+    "status_code": 503,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_finished",
+    "status_code": null,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_finished",
+    "status_code": 200,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_finished",
+    "status_code": 409,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_finished",
+    "status_code": 503,
+    "classification": {
+      "category": "action",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "action_failed",
+    "status_code": null,
+    "classification": {
+      "category": "action",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "action_failure"
+    }
+  },
+  {
+    "name": "action_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "action",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "action_failure"
+    }
+  },
+  {
+    "name": "action_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "action",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "action_failure"
+    }
+  },
+  {
+    "name": "action_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "action",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "action_failure"
+    }
+  },
+  {
+    "name": "action_cancelled",
+    "status_code": null,
+    "classification": {
+      "category": "action",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "action_cancelled",
+    "status_code": 200,
+    "classification": {
+      "category": "action",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "action_cancelled",
+    "status_code": 409,
+    "classification": {
+      "category": "action",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
+  },
+  {
+    "name": "action_cancelled",
+    "status_code": 503,
+    "classification": {
+      "category": "action",
+      "severity": "warning",
+      "outcome": "cancelled",
+      "error_code": "cancelled"
+    }
   }
 ]

@@ -6,6 +6,9 @@ import {
 } from "./desktop-startup";
 import { getDesktopRuntimeConfig } from "./runtime-config";
 
+import { observeLocalAction } from "./diagnostic-actions.ts";
+import type { DiagnosticContext } from "./diagnostics";
+
 const CLIENT_NAME = "vibe-learner-runtime";
 export const DESKTOP_VAULT_STATE_CHANGE_EVENT = "vibe-learner:desktop-vault-state-change";
 
@@ -47,7 +50,11 @@ export function isDesktopVaultCreationRequired() {
   });
 }
 
-export async function initializeDesktopVault(password: string) {
+export async function initializeDesktopVault(password: string, context?: DiagnosticContext) {
+  return observeLocalAction("vault_create", () => initializeDesktopVaultUnobserved(password), { context });
+}
+
+async function initializeDesktopVaultUnobserved(password: string) {
   const { stronghold, client } = await loadStrongholdInstance(password);
   activeStronghold = stronghold;
   activeClient = client;
@@ -59,7 +66,11 @@ export async function initializeDesktopVault(password: string) {
   notifyDesktopVaultStateChange();
 }
 
-export async function unlockDesktopVault(password: string) {
+export async function unlockDesktopVault(password: string, context?: DiagnosticContext) {
+  return observeLocalAction("vault_unlock", () => unlockDesktopVaultUnobserved(password), { context });
+}
+
+async function unlockDesktopVaultUnobserved(password: string) {
   const { stronghold, client } = await loadStrongholdInstance(password);
   activeStronghold = stronghold;
   activeClient = client;
@@ -67,7 +78,11 @@ export async function unlockDesktopVault(password: string) {
   notifyDesktopVaultStateChange();
 }
 
-export async function lockDesktopVault() {
+export async function lockDesktopVault(context?: DiagnosticContext) {
+  return observeLocalAction("vault_lock", () => lockDesktopVaultUnobserved(), { context });
+}
+
+async function lockDesktopVaultUnobserved() {
   if (activeStronghold) {
     await activeStronghold.unload();
   }
@@ -77,7 +92,11 @@ export async function lockDesktopVault() {
   notifyDesktopVaultStateChange();
 }
 
-export async function loadDesktopVaultSecrets(): Promise<DesktopVaultSecrets> {
+export async function loadDesktopVaultSecrets(context?: DiagnosticContext): Promise<DesktopVaultSecrets> {
+  return observeLocalAction("vault_load_secrets", () => loadDesktopVaultSecretsUnobserved(), { context });
+}
+
+async function loadDesktopVaultSecretsUnobserved(): Promise<DesktopVaultSecrets> {
   const { store } = requireUnlockedStore();
   const values = await Promise.all(
     (Object.keys(SECRET_KEY_MAP) as SecretKey[]).map(async (key) => {
@@ -94,7 +113,11 @@ export async function loadDesktopVaultSecrets(): Promise<DesktopVaultSecrets> {
   };
 }
 
-export async function saveDesktopVaultSecrets(secrets: Partial<DesktopVaultSecrets>) {
+export async function saveDesktopVaultSecrets(secrets: Partial<DesktopVaultSecrets>, context?: DiagnosticContext) {
+  return observeLocalAction("vault_save_secrets", () => saveDesktopVaultSecretsUnobserved(secrets), { context });
+}
+
+async function saveDesktopVaultSecretsUnobserved(secrets: Partial<DesktopVaultSecrets>) {
   const { stronghold, store } = requireUnlockedStore();
   for (const key of Object.keys(SECRET_KEY_MAP) as SecretKey[]) {
     const value = String(secrets[key] ?? "");
@@ -103,7 +126,11 @@ export async function saveDesktopVaultSecrets(secrets: Partial<DesktopVaultSecre
   await stronghold.save();
 }
 
-export async function clearDesktopVaultSecrets() {
+export async function clearDesktopVaultSecrets(context?: DiagnosticContext) {
+  return observeLocalAction("vault_clear_secrets", () => clearDesktopVaultSecretsUnobserved(), { context });
+}
+
+async function clearDesktopVaultSecretsUnobserved() {
   const { stronghold, store } = requireUnlockedStore();
   for (const key of Object.keys(SECRET_KEY_MAP) as SecretKey[]) {
     await store.remove(SECRET_KEY_MAP[key]);

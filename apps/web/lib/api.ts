@@ -1278,7 +1278,8 @@ export async function deleteReusableSceneNode(nodeId: string): Promise<{ deleted
 }
 
 export async function updateRuntimeSettings(
-  patch: RuntimeSettingsPatch
+  patch: RuntimeSettingsPatch,
+  context?: DiagnosticContext
 ): Promise<RuntimeSettings> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/runtime-settings`, {
@@ -1314,7 +1315,7 @@ export async function updateRuntimeSettings(
         openai_plan_fallback_disable_tools: patch.openaiPlanFallbackDisableTools,
         show_debug_info: patch.showDebugInfo
       })
-    })
+    }, context)
   );
   return normalizeRuntimeSettings(payload);
 }
@@ -1324,7 +1325,7 @@ export async function applyRuntimeSessionSecrets(patch: {
   openaiPlanApiKey?: string;
   openaiSettingApiKey?: string;
   openaiChatApiKey?: string;
-}): Promise<RuntimeSettings> {
+}, context?: DiagnosticContext): Promise<RuntimeSettings> {
   const payload = await readJson<any>(
     await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
       method: "PUT",
@@ -1337,7 +1338,7 @@ export async function applyRuntimeSessionSecrets(patch: {
         openai_setting_api_key: patch.openaiSettingApiKey,
         openai_chat_api_key: patch.openaiChatApiKey
       })
-    })
+    }, context)
   );
   return normalizeRuntimeSettings(payload);
 }

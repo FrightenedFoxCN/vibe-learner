@@ -1310,3 +1310,16 @@ prepared or external effects still require their canonical receipts. Provider
 calls made inside a tool link their parent span to that tool, so audit consumers
 must not add inclusive tool and provider durations together. Browser ingestion
 rejects server tool names and metric fields.
+
+
+Browser `action_started`, `action_finished`, `action_failed` and
+`action_cancelled` events use the closed `action_name` vocabulary: Persona/Scene
+JSON import **read**, JSON export **handoff**, Settings persistence, and Vault
+create/unlock/lock/load/save/clear. Import-read completion is not domain validation
+or application; browser export handoff is not proof the user retained the download.
+Desktop export cancellation is separate from failure. Action observers exclude
+filenames, contents, settings snapshots, secret values and exception text.
+Settings persistence passes captured correlation explicitly into Vault and HTTP
+calls, including after navigation. Nested local spans share an action and keep
+parentage; inclusive durations are not additive. A failed diagnostic ID allocation
+drops telemetry and leaves the local business action running.

@@ -15,7 +15,7 @@ export function useSettingsSave<T>(
   useEffect(() => { portRef.current = port; });
   const [coordinator] = useState(() => new SettingsSaveCoordinator<T>({
     serialize: value => portRef.current.serialize(value),
-    persist: value => portRef.current.persist(value),
+    persist: (value, context) => portRef.current.persist(value, context),
     saved: (value, key) => portRef.current.saved(value, key),
     status: (phase, error) => { if (mounted.current) portRef.current.status(phase, error); },
   }, delay, scheduler));

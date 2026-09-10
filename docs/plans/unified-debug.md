@@ -23,6 +23,8 @@
 
   - 2026-09-10 Tool 切片：Planning 六工具与 Study 三十一工具在原 decode/budget/runtime/result 边界记录 start/finish/failure、Manifest 契约/预算及耗时；未知名称脱敏，参数/结果/评分材料不记录，provider tool-call ID 只作独立关联。嵌套 provider span 归属工具 span，工具成功明确不声明效果提交。34 项后端专项测试（含全部 37 工具拒绝路径）和完整 `npm run check` 通过，包含全部 13 个 Harness suite。其余前端/桌面事件及完整配置、审计指标仍待完成。
 
+  - 2026-09-10 本地动作切片：JSON 导入读取/导出交接、Settings 保存队列及六个 Vault 入口记录明确动作名和结果；保存上下文显式传入 Vault/HTTP，嵌套本地 span 保留父子关系。日志不包含文件名、正文、凭据或异常原文；诊断 ID 分配失败不阻止本地动作。9 项客户端诊断测试、1 项 Vault 入口测试、18 项后端诊断测试、完整 Web reliability 与 shared/type 门通过。Vault 测试覆盖不可用/锁定入口，真实 native 创建/解锁和桌面启动/退出仍待后续验收。
+
 - [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。

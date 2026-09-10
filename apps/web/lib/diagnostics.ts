@@ -1,7 +1,7 @@
 import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
 import type { DiagnosticEventV1 } from "@vibe-learner/shared";
 
-export type DiagnosticContext = Pick<DiagnosticEventV1, "client_instance_id" | "page_view_id" | "flow_id" | "action_id">;
+export type DiagnosticContext = Pick<DiagnosticEventV1, "client_instance_id" | "page_view_id" | "flow_id" | "action_id"> & { local_span_id?: string | null };
 const CAPACITY = 1000;
 let clientId: string | null = null;
 let page: { owner: symbol; id: string } | null = null;
@@ -10,16 +10,20 @@ let pending: DiagnosticEventV1[] = [];
 let dropped = 0;
 let uploading = false;
 
+export function createDiagnosticId(): string | null {
+  try { return crypto.randomUUID(); } catch { return null; }
+}
+
 export function registerDiagnosticPage() {
-  const registration = { owner: Symbol("page-view"), id: crypto.randomUUID() };
+  const registration = { owner: Symbol("page-view"), id: createDiagnosticId() ?? "" };
   page = registration;
   return { id: registration.id, dispose: () => { if (page?.owner === registration.owner) page = null; } };
 }
 
 export function diagnosticContext(flowId: string | null = null): DiagnosticContext {
-  clientId ??= crypto.randomUUID();
-  return { client_instance_id: clientId, page_view_id: page?.id ?? null, flow_id: flowId,
-    action_id: crypto.randomUUID() };
+  clientId ??= createDiagnosticId();
+  return { client_instance_id: clientId, page_view_id: page?.id || null, flow_id: flowId,
+    action_id: createDiagnosticId() };
 }
 
 export function diagnosticSnapshot() {
@@ -27,11 +31,14 @@ export function diagnosticSnapshot() {
 }
 
 export function emitDiagnostic(name: DiagnosticEventV1["name"], context: DiagnosticContext,
-  fields: Pick<DiagnosticEventV1, "request_id" | "duration_ms" | "status_code" | "method">) {
+  fields: Pick<DiagnosticEventV1, "request_id" | "duration_ms" | "status_code" | "method"> & Partial<Pick<DiagnosticEventV1, "action_name" | "span_id" | "parent_span_id">>) {
+  const eventId = createDiagnosticId();
+  if (!eventId) { dropped += 1; return; }
   // Explicit projection: no URLs, bodies, exception strings or arbitrary object spreads.
   const event: DiagnosticEventV1 = {
-    schema_version: "diagnostic-event-v1", event_id: crypto.randomUUID(), source: "browser", name,
+    schema_version: "diagnostic-event-v1", event_id: eventId, source: "browser", name,
     ...classifyDiagnostic(name, fields.status_code),
+    action_name: fields.action_name ?? null, span_id: fields.span_id ?? null, parent_span_id: fields.parent_span_id ?? null,
     timestamp: new Date().toISOString(), route: null,
     client_instance_id: context.client_instance_id, page_view_id: context.page_view_id,
     flow_id: context.flow_id, action_id: context.action_id,
@@ -78,7 +85,8 @@ export async function diagnosticFetch(input: string, init?: RequestInit, context
     duration_ms: name === "request_started" ? null : performance.now() - started,
   });
   const headers = new Headers(init?.headers);
-  for (const [key, value] of Object.entries(context)) {
+  for (const key of ["client_instance_id", "page_view_id", "flow_id", "action_id"] as const) {
+    const value = context[key];
     if (value) headers.set(`X-Debug-${key.replaceAll("_", "-")}`, value);
   }
   emit("request_started");
