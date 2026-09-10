@@ -62,6 +62,8 @@
 
   - 2026-09-10 诊断导出 UI 切片：全局 Debug 新增按需生成快照、分组统计和诊断包下载；共享后端 schema 严格校验嵌套 DTO、关联身份、writer 分页及统计计数，32 MiB/15 秒边界和调用方取消不递归采集。刷新清除旧包，筛选/关闭 fence 迟到响应；最多显示 100 组，完整原始指标保留在下载包。10 项查询/7 项 React 时间线测试、完整 Web reliability、7 项后端导出测试、生产构建和 3 项 Chromium 场景通过；真实 Persona 包下载、正文 sentinel 排除及 390px 渲染已验证。原生保存对话框、多平台、总体磁盘及开销验收仍未认证。
 
+  - 2026-09-10 关联/索引留存切片：request→operation 关联按首次入库七天/一万行/4 MiB 留存；Harness 索引按可用 canonical 更新时间或首次观察七天/五千行/32 MiB 留存，过期源记录在重复补扫时不重新入库，后续真实更新可重新纳入。清理/计数同事务，旧库未知时间有迁移计数；诊断包及 Debug 展示清理缺口。40 项后端回归（含真实进程在清理提交前后退出）、共享契约、10 项查询/7 项时间线、生产构建和 3 项 Chromium 场景通过。限制只覆盖正文/行数，物理 DB/WAL 回收、总体磁盘上限与开销测量仍待完成。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
@@ -70,7 +72,8 @@ exists under `storage_root/diagnostics/events.sqlite3`; it retains at most 10,00
 rows using a 1,000-event queue. Browser ingestion and cursor query are available at `/diagnostics/events`,
 including writer health counters. Event payload retention now uses seven days,
 10,000 rows or 64 MiB, with durable removal coverage; global UI health is visible.
-Aggregate disk retention and other diagnostic-table retention remain pending.
+Operation links and Harness index projections now have independent age/row/payload retention.
+Aggregate physical disk retention and WAL reclamation remain pending.
 Snapshot export and grouped statistics are available on demand in global Debug. Console logging intentionally excludes
 unreviewed formatted messages and exception text.
 

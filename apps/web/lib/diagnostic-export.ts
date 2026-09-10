@@ -19,6 +19,9 @@ export function decodeDiagnosticExport(raw: unknown, filters: DiagnosticEventFil
     for (const key of ["category", "severity", "outcome", "error_code"] as const) if (row.event[key] !== classification[key]) invalid();
   }
   if (value.retention.retained_events < value.events.length || value.retention.cursor_gap !== (value.retention.removed_through_sequence > 0)) invalid();
+  if (value.link_retention.table !== "operation_links" || value.link_retention.retained_rows < value.operation_links.length || value.link_retention.age_basis !== "first_local_observation" || value.link_retention.source_age_exclusions_possible) invalid();
+  if (value.index_retention !== null && (value.index_retention.table !== "projections" || value.index_retention.retained_rows < value.index.length || value.index_retention.age_basis !== "canonical_update_or_first_local_observation" || !value.index_retention.source_age_exclusions_possible)) invalid();
+  if ((value.index_retention === null) !== (value.index_coverage.freshness === "unavailable")) invalid();
   const traces = new Set<string>();
   for (const trace of value.index) { if (traces.has(trace.trace_id)) invalid(); traces.add(trace.trace_id); }
   const links = new Set<string>();

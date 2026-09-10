@@ -63,6 +63,7 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
         # may append/prune after this read without changing any export member.
         with closing(_connect(store.path, deadline)) as db:
             retention = store.retention.coverage(db, 0)
+            link_retention = store.link_retention.coverage(db)
             for row in db.execute("SELECT e.sequence,e.event_id,e.payload FROM events e WHERE " + predicate + " ORDER BY e.sequence LIMIT 10001", params):
                 if len(events) == 10000:
                     raise DiagnosticExportTooLarge("diagnostic_export_too_large")
@@ -107,11 +108,13 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
                     break
                 after = page["next_cursor"]
         traces = []
+        index_retention = None
         coverage = dict(freshness="unavailable", scope=scope, missing_operation_count=len(operations))
         # Missing index is an explicit coverage gap; a present but unreadable or
         # corrupt database fails the whole export, never leaks raw SQL/data.
         if index is not None and index.path.exists():
             with closing(_connect(index.path, deadline)) as db:
+                index_retention = index.retention.coverage(db)
                 checkpoint = db.execute("SELECT cursor,sweeps FROM checkpoint WHERE name='runtime'").fetchone()
                 if checkpoint is None:
                     raise ValueError("diagnostic_index_checkpoint_missing")
@@ -144,7 +147,7 @@ def build_diagnostic_export(store, index, filters: DiagnosticExportFiltersV1, ap
                 raise DiagnosticExportTooLarge("diagnostic_export_too_large") from None
             raise
         result = DiagnosticExportV1(app_version=app_version, created_at=datetime.now(timezone.utc), filters=filters,
-            events=events, operation_links=links, retention=retention, writer_pages=writer_pages,
+            events=events, operation_links=links, retention=retention, link_retention=link_retention, index_retention=index_retention, writer_pages=writer_pages,
             index=traces, index_coverage=coverage, audit=audit).model_dump_json().encode("utf-8")
         budget.check()
         if len(result) > MAX_EXPORT_BYTES:

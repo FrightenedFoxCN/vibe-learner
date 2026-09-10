@@ -7,6 +7,7 @@ from pydantic import Field, model_validator
 from app.models.diagnostic import DiagnosticEventV1, DiagnosticOperationLinkV1, DiagnosticPagePath, Identity
 from app.models.diagnostic_audit import AuditModel, DiagnosticAuditV1
 from app.models.diagnostic_index import DiagnosticHarnessIndexV1
+from app.models.diagnostic_retention import DiagnosticRecordRetentionV1
 from app.models.diagnostic_writer import DiagnosticWriterCoverageV1
 from app.models.harness import HarnessWorkflow, HarnessStage
 
@@ -76,6 +77,8 @@ class DiagnosticExportV1(AuditModel):
     events: list[DiagnosticExportEventV1] = Field(max_length=10000)
     operation_links: list[DiagnosticOperationLinkV1] = Field(max_length=5000)
     retention: DiagnosticExportRetentionV1
+    link_retention: DiagnosticRecordRetentionV1
+    index_retention: DiagnosticRecordRetentionV1 | None
     writer_pages: list[DiagnosticWriterCoverageV1] = Field(min_length=1, max_length=3)
     index: list[DiagnosticHarnessIndexV1] = Field(max_length=5000)
     index_coverage: DiagnosticExportIndexCoverageV1

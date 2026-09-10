@@ -129,6 +129,10 @@ test("export decodes Python snapshot and rejects nested secrets, drift and incom
     x => { x.created_at = "2026-09-10"; },
     x => { delete x.audit.groups[0].key.model; },
     x => { x.filters.source = "browser"; },
+    x => { x.link_retention.retained_rows = 0; },
+    x => { x.index_retention = null; },
+    x => { x.link_retention.table = "projections"; },
+    x => { x.index_retention.private = "PRIVATE"; },
   ]) {
     const value = structuredClone(sample); mutate(value);
     assert.throws(() => decodeDiagnosticExport(value, {}), DiagnosticQueryError);

@@ -2094,6 +2094,104 @@
       "title": "DiagnosticProviderMetricV1",
       "type": "object"
     },
+    "DiagnosticRecordRetentionV1": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "diagnostic-record-retention-v1",
+          "default": "diagnostic-record-retention-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "table": {
+          "enum": [
+            "operation_links",
+            "projections"
+          ],
+          "title": "Table",
+          "type": "string"
+        },
+        "retained_rows": {
+          "minimum": 0,
+          "title": "Retained Rows",
+          "type": "integer"
+        },
+        "retained_payload_bytes": {
+          "minimum": 0,
+          "title": "Retained Payload Bytes",
+          "type": "integer"
+        },
+        "removed_rows": {
+          "minimum": 0,
+          "title": "Removed Rows",
+          "type": "integer"
+        },
+        "legacy_timestamp_rows": {
+          "minimum": 0,
+          "title": "Legacy Timestamp Rows",
+          "type": "integer"
+        },
+        "max_rows": {
+          "minimum": 1,
+          "title": "Max Rows",
+          "type": "integer"
+        },
+        "max_payload_bytes": {
+          "minimum": 1,
+          "title": "Max Payload Bytes",
+          "type": "integer"
+        },
+        "max_age_seconds": {
+          "minimum": 1,
+          "title": "Max Age Seconds",
+          "type": "integer"
+        },
+        "age_basis": {
+          "enum": [
+            "first_local_observation",
+            "canonical_update_or_first_local_observation"
+          ],
+          "title": "Age Basis",
+          "type": "string"
+        },
+        "removed_count_scope": {
+          "const": "deletions_not_unique_identities",
+          "default": "deletions_not_unique_identities",
+          "title": "Removed Count Scope",
+          "type": "string"
+        },
+        "source_age_exclusions_possible": {
+          "title": "Source Age Exclusions Possible",
+          "type": "boolean"
+        },
+        "complete_history_claim": {
+          "const": false,
+          "default": false,
+          "title": "Complete History Claim",
+          "type": "boolean"
+        },
+        "disk_size_limit_certified": {
+          "const": false,
+          "default": false,
+          "title": "Disk Size Limit Certified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "table",
+        "retained_rows",
+        "retained_payload_bytes",
+        "removed_rows",
+        "legacy_timestamp_rows",
+        "max_rows",
+        "max_payload_bytes",
+        "max_age_seconds",
+        "age_basis",
+        "source_age_exclusions_possible"
+      ],
+      "title": "DiagnosticRecordRetentionV1",
+      "type": "object"
+    },
     "DiagnosticResourceReferenceV1": {
       "additionalProperties": false,
       "properties": {
@@ -2619,6 +2717,19 @@
     "retention": {
       "$ref": "#/$defs/DiagnosticExportRetentionV1"
     },
+    "link_retention": {
+      "$ref": "#/$defs/DiagnosticRecordRetentionV1"
+    },
+    "index_retention": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DiagnosticRecordRetentionV1"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "writer_pages": {
       "items": {
         "$ref": "#/$defs/DiagnosticWriterCoverageV1"
@@ -2650,6 +2761,8 @@
     "events",
     "operation_links",
     "retention",
+    "link_retention",
+    "index_retention",
     "writer_pages",
     "index",
     "index_coverage",

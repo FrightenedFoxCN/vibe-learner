@@ -17,7 +17,9 @@ from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 
 
 class DiagnosticHarnessIndex:
-    def __init__(self, repository: HarnessRuntimeRepository, path: Path):
+    def __init__(self, repository: HarnessRuntimeRepository, path: Path, *, retention=None):
+        from app.core.diagnostic_record_retention import DiagnosticRecordRetention
+        self.retention = retention or DiagnosticRecordRetention("projections")
         self.repository = repository
         self.path = path
         self.failures = 0
@@ -36,6 +38,7 @@ class DiagnosticHarnessIndex:
             db.execute("CREATE INDEX IF NOT EXISTS projections_operation ON projections(operation_id,trace_id)")
             db.execute("CREATE TABLE IF NOT EXISTS checkpoint (name TEXT PRIMARY KEY, cursor TEXT NOT NULL, sweeps INTEGER NOT NULL)")
             db.execute("INSERT OR IGNORE INTO checkpoint VALUES ('runtime','',0)")
+            self.retention.initialize(db)
             db.commit()
             yield db
         finally:
@@ -63,11 +66,16 @@ class DiagnosticHarnessIndex:
                 projections.append(projection)
             for value in projections:
                 value = DiagnosticHarnessIndexV1.model_validate(value).model_dump(mode="json")
-                db.execute("INSERT INTO projections(trace_id,operation_id,workflow,stage,payload,last_seen_sweep) VALUES (?,?,?,?,?,?) ON CONFLICT(trace_id) DO UPDATE SET operation_id=excluded.operation_id,workflow=excluded.workflow,stage=excluded.stage,payload=excluded.payload,last_seen_sweep=excluded.last_seen_sweep WHERE projections.payload != excluded.payload OR projections.last_seen_sweep != excluded.last_seen_sweep",
-                           (value["trace_id"], value.get("operation_id"), value.get("workflow"), value.get("stage"), json.dumps(value, sort_keys=True), sweep))
+                retained_at = self.retention.source_time(db, value.get("source_updated_at"))
+                if retained_at is not None and db.execute("SELECT ? < unixepoch('now')-?", (retained_at, self.retention.max_age_seconds)).fetchone()[0]:
+                    db.execute("DELETE FROM projections WHERE trace_id=?", (value["trace_id"],))
+                    continue
+                db.execute("INSERT INTO projections(trace_id,operation_id,workflow,stage,payload,last_seen_sweep,retained_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(trace_id) DO UPDATE SET operation_id=excluded.operation_id,workflow=excluded.workflow,stage=excluded.stage,payload=excluded.payload,last_seen_sweep=excluded.last_seen_sweep,retained_at=CASE WHEN ? IS NOT NULL AND projections.payload != excluded.payload THEN excluded.retained_at ELSE projections.retained_at END WHERE projections.payload != excluded.payload OR projections.last_seen_sweep != excluded.last_seen_sweep",
+                           (value["trace_id"], value.get("operation_id"), value.get("workflow"), value.get("stage"), json.dumps(value, sort_keys=True), sweep, retained_at or 0, retained_at))
             exhausted = len(ids) < limit
             if exhausted:
                 db.execute("UPDATE projections SET payload=json_set(payload,'$.gap','source_removed','$.state',NULL,'$.status',NULL,'$.commit_status',NULL) WHERE last_seen_sweep < ?", (sweep,))
+            self.retention.prune(db)
             db.execute("UPDATE checkpoint SET cursor=?, sweeps=sweeps+? WHERE name='runtime'", ("" if exhausted else ids[-1], int(exhausted)))
             db.commit()
             return len(ids)
@@ -78,6 +86,7 @@ class DiagnosticHarnessIndex:
         try:
             from contextlib import closing
             with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
+                db.execute("BEGIN")
                 rows = db.execute("SELECT payload FROM projections WHERE trace_id > ? AND (? IS NULL OR operation_id=?) AND (? IS NULL OR workflow=?) AND (? IS NULL OR stage=?) ORDER BY trace_id LIMIT ?",
                                   (after, operation_id, operation_id, workflow, workflow, stage, stage, limit + 1)).fetchall()
                 cursor, sweeps = db.execute("SELECT cursor,sweeps FROM checkpoint WHERE name='runtime'").fetchone()

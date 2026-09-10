@@ -87,7 +87,7 @@ class DiagnosticQueryTests(unittest.TestCase):
                 self.assertEqual(store.write_failures, 0)
                 operation = "harness-operation-" + "a" * 32
                 with sqlite3.connect(store.path) as db:
-                    db.execute("INSERT INTO operation_links VALUES (?,?,?)", (operation, "request", '{"PRIVATE_CONTENT":"PRIVATE_SECRET"}'))
+                    db.execute("INSERT INTO operation_links(operation_id,request_id,payload) VALUES (?,?,?)", (operation, "request", '{"PRIVATE_CONTENT":"PRIVATE_SECRET"}'))
                 links = client.get("/diagnostics/operation-links", params={"operation_id": operation})
                 self.assertEqual(links.json()["gap"], "diagnostic_store_unavailable")
                 self.assertNotIn("PRIVATE", links.text)

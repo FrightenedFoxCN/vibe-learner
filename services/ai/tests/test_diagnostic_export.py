@@ -36,7 +36,7 @@ class DiagnosticExportTests(unittest.TestCase):
             trace = DiagnosticHarnessIndexV1.model_validate_json(json.dumps(dict(trace_id="trace", operation_id=OP,
                 workflow="persona", stage="persona_generation", state="terminal", status="passed", commit_status="committed", duration_ms=40,
                 components=[], attempts=[])))
-            db.execute("INSERT INTO projections VALUES (?,?,?,?,?,?)", ("trace", OP, "persona", "persona_generation", trace.model_dump_json(), 0))
+            db.execute("INSERT INTO projections(trace_id,operation_id,workflow,stage,payload,last_seen_sweep) VALUES (?,?,?,?,?,?)", ("trace", OP, "persona", "persona_generation", trace.model_dump_json(), 0))
             db.commit()
         app = FastAPI(version="0.3.1")
         app.state.diagnostics = self.store
@@ -82,10 +82,13 @@ class DiagnosticExportTests(unittest.TestCase):
         self.assertEqual(len(report.events), report.retention.retained_events)
         self.assertEqual(len(report.events), 1)
         self.assertEqual(len(report.operation_links), 1)
+        self.assertEqual(report.link_retention.retained_rows, 1)
+        self.assertEqual(report.link_retention.removed_rows, 0)
         self.assertEqual(report.writer_pages[0].totals.observed_dropped, 0)
         current = self.export()
         self.assertEqual(current.events, [])
         self.assertEqual(current.retention.removed_events, 1)
+        self.assertEqual(current.link_retention.removed_rows, 1)
         self.assertEqual(current.writer_pages[0].totals.observed_dropped, 17)
 
     def test_invalid_private_payloads_and_identity_mismatch_fail_closed(self):

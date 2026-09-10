@@ -1,7 +1,7 @@
 {
   "schema_version": "diagnostic-export-v1",
   "app_version": "0.3.1",
-  "created_at": "2026-09-10T08:32:27.049699Z",
+  "created_at": "2026-09-10T08:39:49.007922Z",
   "filters": {
     "request_id": null,
     "action_id": null,
@@ -191,16 +191,48 @@
     "storage_scope": "event_payloads",
     "disk_size_limit_certified": false
   },
+  "link_retention": {
+    "schema_version": "diagnostic-record-retention-v1",
+    "table": "operation_links",
+    "retained_rows": 1,
+    "retained_payload_bytes": 235,
+    "removed_rows": 0,
+    "legacy_timestamp_rows": 0,
+    "max_rows": 10000,
+    "max_payload_bytes": 4194304,
+    "max_age_seconds": 604800,
+    "age_basis": "first_local_observation",
+    "removed_count_scope": "deletions_not_unique_identities",
+    "source_age_exclusions_possible": false,
+    "complete_history_claim": false,
+    "disk_size_limit_certified": false
+  },
+  "index_retention": {
+    "schema_version": "diagnostic-record-retention-v1",
+    "table": "projections",
+    "retained_rows": 1,
+    "retained_payload_bytes": 548,
+    "removed_rows": 0,
+    "legacy_timestamp_rows": 0,
+    "max_rows": 5000,
+    "max_payload_bytes": 33554432,
+    "max_age_seconds": 604800,
+    "age_basis": "canonical_update_or_first_local_observation",
+    "removed_count_scope": "deletions_not_unique_identities",
+    "source_age_exclusions_possible": true,
+    "complete_history_claim": false,
+    "disk_size_limit_certified": false
+  },
   "writer_pages": [
     {
       "schema_version": "diagnostic-writer-coverage-v1",
       "items": [
         {
           "sequence": 1,
-          "epoch_id": "ec825a958b484b86acfc3f9313debba5",
-          "started_at": 1789029146,
-          "observed_at": 1789029147,
-          "closed_at": 1789029147,
+          "epoch_id": "6908653965fd4362bd3fc9c0a125e229",
+          "started_at": 1789029588,
+          "observed_at": 1789029588,
+          "closed_at": 1789029588,
           "observed_dropped": 0,
           "observed_write_failures": 0,
           "observed_read_failures": 0

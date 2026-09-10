@@ -1467,3 +1467,10 @@ P50/P95 groups. Events and coverage share a snapshot; the Harness index uses an
 independent snapshot. HTTP/export success is not a business commit assertion.
 Limits return fixed 413, invalid filters fixed 422 and read/validation failures
 fixed 503. See [snapshot scope and limits](diagnostic-audit.md#stored-snapshot-export).
+
+
+Diagnostic exports also contain `link_retention` and nullable `index_retention`
+(`diagnostic-record-retention-v1`), each from its corresponding read snapshot.
+They expose retained bytes/rows, deletion occurrences, limits and unknown legacy
+observation times. Deletion counts are not unique record counts; source-age
+exclusions are possible for the index. See [retention semantics](diagnostic-audit.md#link-and-index-retention).

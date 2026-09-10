@@ -103,3 +103,31 @@ observations remain in the package. Coverage text distinguishes independent
 index timing, event/trace scope and incomplete collection. Chromium acceptance
 covers a real mock-provider Persona chain, downloaded JSON and 390px rendering;
 this does not certify native save dialogs or all platforms.
+
+
+## Link and index retention
+
+The diagnostic writer now prunes operation links independently of event cleanup:
+seven days from first local insertion, 10,000 rows or 4 MiB UTF-8 payload. Updating
+the same request/operation link does not renew its age. The index keeps at most
+5,000 projections or 32 MiB payload. Its seven-day age uses canonical update time
+when available, otherwise first local observation. Valid old canonical records
+are excluded before insertion on every sweep; a later canonical update may
+make a trace eligible again. Source timestamps in the future are clamped to
+local database observation time; stable rescans do not renew a retained row.
+
+Legacy unknown observation times are counted and begin at migration. Cleanup
+uses oldest age then local row order, and retains a newest suffix fitting the
+payload budget. Deletions and byte/row counters share their diagnostic
+transaction. Index checkpoint advancement and pruning share a transaction;
+index read pages now pin the checkpoint and results to one read snapshot.
+Capacity-evicted projections may be encountered again in subsequent canonical
+sweeps. `removed_rows` counts deletion occurrences, not distinct identities or
+excluded source records. Unavailable source timestamps cannot establish age of
+canonical history, and no complete-history assertion is made.
+
+Exported `link_retention` shares the event snapshot; nullable `index_retention`
+shares the independent index snapshot. The strict browser decoder validates
+these records and Debug displays cleanup counts and legacy-time gaps. No domain
+rows or canonical traces are removed. These are payload/row retention budgets;
+physical SQLite files, freelists and WAL reclamation remain separate work.

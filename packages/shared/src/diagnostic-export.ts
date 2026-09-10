@@ -80,6 +80,8 @@ export interface DiagnosticExportV1 {
   events: { sequence: number; event: DiagnosticEventV1 }[];
   operation_links: DiagnosticOperationLinkV1[];
   retention: DiagnosticEventRetentionV1;
+  link_retention: DiagnosticRecordRetentionV1;
+  index_retention: DiagnosticRecordRetentionV1 | null;
   writer_pages: DiagnosticWriterCoverageV1[];
   index: DiagnosticHarnessIndexV1[];
   index_coverage: {
@@ -92,4 +94,22 @@ export interface DiagnosticExportV1 {
     time_and_event_filters_apply_to_traces: false;
   };
   audit: DiagnosticAuditV1;
+}
+
+
+export interface DiagnosticRecordRetentionV1 {
+  schema_version: "diagnostic-record-retention-v1";
+  table: "operation_links" | "projections";
+  retained_rows: number;
+  retained_payload_bytes: number;
+  removed_rows: number;
+  legacy_timestamp_rows: number;
+  max_rows: number;
+  max_payload_bytes: number;
+  max_age_seconds: number;
+  age_basis: "first_local_observation" | "canonical_update_or_first_local_observation";
+  removed_count_scope: "deletions_not_unique_identities";
+  source_age_exclusions_possible: boolean;
+  complete_history_claim: false;
+  disk_size_limit_certified: false;
 }

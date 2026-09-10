@@ -48,6 +48,7 @@ export function DiagnosticAuditPanel({ filters }: { filters: DiagnosticEventFilt
       <button style={button} disabled={saving || loading} onClick={save}>{saving ? "正在保存诊断包…" : "下载诊断包"}</button>
       <p>事件、关联和采集覆盖来自同一快照；Harness 索引使用独立快照，可能滞后。时间、页面和级别条件筛选事件，关联阶段可能超出该时间范围。此包不证明完整采集或业务提交。</p>
       <p>已清理事件 {result.retention.removed_events}；索引{result.index_coverage.freshness === "unavailable" ? "不可用" : "可用但可能滞后"}；缺少索引的关联 operation {result.index_coverage.missing_operation_count}。已观察丢弃下限 {result.writer_pages[0].totals.observed_dropped}，未落盘队列及启动前损失仍未知。</p>
+      <p>关联记录已清理 {result.link_retention.removed_rows} 次；索引清理 {result.index_retention?.removed_rows ?? "未知"} 次。清理次数不是不同记录的数量；过期源记录可能在索引前被排除。{result.link_retention.legacy_timestamp_rows > 0 || (result.index_retention?.legacy_timestamp_rows ?? 0) > 0 ? "部分历史记录的首次保留时间未知。" : ""}当前限制仅覆盖记录正文，尚未认证总体磁盘上限。</p>
       {!result.audit.groups.length && <p>当前范围没有可统计的指标样本；不代表流程没有执行。</p>}
       <p>以下展示前 100 组；完整分组和原始指标保存在诊断包中。P50/P95 使用各组已测量样本，包含失败耗时。</p>
       {result.audit.groups.slice(0, 100).map((group, i) => <details key={i} style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>

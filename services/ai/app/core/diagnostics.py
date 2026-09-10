@@ -119,6 +119,8 @@ class DiagnosticStore:
         from app.core.diagnostic_writer_coverage import DiagnosticWriterCoverage
         self.writer_coverage = DiagnosticWriterCoverage(path, uuid4().hex)
         self.retention = retention or DiagnosticEventRetention()
+        from app.core.diagnostic_record_retention import DiagnosticRecordRetention
+        self.link_retention = DiagnosticRecordRetention("operation_links")
         self.path = path
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
         self.dropped = 0
@@ -249,6 +251,7 @@ class DiagnosticStore:
                 for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
                     db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
                 self.retention.initialize(db)
+                self.link_retention.initialize(db)
                 self.writer_coverage.initialize(db)
                 self._observe_writer(db)
                 db.commit()
@@ -262,6 +265,7 @@ class DiagnosticStore:
                         if time.monotonic() - last_cleanup >= 60:
                             try:
                                 self.retention.prune(db)
+                                self.link_retention.prune(db)
                                 self._observe_writer(db)
                                 db.commit()
                             except Exception:
@@ -276,10 +280,11 @@ class DiagnosticStore:
                                     "client_instance_id": event.client_instance_id, "page_view_id": event.page_view_id,
                                     "flow_id": event.flow_id, "action_id": event.action_id,
                                     "workflow": event.harness.workflow, "stage": event.harness.stage}
-                            db.execute("INSERT INTO operation_links VALUES (?,?,?) ON CONFLICT(operation_id,request_id) DO UPDATE SET payload=excluded.payload",
+                            db.execute("INSERT INTO operation_links(operation_id,request_id,payload) VALUES (?,?,?) ON CONFLICT(operation_id,request_id) DO UPDATE SET payload=excluded.payload",
                                        (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
                         # Retention and loss evidence commit with the event.
                         self.retention.prune(db)
+                        self.link_retention.prune(db)
                         self._observe_writer(db)
                         db.commit()
                     except Exception:
