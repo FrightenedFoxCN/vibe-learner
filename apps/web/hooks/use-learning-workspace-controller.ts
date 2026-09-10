@@ -2,6 +2,7 @@
 
 
 import { useState } from "react";
+import { useStudyContinuation } from "./use-study-continuation";
 import { useStudyCommitActions } from "./use-study-commit-actions";
 import { useStudyMessages } from "./use-study-messages";
 import { useStudySessionNavigation } from "./use-study-session-navigation";
@@ -29,9 +30,6 @@ import {
 import { WorkspaceSnapshotLoader } from "../lib/workspace-snapshot-loader";
 import { listPersonas } from "../lib/data/personas";
 import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
-import {
-  cancelStudySessionFollowUps,
-} from "../lib/data/study-sessions";
 import { mockPersonas } from "../lib/mock-data";
 import {
   buildPlanHistoryItems,
@@ -42,13 +40,6 @@ import {
   resolveWorkspaceSnapshot,
   type WorkspaceSnapshot,
 } from "../lib/learning-workspace-state";
-import {
-  appendDeferredInteractiveCallback,
-  clearDeferredInteractiveCallbacks as clearPersistedDeferredInteractiveCallbacks,
-  readDeferredInteractiveCallbacks,
-  readInterruptedDialogueSessionId,
-  writeInterruptedDialogueSessionId,
-} from "../lib/study-dialogue-interruption";
 import { readSceneProfileFromLocalStorage } from "../lib/scene-profile";
 import {
   PERSONA_LIBRARY_UPDATED_EVENT,
@@ -99,20 +90,14 @@ export function useLearningWorkspaceController({
   );
   const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState(initialSelection?.sceneLibraryId ?? "");
-  const [interruptedDialogueSessionId, setInterruptedDialogueSessionId] = useState("");
   const mountedRef = useRef(true);
   const selectedPersonaIdRef = useRef(state.selectedPersonaId);
   const selectedPlanIdRef = useRef(state.selectedPlanId);
-  const preludeInFlightRef = useRef<Set<string>>(new Set());
-  const preludeFailedRef = useRef<Set<string>>(new Set());
   const snapshotLoaderRef = useRef<WorkspaceSnapshotLoader | null>(null);
   if (snapshotLoaderRef.current === null) {
     snapshotLoaderRef.current = new WorkspaceSnapshotLoader({ listDocuments, listLearningPlans, listPersonas });
   }
   const snapshotLoader = snapshotLoaderRef.current;
-  const followUpTimerRef = useRef<Map<string, number>>(new Map());
-  const followUpInFlightRef = useRef<Set<string>>(new Set());
-  const interruptedDialogueSessionIdRef = useRef("");
   const studyViewFenceRef = useRef(
     new StudyAsyncViewFence<StudySessionRecord>({
       initialPlanId: initialPlan?.id,
@@ -149,10 +134,6 @@ export function useLearningWorkspaceController({
   );
 
   const resolveActiveSceneProfile = () => selectedSceneProfile ?? readSceneProfileFromLocalStorage();
-  const isDialogueInterrupted = Boolean(
-    state.studySession?.id && state.studySession.id === interruptedDialogueSessionId
-  );
-
   const transitionStudyView = (fieldTarget: string, clearSession = false) => {
     studyViewFenceRef.current.transition(fieldTarget, clearSession);
     resetStudyRecovery();
@@ -172,12 +153,6 @@ export function useLearningWorkspaceController({
       snapshotLoader.deactivate();
       studyViewFenceRef.current.transition("learning-route:unmounted", true);
     };
-  }, []);
-
-  useEffect(() => {
-    const persistedSessionId = readInterruptedDialogueSessionId();
-    interruptedDialogueSessionIdRef.current = persistedSessionId;
-    setInterruptedDialogueSessionId(persistedSessionId);
   }, []);
 
   useEffect(() => {
@@ -201,21 +176,6 @@ export function useLearningWorkspaceController({
     }
     studyViewFenceRef.current.session = nextSession;
   }, [state.studySession]);
-
-  const syncInterruptedDialogueSessionId = (sessionId: string) => {
-    const normalizedSessionId = sessionId.trim();
-    interruptedDialogueSessionIdRef.current = normalizedSessionId;
-    setInterruptedDialogueSessionId(normalizedSessionId);
-    writeInterruptedDialogueSessionId(normalizedSessionId);
-  };
-
-  const isDialogueInterruptedForSession = (sessionId: string) => {
-    const normalizedSessionId = sessionId.trim();
-    return Boolean(
-      normalizedSessionId &&
-      interruptedDialogueSessionIdRef.current === normalizedSessionId
-    );
-  };
 
   const resolveStudyUnitTitle = (studyUnitId: string) => {
     const sectionFromPlan = planSections.find((section) => section.id === studyUnitId);
@@ -445,208 +405,16 @@ export function useLearningWorkspaceController({
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
-  const queueDeferredInteractiveCallback = (sessionId: string, callbackMessage: string) => {
-    const normalizedSessionId = sessionId.trim();
-    const normalizedMessage = callbackMessage.trim();
-    if (!normalizedSessionId || !normalizedMessage) {
-      return;
-    }
-    appendDeferredInteractiveCallback(normalizedSessionId, normalizedMessage);
-  };
-
-  const peekDeferredInteractiveCallbackPrefix = (sessionId: string) => {
-    const normalizedSessionId = sessionId.trim();
-    if (!normalizedSessionId) {
-      return "";
-    }
-    return readDeferredInteractiveCallbacks(normalizedSessionId).join("\n\n");
-  };
-
-  const clearDeferredInteractiveCallbacks = (sessionId: string) => {
-    const normalizedSessionId = sessionId.trim();
-    if (!normalizedSessionId) {
-      return;
-    }
-    clearPersistedDeferredInteractiveCallbacks(normalizedSessionId);
-  };
-
-  const clearInterruptedDialogueState = (sessionId: string) => {
-    const normalizedSessionId = sessionId.trim();
-    if (!normalizedSessionId) {
-      return;
-    }
-    clearDeferredInteractiveCallbacks(normalizedSessionId);
-    if (interruptedDialogueSessionIdRef.current === normalizedSessionId) {
-      syncInterruptedDialogueSessionId("");
-    }
-  };
-
-  const clearPendingFollowUpTimers = (followUpIds: string[]) => {
-    const timers = followUpTimerRef.current;
-    followUpIds.forEach((followUpId) => {
-      const timer = timers.get(followUpId);
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-      }
-      timers.delete(followUpId);
-    });
-  };
-
   const { handleAsk, handleAskForSection, retryFailedAsk, sendHiddenSessionMessage,
     automaticStudyRequest, forgetAutomaticStudyRequest, isSending } = useStudyMessages({
     view: studyViewFenceRef.current,
     recovery: { chatFailure, setChatFailure, beginStudyResponseTicket, isCurrentStudyResponseTicket, applyStudyChatOperation },
-    ensureSessionForSection, isDialogueInterruptedForSession,
-    peekDeferredInteractiveCallbackPrefix, clearInterruptedDialogueState,
+    ensureSessionForSection,
+    isDialogueInterruptedForSession: (id) => continuation.isDialogueInterruptedForSession(id),
+    peekDeferredInteractiveCallbackPrefix: (id) => continuation.peekDeferredInteractiveCallbackPrefix(id),
+    clearInterruptedDialogueState: (id, prefix) => continuation.clearInterruptedDialogueState(id, prefix),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
-
-  const runSessionPrelude = async (input: {
-    session: StudySessionRecord;
-    studyUnitId: string;
-    sectionTitle: string;
-    themeHint: string;
-    force?: boolean;
-  }) => {
-    const normalizedStudyUnitId = input.studyUnitId.trim();
-    if (!normalizedStudyUnitId) {
-      return false;
-    }
-    if (!input.force && input.session.preparedStudyUnitIds?.includes(normalizedStudyUnitId)) {
-      return false;
-    }
-    const requestKey = `${input.session.id}:${normalizedStudyUnitId}`;
-    if (input.force) {
-      preludeFailedRef.current.delete(requestKey);
-    } else if (preludeFailedRef.current.has(requestKey)) {
-      return false;
-    }
-    if (preludeInFlightRef.current.has(requestKey)) {
-      return false;
-    }
-    preludeInFlightRef.current.add(requestKey);
-    try {
-      dispatch({ type: "busy_started" });
-      const operationKey = `prelude:${requestKey}:${input.session.revision}`;
-      const operationIdentity = automaticStudyRequest(
-        operationKey,
-        "prelude",
-      );
-      await sendHiddenSessionMessage({
-        session: input.session,
-        operationKey,
-        ...operationIdentity,
-        message: buildSessionPreludeMessage({
-          sectionTitle: input.sectionTitle,
-          themeHint: input.themeHint,
-        }),
-        messageKind: "session_prelude",
-      });
-      return true;
-    } catch (error) {
-      preludeFailedRef.current.add(requestKey);
-      dispatch({
-        type: "notice_set",
-        notice: resolveStudySessionErrorNotice(
-          error,
-          `章节准备失败：${String(error)}`,
-          "response",
-        ),
-      });
-      logWorkspaceError("workflow:study_session:prelude_error", error);
-      return false;
-    } finally {
-      preludeInFlightRef.current.delete(requestKey);
-      dispatch({ type: "busy_finished" });
-    }
-  };
-
-  const triggerSessionPrelude = async (input: {
-    studyUnitId: string;
-    sectionTitle?: string;
-    themeHint?: string;
-  }) => {
-    const session = await ensureSessionForSection(input.studyUnitId, {
-      clearResponseOnSwitch: false,
-    });
-    if (!session) {
-      return false;
-    }
-    return runSessionPrelude({
-      session,
-      studyUnitId: input.studyUnitId,
-      sectionTitle: input.sectionTitle || session.studyUnitTitle || session.studyUnitId,
-      themeHint: input.themeHint ?? session.themeHint ?? "",
-      force: true,
-    });
-  };
-
-  const triggerInteractiveQuestionCallback = async (
-    session: StudySessionRecord,
-    input: { turnId: string }
-  ) => {
-    const committedQuestion = session.turns.find(
-      (turn) => turn.id === input.turnId
-    )?.interactiveQuestion;
-    if (!committedQuestion?.callBack) {
-      return;
-    }
-    const committedResult = committedQuestion.result;
-    if (
-      !committedResult?.submittedAnswer ||
-      typeof committedResult.isCorrect !== "boolean" ||
-      !committedResult.feedbackText.trim()
-    ) {
-      logWorkspaceError(
-        "workflow:study_attempt:callback_read_back_missing",
-        new Error("study_question_attempt_callback_read_back_missing"),
-      );
-      return;
-    }
-    const callbackMessage = buildInteractiveCallbackMessage({
-      questionType: committedQuestion.questionType,
-      prompt: committedQuestion.prompt,
-      topic: committedQuestion.topic,
-      submittedAnswer: committedResult.submittedAnswer,
-      isCorrect: committedResult.isCorrect,
-      explanation: committedResult.explanation,
-    });
-    if (isDialogueInterruptedForSession(session.id)) {
-      queueDeferredInteractiveCallback(session.id, callbackMessage);
-      dispatch({
-        type: "notice_set",
-        notice: "答案已记录；已暂停自动续接，会在你下次主动发言前补入答题结果。"
-      });
-      return;
-    }
-    try {
-      dispatch({ type: "busy_started" });
-      const operationKey = `callback:${session.id}:${input.turnId}:${session.revision}`;
-      const operationIdentity = automaticStudyRequest(
-        operationKey,
-        "callback",
-      );
-      await sendHiddenSessionMessage({
-        session,
-        operationKey,
-        ...operationIdentity,
-        message: callbackMessage,
-        messageKind: "interactive_callback",
-      });
-    } catch (callbackError) {
-      dispatch({
-        type: "notice_set",
-        notice: resolveStudySessionErrorNotice(
-          callbackError,
-          `答案已记录，续问失败：${String(callbackError)}`,
-          "response",
-        )
-      });
-      logWorkspaceError("workflow:study_attempt:callback_error", callbackError);
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
 
   const { handleSubmitQuestionAttempt, handleResolvePlanConfirmation, isApplying } = useStudyCommitActions({
     view: studyViewFenceRef.current, automaticStudyRequest, forgetAutomaticStudyRequest,
@@ -655,83 +423,21 @@ export function useLearningWorkspaceController({
       dispatch({ type: "study_session_set", studySession, clearResponse: false });
     },
     onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
-    onCommittedQuestion: triggerInteractiveQuestionCallback,
+    onCommittedQuestion: (session, input) => continuation.triggerInteractiveQuestionCallback(session, input),
     onNotice: (notice) => dispatch({ type: "notice_set", notice }),
   });
 
-  const interruptDialogue = async () => {
-    const session = studyViewFenceRef.current.session;
-    if (!session) {
-      dispatch({
-        type: "notice_set",
-        notice: "当前还没有可打断的学习单元会话。"
-      });
-      return false;
-    }
-    const pendingFollowUpIds = (session?.pendingFollowUps ?? [])
-      .filter((item) => item.status === "pending")
-      .map((item) => item.id);
-    if (isDialogueInterruptedForSession(session.id) && !pendingFollowUpIds.length) {
-      dispatch({
-        type: "notice_set",
-        notice: "当前已暂停自动续接；答题结果会等你下次主动发言时再补入。"
-      });
-      return false;
-    }
-    if (!pendingFollowUpIds.length) {
-      syncInterruptedDialogueSessionId(session.id);
-      dispatch({
-        type: "notice_set",
-        notice: "已暂停当前自动续接；之后提交答案不会立即续聊。"
-      });
-      return true;
-    }
-    clearPendingFollowUpTimers(pendingFollowUpIds);
-    const targetViewRevision = studyViewFenceRef.current.viewRevision;
-    try {
-      dispatch({ type: "busy_started" });
-      const nextSession = await cancelStudySessionFollowUps({
-        sessionId: session.id,
-      });
-      if (
-        studyViewFenceRef.current.session?.id !== session.id ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision
-      ) {
-        return false;
-      }
-      activateStudySessionView(nextSession);
-      dispatch({
-        type: "study_session_set",
-        studySession: nextSession,
-        clearResponse: false,
-      });
-      syncInterruptedDialogueSessionId(nextSession.id);
-      dispatch({
-        type: "notice_set",
-        notice: "已打断当前自动续接；之后提交答案不会立即续聊。"
-      });
-      return true;
-    } catch (error) {
-      if (
-        studyViewFenceRef.current.session?.id !== session.id ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision
-      ) {
-        return false;
-      }
-      dispatch({
-        type: "notice_set",
-        notice: resolveStudySessionErrorNotice(
-          error,
-          `打断自动续接失败：${String(error)}`,
-          "update",
-        )
-      });
-      logWorkspaceError("workflow:study_follow_up:interrupt_error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
+  const continuation = useStudyContinuation({
+    session: state.studySession, view: studyViewFenceRef.current,
+    busy: state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying,
+    ensureSessionForSection, sendHiddenSessionMessage, automaticStudyRequest,
+    onSession: (studySession) => {
+      activateStudySessionView(studySession);
+      dispatch({ type: "study_session_set", studySession, clearResponse: false });
+    },
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+  });
+  const { triggerSessionPrelude, interruptDialogue, isDialogueInterrupted, isContinuing } = continuation;
 
   useEffect(() => {
     void syncWorkspaceSnapshot({
@@ -791,106 +497,6 @@ export function useLearningWorkspaceController({
     };
   }, []);
 
-  useEffect(() => {
-    if (!state.studySession) {
-      return;
-    }
-    const session = state.studySession;
-    const studyUnitId = session.studyUnitId;
-    if (!studyUnitId || state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying) {
-      return;
-    }
-    void runSessionPrelude({
-      session,
-      studyUnitId,
-      sectionTitle: session.studyUnitTitle ?? session.studyUnitId,
-      themeHint: session.themeHint ?? "",
-      force: false,
-    });
-  }, [state.isBusy, isMutating, isQuerying, isNavigating, isSending, isApplying, state.studySession]);
-
-  useEffect(() => {
-    const session = state.studySession;
-    const timers = followUpTimerRef.current;
-    const pendingIds = new Set(
-      (session?.pendingFollowUps ?? [])
-        .filter((item) => item.status === "pending")
-        .map((item) => item.id)
-    );
-    Array.from(timers.keys()).forEach((id) => {
-      if (pendingIds.has(id)) {
-        return;
-      }
-      const timer = timers.get(id);
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-      }
-      timers.delete(id);
-    });
-    if (!session) {
-      return;
-    }
-    (session.pendingFollowUps ?? [])
-      .filter((item) => item.status === "pending")
-      .forEach((item) => {
-        if (timers.has(item.id) || followUpInFlightRef.current.has(item.id)) {
-          return;
-        }
-        const dueAt = Date.parse(item.dueAt || "");
-        const delay = Number.isFinite(dueAt) ? Math.max(0, dueAt - Date.now()) : 0;
-        const timer = window.setTimeout(() => {
-          timers.delete(item.id);
-          if (followUpInFlightRef.current.has(item.id)) {
-            return;
-          }
-          followUpInFlightRef.current.add(item.id);
-          void (async () => {
-            try {
-              dispatch({ type: "busy_started" });
-              const operationKey = `follow-up:${session.id}:${item.id}`;
-              const operationIdentity = automaticStudyRequest(
-                operationKey,
-                "follow-up",
-              );
-              await sendHiddenSessionMessage({
-                session,
-                operationKey,
-                ...operationIdentity,
-                message: item.hiddenMessage,
-                messageKind: "scheduled_follow_up",
-                followUpId: item.id,
-              });
-            } catch (error) {
-              if (String(error).includes("follow_up_not_pending")) {
-                return;
-              }
-              dispatch({
-                type: "notice_set",
-                notice: resolveStudySessionErrorNotice(
-                  error,
-                  `自动续接失败：${String(error)}`,
-                  "response",
-                ),
-              });
-              logWorkspaceError("workflow:study_follow_up:error", error);
-            } finally {
-              followUpInFlightRef.current.delete(item.id);
-              dispatch({ type: "busy_finished" });
-            }
-          })();
-        }, delay);
-        timers.set(item.id, timer);
-      });
-  }, [state.isBusy, isMutating, isQuerying, isNavigating, isSending, isApplying, state.studySession]);
-
-  useEffect(() => {
-    return () => {
-      const timers = followUpTimerRef.current;
-      Array.from(timers.values()).forEach((timer) => window.clearTimeout(timer));
-      timers.clear();
-    };
-  }, []);
-
 
   return {
     personas: state.personas,
@@ -909,7 +515,7 @@ export function useLearningWorkspaceController({
     studySession: state.studySession,
     response: state.response,
     notice: state.notice,
-    isBusy: state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying,
+    isBusy: state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying || isContinuing,
     chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
     isInterruptingPlan,
@@ -1051,42 +657,4 @@ function buildPlanDirectorySections(
   return sections.filter(
     (section, index) => sections.findIndex((candidate) => candidate.id === section.id) === index
   );
-}
-
-function buildInteractiveCallbackMessage(input: {
-  questionType: "multiple_choice" | "fill_blank";
-  prompt: string;
-  topic: string;
-  submittedAnswer: string;
-  isCorrect: boolean;
-  explanation: string;
-}) {
-  const verdict = input.isCorrect ? "正确" : "不正确";
-  return [
-    `学习者刚完成了一道${input.questionType === "multiple_choice" ? "选择题" : "填空题"}。`,
-    `题目：${input.prompt}`,
-    `主题：${input.topic || "章节练习"}`,
-    `学习者答案：${input.submittedAnswer || "（空）"}`,
-    `判定：${verdict}`,
-    input.explanation ? `解析：${input.explanation}` : "",
-    input.isCorrect
-      ? "请基于这次正确作答继续推进下一步讲解或追问。"
-      : "请先针对错误点做纠正，再继续推进下一步讲解或追问。"
-  ].filter(Boolean).join("\n");
-}
-
-function buildSessionPreludeMessage(input: {
-  sectionTitle: string;
-  themeHint: string;
-}) {
-  return [
-    "正式对话开始前，请先完成一轮隐藏的学习单元预处理和自然引入。",
-    `当前学习单元：${input.sectionTitle || "未命名学习单元"}`,
-    `当前主题：${input.themeHint || "未额外指定"}`,
-    "要求：",
-    "1. 如果需要，可先调用计划、场景、教材或时间相关工具，确认当前上下文。",
-    "2. 用 2 到 4 句自然地把学习者带入这一学习单元，说明你准备如何陪他学。",
-    "3. 如果场景、物体、教材页码或公式焦点有帮助，可以顺手把它们纳入引入。",
-    "4. 不要提到这是隐藏消息、预处理消息或内部流程。"
-  ].join("\n");
 }

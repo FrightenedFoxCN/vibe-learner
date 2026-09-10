@@ -99,3 +99,18 @@ test("an older committed receipt cannot roll back a newer Session projection", (
   assert.deepEqual(h.applied, []);
   assert.equal(h.view.session.revision, 7);
 });
+
+
+test("terminal automatic-message receipts clear only their own pending identity", () => {
+  for (const status of ["committed", "not_committed"]) {
+    const h = fixture();
+    const automatic = { ...draft, messageKind: "session_prelude" };
+    h.store.persistPendingStudyOperation(automatic);
+    act(() => {
+      const ticket = h.result.current.beginStudyResponseTicket(automatic);
+      h.result.current.applyStudyChatOperation(receipt(status), automatic, ticket);
+    });
+    assert.equal(h.store.readPendingStudyOperation(), null);
+    h.unmount();
+  }
+});

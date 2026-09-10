@@ -63,12 +63,11 @@ export function useStudyChatRecovery(options: StudyRecoveryOptions,
     draft: StudyChatDraft,
     ticket: AsyncResultTicket,
   ): boolean => {
-    const learnerOperation = draft.messageKind === "learner";
     try {
       if (
         !isCurrentStudyResponseTicket(ticket, receipt.clientRequestId)
       ) {
-        if (learnerOperation && receipt.status === "committed") {
+        if (receipt.status === "committed") {
           clearPendingStudyOperation(receipt);
         }
         logWorkspaceInfo("workflow:study_chat:stale_result_discarded", {
@@ -80,18 +79,14 @@ export function useStudyChatRecovery(options: StudyRecoveryOptions,
       if (receipt.status === "committed" && receipt.result) {
         const currentSession = view.session;
         if (currentSession?.id !== receipt.sessionId) {
-          if (learnerOperation) {
-            clearPendingStudyOperation(receipt);
-          }
+          clearPendingStudyOperation(receipt);
           return false;
         }
         if (currentSession.revision <= receipt.result.session.revision) {
           optionsRef.current.onExchange(receipt.result);
         }
         setChatFailure(null);
-        if (learnerOperation) {
-          clearPendingStudyOperation(receipt);
-        }
+        clearPendingStudyOperation(receipt);
         return true;
       }
 
@@ -111,12 +106,10 @@ export function useStudyChatRecovery(options: StudyRecoveryOptions,
         canResend,
         canRefreshSession: false,
       });
-      if (learnerOperation) {
-        if (receipt.status === "not_committed") {
-          clearPendingStudyOperation(receipt);
-        } else {
-          persistPendingStudyOperation(draft);
-        }
+      if (receipt.status === "not_committed") {
+        clearPendingStudyOperation(receipt);
+      } else {
+        persistPendingStudyOperation(draft);
       }
       return false;
     } finally {

@@ -23,6 +23,7 @@ test("refresh queries the original uncertain operation; manual read-back unlocks
   await page.addInitScript(({ id, unitId }) => {
     localStorage.setItem("vibe-learner:pending-study-chat-operation:v1", JSON.stringify({ sessionId: id, clientRequestId: "pending-learner", expectedSessionRevision: 1, messageKind: "learner", studyUnitId: unitId }));
   }, { id: h.session.id, unitId: h.unitId });
+  h.session.prepared_study_unit_ids = [];
   let committed = false;
   await page.route(`${api}/study-sessions/${h.session.id}/chat-operations/pending-learner`, route => route.fulfill({ json: h.operation(committed ? "committed" : "uncertain") }));
   await page.goto("/study");
@@ -31,7 +32,7 @@ test("refresh queries the original uncertain operation; manual read-back unlocks
   await expect(page.getByRole("button", { name: "请先查询本次请求结果", exact: true })).toBeDisabled();
   await page.reload();
   await expect(query).toBeVisible();
-  h.commitAnswer(); committed = true;
+  h.commitAnswer(); h.session.prepared_study_unit_ids = [h.unitId]; committed = true;
   await query.click();
   await expect(page.getByText("Recovered answer", { exact: true })).toBeVisible();
   await expect(query).toHaveCount(0);

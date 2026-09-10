@@ -145,6 +145,8 @@
 
 - [x] `useStudyCommitActions` 独立负责答案提交与计划确认的持久化投影，按 Turn/confirmation 合并重复写入，并核对完整答题 read-back 后才通知自动续问。Session/Study Unit 切换或卸载后旧结果不改变当前视图；计划确认不降低当前 Session revision。7 项独立 Hook 测试、Web 类型和可靠性聚合通过；公共答题样例迁入 `tests/support`。
 
+- [x] `useStudyContinuation` 独立持有章节预处理、答题续问、计时器与暂停状态；注入时钟/API/存储，timer 发送读取当前 Session revision，失败反馈不自行形成轮询。恢复中的 pending 操作阻止新的自动消息，已确认的自动终态只清理匹配身份；learner 完成只消费发送前带入的回调，保留在途新增答案。8 项续接模块、11 项存储/恢复测试以及 Web 类型/可靠性/构建和 21 项 Chromium 验收通过；浏览器增加未准备章节恢复 uncertain 的无额外 POST 断言。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

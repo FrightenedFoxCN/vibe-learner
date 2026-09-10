@@ -18,7 +18,7 @@ interface StudyMessageOptions {
   ensureSessionForSection: ReturnType<typeof useStudySessionNavigation>["ensureSessionForSection"];
   isDialogueInterruptedForSession: (id: string) => boolean;
   peekDeferredInteractiveCallbackPrefix: (id: string) => string;
-  clearInterruptedDialogueState: (id: string) => void;
+  clearInterruptedDialogueState: (id: string, consumedPrefix: string) => void;
   onNotice: (notice: string) => void;
 }
 export interface StudyMessagePort {
@@ -194,7 +194,7 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
         }
         return false;
       }
-      latest.current.clearInterruptedDialogueState(targetSession.id);
+      latest.current.clearInterruptedDialogueState(targetSession.id, draft.hiddenMessagePrefix ?? "");
       logWorkspaceInfo("workflow:study_chat:done", {
         sessionId: targetSession.id,
         citations: next.result?.citations.length ?? 0,
