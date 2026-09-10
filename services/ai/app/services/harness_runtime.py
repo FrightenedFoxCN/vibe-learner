@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.core.diagnostics import reference_harness
+from app.core.diagnostics import reference_harness, diagnostic_runtime_scope, set_diagnostic_execution
 
 from app.models.harness_runtime_commit import HarnessRuntimePreparedOutput, HarnessRuntimeFinalizeResult
 
@@ -175,6 +175,7 @@ class HarnessOperationRuntime:
         self.artifact_resolver = artifact_resolver
         self.clock = clock or (lambda: datetime.now(UTC))
 
+    @diagnostic_runtime_scope
     def execute(
         self,
         *,
@@ -196,6 +197,7 @@ class HarnessOperationRuntime:
             context=request.context,
             parent_trace_id=request.parent_trace_id,
         )
+        set_diagnostic_execution(execution)
         reference_harness(request.operation_binding)
         if execution.terminal_trace is not None:
             reference_harness(request.operation_binding, execution.terminal_trace)

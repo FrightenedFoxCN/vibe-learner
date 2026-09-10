@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
+from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 import queue
@@ -13,6 +14,30 @@ from uuid import uuid4
 from app.models.diagnostic import DiagnosticEventV1, DiagnosticHarnessReferenceV1, DiagnosticResourceReferenceV1
 
 correlation: ContextVar[dict[str, str]] = ContextVar("diagnostic_correlation", default={})
+
+active_harness: ContextVar[DiagnosticHarnessReferenceV1 | None] = ContextVar("active_diagnostic_harness", default=None)
+
+
+def diagnostic_runtime_scope(function):
+    @wraps(function)
+    def scoped(*args, **kwargs):
+        token = active_harness.set(None)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            active_harness.reset(token)
+    return scoped
+
+
+def set_diagnostic_execution(execution):
+    try:
+        active_harness.set(DiagnosticHarnessReferenceV1(
+            operation_id=execution.harness_operation_id, workflow=execution.workflow,
+            stage=execution.stage, trace_id=execution.trace_id,
+        ))
+    except Exception:
+        pass
+
 
 active_store: ContextVar["DiagnosticStore | None"] = ContextVar("active_diagnostic_store", default=None)
 

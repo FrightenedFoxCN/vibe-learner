@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from app.core.logging import get_logger
+from app.core.diagnostic_provider import ProviderObservation
 from app.services.model_recovery import record_model_recovery
 
 logger = get_logger("vibe_learner.provider_transport")
@@ -48,13 +49,16 @@ class ProviderTransport:
         model: str,
         invoke: Callable[[], Any],
     ) -> tuple[dict[str, Any], int]:
+        observation = ProviderObservation(request_kind, model, self.timeout_seconds)
         started_at = self.clock()
         attempt = 0
         while True:
             attempt += 1
+            observation.begin_attempt(attempt)
             try:
                 raw_result = invoke()
                 raw_payload = _normalize_litellm_payload(raw_result)
+                observation.end_attempt(raw_payload)
                 elapsed_ms = int((self.clock() - started_at) * 1000)
                 if attempt > 1:
                     self.record_recovery(
@@ -70,8 +74,10 @@ class ProviderTransport:
                         attempt,
                         elapsed_ms,
                     )
+                observation.finish()
                 return raw_payload, elapsed_ms
             except Exception as exc:
+                observation.end_attempt(failed=True)
                 if _is_litellm_retryable_error(exc, sdk=self.sdk) and attempt <= LITELLM_TRANSIENT_RETRY_COUNT:
                     retry_delay_seconds = min(0.4 * attempt, 1.2)
                     status_code, error_code, error_message = _extract_litellm_exception_details(exc)
@@ -91,6 +97,7 @@ class ProviderTransport:
                 mapped_error = self.map_error(exc, request_kind=request_kind)
                 if isinstance(mapped_error, ModelRequestError):
                     mapped_error.attempts = attempt
+                observation.finish(failed=True)
                 raise mapped_error from exc
 
     def map_error(self, exc: Exception, *, request_kind: str) -> RuntimeError:

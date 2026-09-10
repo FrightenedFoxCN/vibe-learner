@@ -5,13 +5,16 @@ export interface DiagnosticEventV1 {
   schema_version: "diagnostic-event-v1";
   event_id: string;
   source: "server" | "browser" | "desktop";
-  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference";
+  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed";
+  span_id?: string | null;
+  parent_span_id?: string | null;
+  provider_metric?: DiagnosticProviderMetricV1 | null;
   resource?: { resource_type: "persona"; resource_id: string; revision: number | null } | null;
   harness?: { operation_id: string; workflow: HarnessWorkflow; stage: HarnessStage; trace_id: string | null; attempt_id?: string | null; attempt_index?: number | null; phase?: HarnessAttemptPhase | null; attempt_status?: HarnessAttemptStatus | null } | null;
-  category: "transport" | "lifecycle" | "harness" | "resource";
+  category: "transport" | "lifecycle" | "harness" | "resource" | "provider";
   severity: "info" | "warning" | "error";
   outcome: "started" | "headers_received" | "completed" | "failed" | "cancelled" | "observed";
-  error_code: "transport_failure" | "http_error" | "cancelled" | null;
+  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | null;
   timestamp: string;
   request_id: string | null;
   client_instance_id: string | null;
@@ -34,6 +37,12 @@ export const DIAGNOSTIC_EVENT_CATALOG = {
   lifecycle_stopped: ["lifecycle", "info", "completed", null],
   harness_reference: ["harness", "info", "observed", null],
   resource_reference: ["resource", "info", "observed", null],
+  provider_started: ["provider", "info", "started", null],
+  provider_finished: ["provider", "info", "completed", null],
+  provider_failed: ["provider", "error", "failed", "provider_failure"],
+  provider_attempt_started: ["provider", "info", "started", null],
+  provider_attempt_finished: ["provider", "info", "completed", null],
+  provider_attempt_failed: ["provider", "error", "failed", "provider_failure"],
 } as const;
 
 export function classifyDiagnostic(name: DiagnosticEventV1["name"], statusCode: number | null = null):
@@ -70,4 +79,26 @@ export interface DiagnosticHarnessIndexV1 {
   provider: null; model: null; tokens: null; cost: null;
   usage_gap: "not_recorded_in_canonical_trace";
   correlation_gap: "resolve_request_links_separately";
+}
+
+
+export interface DiagnosticProviderMetricV1 {
+  adapter: "litellm";
+  adapter_contract: "diagnostic-provider-transport-v1";
+  request_kind: "plan" | "chat" | "setting" | "embedding" | "other";
+  model: string | null;
+  model_gap: "model_label_unreviewed" | null;
+  timeout_seconds: number;
+  max_attempts: 3;
+  attempt_index: number | null;
+  attempts_used: number;
+  recovered: boolean;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  total_tokens: number | null;
+  usage_source: "provider_reported" | "unavailable";
+  usage_gap: "not_returned" | "partial_or_invalid" | "aggregate_not_additive" | null;
+  cost: null;
+  cost_gap: "provider_cost_evidence_unavailable";
+  configuration_gap: "endpoint_configuration_not_recorded";
 }

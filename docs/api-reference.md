@@ -1283,3 +1283,17 @@ retained separately from the bounded event list. Missing links are reported as
 `no_correlation_recorded_or_retained`; historical requests are never fabricated
 from a recovered Harness trace. Index and link retention budgets remain part of
 the diagnostic audit stage.
+
+
+Server `provider_*` events describe the shared LiteLLM transport and carry a
+reviewed `provider_metric` whitelist. A parent call includes retries/backoff;
+child attempt durations must not be summed with it. Parent usage is null with
+`aggregate_not_additive`; each returned attempt can record provider-reported
+input/output/total token integers. Absent, negative, non-integer and unbounded
+values remain null with a gap, not zero or an estimate. Responses and chat usage
+keys are normalized without copying response content. Provider cost evidence and
+endpoint configuration remain explicitly unavailable. `span_id` and
+`parent_span_id` are diagnostic identities; the separate Harness reference uses
+the actual prepared execution and never a provider tool-call ID. Browser ingestion
+rejects provider metrics and event names. Existing TokenUsageService bookkeeping
+is unchanged; this observer does not create another usage receipt.

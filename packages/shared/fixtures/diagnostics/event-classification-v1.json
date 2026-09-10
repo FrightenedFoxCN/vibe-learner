@@ -358,5 +358,245 @@
       "outcome": "observed",
       "error_code": null
     }
+  },
+  {
+    "name": "provider_started",
+    "status_code": null,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_started",
+    "status_code": 200,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_started",
+    "status_code": 409,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_started",
+    "status_code": 503,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_finished",
+    "status_code": null,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_finished",
+    "status_code": 200,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_finished",
+    "status_code": 409,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_finished",
+    "status_code": 503,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_failed",
+    "status_code": null,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_attempt_started",
+    "status_code": null,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_started",
+    "status_code": 200,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_started",
+    "status_code": 409,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_started",
+    "status_code": 503,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_finished",
+    "status_code": null,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_finished",
+    "status_code": 200,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_finished",
+    "status_code": 409,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_finished",
+    "status_code": 503,
+    "classification": {
+      "category": "provider",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "provider_attempt_failed",
+    "status_code": null,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_attempt_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_attempt_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
+  },
+  {
+    "name": "provider_attempt_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "provider",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "provider_failure"
+    }
   }
 ]

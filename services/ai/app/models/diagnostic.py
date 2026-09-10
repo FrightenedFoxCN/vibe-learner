@@ -1,5 +1,6 @@
 """Content-free diagnostic hints; never authorization or commit evidence."""
 from typing import Annotated, Literal
+from app.models.diagnostic_provider import DiagnosticProviderMetricV1
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.models.harness import HarnessStage, HarnessWorkflow, HarnessAttemptPhase, HarnessAttemptStatus
 from app.models.harness_operation import HARNESS_OPERATION_ID_PATTERN
@@ -17,6 +18,12 @@ DIAGNOSTIC_EVENT_CATALOG = {
     "lifecycle_stopped": ("lifecycle", "info", "completed", None),
     "harness_reference": ("harness", "info", "observed", None),
     "resource_reference": ("resource", "info", "observed", None),
+    "provider_started": ("provider", "info", "started", None),
+    "provider_finished": ("provider", "info", "completed", None),
+    "provider_failed": ("provider", "error", "failed", "provider_failure"),
+    "provider_attempt_started": ("provider", "info", "started", None),
+    "provider_attempt_finished": ("provider", "info", "completed", None),
+    "provider_attempt_failed": ("provider", "error", "failed", "provider_failure"),
 }
 
 
@@ -63,13 +70,16 @@ class DiagnosticEventV1(BaseModel):
     schema_version: Literal["diagnostic-event-v1"] = "diagnostic-event-v1"
     event_id: Identity
     source: Literal["server", "browser", "desktop"]
-    name: Literal["request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference"]
+    name: Literal["request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference", "provider_started", "provider_finished", "provider_failed", "provider_attempt_started", "provider_attempt_finished", "provider_attempt_failed"]
+    span_id: Identity | None = None
+    parent_span_id: Identity | None = None
+    provider_metric: DiagnosticProviderMetricV1 | None = None
     harness: DiagnosticHarnessReferenceV1 | None = None
     resource: DiagnosticResourceReferenceV1 | None = None
-    category: Literal["transport", "lifecycle", "harness", "resource"]
+    category: Literal["transport", "lifecycle", "harness", "resource", "provider"]
     severity: Literal["info", "warning", "error"]
     outcome: Literal["started", "headers_received", "completed", "failed", "cancelled", "observed"]
-    error_code: Literal["transport_failure", "http_error", "cancelled"] | None
+    error_code: Literal["transport_failure", "http_error", "cancelled", "provider_failure"] | None
 
     @model_validator(mode="before")
     @classmethod

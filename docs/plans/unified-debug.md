@@ -19,6 +19,8 @@
   - 记录阶段、尝试、provider/tool 耗时、token 来源、预算、恢复和缺失数据；关联与终态索引支持重启补建和幂等去重。
   - 2026-09-10 索引切片：新增独立 `harness-index.sqlite3`，分页扫描 canonical runtime、原子保存 checkpoint 和受限指标投影，重启去重并周期补扫晚到提交；来源删除/异常有明确缺口。request→operation 关联单独持久化，事件列表清理后仍可查询。37 项诊断/index/生命周期/Harness runtime/commit 测试及 shared contracts/Web 类型门通过。模型、usage、费用当前诚实标记未被 canonical trace 记录；provider/tool 指标、完整流程覆盖、查询 UI 与性能量测仍待后续切片。
 
+  - 2026-09-10 Provider 切片：统一 LiteLLM transport 记录父调用和逐次重试 span、monotonic 耗时、timeout/max-attempts、恢复次数及严格 provider-reported token；缺失/非法 token 保持 null，父调用不重复携带子 usage。指标引用已 prepare 的真实 Harness trace，退出 runtime 后恢复上下文。37 项 provider/SDK/diagnostic/runtime 测试、4 项客户端分类测试及 shared contracts/Web 类型门通过；没有真实上游费用证据，不声明 cost 或完整 endpoint 配置覆盖。
+
 - [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。
