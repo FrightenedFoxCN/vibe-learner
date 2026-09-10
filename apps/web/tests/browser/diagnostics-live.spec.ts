@@ -219,3 +219,47 @@ test("Scene generation, candidate application and saves share flow with committe
   const references = await request.get(`http://127.0.0.1:18998/diagnostics/events?resource_type=scene&resource_id=${created.scene_id}`);
   expect((await references.json()).items).toHaveLength(2);
 });
+
+
+test("document upload, parsing, plan stream and initial Session share one real diagnostic action", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: false } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const sent: { path: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => {
+    if (item.method() === "POST" && item.url().startsWith("http://127.0.0.1:18998")) sent.push({ path: new URL(item.url()).pathname, headers: item.headers() });
+  });
+  await page.goto("/plan");
+  await page.getByLabel("教材文件（PDF）", { exact: true }).setInputFiles({
+    name: "diagnostic-document.pdf", mimeType: "application/pdf",
+    buffer: await readFile(new URL("./fixtures/diagnostic-document.pdf", import.meta.url)),
+  });
+  await page.getByRole("textbox", { name: "学习目标", exact: true }).fill("PRIVATE_PLAN_DIAGNOSTIC_SENTINEL learn observation and evidence");
+  const sessionResponse = page.waitForResponse(response => response.url().endsWith("/study-sessions") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "生成计划", exact: true }).click();
+  expect((await sessionResponse).status()).toBe(200);
+  const chain = sent.filter(item => item.path === "/documents" || item.path.endsWith("/process/stream") || item.path === "/learning-plans/stream" || item.path === "/study-sessions");
+  expect(chain).toHaveLength(4);
+  const flow = chain[0].headers["x-debug-flow-id"];
+  expect(flow).toBeTruthy();
+  expect(new Set(chain.map(item => item.headers["x-debug-flow-id"])).size).toBe(1);
+  expect(new Set(chain.map(item => item.headers["x-debug-action-id"])).size).toBe(1);
+  let events: any[] = [];
+  await expect.poll(async () => {
+    events = []; let after = 0;
+    for (let index = 0; index < 10; index++) {
+      const response = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${flow}&after=${after}`);
+      const result = await response.json(); events.push(...result.items.map((item: any) => item.event));
+      if (!result.has_more) break;
+      after = result.next_cursor;
+    }
+    return events.filter(item => item.source === "browser" && item.name === "request_finished").length;
+  }).toBe(4);
+  expect(new Set(events.filter(item => item.source === "server" && item.name === "request_finished").map(item => item.request_id)).size).toBe(4);
+  expect(events.some(item => item.harness?.workflow === "document_parse")).toBe(true);
+  expect(events.some(item => item.harness?.workflow === "planning")).toBe(true);
+  expect(JSON.stringify(events)).not.toContain("PRIVATE_PLAN_DIAGNOSTIC_SENTINEL");
+  expect(JSON.stringify(events)).not.toContain("diagnostic-document.pdf");
+  expect(JSON.stringify(events)).not.toContain("Observe a sample");
+});

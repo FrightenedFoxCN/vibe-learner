@@ -108,3 +108,26 @@ checks one flow/three actions, persisted resource revisions, content exclusion,
 and an actual CAS conflict without a new saved-resource event. Saved-scene load
 is a local library snapshot operation, not an HTTP reload. This slice does not
 close the remaining product flows, native gates or independent review.
+
+## Document and Planning action chain slice
+
+The main Plan Workspace action now passes one captured flow/action through
+upload → process stream → learning-plan stream → initial Study Session creation.
+Goal-only generation uses the same context owner. Cancellation, supersession and
+unmount capture the old flow/page with a separate cancellation action; a new run
+gets its own flow. The independent upload-and-process helper also shares one
+context. No diagnostic identity is added to model input or durable admission.
+
+Verification: eight Plan generation hook tests and the production Web build
+passed. Tests cover the four-step action across page replacement and old/new
+flow isolation during supersession. All five production Chromium diagnostic
+scenarios passed; the new one uploads the checked-in one-page synthetic PDF,
+executes actual parsing and mock-provider planning streams, creates a persisted
+Session, and verifies browser/server request identity plus Document/Planning
+Harness correlation. It excludes file name, PDF text and objective content from
+the diagnostic result. The first run stopped at a test locator before generation;
+the role-based locator was corrected and the entire suite rerun successfully.
+
+This proves the successful text-PDF main chain. OCR/failure diagnostic acceptance,
+other domain resource emitters, Study chat/question/attachment and Tavern flow
+wiring, native gates and the other outstanding audit items remain unfinished.

@@ -2,6 +2,7 @@ import { dom } from "./support/dom.js";
 import assert from "node:assert/strict";
 import { after, afterEach, test } from "node:test";
 import { act, cleanup, renderHook } from "@testing-library/react";
+import { registerDiagnosticPage } from "../lib/diagnostics.ts";
 import { usePlanGeneration } from "../hooks/use-plan-generation.ts";
 
 afterEach(cleanup);
@@ -143,4 +144,50 @@ test("document generation carries the parsed revision and bounds stream history"
   assert.equal(view.result.current.planStreamEvents.length, 120);
   assert.equal(view.result.current.processStreamStatus, "completed");
   assert.equal(view.result.current.planStreamStatus, "completed");
+});
+
+
+test("upload, parse, plan and session keep one action captured before page replacement", async () => {
+  const owner = registerDiagnosticPage("/plan"), parsing = deferred(), contexts = [];
+  const document = { id: "doc", studyUnits: [], updatedAt: "2026-09-10T00:00:00Z" };
+  const view = fixture({
+    uploadDocument: async (_file, options) => { contexts.push(options.diagnostic); return document; },
+    processDocumentStream: (_id, options) => { contexts.push(options.diagnostic); return parsing.promise; },
+    createLearningPlanStream: async (_goal, _event, options) => { contexts.push(options.diagnostic); return plan("planned"); },
+    createStudySession: async (_input, context) => { contexts.push(context); return { id: "session" }; },
+  });
+  let running;
+  await act(async () => { running = view.result.current.generatePlanWorkflow({ mode: "document", file: new File(["private"], "private.pdf"), objective: "private objective" }); });
+  assert.equal(contexts.length, 2);
+  const replacement = registerDiagnosticPage("/study"); owner.dispose();
+  await act(async () => { parsing.resolve(document); await running; });
+  assert.equal(contexts.length, 4);
+  assert.ok(contexts[0].flow_id);
+  assert.ok(contexts.every(context => context === contexts[0]));
+  assert.equal(contexts[3].page_view_id, owner.id);
+  assert.ok(!JSON.stringify(contexts).includes("private"));
+  replacement.dispose();
+});
+
+test("supersession cancellation retains old flow and page while the new run gets its own flow", async () => {
+  const page = registerDiagnosticPage("/plan"), requests = [], cancellations = [];
+  const view = fixture({
+    createLearningPlanStream: (_goal, event, options) => {
+      const pending = deferred(); requests.push({ ...pending, event, context: options.diagnostic }); return pending.promise;
+    },
+    cancelStreamRun: async (id, context) => { cancellations.push({ id, context }); },
+  });
+  let first, second;
+  act(() => { first = view.result.current.generatePlanWorkflow(input); });
+  act(() => requests[0].event({ stage: "working", operationId: "first-stream", payload: {} }));
+  const replacement = registerDiagnosticPage("/study"); page.dispose();
+  act(() => { second = view.result.current.generatePlanWorkflow(input); });
+  assert.equal(cancellations[0].id, "first-stream");
+  assert.equal(cancellations[0].context.flow_id, requests[0].context.flow_id);
+  assert.equal(cancellations[0].context.page_view_id, page.id);
+  assert.notEqual(cancellations[0].context.action_id, requests[0].context.action_id);
+  assert.notEqual(requests[1].context.flow_id, requests[0].context.flow_id);
+  assert.equal(requests[1].context.page_view_id, replacement.id);
+  await act(async () => { requests[0].resolve(plan("old")); requests[1].resolve(plan("new")); await first; await second; });
+  replacement.dispose();
 });

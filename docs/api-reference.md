@@ -1514,3 +1514,15 @@ No flow identity is persisted in the Scene/model proposal or local draft JSON.
 Scene library saves emit a safe `resource_reference` using the returned server
 record's `scene_id` and revision. Validation/CAS failures emit no saved reference;
 a diagnostic allocation/write failure cannot alter the Scene save result.
+
+
+Plan Workspace generation captures one diagnostic flow/action before upload or
+planning starts. Document upload, document process stream, learning-plan stream
+and initial Study Session creation reuse that captured context, including the
+originating page-view identity. Goal-only generation uses the same mechanism.
+Cancellation captures the old operation's flow/page and allocates a separate
+action before a replacement run installs its own context. Unmount/supersession
+therefore cannot associate old cancellation requests with the new run. These IDs
+are diagnostic metadata, separate from durable learning-plan request admission.
+The standalone upload-and-process API helper also shares one context across its
+two requests. Neither HTTP nor stream completion becomes extra commit evidence.

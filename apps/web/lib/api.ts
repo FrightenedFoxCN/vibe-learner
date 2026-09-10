@@ -1,4 +1,4 @@
-import { diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
+import { createDiagnosticId, diagnosticContext, diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
@@ -1420,7 +1420,7 @@ export async function getDocumentPlanEvents(documentId: string): Promise<StreamR
 
 export async function uploadDocument(
   file: File,
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal; diagnostic?: DiagnosticContext }
 ): Promise<DocumentRecord> {
   const form = new FormData();
   form.append("file", file);
@@ -1428,19 +1428,21 @@ export async function uploadDocument(
       method: "POST",
       body: form,
       signal: options?.signal,
-    });
+    }, options?.diagnostic);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeDocument(payload));
 }
 
 export async function uploadAndProcessDocument(file: File): Promise<DocumentRecord> {
-  const uploaded = await uploadDocument(file);
-  return processDocument(uploaded.id);
+  const diagnostic = diagnosticContext(createDiagnosticId());
+  const uploaded = await uploadDocument(file, { diagnostic });
+  return processDocument(uploaded.id, { diagnostic });
 }
 
 export async function processDocument(
   documentId: string,
   options?: {
+    diagnostic?: DiagnosticContext;
     forceOcr?: boolean;
   }
 ): Promise<DocumentRecord> {
@@ -1452,7 +1454,7 @@ export async function processDocument(
       body: JSON.stringify({
         force_ocr: Boolean(options?.forceOcr)
       })
-    });
+    }, options?.diagnostic);
   const payload = await readJson<unknown>(diagnosticResponse);
   const decoded = diagnosticDecode(diagnosticResponse, () => decodeDocumentRecord(payload, documentId, "document", true));
   return {
@@ -1464,6 +1466,7 @@ export async function processDocument(
 export async function processDocumentStream(
   documentId: string,
   options: {
+    diagnostic?: DiagnosticContext;
     forceOcr?: boolean;
     signal?: AbortSignal;
   },
@@ -1478,7 +1481,7 @@ export async function processDocumentStream(
     body: JSON.stringify({
       force_ocr: Boolean(options.forceOcr)
     })
-  });
+  }, options?.diagnostic);
   if (!response.ok || !response.body) {
     const text = await response.text();
     throw new Error(text || `HTTP ${response.status}`);
@@ -1649,7 +1652,7 @@ export async function deleteLearningPlan(planId: string): Promise<void> {
 export async function createLearningPlanStream(
   goal: LearningGoal,
   onEvent: (event: StreamEvent) => void,
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal; diagnostic?: DiagnosticContext }
 ): Promise<LearningPlan> {
   const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
@@ -1668,7 +1671,7 @@ export async function createLearningPlanStream(
       scene_profile_summary: sceneSummary,
       scene_profile: serializeSceneProfile(goal.sceneProfile)
     })
-  });
+  }, options?.diagnostic);
   if (!response.ok || !response.body) {
     const text = await response.text();
     throw new Error(text || `HTTP ${response.status}`);
@@ -1713,7 +1716,7 @@ export async function createStudySession(input: {
   studyUnitId: string;
   studyUnitTitle?: string;
   themeHint?: string;
-}): Promise<StudySessionRecord> {
+}, context?: DiagnosticContext): Promise<StudySessionRecord> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions`, {
       method: "POST",
       headers: {
@@ -1730,7 +1733,7 @@ export async function createStudySession(input: {
         section_title: input.studyUnitTitle ?? "",
         theme_hint: input.themeHint ?? ""
       })
-    });
+    }, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, {
     expectedDocumentId: input.documentId,
@@ -1740,11 +1743,11 @@ export async function createStudySession(input: {
   }));
 }
 
-export async function cancelStreamRun(streamId: string): Promise<void> {
+export async function cancelStreamRun(streamId: string, context?: DiagnosticContext): Promise<void> {
   await readJson<{ stream_id: string }>(
     await request(`${AI_BASE_URL()}/stream-runs/${streamId}/cancel`, {
       method: "POST",
-    })
+    }, context)
   );
 }
 

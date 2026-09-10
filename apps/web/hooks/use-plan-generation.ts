@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { DocumentRecord, LearningPlan, SceneProfile, StudySessionRecord } from "@vibe-learner/shared";
+import { createDiagnosticId, diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { uploadDocument, processDocumentStream } from "../lib/data/documents";
 import { cancelStreamRun, createLearningPlanStream } from "../lib/data/learning-plans";
 import { createStudySession } from "../lib/data/study-sessions";
@@ -48,6 +49,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
   const [planStreamStatus, setPlanStreamStatus] = useState("idle");
   const [processStreamDocumentId, setProcessStreamDocumentId] = useState("");
   const [planStreamDocumentId, setPlanStreamDocumentId] = useState("");
+  const generationDiagnosticRef = useRef<DiagnosticContext | null>(null);
   const generationAbortControllerRef = useRef<AbortController | null>(null);
   const processStreamIdRef = useRef("");
   const planStreamIdRef = useRef("");
@@ -56,8 +58,10 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
 
   const stopActiveOperation = async () => {
     const streams = new Set([processStreamIdRef.current, planStreamIdRef.current].map(id => id.trim()).filter(Boolean));
+    const diagnostic = generationDiagnosticRef.current;
+    const cancellation = diagnostic ? { ...diagnostic, action_id: createDiagnosticId() } : undefined;
     generationAbortControllerRef.current?.abort();
-    await Promise.allSettled([...streams].map(id => port.cancelStreamRun(id)));
+    await Promise.allSettled([...streams].map(id => port.cancelStreamRun(id, cancellation)));
   };
 
   useEffect(() => {
@@ -66,6 +70,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
       mountedRef.current = false;
       void stopActiveOperation();
       generationAbortControllerRef.current = null;
+      generationDiagnosticRef.current = null;
     };
   }, []);
 
@@ -83,6 +88,8 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
       return;
     }
     void stopActiveOperation();
+    const diagnostic = diagnosticContext(createDiagnosticId());
+    generationDiagnosticRef.current = diagnostic;
     const abortController = new AbortController();
     generationAbortControllerRef.current = abortController;
     processStreamIdRef.current = "";
@@ -110,7 +117,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         });
 
         const uploadedDocument = await port.uploadDocument(input.file, {
-          signal: abortController.signal,
+          signal: abortController.signal, diagnostic,
         });
         abortController.signal.throwIfAborted();
         setProcessStreamDocumentId(uploadedDocument.id);
@@ -124,7 +131,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         nextDocument = await port.processDocumentStream(
           uploadedDocument.id,
           {
-            signal: abortController.signal,
+            signal: abortController.signal, diagnostic,
           },
           (event) => {
             if (!ownsOperation(abortController) || abortController.signal.aborted) return;
@@ -201,7 +208,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
           });
         },
         {
-          signal: abortController.signal,
+          signal: abortController.signal, diagnostic,
         }
       );
       abortController.signal.throwIfAborted();
@@ -215,7 +222,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
         const nextSession = await port.createStudySession({
           ...buildInitialStudySessionInput({ plan: nextPlan, document: nextDocument, planId: nextPlan.id, personaId: options.personaId }),
           sceneProfile,
-        });
+        }, diagnostic);
         if (
           !ownsOperation(abortController) || abortController.signal.aborted || !isCurrentPlanView()
         ) {
@@ -253,6 +260,7 @@ export function usePlanGeneration(options: PlanGenerationOptions, port: PlanGene
     } finally {
       if (ownsOperation(abortController)) {
         generationAbortControllerRef.current = null;
+        generationDiagnosticRef.current = null;
         processStreamIdRef.current = "";
         planStreamIdRef.current = "";
         setIsInterruptingPlan(false);
