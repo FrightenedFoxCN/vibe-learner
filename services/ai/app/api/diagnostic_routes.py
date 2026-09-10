@@ -80,3 +80,12 @@ def query_harness_index(request: Request, after: str = Query("", max_length=160)
 @router.get("/operation-links")
 def query_operation_links(request: Request, operation_id: Identity, after: str = Query("", max_length=96), limit: int = Query(100, ge=1, le=100)):
     return request.app.state.diagnostics.operation_links(operation_id, after, limit)
+
+
+@router.get("/writers")
+def query_writers(request: Request, after: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=100)):
+    try:
+        return request.app.state.diagnostics.writer_coverage.query(after, limit)
+    except Exception:
+        request.app.state.diagnostics.read_failures += 1
+        raise HTTPException(503, "diagnostic_writer_coverage_unavailable") from None

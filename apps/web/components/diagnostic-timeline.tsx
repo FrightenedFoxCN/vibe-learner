@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from "react";
-import type { DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1 } from "@vibe-learner/shared";
-import { queryDiagnosticEvents, queryDiagnosticIndex, queryDiagnosticLinks } from "../lib/diagnostic-query";
+import type { DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1, DiagnosticWriterEpochV1 } from "@vibe-learner/shared";
+import { queryDiagnosticEvents, queryDiagnosticIndex, queryDiagnosticLinks, queryDiagnosticWriters } from "../lib/diagnostic-query";
 import { currentDiagnosticPage, subscribeDiagnosticPage } from "../lib/diagnostics";
 import { useDiagnosticPages } from "../hooks/use-diagnostic-pages";
 import schemas from "../../../packages/shared/fixtures/diagnostics/query-schemas-v1.json";
@@ -82,10 +82,25 @@ function IndexResults({ filters }: { filters: DiagnosticEventFilters }) {
     {operation && <OperationDetails key={operation} operationId={operation} />}
   </>;
 }
+const writerId = (row: DiagnosticWriterEpochV1) => row.epoch_id;
+function WriterResults() {
+  const query = useCallback((after: number, signal: AbortSignal) => queryDiagnosticWriters(after, signal), []);
+  const state = useDiagnosticPages(query, 0 as number, writerId, 500);
+  return <section aria-label="采集覆盖">
+    <h3>采集覆盖</h3>
+    <p>这是本安装的写入器检查点，不使用事件筛选。计数为已观察下限；启动前及未落盘队列的损失无法完整重建。</p>
+    <Status loading={state.loading} error={state.error} count={state.items.length} />
+    <button style={button} onClick={state.refresh} disabled={state.loading}>刷新采集覆盖</button>
+    {state.page && <p>已观察丢弃 {state.page.totals.observed_dropped}；写入失败 {state.page.totals.observed_write_failures}；读取失败 {state.page.totals.observed_read_failures}；未记录关闭 {state.page.totals.unclosed_epochs}；已汇总旧记录 {state.page.totals.retired_epochs}（其中未记录关闭 {state.page.totals.retired_unclosed}）。未关闭可能表示仍在运行或已中断，不代表已证实崩溃。</p>}
+    {state.items.map(item => <details key={item.epoch_id} style={card}><summary>写入器 #{item.sequence} · {item.closed_at === null ? "无关闭记录" : "已记录关闭"}</summary><pre style={pre}>{JSON.stringify(item, null, 2)}</pre></details>)}
+    {state.page?.has_more && <button style={button} disabled={state.loading || state.atCapacity} onClick={state.more}>读取下一页写入器</button>}
+    {state.atCapacity && <p>已达到本次显示上限，请刷新读取当前保留记录。</p>}
+  </section>;
+}
 export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnly?: boolean }) {
   const page = useSyncExternalStore(subscribeDiagnosticPage, currentDiagnosticPage, emptyPage);
   const [filters, setFilters] = useState<DiagnosticEventFilters>({});
-  const [mode, setMode] = useState<"events" | "index">("events");
+  const [mode, setMode] = useState<"events" | "index" | "writers">("events");
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.currentTarget));
@@ -108,8 +123,8 @@ export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnl
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>开始时间（本地）<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} type="datetime-local" name="since" /></label><label style={{ display: "grid", gap: 4, minWidth: 0 }}>结束时间（本地）<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} type="datetime-local" name="until" /></label>
         <button style={button} type="submit">应用筛选</button>
       </form>
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}><button style={button} aria-pressed={mode === "events"} onClick={() => setMode("events")}>事件时间线</button><button style={button} aria-pressed={mode === "index"} onClick={() => setMode("index")}>Harness 索引</button></div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}><button style={button} aria-pressed={mode === "events"} onClick={() => setMode("events")}>事件时间线</button><button style={button} aria-pressed={mode === "index"} onClick={() => setMode("index")}>Harness 索引</button><button style={button} aria-pressed={mode === "writers"} onClick={() => setMode("writers")}>采集覆盖</button></div>
     </>}
-    {currentPageOnly && !page?.id ? <p>当前页面尚未注册诊断身份。</p> : mode === "events" || currentPageOnly ? <EventResults key={JSON.stringify(effective)} filters={effective} /> : <IndexResults key={JSON.stringify(filters)} filters={filters} />}
+    {currentPageOnly && !page?.id ? <p>当前页面尚未注册诊断身份。</p> : mode === "events" || currentPageOnly ? <EventResults key={JSON.stringify(effective)} filters={effective} /> : mode === "index" ? <IndexResults key={JSON.stringify(filters)} filters={filters} /> : <WriterResults />}
   </section>;
 }

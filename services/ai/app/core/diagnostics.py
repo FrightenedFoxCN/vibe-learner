@@ -92,6 +92,8 @@ class DiagnosticQueryUnavailable(RuntimeError):
 class DiagnosticStore:
     def __init__(self, path: Path, capacity: int = 1000, *, retention=None):
         from app.core.diagnostic_retention import DiagnosticEventRetention
+        from app.core.diagnostic_writer_coverage import DiagnosticWriterCoverage
+        self.writer_coverage = DiagnosticWriterCoverage(path, uuid4().hex)
         self.retention = retention or DiagnosticEventRetention()
         self.path = path
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
@@ -242,6 +244,8 @@ class DiagnosticStore:
                 for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
                     db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
                 self.retention.initialize(db)
+                self.writer_coverage.initialize(db)
+                self._observe_writer(db)
                 db.commit()
                 last_cleanup = 0.0
                 while not self._stop.is_set() or not self.queue.empty():
@@ -253,6 +257,7 @@ class DiagnosticStore:
                         if time.monotonic() - last_cleanup >= 60:
                             try:
                                 self.retention.prune(db)
+                                self._observe_writer(db)
                                 db.commit()
                             except Exception:
                                 db.rollback()
@@ -270,6 +275,7 @@ class DiagnosticStore:
                                        (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
                         # Retention and loss evidence commit with the event.
                         self.retention.prune(db)
+                        self._observe_writer(db)
                         db.commit()
                     except Exception:
                         self.write_failures += 1
@@ -277,12 +283,19 @@ class DiagnosticStore:
                         db.rollback()
                     finally:
                         self.queue.task_done()
+                self._observe_writer(db, closed=True)
+                db.commit()
         except Exception:
             self.write_failures += 1
         finally:
             with self._admission:
                 self._accepting = False
                 self._discard_pending()
+
+    def _observe_writer(self, db, *, closed=False):
+        with self._admission:
+            counters = dict(dropped=self.dropped, write_failures=self.write_failures, read_failures=self.read_failures)
+        self.writer_coverage.observe(db, **counters, closed=closed)
 
     def close(self):
         with self._admission:

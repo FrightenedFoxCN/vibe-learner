@@ -276,5 +276,36 @@
       "method": null,
       "route": null
     }
-  ]
+  ],
+  "writers": {
+    "schema_version": "diagnostic-writer-coverage-v1",
+    "items": [
+      {
+        "sequence": 1,
+        "epoch_id": "7823606230d146f3b1751766fb8ebd44",
+        "started_at": 1789027638,
+        "observed_at": 1789027638,
+        "closed_at": 1789027638,
+        "observed_dropped": 0,
+        "observed_write_failures": 0,
+        "observed_read_failures": 0
+      }
+    ],
+    "next_cursor": 1,
+    "has_more": false,
+    "totals": {
+      "retired_epochs": 0,
+      "retired_unclosed": 0,
+      "retained_epochs": 1,
+      "unclosed_epochs": 0,
+      "observed_dropped": 0,
+      "observed_write_failures": 0,
+      "observed_read_failures": 0
+    },
+    "counts_are_lower_bounds": true,
+    "unpersisted_queue_gap": true,
+    "startup_before_epoch_gap": true,
+    "unclosed_meaning": "active_or_interrupted",
+    "complete_collection_claim": false
+  }
 }

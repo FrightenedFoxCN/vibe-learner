@@ -102,3 +102,16 @@ test("retention gaps are visible and cannot masquerade as complete history", asy
   assert.ok(view.container.textContent.includes("本次游标范围存在清理缺口"));
   assert.ok(view.container.textContent.includes("原始入库时间未知"));
 });
+
+
+test("writer coverage is lazy and explains unrecorded closure without claiming a crash", async () => {
+  const calls = [];
+  globalThis.fetch = async url => { calls.push(url); return Response.json(url.includes("/writers?") ? fixture.writers : fixture.events); };
+  const view = render(<DiagnosticTimeline />);
+  await waitFor(() => assert.equal(calls.length, 1));
+  assert.ok(!calls[0].includes("/writers?"));
+  fireEvent.click(view.getByRole("button", { name: "采集覆盖", exact: true }));
+  await waitFor(() => assert.ok(view.container.textContent.includes("不代表已证实崩溃")));
+  assert.ok(calls.at(-1).includes("/writers?"));
+  assert.ok(view.container.textContent.includes("计数为已观察下限"));
+});

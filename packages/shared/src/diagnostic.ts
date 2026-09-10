@@ -207,3 +207,26 @@ export interface DiagnosticOperationLinkV1 {
   workflow?: HarnessWorkflow | null;
   stage?: HarnessStage | null;
 }
+
+export interface DiagnosticWriterEpochV1 {
+  sequence: number;
+  epoch_id: string;
+  started_at: number;
+  observed_at: number;
+  closed_at: number | null;
+  observed_dropped: number;
+  observed_write_failures: number;
+  observed_read_failures: number;
+}
+export interface DiagnosticWriterCoverageV1 {
+  schema_version: "diagnostic-writer-coverage-v1";
+  items: DiagnosticWriterEpochV1[];
+  next_cursor: number;
+  has_more: boolean;
+  totals: { retired_epochs: number; retired_unclosed: number; retained_epochs: number; unclosed_epochs: number; observed_dropped: number; observed_write_failures: number; observed_read_failures: number };
+  counts_are_lower_bounds: true;
+  unpersisted_queue_gap: true;
+  startup_before_epoch_gap: true;
+  unclosed_meaning: "active_or_interrupted";
+  complete_collection_claim: false;
+}

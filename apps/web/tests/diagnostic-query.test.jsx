@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { decodeDiagnosticEvents, decodeDiagnosticIndex, decodeDiagnosticLinks, queryDiagnosticEvents, DiagnosticQueryError } from "../lib/diagnostic-query.ts";
+import { decodeDiagnosticWriters, decodeDiagnosticEvents, decodeDiagnosticIndex, decodeDiagnosticLinks, queryDiagnosticEvents, DiagnosticQueryError } from "../lib/diagnostic-query.ts";
 import { diagnosticSnapshot } from "../lib/diagnostics.ts";
 const fixture = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/query-pages-v1.json", import.meta.url), "utf8"));
 const copy = name => structuredClone(fixture[name]);
@@ -96,5 +96,20 @@ test("retention coverage cannot falsify gaps or report fewer rows than its page"
   ]) {
     const page = copy("events"); mutate(page);
     assert.throws(() => decodeDiagnosticEvents(page), DiagnosticQueryError);
+  }
+});
+
+
+test("writer coverage keeps lower-bound and unclosed semantics strict", () => {
+  assert.deepEqual(decodeDiagnosticWriters(copy("writers")), fixture.writers);
+  for (const mutate of [
+    page => { page.complete_collection_claim = true; },
+    page => { page.unpersisted_queue_gap = false; },
+    page => { page.totals.unclosed_epochs = page.totals.retained_epochs + 1; },
+    page => { page.items[0].epoch_id = "PRIVATE_SECRET"; },
+    page => { page.next_cursor += 1; },
+  ]) {
+    const page = copy("writers"); mutate(page);
+    assert.throws(() => decodeDiagnosticWriters(page), DiagnosticQueryError);
   }
 });

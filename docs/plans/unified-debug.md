@@ -54,6 +54,8 @@
 
   - 2026-09-10 故障隔离切片：诊断 writer/index/spool 线程启动失败不阻断业务生命周期；重复启动不产生额外 writer，终止后拒收并清空未处理队列，失败事件事务回滚后可继续写入。34 项后端回归通过，其中真实应用在三个诊断线程均启动失败时仍完成设置持久化、人格生成与 canonical Harness 终态；重启读回和队列记账也通过。丢弃/失败计数目前仍为进程内状态，跨崩溃 writer epoch 和持久覆盖证据尚待下一步。
 
+  - 2026-09-10 writer 覆盖切片：每个实际 async writer 保存独立 epoch，逐事务/空闲/正常关闭记录已观察计数；保留 256 行，旧行以同事务汇总计数替代。没有关闭记录仅表示 active-or-interrupted；线程启动前、未落盘队列及检查点间丢失继续明确标为未知，拒绝完整采集声明。新增 `/diagnostics/writers` 与按需“采集覆盖”视图。38 项后端测试（含真实进程退出/重启、退休汇总和损坏记录拒绝）、8 项查询/6 项时间线测试、Web 类型、生产构建及 3 项 Chromium 场景通过。总体磁盘治理、诊断导出、统计与开销量测仍待完成。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

@@ -93,6 +93,11 @@ test("global timeline loads on demand, expands canonical links and reports unava
   await requestDetails.getByRole("button", { name: "查看关联请求事件" }).click();
   await expect.poll(() => reads.some(url => url.includes("/diagnostics/events?") && new URL(url).searchParams.has("request_id"))).toBe(true);
   await timeline.getByRole("button", { name: "收起 operation 关联" }).click();
+  await timeline.getByRole("button", { name: "采集覆盖", exact: true }).click();
+  await expect(timeline.getByRole("region", { name: "采集覆盖" })).toContainText("计数为已观察下限");
+  await expect.poll(() => reads.some(url => url.includes("/diagnostics/writers?"))).toBe(true);
+  await timeline.getByRole("button", { name: "事件时间线", exact: true }).click();
+  await expect(timeline.getByRole("button", { name: "刷新诊断" })).toBeEnabled();
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

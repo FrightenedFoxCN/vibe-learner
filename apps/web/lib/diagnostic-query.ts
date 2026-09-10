@@ -1,4 +1,4 @@
-import type { DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1 } from "@vibe-learner/shared";
+import type { DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1, DiagnosticWriterCoverageV1 } from "@vibe-learner/shared";
 import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
 import schemas from "../../../packages/shared/fixtures/diagnostics/query-schemas-v1.json";
 import { getAiBaseUrl } from "./runtime-config";
@@ -175,4 +175,23 @@ export async function queryDiagnosticIndex(filters: Pick<DiagnosticEventFilters,
 }
 export async function queryDiagnosticLinks(operationId: string, after = "", signal?: AbortSignal) {
   return decodeDiagnosticLinks(await query("operation-links", { operation_id: operationId, after, limit: 100 }, signal), operationId, after);
+}
+
+
+export function decodeDiagnosticWriters(raw: unknown, after = 0): DiagnosticWriterCoverageV1 {
+  validate(raw, schemas.writers, schemas.writers);
+  const value = raw as DiagnosticWriterCoverageV1;
+  page(value.items, value.next_cursor, after, value.has_more);
+  const ids = new Set<string>();
+  let previous = after;
+  for (const item of value.items) {
+    if (item.sequence <= previous || ids.has(item.epoch_id)) invalid();
+    previous = item.sequence;
+    ids.add(item.epoch_id);
+  }
+  if (previous !== value.next_cursor || value.totals.unclosed_epochs > value.totals.retained_epochs || value.totals.retired_unclosed > value.totals.retired_epochs) invalid();
+  return value;
+}
+export async function queryDiagnosticWriters(after = 0, signal?: AbortSignal) {
+  return decodeDiagnosticWriters(await query("writers", { after, limit: 100 }, signal), after);
 }

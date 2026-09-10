@@ -17,9 +17,10 @@ class DiagnosticQueryTests(unittest.TestCase):
     def test_browser_query_schemas_match_current_backend_models(self):
         from app.models.diagnostic import DiagnosticOperationLinkV1
         from app.models.diagnostic_index import DiagnosticHarnessIndexV1
+        from app.models.diagnostic_writer import DiagnosticWriterCoverageV1
         root = Path(__file__).parents[3] / "packages/shared/fixtures/diagnostics"
         expected = {name: model.model_json_schema() for name, model in (
-            ("event", DiagnosticEventV1), ("index", DiagnosticHarnessIndexV1), ("link", DiagnosticOperationLinkV1))}
+            ("event", DiagnosticEventV1), ("index", DiagnosticHarnessIndexV1), ("link", DiagnosticOperationLinkV1), ("writers", DiagnosticWriterCoverageV1))}
         self.assertEqual(json.loads((root / "query-schemas-v1.json").read_text()), expected)
         samples = json.loads((root / "query-pages-v1.json").read_text())
         for event in [samples["events"]["items"][0]["event"], *samples["metrics"]]:

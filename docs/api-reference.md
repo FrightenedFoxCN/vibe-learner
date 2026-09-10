@@ -1430,6 +1430,28 @@ writer rejects new queue admissions, counts discarded queued events, and
 balances queue completion bookkeeping. A failed event transaction is rolled
 back and counted before the next event can proceed. Query-only native spool
 persistence retains its separate synchronous acknowledgement boundary.
-These failure/drop counters remain process-local and are not yet durable
-writer-epoch coverage. A timed-out join does not claim a fully flushed writer;
+Live `health` counters remain process-local. The `/diagnostics/writers`
+checkpoints below retain their observed lower bounds across restarts. A timed-out join does not claim a fully flushed writer;
 `writer_alive` continues to report its observed thread state.
+
+
+`GET /diagnostics/writers?after=0&limit=100` returns
+`diagnostic-writer-coverage-v1`: ascending epoch records, a cursor/lookahead and
+retained/retired totals. One actual async writer start allocates a fresh diagnostic
+epoch; event transactions, idle maintenance and normal shutdown checkpoint its
+observed loss/read/write counters. Shutdown records closure only after the writer
+loop drains. An abrupt process exit leaves the prior checkpoint unclosed.
+Unclosed means **active or interrupted**, not independently proven crash.
+
+At most 256 epoch rows are retained. Older rows are transactionally replaced by
+cumulative lower-bound totals, including the count retired without a closure
+record. A still-active retired writer can subsequently perform work absent from
+those totals; queue losses before a checkpoint and startup failures before an
+epoch cannot be reconstructed. Consequently `counts_are_lower_bounds`,
+`unpersisted_queue_gap`, and `startup_before_epoch_gap` are always true, and
+`complete_collection_claim` is always false. Corrupt/unavailable coverage returns
+503 with a fixed code, never stored input or exception text.
+
+The global Debug “采集覆盖” view reads this endpoint only when selected. It
+explicitly separates observed counters from unknown collection coverage and does
+not apply event filters to installation-level epoch records.

@@ -1435,5 +1435,191 @@
     ],
     "title": "DiagnosticOperationLinkV1",
     "type": "object"
+  },
+  "writers": {
+    "$defs": {
+      "DiagnosticWriterEpochV1": {
+        "additionalProperties": false,
+        "properties": {
+          "sequence": {
+            "minimum": 1,
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "epoch_id": {
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Epoch Id",
+            "type": "string"
+          },
+          "started_at": {
+            "minimum": 0,
+            "title": "Started At",
+            "type": "integer"
+          },
+          "observed_at": {
+            "minimum": 0,
+            "title": "Observed At",
+            "type": "integer"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "observed_dropped": {
+            "minimum": 0,
+            "title": "Observed Dropped",
+            "type": "integer"
+          },
+          "observed_write_failures": {
+            "minimum": 0,
+            "title": "Observed Write Failures",
+            "type": "integer"
+          },
+          "observed_read_failures": {
+            "minimum": 0,
+            "title": "Observed Read Failures",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sequence",
+          "epoch_id",
+          "started_at",
+          "observed_at",
+          "closed_at",
+          "observed_dropped",
+          "observed_write_failures",
+          "observed_read_failures"
+        ],
+        "title": "DiagnosticWriterEpochV1",
+        "type": "object"
+      },
+      "DiagnosticWriterTotalsV1": {
+        "additionalProperties": false,
+        "properties": {
+          "retired_epochs": {
+            "minimum": 0,
+            "title": "Retired Epochs",
+            "type": "integer"
+          },
+          "retired_unclosed": {
+            "minimum": 0,
+            "title": "Retired Unclosed",
+            "type": "integer"
+          },
+          "retained_epochs": {
+            "minimum": 0,
+            "title": "Retained Epochs",
+            "type": "integer"
+          },
+          "unclosed_epochs": {
+            "minimum": 0,
+            "title": "Unclosed Epochs",
+            "type": "integer"
+          },
+          "observed_dropped": {
+            "minimum": 0,
+            "title": "Observed Dropped",
+            "type": "integer"
+          },
+          "observed_write_failures": {
+            "minimum": 0,
+            "title": "Observed Write Failures",
+            "type": "integer"
+          },
+          "observed_read_failures": {
+            "minimum": 0,
+            "title": "Observed Read Failures",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "retired_epochs",
+          "retired_unclosed",
+          "retained_epochs",
+          "unclosed_epochs",
+          "observed_dropped",
+          "observed_write_failures",
+          "observed_read_failures"
+        ],
+        "title": "DiagnosticWriterTotalsV1",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": "diagnostic-writer-coverage-v1",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "items": {
+        "items": {
+          "$ref": "#/$defs/DiagnosticWriterEpochV1"
+        },
+        "maxItems": 100,
+        "title": "Items",
+        "type": "array"
+      },
+      "next_cursor": {
+        "minimum": 0,
+        "title": "Next Cursor",
+        "type": "integer"
+      },
+      "has_more": {
+        "title": "Has More",
+        "type": "boolean"
+      },
+      "totals": {
+        "$ref": "#/$defs/DiagnosticWriterTotalsV1"
+      },
+      "counts_are_lower_bounds": {
+        "const": true,
+        "title": "Counts Are Lower Bounds",
+        "type": "boolean"
+      },
+      "unpersisted_queue_gap": {
+        "const": true,
+        "title": "Unpersisted Queue Gap",
+        "type": "boolean"
+      },
+      "startup_before_epoch_gap": {
+        "const": true,
+        "title": "Startup Before Epoch Gap",
+        "type": "boolean"
+      },
+      "unclosed_meaning": {
+        "const": "active_or_interrupted",
+        "title": "Unclosed Meaning",
+        "type": "string"
+      },
+      "complete_collection_claim": {
+        "const": false,
+        "title": "Complete Collection Claim",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "schema_version",
+      "items",
+      "next_cursor",
+      "has_more",
+      "totals",
+      "counts_are_lower_bounds",
+      "unpersisted_queue_gap",
+      "startup_before_epoch_gap",
+      "unclosed_meaning",
+      "complete_collection_claim"
+    ],
+    "title": "DiagnosticWriterCoverageV1",
+    "type": "object"
   }
 }
