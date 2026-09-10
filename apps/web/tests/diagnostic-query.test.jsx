@@ -181,3 +181,25 @@ test("storage observations retain gaps and reject fake totals or admission claim
     assert.deepEqual(await queryDiagnosticStorage(), sample);
   } finally { globalThis.fetch = before; }
 });
+
+
+test("canonical resource roles retain nullable revisions and reject unreviewed fields", () => {
+  const page = copy("index");
+  page.items[0].resources_gap = null;
+  page.items[0].resources = {
+    context_subjects: [{ resource_type: "document", resource_id: "doc", revision: null }],
+    attempted_outputs: [{ resource_type: "learning_plan", resource_id: "plan", revision: null }],
+    committed_outputs: [{ resource_type: "learning_plan", resource_id: "plan", expected_revision: null, committed_revision: null, first_sequence: null, last_sequence: null }],
+    scope: "historical_canonical_projection_requires_read_back",
+  };
+  assert.deepEqual(decodeDiagnosticIndex(page), page);
+  for (const mutate of [
+    resource => { resource.committed_outputs[0].payload_digest = "a".repeat(64); },
+    resource => { resource.context_subjects[0].revision = -1; },
+    resource => { resource.attempted_outputs[0].resource_type = "invented"; },
+    resource => { resource.context_subjects = Array(65).fill(resource.context_subjects[0]); },
+  ]) {
+    const invalid = structuredClone(page); mutate(invalid.items[0].resources);
+    assert.throws(() => decodeDiagnosticIndex(invalid), DiagnosticQueryError);
+  }
+});

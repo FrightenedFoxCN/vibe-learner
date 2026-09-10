@@ -53,3 +53,21 @@ excluded from implementation commits and this change-scope claim.
 
 No top-level task is closed by this checkpoint. Full test/build success is a
 regression result; the missing acceptance items above remain required work.
+
+## Canonical resource projection slice
+
+The diagnostic Harness index and export now include separately bounded context
+subjects, attempted outputs and committed outputs from validated canonical
+executions. They preserve nullable revisions and sequence points/ranges, exclude
+payload digests and receipts, and explicitly require canonical read-back. This
+historical projection is neither current resource state nor proof of all effects.
+Old index rows return `not_backfilled` until the next source sweep. A sweep that
+finds a removed source clears its resource projection; unavailable source reads
+also return an explicit gap rather than cached output claims.
+
+Verification: 23 targeted backend tests passed, including real Persona generation,
+restart/backfill, source deletion/recovery, query/export schema drift and retention.
+Browser query tests cover the nested vocabulary, null revisions, size limits and
+rejection of digests/unreviewed fields; Web type checking passed. This slice does
+not yet add cross-domain event resource emitters, resource filters or logical-flow
+acceptance, and closes no top-level requirement.

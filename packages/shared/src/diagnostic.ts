@@ -1,4 +1,4 @@
-import type { HarnessWorkflow, HarnessStage, HarnessAttemptPhase, HarnessAttemptStatus, HarnessStatus, HarnessCommitStatus } from "./harness";
+import type { HarnessWorkflow, HarnessStage, HarnessAttemptPhase, HarnessAttemptStatus, HarnessStatus, HarnessCommitStatus, HarnessResourceType } from "./harness";
 
 export type DiagnosticPagePath = "/" | "/plan" | "/study" | "/persona-spectrum" | "/scene-setup" | "/tavern" | "/settings" | "/sensory-tools" | "/model-usage";
 
@@ -85,6 +85,13 @@ export function classifyDiagnostic(name: DiagnosticEventV1["name"], statusCode: 
 
 
 /** Eventually consistent diagnostic projection. Resolve canonical records for commit truth. */
+export interface DiagnosticCanonicalResourcesV1 {
+  context_subjects: { resource_type: HarnessResourceType; resource_id: string; revision: number | null }[];
+  attempted_outputs: { resource_type: HarnessResourceType; resource_id: string; revision: number | null }[];
+  committed_outputs: { resource_type: HarnessResourceType; resource_id: string; expected_revision: number | null; committed_revision: number | null; first_sequence: number | null; last_sequence: number | null }[];
+  scope: "historical_canonical_projection_requires_read_back";
+}
+
 export interface DiagnosticHarnessIndexV1 {
   schema_version: "diagnostic-harness-index-v1";
   trace_id: string;
@@ -100,6 +107,8 @@ export interface DiagnosticHarnessIndexV1 {
   completed_at: string | null;
   source_updated_at: string | null;
   gap: "source_removed" | "source_invalid_or_unavailable" | "terminal_trace_not_available" | null;
+  resources: DiagnosticCanonicalResourcesV1 | null;
+  resources_gap: "not_backfilled" | "source_removed" | "source_invalid_or_unavailable" | null;
   components: { name: string; version: string }[];
   attempts: { attempt_id: string; attempt_index: number; phase: HarnessAttemptPhase; status: HarnessAttemptStatus; duration_ms: number }[];
   provider: null; model: null; tokens: null; cost: null;

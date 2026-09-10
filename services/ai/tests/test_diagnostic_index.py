@@ -15,6 +15,36 @@ from app.services.diagnostic_index import DiagnosticHarnessIndex
 
 
 class DiagnosticIndexTests(unittest.TestCase):
+    def test_projection_preserves_nullable_revisions_and_sequence_without_digest(self):
+        from datetime import datetime, timezone
+        from types import SimpleNamespace
+        from app.models.harness import HarnessResourceRefV3, HarnessCommittedResourceRefV3
+        from app.services.diagnostic_index import project_execution
+        ref = HarnessResourceRefV3.model_validate_json('{"resource_type":"study_session","resource_id":"session","revision":null}')
+        committed = HarnessCommittedResourceRefV3.model_validate_json(json.dumps(dict(
+            resource_type="study_session", resource_id="session", expected_revision=4,
+            committed_revision=5, first_sequence=9, last_sequence=9, payload_digest="a" * 64)))
+        now = datetime.now(timezone.utc)
+        execution = SimpleNamespace(trace_id="trace", parent_trace_id=None, harness_operation_id=None,
+            workflow=SimpleNamespace(value="study"), stage=SimpleNamespace(value="study_chat"),
+            state=SimpleNamespace(value="terminal"), updated_at=now, attempt_records=[],
+            context=SimpleNamespace(subject_refs=[ref], component_versions=[]),
+            terminal_trace=SimpleNamespace(status=SimpleNamespace(value="passed"), duration_ms=1,
+                started_at=now, completed_at=now, commit_evidence=SimpleNamespace(
+                    status=SimpleNamespace(value="committed"), attempted_resource_refs=[ref], committed_resources=[committed])))
+        projected = project_execution(execution)
+        # This adapter test does not assert a domain commit; its input resources are typed.
+        resources = projected["resources"]
+        self.assertIsNone(resources["context_subjects"][0]["revision"])
+        self.assertIsNone(resources["attempted_outputs"][0]["revision"])
+        self.assertEqual(resources["committed_outputs"][0], dict(resource_type="study_session",
+            resource_id="session", expected_revision=4, committed_revision=5, first_sequence=9, last_sequence=9))
+        execution.terminal_trace = None
+        projected = project_execution(execution)
+        self.assertEqual(projected["resources"]["committed_outputs"], [])
+        self.assertEqual(projected["resources"]["attempted_outputs"], [])
+        self.assertEqual(projected["gap"], "terminal_trace_not_available")
+
     def test_restart_deduplication_late_rows_fault_isolation_and_content_exclusion(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
@@ -35,6 +65,20 @@ class DiagnosticIndexTests(unittest.TestCase):
                 self.assertEqual(index.query(workflow="not_the_workflow")["items"], [])
                 self.assertFalse(index.query()["has_more"])
                 self.assertTrue(first["attempts"])
+                self.assertIsNone(first["resources_gap"])
+                execution = repo.get(first["trace_id"])
+                self.assertEqual(first["resources"]["context_subjects"], [item.model_dump(mode="json") for item in execution.context.subject_refs])
+                self.assertEqual(first["resources"]["committed_outputs"], [item.model_dump(mode="json", exclude={"payload_digest"}) for item in execution.terminal_trace.commit_evidence.committed_resources])
+                self.assertNotIn("payload_digest", json.dumps(first["resources"]))
+                # Old projections are explicitly incomplete until a canonical sweep backfills them.
+                with sqlite3.connect(index.path) as db:
+                    db.execute("UPDATE projections SET payload=json_remove(payload,'$.resources','$.resources_gap')")
+                legacy = index.query()["items"][0]
+                self.assertIsNone(legacy["resources"])
+                self.assertEqual(legacy["resources_gap"], "not_backfilled")
+                index.step(1)
+                index.step(1)
+                self.assertEqual(index.query()["items"], [first])
                 self.assertEqual(first["usage_gap"], "not_recorded_in_canonical_trace")
                 self.assertIsNone(first["model"])
                 self.assertNotIn("SECRET_INDEX_INPUT", json.dumps(first))
@@ -87,6 +131,7 @@ class DiagnosticIndexTests(unittest.TestCase):
                     restarted.step()
                 vanished = restarted.query()["items"]
                 self.assertTrue(all(item["gap"] == "source_removed" and item["commit_status"] is None for item in vanished))
+                self.assertTrue(all(item["resources"] is None and item["resources_gap"] == "source_removed" for item in vanished))
                 restarted.step()
                 self.assertTrue(all(item["gap"] is None for item in restarted.query()["items"]))
                 broken = DiagnosticHarnessIndex(repo, root)  # directory instead of database

@@ -1,7 +1,7 @@
 """Reviewed content-free Harness index DTO; never a commit receipt."""
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
-from app.models.harness import HarnessWorkflow, HarnessStage, HarnessStatus, HarnessCommitStatus, HarnessAttemptPhase, HarnessAttemptStatus, HarnessContractRef
+from app.models.harness import HarnessWorkflow, HarnessStage, HarnessStatus, HarnessCommitStatus, HarnessAttemptPhase, HarnessAttemptStatus, HarnessContractRef, HarnessResourceType
 from app.models.harness_operation import HARNESS_OPERATION_ID_PATTERN
 
 
@@ -12,6 +12,32 @@ class DiagnosticAttemptMetricV1(BaseModel):
     phase: HarnessAttemptPhase
     status: HarnessAttemptStatus
     duration_ms: int = Field(ge=0)
+
+
+class DiagnosticResourceSubjectV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    resource_type: HarnessResourceType
+    resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
+    revision: int | None = Field(default=None, ge=0)
+
+
+class DiagnosticCommittedResourceV1(BaseModel):
+    """Historical canonical output identity; excludes content/digests and receipts."""
+    model_config = ConfigDict(extra="forbid")
+    resource_type: HarnessResourceType
+    resource_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$")
+    expected_revision: int | None = Field(default=None, ge=0)
+    committed_revision: int | None = Field(default=None, ge=0)
+    first_sequence: int | None = Field(default=None, ge=1)
+    last_sequence: int | None = Field(default=None, ge=1)
+
+
+class DiagnosticCanonicalResourcesV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    context_subjects: list[DiagnosticResourceSubjectV1] = Field(default_factory=list, max_length=64)
+    attempted_outputs: list[DiagnosticResourceSubjectV1] = Field(default_factory=list, max_length=64)
+    committed_outputs: list[DiagnosticCommittedResourceV1] = Field(default_factory=list, max_length=64)
+    scope: Literal["historical_canonical_projection_requires_read_back"] = "historical_canonical_projection_requires_read_back"
 
 
 class DiagnosticHarnessIndexV1(BaseModel):
@@ -30,6 +56,8 @@ class DiagnosticHarnessIndexV1(BaseModel):
     completed_at: str | None = None
     source_updated_at: str | None = None
     gap: Literal["source_removed", "source_invalid_or_unavailable", "terminal_trace_not_available"] | None = None
+    resources: DiagnosticCanonicalResourcesV1 | None = None
+    resources_gap: Literal["not_backfilled", "source_removed", "source_invalid_or_unavailable"] | None = "not_backfilled"
     components: list[HarnessContractRef] = Field(default_factory=list, max_length=64)
     attempts: list[DiagnosticAttemptMetricV1] = Field(default_factory=list, max_length=128)
     provider: None = None

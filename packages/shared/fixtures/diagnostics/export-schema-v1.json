@@ -698,6 +698,115 @@
       "title": "DiagnosticAuditV1",
       "type": "object"
     },
+    "DiagnosticCanonicalResourcesV1": {
+      "additionalProperties": false,
+      "properties": {
+        "context_subjects": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticResourceSubjectV1"
+          },
+          "maxItems": 64,
+          "title": "Context Subjects",
+          "type": "array"
+        },
+        "attempted_outputs": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticResourceSubjectV1"
+          },
+          "maxItems": 64,
+          "title": "Attempted Outputs",
+          "type": "array"
+        },
+        "committed_outputs": {
+          "items": {
+            "$ref": "#/$defs/DiagnosticCommittedResourceV1"
+          },
+          "maxItems": 64,
+          "title": "Committed Outputs",
+          "type": "array"
+        },
+        "scope": {
+          "const": "historical_canonical_projection_requires_read_back",
+          "default": "historical_canonical_projection_requires_read_back",
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "title": "DiagnosticCanonicalResourcesV1",
+      "type": "object"
+    },
+    "DiagnosticCommittedResourceV1": {
+      "additionalProperties": false,
+      "description": "Historical canonical output identity; excludes content/digests and receipts.",
+      "properties": {
+        "resource_type": {
+          "$ref": "#/$defs/HarnessResourceType"
+        },
+        "resource_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "expected_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Revision"
+        },
+        "committed_revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Committed Revision"
+        },
+        "first_sequence": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "First Sequence"
+        },
+        "last_sequence": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Sequence"
+        }
+      },
+      "required": [
+        "resource_type",
+        "resource_id"
+      ],
+      "title": "DiagnosticCommittedResourceV1",
+      "type": "object"
+    },
     "DiagnosticDesktopMetricV1": {
       "additionalProperties": false,
       "properties": {
@@ -1678,6 +1787,34 @@
           "default": null,
           "title": "Gap"
         },
+        "resources": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticCanonicalResourcesV1"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resources_gap": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_backfilled",
+                "source_removed",
+                "source_invalid_or_unavailable"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "not_backfilled",
+          "title": "Resources Gap"
+        },
         "components": {
           "items": {
             "$ref": "#/$defs/HarnessContractRef"
@@ -2224,6 +2361,38 @@
         "resource_id"
       ],
       "title": "DiagnosticResourceReferenceV1",
+      "type": "object"
+    },
+    "DiagnosticResourceSubjectV1": {
+      "additionalProperties": false,
+      "properties": {
+        "resource_type": {
+          "$ref": "#/$defs/HarnessResourceType"
+        },
+        "resource_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9:._-]{0,159}$",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision"
+        }
+      },
+      "required": [
+        "resource_type",
+        "resource_id"
+      ],
+      "title": "DiagnosticResourceSubjectV1",
       "type": "object"
     },
     "DiagnosticStorageCountersV1": {
@@ -2864,6 +3033,25 @@
       ],
       "title": "HarnessContractRef",
       "type": "object"
+    },
+    "HarnessResourceType": {
+      "enum": [
+        "document",
+        "document_page",
+        "document_debug",
+        "study_unit",
+        "learning_plan",
+        "planning_trace",
+        "persona",
+        "scene",
+        "study_session",
+        "tavern_room",
+        "tavern_run",
+        "tavern_message",
+        "frontend_request"
+      ],
+      "title": "HarnessResourceType",
+      "type": "string"
     },
     "HarnessStage": {
       "enum": [

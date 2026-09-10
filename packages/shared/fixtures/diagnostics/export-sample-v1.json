@@ -333,6 +333,8 @@
       "completed_at": null,
       "source_updated_at": null,
       "gap": null,
+      "resources": null,
+      "resources_gap": "not_backfilled",
       "components": [],
       "attempts": [],
       "provider": null,

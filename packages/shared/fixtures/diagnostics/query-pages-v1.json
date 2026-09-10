@@ -76,6 +76,8 @@
         "completed_at": null,
         "source_updated_at": null,
         "gap": "terminal_trace_not_available",
+        "resources": null,
+        "resources_gap": "not_backfilled",
         "components": [],
         "attempts": [],
         "provider": null,

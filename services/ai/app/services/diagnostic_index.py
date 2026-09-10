@@ -70,12 +70,12 @@ class DiagnosticHarnessIndex:
                 try:
                     execution = self.repository.get(trace_id)
                     if execution is None:
-                        projection = {"schema_version": "diagnostic-harness-index-v1", "trace_id": trace_id, "gap": "source_removed"}
+                        projection = {"schema_version": "diagnostic-harness-index-v1", "trace_id": trace_id, "gap": "source_removed", "resources_gap": "source_removed"}
                     else:
                         projection = project_execution(execution)
                 except Exception:
                     self.failures += 1
-                    projection = {"schema_version": "diagnostic-harness-index-v1", "trace_id": trace_id, "gap": "source_invalid_or_unavailable"}
+                    projection = {"schema_version": "diagnostic-harness-index-v1", "trace_id": trace_id, "gap": "source_invalid_or_unavailable", "resources_gap": "source_invalid_or_unavailable"}
                 projections.append(projection)
             with self.quota.transaction(db):
                 for value in projections:
@@ -88,7 +88,7 @@ class DiagnosticHarnessIndex:
                                (value["trace_id"], value.get("operation_id"), value.get("workflow"), value.get("stage"), json.dumps(value, sort_keys=True), sweep, retained_at or 0, retained_at))
                 exhausted = len(ids) < limit
                 if exhausted:
-                    db.execute("UPDATE projections SET payload=json_set(payload,'$.gap','source_removed','$.state',NULL,'$.status',NULL,'$.commit_status',NULL) WHERE last_seen_sweep < ?", (sweep,))
+                    db.execute("UPDATE projections SET payload=json_set(payload,'$.gap','source_removed','$.state',NULL,'$.status',NULL,'$.commit_status',NULL,'$.resources',NULL,'$.resources_gap','source_removed') WHERE last_seen_sweep < ?", (sweep,))
                 self.retention.prune(db)
                 db.execute("UPDATE checkpoint SET cursor=?, sweeps=sweeps+? WHERE name='runtime'", ("" if exhausted else ids[-1], int(exhausted)))
             self.disk_maintenance.maintain(db)
@@ -156,6 +156,13 @@ def project_execution(execution):
         "completed_at": trace.completed_at.isoformat() if trace else None,
         "source_updated_at": execution.updated_at.isoformat(),
         "gap": None if trace else "terminal_trace_not_available",
+        "resources": {
+            "context_subjects": [item.model_dump(mode="json") for item in execution.context.subject_refs],
+            "attempted_outputs": [item.model_dump(mode="json") for item in trace.commit_evidence.attempted_resource_refs] if trace else [],
+            "committed_outputs": [item.model_dump(mode="json", exclude={"payload_digest"}) for item in trace.commit_evidence.committed_resources] if trace else [],
+            "scope": "historical_canonical_projection_requires_read_back",
+        },
+        "resources_gap": None,
         "components": [{"name": item.name, "version": item.version} for item in execution.context.component_versions],
         "attempts": [{"attempt_id": item.attempt_id, "attempt_index": item.attempt_index,
                       "phase": item.phase.value, "status": item.status.value, "duration_ms": item.duration_ms}
