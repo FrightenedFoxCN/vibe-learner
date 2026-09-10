@@ -3,7 +3,10 @@ use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+
+mod diagnostics;
+use diagnostics::{DesktopDiagnostics, DesktopEvent};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -38,10 +41,16 @@ struct DesktopRuntimeConfig {
 
 struct ManagedSidecar {
     child: Option<Child>,
+    diagnostics: DesktopDiagnostics,
+    shutdown_recorded: bool,
+    exit_observed: bool,
 }
 
 impl ManagedSidecar {
     fn shutdown(&mut self) {
+        if self.shutdown_recorded { return; }
+        self.shutdown_recorded = true;
+        self.diagnostics.emit(DesktopEvent::DesktopShutdownRequested, None, None);
         if let Some(mut child) = self.child.take() {
             // The one-file PyInstaller launcher owns another Python process.
             // Each sidecar is spawned in its own group; killing only the launcher
@@ -51,8 +60,22 @@ impl ManagedSidecar {
                 libc::killpg(child.id() as libc::pid_t, libc::SIGKILL);
             }
             let _ = child.kill();
-            let _ = child.wait();
+            let status = child.wait().ok();
+            self.diagnostics.emit(if status.is_some() { DesktopEvent::SidecarStopped } else { DesktopEvent::SidecarShutdownUnknown }, None, status.and_then(|status| status.code()));
         }
+        self.diagnostics.emit(DesktopEvent::DesktopStopped, None, None);
+    }
+
+    fn observe_exit(&mut self) -> bool {
+        if self.exit_observed { return true; }
+        if let Some(child) = &mut self.child {
+            if let Ok(Some(status)) = child.try_wait() {
+                self.diagnostics.emit(DesktopEvent::SidecarExited, None, status.code());
+                // Retain the launcher identity so shutdown still fences its process group.
+                self.exit_observed = true;
+            }
+        }
+        self.child.is_none() || self.exit_observed
     }
 }
 
@@ -68,7 +91,7 @@ struct DesktopAppState {
     vault_path: String,
     vault_state: &'static str,
     startup_error: String,
-    _sidecar: Mutex<ManagedSidecar>,
+    _sidecar: Arc<Mutex<ManagedSidecar>>,
 }
 
 impl DesktopAppState {
@@ -161,6 +184,9 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
     fs::create_dir_all(&storage_root)
         .map_err(|err| format!("desktop_storage_root_create_failed:{err}"))?;
 
+    let diagnostics = DesktopDiagnostics::new(&storage_root);
+    let startup_started = Instant::now();
+    diagnostics.emit(DesktopEvent::DesktopStarted, None, None);
     let vault_path = app_data_dir.join("vibe-learner.secrets.hold");
     let vault_state = if vault_path.exists() {
         "locked"
@@ -171,11 +197,12 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
     let port = available_port().map_err(|err| format!("desktop_port_allocation_failed:{err}"))?;
     let ai_base_url = format!("http://127.0.0.1:{port}");
     let mut startup_error = String::new();
-    let mut managed_sidecar = ManagedSidecar { child: None };
+    let mut managed_sidecar = ManagedSidecar { child: None, diagnostics: diagnostics.clone(), shutdown_recorded: false, exit_observed: false };
 
     match spawn_sidecar_process(app, port, &storage_root) {
         Ok(child) => {
             managed_sidecar.child = Some(child);
+            diagnostics.emit(DesktopEvent::SidecarSpawned, Some(startup_started.elapsed().as_millis() as u64), None);
             if let Err(err) = wait_for_sidecar_health(port) {
                 startup_error = err;
             }
@@ -185,6 +212,7 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
         }
     }
 
+    diagnostics.emit(if startup_error.is_empty() { DesktopEvent::SidecarReady } else { DesktopEvent::SidecarStartupFailed }, Some(startup_started.elapsed().as_millis() as u64), None);
     if !startup_error.is_empty() {
         eprintln!("desktop_startup_error:{startup_error}");
     }
@@ -195,7 +223,7 @@ fn build_desktop_state(app: &tauri::AppHandle) -> Result<DesktopAppState, String
         vault_path: vault_path.to_string_lossy().into_owned(),
         vault_state,
         startup_error,
-        _sidecar: Mutex::new(managed_sidecar),
+        _sidecar: Arc::new(Mutex::new(managed_sidecar)),
     })
 }
 
@@ -469,6 +497,16 @@ pub fn run() {
             install_desktop_menu(&app.handle())?;
             let state = build_desktop_state(&app.handle())
                 .map_err(|err| tauri::Error::Anyhow(std::io::Error::other(err).into()))?;
+            let monitored = state._sidecar.clone();
+            if thread::Builder::new().name("sidecar-diagnostics".into()).spawn(move || loop {
+                match monitored.lock() {
+                    Ok(mut sidecar) => { if sidecar.observe_exit() { break; } },
+                    Err(_) => break,
+                }
+                thread::sleep(Duration::from_millis(250));
+            }).is_err() {
+                eprintln!("desktop_diagnostic_monitor_start_failed");
+            }
             app.manage(state);
             if let Some(window) = app.get_webview_window("main") {
                 let state = app.state::<DesktopAppState>();
@@ -499,4 +537,49 @@ pub fn run() {
             }
             _ => {}
         });
+}
+
+#[cfg(all(test, unix))]
+mod sidecar_diagnostic_tests {
+    use super::*;
+    use std::os::unix::process::CommandExt;
+    fn root() -> PathBuf {
+        std::env::temp_dir().join(format!("sidecar-diagnostic-test-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()))
+    }
+    fn records(root: &Path) -> Vec<serde_json::Value> {
+        fs::read_dir(root.join("diagnostics/desktop-spool")).unwrap().filter_map(Result::ok)
+            .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "json"))
+            .map(|entry| serde_json::from_slice(&fs::read(entry.path()).unwrap()).unwrap()).collect()
+    }
+    #[test]
+    fn records_real_unexpected_exit_once() {
+        let root = root();
+        let child = Command::new("sh").args(["-c", "exit 7"]).process_group(0).spawn().unwrap();
+        let mut sidecar = ManagedSidecar { child: Some(child), diagnostics: DesktopDiagnostics::new(&root), shutdown_recorded: false, exit_observed: false };
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !sidecar.observe_exit() && Instant::now() < deadline { thread::sleep(Duration::from_millis(10)); }
+        assert!(sidecar.observe_exit());
+        assert!(sidecar.child.is_some()); // Keep process-group cleanup possible after launcher exit.
+        let events = records(&root);
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["name"], "sidecar_exited");
+        assert_eq!(events[0]["exit_code"], 7);
+        sidecar.shutdown();
+        drop(sidecar);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn records_real_normal_shutdown_without_duplicate_drop_events() {
+        let root = root();
+        let child = Command::new("sh").args(["-c", "sleep 30"]).process_group(0).spawn().unwrap();
+        let mut sidecar = ManagedSidecar { child: Some(child), diagnostics: DesktopDiagnostics::new(&root), shutdown_recorded: false, exit_observed: false };
+        sidecar.shutdown();
+        sidecar.shutdown();
+        drop(sidecar);
+        let events = records(&root);
+        assert_eq!(events.len(), 3);
+        assert_eq!(events.iter().filter(|event| event["name"] == "sidecar_stopped").count(), 1);
+        assert_eq!(events.iter().filter(|event| event["name"] == "desktop_stopped").count(), 1);
+        fs::remove_dir_all(root).unwrap();
+    }
 }

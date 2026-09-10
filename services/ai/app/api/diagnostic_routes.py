@@ -27,7 +27,7 @@ async def ingest(request: Request):
     except ValidationError:
         # Pydantic's default error detail includes input values; never echo them.
         raise HTTPException(422, "invalid_diagnostic_batch") from None
-    if any(event.source != "browser" or event.tool_metric is not None or event.name.startswith("tool_") or event.provider_metric is not None or event.name.startswith("provider_") or event.harness is not None or event.resource is not None or event.name in {"harness_reference", "resource_reference"} or len(event.model_dump_json().encode()) > 16384 for event in batch.events):
+    if any(event.source != "browser" or event.desktop_metric is not None or event.category == "desktop" or event.tool_metric is not None or event.name.startswith("tool_") or event.provider_metric is not None or event.name.startswith("provider_") or event.harness is not None or event.resource is not None or event.name in {"harness_reference", "resource_reference"} or len(event.model_dump_json().encode()) > 16384 for event in batch.events):
         raise HTTPException(422, "invalid_diagnostic_source_or_size")
     store = request.app.state.diagnostics
     accepted = sum(store.enqueue(event) for event in batch.events)
@@ -42,7 +42,8 @@ def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Que
     store = request.app.state.diagnostics
     rows = store.query(after, limit, {"request_id": request_id, "action_id": action_id,
                        "page_view_id": page_view_id, "flow_id": flow_id, "source": source})
-    return {"items": rows, "next_cursor": rows[-1]["sequence"] if rows else after,
+    spool = getattr(request.app.state, "desktop_diagnostic_spool", None)
+    return {"desktop_spool": {"rejected": spool.rejected, "failures": spool.failures} if spool else None, "items": rows, "next_cursor": rows[-1]["sequence"] if rows else after,
             "health": store.health()}
 
 

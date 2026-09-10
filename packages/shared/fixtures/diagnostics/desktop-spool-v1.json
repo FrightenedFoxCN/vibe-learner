@@ -1,0 +1,11 @@
+{
+  "schema_version": "desktop-diagnostic-v1",
+  "event_id": "desktop-000000000000000018d5a0a800000001-0000002a-0000000000000001",
+  "instance_id": "desktop-000000000000000018d5a0a800000000-0000002a-0000000000000000",
+  "name": "sidecar_exited",
+  "unix_time_ms": 1789012800000,
+  "duration_ms": null,
+  "exit_code": 7,
+  "dropped_before": 3,
+  "write_failures_before": 1
+}

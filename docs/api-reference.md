@@ -1224,7 +1224,7 @@ When updating this API, keep these files aligned:
 - `packages/shared/src/`
 
 
-## Diagnostic events (foundation)
+## Diagnostic events
 
 `POST /diagnostics/events` accepts at most 100 closed `diagnostic-event-v1`
 objects from source `browser` in `{ "events": [...] }` (batch limit 1.6 MiB).
@@ -1323,3 +1323,20 @@ Settings persistence passes captured correlation explicitly into Vault and HTTP
 calls, including after navigation. Nested local spans share an action and keep
 parentage; inclusive durations are not additive. A failed diagnostic ID allocation
 drops telemetry and leaves the local business action running.
+
+
+Desktop startup and sidecar lifecycle events first enter a bounded native spool
+at `storage_root/diagnostics/desktop-spool` (256 event/pending files). Native
+payloads follow the shared `desktop-spool-v1.json` fixture: fixed event names,
+instance/event identity, time/duration, exit code and loss counters only. They
+contain no paths, process arguments, credentials or exception messages. Browser
+ingestion cannot submit these source names or `desktop_metric` fields.
+
+The backend consumes up to 100 files per second, validates the 16 KiB/schema
+limit, and acknowledges by deleting only after synchronous diagnostic commit or
+an identical persisted event. Offline and failed-write files retain their IDs;
+conflicting duplicate payloads remain unacknowledged. Malformed payloads are
+rejected. Event queries expose `desktop_spool: {rejected, failures}` health
+(or null when unavailable). These counters are process-local; spool eviction
+counters do not yet certify crash-safe or multi-process loss accounting.
+Sidecar exit observations prove process lifecycle only, never business outcomes.

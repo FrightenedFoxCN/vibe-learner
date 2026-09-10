@@ -918,5 +918,365 @@
       "outcome": "cancelled",
       "error_code": "cancelled"
     }
+  },
+  {
+    "name": "desktop_started",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_started",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_started",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_started",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_spawned",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_spawned",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_spawned",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_spawned",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_ready",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_ready",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_ready",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_ready",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_startup_failed",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_startup_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_startup_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_startup_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_exited",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_exited",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_exited",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "sidecar_exited",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "desktop_failure"
+    }
+  },
+  {
+    "name": "desktop_shutdown_requested",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_shutdown_requested",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_shutdown_requested",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_shutdown_requested",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "started",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_stopped",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_stopped",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_stopped",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_stopped",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_shutdown_unknown",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_shutdown_unknown",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_shutdown_unknown",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "sidecar_shutdown_unknown",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "warning",
+      "outcome": "unknown",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_stopped",
+    "status_code": null,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_stopped",
+    "status_code": 200,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_stopped",
+    "status_code": 409,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
+  },
+  {
+    "name": "desktop_stopped",
+    "status_code": 503,
+    "classification": {
+      "category": "desktop",
+      "severity": "info",
+      "outcome": "completed",
+      "error_code": null
+    }
   }
 ]

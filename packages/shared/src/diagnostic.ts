@@ -5,7 +5,8 @@ export interface DiagnosticEventV1 {
   schema_version: "diagnostic-event-v1";
   event_id: string;
   source: "server" | "browser" | "desktop";
-  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed" | "tool_started" | "tool_finished" | "tool_failed" | "tool_unknown" | "action_started" | "action_finished" | "action_failed" | "action_cancelled";
+  name: "request_started" | "response_headers" | "request_finished" | "request_failed" | "request_cancelled" | "lifecycle_started" | "lifecycle_stopped" | "harness_reference" | "resource_reference" | "provider_started" | "provider_finished" | "provider_failed" | "provider_attempt_started" | "provider_attempt_finished" | "provider_attempt_failed" | "tool_started" | "tool_finished" | "tool_failed" | "tool_unknown" | "action_started" | "action_finished" | "action_failed" | "action_cancelled" | "desktop_started" | "sidecar_spawned" | "sidecar_ready" | "sidecar_startup_failed" | "sidecar_exited" | "desktop_shutdown_requested" | "sidecar_stopped" | "sidecar_shutdown_unknown" | "desktop_stopped";
+  desktop_metric?: DiagnosticDesktopMetricV1 | null;
   action_name?: "json_import_read_persona" | "json_import_read_scene" | "json_export_handoff" | "settings_save" | "vault_create" | "vault_unlock" | "vault_lock" | "vault_load_secrets" | "vault_save_secrets" | "vault_clear_secrets" | null;
   span_id?: string | null;
   parent_span_id?: string | null;
@@ -13,10 +14,10 @@ export interface DiagnosticEventV1 {
   provider_metric?: DiagnosticProviderMetricV1 | null;
   resource?: { resource_type: "persona"; resource_id: string; revision: number | null } | null;
   harness?: { operation_id: string; workflow: HarnessWorkflow; stage: HarnessStage; trace_id: string | null; attempt_id?: string | null; attempt_index?: number | null; phase?: HarnessAttemptPhase | null; attempt_status?: HarnessAttemptStatus | null } | null;
-  category: "transport" | "lifecycle" | "harness" | "resource" | "provider" | "tool" | "action";
+  category: "transport" | "lifecycle" | "harness" | "resource" | "provider" | "tool" | "action" | "desktop";
   severity: "info" | "warning" | "error";
   outcome: "started" | "headers_received" | "completed" | "failed" | "cancelled" | "observed" | "unknown";
-  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | "tool_failure" | "action_failure" | null;
+  error_code: "transport_failure" | "http_error" | "cancelled" | "provider_failure" | "tool_failure" | "action_failure" | "desktop_failure" | null;
   timestamp: string;
   request_id: string | null;
   client_instance_id: string | null;
@@ -53,6 +54,15 @@ export const DIAGNOSTIC_EVENT_CATALOG = {
   action_finished: ["action", "info", "completed", null],
   action_failed: ["action", "error", "failed", "action_failure"],
   action_cancelled: ["action", "warning", "cancelled", "cancelled"],
+  desktop_started: ["desktop", "info", "started", null],
+  sidecar_spawned: ["desktop", "info", "started", null],
+  sidecar_ready: ["desktop", "info", "completed", null],
+  sidecar_startup_failed: ["desktop", "error", "failed", "desktop_failure"],
+  sidecar_exited: ["desktop", "error", "failed", "desktop_failure"],
+  desktop_shutdown_requested: ["desktop", "info", "started", null],
+  sidecar_stopped: ["desktop", "info", "completed", null],
+  sidecar_shutdown_unknown: ["desktop", "warning", "unknown", null],
+  desktop_stopped: ["desktop", "info", "completed", null],
 } as const;
 
 export function classifyDiagnostic(name: DiagnosticEventV1["name"], statusCode: number | null = null):
@@ -128,4 +138,12 @@ export interface DiagnosticToolMetricV1 {
   timeout_ms: number | null;
   manifest_gap: "unregistered_tool" | null;
   effect_commit_claim: "none";
+}
+
+
+export interface DiagnosticDesktopMetricV1 {
+  instance_id: string;
+  exit_code: number | null;
+  dropped_before: number;
+  write_failures_before: number;
 }

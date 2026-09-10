@@ -25,6 +25,8 @@
 
   - 2026-09-10 本地动作切片：JSON 导入读取/导出交接、Settings 保存队列及六个 Vault 入口记录明确动作名和结果；保存上下文显式传入 Vault/HTTP，嵌套本地 span 保留父子关系。日志不包含文件名、正文、凭据或异常原文；诊断 ID 分配失败不阻止本地动作。9 项客户端诊断测试、1 项 Vault 入口测试、18 项后端诊断测试、完整 Web reliability 与 shared/type 门通过。Vault 测试覆盖不可用/锁定入口，真实 native 创建/解锁和桌面启动/退出仍待后续验收。
 
+  - 2026-09-10 桌面切片：Rust 在 sidecar 就绪前写入 256 文件有界 spool，记录启动、就绪、异常退出与关闭；后端严格校验后持久化，再删除原文件，离线/重启沿用事件 ID 并去重。Rust/Python 共享协议样本，5 项 Rust 测试（含真实 Unix 子进程退出/清理）、20 项后端专项测试及 shared/Web 类型和 9 项客户端诊断测试通过。写盘/线程启动失败不阻断业务；日志不包含路径、命令参数或异常原文。当前验收限本机 Unix；跨平台、真实 native Vault 成功路径及 crash-safe 多进程丢失计数仍未认证。
+
 - [ ] `OBS-DEBUG-001` `[P1]` 改造 Debug 浮窗的页面和全局视图；依赖 `OBS-FLOWS-001`。
   - 独立 DebugProvider + 按 page-view 注册的快照/数据适配器；去除浮窗对 LearningWorkspaceProvider 的强依赖，与 `PERF-WEB-PROVIDER-001` 协同。
   - 页面视图展示当前实体、状态、请求/动作和错误；全局视图按流程、时间、页面、资源及 operation 过滤，并可展开完整关联链。

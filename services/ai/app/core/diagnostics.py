@@ -141,6 +141,23 @@ class DiagnosticStore:
             self.write_failures += 1
             return []
 
+    def persist_external_event(self, event: DiagnosticEventV1) -> bool:
+        """Desktop spool acknowledgement means committed diagnostic bytes, never queue acceptance."""
+        from contextlib import closing
+        try:
+            payload = event.model_dump_json()
+            with closing(sqlite3.connect(self.path, timeout=0.1)) as db:
+                with db:
+                    existing = db.execute("SELECT payload FROM events WHERE event_id=?", (event.event_id,)).fetchone()
+                    if existing is not None:
+                        return DiagnosticEventV1.model_validate_json(existing[0]) == event
+                    db.execute("INSERT INTO events(event_id,payload) VALUES (?,?)", (event.event_id, payload))
+                    db.execute("DELETE FROM events WHERE sequence <= (SELECT COALESCE(MAX(sequence),0)-10000 FROM events)")
+            return True
+        except Exception:
+            self.write_failures += 1
+            return False
+
     def operation_links(self, operation_id: str, after: str = "", limit: int = 100):
         if not 1 <= limit <= 100:
             raise ValueError("diagnostic_link_page_limit")

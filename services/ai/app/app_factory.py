@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from collections.abc import Callable
 
 from app.core.diagnostics import DiagnosticStore
+from app.services.diagnostic_desktop_spool import DesktopDiagnosticSpool
 from app.services.diagnostic_index import DiagnosticHarnessIndex
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.persistence.database import Database
@@ -30,6 +31,9 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
         app.state.diagnostics = diagnostics
         diagnostics.start()
         diagnostics.emit("lifecycle_started")
+        desktop_spool = DesktopDiagnosticSpool(diagnostics, settings.resolved_storage_root / "diagnostics" / "desktop-spool")
+        app.state.desktop_diagnostic_spool = desktop_spool
+        desktop_spool.start()
         container = None
         index = None
         try:
@@ -43,6 +47,7 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
             yield
         finally:
             app.state.container = None
+            desktop_spool.close()
             if index is not None:
                 index.close()
             try:
