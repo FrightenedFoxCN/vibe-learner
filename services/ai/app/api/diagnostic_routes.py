@@ -52,11 +52,11 @@ def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Que
         raise HTTPException(422, "diagnostic_time_range_invalid")
     store = request.app.state.diagnostics
     try:
-        rows = store.query(after, limit + 1, {"request_id": request_id, "action_id": action_id,
+        rows, retention = store.query(after, limit + 1, {"request_id": request_id, "action_id": action_id,
             "page_view_id": page_view_id, "flow_id": flow_id, "source": source, "page_path": page_path,
             "severity": severity, "operation_id": operation_id, "workflow": workflow, "stage": stage,
             "resource_id": resource_id, "resource_type": resource_type,
-            "since": since.isoformat() if since else None, "until": until.isoformat() if until else None}, strict=True)
+            "since": since.isoformat() if since else None, "until": until.isoformat() if until else None}, strict=True, with_coverage=True)
     except DiagnosticQueryUnavailable:
         raise HTTPException(503, "diagnostic_query_unavailable") from None
     has_more = len(rows) > limit
@@ -64,7 +64,7 @@ def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Que
     spool = getattr(request.app.state, "desktop_diagnostic_spool", None)
     return {"desktop_spool": {"rejected": spool.rejected, "failures": spool.failures} if spool else None,
             "items": rows, "next_cursor": rows[-1]["sequence"] if rows else after, "has_more": has_more,
-            "health": store.health()}
+            "health": store.health(), "retention": retention}
 
 
 @router.get("/harness-index")

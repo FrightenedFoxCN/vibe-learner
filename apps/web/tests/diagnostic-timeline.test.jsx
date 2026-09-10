@@ -92,3 +92,13 @@ test("valid next pages append and query failures remain visibly distinct from em
   assert.ok(!view.container.textContent.includes("PRIVATE_FAILURE"));
   assert.ok(!view.container.textContent.includes("当前筛选没有已保留的事件"));
 });
+
+test("retention gaps are visible and cannot masquerade as complete history", async () => {
+  const result = events("retained", 2);
+  Object.assign(result.retention, { removed_events: 1, removed_through_sequence: 1, cursor_gap: true, legacy_timestamp_rows: 3 });
+  globalThis.fetch = async () => Response.json(result);
+  const view = render(<DiagnosticTimeline />);
+  await waitFor(() => assert.ok(view.container.textContent.includes("当前显示不代表完整历史")));
+  assert.ok(view.container.textContent.includes("本次游标范围存在清理缺口"));
+  assert.ok(view.container.textContent.includes("原始入库时间未知"));
+});

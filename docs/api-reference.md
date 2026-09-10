@@ -1243,8 +1243,10 @@ A transport `request_finished` (including HTTP 200) does not prove domain commit
 
 Server events use an isolated append SQLite database under
 `storage_root/diagnostics/events.sqlite3`. Current limits are 1,000 queued events
-and 10,000 retained rows; time/byte retention and audit export are subsequent
-implementation steps in `docs/plans/unified-debug.md`.
+and event retention of 10,000 rows, seven days from database ingestion, or
+64 MiB of UTF-8 event payload, whichever limit is reached first. Aggregate disk
+retention (including indexes/WAL/spool), other diagnostic tables and audit export
+remain subsequent steps in `docs/plans/unified-debug.md`.
 
 Persona generate/save/reload accepts diagnostic correlation through the common
 `X-Debug-Client-Instance-Id`, `X-Debug-Page-View-Id`, `X-Debug-Flow-Id`, and
@@ -1402,3 +1404,21 @@ to 2 MiB and five seconds, including with a caller cancellation signal. These
 queries bypass collection and expose fixed failure codes without server or
 network exception content. They are a validated read boundary, not a claim that
 the global timeline UI or multi-page audit snapshot is complete.
+
+
+Event queries include `retention` (`diagnostic-event-retention-v1`) from the same
+SQLite read snapshot as their rows. It reports retained count/payload bytes,
+cumulative removed count/highest removed sequence, unknown legacy ingestion
+count and a conservative `cursor_gap` when removals exist above the requested
+cursor. Counters persist and commit atomically with deletion, including direct
+SQL deletions. This covers retained event history, not writer queue losses or
+all installation history. The browser displays removal and legacy-time gaps.
+
+Source timestamp is never used for expiration. Legacy rows without ingestion
+time receive the migration time and remain marked as historically unknown;
+restarting a partially completed schema migration preserves them. Retention runs
+on startup, each write and at most 60 seconds after an idle cleanup interval.
+The 64 MiB limit measures event payload bytes only: SQLite page allocation, WAL,
+indexes, operation links and desktop spool are excluded. Accordingly
+`disk_size_limit_certified` is false until aggregate retention is implemented
+and measured. Canonical business/Harness evidence is untouched.

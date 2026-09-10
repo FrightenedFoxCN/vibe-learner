@@ -51,6 +51,7 @@ function EventResults({ filters, allowOperation = true }: { filters: DiagnosticE
     <Status loading={state.loading} error={state.error} count={state.items.length} />
     <button style={button} onClick={state.refresh} disabled={state.loading}>刷新诊断</button>
     {state.page && <p>写入器：{state.page.health.writer_alive ? "运行中" : "已停止"}；队列 {state.page.health.queued}；丢弃 {state.page.health.dropped}；写入失败 {state.page.health.write_failures}；读取失败 {state.page.health.read_failures}{state.page.desktop_spool && `；桌面拒绝 ${state.page.desktop_spool.rejected} / 失败 ${state.page.desktop_spool.failures}`}</p>}
+    {state.page?.retention && <p>保留事件 {state.page.retention.retained_events}；累计移除 {state.page.retention.removed_events}。{state.page.retention.removed_events > 0 ? "已有历史记录被清理，当前显示不代表完整历史。" : ""}{state.page.retention.cursor_gap ? "本次游标范围存在清理缺口。" : ""}{state.page.retention.legacy_timestamp_rows > 0 ? ` ${state.page.retention.legacy_timestamp_rows} 条历史事件的原始入库时间未知。` : ""}</p>}
     {!state.loading && !state.error && !state.items.length && <p>当前筛选没有已保留的事件；不代表该流程从未执行。</p>}
     <div style={{ display: "grid", gap: 8 }}>
       {state.items.map(({ sequence, event }) => <article key={event.event_id} style={card}>

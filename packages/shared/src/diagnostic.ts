@@ -172,7 +172,23 @@ export interface DiagnosticEventFilters {
   until?: string;
 }
 
+export interface DiagnosticEventRetentionV1 {
+  schema_version: "diagnostic-event-retention-v1";
+  retained_events: number;
+  retained_payload_bytes: number;
+  removed_events: number;
+  removed_through_sequence: number;
+  legacy_timestamp_rows: number;
+  cursor_gap: boolean;
+  max_age_seconds: number;
+  max_rows: number;
+  max_payload_bytes: number;
+  storage_scope: "event_payloads";
+  disk_size_limit_certified: false;
+}
+
 export interface DiagnosticEventPageV1 {
+  retention: DiagnosticEventRetentionV1;
   items: { sequence: number; event: DiagnosticEventV1 }[];
   next_cursor: number;
   has_more: boolean;

@@ -48,6 +48,7 @@
   - 本地 append 存储、游标分页、轮转/清理及诊断包导出；内容按白名单脱敏，受保护内容仍走 artifact resolver，凭据及未提交评分材料不得进入全局日志。
   - 样本按 workflow/stage、模型、配置/组件版本分组；输出原始指标、P50/P95、失败/恢复/unknown 数和缺口，父子耗时不能重复相加。
   - 注入离线、断进程、写盘失败、队列溢出、重复上传和大日志量；诊断故障不能改变业务提交结论，性能开销须量测。
+  - 2026-09-10 事件留存切片：数据库入库时间驱动七天/一万行/64 MiB UTF-8 正文上限，启动、写入及空闲周期清理；删除计数/最高删除序号与清理同事务，查询与覆盖信息取同一快照。旧库未知入库时间明确标记，半完成迁移可恢复，前端展示历史缺口。30 项后端测试（含真实子进程在清理提交前后退出）、7 项查询/5 项时间线测试、shared/Web 类型门、生产构建和 3 项 Chromium 场景通过。此限制只覆盖事件正文；索引、关联表、WAL/物理空间、writer epoch、导出和开销量测仍待完成。
 
 
 
@@ -57,8 +58,9 @@ Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md
 not a claim that every component is implemented. The initial server event store
 exists under `storage_root/diagnostics/events.sqlite3`; it retains at most 10,000
 rows using a 1,000-event queue. Browser ingestion and cursor query are available at `/diagnostics/events`,
-including writer health counters. Time/byte retention, exports and global UI
-health visibility are still pending. Console logging intentionally excludes
+including writer health counters. Event payload retention now uses seven days,
+10,000 rows or 64 MiB, with durable removal coverage; global UI health is visible.
+Aggregate disk retention, other diagnostic-table retention and exports remain pending. Console logging intentionally excludes
 unreviewed formatted messages and exception text.
 
 ```mermaid

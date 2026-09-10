@@ -65,7 +65,7 @@ function page(value: unknown, cursor: unknown, after: number | string, hasMore: 
   if (!Array.isArray(value) || value.length > 100 || typeof hasMore !== "boolean" || typeof cursor !== typeof after || (hasMore && value.length === 0)) invalid();
 }
 export function decodeDiagnosticEvents(raw: unknown, after = 0): DiagnosticEventPageV1 {
-  const value = exact(raw, ["items", "next_cursor", "has_more", "health", "desktop_spool"]);
+  const value = exact(raw, ["items", "next_cursor", "has_more", "health", "desktop_spool", "retention"]);
   page(value.items, value.next_cursor, after, value.has_more);
   count(value.next_cursor);
   const ids = new Set<string>();
@@ -93,6 +93,11 @@ export function decodeDiagnosticEvents(raw: unknown, after = 0): DiagnosticEvent
     const spool = exact(value.desktop_spool, ["rejected", "failures"]);
     count(spool.rejected); count(spool.failures);
   }
+  const retention = exact(value.retention, ["schema_version", "retained_events", "retained_payload_bytes", "removed_events", "removed_through_sequence", "legacy_timestamp_rows", "cursor_gap", "max_age_seconds", "max_rows", "max_payload_bytes", "storage_scope", "disk_size_limit_certified"]);
+  for (const key of ["retained_events", "retained_payload_bytes", "removed_events", "removed_through_sequence", "legacy_timestamp_rows", "max_age_seconds", "max_rows", "max_payload_bytes"]) count(retention[key]);
+  if (retention.schema_version !== "diagnostic-event-retention-v1" || retention.storage_scope !== "event_payloads" || retention.disk_size_limit_certified !== false ||
+      retention.cursor_gap !== (after < retention.removed_through_sequence) || retention.retained_events < value.items.length ||
+      Math.min(retention.max_age_seconds, retention.max_rows, retention.max_payload_bytes) < 1) invalid();
   return value as DiagnosticEventPageV1;
 }
 export interface DiagnosticIndexPage {

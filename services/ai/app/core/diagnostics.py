@@ -90,7 +90,9 @@ class DiagnosticQueryUnavailable(RuntimeError):
 
 
 class DiagnosticStore:
-    def __init__(self, path: Path, capacity: int = 1000):
+    def __init__(self, path: Path, capacity: int = 1000, *, retention=None):
+        from app.core.diagnostic_retention import DiagnosticEventRetention
+        self.retention = retention or DiagnosticEventRetention()
         self.path = path
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
         self.dropped = 0
@@ -127,7 +129,7 @@ class DiagnosticStore:
                 "queued": self.queue.qsize(),
                 "writer_alive": self._thread is not None and self._thread.is_alive()}
 
-    def query(self, after: int, limit: int, filters: dict, *, strict=False):
+    def query(self, after: int, limit: int, filters: dict, *, strict=False, with_coverage=False):
         # All predicates target this diagnostic database, never domain transactions.
         from contextlib import closing
         if not 0 <= after or not 1 <= limit <= 101:
@@ -154,11 +156,14 @@ class DiagnosticStore:
                 values.append(filters[key])
         try:
             with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
+                db.execute("BEGIN")
+                coverage = self.retention.coverage(db, after) if with_coverage else None
                 rows = db.execute("SELECT e.sequence,e.payload FROM events e WHERE " +
                                   " AND ".join(clauses) + " ORDER BY e.sequence LIMIT ?",
                                   [*values, limit]).fetchall()
             # Revalidate stored bytes before returning anything to a global viewer/exporter.
-            return [{"sequence": seq, "event": DiagnosticEventV1.model_validate_json(payload).model_dump(mode="json")} for seq, payload in rows]
+            items = [{"sequence": seq, "event": DiagnosticEventV1.model_validate_json(payload).model_dump(mode="json")} for seq, payload in rows]
+            return (items, coverage) if with_coverage else items
         except (sqlite3.Error, OSError, ValueError):
             self.read_failures += 1
             if strict:
@@ -176,7 +181,7 @@ class DiagnosticStore:
                     if existing is not None:
                         return DiagnosticEventV1.model_validate_json(existing[0]) == event
                     db.execute("INSERT INTO events(event_id,payload) VALUES (?,?)", (event.event_id, payload))
-                    db.execute("DELETE FROM events WHERE sequence <= (SELECT COALESCE(MAX(sequence),0)-10000 FROM events)")
+                    self.retention.prune(db)
             return True
         except Exception:
             self.write_failures += 1
@@ -209,10 +214,23 @@ class DiagnosticStore:
                 db.execute("CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)")
                 for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
                     db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
+                self.retention.initialize(db)
+                db.commit()
+                last_cleanup = 0.0
                 while not self._stop.is_set() or not self.queue.empty():
                     try:
                         event = self.queue.get(timeout=0.1)
                     except queue.Empty:
+                        # Expire inactive stores too; no business activity is needed.
+                        import time
+                        if time.monotonic() - last_cleanup >= 60:
+                            try:
+                                self.retention.prune(db)
+                                db.commit()
+                            except Exception:
+                                db.rollback()
+                                self.write_failures += 1
+                            last_cleanup = time.monotonic()
                         continue
                     try:
                         db.execute("INSERT OR IGNORE INTO events(event_id,payload) VALUES (?,?)", (event.event_id, event.model_dump_json()))
@@ -223,10 +241,11 @@ class DiagnosticStore:
                                     "workflow": event.harness.workflow, "stage": event.harness.stage}
                             db.execute("INSERT INTO operation_links VALUES (?,?,?) ON CONFLICT(operation_id,request_id) DO UPDATE SET payload=excluded.payload",
                                        (event.harness.operation_id, event.request_id, json.dumps(link, sort_keys=True)))
-                        # Initial hard bound. Time/byte retention and export follow in OBS-AUDIT.
-                        db.execute("DELETE FROM events WHERE sequence <= (SELECT COALESCE(MAX(sequence),0)-10000 FROM events)")
+                        # Retention and loss evidence commit with the event.
+                        self.retention.prune(db)
                         db.commit()
                     except Exception:
+                        db.rollback()
                         self.write_failures += 1
                     finally:
                         self.queue.task_done()

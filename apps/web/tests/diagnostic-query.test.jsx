@@ -86,3 +86,15 @@ test("caller abort cancels the combined timeout signal and remains distinguishab
   try { await assert.rejects(queryDiagnosticEvents({}, 0, controller.signal), error => error.name === "AbortError"); }
   finally { globalThis.fetch = original; }
 });
+
+test("retention coverage cannot falsify gaps or report fewer rows than its page", () => {
+  for (const mutate of [
+    page => { page.retention.removed_through_sequence = 2; },
+    page => { page.retention.retained_events = 0; },
+    page => { page.retention.disk_size_limit_certified = true; },
+    page => { page.retention.retained_payload_bytes = -1; },
+  ]) {
+    const page = copy("events"); mutate(page);
+    assert.throws(() => decodeDiagnosticEvents(page), DiagnosticQueryError);
+  }
+});

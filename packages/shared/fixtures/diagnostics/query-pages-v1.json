@@ -43,7 +43,21 @@
       "queued": 0,
       "writer_alive": true
     },
-    "desktop_spool": null
+    "desktop_spool": null,
+    "retention": {
+      "schema_version": "diagnostic-event-retention-v1",
+      "retained_events": 1,
+      "retained_payload_bytes": 1024,
+      "removed_events": 0,
+      "removed_through_sequence": 0,
+      "legacy_timestamp_rows": 0,
+      "cursor_gap": false,
+      "max_age_seconds": 604800,
+      "max_rows": 10000,
+      "max_payload_bytes": 67108864,
+      "storage_scope": "event_payloads",
+      "disk_size_limit_certified": false
+    }
   },
   "index": {
     "items": [
