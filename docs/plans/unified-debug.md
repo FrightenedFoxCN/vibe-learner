@@ -56,6 +56,8 @@
 
   - 2026-09-10 writer 覆盖切片：每个实际 async writer 保存独立 epoch，逐事务/空闲/正常关闭记录已观察计数；保留 256 行，旧行以同事务汇总计数替代。没有关闭记录仅表示 active-or-interrupted；线程启动前、未落盘队列及检查点间丢失继续明确标为未知，拒绝完整采集声明。新增 `/diagnostics/writers` 与按需“采集覆盖”视图。38 项后端测试（含真实进程退出/重启、退休汇总和损坏记录拒绝）、8 项查询/6 项时间线测试、Web 类型、生产构建及 3 项 Chromium 场景通过。总体磁盘治理、诊断导出、统计与开销量测仍待完成。
 
+  - 2026-09-10 审计统计核心切片：版本化 report 保留原始 metric observation，按 provider call/attempt、tool、Harness stage/attempt 分组，结合实际模型、可用配置/契约及组件版本；nearest-rank P50/P95 与失败/恢复/unknown、用量样本数/缺口分开输出。父子耗时不相加，token 只聚合 provider attempt 的已报告值；冲突 span 不声明指标，缺失保持未知。14 项 audit/provider/tool/index 测试通过，含真实 ProviderObservation 重试输入。详见 `docs/diagnostic-audit.md`；一致快照导出、统计 UI 和开销量测尚未接入。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

@@ -9,6 +9,7 @@
 | [Harness 架构图](harness-architecture.md) | 可靠性生命周期、制品/效果边界与代码入口 |
 | [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
 | [API 参考](api-reference.md) | HTTP 和流式协议 |
+| [诊断审计统计](diagnostic-audit.md) | 统计分组、分位数、去重与未知数据语义 |
 | [桌面打包](desktop-packaging.md) | 本地构建、sidecar、Vault 与发布配置 |
 | [性能预算](performance-budgets-v1.md) | Room 分页、Harness 字节/调用/时延门 |
 | [解析与规划数据流](parsing-and-planning-data-flow.md) | Document → Study Unit → Learning Plan |
