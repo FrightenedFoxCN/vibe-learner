@@ -1,6 +1,6 @@
 # 统一 Logging 与 Debug 实施计划
 
-状态：已规划，未实现；在 0.3.0 发布后的后续小版本分步推进。以下四项以本文件为唯一详细任务来源，根 TODO 仅链接。质量复核仍按用户要求暂缓。
+状态：实施中；按基础、流程、Debug 视图、审计四阶段分步提交。以下四项以本文件为唯一详细任务来源，根 TODO 仅链接。质量复核仍按用户要求暂缓。
 
 ### 统一 logging 与 Debug（按 1 → 2 → 3 → 4 实施）
 
@@ -8,6 +8,7 @@
   - Python/TypeScript 共用版本化事件契约；区分客户端 action/page view、服务端 request、真实 Harness operation/trace/attempt 与持久资源身份。
   - 结构化 Python logging、前端请求入口及有界事件存储；在容器构造前初始化 logging。先打通 Persona 生成 → 保存 → 重载的纵向样例。
   - 关联 ID 仅用于诊断，不参与授权或幂等判断；跨线程、流式结束、取消和请求重放都必须正确关联。
+  - 2026-09-10 基础切片 A：已建立封闭 Python/TypeScript 事件契约、独立 SQLite 有界异步写入、结构化脱敏 Python 输出及 ASGI 请求/流式终态关联；原生 stream worker 显式复制上下文。10 项诊断/生命周期测试和 shared contracts 门通过。尚待浏览器采集、Persona 纵向关联、摄取/查询及更完整故障门；本项保持未完成。
 
 - [ ] `OBS-FLOWS-001` `[P1]` 覆盖全部功能流程和 Harness 性能记录；依赖 `OBS-FOUNDATION-001`。
   - 覆盖 Document/OCR/清洗、Planning/tools、Persona/Scene、Study/题目/附件、Tavern、Settings/Vault、导入导出及桌面启动/sidecar 退出。
@@ -29,7 +30,11 @@
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
-not a claim that a unified event store already exists.
+not a claim that every component is implemented. The initial server event store
+exists under `storage_root/diagnostics/events.sqlite3`; it retains at most 10,000
+rows using a 1,000-event queue. Time/byte retention, ingestion, query, exports and
+health visibility are still pending. Console logging intentionally excludes
+unreviewed formatted messages and exception text.
 
 ```mermaid
 flowchart TD

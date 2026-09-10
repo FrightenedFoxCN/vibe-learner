@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import queue
 import threading
+from contextvars import copy_context
 from typing import Literal
 from uuid import uuid4
 
@@ -846,7 +847,7 @@ def process_document_stream(
             interrupt_handle.mark_completed()
             event_queue.put(None)
 
-    threading.Thread(target=run, daemon=True).start()
+    threading.Thread(target=copy_context().run, args=(run,), daemon=True).start()
 
     def generate():
         while True:
@@ -2013,7 +2014,7 @@ def create_learning_plan_stream(
             interrupt_handle.mark_completed()
             event_queue.put(None)
 
-    threading.Thread(target=run, daemon=True).start()
+    threading.Thread(target=copy_context().run, args=(run,), daemon=True).start()
 
     def generate():
         while True:

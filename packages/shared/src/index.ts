@@ -9,3 +9,4 @@ export * from "./harness-artifact-access";
 export * from "./harness-eval";
 export * from "./harness-manifest";
 export * from "./tool-manifest";
+export * from "./diagnostic";
