@@ -537,3 +537,24 @@ All nine diagnostic Tavern and cross-domain process-recovery tests passed in
 15.569 seconds; `/tmp/diagnostic-tavern-crash-python.log`. No production changes
 were necessary. Browser Tavern branches, successful OCR/native paths, performance
 and consolidated final acceptance remain open.
+
+## Tavern partial/retry ownership in the real browser
+
+The disposable browser provider now injects one failure on the second actor for
+an exact test-only message. The Chromium case creates a two-person Room and
+explicitly selects both responders. It observes the real failed request followed
+by automatic same-request replay to `partial`; both POSTs share action and flow.
+Clicking “仅重试未完成角色” creates a new user action/flow, shared by its retry POST
+and subsequent Room/recovery reads. The child completes only the missing actor,
+adds no user Message and retains the original committed Message unchanged. Both
+flows have persisted Run and Harness references and exclude the trigger and
+exception text. Parent/child operation identity is separately verified by the
+HTTP diagnostic tests above; distinct user actions need not share a flow.
+
+All twelve production Chromium scenarios passed in 15.4 seconds; log:
+`/tmp/diagnostic-tavern-partial-browser.log`. Initial test drafts assumed the
+creation form was already open, every participant was automatically a responder,
+and the notice omitted its revision suffix; the final test follows the actual
+new-Room action, explicit Participant Roster selection and rendered notice.
+Production behavior did not change. Browser cancellation, OCR/native success,
+performance and consolidated final acceptance remain open.

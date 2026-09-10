@@ -591,3 +591,65 @@ test("Plan Workspace parse failure stops planning and a corrected submission own
   expect(processEvents.some(event => event.resource)).toBe(false);
   for (const secret of ["PRIVATE_BAD_PDF", "PRIVATE_BROKEN_PDF_CONTENT", "PRIVATE_RETRY_OBJECTIVE"]) expect(JSON.stringify(failedEvents)).not.toContain(secret);
 });
+
+test("Tavern partial replay and explicit child retry correlate their own browser actions", async ({ page, request }) => {
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  await page.goto("/tavern");
+  await page.getByRole("button", { name: "新建酒馆", exact: true }).click();
+  const setup = page.getByRole("region", { name: "创建房间", exact: true });
+  await setup.getByRole("textbox", { name: "标题", exact: true }).fill("Diagnostic partial Tavern");
+  await setup.getByRole("checkbox").nth(0).check();
+  await setup.getByRole("checkbox").nth(1).check();
+  const creating = page.waitForResponse(item => item.url().endsWith("/tavern/rooms") && item.request().method() === "POST");
+  await setup.getByRole("button", { name: "创建并进入", exact: true }).click();
+  const room = (await (await creating).json()).room;
+  const calls: { path: string; method: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => {
+    if (item.url().includes("/tavern/rooms")) calls.push({ path: new URL(item.url()).pathname, method: item.method(), headers: item.headers() });
+  });
+  await page.getByRole("checkbox", { name: /^Lyra / }).check();
+  await page.getByPlaceholder("输入消息。Enter 发送，Shift + Enter 换行。").fill("PRIVATE_TAVERN_PARTIAL_TRIGGER");
+  const replaying = page.waitForResponse(item => item.url().endsWith("/turns") && item.status() === 200);
+  await page.getByRole("button", { name: "发送并回应", exact: true }).click();
+  const replay = await replaying;
+  const partial = await replay.json();
+  expect(partial.run.status).toBe("partial");
+  expect(partial.generated_messages).toHaveLength(1);
+  await expect(page.getByRole("button", { name: "生成中…", exact: true })).toHaveCount(0);
+  const posts = calls.filter(item => item.path.endsWith("/turns"));
+  expect(posts).toHaveLength(2);
+  const originalFlow = posts[0].headers["x-debug-flow-id"];
+  expect(originalFlow).toBeTruthy();
+  expect(posts[1].headers["x-debug-flow-id"]).toBe(originalFlow);
+  expect(posts[1].headers["x-debug-action-id"]).toBe(posts[0].headers["x-debug-action-id"]);
+  calls.length = 0;
+  const retrying = page.waitForResponse(item => item.url().endsWith(`/${partial.run.id}/retry`));
+  await page.getByRole("button", { name: "仅重试未完成角色", exact: true }).first().click();
+  const retry = await retrying; expect(retry.status()).toBe(200);
+  const child = await retry.json();
+  expect(child.run.status).toBe("completed");
+  expect(child.run.parent_run_id).toBe(partial.run.id);
+  expect(child.generated_messages).toHaveLength(1);
+  expect(child.input_message).toBeNull();
+  await expect(page.getByText(/^剩余角色已完成回应 · revision/)).toBeVisible();
+  await expect.poll(() => calls.filter(item => item.method === "GET").length).toBeGreaterThanOrEqual(2);
+  const retryHeaders = retry.request().headers();
+  expect(retryHeaders["x-debug-flow-id"]).toBeTruthy();
+  expect(retryHeaders["x-debug-flow-id"]).not.toBe(originalFlow);
+  expect(calls.every(item => item.headers["x-debug-flow-id"] === retryHeaders["x-debug-flow-id"] && item.headers["x-debug-action-id"] === retryHeaders["x-debug-action-id"])).toBe(true);
+  const persisted = (await (await request.get(`http://127.0.0.1:18998/tavern/rooms/${room.id}`)).json()).messages;
+  expect(persisted.filter((item: any) => item.author_kind === "user")).toHaveLength(1);
+  expect(persisted.filter((item: any) => item.author_kind === "persona")).toHaveLength(2);
+  expect(persisted.find((item: any) => item.id === partial.generated_messages[0].id)).toEqual(partial.generated_messages[0]);
+  for (const [flowId, expectedRun] of [[originalFlow, partial.run], [retryHeaders["x-debug-flow-id"], child.run]] as const) {
+    let events: any[] = [];
+    await expect.poll(async () => {
+      events = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${flowId}`)).json()).items.map((item: any) => item.event);
+      return events.some(event => event.resource?.resource_id === expectedRun.id);
+    }).toBe(true);
+    expect(events.some(event => event.harness?.workflow === "tavern")).toBe(true);
+    for (const secret of ["PRIVATE_TAVERN_PARTIAL_TRIGGER", "PRIVATE_TAVERN_PARTIAL_FAILURE"]) expect(JSON.stringify(events)).not.toContain(secret);
+  }
+});

@@ -251,3 +251,8 @@ operation/trace 和消息 identity/sequence；502 不被解释为整轮无提交
 canonical 数据。9 项诊断/跨域进程恢复测试通过。测试先排空诊断队列并推进
 指定 lease 到过期，不声称未落盘日志无损或真实 provider exactly-once。
 其余浏览器分支/OCR/原生/性能和最终验收继续。
+
+2026-09-10 Tavern 浏览器部分失败/子重试验收：真实多人响应失败后的自动原请求
+读回共享 action/flow；用户显式子重试创建新 action/flow，其后续读回保持一致。
+仅补缺失演员，旧消息不变，无重复用户消息；两条 flow 的持久化诊断均排除
+消息与异常文本。12 项 Chromium 场景通过；浏览器取消/OCR/原生/性能继续。
