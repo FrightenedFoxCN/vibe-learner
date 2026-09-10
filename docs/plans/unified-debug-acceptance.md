@@ -435,3 +435,19 @@ and stage-metrics tests passed in 2.034 seconds; log:
 `/tmp/diagnostic-document-fault-python.log`. The initial test draft incorrectly
 assumed one operation per entire parse and exceeded the query page limit; the final
 assertions follow the actual bounded query and independent stage-admission contracts.
+
+## Plan Workspace failed upload correction in Chromium
+
+The real browser now exercises corrupt PDF upload → terminal parse failure →
+corrected file submission → successful Plan/initial Session. It verifies the
+visible failure notice, absence of Planning/Session POSTs after the failed parse,
+persisted failed Document and no process-request saved-resource observation.
+Upload/process share the first flow; changing the file and explicitly submitting
+again creates a new Document and a new flow shared by all four successful requests.
+This is a new user submission, distinct from the backend same-Document retry above.
+Failed-flow diagnostics exclude file/content/objective sentinels. The first draft
+used the initial file label after selection; the final test follows the actual
+“更换教材文件（PDF）” control. All eleven production Chromium scenarios passed in
+14.2 seconds; `/tmp/diagnostic-document-browser.log`. No production change was
+required. Real OCR-engine success, Tavern faults, native and performance acceptance
+remain open.

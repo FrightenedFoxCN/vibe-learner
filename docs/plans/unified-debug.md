@@ -223,3 +223,8 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 真实阶段身份以及内容/文件名排除；关闭强制 OCR 后的重试可提交同一 Document，
 沿用传入 flow 并获得新的 operation。25 项后端专项测试通过；浏览器重试动作
 归属、真实 OCR 引擎成功路径与其余异常/原生/性能验收仍继续。
+
+2026-09-10 浏览器更正提交验收：损坏 PDF 显示处理失败并停止计划/Session 请求；
+更换文件后重新提交创建新 Document/flow，成功链四个请求共享该 flow。失败解析
+无保存成功资源引用且诊断排除文件名、内容和目标。11 项生产 Chromium 场景通过，
+见[验收记录](unified-debug-acceptance.md)；其余 OCR/Tavern/原生/性能项继续。

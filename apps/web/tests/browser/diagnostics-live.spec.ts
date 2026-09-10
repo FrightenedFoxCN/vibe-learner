@@ -548,3 +548,46 @@ test("committed automatic question callback recovers after reload with the answe
   expect(turns).toHaveLength(1);
   expect(turns[0].learner_message_kind).toBe("interactive_callback");
 });
+
+test("Plan Workspace parse failure stops planning and a corrected submission owns a new flow", async ({ page, request }) => {
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const posts: { path: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => {
+    if (item.method() === "POST" && item.url().startsWith("http://127.0.0.1:18998")) posts.push({ path: new URL(item.url()).pathname, headers: item.headers() });
+  });
+  await page.goto("/plan");
+  await page.getByLabel("教材文件（PDF）", { exact: true }).setInputFiles({ name: "PRIVATE_BAD_PDF.pdf", mimeType: "application/pdf", buffer: Buffer.from("PRIVATE_BROKEN_PDF_CONTENT") });
+  await page.getByRole("textbox", { name: "学习目标", exact: true }).fill("PRIVATE_RETRY_OBJECTIVE learn evidence");
+  const failing = page.waitForResponse(item => item.url().endsWith("/process/stream"));
+  await page.getByRole("button", { name: "生成计划", exact: true }).click();
+  const failed = await failing; expect(failed.status()).toBe(200);
+  expect(JSON.parse((await failed.text()).trim().split("\n").at(-1)!).stage).toBe("stream_error");
+  await expect(page.getByRole("button", { name: "生成计划", exact: true })).toBeEnabled();
+  const failedChain = posts.filter(item => item.path === "/documents" || item.path.endsWith("/process/stream") || item.path === "/learning-plans/stream" || item.path === "/study-sessions");
+  expect(failedChain).toHaveLength(2);
+  const flow = failedChain[0].headers["x-debug-flow-id"];
+  expect(flow).toBeTruthy();
+  expect(failedChain[1].headers["x-debug-flow-id"]).toBe(flow);
+  const failedDocumentId = new URL(failed.url()).pathname.split("/")[2];
+  expect((await (await request.get(`http://127.0.0.1:18998/documents/${failedDocumentId}/status`)).json()).status).toBe("failed");
+  await expect(page.getByText(/教材处理失败：/)).toBeVisible();
+  await page.getByLabel(/^更换教材文件（PDF）/).setInputFiles({ name: "PRIVATE_CORRECTED_PDF.pdf", mimeType: "application/pdf", buffer: await readFile(new URL("./fixtures/diagnostic-document.pdf", import.meta.url)) });
+  const succeeding = page.waitForResponse(item => item.url().endsWith("/study-sessions") && item.request().method() === "POST");
+  await page.getByRole("button", { name: "生成计划", exact: true }).click();
+  expect((await succeeding).status()).toBe(200);
+  const corrected = posts.filter(item => item.path === "/documents" || item.path.endsWith("/process/stream") || item.path === "/learning-plans/stream" || item.path === "/study-sessions").slice(2);
+  expect(corrected).toHaveLength(4);
+  expect(corrected[0].headers["x-debug-flow-id"]).not.toBe(flow);
+  expect(new Set(corrected.map(item => item.headers["x-debug-flow-id"])).size).toBe(1);
+  let failedEvents: any[] = [];
+  await expect.poll(async () => {
+    failedEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${flow}`)).json()).items.map((item: any) => item.event);
+    return failedEvents.some(event => event.harness?.stage === "document_parse");
+  }).toBe(true);
+  const processEvents = failedEvents.filter(event => event.request_id === failed.headers()["x-request-id"]);
+  expect(processEvents.length).toBeGreaterThan(0);
+  expect(processEvents.some(event => event.resource)).toBe(false);
+  for (const secret of ["PRIVATE_BAD_PDF", "PRIVATE_BROKEN_PDF_CONTENT", "PRIVATE_RETRY_OBJECTIVE"]) expect(JSON.stringify(failedEvents)).not.toContain(secret);
+});
