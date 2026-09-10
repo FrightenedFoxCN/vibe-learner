@@ -972,3 +972,15 @@ sparse and contention pass. [Complete release-profile evidence](../performance/d
 retains all observations. This excludes a compiler-profile-only fix and keeps
 native I/O acceptance open. A counter-checkpoint redesign requires explicit
 crash/torn-write/migration proof before adoption; no production change was made.
+
+## Counter checkpoint candidate validated in isolation
+
+A test-only versioned/checksummed alternating-slot prototype preserves the other
+slot during overwrite, rejects decreases and damaged bytes, and recovers after an
+actual child-process exit during partial overwrite. Five tests pass (including
+the child entry point). Thirty paired checkpoint-only samples show P95 4.12 ms
+versus 8.41 ms for rename checkpoints; all pairs are retained in
+[the prototype report](../performance/diagnostic-counter-prototype-v1.md).
+Production writer remains unchanged. Legacy/pending migration, older-binary
+fail-closed behavior and full-spool integration/performance must be verified
+before adoption. The overall native gate is still open.

@@ -14,6 +14,10 @@ const MAX_SPOOL_BYTES: u64 = MAX_EVENTS as u64 * MAX_EVENT_BYTES;
 static UNIQUE: AtomicU64 = AtomicU64::new(0);
 
 #[cfg(test)]
+#[path = "diagnostic_counter_prototype.rs"]
+mod counter_prototype;
+
+#[cfg(test)]
 thread_local! {
     static WRITE_TIMING: std::cell::RefCell<Option<(Instant, Vec<(&'static str, f64)>)>> = const { std::cell::RefCell::new(None) };
 }

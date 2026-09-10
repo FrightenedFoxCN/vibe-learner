@@ -1,0 +1,189 @@
+{
+  "raw": [
+    {
+      "delta_ms": -3.8585419999999995,
+      "first": "slots",
+      "rename_ms": 6.754,
+      "slots_ms": 2.895458
+    },
+    {
+      "delta_ms": -3.9474169999999997,
+      "first": "rename",
+      "rename_ms": 7.920916999999999,
+      "slots_ms": 3.9734999999999996
+    },
+    {
+      "delta_ms": -4.074876,
+      "first": "slots",
+      "rename_ms": 7.986209,
+      "slots_ms": 3.9113330000000004
+    },
+    {
+      "delta_ms": -3.810249999999999,
+      "first": "rename",
+      "rename_ms": 7.8469999999999995,
+      "slots_ms": 4.0367500000000005
+    },
+    {
+      "delta_ms": -1.9682909999999998,
+      "first": "slots",
+      "rename_ms": 6.015083,
+      "slots_ms": 4.046792
+    },
+    {
+      "delta_ms": -3.7635000000000005,
+      "first": "rename",
+      "rename_ms": 7.742625,
+      "slots_ms": 3.979125
+    },
+    {
+      "delta_ms": -2.7429580000000007,
+      "first": "slots",
+      "rename_ms": 6.8642080000000005,
+      "slots_ms": 4.12125
+    },
+    {
+      "delta_ms": -2.824833000000001,
+      "first": "rename",
+      "rename_ms": 6.868583,
+      "slots_ms": 4.043749999999999
+    },
+    {
+      "delta_ms": -2.093333999999999,
+      "first": "slots",
+      "rename_ms": 6.0027919999999995,
+      "slots_ms": 3.9094580000000003
+    },
+    {
+      "delta_ms": -3.920042,
+      "first": "rename",
+      "rename_ms": 7.87275,
+      "slots_ms": 3.952708
+    },
+    {
+      "delta_ms": -3.9180830000000006,
+      "first": "slots",
+      "rename_ms": 7.8882080000000006,
+      "slots_ms": 3.970125
+    },
+    {
+      "delta_ms": -2.231875,
+      "first": "rename",
+      "rename_ms": 6.06175,
+      "slots_ms": 3.829875
+    },
+    {
+      "delta_ms": -2.9817500000000003,
+      "first": "slots",
+      "rename_ms": 6.941333,
+      "slots_ms": 3.959583
+    },
+    {
+      "delta_ms": -3.9172490000000004,
+      "first": "rename",
+      "rename_ms": 7.913833,
+      "slots_ms": 3.996584
+    },
+    {
+      "delta_ms": -3.1149579999999997,
+      "first": "slots",
+      "rename_ms": 7.020167,
+      "slots_ms": 3.905209
+    },
+    {
+      "delta_ms": -2.1667500000000004,
+      "first": "rename",
+      "rename_ms": 6.083875,
+      "slots_ms": 3.9171249999999995
+    },
+    {
+      "delta_ms": -3.222125,
+      "first": "slots",
+      "rename_ms": 6.955542,
+      "slots_ms": 3.733417
+    },
+    {
+      "delta_ms": -3.726541000000001,
+      "first": "rename",
+      "rename_ms": 7.839708000000001,
+      "slots_ms": 4.113167
+    },
+    {
+      "delta_ms": -3.156042999999999,
+      "first": "slots",
+      "rename_ms": 6.787083999999999,
+      "slots_ms": 3.631041
+    },
+    {
+      "delta_ms": -4.076167,
+      "first": "rename",
+      "rename_ms": 7.949292,
+      "slots_ms": 3.873125
+    },
+    {
+      "delta_ms": -3.2269169999999994,
+      "first": "slots",
+      "rename_ms": 6.8469999999999995,
+      "slots_ms": 3.620083
+    },
+    {
+      "delta_ms": -3.7160409999999997,
+      "first": "rename",
+      "rename_ms": 7.664708,
+      "slots_ms": 3.9486670000000004
+    },
+    {
+      "delta_ms": -4.393875,
+      "first": "slots",
+      "rename_ms": 8.412917,
+      "slots_ms": 4.019042
+    },
+    {
+      "delta_ms": -3.822999999999999,
+      "first": "rename",
+      "rename_ms": 7.819082999999999,
+      "slots_ms": 3.996083
+    },
+    {
+      "delta_ms": -4.130042000000001,
+      "first": "slots",
+      "rename_ms": 7.903958000000001,
+      "slots_ms": 3.773916
+    },
+    {
+      "delta_ms": -3.630624,
+      "first": "rename",
+      "rename_ms": 7.7294160000000005,
+      "slots_ms": 4.098792
+    },
+    {
+      "delta_ms": -2.4101660000000003,
+      "first": "slots",
+      "rename_ms": 6.861416,
+      "slots_ms": 4.45125
+    },
+    {
+      "delta_ms": -3.8106660000000003,
+      "first": "rename",
+      "rename_ms": 7.791708,
+      "slots_ms": 3.9810419999999995
+    },
+    {
+      "delta_ms": -5.407832000000001,
+      "first": "slots",
+      "rename_ms": 8.984791000000001,
+      "slots_ms": 3.576959
+    },
+    {
+      "delta_ms": -3.7332080000000003,
+      "first": "rename",
+      "rename_ms": 7.686875000000001,
+      "slots_ms": 3.9536670000000003
+    }
+  ],
+  "sample_pairs": 30,
+  "schema_version": "counter-checkpoint-prototype-v1",
+  "scope": "Checkpoint only; caller lock, event writes, eviction barriers and full spool recovery excluded. Production writer unchanged.",
+  "warmup_pairs": 3,
+  "prototype_sha256": "59161e67047fdcbf101f182842b4a090eea4d1a3c6d13b62eb2784aa265e3e00"
+}
