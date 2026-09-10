@@ -13,6 +13,22 @@ const MAX_EVENT_BYTES: u64 = 16 * 1024;
 const MAX_SPOOL_BYTES: u64 = MAX_EVENTS as u64 * MAX_EVENT_BYTES;
 static UNIQUE: AtomicU64 = AtomicU64::new(0);
 
+#[cfg(test)]
+thread_local! {
+    static WRITE_TIMING: std::cell::RefCell<Option<(Instant, Vec<(&'static str, f64)>)>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+fn timing_checkpoint(stage: &'static str) {
+    WRITE_TIMING.with_borrow_mut(|probe| {
+        if let Some((previous, samples)) = probe {
+            let now = Instant::now();
+            samples.push((stage, now.duration_since(*previous).as_secs_f64() * 1000.0));
+            *previous = now;
+        }
+    });
+}
+
 fn identity() -> String {
     format!(
         "desktop-{:032x}-{:08x}-{:016x}",
@@ -105,6 +121,8 @@ impl DesktopDiagnostics {
             std::thread::sleep(Duration::from_millis(1));
         }
         let drops_path = self.root.join("drops.count");
+        #[cfg(test)]
+        timing_checkpoint("lock_admission");
         let pending_count = self.root.join("drops.pending");
         let mut drops = read_counter(&drops_path)?.unwrap_or(0);
         match read_counter(&pending_count) {
@@ -130,6 +148,8 @@ impl DesktopDiagnostics {
             Err(error) => return Err(error),
         }
         let original_drops = drops;
+        #[cfg(test)]
+        timing_checkpoint("counter_recovery");
         let mut files = Vec::new();
         let mut total_bytes = 0u64;
         for (i, entry) in fs::read_dir(&self.root)?.enumerate() {
@@ -161,6 +181,8 @@ impl DesktopDiagnostics {
             files.push((path, metadata.len()));
         }
         files.sort_by(|a, b| a.0.cmp(&b.0));
+        #[cfg(test)]
+        timing_checkpoint("scan_sort");
         // Reserve a maximum-sized new record before creating its pending file.
         while files.len() >= MAX_EVENTS
             || total_bytes.saturating_add(MAX_EVENT_BYTES) > MAX_SPOOL_BYTES
@@ -185,6 +207,8 @@ impl DesktopDiagnostics {
             sync_directory(&self.root)?;
         }
         if drops != original_drops || !drops_path.exists() {
+            #[cfg(test)]
+            timing_checkpoint("eviction_sync");
             let mut file = fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
@@ -196,6 +220,8 @@ impl DesktopDiagnostics {
             sync_directory(&self.root)?;
         }
         let event_id = identity();
+        #[cfg(test)]
+        timing_checkpoint("counter_checkpoint");
         let record = Record {
             schema_version: "desktop-diagnostic-v1",
             event_id: event_id.clone(),
@@ -224,6 +250,8 @@ impl DesktopDiagnostics {
         drop(file);
         fs::rename(pending, self.root.join(format!("{event_id}.json")))?;
         sync_directory(&self.root)?;
+        #[cfg(test)]
+        timing_checkpoint("event_commit");
         Ok(())
     }
 }
@@ -298,6 +326,7 @@ mod tests {
         let mut sparse = Vec::new();
         let mut saturated = Vec::new();
         let mut contended = Vec::new();
+        let mut saturated_stages = Vec::new();
         for index in 0..33 {
             let start = Instant::now();
             diagnostics.emit(DesktopEvent::DesktopStarted, None, None);
@@ -306,8 +335,13 @@ mod tests {
         for _ in 33..MAX_EVENTS { diagnostics.emit(DesktopEvent::DesktopStarted, None, None); }
         for index in 0..33 {
             let start = Instant::now();
+            WRITE_TIMING.with_borrow_mut(|probe| *probe = Some((start, Vec::new())));
             diagnostics.emit(DesktopEvent::SidecarReady, Some(1), None);
-            if index >= 3 { saturated.push(start.elapsed().as_secs_f64() * 1000.0); }
+            let stages = WRITE_TIMING.with_borrow_mut(|probe| probe.take().unwrap().1);
+            if index >= 3 {
+                saturated.push(start.elapsed().as_secs_f64() * 1000.0);
+                saturated_stages.push(stages.into_iter().collect::<std::collections::BTreeMap<_, _>>());
+            }
         }
         assert_eq!(diagnostics.failures.load(Ordering::Relaxed), 0);
         assert_eq!(read_counter(&diagnostics.root.join("drops.count")).unwrap(), Some(33));
@@ -343,7 +377,8 @@ mod tests {
             "gate_rationale": "P95 successful emit <=25 ms limits three startup events to a nominal 75 ms contribution; contended emit <=100 ms allows scheduling headroom over the existing 50 ms lock deadline. Local probe, not a hard filesystem latency bound.",
             "retained_events": retained, "observed_refused_emits": 33, "recovered_after_contention": true,
             "warmups_per_case": 3, "passed": passed, "summary": summaries,
-            "raw": {"sparse_emit_ms": sparse, "saturated_emit_ms": saturated, "contended_emit_ms": contended}});
+            "raw": {"sparse_emit_ms": sparse, "saturated_emit_ms": saturated, "contended_emit_ms": contended,
+                "saturated_stages_ms": saturated_stages}});
         fs::write(output, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
         fs::remove_dir_all(root).unwrap();
         assert!(passed, "native spool performance budget exceeded; see report");

@@ -732,3 +732,11 @@ pass, but saturated-ring P95 25.21 ms exceeds its 25 ms budget. The failed repor
 is retained and native overhead remains open. See [method and raw reports](../performance/diagnostic-render-and-spool-v1.md).
 These scopes do not replace native creation, maximum nested-record rendering,
 full-workflow overhead or the consolidated requirement audit.
+
+Native stage investigation found filesystem synchronization dominates saturated
+emission. The unchanged runtime measured P95 23.09 ms in a later sample set;
+filename-only sorting did not establish a scan improvement and was reverted.
+Test-only stage instrumentation and both raw reports are retained in the
+[investigation](../performance/diagnostic-native-spool-stages-v1.md). The original
+25.21 ms failed observation remains part of the evidence; no runtime durability
+change or performance-acceptance closure is claimed.

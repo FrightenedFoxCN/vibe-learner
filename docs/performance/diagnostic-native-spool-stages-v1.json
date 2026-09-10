@@ -1,0 +1,382 @@
+{
+  "arch": "aarch64",
+  "debug_assertions": true,
+  "gate_rationale": "P95 successful emit <=25 ms limits three startup events to a nominal 75 ms contribution; contended emit <=100 ms allows scheduling headroom over the existing 50 ms lock deadline. Local probe, not a hard filesystem latency bound.",
+  "observed_refused_emits": 33,
+  "os": "macos",
+  "passed": true,
+  "raw": {
+    "contended_emit_ms": [
+      51.1295,
+      50.797000000000004,
+      50.979333000000004,
+      50.947708,
+      50.478415999999996,
+      50.540542,
+      50.633666,
+      50.749708,
+      50.687166999999995,
+      50.69175,
+      50.392625,
+      50.366958000000004,
+      50.9595,
+      50.783625,
+      51.446458,
+      50.521499999999996,
+      50.511959000000004,
+      50.846000000000004,
+      50.44975,
+      50.669167,
+      50.382957999999995,
+      50.705167,
+      50.776458,
+      50.892041,
+      50.90175,
+      50.7425,
+      50.718917000000005,
+      50.88575,
+      50.872583,
+      50.436707999999996
+    ],
+    "saturated_emit_ms": [
+      23.086958000000003,
+      21.802875,
+      23.939708,
+      20.98725,
+      21.032583,
+      21.125791000000003,
+      20.879749999999998,
+      21.119875,
+      20.808291,
+      23.062416,
+      20.93375,
+      20.994583000000002,
+      22.105041999999997,
+      20.897790999999998,
+      21.063417,
+      21.967084,
+      21.903333,
+      21.036791,
+      20.185209,
+      21.899083,
+      20.768334,
+      21.155959,
+      21.849583,
+      21.07575,
+      23.01725,
+      21.844915999999998,
+      22.03975,
+      22.01925,
+      23.002833,
+      21.903917
+    ],
+    "saturated_stages_ms": [
+      {
+        "counter_checkpoint": 7.194917,
+        "counter_recovery": 0.067166,
+        "event_commit": 7.901375000000001,
+        "eviction_sync": 4.705958,
+        "lock_admission": 0.074625,
+        "scan_sort": 3.1193340000000003
+      },
+      {
+        "counter_checkpoint": 7.106917,
+        "counter_recovery": 0.062166,
+        "event_commit": 7.8924579999999995,
+        "eviction_sync": 3.756666,
+        "lock_admission": 0.078459,
+        "scan_sort": 2.885459
+      },
+      {
+        "counter_checkpoint": 8.951917,
+        "counter_recovery": 0.049499999999999995,
+        "event_commit": 7.983624999999999,
+        "eviction_sync": 4.462333,
+        "lock_admission": 0.056416,
+        "scan_sort": 2.413292
+      },
+      {
+        "counter_checkpoint": 7.797625,
+        "counter_recovery": 0.043042,
+        "event_commit": 7.064667,
+        "eviction_sync": 4.225542,
+        "lock_admission": 0.05450000000000001,
+        "scan_sort": 1.780291
+      },
+      {
+        "counter_checkpoint": 8.074833,
+        "counter_recovery": 0.045916,
+        "event_commit": 6.97,
+        "eviction_sync": 4.340417,
+        "lock_admission": 0.052542,
+        "scan_sort": 1.524167
+      },
+      {
+        "counter_checkpoint": 7.822417,
+        "counter_recovery": 0.035125,
+        "event_commit": 7.12375,
+        "eviction_sync": 3.888292,
+        "lock_admission": 0.041791,
+        "scan_sort": 2.181375
+      },
+      {
+        "counter_checkpoint": 7.893125000000001,
+        "counter_recovery": 0.042833,
+        "event_commit": 7.1097909999999995,
+        "eviction_sync": 4.220542,
+        "lock_admission": 0.047834,
+        "scan_sort": 1.546875
+      },
+      {
+        "counter_checkpoint": 8.088916999999999,
+        "counter_recovery": 0.047125,
+        "event_commit": 6.112292,
+        "eviction_sync": 4.542708,
+        "lock_admission": 0.055708,
+        "scan_sort": 2.224417
+      },
+      {
+        "counter_checkpoint": 7.804333,
+        "counter_recovery": 0.08916600000000001,
+        "event_commit": 8.08625,
+        "eviction_sync": 2.616375,
+        "lock_admission": 0.133,
+        "scan_sort": 2.052834
+      },
+      {
+        "counter_checkpoint": 8.034417,
+        "counter_recovery": 0.054958,
+        "event_commit": 8.073708,
+        "eviction_sync": 4.4525,
+        "lock_admission": 0.064333,
+        "scan_sort": 2.364292
+      },
+      {
+        "counter_checkpoint": 7.040167,
+        "counter_recovery": 0.058791,
+        "event_commit": 7.953250000000001,
+        "eviction_sync": 3.7545830000000002,
+        "lock_admission": 0.049375,
+        "scan_sort": 2.057834
+      },
+      {
+        "counter_checkpoint": 8.117958,
+        "counter_recovery": 0.055833,
+        "event_commit": 6.867542,
+        "eviction_sync": 3.821625,
+        "lock_admission": 0.0765,
+        "scan_sort": 2.027167
+      },
+      {
+        "counter_checkpoint": 8.071958,
+        "counter_recovery": 0.046458,
+        "event_commit": 6.945333,
+        "eviction_sync": 4.960709,
+        "lock_admission": 0.048792,
+        "scan_sort": 1.9945829999999998
+      },
+      {
+        "counter_checkpoint": 7.9232499999999995,
+        "counter_recovery": 0.068167,
+        "event_commit": 7.1396250000000006,
+        "eviction_sync": 3.768375,
+        "lock_admission": 0.07079099999999999,
+        "scan_sort": 1.9085
+      },
+      {
+        "counter_checkpoint": 8.0625,
+        "counter_recovery": 0.044333,
+        "event_commit": 7.096417,
+        "eviction_sync": 4.138666,
+        "lock_admission": 0.049166999999999995,
+        "scan_sort": 1.654167
+      },
+      {
+        "counter_checkpoint": 8.096959,
+        "counter_recovery": 0.07483300000000001,
+        "event_commit": 7.990791000000001,
+        "eviction_sync": 3.915041,
+        "lock_admission": 0.05466699999999999,
+        "scan_sort": 1.732459
+      },
+      {
+        "counter_checkpoint": 8.024708,
+        "counter_recovery": 0.08854100000000001,
+        "event_commit": 8.024167,
+        "eviction_sync": 3.823334,
+        "lock_admission": 0.163,
+        "scan_sort": 1.745125
+      },
+      {
+        "counter_checkpoint": 7.943208,
+        "counter_recovery": 0.057958,
+        "event_commit": 7.095625,
+        "eviction_sync": 3.775875,
+        "lock_admission": 0.056833,
+        "scan_sort": 2.089417
+      },
+      {
+        "counter_checkpoint": 7.072208,
+        "counter_recovery": 0.036584,
+        "event_commit": 7.174042,
+        "eviction_sync": 4.05425,
+        "lock_admission": 0.047875,
+        "scan_sort": 1.780125
+      },
+      {
+        "counter_checkpoint": 8.060542,
+        "counter_recovery": 0.064041,
+        "event_commit": 7.0487079999999995,
+        "eviction_sync": 4.487583,
+        "lock_admission": 0.057541999999999996,
+        "scan_sort": 2.109042
+      },
+      {
+        "counter_checkpoint": 6.92875,
+        "counter_recovery": 0.061083,
+        "event_commit": 7.926708,
+        "eviction_sync": 3.7880420000000004,
+        "lock_admission": 0.063334,
+        "scan_sort": 1.9645000000000001
+      },
+      {
+        "counter_checkpoint": 6.964875,
+        "counter_recovery": 0.072083,
+        "event_commit": 8.095209,
+        "eviction_sync": 3.881583,
+        "lock_admission": 0.076709,
+        "scan_sort": 2.049375
+      },
+      {
+        "counter_checkpoint": 7.827417,
+        "counter_recovery": 0.046375,
+        "event_commit": 8.091875,
+        "eviction_sync": 3.79,
+        "lock_admission": 0.043708000000000004,
+        "scan_sort": 2.03325
+      },
+      {
+        "counter_checkpoint": 7.972916,
+        "counter_recovery": 0.042584,
+        "event_commit": 7.034292,
+        "eviction_sync": 4.085625,
+        "lock_admission": 0.045666,
+        "scan_sort": 1.863375
+      },
+      {
+        "counter_checkpoint": 7.912958,
+        "counter_recovery": 0.058,
+        "event_commit": 8.118917,
+        "eviction_sync": 4.8245830000000005,
+        "lock_admission": 0.057125,
+        "scan_sort": 2.0274170000000002
+      },
+      {
+        "counter_checkpoint": 8.003166,
+        "counter_recovery": 0.04725,
+        "event_commit": 7.942459,
+        "eviction_sync": 3.6160419999999998,
+        "lock_admission": 0.050958,
+        "scan_sort": 2.166375
+      },
+      {
+        "counter_checkpoint": 7.9332910000000005,
+        "counter_recovery": 0.048209,
+        "event_commit": 7.882209,
+        "eviction_sync": 3.876792,
+        "lock_admission": 0.049125,
+        "scan_sort": 2.226708
+      },
+      {
+        "counter_checkpoint": 7.910667,
+        "counter_recovery": 0.045833,
+        "event_commit": 8.027208,
+        "eviction_sync": 3.4489159999999996,
+        "lock_admission": 0.054625,
+        "scan_sort": 2.5127919999999997
+      },
+      {
+        "counter_checkpoint": 8.078917,
+        "counter_recovery": 0.053083,
+        "event_commit": 7.9525,
+        "eviction_sync": 4.126917,
+        "lock_admission": 0.064875,
+        "scan_sort": 2.704125
+      },
+      {
+        "counter_checkpoint": 7.9235,
+        "counter_recovery": 0.0575,
+        "event_commit": 7.931792,
+        "eviction_sync": 3.077458,
+        "lock_admission": 0.065417,
+        "scan_sort": 2.832375
+      }
+    ],
+    "sparse_emit_ms": [
+      7.9215420000000005,
+      6.967041999999999,
+      7.063291,
+      7.8887920000000005,
+      8.0635,
+      7.002208,
+      8.020125,
+      8.143667,
+      7.8411669999999996,
+      7.1381250000000005,
+      7.077208,
+      6.728292000000001,
+      8.065166,
+      7.108874999999999,
+      7.01375,
+      7.005875,
+      7.067334,
+      7.816083,
+      7.097499999999999,
+      6.986917,
+      6.878334,
+      7.306708,
+      6.753833,
+      7.920958000000001,
+      7.1264579999999995,
+      7.099292,
+      6.843375,
+      7.979082999999999,
+      8.919459,
+      8.022875
+    ]
+  },
+  "recovered_after_contention": true,
+  "retained_events": 256,
+  "schema_version": "native-spool-benchmark-v1",
+  "scope": "Actual native emit, file lock, scan, fsync and rotation in a temporary directory; no sidecar consumer or WebView.",
+  "summary": {
+    "contended_emit_ms": {
+      "budget_ms": 100.0,
+      "count": 30,
+      "max": 51.446458,
+      "p50": 50.718917000000005,
+      "p95": 51.1295,
+      "passed": true
+    },
+    "saturated_emit_ms": {
+      "budget_ms": 25.0,
+      "count": 30,
+      "max": 23.939708,
+      "p50": 21.155959,
+      "p95": 23.086958000000003,
+      "passed": true
+    },
+    "sparse_emit_ms": {
+      "budget_ms": 25.0,
+      "count": 30,
+      "max": 8.919459,
+      "p50": 7.108874999999999,
+      "p95": 8.143667,
+      "passed": true
+    }
+  },
+  "unix_time_ms": 1789044968423,
+  "warmups_per_case": 3,
+  "experiment": "Unchanged runtime with test-only stage timing",
+  "source_sha256": "8b3b2f39ebebbfbec4d52f64594d9f7fbd24914b7d9cb36bc4417c60b6d360e9"
+}
