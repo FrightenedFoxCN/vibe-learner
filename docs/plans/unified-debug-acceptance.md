@@ -6,21 +6,20 @@ is deferred as requested; implementer tests are not presented as that review.
 
 ## Current evidence checkpoint (2026-09-10)
 
-Audited source revision: `2616b10`. This replaces the old summary matrix;
+Audited source revision: `4fe96d7`. This replaces the old summary matrix;
 chronological sections below remain historical evidence with their original scope.
 Only `OBS-FOUNDATION-001` is checked in the implementation plan. The other three
 items remain open; implemented slices are distinguished from final acceptance.
 
-The latest complete release run is `/tmp/diagnostic-schema-release.log`: 745
-backend tests passed in 78.999 seconds, shared/Web reliability and type gates,
-all 13 Harness PR suites, and the production build passed. Since that run,
-Settings safe projections passed `npm run check`, production build and all 14
-Chromium diagnostic scenarios (`/tmp/settings-debug-{check,build,browser}.log`).
-Native existing-Vault unlock and save-dialog export were inspected in the actual
-macOS application. Eleven ordinary native tests passed after adding opt-in
-performance probes. The final native normal-build check passed after the
-unsuccessful sorting experiment was reverted. These are different scopes and
-must not be reported as a single fresh full release run.
+The latest complete release run is `/tmp/diagnostic-current-release.log` on
+`4fe96d7`: all 745 backend tests passed in 63.292 seconds, shared/Web reliability
+and type gates, all 13 Harness PR suites, and the production build passed. The
+separate real Chromium suite most recently passed 16 cases after the import
+boundary fix (`/tmp/diagnostic-import-browser.log`). Native existing-Vault unlock,
+save/lock/read-back and save-dialog export were inspected in the actual macOS app.
+Eleven ordinary native tests and the normal-build check passed in preceding native
+slices; the new isolated creation application also built successfully. None of
+these checks closes the remaining functional/performance items below.
 
 For this audit, `uv run --directory services/ai python -m unittest discover -s
 tests -p 'test_diagnostic*.py'` passed all 110 diagnostic tests in 9.976 seconds
@@ -804,3 +803,27 @@ with maximum delta 64.77 ms explicitly retained. Candidate generation has actual
 See [method and complete raw report](../performance/diagnostic-persona-workflow-v1.md).
 This fills one backend workflow comparison; it does not close all-workflow,
 browser/native, saturated-spool or remaining native functional acceptance.
+
+## Fresh release gate and isolated native creation setup
+
+The full `npm run check:release` completed successfully on `4fe96d7`; its results
+are summarized at the top. A separate temporary native bundle,
+`/tmp/Vibe Diagnostic Creation.app`, uses identifier
+`com.vibelearner.diagnostic-creation-acceptance` and its own application-support
+storage, leaving the previous acceptance Vault untouched. It runs the current
+source sidecar and production Web server on port 3000. Restarting the old Web
+process after the release build resolved a stale static-resource mismatch.
+
+The actual app displays unconfigured Vault and the create/unlock form. Before
+handing off credential creation, a read-only health query verified the writer is
+alive, queue/drops/read failures are zero, and 29 events are persisted. Five spool
+persistence retry failures are visible, matching the already investigated startup
+contention pattern; no claim of lossless startup is made. Native build log:
+`/tmp/diagnostic-creation-build.log`; readiness observation:
+`/tmp/diagnostic-creation-ready.json`. The UI creation itself is still pending and
+must not be represented by this setup as completed.
+
+The computer-use tool's credential-creation rule requires the user to enter,
+confirm and submit a new credential. Once the user creates this isolated Vault,
+verify actual create/read-back events before proceeding with test-secret clearing.
+Other outstanding measurements remain independent work while awaiting that action.
