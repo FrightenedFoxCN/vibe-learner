@@ -386,3 +386,29 @@ then all scenarios passed. Logs: `/tmp/diagnostic-study-alternates-{python,brows
 No shared/public response shape changed. Remaining callback-flow wiring,
 Document/OCR fault paths, Tavern partial/retry/cancel/recovery, native success and
 performance acceptance remain open; no top-level goal item is closed here.
+
+## Immediate question callback flow and reload recovery slice
+
+An immediately executed question callback now inherits the successful answer's
+random diagnostic flow, while allocating its own action. The callback request's
+bounded tab-local diagnostic mapping preserves that flow across reload/query
+recovery. Existing request mappings cannot be rebound by a later parent hint;
+invalid hints fall back to ordinary allocation. No diagnostic metadata enters
+chat admission JSON, request fingerprint, durable pending-operation state or the
+model/public response schema. Diagnostic entropy failure still permits answer
+read-back and callback handling. Paused callbacks aggregate into a later learner
+action and retain that action's separate flow; this slice covers immediate callbacks.
+
+All ten production Chromium scenarios passed in 15.4 seconds. The added scenario
+lets the real callback commit, aborts its response, reloads the page, and verifies
+query-only recovery with the answer flow, new action/page-view, exactly one callback
+POST and the original committed Turn. The existing CAS/retry scenario additionally
+checks distinct callback action and callback-specific resource observation by
+request ID, plus exclusion of grading/prompt material. Unit regressions cover
+mapping reload/non-rebinding, malformed hints, transport/body separation, hidden
+send/query propagation and entropy failure. `npm run check` and production Web
+build passed. Logs: `/tmp/diagnostic-callback-{check,build,browser}.log`.
+
+This supersedes the separate immediate-callback flow limitation above. Remaining
+Document/OCR faults, Tavern partial/retry/cancel/recovery, native Vault/export,
+performance acceptance and deferred independent review remain open.

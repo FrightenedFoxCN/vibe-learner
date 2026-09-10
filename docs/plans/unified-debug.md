@@ -210,3 +210,10 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 保存后的 Session 资源引用使用已验证回执中的 identity/revision。自动续接仍
 使用独立 flow，继承关联以及其他异常、原生和性能验收继续，见
 [验收记录](unified-debug-acceptance.md)。
+
+2026-09-10 自动续接关联：即时互动题 callback 继承已保存答案的 flow，分配独立
+的 action；刷新后的查询恢复保留原 flow，不重复提交。诊断映射不进入业务请求
+体或持久化 pending 状态，已有请求关联不能被后续提示改绑。暂停后汇入后续
+学习动作的 callback 仍随该动作使用独立 flow。`npm run check`、生产构建及
+10 项真实 Chromium 场景通过，含真实提交后丢失响应、刷新查询和唯一 Turn
+验证。详见[验收记录](unified-debug-acceptance.md)，其他异常/原生/性能项继续。

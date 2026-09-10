@@ -1833,8 +1833,9 @@ export async function sendStudyMessage(input: {
   followUpId?: string;
   hiddenMessagePrefix?: string;
   attachments?: File[];
+  diagnosticFlowId?: string | null;
 }): Promise<StudyChatOperationResponse> {
-  const context = studyDiagnosticContext(input.sessionId, input.clientRequestId);
+  const context = studyDiagnosticContext(input.sessionId, input.clientRequestId, input.diagnosticFlowId);
   const hasAttachments = Boolean(input.attachments?.length);
   const response = hasAttachments
     ? await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat-with-attachments`, {
@@ -1878,10 +1879,11 @@ export async function sendStudyMessage(input: {
 export async function getStudyChatOperation(input: {
   sessionId: string;
   clientRequestId: string;
+  diagnosticFlowId?: string | null;
 }): Promise<StudyChatOperationResponse> {
   const diagnosticResponse = await request(
       `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
-      undefined, studyDiagnosticContext(input.sessionId, input.clientRequestId),
+      undefined, studyDiagnosticContext(input.sessionId, input.clientRequestId, input.diagnosticFlowId),
     );
   const payload = await readJson<unknown>(
     diagnosticResponse,
@@ -1911,8 +1913,7 @@ export async function submitStudyQuestionAttempt(input: {
   expectedSessionRevision: number;
   clientAttemptId: string;
   submittedAnswer: string;
-}): Promise<StudyQuestionAttemptCommitResult> {
-  const context = diagnosticContext(createDiagnosticId());
+}, context: DiagnosticContext = diagnosticContext(createDiagnosticId())): Promise<StudyQuestionAttemptCommitResult> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`, {
       method: "POST",
       headers: {

@@ -49,6 +49,7 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
     message: string;
     messageKind: "session_prelude" | "scheduled_follow_up" | "interactive_callback";
     followUpId?: string;
+    diagnosticFlowId?: string | null;
   }) => {
     if (!mounted.current) return null;
     const draft: StudyChatDraft = {
@@ -69,6 +70,7 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
         ? await port.getStudyChatOperation({
             sessionId: input.session.id,
             clientRequestId: input.clientRequestId,
+            ...(input.diagnosticFlowId ? { diagnosticFlowId: input.diagnosticFlowId } : {}),
           })
         : await port.sendStudyMessage({
             sessionId: input.session.id,
@@ -77,6 +79,7 @@ export function useStudyMessages(options: StudyMessageOptions, port: StudyMessag
             message: input.message,
             messageKind: input.messageKind,
             followUpId: input.followUpId,
+            ...(input.diagnosticFlowId ? { diagnosticFlowId: input.diagnosticFlowId } : {}),
           });
     } catch (error) {
       if (!isCurrentStudyResponseTicket(ticket)) {

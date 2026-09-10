@@ -16,8 +16,8 @@ function deferred() {
 function fixture() {
   const view = new StudyAsyncViewFence({ session: session() });
   const writes = [], applied = [], callbacks = [], forgotten = [], notices = [];
-  const port = Object.fromEntries(["submitStudyQuestionAttempt", "resolveStudyPlanConfirmation"].map(name => [name, input => {
-    const pending = deferred(); writes.push({ name, input, ...pending }); return pending.promise;
+  const port = Object.fromEntries(["submitStudyQuestionAttempt", "resolveStudyPlanConfirmation"].map(name => [name, (input, context) => {
+    const pending = deferred(); writes.push({ name, input, context, ...pending }); return pending.promise;
   }]));
   const h = renderHook(() => useStudyCommitActions({ view,
     automaticStudyRequest: () => ({ clientRequestId: "client-attempt-1", queryExisting: false }),
@@ -41,7 +41,8 @@ test("answer submission deduplicates a Turn and calls back only from matching pe
   const committed = h.committed();
   await act(async () => { h.writes[0].resolve(committed); assert.equal(await save, true); });
   assert.equal(h.callbacks[0].value, committed.session);
-  assert.deepEqual(h.callbacks[0].input, { turnId: "turn-1" });
+  assert.ok(h.writes[0].context.flow_id);
+  assert.deepEqual(h.callbacks[0].input, { turnId: "turn-1", diagnosticFlowId: h.writes[0].context.flow_id });
   assert.equal(h.forgotten.length, 1);
 });
 
@@ -105,4 +106,21 @@ test("switching Study Unit within the same Session prevents the old answer from 
   assert.equal(h.view.session.studyUnitId, "next-unit");
   assert.deepEqual(h.applied, []);
   assert.deepEqual(h.callbacks, []);
+});
+
+
+test("diagnostic ID failure does not change a committed answer or suppress its callback", async () => {
+  const h = fixture(); let save;
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+  try {
+    Object.defineProperty(globalThis, "crypto", { configurable: true, value: { randomUUID() { throw Error("diagnostic entropy denied"); } } });
+    act(() => { save = h.result.current.handleSubmitQuestionAttempt(answer); });
+    await act(async () => { h.writes[0].resolve(h.committed()); assert.equal(await save, true); });
+    assert.equal(h.callbacks.length, 1);
+    assert.equal(h.callbacks[0].input.diagnosticFlowId, null);
+    assert.equal(h.applied.length, 1);
+  } finally {
+    if (descriptor) Object.defineProperty(globalThis, "crypto", descriptor);
+    else delete globalThis.crypto;
+  }
 });

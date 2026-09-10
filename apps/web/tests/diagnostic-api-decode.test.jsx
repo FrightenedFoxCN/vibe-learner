@@ -170,3 +170,33 @@ test("question attempt and persisted Session read-back share context even when r
     assert.ok(!JSON.stringify(events).includes("PRIVATE"));
   } finally { globalThis.fetch = original; page.dispose(); replacement?.dispose(); }
 });
+
+
+test("inherited callback flows survive reload and cannot rebind a known request", () => {
+  let raw = null;
+  const storage = { read: () => raw, write: value => { raw = value; } };
+  const flows = createStudyDiagnosticFlows(storage, () => 1000, () => "allocated-flow");
+  const first = flows("session", "callback", "answer-flow");
+  assert.equal(first.flow_id, "answer-flow");
+  assert.equal(flows("session", "callback", "different-parent").flow_id, "answer-flow");
+  const reload = createStudyDiagnosticFlows(storage, () => 1000, () => "new-flow");
+  assert.equal(reload("session", "callback").flow_id, "answer-flow");
+  assert.equal(reload("session", "other-callback", "PRIVATE invalid hint").flow_id, "new-flow");
+  assert.ok(!raw.includes("PRIVATE"));
+});
+
+test("callback ancestry is only diagnostic metadata and survives query-only recovery", async () => {
+  const original = globalThis.fetch, sent = [];
+  try {
+    globalThis.fetch = async (url, init) => { sent.push({ url, headers: new Headers(init.headers), body: init.body }); return Response.json(null); };
+    const input = { sessionId: "inherited-session", clientRequestId: "inherited-callback", expectedSessionRevision: 5, message: "PRIVATE_CALLBACK", messageKind: "interactive_callback", diagnosticFlowId: "answer-flow" };
+    await assert.rejects(sendStudyMessage(input));
+    await assert.rejects(getStudyChatOperation({ sessionId: input.sessionId, clientRequestId: input.clientRequestId }));
+    assert.equal(sent[0].headers.get("X-Debug-Flow-Id"), "answer-flow");
+    assert.equal(sent[1].headers.get("X-Debug-Flow-Id"), "answer-flow");
+    assert.notEqual(sent[0].headers.get("X-Debug-Action-Id"), sent[1].headers.get("X-Debug-Action-Id"));
+    assert.equal(Object.hasOwn(JSON.parse(sent[0].body), "diagnosticFlowId"), false);
+    assert.ok(!sent[0].body.includes("answer-flow"));
+    assert.ok(!sent[1].url.includes("answer-flow"));
+  } finally { globalThis.fetch = original; }
+});

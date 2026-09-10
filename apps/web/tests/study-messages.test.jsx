@@ -107,3 +107,20 @@ test("automatic retries query a retained identity and forget it only after safe 
   assert.notEqual(next.clientRequestId, first.clientRequestId);
   assert.equal(next.queryExisting, false);
 });
+
+
+test("callback diagnostic ancestry reaches sends and query retries without entering durable admission state", async () => {
+  const h = fixture(); let send;
+  const key = "callback:s:t:4";
+  const first = h.result.current.automaticStudyRequest(key, "callback");
+  act(() => { send = h.result.current.sendHiddenSessionMessage({ session, ...first, operationKey: key, message: "hidden answer", messageKind: "interactive_callback", diagnosticFlowId: "answer-flow" }).catch(String); });
+  assert.equal(h.writes[0].input.diagnosticFlowId, "answer-flow");
+  assert.equal(Object.hasOwn(h.store.readPendingStudyOperation(), "diagnosticFlowId"), false);
+  await act(async () => { h.writes[0].reject(Error("network lost")); await send; });
+  const retry = h.result.current.automaticStudyRequest(key, "callback");
+  assert.equal(retry.clientRequestId, first.clientRequestId);
+  act(() => { send = h.result.current.sendHiddenSessionMessage({ session, ...retry, operationKey: key, message: "hidden answer", messageKind: "interactive_callback", diagnosticFlowId: "answer-flow" }); });
+  assert.equal(h.queries[0].input.diagnosticFlowId, "answer-flow");
+  await act(async () => { h.queries[0].resolve(h.receipt("committed", first.clientRequestId)); await send; });
+  assert.equal(h.writes.length, 1);
+});

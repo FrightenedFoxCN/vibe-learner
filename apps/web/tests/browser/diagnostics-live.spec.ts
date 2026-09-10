@@ -472,6 +472,8 @@ test("interactive question CAS conflict and retry use persisted read-back while 
   expect((await continued.json()).status).toBe("committed");
   await expect(page.getByText(/已记录/).first()).toBeVisible();
   const successful = saved.request().headers();
+  expect(continued.request().headers()["x-debug-flow-id"]).toBe(successful["x-debug-flow-id"]);
+  expect(continued.request().headers()["x-debug-action-id"]).not.toBe(successful["x-debug-action-id"]);
   const readBack = sent.find(item => item.method === "GET" && item.path === `/study-sessions/${sessionId}` && item.headers["x-debug-action-id"] === successful["x-debug-action-id"]);
   expect(readBack).toBeTruthy();
   expect(readBack!.headers["x-debug-flow-id"]).toBe(successful["x-debug-flow-id"]);
@@ -491,10 +493,58 @@ test("interactive question CAS conflict and retry use persisted read-back while 
   let callbackEvents: any[] = [];
   await expect.poll(async () => {
     callbackEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${continued.request().headers()["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
-    return callbackEvents.some(event => event.resource?.resource_id === sessionId);
+    return callbackEvents.some(event => event.resource?.resource_id === sessionId && event.request_id === continued.headers()["x-request-id"]);
   }).toBe(true);
   const generationEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${generation.request().headers()["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
   expect(generationEvents.some((event: any) => event.harness?.workflow === "study_chat")).toBe(true);
   const all = JSON.stringify([...generationEvents, ...successfulEvents, ...failedEvents, ...callbackEvents]);
   for (const secret of ["PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER", "PRIVATE_DIAGNOSTIC_QUESTION_PROMPT", "PRIVATE_DIAGNOSTIC_GRADING_EXPLANATION", "grading_spec", "answer_key", "correct_option_key", "accepted_answers"]) expect(all).not.toContain(secret);
+});
+
+test("committed automatic question callback recovers after reload with the answer flow", async ({ page, request }) => {
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  let callbackHeaders: Record<string, string> = {}, clientRequestId = "", sessionId = "", receipt: any;
+  let callbackPosts = 0;
+  const queries: Record<string, string>[] = [];
+  page.on("request", item => {
+    if (clientRequestId && item.url().includes(`/chat-operations/${clientRequestId}`)) queries.push(item.headers());
+  });
+  await page.route("**/study-sessions/*/chat", async route => {
+    const input = route.request().postDataJSON();
+    if (input.message_kind !== "interactive_callback") { await route.continue(); return; }
+    callbackPosts += 1;
+    callbackHeaders = route.request().headers(); clientRequestId = input.client_request_id;
+    sessionId = new URL(route.request().url()).pathname.split("/")[2];
+    const upstream = await route.fetch();
+    expect(upstream.status()).toBe(200);
+    receipt = await upstream.json(); expect(receipt.status).toBe("committed");
+    await route.abort("failed");
+  });
+  await page.goto("/study");
+  await expect(page.getByRole("button", { name: "发送", exact: true })).toBeEnabled();
+  await page.getByPlaceholder("输入本节学习问题…").fill("PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER");
+  await page.getByRole("button", { name: "发送", exact: true }).click();
+  await expect(page.getByRole("button", { name: "A. Diagnostic first choice", exact: true }).last()).toBeEnabled();
+  await page.getByRole("button", { name: "A. Diagnostic first choice", exact: true }).last().click();
+  const saving = page.waitForResponse(item => item.url().endsWith("/attempt"));
+  await page.getByRole("button", { name: "提交答案", exact: true }).last().click();
+  const saved = await saving; expect(saved.status()).toBe(200);
+  const answerHeaders = saved.request().headers();
+  await expect(page.getByRole("button", { name: "查询本次请求结果", exact: true })).toBeVisible();
+  expect(answerHeaders["x-debug-flow-id"]).toBeTruthy();
+  expect(callbackHeaders["x-debug-flow-id"]).toBe(answerHeaders["x-debug-flow-id"]);
+  expect(callbackHeaders["x-debug-action-id"]).not.toBe(answerHeaders["x-debug-action-id"]);
+  await page.reload();
+  await expect.poll(() => queries.length).toBeGreaterThan(0);
+  await expect(page.getByRole("button", { name: "查询本次请求结果", exact: true })).toHaveCount(0);
+  expect(queries[0]["x-debug-flow-id"]).toBe(answerHeaders["x-debug-flow-id"]);
+  expect(queries[0]["x-debug-action-id"]).not.toBe(callbackHeaders["x-debug-action-id"]);
+  expect(queries[0]["x-debug-page-view-id"]).not.toBe(callbackHeaders["x-debug-page-view-id"]);
+  expect(callbackPosts).toBe(1);
+  const persisted = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  const turns = persisted.turns.filter((turn: any) => turn.id === receipt.committed_turn_id);
+  expect(turns).toHaveLength(1);
+  expect(turns[0].learner_message_kind).toBe("interactive_callback");
 });

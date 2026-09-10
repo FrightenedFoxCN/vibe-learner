@@ -104,7 +104,7 @@ export function useStudyContinuation(options: ContinuationOptions, port: StudyCo
     const session = await latest.current.ensureSessionForSection(input.studyUnitId, { clearResponseOnSwitch: false });
     return session ? runPrelude(session, { ...input, sectionTitle: input.sectionTitle || session.studyUnitTitle || session.studyUnitId, themeHint: input.themeHint ?? session.themeHint ?? "", force: true }) : false;
   }
-  async function triggerInteractiveQuestionCallback(session: StudySessionRecord, input: { turnId: string }) {
+  async function triggerInteractiveQuestionCallback(session: StudySessionRecord, input: { turnId: string; diagnosticFlowId?: string | null }) {
     if (!current(session)) return;
     const question = session.turns.find(turn => turn.id === input.turnId)?.interactiveQuestion;
     if (!question?.callBack) return;
@@ -122,7 +122,7 @@ export function useStudyContinuation(options: ContinuationOptions, port: StudyCo
     begin(); const revision = latest.current.view.viewRevision;
     try {
       const operationKey = `callback:${session.id}:${input.turnId}:${session.revision}`;
-      await latest.current.sendHiddenSessionMessage({ session, operationKey, ...latest.current.automaticStudyRequest(operationKey, "callback"), message, messageKind: "interactive_callback" });
+      await latest.current.sendHiddenSessionMessage({ session, operationKey, ...latest.current.automaticStudyRequest(operationKey, "callback"), message, messageKind: "interactive_callback", diagnosticFlowId: input.diagnosticFlowId });
     } catch (error) {
       if (current(session, revision)) latest.current.onNotice(resolveStudySessionErrorNotice(error, `答案已记录，续问失败：${String(error)}`, "response"));
       logWorkspaceError("workflow:study_attempt:callback_error", error);

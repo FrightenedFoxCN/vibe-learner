@@ -13,7 +13,7 @@ interface StoragePort { read(): string | null; write(value: string): void }
 export function createStudyDiagnosticFlows(storage: StoragePort, now = Date.now, allocate = createDiagnosticId) {
   let entries: Entry[] = [];
   let loaded = false;
-  return (sessionId: string, clientRequestId: string) => {
+  return (sessionId: string, clientRequestId: string, inheritedFlowId?: string | null) => {
     const timestamp = now();
     if (!loaded) {
       loaded = true;
@@ -39,7 +39,9 @@ export function createStudyDiagnosticFlows(storage: StoragePort, now = Date.now,
     if (!identity(sessionId) || !identity(clientRequestId)) return diagnosticContext();
     let entry = entries.find(item => item.sessionId === sessionId && item.clientRequestId === clientRequestId);
     if (!entry) {
-      const flowId = allocate();
+      // Existing request ownership wins over a later parent's hint. Only a new
+      // diagnostic mapping may inherit a reviewed random flow identity.
+      const flowId = flowIdentity(inheritedFlowId) ? inheritedFlowId : allocate();
       if (!flowIdentity(flowId)) return diagnosticContext();
       entry = { sessionId, clientRequestId, flowId, createdAt: timestamp };
       entries = [...entries.slice(-(LIMIT - 1)), entry];

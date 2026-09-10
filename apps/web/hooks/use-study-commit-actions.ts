@@ -6,6 +6,7 @@ import { submitStudyQuestionAttempt, resolveStudyPlanConfirmation } from "../lib
 import { StudyAsyncViewFence } from "../lib/async-result-fence";
 import { decideStudyQuestionAttemptApply } from "../lib/study-question-attempt";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
+import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
 
 interface StudyCommitOptions {
@@ -14,7 +15,7 @@ interface StudyCommitOptions {
   forgetAutomaticStudyRequest: (key: string) => void;
   onSession: (session: StudySessionRecord) => void;
   onPlan: (plan: LearningPlan) => void;
-  onCommittedQuestion: (session: StudySessionRecord, input: { turnId: string }) => Promise<void>;
+  onCommittedQuestion: (session: StudySessionRecord, input: { turnId: string; diagnosticFlowId?: string | null }) => Promise<void>;
   onNotice: (notice: string) => void;
 }
 export interface StudyCommitPort {
@@ -52,13 +53,14 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
     if (!begin(attemptKey)) return false;
     try {
       const attemptIdentity = latest.current.automaticStudyRequest(attemptKey, "attempt");
+      const context = diagnosticContext(createDiagnosticId());
       const committed = await port.submitStudyQuestionAttempt({
         sessionId: currentSession.id,
         turnId: input.turnId,
         expectedSessionRevision: currentSession.revision,
         clientAttemptId: attemptIdentity.clientRequestId,
         submittedAnswer: input.submittedAnswer,
-      });
+      }, context);
       const nextSession = committed.session;
       const latestSession = mounted.current && view.viewRevision === targetViewRevision ? view.session : null;
       const applyDecision = decideStudyQuestionAttemptApply({
@@ -83,6 +85,7 @@ export function useStudyCommitActions(options: StudyCommitOptions, port: StudyCo
       if (mounted.current && authoritativeSession) {
         void latest.current.onCommittedQuestion(authoritativeSession, {
           turnId: input.turnId,
+          diagnosticFlowId: context.flow_id,
         });
       }
       latest.current.forgetAutomaticStudyRequest(

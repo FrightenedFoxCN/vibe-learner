@@ -106,9 +106,10 @@ test("paused answer callbacks use only committed grading and are retained for th
 test("active answer callback sends the committed result and never invents missing grading", async () => {
   const h = fixture(); const committed = structuredClone(h.session); commitAttempt(committed, attempt());
   h.view.activateSession(committed); let send;
-  act(() => { send = h.result.current.triggerInteractiveQuestionCallback(committed, { turnId: "turn-1" }); });
+  act(() => { send = h.result.current.triggerInteractiveQuestionCallback(committed, { turnId: "turn-1", diagnosticFlowId: "answer-flow" }); });
   assert.match(h.messages[0].input.message, /判定：正确/);
   assert.equal(h.messages[0].input.operationKey, "callback:session-1:turn-1:5");
+  assert.equal(h.messages[0].input.diagnosticFlowId, "answer-flow");
   await act(async () => { h.messages[0].resolve({ status: "committed" }); await send; });
 });
 
