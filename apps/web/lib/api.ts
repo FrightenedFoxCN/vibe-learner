@@ -351,10 +351,11 @@ export function decodeTavernHttpError(error: unknown): TavernErrorDetail | null 
 
 async function requestTavernMutationWithRecovery(
   input: string,
-  init: RequestInit
+  init: RequestInit,
+  context = diagnosticContext(createDiagnosticId())
 ): Promise<Response> {
   try {
-    const response = await request(input, init);
+    const response = await request(input, init, context);
     if (!response.ok) await readJson<unknown>(response);
     return response;
   } catch (error) {
@@ -367,7 +368,7 @@ async function requestTavernMutationWithRecovery(
     }
     // The server has already committed terminal evidence. Replaying the exact
     // request key is query-only recovery and must not invoke the model again.
-    return await request(input, init);
+    return await request(input, init, context);
   }
 }
 
@@ -655,19 +656,19 @@ export async function listPersonas(context?: DiagnosticContext): Promise<Persona
 }
 
 export async function listTavernRooms(
-  input: { limit?: number; cursor?: string } = {}
+  input: { limit?: number; cursor?: string } = {}, context?: DiagnosticContext
 ): Promise<TavernRoomPage> {
   const params = new URLSearchParams();
   if (input.limit !== undefined) params.set("limit", String(input.limit));
   if (input.cursor) params.set("cursor", input.cursor);
   const suffix = params.toString();
-  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms${suffix ? `?${suffix}` : ""}`);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms${suffix ? `?${suffix}` : ""}`, undefined, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomList(payload));
 }
 
 export async function createTavernRoom(
-  input: CreateTavernRoomInput
+  input: CreateTavernRoomInput, context?: DiagnosticContext
 ): Promise<TavernRoomDetail> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms`, {
       method: "POST",
@@ -689,7 +690,7 @@ export async function createTavernRoom(
           : undefined,
         idempotency_key: input.idempotencyKey,
       }),
-    });
+    }, context);
   const payload = await readJson<any>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomDetail(payload));
 }
@@ -700,7 +701,7 @@ export async function getTavernRoom(input: {
   beforeSequence?: number;
   tail?: boolean;
   limit?: number;
-}): Promise<TavernRoomDetail> {
+}, context?: DiagnosticContext): Promise<TavernRoomDetail> {
   const query = new URLSearchParams();
   if (input.afterSequence !== undefined) {
     query.set("after_sequence", String(input.afterSequence));
@@ -716,7 +717,7 @@ export async function getTavernRoom(input: {
   }
   const suffix = query.toString();
   const diagnosticResponse = await request(
-      `${AI_BASE_URL()}/tavern/rooms/${input.roomId}${suffix ? `?${suffix}` : ""}`
+      `${AI_BASE_URL()}/tavern/rooms/${input.roomId}${suffix ? `?${suffix}` : ""}`, undefined, context
     );
   const payload = await readJson<any>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomDetail(payload, input.roomId));
@@ -724,7 +725,7 @@ export async function getTavernRoom(input: {
 
 export async function updateTavernRoom(
   roomId: string,
-  input: UpdateTavernRoomInput
+  input: UpdateTavernRoomInput, context?: DiagnosticContext
 ): Promise<TavernRoomDetail> {
   const body: Record<string, unknown> = {
     expected_revision: input.expectedRoomRevision,
@@ -739,7 +740,7 @@ export async function updateTavernRoom(
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    });
+    }, context);
   const payload = await readJson<any>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomDetail(payload, roomId));
 }
@@ -758,18 +759,18 @@ export async function deleteTavernRoom(
 
 export async function listTavernRuns(
   roomId: string,
-  limit = 50
+  limit = 50, context?: DiagnosticContext
 ): Promise<TavernRun[]> {
-  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs?limit=${limit}`);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs?limit=${limit}`, undefined, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernRunList(payload, roomId));
 }
 
 export async function getTavernRunRecovery(
   roomId: string,
-  limit = 50
+  limit = 50, context?: DiagnosticContext
 ): Promise<TavernRunRecoveryChain[]> {
-  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/run-recovery?limit=${limit}`);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/run-recovery?limit=${limit}`, undefined, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernRunRecovery(payload, roomId));
 }
@@ -790,7 +791,7 @@ function serializeTavernTurnInput(input: TavernTurnInput) {
 
 export async function runTavernTurn(
   roomId: string,
-  input: TavernTurnInput
+  input: TavernTurnInput, context?: DiagnosticContext
 ): Promise<TavernTurnResult> {
   const diagnosticResponse = await requestTavernMutationWithRecovery(
     `${AI_BASE_URL()}/tavern/rooms/${roomId}/turns`,
@@ -798,7 +799,7 @@ export async function runTavernTurn(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(serializeTavernTurnInput(input)),
-    }
+    }, context
   );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
@@ -807,7 +808,7 @@ export async function runTavernTurn(
 export async function retryTavernRun(
   roomId: string,
   runId: string,
-  input: RetryTavernRunInput
+  input: RetryTavernRunInput, context?: DiagnosticContext
 ): Promise<TavernTurnResult> {
   const diagnosticResponse = await requestTavernMutationWithRecovery(
     `${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/retry`,
@@ -818,7 +819,7 @@ export async function retryTavernRun(
         idempotency_key: input.idempotencyKey,
         expected_room_revision: input.expectedRoomRevision,
       }),
-    }
+    }, context
   );
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
@@ -826,22 +827,22 @@ export async function retryTavernRun(
 
 export async function resumeTavernRun(
   roomId: string,
-  runId: string
+  runId: string, context?: DiagnosticContext
 ): Promise<TavernTurnResult> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/resume`, {
       method: "POST",
-    });
+    }, context);
   const payload = await readJson<any>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
 }
 
 export async function cancelTavernRun(
   roomId: string,
-  runId: string
+  runId: string, context?: DiagnosticContext
 ): Promise<TavernTurnResult> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/cancel`, {
       method: "POST",
-    });
+    }, context);
   const payload = await readJson<any>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
 }

@@ -151,3 +151,25 @@ the HTTP response, refreshes, recovers by querying the original request, verifie
 the retained flow/new action/new page and exactly one matching persisted Turn.
 This proves that recovery scenario; full attachment staging and interactive
 question product acceptance, Tavern and the other audit gaps remain unfinished.
+
+## Tavern mutation/read-back correlation slice
+
+Tavern mutations, their result refreshes and foreground Run polling now capture
+one diagnostic context. A same-room cancellation replacing the current mutation
+retains its flow with a new action. Room load/refresh and automatic resume group
+their own related requests. The explicit server-authorized terminal replay keeps
+the same URL/body/context; it does not broaden the replay policy. Later page
+loads or child retries currently start new flows and use canonical operation/Run
+lineage for historical association, not an invented persisted flow guarantee.
+
+Verification: 40 Tavern state/decoder regressions passed (one optional externally
+populated backend test skipped); eight diagnostic API tests and production Web
+build passed. All seven real Chromium diagnostic scenarios passed. The new
+Tavern scenario creates a room and tests normal turn completion plus an actually
+committed turn whose HTTP response is deliberately lost. Both result-refresh
+paths carry the original flow/action, canonical Tavern references are visible,
+message content is excluded from diagnostics, and each user message exists once.
+The initial browser run exposed a test assumption that an empty composer could
+send; that wait was corrected and the complete suite passed. Facilitated partial
+failure/child retry, active cancellation/lease recovery diagnostic acceptance and
+other remaining audit requirements are not closed by these direct-turn tests.

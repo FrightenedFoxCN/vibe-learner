@@ -68,15 +68,17 @@ test("Tavern terminal replay keeps exact request and attributes decoder rejectio
   const original = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, init) => {
-    calls.push({ url, body: init.body, method: init.method });
+    calls.push({ url, body: init.body, method: init.method, flow: new Headers(init.headers).get("X-Debug-Flow-Id"), action: new Headers(init.headers).get("X-Debug-Action-Id") });
     return calls.length === 1
       ? Response.json({ detail: { code: "tavern_run_failed", run_id: "run-1", child_run_id: "", current_revision: 1, recovery_action: "replay_same_request" } }, { status: 502, headers: { "X-Request-ID": "replay_initial" } })
       : Response.json(null, { headers: { "X-Request-ID": "replay_readback" } });
   };
   try {
-    await assert.rejects(runTavernTurn("room", { mode: "direct", input: { kind: "user_message", text: "PRIVATE_MESSAGE" }, targetPersonaIds: ["persona"], idempotencyKey: "stable-key", expectedRoomRevision: 0 }));
+    await assert.rejects(runTavernTurn("room", { mode: "direct", input: { kind: "user_message", content: "PRIVATE_MESSAGE" }, targetPersonaIds: ["persona"], idempotencyKey: "stable-key", expectedRoomRevision: 0 }));
     assert.equal(calls.length, 2);
     assert.deepEqual(calls[0], calls[1]);
+    assert.ok(calls[0].flow);
+    assert.ok(calls[0].action);
     assert.equal(diagnosticSnapshot().events.filter(event => event.name === "decode_failed" && event.request_id === "replay_initial").length, 0);
     assert.equal(diagnosticSnapshot().events.filter(event => event.name === "decode_failed" && event.request_id === "replay_readback").length, 1);
     assert.ok(!JSON.stringify(diagnosticSnapshot()).includes("PRIVATE"));

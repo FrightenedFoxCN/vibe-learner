@@ -63,6 +63,7 @@ import {
   TAVERN_ROOM_SUMMARY_LIMIT,
   type TavernParticipantGenerationState,
 } from "../lib/tavern-workspace-state";
+import { createDiagnosticId, diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { MaterialIcon } from "./material-icon";
 import { usePageDebugSnapshot } from "./page-debug-context";
 import { RichTextMessage } from "./rich-text-message";
@@ -72,6 +73,7 @@ type BusyAction = "bootstrap" | "room" | "create" | "archive" | "turn" | "retry"
 type MutationAction = Exclude<BusyAction, "bootstrap" | "room" | null>;
 
 interface MutationOperation {
+  diagnostic: DiagnosticContext;
   id: number;
   action: MutationAction;
   roomId: string;
@@ -198,6 +200,8 @@ export function TavernWorkspace() {
     (action: MutationAction, roomId: string, replaceCurrent = false): MutationOperation | null => {
       if (olderLoadRoomRef.current || (mutationOperationRef.current && !replaceCurrent)) return null;
       const operation = {
+        diagnostic: diagnosticContext(replaceCurrent && mutationOperationRef.current?.roomId === roomId
+          ? mutationOperationRef.current.diagnostic.flow_id : createDiagnosticId()),
         id: ++mutationOperationVersionRef.current,
         action,
         roomId,
@@ -241,11 +245,12 @@ export function TavernWorkspace() {
     setVisibleError("");
     setRawError("");
     setNotice("正在恢复最近对话…");
+    const diagnostic = diagnosticContext(createDiagnosticId());
     try {
       const [nextDetail, nextRuns, nextRecoveryChains] = await Promise.all([
-        getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }),
-        listTavernRuns(roomId),
-        getTavernRunRecovery(roomId),
+        getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }, diagnostic),
+        listTavernRuns(roomId, 50, diagnostic),
+        getTavernRunRecovery(roomId, 50, diagnostic),
       ]);
       if (loadVersion !== roomLoadVersion.current) {
         return;
@@ -301,7 +306,7 @@ export function TavernWorkspace() {
     }
   }, []);
 
-  const refreshRoom = useCallback(async () => {
+  const refreshRoom = useCallback(async (context = diagnosticContext(createDiagnosticId())) => {
     if (!activeRoom?.id) {
       return;
     }
@@ -309,10 +314,10 @@ export function TavernWorkspace() {
     const refreshVersion = ++roomRefreshVersion.current;
     try {
       const [nextDetail, nextRuns, nextRecoveryChains, nextRoomPage] = await Promise.all([
-        getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }),
-        listTavernRuns(roomId),
-        getTavernRunRecovery(roomId),
-        listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }),
+        getTavernRoom({ roomId, tail: true, limit: TAVERN_PAGE_SIZE }, context),
+        listTavernRuns(roomId, 50, context),
+        getTavernRunRecovery(roomId, 50, context),
+        listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }, context),
       ]);
       if (
         activeRoomIdRef.current !== roomId ||
@@ -466,9 +471,9 @@ export function TavernWorkspace() {
     });
   }, [detail?.room.id, detail?.participants]);
 
-  const updateRooms = useCallback(async () => {
+  const updateRooms = useCallback(async (context?: DiagnosticContext) => {
     try {
-      const page = await listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE });
+      const page = await listTavernRooms({ limit: TAVERN_ROOM_PAGE_SIZE }, context);
       roomPageVersionRef.current += 1;
       loadingRoomCursorRef.current = null;
       setLoadingMoreRooms(false);
@@ -528,9 +533,9 @@ export function TavernWorkspace() {
     }
   }, [nextRoomCursor]);
 
-  const updateRunRecovery = useCallback(async (roomId: string) => {
+  const updateRunRecovery = useCallback(async (roomId: string, context?: DiagnosticContext) => {
     try {
-      const nextChains = await getTavernRunRecovery(roomId);
+      const nextChains = await getTavernRunRecovery(roomId, 50, context);
       if (
         activeRoomIdRef.current === roomId &&
         requestedRoomIdRef.current === roomId
@@ -595,8 +600,8 @@ export function TavernWorkspace() {
     return true;
   }, []);
 
-  const recoverCurrentRoom = useCallback(async () => {
-    await refreshRoom();
+  const recoverCurrentRoom = useCallback(async (context?: DiagnosticContext) => {
+    await refreshRoom(context);
   }, [refreshRoom]);
 
   const resumePendingRun = useCallback(async (run: TavernRun) => {
@@ -610,8 +615,9 @@ export function TavernWorkspace() {
       return;
     }
     resumeRunRef.current = run.id;
+    const diagnostic = diagnosticContext(createDiagnosticId());
     try {
-      const result = await resumeTavernRun(roomId, run.id);
+      const result = await resumeTavernRun(roomId, run.id, diagnostic);
       if (
         activeRoomIdRef.current !== roomId ||
         requestedRoomIdRef.current !== roomId
@@ -637,7 +643,7 @@ export function TavernWorkspace() {
       if (
         activeRoomIdRef.current === roomId &&
         requestedRoomIdRef.current === roomId
-      ) await refreshRoom();
+      ) await refreshRoom(diagnostic);
     }
   }, [refreshRoom, syncTurnResult]);
 
@@ -657,11 +663,12 @@ export function TavernWorkspace() {
     const roomId = activeRoom.id;
     const operationId = foregroundOperationIdRef.current;
     if (operationId === null) return;
+    const diagnostic = mutationOperationRef.current?.diagnostic;
     let disposed = false;
     const discoverPendingRun = async () => {
       const pollVersion = ++runPollVersionRef.current;
       try {
-        const nextRuns = await listTavernRuns(roomId);
+        const nextRuns = await listTavernRuns(roomId, 50, diagnostic);
         if (
           disposed ||
           pollVersion !== runPollVersionRef.current ||
@@ -727,7 +734,7 @@ export function TavernWorkspace() {
           sceneProfile,
           openingPrompt: input.openingPrompt,
           idempotencyKey: creationDraft.key,
-        });
+        }, operation.diagnostic);
         if (!operationIsCurrent(operation)) return;
         activeRoomIdRef.current = created.room.id;
         requestedRoomIdRef.current = created.room.id;
@@ -746,7 +753,7 @@ export function TavernWorkspace() {
         setNotice("酒馆已创建，可以开始对话");
         rememberActiveTavernRoomId(created.room.id);
         writeTavernCreationDraft(null);
-        await updateRooms();
+        await updateRooms(operation.diagnostic);
       } catch (error) {
         if (!operationIsCurrent(operation)) return;
         recordError(error, "创建失败，请检查标题、人格与服务连接。", setVisibleError, setRawError);
@@ -772,7 +779,7 @@ export function TavernWorkspace() {
       const updated = await updateTavernRoom(roomId, {
         status: nextStatus,
         expectedRoomRevision: activeRoom.revision,
-      });
+      }, operation.diagnostic);
       if (
         !operationIsCurrent(operation) ||
         activeRoomIdRef.current !== roomId ||
@@ -796,11 +803,11 @@ export function TavernWorkspace() {
       setDetail(updatedDetail);
       setMessages(nextMessages);
       setNotice(nextStatus === "archived" ? "酒馆已归档，历史仍可阅读" : "酒馆已恢复使用");
-      await updateRooms();
+      await updateRooms(operation.diagnostic);
     } catch (error) {
       if (!operationIsCurrent(operation)) return;
       recordError(error, "房间状态未更新；页面将重新同步最新版本。", setVisibleError, setRawError);
-      await recoverCurrentRoom();
+      await recoverCurrentRoom(operation.diagnostic);
     } finally {
       finishMutation(operation);
     }
@@ -862,7 +869,7 @@ export function TavernWorkspace() {
           guidance,
           idempotencyKey: requestKey,
           expectedRoomRevision,
-        });
+        }, operation.diagnostic);
         if (
           !operationIsCurrent(operation) ||
           activeRoomIdRef.current !== roomId ||
@@ -884,11 +891,11 @@ export function TavernWorkspace() {
               : "本轮角色回应未完成；服务端已保存失败证据，可从恢复入口再次尝试。"
           );
         }
-        await Promise.all([updateRooms(), updateRunRecovery(roomId)]);
+        await Promise.all([updateRooms(operation.diagnostic), updateRunRecovery(roomId, operation.diagnostic)]);
         return result.inputMessage !== null || input.kind === "continue";
       } catch (error) {
         if (!operationIsCurrent(operation)) return false;
-        const recovered = await refreshRoom();
+        const recovered = await refreshRoom(operation.diagnostic);
         if (!operationIsCurrent(operation)) return false;
         const recoveredRun = recovered?.runs.find((run) => run.idempotencyKey === requestKey);
         if (recoveredRun && input.kind === "user_message") {
@@ -923,7 +930,7 @@ export function TavernWorkspace() {
     setNotice("正在取消接收本轮结果…");
     setVisibleError("");
     try {
-      const result = await cancelTavernRun(roomId, pendingRun.id);
+      const result = await cancelTavernRun(roomId, pendingRun.id, operation.diagnostic);
       if (
         !operationIsCurrent(operation) ||
         activeRoomIdRef.current !== roomId ||
@@ -941,7 +948,7 @@ export function TavernWorkspace() {
       return false;
     } finally {
       if (operationIsCurrent(operation)) {
-        const recovered = await refreshRoom();
+        const recovered = await refreshRoom(operation.diagnostic);
         const recoveredRun = recovered?.runs.find((run) => run.id === pendingRun.id);
         if (recoveredRun?.status === "canceled") {
           cancelConfirmed = true;
@@ -981,7 +988,7 @@ export function TavernWorkspace() {
         const result = await retryTavernRun(activeRoom.id, run.id, {
           idempotencyKey: makeTavernRequestKey("retry"),
           expectedRoomRevision: activeRoom.revision,
-        });
+        }, operation.diagnostic);
         if (
           !operationIsCurrent(operation) ||
           activeRoomIdRef.current !== operation.roomId ||
@@ -992,11 +999,11 @@ export function TavernWorkspace() {
         if (result.run.status === "partial" || result.run.status === "failed") {
           setVisibleError("恢复运行仍有角色未完成；已完成回应不会重复生成，可继续恢复当前叶节点。");
         }
-        await Promise.all([updateRooms(), updateRunRecovery(operation.roomId)]);
+        await Promise.all([updateRooms(operation.diagnostic), updateRunRecovery(operation.roomId, operation.diagnostic)]);
       } catch (error) {
         if (!operationIsCurrent(operation)) return;
         recordError(error, "重试未完整返回；已重新同步已保存的结果。", setVisibleError, setRawError);
-        await recoverCurrentRoom();
+        await recoverCurrentRoom(operation.diagnostic);
       } finally {
         releaseForegroundOperation(operation);
         if (finishMutation(operation)) setGeneratingPersonaIds([]);

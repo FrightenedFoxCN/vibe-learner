@@ -1542,3 +1542,16 @@ request bodies, grading content, committed projection or retry policy.
 Interactive-question POST and mandatory persisted Session GET share one
 captured diagnostic flow/action. A failed Session decoder still rejects the
 operation result at the existing boundary; HTTP success never bypasses read-back.
+
+
+Tavern Workspace captures diagnostic context at the beginning of each mutation.
+Creation/archive/turn/retry requests and their follow-up list/recovery reads reuse
+that context. Foreground Run discovery polling uses the same captured operation
+context; a same-room cancellation replacing an active mutation keeps its flow
+and allocates a new action. Explicit room load/refresh and automatic Run resume
+capture their own action for all associated read-back requests. These metadata
+changes do not change room revision, idempotency key, replay eligibility or
+model execution. The single authorized `replay_same_request` transport repeat
+uses the exact original URL/body and diagnostic context, with its own HTTP
+request ID. A new page load or later retry is a separate diagnostic flow; durable
+Run lineage and canonical operation links remain the cross-run association.

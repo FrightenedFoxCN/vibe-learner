@@ -305,3 +305,46 @@ test("committed Study reply lost in transport is queried after reload with the o
   expect(events.some((event: any) => event.harness?.workflow === "study_chat")).toBe(true);
   expect(JSON.stringify(events)).not.toContain("PRIVATE_STUDY_DIAGNOSTIC_SENTINEL");
 });
+
+
+test("Tavern turn and recovery reads share action without repeating a committed user message", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: false } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  await page.goto("/tavern");
+  const setup = page.getByRole("region", { name: "创建房间", exact: true });
+  await setup.getByRole("textbox", { name: "标题", exact: true }).fill("Diagnostic Tavern");
+  await setup.getByRole("checkbox").first().check();
+  const creating = page.waitForResponse(response => response.url().endsWith("/tavern/rooms") && response.request().method() === "POST");
+  await setup.getByRole("button", { name: "创建并进入", exact: true }).click();
+  const room = (await (await creating).json()).room;
+  await expect(page.getByPlaceholder("输入消息。Enter 发送，Shift + Enter 换行。")).toBeVisible();
+  const calls: { path: string; method: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => { if (item.url().includes("/tavern/rooms")) calls.push({ path: new URL(item.url()).pathname, method: item.method(), headers: item.headers() }); });
+  for (const lost of [false, true]) {
+    const message = `PRIVATE_TAVERN_DIAGNOSTIC_SENTINEL-${lost}`;
+    if (lost) await page.route("**/tavern/rooms/*/turns", async route => {
+      const result = await route.fetch(); expect(result.status()).toBe(200);
+      expect((await result.json()).run.status).toBe("completed");
+      await route.abort("failed");
+    });
+    calls.length = 0;
+    await page.getByPlaceholder("输入消息。Enter 发送，Shift + Enter 换行。").fill(message);
+    await page.getByRole("button", { name: "发送并回应", exact: true }).click();
+    await expect.poll(() => calls.some(call => call.path.endsWith("/turns"))).toBe(true);
+    await expect(page.getByRole("button", { name: "生成中…", exact: true })).toHaveCount(0);
+    const post = calls.find(call => call.path.endsWith("/turns"))!;
+    const reads = calls.filter(call => call.method === "GET");
+    expect(reads.length).toBeGreaterThanOrEqual(lost ? 4 : 2);
+    expect(post.headers["x-debug-flow-id"]).toBeTruthy();
+    expect(reads.every(call => call.headers["x-debug-flow-id"] === post.headers["x-debug-flow-id"] && call.headers["x-debug-action-id"] === post.headers["x-debug-action-id"])).toBe(true);
+    expect(calls.filter(call => call.path.endsWith("/turns"))).toHaveLength(1);
+    const persisted = await (await request.get(`http://127.0.0.1:18998/tavern/rooms/${room.id}`)).json();
+    expect(persisted.messages.filter((item: any) => item.author_kind === "user" && item.content === message)).toHaveLength(1);
+    const response = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${post.headers["x-debug-flow-id"]}`);
+    const events = (await response.json()).items.map((item: any) => item.event);
+    expect(events.some((event: any) => event.harness?.workflow === "tavern")).toBe(true);
+    expect(JSON.stringify(events)).not.toContain("PRIVATE_TAVERN_DIAGNOSTIC_SENTINEL");
+  }
+});
