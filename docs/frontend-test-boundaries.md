@@ -23,6 +23,7 @@
 | `npm --workspace @vibe-learner/web run test:persona:draft:browser` | 未保存 Persona 输入在拒绝离页后保留，确认后正常导航 |
 | `npm --workspace @vibe-learner/web run test:persona:assist` | Persona 单插槽/整体辅助、锁定插槽、提示词手动接受、过期请求与失败不重放 |
 | `npm --workspace @vibe-learner/web run test:scene` / `test:persona` | 分别聚合该领域全部无网络 Hook/组件模块；浏览器流程单独运行 |
+| `npm --workspace @vibe-learner/web run test:persona:library` | Persona 库查询版本、并发提交对账、后续权威刷新、失败/重复写与离页广播 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |

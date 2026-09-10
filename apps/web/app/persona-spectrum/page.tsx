@@ -28,17 +28,7 @@ import { MaterialIcon, type MaterialIconName } from "../../components/material-i
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
-import {
-  createPersona,
-  deletePersona,
-  listPersonas,
-  updatePersona,
-} from "../../lib/data/personas";
-import {
-  deletePersonaCard,
-  listPersonaCards,
-} from "../../lib/data/persona-cards";
-import { broadcastPersonaLibraryUpdated } from "../../lib/persona-library-sync";
+import { usePersonaLibrary } from "../../hooks/use-persona-library";
 import {
   applyAsyncResult,
   AsyncResultFence,
@@ -95,7 +85,7 @@ const SIDEBAR_PANE_WIDTH = 360;
 
 export default function PersonaSpectrumPage() {
   const configImportInputRef = useRef<HTMLInputElement>(null);
-  const [personas, setPersonas] = useState<PersonaProfile[]>([]);
+  const { personas, personaCards, listPersonas, listPersonaCards, createPersona, updatePersona, deletePersona, deletePersonaCard } = usePersonaLibrary();
   const configImportFenceRef = useRef(new AsyncResultFence());
   const saveFenceRef = useRef(new AsyncResultFence());
   const reloadFenceRef = useRef(new AsyncResultFence());
@@ -145,7 +135,6 @@ export default function PersonaSpectrumPage() {
   } = usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyncScope, onSettingStarted: () => setIsRewritePopoverOpen(false) });
   const [configMessage, setConfigMessage] = useState("");
   const [configError, setConfigError] = useState("");
-  const [personaCards, setPersonaCards] = useState<PersonaCard[]>([]);
   const {
     generatedCards,
     cardGenerationMode,
@@ -232,14 +221,11 @@ export default function PersonaSpectrumPage() {
       }
       if (personaResult.status === "fulfilled") {
         const personaList = personaResult.value;
-        setPersonas(personaList);
         initializePersonaFromLibrary(personaList[0]);
       } else {
         setLoadError(String(personaResult.reason));
       }
-      if (cardResult.status === "fulfilled") {
-        setPersonaCards(cardResult.value);
-      } else {
+      if (cardResult.status === "rejected") {
         setCardError(`人格卡片库加载失败：${String(cardResult.reason)}`);
       }
     }
@@ -369,16 +355,6 @@ export default function PersonaSpectrumPage() {
   );
 
   usePageDebugSnapshot(debugSnapshot);
-
-  function mergePersonaIntoList(nextPersona: PersonaProfile) {
-    setPersonas((prev) => {
-      const exists = prev.some((item) => item.id === nextPersona.id);
-      if (exists) {
-        return prev.map((item) => (item.id === nextPersona.id ? nextPersona : item));
-      }
-      return [nextPersona, ...prev];
-    });
-  }
 
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
     if (assistError) clearAssistError();
@@ -546,8 +522,6 @@ export default function PersonaSpectrumPage() {
     setSavingPersona(true);
     try {
       const created = await createPersona(payload);
-      mergePersonaIntoList(created);
-      broadcastPersonaLibraryUpdated();
       const decision = saveFenceRef.current.decide(
         ticket,
         currentPersonaAsyncScope("persona-save"),
@@ -565,7 +539,7 @@ export default function PersonaSpectrumPage() {
       setPersonaLibraryMessage(`已创建人格「${created.name}」。`);
       setPersonaLibraryError("");
       try {
-        setPersonas(await listPersonas());
+        await listPersonas();
       } catch (refreshError) {
         setPersonaLibraryMessage(
           `已创建人格「${created.name}」，但人格库刷新失败：${String(refreshError)}`,
@@ -619,7 +593,6 @@ export default function PersonaSpectrumPage() {
     const ticket = reloadFenceRef.current.begin(reloadScope);
     try {
       const latest = await listPersonas();
-      setPersonas(latest);
       const decision = reloadFenceRef.current.decide(
         ticket,
         currentPersonaAsyncScope("persona-reload"),
@@ -660,8 +633,6 @@ export default function PersonaSpectrumPage() {
         ...payload,
         expectedRevision: selectedPersona.revision,
       });
-      mergePersonaIntoList(updated);
-      broadcastPersonaLibraryUpdated();
       const decision = saveFenceRef.current.decide(
         ticket,
         currentPersonaAsyncScope("persona-save"),
@@ -677,7 +648,7 @@ export default function PersonaSpectrumPage() {
       setPersonaLibraryMessage(`已更新人格「${updated.name}」。`);
       setPersonaLibraryError("");
       try {
-        setPersonas(await listPersonas());
+        await listPersonas();
       } catch (refreshError) {
         setPersonaLibraryMessage(
           `已更新人格「${updated.name}」，但人格库刷新失败：${String(refreshError)}`,
@@ -781,7 +752,6 @@ export default function PersonaSpectrumPage() {
     setCardDeletePendingId(cardId);
     try {
       await deletePersonaCard(cardId);
-      setPersonaCards((prev) => prev.filter((card) => card.id !== cardId));
     } catch (error) {
       setCardError(String(error));
     } finally {
@@ -815,8 +785,6 @@ export default function PersonaSpectrumPage() {
           `已删除人格「${persona.name}」，但人格库刷新失败：${String(refreshError)}`,
         );
       }
-      setPersonas(latest);
-      broadcastPersonaLibraryUpdated();
       if (
         selectedPersonaId === persona.id ||
         !latest.some((item) => item.id === selectedPersonaId)
