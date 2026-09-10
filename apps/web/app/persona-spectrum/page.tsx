@@ -40,7 +40,6 @@ import {
 } from "../../lib/data/personas";
 import {
   deletePersonaCard,
-  generatePersonaCards,
   listPersonaCards,
 } from "../../lib/data/persona-cards";
 import { broadcastPersonaLibraryUpdated } from "../../lib/persona-library-sync";
@@ -49,10 +48,11 @@ import {
   AsyncResultFence,
   type AsyncResultScope,
 } from "../../lib/async-result-fence";
+import { usePersonaCardGeneration } from "../../hooks/use-persona-card-generation";
+import { matchesPersonaCard, matchesPersonaProfile } from "../../lib/persona-editor-model";
 import { isApiHttpError } from "../../lib/http-error";
 import {
   clampPersonaWeight,
-  clearPersonaDraftForGeneratedBackfill,
   createPersonaInputToDraft,
   draftToCreatePersonaInput,
   duplicatePersonaDraft,
@@ -75,14 +75,6 @@ const SLOT_KIND_HINTS: Record<string, string> = {
   correction_style: "描述纠错方式，建议先指出可改进点，再给下一步动作。",
   custom: "自定义插槽，用于补充特殊设定。"
 };
-
-interface GeneratedPersonaMeta {
-  summary: string;
-  relationship: string;
-  learnerAddress: string;
-}
-
-type CardGenerationMode = "keywords" | "long_text";
 
 const DEFAULT_CONFIG_TEMPLATE: CreatePersonaInput = {
   name: "模板教师",
@@ -113,7 +105,6 @@ export default function PersonaSpectrumPage() {
   const selectedPersonaIdRef = useRef("");
   const draftRevisionRef = useRef(0);
   const assistFenceRef = useRef(new AsyncResultFence());
-  const cardGenerationFenceRef = useRef(new AsyncResultFence());
   const configImportFenceRef = useRef(new AsyncResultFence());
   const saveFenceRef = useRef(new AsyncResultFence());
   const reloadFenceRef = useRef(new AsyncResultFence());
@@ -134,28 +125,36 @@ export default function PersonaSpectrumPage() {
   const [configMessage, setConfigMessage] = useState("");
   const [configError, setConfigError] = useState("");
   const [personaCards, setPersonaCards] = useState<PersonaCard[]>([]);
-  const [generatedCards, setGeneratedCards] = useState<PersonaCard[]>([]);
-  const [cardGenerationMode, setCardGenerationMode] = useState<CardGenerationMode>("keywords");
-  const [cardKeywordInput, setCardKeywordInput] = useState("");
-  const [cardLongTextFile, setCardLongTextFile] = useState<File | null>(null);
+  const {
+    generatedCards,
+    cardGenerationMode,
+    setCardGenerationMode,
+    cardKeywordInput,
+    setCardKeywordInput,
+    cardLongTextFile,
+    setCardLongTextFile,
+    cardGenerateCount,
+    setCardGenerateCount,
+    clearBeforeBackfill,
+    setClearBeforeBackfill,
+    cardActionPending,
+    cardMessage,
+    setCardMessage,
+    cardError,
+    setCardError,
+    cardModelRecoveries,
+    generatedPersonaMeta,
+    applyGeneratedCardsToDraft,
+    insertCardsIntoDraft,
+    handleGenerateCards,
+    resetCardGeneration,
+  } = usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope });
   const [cardSearchQuery, setCardSearchQuery] = useState("");
-  const [cardGenerateCount, setCardGenerateCount] = useState("");
-  const [clearBeforeBackfill, setClearBeforeBackfill] = useState(false);
-  const [cardActionPending, setCardActionPending] = useState<null | "generate_keywords" | "generate_long_text">(null);
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
-  const [cardMessage, setCardMessage] = useState("");
-  const [cardError, setCardError] = useState("");
-  const [cardModelRecoveries, setCardModelRecoveries] = useState<ModelRecovery[]>([]);
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
   const [slotInsertIndex, setSlotInsertIndex] = useState<number | null>(null);
   const [systemPromptSuggestion, setSystemPromptSuggestion] = useState("");
   const [systemPromptSuggestionSource, setSystemPromptSuggestionSource] = useState("");
-  const [generatedPersonaMeta, setGeneratedPersonaMeta] = useState<GeneratedPersonaMeta>({
-    summary: "",
-    relationship: "",
-    learnerAddress: "",
-  });
-
   const [draggingSlotIndex, setDraggingSlotIndex] = useState<number | null>(null);
   const [expandedSlotIndex, setExpandedSlotIndex] = useState<number | null>(null);
   const [movePulse, setMovePulse] = useState<{ index: number; direction: -1 | 1 } | null>(null);
@@ -203,20 +202,10 @@ export default function PersonaSpectrumPage() {
     if (selectedPersonaIdRef.current !== normalizedPersonaId) {
       draftRevisionRef.current += 1;
       assistFenceRef.current.invalidate();
-      cardGenerationFenceRef.current.invalidate();
       reloadFenceRef.current.invalidate();
       setAssistPending(false);
       setSlotAssistIndex(null);
-      setCardActionPending(null);
-      setGeneratedCards([]);
-      setGeneratedPersonaMeta({
-        summary: "",
-        relationship: "",
-        learnerAddress: "",
-      });
-      setCardMessage("");
-      setCardError("");
-      setCardModelRecoveries([]);
+      resetCardGeneration();
     }
     selectedPersonaIdRef.current = normalizedPersonaId;
     setSelectedPersonaId(normalizedPersonaId);
@@ -978,160 +967,6 @@ export default function PersonaSpectrumPage() {
         ? current.filter((item) => item !== key)
         : [...current, key]
     ));
-  }
-
-  function applyGeneratedCardsToDraft() {
-    if (!generatedCards.length && !generatedPersonaMeta.summary && !generatedPersonaMeta.relationship && !generatedPersonaMeta.learnerAddress) {
-      setCardError("当前没有可回填的生成人格内容。");
-      return;
-    }
-    if (
-      clearBeforeBackfill &&
-      !window.confirm("应用后会清空现有摘要、关系、称呼、参考提示和全部插槽。是否继续？")
-    ) {
-      return;
-    }
-    setCardError("");
-    setCardMessage("");
-    const baseDraft = clearBeforeBackfill
-      ? clearPersonaDraftForGeneratedBackfill(draft)
-      : draft;
-    const insertion = buildDraftWithInsertedCards(baseDraft, generatedCards);
-    updatePersonaDraft({
-      ...insertion.draft,
-      summary: generatedPersonaMeta.summary || insertion.draft.summary,
-      relationship: generatedPersonaMeta.relationship || insertion.draft.relationship,
-      learnerAddress: generatedPersonaMeta.learnerAddress || insertion.draft.learnerAddress,
-      referenceHints: mergeReferenceHints(
-        insertion.draft.referenceHints,
-        collectReferenceHintsFromCards(generatedCards)
-      ),
-    });
-    const metaParts = [
-      generatedPersonaMeta.summary ? "摘要" : "",
-      generatedPersonaMeta.relationship ? "关系" : "",
-      generatedPersonaMeta.learnerAddress ? "称呼" : "",
-    ].filter(Boolean);
-    const summary = [
-      clearBeforeBackfill ? "已清空摘要、关系、称呼、参考提示和全部插槽" : "",
-      metaParts.length ? `已回填${metaParts.join("、")}` : "",
-      insertion.insertedCount ? `并插入 ${insertion.insertedCount} 张卡片` : generatedCards.length ? "卡片已存在，未重复插入" : "",
-    ].filter(Boolean).join("，");
-    setCardMessage(summary || "已将本轮生成内容应用到当前编辑区。");
-  }
-
-  function insertCardsIntoDraft(cards: PersonaCard[], insertIndex?: number) {
-    if (!cards.length) {
-      setCardError("请先选择至少一张人格卡片。");
-      return;
-    }
-    setCardError("");
-    setCardMessage("");
-    const insertion = buildDraftWithInsertedCards(draft, cards, insertIndex);
-    updatePersonaDraft({
-      ...insertion.draft,
-      referenceHints: mergeReferenceHints(
-        insertion.draft.referenceHints,
-        collectReferenceHintsFromCards(cards)
-      ),
-    });
-    if (!insertion.insertedCount) {
-      setCardMessage("所选卡片已存在于当前人格中，未重复插入。");
-      return;
-    }
-    setCardMessage(`已将 ${insertion.insertedCount} 张卡片插入当前人格编辑区。`);
-  }
-
-  async function handleGenerateCards(mode: "keywords" | "long_text") {
-    const requestScope = currentPersonaAsyncScope("persona-card-candidate");
-    let inputText = "";
-    if (mode === "keywords") {
-      inputText = cardKeywordInput.trim();
-    } else {
-      if (!cardLongTextFile) {
-        setCardError("请先上传纯文本文件。");
-        return;
-      }
-      try {
-        inputText = (await cardLongTextFile.text()).trim();
-      } catch (error) {
-        setCardError(`读取文本文件失败：${String(error)}`);
-        return;
-      }
-    }
-    if (!inputText) {
-      setCardError(mode === "keywords" ? "请先输入关键词。" : "上传的文本文件为空。");
-      return;
-    }
-    const countText = cardGenerateCount.trim();
-    let count: number | null = null;
-    if (countText) {
-      const parsedCount = Number(countText);
-      if (!Number.isInteger(parsedCount) || parsedCount < 1 || parsedCount > 24) {
-        setCardError("精确卡片数量必须是 1 到 24 的整数，或留空交给模型决定。");
-        return;
-      }
-      count = parsedCount;
-    }
-    setCardError("");
-    setCardMessage("");
-    setCardModelRecoveries([]);
-    setCardActionPending(mode === "keywords" ? "generate_keywords" : "generate_long_text");
-    const ticket = cardGenerationFenceRef.current.begin(requestScope);
-    if (
-      cardGenerationFenceRef.current.decide(
-        ticket,
-        currentPersonaAsyncScope("persona-card-candidate"),
-      ) !== "apply"
-    ) {
-      cardGenerationFenceRef.current.settle(ticket);
-      setCardActionPending(null);
-      return;
-    }
-    try {
-      const result = await generatePersonaCards({
-        mode,
-        inputText,
-        count,
-      });
-      if (
-        cardGenerationFenceRef.current.decide(
-          ticket,
-          currentPersonaAsyncScope("persona-card-candidate"),
-        ) !== "apply"
-      ) {
-        return;
-      }
-      setGeneratedCards(result.items);
-      setGeneratedPersonaMeta({
-        summary: result.summary,
-        relationship: result.relationship,
-        learnerAddress: result.learnerAddress,
-      });
-      setCardModelRecoveries(result.modelRecoveries ?? []);
-      setCardMessage(
-        `已生成 ${result.items.length} 张卡片。${
-          result.usedWebSearch
-            ? "已使用联网搜索。"
-            : result.usedModel === "mock"
-              ? "本地模拟结果。"
-              : ""
-        }`
-      );
-    } catch (error) {
-      if (
-        cardGenerationFenceRef.current.decide(
-          ticket,
-          currentPersonaAsyncScope("persona-card-candidate"),
-        ) === "apply"
-      ) {
-        setCardError(humanizePersonaCardGenerationError(error));
-      }
-    } finally {
-      if (cardGenerationFenceRef.current.settle(ticket)) {
-        setCardActionPending(null);
-      }
-    }
   }
 
   async function handleDeletePersonaCard(cardId: string) {
@@ -1972,90 +1807,6 @@ function IconGlyphButton({
   );
 }
 
-function buildDraftWithInsertedCards(
-  draft: PersonaDraft,
-  cards: PersonaCard[],
-  insertIndex?: number,
-): { draft: PersonaDraft; insertedCount: number } {
-  const safeInsertIndex = Math.max(0, Math.min(insertIndex ?? draft.slots.length, draft.slots.length));
-  const existingKeys = new Set(
-    draft.slots.map((slot) => `${slot.kind}::${slot.label}::${slot.content.trim()}`)
-  );
-  const appended = cards
-    .filter((card) => {
-      const key = `${card.kind}::${card.label}::${card.content.trim()}`;
-      if (existingKeys.has(key)) {
-        return false;
-      }
-      existingKeys.add(key);
-      return true;
-    })
-    .map((card, index) => ({
-      kind: card.kind,
-      label: card.label,
-      content: card.content,
-      weight: 50,
-      locked: false,
-      sortOrder: (safeInsertIndex + index) * 10,
-    }));
-  if (!appended.length) {
-    return { draft, insertedCount: 0 };
-  }
-  const nextSlots = [...draft.slots];
-  nextSlots.splice(safeInsertIndex, 0, ...appended);
-  return {
-    draft: {
-      ...draft,
-      slots: nextSlots.map((slot, index) => ({ ...slot, sortOrder: index * 10 })),
-    },
-    insertedCount: appended.length,
-  };
-}
-
-function matchesPersonaCard(card: PersonaCard, query: string): boolean {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) {
-    return true;
-  }
-  const haystack = [
-    card.title,
-    card.label,
-    card.content,
-    card.sourceNote,
-    card.searchKeywords,
-    card.tags.join(" "),
-  ]
-    .join("\n")
-    .toLowerCase();
-  return haystack.includes(trimmed);
-}
-
-function matchesPersonaProfile(persona: PersonaProfile, query: string): boolean {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) {
-    return true;
-  }
-  const haystack = [
-    persona.name,
-    persona.summary,
-    persona.relationship,
-    persona.learnerAddress,
-    persona.systemPrompt,
-    (persona.referenceHints ?? []).join(" "),
-    persona.source === "builtin" ? "内置人格" : "用户人格",
-  ]
-    .join("\n")
-    .toLowerCase();
-  return haystack.includes(trimmed);
-}
-
-function collectReferenceHintsFromCards(cards: PersonaCard[]): string[] {
-  return mergeReferenceHints(
-    [],
-    cards.map((card) => card.sourceNote)
-  );
-}
-
 function humanizePersonaDeleteError(error: unknown): string {
   const raw = String(error).replace(/^Error:\s*/, "");
   if (raw.includes("persona_readonly_builtin")) {
@@ -2092,23 +1843,6 @@ function humanizePersonaSaveError(error: unknown): string {
     return "人格内容未通过校验，请检查名称、插槽权重和排序。";
   }
   return String(error).replace(/^Error:\s*/, "");
-}
-
-function humanizePersonaCardGenerationError(error: unknown): string {
-  if (!isApiHttpError(error)) {
-    return "人格卡片生成失败，请稍后重试。";
-  }
-  const code = error.code || error.message;
-  if (code === "setting_persona_card_count_mismatch") {
-    return "模型返回的卡片数量不符合精确数量要求，请重试或调整数量。";
-  }
-  if (code === "keyword_generation_requires_openai") {
-    return "当前提供器暂不支持关键词生成，请切换提供器或使用长文本提取。";
-  }
-  if (error.status === 422) {
-    return "生成条件未通过校验，请检查关键词和精确卡片数量。";
-  }
-  return "人格卡片生成失败，请稍后重试。";
 }
 
 /* ─── Styles ─── */
