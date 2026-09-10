@@ -29,7 +29,7 @@ excluded from implementation commits and this change-scope claim.
 | Persona generate → save → reload correlation with Debug closed | `persona-diagnostics.test.jsx`, `diagnostics-live.spec.ts` real mock-backend Chromium chain | Verified for that chain; not evidence for every other feature. |
 | All workflow/stage and terminal Harness references | `harness_runtime.py`, `harness_broad_adoption.py`, restartable `diagnostic_index.py`; index/runtime and 13 Harness suites | Shared hooks exist. Per-workflow diagnostic-chain acceptance still needed for Document/OCR/cleanup, Planning, Scene, Study/question/attachment and Tavern. |
 | Logical action/flow correlation across requests and navigation | Default `diagnosticFetch` creates a request action context; Persona draft owns an explicit flow; Settings/Vault/import/export adapters exist | Audit other controllers' multi-request actions. A default per-request context with null flow does not prove one logical user flow is correlated. |
-| Resources and full association filtering | Persona save/update emits saved identity/revision; operation links and timeline drilldown work | Canonical index projections and resource type/ID/role filters now cover the shared Harness vocabulary. Direct event references now emit Persona and Scene saves; Document/Planning/Study/Tavern event associations and flow acceptance remain. Do not infer committed identity from URL parameters or HTTP success. |
+| Resources and full association filtering | Persona/Scene/Document/Plan/Session/Tavern saved-resource references; canonical index and request drilldown | Canonical index projections and resource type/ID/role filters now cover the shared Harness vocabulary. Direct event references cover main saved-resource boundaries across these domains. Full fault/alternate-flow acceptance remains. Do not infer committed identity from URL parameters or HTTP success. |
 | Provider/tool timing, usage, recovery and missing evidence | Provider parent/attempt spans; 6 Planning and 31 Study tools; audit fixtures/tests | Implemented bounded telemetry with explicit missing cost/endpoint/context evidence. Existing missing-evidence labels must remain honest. |
 | Settings/Vault/import/export and desktop lifecycle | Local action adapters; bounded native spool; Python consumer; real sidecar subprocess tests | Actual native Vault create/unlock/save/read-back and native save-dialog acceptance remain unverified. Frontend unavailable/locked-path tests do not establish successful native behavior. |
 | Independent DebugProvider and page-view ownership | `debug-provider.tsx`, `owned-debug-snapshot.tsx`, StrictMode/unmount/route tests and Chromium navigation | Implemented and locally verified. Full task closure still depends on the unfinished flow coverage. |
@@ -173,3 +173,30 @@ The initial browser run exposed a test assumption that an empty composer could
 send; that wait was corrected and the complete suite passed. Facilitated partial
 failure/child retry, active cancellation/lease recovery diagnostic acceptance and
 other remaining audit requirements are not closed by these direct-turn tests.
+
+## Cross-domain saved-resource event slice
+
+Direct diagnostic events now reference saved Document, Learning Plan, Study
+Session and Tavern Room/Run/Message records alongside Persona/Scene. Source is
+an actual returned record or decoded committed Study receipt, not a transaction
+internal candidate, URL or HTTP status. Message sequence and parent Room identity
+remain exact; types without authoritative revision use null and reject invented
+revision values. Queries and exports share browser/backend ownership checks.
+The Timeline can expand a resource event into its same-request events, then use
+existing canonical operation links. Replayed observations are not new commits.
+
+Verification before the broad gate: 43 backend diagnostic/query/export/index and
+Tavern API tests, 13 browser query tests, 10 Timeline tests and production build
+passed. All seven real Chromium scenarios passed with new assertions for
+Document/Plan/Session references and Tavern Message sequence/Room correspondence.
+Failure-isolation tests prove writer errors cannot replace the caller's outcome;
+strict decoder tests reject invented revisions and incomplete message scope.
+Remaining workflow fault acceptance, old oversize recovery, native success and
+performance gates remain as listed above; this does not close the overall goal.
+
+
+The cumulative `npm run check:release` gate also passed after this resource slice:
+shared/Web contracts, reliability/type gates, all 13 Harness PR suites, the full
+backend suite (718 tests in 57.909 seconds) and production Web build. Raw output is retained at
+`/tmp/unified-debug-domain-release.log`. Native tests and the still-open acceptance
+items are outside this gate; overall completion remains unproven.

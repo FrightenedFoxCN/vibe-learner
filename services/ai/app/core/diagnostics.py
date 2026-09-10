@@ -98,6 +98,34 @@ def reference_scene(scene):
 
 
 
+def reference_resource(resource_type, resource_id, *, revision=None, sequence=None, parent_resource_id=None):
+    """Observed saved record identity only; callers supply application-owned fields."""
+    store = active_store.get()
+    if store is None:
+        return
+    try:
+        store.emit("resource_reference", resource=DiagnosticResourceReferenceV1(
+            resource_type=resource_type, resource_id=resource_id, revision=revision,
+            sequence=sequence, parent_resource_id=parent_resource_id,
+        ))
+    except Exception:
+        store.dropped += 1
+
+
+def reference_tavern_result(result):
+    store = active_store.get()
+    if store is None:
+        return
+    try:
+        reference_resource("tavern_room", result.run.room_id, revision=result.room_state.revision)
+        reference_resource("tavern_run", result.run.id, parent_resource_id=result.run.room_id)
+        messages = ([result.input_message] if result.input_message is not None else []) + result.generated_messages
+        for message in messages[:5]:
+            reference_resource("tavern_message", message.id, sequence=message.sequence, parent_resource_id=message.room_id)
+    except Exception:
+        store.dropped += 1
+
+
 class DiagnosticQueryUnavailable(RuntimeError):
     pass
 

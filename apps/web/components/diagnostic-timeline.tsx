@@ -44,7 +44,8 @@ function OperationDetails({ operationId }: { operationId: string }) {
     {(index.atCapacity || links.atCapacity) && <p>已达本视图显示上限；请缩小筛选范围。</p>}
   </section>;
 }
-function EventResults({ filters, allowOperation = true }: { filters: DiagnosticEventFilters; allowOperation?: boolean }) {
+function EventResults({ filters, allowOperation = true, allowResource = true }: { filters: DiagnosticEventFilters; allowOperation?: boolean; allowResource?: boolean }) {
+  const [resourceRequest, setResourceRequest] = useState<string | null>(null);
   const [operation, setOperation] = useState<string | null>(null);
   const serialized = JSON.stringify(filters);
   const query = useCallback((after: number, signal: AbortSignal) => queryDiagnosticEvents(JSON.parse(serialized), after, signal), [serialized]);
@@ -60,11 +61,13 @@ function EventResults({ filters, allowOperation = true }: { filters: DiagnosticE
         <details><summary style={{ overflowWrap: "anywhere" }}>#{sequence} · {event.timestamp} · {event.name} · {event.outcome} · {event.duration_ms == null ? "耗时未知" : `${event.duration_ms.toFixed(1)} ms`}</summary>
           <pre style={pre}>{JSON.stringify(event, null, 2)}</pre>
         </details>
+        {allowResource && event.resource && event.request_id && <button style={button} onClick={() => setResourceRequest(event.request_id)}>查看资源关联请求</button>}
         {allowOperation && event.harness && <button style={button} onClick={() => setOperation(event.harness!.operation_id)}>展开 operation 关联</button>}
       </article>)}
     </div>
     {state.page?.has_more && <button style={button} onClick={state.more} disabled={state.loading || state.atCapacity}>读取下一页事件</button>}
     {state.atCapacity && <p>已显示 500 条事件，请缩小范围后重新查询。</p>}
+    {resourceRequest && <section aria-label="资源关联请求" style={card}><button style={button} onClick={() => setResourceRequest(null)}>收起资源关联请求</button><EventResults key={resourceRequest} filters={{ request_id: resourceRequest }} allowResource={false} /></section>}
     {operation && <><button style={button} onClick={() => setOperation(null)}>收起 operation 关联</button><OperationDetails key={operation} operationId={operation} /></>}
   </>;
 }
@@ -119,7 +122,7 @@ export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnl
   return <section aria-label={currentPageOnly ? "当前页面诊断" : "全局诊断时间线"}>
     <h2>{currentPageOnly ? "当前页面诊断" : "全局诊断时间线"}</h2>
     <p>按入库顺序显示保留记录。HTTP 完成不等于业务提交；父子耗时不应相加。</p>
-    {!currentPageOnly && <p>事件与导出中的资源条件匹配直接记录的资源引用（目前为 Persona 和 Scene 保存）。跨域 canonical 资源请在 Harness 索引中筛选，再展开关联请求；两者的匹配范围不同。</p>}
+    {!currentPageOnly && <p>事件与导出中的资源条件匹配直接记录的资源引用（包含领域保存结果与已提交回执投影）。跨域 canonical 资源请在 Harness 索引中筛选，再展开关联请求；两者的匹配范围不同。</p>}
     {!currentPageOnly && <>
       <form onSubmit={submit} style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))" }}>
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>流程<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="workflow" aria-label="流程"><option value="">全部</option>{schemas.index.$defs.HarnessWorkflow.enum.map(value => <option key={value}>{value}</option>)}</select></label>

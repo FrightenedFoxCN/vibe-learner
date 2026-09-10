@@ -84,9 +84,22 @@ class DiagnosticHarnessReferenceV1(BaseModel):
 
 class DiagnosticResourceReferenceV1(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    resource_type: Literal["persona", "scene"]
+    resource_type: Literal["persona", "scene", "document", "learning_plan", "study_session", "tavern_room", "tavern_run", "tavern_message"]
     resource_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9:._-]{1,160}$")]
     revision: Annotated[int, Field(ge=0)] | None = None
+    sequence: Annotated[int, Field(ge=1)] | None = None
+    parent_resource_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9:._-]{1,160}$")] | None = None
+
+
+    @model_validator(mode="after")
+    def reviewed_resource_scope(self):
+        if self.resource_type in {"document", "learning_plan", "tavern_run", "tavern_message"} and self.revision is not None:
+            raise ValueError("diagnostic_resource_revision_unsupported")
+        if (self.resource_type == "tavern_message") != (self.sequence is not None):
+            raise ValueError("diagnostic_resource_sequence_scope_invalid")
+        if (self.resource_type in {"tavern_run", "tavern_message"}) != (self.parent_resource_id is not None):
+            raise ValueError("diagnostic_resource_parent_scope_invalid")
+        return self
 
 
 class DiagnosticEventV1(BaseModel):

@@ -2333,7 +2333,13 @@
         "resource_type": {
           "enum": [
             "persona",
-            "scene"
+            "scene",
+            "document",
+            "learning_plan",
+            "study_session",
+            "tavern_room",
+            "tavern_run",
+            "tavern_message"
           ],
           "title": "Resource Type",
           "type": "string"
@@ -2355,6 +2361,32 @@
           ],
           "default": null,
           "title": "Revision"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "parent_resource_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9:._-]{1,160}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Resource Id"
         }
       },
       "required": [

@@ -165,3 +165,13 @@ work, and parallel spans must not be summed as wall-clock time.
 ## Integration order
 
 First establish application lifecycle logging (`ARCH-LIFECYCLE-001`) and a Persona generate/save/reload vertical slice. Add workflow emitters through adapters without moving domain transaction ownership. Coordinate DebugProvider routing with `ARCH-WEB-001` / `PERF-WEB-PROVIDER-001`; they are one ownership change, not duplicate implementations.
+
+
+2026-09-10 cumulative flow/resource checkpoint: Persona and Scene draft flows,
+Document upload→parse→Planning→initial Session, Study refresh recovery and Tavern
+mutation/read-back actions are now correlated. Saved-resource references span
+those domains with explicit revision/sequence ownership, and Timeline resource
+results link to their request events. Seven real Chromium scenarios plus the
+cumulative `check:release` passed. See [current acceptance audit](unified-debug-acceptance.md)
+for tested boundaries and remaining fault, native, storage-recovery and performance
+work; no top-level item is closed by this checkpoint.

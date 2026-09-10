@@ -1383,7 +1383,7 @@ Operation/workflow/stage event filters match direct Harness references or the
 same server request via durable operation links. New links retain canonical
 workflow/stage labels; older links without these labels remain queryable by
 operation ID but cannot certify complete historical workflow/stage coverage.
-Resource filters currently select directly referenced Persona/Scene save events, while
+Resource filters select directly observed saved-resource events, while
 page-path filters select events carrying the reviewed browser page label.
 These filters are diagnostic projections, not authorization or commit proof.
 
@@ -1398,7 +1398,7 @@ canonical projections requiring read-back, not current resource state or proof
 of every side effect. SQLite scanning has a cooperative five-second deadline.
 The Timeline exposes resource type/ID and a Harness-only role selector, with
 operation → request → event drilldown. Event/export resource filters still
-select direct resource events (currently Persona/Scene saves); they do not implicitly
+select direct saved-resource events; they do not implicitly
 join the independently refreshed canonical index. Query uses a read-only connection: absent/unavailable index storage
 reports `coverage.freshness=unavailable` and never creates a blank index as a
 side effect. The worker remains responsible for index creation/rebuild.
@@ -1555,3 +1555,22 @@ model execution. The single authorized `replay_same_request` transport repeat
 uses the exact original URL/body and diagnostic context, with its own HTTP
 request ID. A new page load or later retry is a separate diagnostic flow; durable
 Run lineage and canonical operation links remain the cross-run association.
+
+
+Saved-resource events now cover Persona, Scene, Document upload/process,
+Learning Plan creation (synchronous and streaming), Study Session creation and
+committed chat receipt projections, and Tavern Room/Run/Message response records.
+They are emitted after services return saved records or after a committed receipt
+is decoded, never from a model proposal or a transaction-internal finalize hook.
+`revision` is null for Document, Learning Plan, Tavern Run and Tavern Message,
+which lack that authoritative revision contract. Tavern Message references require
+its actual `sequence` and Room ID as `parent_resource_id`; Tavern Run references
+also require the parent Room ID. Other types forbid sequence/parent fields. Both
+backend and browser query/export decoders enforce these ownership rules.
+
+The event outcome remains `observed`. Idempotent replay or receipt read-back can
+observe the same saved resource again, and historical receipt revision need not
+be the resource's latest revision. This is not proof that this request performed
+a new commit or completed all effects. Timeline resource results can expand their
+request's events and existing Harness operation links. Unretained/lost events
+still require canonical index/read-back; diagnostics are not a business ledger.

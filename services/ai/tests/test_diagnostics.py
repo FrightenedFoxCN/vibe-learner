@@ -16,6 +16,34 @@ from app.models.diagnostic import DiagnosticEventV1
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_saved_resource_scope_and_writer_failure_isolation(self):
+        from app.core.diagnostics import active_store, reference_resource, reference_tavern_result
+        from app.models.diagnostic import DiagnosticResourceReferenceV1
+        for bad in [dict(resource_type="document", resource_id="d", revision=0),
+                    dict(resource_type="tavern_message", resource_id="m"),
+                    dict(resource_type="persona", resource_id="p", sequence=1),
+                    dict(resource_type="scene", resource_id="s", parent_resource_id="r")]:
+            with self.assertRaises(ValidationError):
+                DiagnosticResourceReferenceV1(**bad)
+        store = SimpleNamespace(emit=Mock(), dropped=0)
+        token = active_store.set(store)
+        try:
+            result = SimpleNamespace(run=SimpleNamespace(id="run", room_id="room"),
+                room_state=SimpleNamespace(revision=7), input_message=None,
+                generated_messages=[SimpleNamespace(id="message", sequence=12, room_id="room", content="PRIVATE")])
+            reference_tavern_result(result)
+            refs = [call.kwargs["resource"].model_dump() for call in store.emit.call_args_list]
+            self.assertEqual([item["resource_type"] for item in refs], ["tavern_room", "tavern_run", "tavern_message"])
+            self.assertEqual(refs[2]["sequence"], 12)
+            self.assertEqual(refs[2]["parent_resource_id"], "room")
+            self.assertIsNone(refs[2]["revision"])
+            self.assertNotIn("PRIVATE", json.dumps(refs))
+            store.emit.side_effect = RuntimeError("unavailable")
+            reference_resource("study_session", "session", revision=4)
+            self.assertEqual(store.dropped, 1)
+        finally:
+            active_store.reset(token)
+
     def test_page_path_whitelist_and_persisted_filter(self):
         base = dict(event_id="page_event", source="browser", name="page_entered", timestamp="2026-09-10", page_view_id="page")
         with self.assertRaises(ValidationError):
@@ -189,7 +217,7 @@ class DiagnosticTests(unittest.TestCase):
                 flow = store.query(0, 100, {"flow_id": "persona_flow"})
                 self.assertEqual({row["event"]["action_id"] for row in flow}, {"generate", "save", "reload"})
                 resource = next(row["event"]["resource"] for row in flow if row["event"]["name"] == "resource_reference")
-                self.assertEqual(resource, {"resource_type": "persona", "resource_id": saved.json()["id"], "revision": saved.json()["revision"]})
+                self.assertEqual(resource, {"resource_type": "persona", "resource_id": saved.json()["id"], "revision": saved.json()["revision"], "sequence": None, "parent_resource_id": None})
 
     def test_asgi_records_body_completion_and_resets_context(self):
         async def scenario(failure=False):

@@ -15,7 +15,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.core.logging import get_logger
-from app.core.diagnostics import reference_persona, reference_scene
+from app.core.diagnostics import reference_persona, reference_scene, reference_resource
 from app.core.bootstrap import Container
 from app.api.dependencies import get_container
 from fastapi import Depends
@@ -645,6 +645,7 @@ def create_document(file: UploadFile = File(...), *, container: Container = Depe
         file.content_type,
     )
     document = container.document_service.create_document(file)
+    reference_resource("document", document.id)
     return _into_response(DocumentResponse, document)
 
 
@@ -697,6 +698,7 @@ def process_document(
         stage=HarnessStage.DOCUMENT_PARSE,
         container=container,
     )
+    reference_resource("document", document.id)
     document_commit_projection = document.model_dump(mode="json")
     document_projection = {
         **document_commit_projection,
@@ -807,6 +809,7 @@ def process_document_stream(
                     stage=HarnessStage.DOCUMENT_PARSE,
                     container=container,
                 )
+                reference_resource("document", document.id)
                 document_commit_projection = document.model_dump(mode="json")
                 document_projection = {
                     **document_commit_projection,
@@ -1398,7 +1401,10 @@ def _study_chat_operation_response(receipt) -> StudyChatOperationReceiptResponse
         payload["result"] = StudyChatExchangeResponse.model_validate(
             receipt.result
         ).model_dump(mode="json")
-    return StudyChatOperationReceiptResponse.model_validate(payload)
+    response = StudyChatOperationReceiptResponse.model_validate(payload)
+    if response.status == "committed" and response.result is not None:
+        reference_resource("study_session", response.result.session.id, revision=response.result.session.revision)
+    return response
 
 
 @router.post("/study-sessions/{session_id}/follow-ups/cancel", response_model=StudySessionResponse)
@@ -1636,6 +1642,7 @@ def create_study_session(payload: CreateStudySessionRequest, *, container: Conta
         theme_hint=theme_hint,
         session_system_prompt=session_system_prompt,
     )
+    reference_resource("study_session", session.id, revision=session.revision)
     return _into_response(StudySessionResponse, session)
 
 
@@ -1804,6 +1811,7 @@ def create_learning_plan(payload: LearningPlanCreateRequest, *, container: Conta
         stage=HarnessStage.PLAN_GENERATION,
         container=container,
     )
+    reference_resource("learning_plan", plan.id)
     plan_commit_projection = plan.model_dump(mode="json")
     plan_projection = {
         **plan_commit_projection,
@@ -1954,6 +1962,7 @@ def create_learning_plan_stream(
                     stage=HarnessStage.PLAN_GENERATION,
                     container=container,
                 )
+                reference_resource("learning_plan", plan.id)
                 plan_commit_projection = plan.model_dump(mode="json")
                 plan_projection = {
                     **plan_commit_projection,

@@ -183,3 +183,19 @@ test("resource type, identity and role reach the index and role changes fence st
   assert.ok(view.container.textContent.includes("未回填或源记录缺失"));
   assert.ok(!calls.some(url => url.includes("operation-links")));
 });
+
+
+test("resource references drill into their request without retaining resource filters", async () => {
+  const calls = [], result = events("resource");
+  Object.assign(result.items[0].event, { name: "resource_reference", category: "resource", severity: "info", outcome: "observed", error_code: null, request_id: "resource-request",
+    resource: { resource_type: "tavern_message", resource_id: "message", revision: null, sequence: 1, parent_resource_id: "room" } });
+  globalThis.fetch = async url => { calls.push(url); return Response.json(result); };
+  const view = render(<DiagnosticTimeline />);
+  await waitFor(() => assert.ok(view.getByRole("button", { name: "查看资源关联请求" })));
+  fireEvent.click(view.getByRole("button", { name: "查看资源关联请求" }));
+  await waitFor(() => assert.equal(calls.length, 2));
+  assert.equal(new URL(calls[1]).searchParams.get("request_id"), "resource-request");
+  assert.equal(new URL(calls[1]).searchParams.get("resource_id"), null);
+  assert.equal(view.getByRole("region", { name: "资源关联请求" }).querySelectorAll("button").length >= 1, true);
+  assert.equal(view.getAllByRole("button", { name: "查看资源关联请求" }).length, 1);
+});

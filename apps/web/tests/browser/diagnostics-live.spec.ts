@@ -205,8 +205,8 @@ test("Scene generation, candidate application and saves share flow with committe
     return events.filter(item => item.source === "browser" && item.name === "request_finished").length;
   }).toBe(3);
   expect(events.filter(item => item.resource?.resource_type === "scene").map(item => item.resource)).toEqual([
-    { resource_type: "scene", resource_id: created.scene_id, revision: created.revision },
-    { resource_type: "scene", resource_id: updated.scene_id, revision: updated.revision },
+    { resource_type: "scene", resource_id: created.scene_id, revision: created.revision, sequence: null, parent_resource_id: null },
+    { resource_type: "scene", resource_id: updated.scene_id, revision: updated.revision, sequence: null, parent_resource_id: null },
   ]);
   expect(events.some(item => item.harness?.workflow === "scene")).toBe(true);
   expect(JSON.stringify(events)).not.toContain("PRIVATE_SCENE_DIAGNOSTIC_SENTINEL");
@@ -259,6 +259,8 @@ test("document upload, parsing, plan stream and initial Session share one real d
   expect(new Set(events.filter(item => item.source === "server" && item.name === "request_finished").map(item => item.request_id)).size).toBe(4);
   expect(events.some(item => item.harness?.workflow === "document_parse")).toBe(true);
   expect(events.some(item => item.harness?.workflow === "planning")).toBe(true);
+  for (const type of ["document", "learning_plan", "study_session"]) expect(events.some(item => item.resource?.resource_type === type)).toBe(true);
+  expect(events.filter(item => ["document", "learning_plan"].includes(item.resource?.resource_type)).every(item => item.resource.revision === null)).toBe(true);
   expect(JSON.stringify(events)).not.toContain("PRIVATE_PLAN_DIAGNOSTIC_SENTINEL");
   expect(JSON.stringify(events)).not.toContain("diagnostic-document.pdf");
   expect(JSON.stringify(events)).not.toContain("Observe a sample");
@@ -303,6 +305,7 @@ test("committed Study reply lost in transport is queried after reload with the o
   const diagnostics = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${originalHeaders["x-debug-flow-id"]}`);
   const events = (await diagnostics.json()).items.map((item: any) => item.event);
   expect(events.some((event: any) => event.harness?.workflow === "study_chat")).toBe(true);
+  expect(events.some((event: any) => event.resource?.resource_type === "study_session" && event.resource.resource_id === sessionId)).toBe(true);
   expect(JSON.stringify(events)).not.toContain("PRIVATE_STUDY_DIAGNOSTIC_SENTINEL");
 });
 
@@ -345,6 +348,13 @@ test("Tavern turn and recovery reads share action without repeating a committed 
     const response = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${post.headers["x-debug-flow-id"]}`);
     const events = (await response.json()).items.map((item: any) => item.event);
     expect(events.some((event: any) => event.harness?.workflow === "tavern")).toBe(true);
+    const resourceMessages = events.filter((event: any) => event.resource?.resource_type === "tavern_message");
+    expect(resourceMessages.length).toBeGreaterThan(0);
+    for (const event of resourceMessages) {
+      const message = persisted.messages.find((item: any) => item.id === event.resource.resource_id);
+      expect(message).toBeTruthy(); expect(event.resource.sequence).toBe(message.sequence);
+      expect(event.resource.parent_resource_id).toBe(room.id); expect(event.resource.revision).toBeNull();
+    }
     expect(JSON.stringify(events)).not.toContain("PRIVATE_TAVERN_DIAGNOSTIC_SENTINEL");
   }
 });

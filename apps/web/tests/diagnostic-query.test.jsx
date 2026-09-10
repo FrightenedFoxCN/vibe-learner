@@ -203,3 +203,15 @@ test("canonical resource roles retain nullable revisions and reject unreviewed f
     assert.throws(() => decodeDiagnosticIndex(invalid), DiagnosticQueryError);
   }
 });
+
+
+test("saved-resource events reject invented revisions and unscoped message sequences", () => {
+  const page = copy("events");
+  Object.assign(page.items[0].event, { name: "resource_reference", category: "resource", severity: "info", outcome: "observed", error_code: null,
+    resource: { resource_type: "tavern_message", resource_id: "message", revision: null, sequence: 12, parent_resource_id: "room" } });
+  assert.deepEqual(decodeDiagnosticEvents(page), page);
+  for (const patch of [{ revision: 0 }, { sequence: null }, { parent_resource_id: null }, { resource_type: "document" }]) {
+    const bad = structuredClone(page); Object.assign(bad.items[0].event.resource, patch);
+    assert.throws(() => decodeDiagnosticEvents(bad), DiagnosticQueryError);
+  }
+});

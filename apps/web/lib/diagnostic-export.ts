@@ -2,7 +2,7 @@ import type { DiagnosticEventFilters, DiagnosticExportV1 } from "@vibe-learner/s
 import { decodeDiagnosticStorage } from "./diagnostic-storage";
 import schema from "../../../packages/shared/fixtures/diagnostics/export-schema-v1.json";
 import { classifyDiagnostic } from "../../../packages/shared/src/diagnostic.ts";
-import { DiagnosticQueryError, decodeDiagnosticWriters, requestDiagnosticExport, validateDiagnosticExportSchema } from "./diagnostic-query";
+import { validateDiagnosticResource, DiagnosticQueryError, decodeDiagnosticWriters, requestDiagnosticExport, validateDiagnosticExportSchema } from "./diagnostic-query";
 
 const invalid = (): never => { throw new DiagnosticQueryError("invalid_response"); };
 export function decodeDiagnosticExport(raw: unknown, filters: DiagnosticEventFilters): DiagnosticExportV1 {
@@ -17,6 +17,7 @@ export function decodeDiagnosticExport(raw: unknown, filters: DiagnosticEventFil
     if (row.sequence <= sequence || ids.has(row.event.event_id)) invalid();
     sequence = row.sequence;
     ids.add(row.event.event_id);
+    validateDiagnosticResource(row.event.resource);
     const classification = classifyDiagnostic(row.event.name, row.event.status_code);
     for (const key of ["category", "severity", "outcome", "error_code"] as const) if (row.event[key] !== classification[key]) invalid();
   }

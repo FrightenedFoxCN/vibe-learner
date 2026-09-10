@@ -65,6 +65,13 @@ function count(value: unknown): asserts value is number { if (!Number.isSafeInte
 function page(value: unknown, cursor: unknown, after: number | string, hasMore: unknown) {
   if (!Array.isArray(value) || value.length > 100 || typeof hasMore !== "boolean" || typeof cursor !== typeof after || (hasMore && value.length === 0)) invalid();
 }
+export function validateDiagnosticResource(resource: import("@vibe-learner/shared").DiagnosticEventV1["resource"]) {
+  if (!resource) return;
+  if (["document", "learning_plan", "tavern_run", "tavern_message"].includes(resource.resource_type) && resource.revision != null) invalid();
+  if ((resource.resource_type === "tavern_message") !== (resource.sequence != null)) invalid();
+  if (["tavern_run", "tavern_message"].includes(resource.resource_type) !== (resource.parent_resource_id != null)) invalid();
+}
+
 export function decodeDiagnosticEvents(raw: unknown, after = 0): DiagnosticEventPageV1 {
   const value = exact(raw, ["items", "next_cursor", "has_more", "health", "desktop_spool", "retention"]);
   page(value.items, value.next_cursor, after, value.has_more);
@@ -78,6 +85,7 @@ export function decodeDiagnosticEvents(raw: unknown, after = 0): DiagnosticEvent
     previous = row.sequence;
     validate(row.event, schemas.event, schemas.event);
     const event = row.event;
+    validateDiagnosticResource(event.resource);
     if (ids.has(event.event_id)) invalid();
     ids.add(event.event_id);
     const classification = classifyDiagnostic(event.name, event.status_code);
