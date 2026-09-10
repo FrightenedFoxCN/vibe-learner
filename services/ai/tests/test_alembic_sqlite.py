@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.support.migrations import alembic_config
 from io import StringIO
 import os
 from pathlib import Path
@@ -8,22 +9,13 @@ import unittest
 from unittest.mock import patch
 
 from alembic import command
-from alembic.config import Config
 from sqlalchemy import inspect
 from sqlalchemy.engine import Engine
 
 from app.persistence.database import Database
 
 
-SERVICE_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_HEAD = "20260909_0019"
-
-
-def _alembic_config(database_url: str) -> Config:
-    config = Config(str(SERVICE_ROOT / "alembic.ini"))
-    config.set_main_option("script_location", str(SERVICE_ROOT / "alembic"))
-    config.set_main_option("sqlalchemy.url", database_url)
-    return config
 
 
 def _normalize_sql(expression: object) -> str:
@@ -98,7 +90,7 @@ class AlembicSqliteTests(unittest.TestCase):
             migrated_url = f"sqlite:///{Path(temp_dir) / 'migrated.db'}"
             runtime_url = f"sqlite:///{Path(temp_dir) / 'runtime.db'}"
 
-            config = _alembic_config(migrated_url)
+            config = alembic_config(migrated_url)
             with patch.dict(os.environ, {"DATABASE_URL": migrated_url}):
                 command.upgrade(config, "head")
 
@@ -121,7 +113,7 @@ class AlembicSqliteTests(unittest.TestCase):
 
     def test_postgresql_offline_ddl_keeps_jsonb_and_named_constraints(self) -> None:
         database_url = "postgresql+psycopg://unused:unused@localhost/unused"
-        config = _alembic_config(database_url)
+        config = alembic_config(database_url)
         output = StringIO()
         config.output_buffer = output
         with patch.dict(os.environ, {"DATABASE_URL": database_url}):

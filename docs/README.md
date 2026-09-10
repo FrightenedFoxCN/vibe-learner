@@ -16,6 +16,8 @@
 | [计划文本契约](plan-text-contract.md) | 面向学习者的文本字段语义 |
 | [规划 Prompt 契约](learning-plan-prompt-contract.md) | Prompt 结构和模型输入 |
 | [学习工作区](frontend-learning-workspace.md) | Plan/Study 前端职责 |
+| [前端测试边界](frontend-test-boundaries.md) | 独立数据/Hook/组件模块与生产浏览器验收 |
+| [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
 修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。除用户指定的下列专项计划外，不另建 roadmap 或复制待办列表；新评测数据放在版本化 fixture 或运行产物中，避免重新积累日期命名的过程文档。

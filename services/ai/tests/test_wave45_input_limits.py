@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from tests.support.scene_proposals import layer, scene
 import copy
 import unittest
 
@@ -13,30 +14,6 @@ from app.models.persona_generation import (
     PersonaGenerationProposalV1,
 )
 from pydantic import ValidationError
-
-
-def layer():
-    return dict(
-        title="层",
-        scope_label="域",
-        summary="述",
-        atmosphere="气",
-        rules="规",
-        entrance="门",
-        objects=[],
-        children=[],
-    )
-
-
-def scene(layers):
-    return dict(
-        schema_name="scene-tree-proposal",
-        schema_version="scene-tree-proposal-v1",
-        scene_name="景",
-        scene_summary="述",
-        selected_path=[0],
-        scene_layers=layers,
-    )
 
 
 class Wave45InputLimitTests(unittest.TestCase):

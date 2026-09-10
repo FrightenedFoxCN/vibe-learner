@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.support.document_operations import FakeDocumentParser, FakeStudyArrangement, UnavailableOcrParser, create_document
 import io
 import unittest
 from unittest.mock import patch
@@ -11,12 +12,6 @@ from fastapi import HTTPException, UploadFile
 from app.models.document_process_operation import (
     DocumentProcessOperationStatus,
     DocumentProcessProjectionState,
-)
-from app.models.domain import (
-    DocumentChunkRecord,
-    DocumentDebugRecord,
-    DocumentPageRecord,
-    StudyUnitRecord,
 )
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
@@ -32,51 +27,6 @@ from app.services.local_store import LocalJsonStore
 from app.services.stream_interrupts import StreamInterruptedError
 
 
-class _FakeParser:
-    def __init__(self, *, failure: Exception | None = None) -> None:
-        self.failure = failure
-        self.force_ocr_calls: list[bool] = []
-
-    def parse(self, **kwargs: object) -> DocumentDebugRecord:
-        self.force_ocr_calls.append(bool(kwargs["force_ocr"]))
-        if self.failure is not None:
-            raise self.failure
-        return _debug_report(str(kwargs["document_id"]))
-
-
-class _FakeArrangement:
-    def __init__(self, *, failure: Exception | None = None) -> None:
-        self.failure = failure
-
-    def build_study_units(self, *, document, debug_report) -> list[StudyUnitRecord]:
-        if self.failure is not None:
-            raise self.failure
-        return [
-            StudyUnitRecord(
-                id=f"{document.id}:study-unit:1",
-                document_id=document.id,
-                title="Atomic processing",
-                page_start=1,
-                page_end=1,
-                source_section_ids=[],
-                summary="A deterministic test unit.",
-                confidence=1.0,
-            )
-        ]
-
-
-class _UnavailableOcrParser(_FakeParser):
-    def parse(self, **kwargs: object) -> DocumentDebugRecord:
-        self.force_ocr_calls.append(bool(kwargs["force_ocr"]))
-        return _debug_report(str(kwargs["document_id"])).model_copy(
-            update={
-                "ocr_status": "unavailable",
-                "ocr_applied": False,
-                "ocr_warnings": ["ocr_engine_unavailable"],
-            }
-        )
-
-
 class DocumentProcessOperationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = TemporaryDirectory()
@@ -87,7 +37,7 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_uninstrumented_stages_do_not_invent_parser_timings(self) -> None:
-        service = self._service(parser=_FakeParser())
+        service = self._service(parser=FakeDocumentParser())
         document = service.create_document(UploadFile(filename="metrics.pdf", file=io.BytesIO(b"pdf")))
         harness = service.harness_service
         with (
@@ -106,9 +56,9 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.assertEqual(measured.attempt_count, 1)
 
     def test_success_commits_document_debug_and_terminal_truth_atomically(self) -> None:
-        parser = _FakeParser()
+        parser = FakeDocumentParser()
         service = self._service(parser=parser)
-        document = self._create_document(service, "success.pdf")
+        document = create_document(service, "success.pdf")
 
         processed = service.process_document(document.id, force_ocr=True)
         operation = service.process_repository.latest(document_id=document.id)
@@ -127,8 +77,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.assertTrue(operation.request_payload.force_ocr)
 
     def test_admission_persists_harness_operation_identity_atomically(self) -> None:
-        service = self._service(parser=_FakeParser())
-        document = self._create_document(service, "identity.pdf")
+        service = self._service(parser=FakeDocumentParser())
+        document = create_document(service, "identity.pdf")
 
         operation, _ = service.process_repository.admit(
             document_id=document.id,
@@ -149,10 +99,10 @@ class DocumentProcessOperationTests(unittest.TestCase):
 
     def test_cleanup_failure_reaches_failed_terminal_state_without_debug_projection(self) -> None:
         service = self._service(
-            parser=_FakeParser(),
-            arrangement=_FakeArrangement(failure=RuntimeError("cleanup_failed")),
+            parser=FakeDocumentParser(),
+            arrangement=FakeStudyArrangement(failure=RuntimeError("cleanup_failed")),
         )
-        document = self._create_document(service, "cleanup.pdf")
+        document = create_document(service, "cleanup.pdf")
 
         with self.assertRaisesRegex(RuntimeError, "cleanup_failed"):
             service.process_document(document.id)
@@ -160,8 +110,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self._assert_failed_without_debug(service, document.id)
 
     def test_forced_ocr_unavailable_does_not_commit_a_synthetic_study_unit(self) -> None:
-        service = self._service(parser=_UnavailableOcrParser())
-        document = self._create_document(service, "ocr-unavailable.pdf")
+        service = self._service(parser=UnavailableOcrParser())
+        document = create_document(service, "ocr-unavailable.pdf")
 
         with self.assertRaisesRegex(RuntimeError, "document_ocr_unavailable"):
             service.process_document(document.id, force_ocr=True)
@@ -182,8 +132,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
                         _raise_fault(current) if current == expected else None
                     ),
                 )
-                service = self._service(parser=_FakeParser(), repository=repository)
-                document = self._create_document(service, f"{stage}.pdf")
+                service = self._service(parser=FakeDocumentParser(), repository=repository)
+                document = create_document(service, f"{stage}.pdf")
 
                 with self.assertRaisesRegex(RuntimeError, f"fault:{stage}"):
                     service.process_document(document.id)
@@ -191,8 +141,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
                 self._assert_failed_without_debug(service, document.id)
 
     def test_interrupt_during_first_progress_event_restores_base_projection(self) -> None:
-        service = self._service(parser=_FakeParser())
-        document = self._create_document(service, "interrupt.pdf")
+        service = self._service(parser=FakeDocumentParser())
+        document = create_document(service, "interrupt.pdf")
 
         def interrupt_progress(stage: str, _payload: dict[str, object]) -> None:
             if stage == "document_processing_started":
@@ -211,8 +161,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.assertEqual(operation.projection_state, DocumentProcessProjectionState.NOT_COMMITTED)
 
     def test_startup_recovery_terminalizes_abandoned_operation(self) -> None:
-        service = self._service(parser=_FakeParser())
-        document = self._create_document(service, "abandoned.pdf")
+        service = self._service(parser=FakeDocumentParser())
+        document = create_document(service, "abandoned.pdf")
         operation, _processing_document = service.process_repository.admit(
             document_id=document.id,
             force_ocr=False,
@@ -229,8 +179,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.assertNotEqual(refreshed.status, "processing")
 
     def test_committed_read_back_detects_debug_projection_tampering(self) -> None:
-        service = self._service(parser=_FakeParser())
-        document = self._create_document(service, "tamper.pdf")
+        service = self._service(parser=FakeDocumentParser())
+        document = create_document(service, "tamper.pdf")
         service.process_document(document.id)
 
         with self.store.database.session() as session:
@@ -244,8 +194,8 @@ class DocumentProcessOperationTests(unittest.TestCase):
             service.process_repository.latest(document_id=document.id)
 
     def test_post_commit_progress_failure_does_not_change_committed_outcome(self) -> None:
-        service = self._service(parser=_FakeParser())
-        document = self._create_document(service, "post-commit-progress.pdf")
+        service = self._service(parser=FakeDocumentParser())
+        document = create_document(service, "post-commit-progress.pdf")
 
         def fail_only_after_commit(stage: str, _payload: dict[str, object]) -> None:
             if stage == "document_processing_completed":
@@ -263,7 +213,7 @@ class DocumentProcessOperationTests(unittest.TestCase):
         self.assertEqual(operation.status, DocumentProcessOperationStatus.COMMITTED)
 
     def test_missing_document_is_reported_without_creating_an_operation(self) -> None:
-        service = self._service(parser=_FakeParser())
+        service = self._service(parser=FakeDocumentParser())
 
         with self.assertRaises(HTTPException) as raised:
             service.process_document("doc-missing")
@@ -276,25 +226,15 @@ class DocumentProcessOperationTests(unittest.TestCase):
     def _service(
         self,
         *,
-        parser: _FakeParser,
-        arrangement: _FakeArrangement | None = None,
+        parser: FakeDocumentParser,
+        arrangement: FakeStudyArrangement | None = None,
         repository: DocumentProcessOperationRepository | None = None,
     ) -> DocumentService:
         return DocumentService(
             self.store,
             parser,  # type: ignore[arg-type]
-            arrangement or _FakeArrangement(),  # type: ignore[arg-type]
+            arrangement or FakeStudyArrangement(),  # type: ignore[arg-type]
             process_repository=repository,
-        )
-
-    @staticmethod
-    def _create_document(service: DocumentService, filename: str):
-        return service.create_document(
-            UploadFile(
-                filename=filename,
-                file=io.BytesIO(b"fake-pdf-for-deterministic-parser"),
-                headers={"content-type": "application/pdf"},
-            )
         )
 
     def _assert_failed_without_debug(
@@ -315,45 +255,6 @@ class DocumentProcessOperationTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as raised:
             service.require_debug_report(document_id)
         self.assertEqual(raised.exception.status_code, 404)
-
-
-def _debug_report(document_id: str) -> DocumentDebugRecord:
-    return DocumentDebugRecord(
-        document_id=document_id,
-        parser_name="deterministic-test-parser",
-        processed_at="2026-08-24T00:00:00+00:00",
-        page_count=1,
-        total_characters=24,
-        extraction_method="text",
-        ocr_status="completed",
-        ocr_applied=False,
-        pages=[
-            DocumentPageRecord(
-                page_number=1,
-                char_count=24,
-                word_count=3,
-                text_preview="Atomic processing content",
-                dominant_font_size=12.0,
-                extraction_source="text",
-                heading_candidates=[],
-            )
-        ],
-        sections=[],
-        chunks=[
-            DocumentChunkRecord(
-                id=f"{document_id}:chunk:1",
-                document_id=document_id,
-                section_id="",
-                page_start=1,
-                page_end=1,
-                char_count=24,
-                text_preview="Atomic processing content",
-                content="Atomic processing content",
-            )
-        ],
-        warnings=[],
-        dominant_language_hint="en",
-    )
 
 
 def _raise_fault(stage: str) -> None:

@@ -18,7 +18,7 @@ from app.persistence.harness_workflow_operation_repository import (
 )
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
-from tests.test_alembic_sqlite import _alembic_config
+from tests.support.migrations import alembic_config
 
 
 class FrontendEvalAdmissionTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class FrontendEvalAdmissionTests(unittest.TestCase):
         for migration in ("alembic", "runtime"):
             with self.subTest(migration=migration), TemporaryDirectory() as folder:
                 url = f"sqlite:///{Path(folder) / 'db.sqlite'}"
-                config = _alembic_config(url)
+                config = alembic_config(url)
                 with patch.dict(os.environ, {"DATABASE_URL": url}):
                     command.upgrade(config, "20260903_0018")
                 db = Database(url)
@@ -103,7 +103,7 @@ class FrontendEvalAdmissionTests(unittest.TestCase):
     def test_empty_database_can_downgrade_and_upgrade(self):
         with TemporaryDirectory() as folder:
             url = f"sqlite:///{Path(folder) / 'db.sqlite'}"
-            config = _alembic_config(url)
+            config = alembic_config(url)
             with patch.dict(os.environ, {"DATABASE_URL": url}):
                 command.upgrade(config, "head")
                 command.downgrade(config, "20260903_0018")

@@ -35,20 +35,20 @@ from app.services.model_provider import MockModelProvider
 from app.services.persona import PersonaEngine
 from app.services.plans import LearningPlanService
 from app.services.study_arrangement import StudyArrangementService
-from tests import test_document_process_operation as document_fixtures
-from tests.test_document_process_operation import (
-    _FakeArrangement,
-    _FakeParser,
-    _debug_report,
+from tests.support.document_operations import create_document
+from tests.support.document_operations import (
+    FakeStudyArrangement,
+    FakeDocumentParser,
+    document_debug_report,
 )
-from tests.test_learning_plan_operation import _debug, _document, _goal_for, _reply
+from tests.support.planning_operations import planning_debug, planning_document, planning_goal, planning_reply
 
 
 class HarnessBroadCommitBindingTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = TemporaryDirectory()
         self.store = LocalJsonStore(Path(self.temp.name))
-        self.documents = DocumentService(self.store, _FakeParser(), _FakeArrangement())
+        self.documents = DocumentService(self.store, FakeDocumentParser(), FakeStudyArrangement())
         self.provider = MockModelProvider()
         self.plans = LearningPlanService(
             self.store, StudyArrangementService(), self.provider
@@ -72,13 +72,13 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
             }
 
     def _prepare_document(self, name):
-        document = document_fixtures.DocumentProcessOperationTests._create_document(self.documents, f"{name}.pdf")
+        document = create_document(self.documents, f"{name}.pdf")
         operation, document = self.documents.process_repository.admit(
             document_id=document.id, force_ocr=False
         )
         binding = self.documents.process_repository.require_harness_operation(operation.operation_id)
         output = DocumentProcessRuntimeOutputV1(
-            debug_report=_debug_report(document.id), study_units=[]
+            debug_report=document_debug_report(document.id), study_units=[]
         )
         prepared, runtime = self.documents.harness_service.prepare_document(
             operation_binding=binding,
@@ -109,12 +109,12 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
         )
 
     def _prepare_plan(self, name):
-        document = _document(document_id=f"doc-{name}")
-        debug = _debug(document)
+        document = planning_document(document_id=f"doc-{name}")
+        debug = planning_debug(document)
         existing = self.store.load_list("documents", type(document))
         self.store.save_list("documents", [*existing, document])
         self.store.save_item("document_debug", document.id, debug)
-        goal = _goal_for(document, f"request-{name}", self.persona.id)
+        goal = planning_goal(document, f"request-{name}", self.persona.id)
         operation, _ = self.plans.operation_repository.admit(
             request=LearningPlanOperationRequestV1(
                 client_request_id=goal.client_request_id,
@@ -125,7 +125,7 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
             )
         )
         binding = self.plans.operation_repository.require_harness_operation(operation.operation_id)
-        with patch.object(self.provider, "generate_learning_plan", return_value=_reply(document)):
+        with patch.object(self.provider, "generate_learning_plan", return_value=planning_reply(document)):
             candidate = self.plans._build_plan_candidate(
                 goal=goal, document=document.model_copy(deep=True),
                 persona_name=self.persona.name, persona=self.persona,
@@ -339,7 +339,7 @@ class HarnessBroadCommitBindingTests(unittest.TestCase):
         self.assertTrue(any(item.status.value == "failed" for item in trace.checks))
 
     def test_document_runtime_output_rejects_malformed_section_bounds(self):
-        report = _debug_report("doc-bounds")
+        report = document_debug_report("doc-bounds")
         report.sections = [
             DocumentSection(
                 id="doc-bounds:section:1",

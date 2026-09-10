@@ -1,3 +1,4 @@
+from tests.support.planning_operations import planning_goal, planning_document, planning_debug, planning_reply
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -6,19 +7,8 @@ from unittest.mock import patch
 from pydantic import ValidationError
 
 from app.models.api import LearningPlanCreateRequest
-from app.models.domain import (
-    DocumentDebugRecord,
-    DocumentRecord,
-    PlanGenerationTraceRecord,
-    StudyUnitRecord,
-)
-from app.models.planning import (
-    LearningPlanOperationRequestV1,
-    LearningPlanOperationStatus,
-    LearningPlanProjectionState,
-    PlanContentSliceProposalV1,
-    PlanScheduleChapterProposalV1,
-)
+from app.models.domain import DocumentDebugRecord, DocumentRecord, PlanGenerationTraceRecord
+from app.models.planning import LearningPlanOperationRequestV1, LearningPlanOperationStatus, LearningPlanProjectionState
 from app.models.harness_operation import (
     HarnessDomainOperationKind,
     HarnessOperationResolutionStatus,
@@ -32,7 +22,7 @@ from app.persistence.learning_plan_operation_repository import (
     LearningPlanStaleDocument,
 )
 from app.services.local_store import LocalJsonStore
-from app.services.model_provider import MockModelProvider, PlanModelReply, PlanScheduleItem
+from app.services.model_provider import MockModelProvider, PlanModelReply
 from app.services.persona import PersonaEngine
 from app.services.plans import LearningPlanService
 from app.services.stream_interrupts import StreamInterruptedError
@@ -44,8 +34,8 @@ class LearningPlanOperationTests(unittest.TestCase):
         self.temp_dir = TemporaryDirectory()
         self.store = LocalJsonStore(Path(self.temp_dir.name))
         self.persona = PersonaEngine(self.store).require_persona("mentor-aurora")
-        self.document = _document()
-        self.debug = _debug(self.document)
+        self.document = planning_document()
+        self.debug = planning_debug(self.document)
         self.store.save_list("documents", [self.document])
         self.store.save_item("document_debug", self.document.id, self.debug)
 
@@ -67,7 +57,7 @@ class LearningPlanOperationTests(unittest.TestCase):
         with patch.object(
             provider,
             "generate_learning_plan",
-            return_value=_reply(self.document),
+            return_value=planning_reply(self.document),
         ) as generate:
             first = service.create_plan(
                 goal=goal,
@@ -135,8 +125,8 @@ class LearningPlanOperationTests(unittest.TestCase):
                 store = LocalJsonStore(Path(temp_dir))
                 try:
                     persona = PersonaEngine(store).require_persona("mentor-aurora")
-                    document = _document(document_id=f"doc-{stage}")
-                    debug = _debug(document)
+                    document = planning_document(document_id=f"doc-{stage}")
+                    debug = planning_debug(document)
                     store.save_list("documents", [document])
                     store.save_item("document_debug", document.id, debug)
                     base_document = document.model_dump(mode="json")
@@ -157,12 +147,12 @@ class LearningPlanOperationTests(unittest.TestCase):
                         provider,
                         operation_repository=repository,
                     )
-                    goal = _goal_for(document, f"plan-request-{stage}", persona.id)
+                    goal = planning_goal(document, f"plan-request-{stage}", persona.id)
 
                     with patch.object(
                         provider,
                         "generate_learning_plan",
-                        return_value=_reply(document),
+                        return_value=planning_reply(document),
                     ):
                         with self.assertRaisesRegex(RuntimeError, f"fault:{stage}"):
                             service.create_plan(
@@ -223,7 +213,7 @@ class LearningPlanOperationTests(unittest.TestCase):
             changed.title = "Concurrent title"
             changed.updated_at = "2026-08-24T10:01:00+00:00"
             self.store.save_list("documents", [changed])
-            return _reply(self.document)
+            return planning_reply(self.document)
 
         with patch.object(
             provider,
@@ -268,7 +258,7 @@ class LearningPlanOperationTests(unittest.TestCase):
             changed = self.debug.model_copy(deep=True)
             changed.total_characters += 1
             self.store.save_item("document_debug", self.document.id, changed)
-            return _reply(self.document)
+            return planning_reply(self.document)
 
         with patch.object(
             provider,
@@ -398,7 +388,7 @@ class LearningPlanOperationTests(unittest.TestCase):
         with patch.object(
             provider,
             "generate_learning_plan",
-            return_value=_reply(self.document),
+            return_value=planning_reply(self.document),
         ):
             plan = service.create_plan(
                 goal=goal,
@@ -461,7 +451,7 @@ class LearningPlanOperationTests(unittest.TestCase):
         with patch.object(
             provider,
             "generate_learning_plan",
-            return_value=_reply(self.document),
+            return_value=planning_reply(self.document),
         ):
             with self.assertRaises(StreamInterruptedError):
                 service.create_plan(
@@ -479,108 +469,7 @@ class LearningPlanOperationTests(unittest.TestCase):
         self.assertEqual(service.list_plans(), [])
 
     def _goal(self, client_request_id: str) -> LearningPlanCreateRequest:
-        return _goal_for(self.document, client_request_id, self.persona.id)
-
-
-def _goal_for(
-    document: DocumentRecord,
-    client_request_id: str,
-    persona_id: str,
-) -> LearningPlanCreateRequest:
-    return LearningPlanCreateRequest(
-        client_request_id=client_request_id,
-        expected_document_updated_at=document.updated_at,
-        document_id=document.id,
-        persona_id=persona_id,
-        objective="Master vectors",
-    )
-
-
-def _document(*, document_id: str = "doc-plan-operation") -> DocumentRecord:
-    unit = StudyUnitRecord(
-        id=f"{document_id}:study-unit:1",
-        document_id=document_id,
-        title="Vectors",
-        page_start=1,
-        page_end=12,
-        unit_kind="chapter",
-        include_in_plan=True,
-        source_section_ids=["raw-1"],
-        summary="Vector foundations.",
-        confidence=0.95,
-    )
-    return DocumentRecord(
-        id=document_id,
-        title="Linear Algebra",
-        original_filename="linear-algebra.pdf",
-        stored_path="/tmp/linear-algebra.pdf",
-        status="processed",
-        ocr_status="completed",
-        created_at="2026-08-24T10:00:00+00:00",
-        updated_at="2026-08-24T10:00:00+00:00",
-        sections=[],
-        study_units=[unit],
-        study_unit_count=1,
-        page_count=12,
-        chunk_count=2,
-        preview_excerpt="Vectors",
-        debug_ready=True,
-    )
-
-
-def _debug(document: DocumentRecord) -> DocumentDebugRecord:
-    return DocumentDebugRecord(
-        document_id=document.id,
-        parser_name="test-parser",
-        processed_at=document.updated_at,
-        page_count=document.page_count,
-        total_characters=1000,
-        extraction_method="text",
-        pages=[],
-        sections=[],
-        study_units=[item.model_copy(deep=True) for item in document.study_units],
-        chunks=[],
-        warnings=[],
-        dominant_language_hint="en",
-    )
-
-
-def _reply(document: DocumentRecord) -> PlanModelReply:
-    unit = document.study_units[0]
-    return PlanModelReply(
-        course_title="Linear Algebra / Vectors",
-        overview="A committed plan.",
-        today_tasks=["Read vector definitions."],
-        schedule=[
-            PlanScheduleItem(
-                unit_id=unit.id,
-                title="Vectors deep read",
-                focus="Definitions and examples.",
-                activity_type="learn",
-                schedule_chapters=[
-                    PlanScheduleChapterProposalV1(
-                        title="Vectors",
-                        anchor_page_start=unit.page_start,
-                        anchor_page_end=unit.page_end,
-                        source_section_ids=["raw-1"],
-                        content_slices=[
-                            PlanContentSliceProposalV1(
-                                page_start=unit.page_start,
-                                page_end=unit.page_end,
-                                source_section_ids=["raw-1"],
-                            )
-                        ],
-                    )
-                ],
-            )
-        ],
-        debug_trace=PlanGenerationTraceRecord(
-            document_id=document.id,
-            model="test-model",
-            created_at="2026-08-24T10:00:01+00:00",
-            rounds=[],
-        ),
-    )
+        return planning_goal(self.document, client_request_id, self.persona.id)
 
 
 if __name__ == "__main__":

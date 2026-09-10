@@ -10,16 +10,13 @@ from unittest.mock import patch
 from app.models import harness_performance as budget
 from app.models.harness import HarnessContextEnvelopeV3, HarnessSnapshotRefV3, canonical_harness_context_digest
 from app.services.harness_runtime import HarnessOperationRuntime, HarnessRuntimeResolvedArtifact
-from tests import test_harness_runtime as fixture
+from tests.support.harness_runtime import HarnessRuntimeFixture
 
 
 class HarnessPerformanceTests(unittest.TestCase):
     def setUp(self):
-        self.fixture = fixture.HarnessRuntimeTests()
-        self.fixture.setUp()
-
-    def tearDown(self):
-        self.fixture.tearDown()
+        self.fixture = HarnessRuntimeFixture()
+        self.addCleanup(self.fixture.close)
 
     def test_canonical_measurement_matches_utf8_not_character_count(self):
         payload = {"字": ["中文", None, 3], "a": True}
@@ -42,7 +39,7 @@ class HarnessPerformanceTests(unittest.TestCase):
         resolver = SimpleNamespace(resolve=lambda **_: self.fail("resolver must not run"))
         runtime = HarnessOperationRuntime(repository=self.fixture.repository, artifact_resolver=resolver)
         with patch.object(budget, "CONTEXT_MAX_BYTES", 1):
-            result = runtime.execute(request=self.fixture.request, adapter=self.fixture._adapter(calls), claim_owner="test")
+            result = runtime.execute(request=self.fixture.request, adapter=self.fixture.adapter(calls), claim_owner="test")
         self.assertEqual(calls, {})
         self.assertEqual(result.terminal_trace.error_code, "harness_budget_context_bytes_exceeded")
         evidence = json.loads(result.terminal_trace.checks[0].message)
@@ -54,7 +51,7 @@ class HarnessPerformanceTests(unittest.TestCase):
         request = self._snapshot_request()
         runtime = HarnessOperationRuntime(repository=self.fixture.repository)
         with patch.object(budget, "CONTEXT_MAX_REFERENCES", 0):
-            result = runtime.execute(request=request, adapter=self.fixture._adapter(calls), claim_owner="test")
+            result = runtime.execute(request=request, adapter=self.fixture.adapter(calls), claim_owner="test")
         self.assertEqual(calls, {})
         self.assertEqual(result.terminal_trace.error_code, "harness_budget_reference_count_exceeded")
 
@@ -65,7 +62,7 @@ class HarnessPerformanceTests(unittest.TestCase):
             "performance-fixture", "a" * 64, b"secret snapshot content"),))
         runtime = HarnessOperationRuntime(repository=self.fixture.repository, artifact_resolver=resolver)
         with patch.object(budget, "SNAPSHOT_MAX_BYTES", 1):
-            result = runtime.execute(request=request, adapter=self.fixture._adapter(calls), claim_owner="test")
+            result = runtime.execute(request=request, adapter=self.fixture.adapter(calls), claim_owner="test")
         self.assertEqual(calls, {})
         self.assertEqual(result.terminal_trace.error_code, "harness_budget_snapshot_bytes_exceeded")
         self.assertNotIn("secret snapshot content", result.terminal_trace.model_dump_json())
@@ -112,7 +109,7 @@ class HarnessPerformanceTests(unittest.TestCase):
         calls = {}
         runtime = HarnessOperationRuntime(repository=self.fixture.repository)
         with patch.object(budget, "RUNTIME_MAX_EVIDENCE_BYTES", 1):
-            result = runtime.execute(request=self.fixture.request, adapter=self.fixture._adapter(calls), claim_owner="test")
+            result = runtime.execute(request=self.fixture.request, adapter=self.fixture.adapter(calls), claim_owner="test")
         self.assertEqual(calls, {})
         self.assertEqual(result.terminal_trace.error_code, "harness_budget_runtime_evidence_bytes_exceeded")
 

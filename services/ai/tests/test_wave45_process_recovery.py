@@ -39,10 +39,10 @@ from app.services.persona import PersonaEngine
 from app.services.plans import LearningPlanService
 from app.services.study_arrangement import StudyArrangementService
 from sqlalchemy import text
-from tests import test_document_process_operation as document_fixtures
-from tests.test_document_process_operation import _FakeArrangement, _FakeParser
-from tests.test_learning_plan_operation import _debug, _document, _goal_for, _reply
-from tests.test_wave45_input_limits import layer, scene
+from tests.support.document_operations import create_document
+from tests.support.document_operations import FakeStudyArrangement, FakeDocumentParser
+from tests.support.planning_operations import planning_debug, planning_document, planning_goal, planning_reply
+from tests.support.scene_proposals import layer, scene
 
 
 def crash(*args, **kwargs):
@@ -53,12 +53,12 @@ def crash(*args, **kwargs):
 def child(root: Path, scenario: str):
     store = LocalJsonStore(root)
     if scenario.startswith("document"):
-        service = DocumentService(store, _FakeParser(), _FakeArrangement())
+        service = DocumentService(store, FakeDocumentParser(), FakeStudyArrangement())
         if scenario.startswith("document_fault_"):
             service.process_repository.fault_injector = lambda stage: (
                 crash() if stage == scenario.removeprefix("document_fault_") else None
             )
-        document = document_fixtures.DocumentProcessOperationTests._create_document(
+        document = create_document(
             service, "synthetic.pdf"
         )
         (root / "identity.json").write_text(json.dumps({"document": document.id}))
@@ -70,8 +70,8 @@ def child(root: Path, scenario: str):
     if scenario.startswith("plan"):
         persona = PersonaEngine(store).require_persona("mentor-aurora")
         if scenario == "plan_committed" or scenario.startswith("plan_fault_"):
-            document = _document()
-            debug = _debug(document)
+            document = planning_document()
+            debug = planning_debug(document)
             store.save_list("documents", [document])
             store.save_item("document_debug", document.id, debug)
             provider = MockModelProvider()
@@ -84,10 +84,10 @@ def child(root: Path, scenario: str):
                 store, StudyArrangementService(), provider, operation_repository=repo
             )
             with patch.object(
-                provider, "generate_learning_plan", return_value=_reply(document)
+                provider, "generate_learning_plan", return_value=planning_reply(document)
             ):
                 result = service.create_plan(
-                    goal=_goal_for(document, scenario, persona.id),
+                    goal=planning_goal(document, scenario, persona.id),
                     document=document,
                     persona_name=persona.name,
                     persona=persona,
@@ -156,7 +156,7 @@ def child(root: Path, scenario: str):
         from app.models.tavern import CreateTavernRoomRequest, TavernTurnRequest
         from app.persistence.tavern_repository import TavernRepository
         from app.services.tavern import TavernService
-        from tests.test_tavern_facilitated import SequencedTavernProvider
+        from tests.support.tavern_provider import SequencedTavernProvider
 
         engine = PersonaEngine(store)
         personas = [
@@ -275,8 +275,8 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                 self.run_child(root, scenario)
                 store = LocalJsonStore(root)
                 try:
-                    parser = _FakeParser()
-                    service = DocumentService(store, parser, _FakeArrangement())
+                    parser = FakeDocumentParser()
+                    service = DocumentService(store, parser, FakeStudyArrangement())
                     identity = json.loads((root / "identity.json").read_text())
                     op = service.process_repository.latest(
                         document_id=identity["document"]
@@ -343,18 +343,18 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                         service = LearningPlanService(
                             store, StudyArrangementService(), provider
                         )
-                        document = _document()
+                        document = planning_document()
                         with patch.object(
                             provider,
                             "generate_learning_plan",
                             side_effect=AssertionError("duplicate provider call"),
                         ):
                             replay = service.create_plan(
-                                goal=_goal_for(document, scenario, persona.id),
+                                goal=planning_goal(document, scenario, persona.id),
                                 document=document,
                                 persona_name=persona.name,
                                 persona=persona,
-                                debug_report=_debug(document),
+                                debug_report=planning_debug(document),
                             )
                         self.assertEqual(
                             replay.id,
@@ -393,7 +393,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                     try:
                         if workflow == "document":
                             service = DocumentService(
-                                store, _FakeParser(), _FakeArrangement()
+                                store, FakeDocumentParser(), FakeStudyArrangement()
                             )
                             doc_id = json.loads((root / "identity.json").read_text())[
                                 "document"
@@ -427,7 +427,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                                 DocumentRecord,
                             )
 
-                            base = _document()
+                            base = planning_document()
                             self.assertEqual(
                                 store.load_list("documents", DocumentRecord)[
                                     0
@@ -438,7 +438,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
                                 store.load_item(
                                     "document_debug", base.id, DocumentDebugRecord
                                 ).model_dump(mode="json"),
-                                _debug(base).model_dump(mode="json"),
+                                planning_debug(base).model_dump(mode="json"),
                             )
                             with store.database.engine.connect() as conn:
                                 for table in ("learning_plans", "planning_traces"):
@@ -507,7 +507,7 @@ class Wave45ProcessRecoveryTests(unittest.TestCase):
     def test_tavern_maximum_roster_pending_and_partial_process_restart(self):
         from app.persistence.tavern_repository import TavernRepository
         from app.services.tavern import TavernService
-        from tests.test_tavern_facilitated import SequencedTavernProvider
+        from tests.support.tavern_provider import SequencedTavernProvider
 
         for scenario in ("tavern_pending", "tavern_partial"):
             with self.subTest(scenario=scenario), TemporaryDirectory() as folder:

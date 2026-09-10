@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.support.tavern_provider import SequencedTavernProvider
 from tests.support.api import ContainerTestCase, isolated_client
 
 from pathlib import Path
@@ -12,12 +13,11 @@ import unittest
 from unittest.mock import patch
 
 from fastapi import FastAPI, HTTPException
-from fastapi.testclient import TestClient
 
 from app.api import tavern_routes
 from app.models.api import CreatePersonaRequest
 from app.models.harness_operation import HarnessOperationResolutionStatus
-from app.models.tavern import RetryTavernRunRequest, TavernActorReply, TavernTurnRequest
+from app.models.tavern import RetryTavernRunRequest, TavernTurnRequest
 from app.persistence.database import Database
 from app.persistence.models import (
     TavernMessageRow,
@@ -28,44 +28,9 @@ from app.persistence.models import (
 from app.persistence.storage import StorageManager
 from app.persistence.tavern_repository import TavernRepository
 from app.services.local_store import LocalJsonStore
-from app.services.model_provider import MockModelProvider, OpenAIModelProvider
+from app.services.model_provider import OpenAIModelProvider
 from app.services.persona import PersonaEngine
 from app.services.tavern import TavernService
-
-
-class SequencedTavernProvider(MockModelProvider):
-    def __init__(self, *, fail_calls: set[int] | None = None) -> None:
-        self.fail_calls = set(fail_calls or set())
-        self.calls: list[dict[str, object]] = []
-
-    def generate_tavern_actor_reply(self, **kwargs) -> TavernActorReply:
-        call_number = len(self.calls) + 1
-        self.calls.append(
-            {
-                "call_number": call_number,
-                "persona_id": kwargs["persona"].id,
-                "recent_message_ids": [item.id for item in kwargs["recent_messages"]],
-                "recent_persona_ids": [
-                    item.persona_id
-                    for item in kwargs["recent_messages"]
-                    if item.persona_id
-                ],
-                "user_message": kwargs["user_message"],
-                "turn_kind": kwargs["turn_kind"],
-                "required_target_id": kwargs["required_target_id"],
-            }
-        )
-        if call_number in self.fail_calls:
-            raise RuntimeError(f"planned_actor_failure:{call_number}")
-        return TavernActorReply(
-            text=f"{kwargs['persona'].name} 完成第 {call_number} 次回应。",
-            mood="calm",
-            action="微微颔首，望向上一位说话者",
-            speech_style="克制",
-            delivery_cue="停顿后自然接话",
-            state_commentary="按服务端安排推进多人互动",
-            addressed_participant_ids=[],
-        )
 
 
 class TavernFacilitatedApiTests(ContainerTestCase):

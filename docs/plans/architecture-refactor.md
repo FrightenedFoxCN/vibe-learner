@@ -33,7 +33,7 @@
   - 验收：路由请求清单、focus 刷新、取消/过期响应、草稿保存和页面切换保持正确；不以单纯文件拆分作为完成标准。
   - 按用户 2026-09-10 补充授权，同步处理直接相关 UX：Scene 删除 Dialog、Persona/Scene 默认折叠与主次动作、异步状态/错误反馈；进度归入 TODO 的原任务，不复制 checkbox。跨页面 UX 条目只有所有指定页面及独立/设备级验收通过后才关闭。
 
-- [ ] `ARCH-TEST-SEAMS-001` `[P2]` 建立可重构的测试边界。
+- [x] `ARCH-TEST-SEAMS-001` `[P2]` 建立可重构的测试边界。
   - 公共 fixture/helper 不再藏在其他 TestCase 模块的私有函数中；使用应用实例级依赖覆盖，逐步减少全局 container patch。
   - 将按源码字符串切片的 Settings 测试替换为显式保存协调器测试及真实 Hook/组件行为测试。
   - 验收：重命名/移动内部函数不破坏行为测试；保留当前故障注入、24 个进程中断场景及真实 HTTP read-back 覆盖。
@@ -138,4 +138,5 @@
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。
-- [ ] 完成剩余跨 TestCase 公共 fixture/helper 迁移，并运行最终 release/recovery 阶段门禁。
+- [x] 剩余 Document/Planning operation、Scene proposal、Tavern provider、Alembic 与 Harness runtime 公共 fixture 归入 `tests/support`，移除跨 TestCase 私有 helper 及手动调用其他 TestCase setUp 的依赖。故障注入位置与 24 个子进程退出场景不变；新增迁移/runtime/性能/输入上限/进程中断独立脚本，详见 `docs/backend-test-boundaries.md`。
+- [x] 2026-09-10 测试 seam 阶段门禁通过：相关 93 项测试；`check:release`（635 项后端、13 个 eval suite、shared/Web 和生产构建）；`test:acceptance:recovery-limits`（193 项后端及 Web decoder/Hook/组件聚合）。真实 HTTP 重启 read-back 覆盖保留，剩余学习 controller 变更仍须重新执行受影响与阶段验收。
