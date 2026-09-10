@@ -18,12 +18,16 @@ import {
   writeStoredBoolean
 } from "../lib/view-preferences";
 
+import { DiagnosticTimeline } from "./diagnostic-timeline";
+
 export function DebugOverlay() {
   const pathname = usePathname();
   const { showDebugInfo, settings } = useRuntimeSettings();
   const workspace = useLearningDebugSnapshot();
   const pageSnapshot = useCurrentPageDebugSnapshot();
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<"page" | "global">("page");
+  const [pageEvents, setPageEvents] = useState(false);
   const [openPreferenceLoaded, setOpenPreferenceLoaded] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
   const collapseButtonRef = useRef<HTMLButtonElement>(null);
@@ -33,7 +37,7 @@ export function DebugOverlay() {
   const activeDocumentId = workspace?.activeDocument?.id ?? "";
   const debugData = useDocumentDebugData(
     activeDocumentId,
-    showDebugInfo && open && pathname === "/plan" && Boolean(activeDocumentId),
+    showDebugInfo && open && view === "page" && pathname === "/plan" && Boolean(activeDocumentId),
     Boolean(workspace?.activeDocument?.debugReady)
   );
 
@@ -158,7 +162,7 @@ export function DebugOverlay() {
     };
   }, [closeOverlay, open]);
 
-  const title = useMemo(() => getDebugTitle(pathname), [pathname]);
+  const title = useMemo(() => view === "global" ? "全局诊断浮窗" : getDebugTitle(pathname), [pathname, view]);
 
   if (!showDebugInfo) {
     return null;
@@ -218,7 +222,14 @@ export function DebugOverlay() {
               </div>
             </header>
 
+            <nav aria-label="Debug 视图" style={{ display: "flex", gap: 8, padding: 12 }}>
+              <button style={view === "page" ? styles.primaryButton : styles.secondaryButton} aria-pressed={view === "page"} onClick={() => setView("page")}>当前页面</button>
+              <button style={view === "global" ? styles.primaryButton : styles.secondaryButton} aria-pressed={view === "global"} onClick={() => setView("global")}>全局诊断</button>
+            </nav>
             <div style={styles.overlayBody}>
+              {view === "global" ? <DiagnosticTimeline /> : <>
+              <button style={styles.secondaryButton} aria-expanded={pageEvents} onClick={() => setPageEvents(value => !value)}>当前页面请求与动作</button>
+              {pageEvents && <DiagnosticTimeline currentPageOnly />}
               {pathname === "/plan" && workspace ? (
                 <DocumentDebugPanels
                   document={workspace.activeDocument}
@@ -260,6 +271,7 @@ export function DebugOverlay() {
               ) : (
                 <div style={styles.emptyState}>暂无调试面板。</div>
               )}
+              </>}
             </div>
           </section>
         ) : null}
@@ -313,7 +325,7 @@ const styles: Record<string, CSSProperties> = {
     width: "min(92vw, 680px)",
     maxHeight: "min(78vh, 860px)",
     display: "grid",
-    gridTemplateRows: "auto minmax(0, 1fr)",
+    gridTemplateRows: "auto auto minmax(0, 1fr)",
     border: "1px solid var(--border)",
     borderRadius: 20,
     background: "color-mix(in srgb, white 94%, var(--panel))",

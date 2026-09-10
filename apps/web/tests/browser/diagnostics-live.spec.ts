@@ -66,3 +66,44 @@ test("production Debug shows only the current page adapter across client navigat
   await expect(page.getByRole("dialog").getByText("用量审计调试面板", { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("global timeline loads on demand, expands canonical links and reports unavailable reads", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: true } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const reads: string[] = [];
+  page.on("request", item => { if (item.method() === "GET" && item.url().includes("/diagnostics/")) reads.push(item.url()); });
+  await page.goto("/persona-spectrum");
+  await page.getByRole("button", { name: /Debug/ }).click();
+  await expect(page.getByRole("dialog").getByText("人格页调试面板", { exact: true })).toBeVisible();
+  expect(reads).toEqual([]);
+  await page.getByRole("button", { name: "全局诊断", exact: true }).click();
+  const timeline = page.getByRole("region", { name: "全局诊断时间线" });
+  await expect(timeline.getByRole("button", { name: "刷新诊断" })).toBeEnabled();
+  await timeline.getByLabel("流程", { exact: true }).selectOption("persona");
+  await timeline.getByRole("button", { name: "应用筛选" }).click();
+  await timeline.getByRole("button", { name: "展开 operation 关联" }).first().click();
+  const linked = page.getByRole("region", { name: "Operation 关联详情" });
+  await expect(linked.getByText("Harness 阶段与尝试", { exact: true })).toBeVisible();
+  await expect.poll(() => reads.some(url => url.includes("operation-links"))).toBe(true);
+  await expect.poll(() => reads.some(url => url.includes("harness-index"))).toBe(true);
+  const requestDetails = linked.locator("details").filter({ has: page.locator("button").filter({ hasText: "查看关联请求事件" }) }).first();
+  await requestDetails.locator("summary").click();
+  await requestDetails.getByRole("button", { name: "查看关联请求事件" }).click();
+  await expect.poll(() => reads.some(url => url.includes("/diagnostics/events?") && new URL(url).searchParams.has("request_id"))).toBe(true);
+  await timeline.getByRole("button", { name: "收起 operation 关联" }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await timeline.getByRole("heading", { name: "全局诊断时间线", exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "/tmp/unified-debug-timeline.png" });
+  await page.keyboard.press("Escape");
+  const count = reads.length;
+  await page.waitForTimeout(250);
+  expect(reads.length).toBe(count);
+  await page.route("**/diagnostics/events?**", route => route.fulfill({ status: 503, contentType: "application/json", body: '{"detail":"PRIVATE_DIAGNOSTIC_SERVER_ERROR"}' }));
+  await page.getByRole("button", { name: /Debug/ }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText("诊断读取失败");
+  await expect(page.getByRole("dialog")).not.toContainText("PRIVATE_DIAGNOSTIC_SERVER_ERROR");
+});

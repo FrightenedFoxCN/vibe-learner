@@ -339,3 +339,15 @@ restoring older page snapshots. Stable subscription/publish APIs avoid snapshot
 updates re-triggering registration. The adapter does not load learning data or
 persist its rich content into diagnostic events. Diagnostic collection keeps its
 independent application lifetime when the overlay is closed.
+
+
+The Debug Overlay now has current-page and global diagnostic views. Rich page
+adapters remain in memory; current-page events load only when expanded. The
+global timeline requests validated diagnostic pages, never initializes all
+business providers, and loads Harness/index/request links only on selection.
+Changing filters or leaving the view aborts active queries and fences late
+responses. Event views retain at most 500 rows and index views 250; duplicate
+identities across pages are rejected. Time filters apply to event source times;
+Harness index filtering is explicitly limited to workflow/stage/operation.
+Query errors, writer health and reference gaps remain distinct from successful
+empty history. None of these projections establishes business commit truth.
