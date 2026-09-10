@@ -131,3 +131,23 @@ the role-based locator was corrected and the entire suite rerun successfully.
 This proves the successful text-PDF main chain. OCR/failure diagnostic acceptance,
 other domain resource emitters, Study chat/question/attachment and Tavern flow
 wiring, native gates and the other outstanding audit items remain unfinished.
+
+## Study send/recovery correlation slice
+
+Study Chat sends (JSON or attachments) and operation queries now share a random
+flow for the existing Session/client-request pair, using bounded tab-scoped
+session storage. Each actual request gets its own action and current page-view;
+refresh can retain the flow without retaining prompt/message/attachment content.
+Question submission and its required Session read-back share a captured action.
+The diagnostic map is separate from durable admission and pending recovery state;
+its seven-day / 128-entry / 64-KiB limits can create honest correlation gaps.
+
+Verification: diagnostic API tests cover reload, Session scoping, expiry,
+capacity, corrupt/denied storage, JSON/attachment request headers and question
+read-back decoder failure with no content leakage. Existing recovery tests and
+production build passed. All six production Chromium diagnostics scenarios
+passed: the new test commits a real mock-provider Study reply, deliberately loses
+the HTTP response, refreshes, recovers by querying the original request, verifies
+the retained flow/new action/new page and exactly one matching persisted Turn.
+This proves that recovery scenario; full attachment staging and interactive
+question product acceptance, Tavern and the other audit gaps remain unfinished.

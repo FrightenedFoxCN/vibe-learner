@@ -1526,3 +1526,19 @@ therefore cannot associate old cancellation requests with the new run. These IDs
 are diagnostic metadata, separate from durable learning-plan request admission.
 The standalone upload-and-process API helper also shares one context across its
 two requests. Neither HTTP nor stream completion becomes extra commit evidence.
+
+
+Study Chat JSON and attachment sends, and query-only operation recovery, resolve
+a diagnostic flow using the existing `(sessionId, clientRequestId)` pair. A
+separate tab-scoped `sessionStorage` map stores only those IDs, a random flow ID
+and first-observed timestamp: at most 128 entries / 64 KiB / seven days. It
+survives reload in that tab, not all browser restarts or tabs. Malformed, expired,
+future-dated or oversized records are ignored; denied storage falls back to the
+bounded in-memory map. Retention/denial can break correlation and never implies
+a missing business operation. Each request captures a new action/current page.
+The map does not alter pending-operation metadata, durable admission identity,
+request bodies, grading content, committed projection or retry policy.
+
+Interactive-question POST and mandatory persisted Session GET share one
+captured diagnostic flow/action. A failed Session decoder still rejects the
+operation result at the existing boundary; HTTP success never bypasses read-back.

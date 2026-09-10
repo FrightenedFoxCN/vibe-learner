@@ -263,3 +263,45 @@ test("document upload, parsing, plan stream and initial Session share one real d
   expect(JSON.stringify(events)).not.toContain("diagnostic-document.pdf");
   expect(JSON.stringify(events)).not.toContain("Observe a sample");
 });
+
+
+test("committed Study reply lost in transport is queried after reload with the original flow", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: false } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const sentinel = "PRIVATE_STUDY_DIAGNOSTIC_SENTINEL explain the observation";
+  let originalHeaders: Record<string, string> = {}, clientRequestId = "", sessionId = "", receipt: any;
+  const queries: Record<string, string>[] = [];
+  page.on("request", item => {
+    if (clientRequestId && item.url().includes(`/chat-operations/${clientRequestId}`)) queries.push(item.headers());
+  });
+  await page.route("**/study-sessions/*/chat", async route => {
+    const input = route.request().postDataJSON();
+    if (input.message !== sentinel) { await route.continue(); return; }
+    originalHeaders = route.request().headers(); clientRequestId = input.client_request_id;
+    sessionId = new URL(route.request().url()).pathname.split("/")[2];
+    const upstream = await route.fetch();
+    expect(upstream.status()).toBe(200);
+    receipt = await upstream.json(); expect(receipt.status).toBe("committed");
+    await route.abort("failed");
+  });
+  await page.goto("/study");
+  await expect(page.getByRole("button", { name: "发送", exact: true })).toBeEnabled();
+  await page.getByPlaceholder("输入本节学习问题…").fill(sentinel);
+  await page.getByRole("button", { name: "发送", exact: true }).click();
+  await expect(page.getByRole("button", { name: "查询本次请求结果", exact: true })).toBeVisible();
+  expect(originalHeaders["x-debug-flow-id"]).toBeTruthy();
+  await page.reload();
+  await expect.poll(() => queries.length).toBeGreaterThan(0);
+  await expect(page.getByRole("button", { name: "查询本次请求结果", exact: true })).toHaveCount(0);
+  expect(queries[0]["x-debug-flow-id"]).toBe(originalHeaders["x-debug-flow-id"]);
+  expect(queries[0]["x-debug-action-id"]).not.toBe(originalHeaders["x-debug-action-id"]);
+  expect(queries[0]["x-debug-page-view-id"]).not.toBe(originalHeaders["x-debug-page-view-id"]);
+  const persisted = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  expect(persisted.turns.filter((turn: any) => turn.learner_message === sentinel)).toHaveLength(1);
+  const diagnostics = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${originalHeaders["x-debug-flow-id"]}`);
+  const events = (await diagnostics.json()).items.map((item: any) => item.event);
+  expect(events.some((event: any) => event.harness?.workflow === "study_chat")).toBe(true);
+  expect(JSON.stringify(events)).not.toContain("PRIVATE_STUDY_DIAGNOSTIC_SENTINEL");
+});

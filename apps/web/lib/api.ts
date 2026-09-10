@@ -1,3 +1,4 @@
+import { studyDiagnosticContext } from "./study-diagnostic-context";
 import { createDiagnosticId, diagnosticContext, diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
 import type {
   CreatePersonaInput,
@@ -1776,8 +1777,8 @@ export async function listStudySessions(input: {
   }));
 }
 
-export async function getStudySession(sessionId: string): Promise<StudySessionRecord> {
-  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`);
+export async function getStudySession(sessionId: string, context?: DiagnosticContext): Promise<StudySessionRecord> {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`, undefined, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, { expectedSessionId: sessionId }));
 }
@@ -1832,6 +1833,7 @@ export async function sendStudyMessage(input: {
   hiddenMessagePrefix?: string;
   attachments?: File[];
 }): Promise<StudyChatOperationResponse> {
+  const context = studyDiagnosticContext(input.sessionId, input.clientRequestId);
   const hasAttachments = Boolean(input.attachments?.length);
   const response = hasAttachments
     ? await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat-with-attachments`, {
@@ -1849,7 +1851,7 @@ export async function sendStudyMessage(input: {
           });
           return form;
         })()
-      })
+      }, context)
     : await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/chat`, {
         method: "POST",
         headers: {
@@ -1863,7 +1865,7 @@ export async function sendStudyMessage(input: {
           follow_up_id: input.followUpId ?? "",
           hidden_message_prefix: input.hiddenMessagePrefix ?? "",
         })
-      });
+      }, context);
   const diagnosticResponse = response;
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeStudyChatOperationResponse(payload, {
@@ -1878,6 +1880,7 @@ export async function getStudyChatOperation(input: {
 }): Promise<StudyChatOperationResponse> {
   const diagnosticResponse = await request(
       `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
+      undefined, studyDiagnosticContext(input.sessionId, input.clientRequestId),
     );
   const payload = await readJson<unknown>(
     diagnosticResponse,
@@ -1908,6 +1911,7 @@ export async function submitStudyQuestionAttempt(input: {
   clientAttemptId: string;
   submittedAnswer: string;
 }): Promise<StudyQuestionAttemptCommitResult> {
+  const context = diagnosticContext(createDiagnosticId());
   const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`, {
       method: "POST",
       headers: {
@@ -1919,7 +1923,7 @@ export async function submitStudyQuestionAttempt(input: {
         client_attempt_id: input.clientAttemptId,
         submitted_answer: input.submittedAnswer,
       })
-    });
+    }, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   const attempt = diagnosticDecode(diagnosticResponse, () => decodeStudyQuestionAttemptResponse(payload, {
     sessionId: input.sessionId,
@@ -1927,7 +1931,7 @@ export async function submitStudyQuestionAttempt(input: {
     clientAttemptId: input.clientAttemptId,
     expectedSessionRevision: input.expectedSessionRevision,
   }));
-  const session = await getStudySession(input.sessionId);
+  const session = await getStudySession(input.sessionId, context);
   return { attempt, session };
 }
 
