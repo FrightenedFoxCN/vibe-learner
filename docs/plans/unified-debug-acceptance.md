@@ -600,3 +600,15 @@ separate from ordinary deterministic unit tests. Log: `/tmp/diagnostic-real-ocr.
 The initial probe used the wrong owner for `ocr_applied`; the final check reads the
 persisted debug record where that field belongs. Native success, overhead and
 consolidated acceptance remain open; no independent quality claim is made.
+
+## Chromium collection overhead
+
+An opt-in headless Chromium probe executes the actual collector bundle with
+saturated bounded queues and verifies overflow/upload accounting. Sixty raw burst
+samples give P95 1.400 ms for 100 requests/200 events, within the predefined 16.7 ms
+collection-only frame budget. Snapshot and serialization/flush samples are also
+retained; flush uses a local acknowledgement stub and excludes network. See
+[method and report](../performance/diagnostic-chromium-collector-v1.md).
+This does not close React/native/full-workflow overhead acceptance. Native UI
+verification is ongoing in an isolated application; prior bundled sidecar output
+is not evidence for the current source backend.
