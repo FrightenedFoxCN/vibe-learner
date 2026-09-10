@@ -62,15 +62,15 @@ export function useSceneLibrary(port: SceneLibraryPort = api) {
     try { return await operation(); }
     finally { pending.current.delete(key); }
   }
-  const createSceneLibraryItem: typeof api.createSceneLibraryItem = input => mutate("scene:create", async () => {
+  const createSceneLibraryItem: typeof api.createSceneLibraryItem = (input, context) => mutate("scene:create", async () => {
     const revision = selection.current.revision;
-    const created = await port.createSceneLibraryItem(input);
+    const created = await port.createSceneLibraryItem(input, context);
     scenes.apply(created.sceneId, created);
     if (scenes.active.current && selection.current.revision === revision) setSelectedSavedSceneId(created.sceneId);
     return created;
   });
-  const updateSceneLibraryItem: typeof api.updateSceneLibraryItem = (id, input) => mutate(`scene:${id}`, async () => {
-    const updated = await port.updateSceneLibraryItem(id, input);
+  const updateSceneLibraryItem: typeof api.updateSceneLibraryItem = (id, input, context) => mutate(`scene:${id}`, async () => {
+    const updated = await port.updateSceneLibraryItem(id, input, context);
     scenes.apply(updated.sceneId, updated);
     return updated;
   });

@@ -15,7 +15,7 @@ export interface DiagnosticEventV1 {
   parent_span_id?: string | null;
   tool_metric?: DiagnosticToolMetricV1 | null;
   provider_metric?: DiagnosticProviderMetricV1 | null;
-  resource?: { resource_type: "persona"; resource_id: string; revision: number | null } | null;
+  resource?: { resource_type: "persona" | "scene"; resource_id: string; revision: number | null } | null;
   harness?: { operation_id: string; workflow: HarnessWorkflow; stage: HarnessStage; trace_id: string | null; attempt_id?: string | null; attempt_index?: number | null; phase?: HarnessAttemptPhase | null; attempt_status?: HarnessAttemptStatus | null } | null;
   category: "transport" | "lifecycle" | "harness" | "resource" | "provider" | "tool" | "action" | "desktop" | "page" | "decode";
   severity: "info" | "warning" | "error";

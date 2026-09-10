@@ -49,6 +49,7 @@ export function useSceneWorkspaceController() {
     setCollapsedLayerIds,
     selectedObjectId,
     currentSceneAsyncScope,
+    beginDiagnosticAction,
     updateSceneLayersState,
     updateSceneGenerationInput,
     selectSceneLayer,
@@ -85,7 +86,7 @@ export function useSceneWorkspaceController() {
     generatedSceneCandidate,
     handleGenerateScene,
     resetSceneGeneration,
-  } = useSceneGeneration(currentSceneAsyncScope);
+  } = useSceneGeneration(currentSceneAsyncScope, undefined, beginDiagnosticAction);
   const {
     rewriteStrength,
     setRewriteStrength,
@@ -98,7 +99,7 @@ export function useSceneWorkspaceController() {
     rewriteObjectField,
     invalidateRewrite,
     resetRewrite,
-  } = useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneFieldTarget, updateLayer, updateObject });
+  } = useSceneRewrite({ beginDiagnosticAction, sceneLayers, currentSceneAsyncScope, setSceneFieldTarget, updateLayer, updateObject });
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const sceneImportFenceRef = useRef(new AsyncResultFence());
   useEffect(() => () => sceneImportFenceRef.current.invalidate(), []);
@@ -412,6 +413,7 @@ export function useSceneWorkspaceController() {
         selectedLayerId: sceneSelectionLayerId,
         collapsedLayerIds,
       };
+      const diagnostic = beginDiagnosticAction();
       if (mode === "upsert" && selectedSavedSceneId) {
         const selectedSavedScene = savedScenes.find(
           (item) => item.sceneId === selectedSavedSceneId
@@ -423,11 +425,11 @@ export function useSceneWorkspaceController() {
         const updated = await updateSceneLibraryItem(selectedSavedSceneId, {
           ...payload,
           expectedRevision: selectedSavedScene.revision,
-        });
+        }, diagnostic);
         setSceneIoMessage(`已更新已保存场景“${updated.sceneName}”。`);
         return;
       }
-      const created = await createSceneLibraryItem(payload);
+      const created = await createSceneLibraryItem(payload, diagnostic);
       setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
     } catch {
       setSceneIoMessage("保存到场景库失败，请稍后重试。");
@@ -537,7 +539,7 @@ export function useSceneWorkspaceController() {
     if (!generatedSceneCandidate) {
       return;
     }
-    applySceneImport(generatedSceneCandidate, "已将生成场景树应用到当前编辑区。");
+    applySceneImport(generatedSceneCandidate, "已将生成场景树应用到当前编辑区。", "scene-editor:local", true);
   }
 
   function toggleSidebarSection(key: string) {

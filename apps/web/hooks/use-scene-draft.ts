@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
+import { createDiagnosticId, diagnosticContext } from "../lib/diagnostics";
 import type { AsyncResultScope } from "../lib/async-result-fence";
 import {
   INITIAL_SCENE,
@@ -47,6 +48,12 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
   const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>(() => collectLayerIds(INITIAL_SCENE).filter(id => !INITIAL_SCENE.some(layer => layer.id === id)));
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const sceneDraftRevisionRef = useRef(0);
+  const diagnosticFlow = useRef<string | null>(null);
+  function beginDiagnosticAction() {
+    diagnosticFlow.current ??= createDiagnosticId();
+    return diagnosticContext(diagnosticFlow.current);
+  }
+
   const sceneSubjectIdRef = useRef("scene-editor:local");
   const selectedLayerIdRef = useRef(INITIAL_SCENE[0]?.id ?? "");
   const selectedObjectIdRef = useRef("");
@@ -122,7 +129,9 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
     imported: SceneImportPayload,
     message: string,
     subjectId = "scene-editor:local",
+    preserveDiagnosticFlow = false,
   ) {
+    if (!preserveDiagnosticFlow) diagnosticFlow.current = null;
     const knownIds = new Set(collectLayerIds(imported.sceneLayers));
     const nextSelectedLayerId =
       imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
@@ -190,6 +199,7 @@ export function useSceneDraft({ onSelectionChange, onImported, onNotice }: {
     setCollapsedLayerIds,
     selectedObjectId,
     currentSceneAsyncScope,
+    beginDiagnosticAction,
     updateSceneLayersState,
     updateSceneGenerationInput,
     selectSceneLayer,

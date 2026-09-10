@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ModelRecovery } from "@vibe-learner/shared";
+import { diagnosticContext } from "../lib/diagnostics";
 import { assistPersonaSlot } from "../lib/data/personas";
 import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
 import { findLayerById, type SceneLayer, type SceneObject } from "../lib/scene-editor-model";
@@ -30,6 +31,7 @@ export type RewriteUndoEntry =
     };
 
 interface SceneRewriteOptions {
+  beginDiagnosticAction?: typeof diagnosticContext;
   sceneLayers: SceneLayer[];
   currentSceneAsyncScope: () => AsyncResultScope;
   setSceneFieldTarget: (target: string) => void;
@@ -37,7 +39,7 @@ interface SceneRewriteOptions {
   updateObject: (layerId: string, objectId: string, key: keyof SceneObject, value: string) => void;
 }
 
-export function useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneFieldTarget, updateLayer, updateObject }: SceneRewriteOptions, assist = assistPersonaSlot) {
+export function useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneFieldTarget, updateLayer, updateObject, beginDiagnosticAction = diagnosticContext }: SceneRewriteOptions, assist = assistPersonaSlot) {
   const [rewriteStrength, setRewriteStrength] = useState(0.6);
   const [rewritePendingKey, setRewritePendingKey] = useState("");
   const [rewriteError, setRewriteError] = useState("");
@@ -117,7 +119,7 @@ export function useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneF
           sortOrder: 0
         },
         rewriteStrength: Number(rewriteStrength.toFixed(2))
-      });
+      }, beginDiagnosticAction());
       if (!canApply(ticket)) {
         return;
       }
@@ -180,7 +182,7 @@ export function useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneF
           sortOrder: 0
         },
         rewriteStrength: Number(rewriteStrength.toFixed(2))
-      });
+      }, beginDiagnosticAction());
       if (!canApply(ticket)) {
         return;
       }

@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ModelRecovery } from "@vibe-learner/shared";
+import { diagnosticContext } from "../lib/diagnostics";
 import { generateSceneTree } from "../lib/data/scenes";
 import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
 import { parseSceneImportPayload, countSceneNodes, normalizeSceneTreeNodeForProfile, type SceneLayer } from "../lib/scene-editor-model";
 
-export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string) => AsyncResultScope, generate = generateSceneTree) {
+export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string) => AsyncResultScope, generate = generateSceneTree, beginDiagnosticAction = diagnosticContext) {
   const [sceneKeywordInput, setSceneKeywordInput] = useState("");
   const [sceneLongTextFile, setSceneLongTextFile] = useState<File | null>(null);
   const [sceneGenerateMode, setSceneGenerateMode] = useState<"keywords" | "long_text">("keywords");
@@ -84,7 +85,7 @@ export function useSceneGeneration(currentSceneAsyncScope: (fieldTarget?: string
         mode,
         inputText,
         layerCount,
-      });
+      }, beginDiagnosticAction());
       const imported = parseSceneImportPayload({
         sceneName: result.sceneName,
         sceneSummary: result.sceneSummary,

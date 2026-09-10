@@ -84,6 +84,19 @@ def reference_persona(persona):
         store.dropped += 1
 
 
+def reference_scene(scene):
+    """Reference only the saved Scene library record, never a generated proposal."""
+    store = active_store.get()
+    if store is None:
+        return
+    try:
+        store.emit("resource_reference", resource=DiagnosticResourceReferenceV1(
+            resource_type="scene", resource_id=scene.scene_id, revision=scene.revision,
+        ))
+    except Exception:
+        store.dropped += 1
+
+
 
 class DiagnosticQueryUnavailable(RuntimeError):
     pass

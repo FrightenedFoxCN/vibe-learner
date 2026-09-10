@@ -961,7 +961,7 @@ export async function generateSceneTree(input: {
   mode: "keywords" | "long_text";
   inputText: string;
   layerCount?: number | null;
-}): Promise<SceneTreeGenerateResult> {
+}, context?: DiagnosticContext): Promise<SceneTreeGenerateResult> {
   const requestBody: Record<string, unknown> = {
     mode: input.mode,
     input_text: input.inputText
@@ -975,7 +975,7 @@ export async function generateSceneTree(input: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
-    });
+    }, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeSceneTreeGenerateResult(payload, { expectedMode: input.mode }));
 }
@@ -1000,7 +1000,7 @@ export async function assistPersonaSetting(
 }
 
 export async function assistPersonaSlot(
-  input: PersonaSlotAssistInput
+  input: PersonaSlotAssistInput, context?: DiagnosticContext
 ): Promise<PersonaSlotAssistOutput> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/personas/assist-slot`, {
       method: "POST",
@@ -1013,7 +1013,7 @@ export async function assistPersonaSlot(
         slot: serializeSlot(input.slot),
         rewrite_strength: input.rewriteStrength
       })
-    });
+    }, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodePersonaSlotAssistOutput(payload, input.slot));
 }
@@ -1134,7 +1134,7 @@ export async function createSceneLibraryItem(input: {
   sceneLayers: unknown[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
-}): Promise<SceneLibraryItemPayload> {
+}, context?: DiagnosticContext): Promise<SceneLibraryItemPayload> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library`, {
       method: "POST",
       headers: {
@@ -1149,7 +1149,7 @@ export async function createSceneLibraryItem(input: {
         selected_layer_id: input.selectedLayerId,
         collapsed_layer_ids: input.collapsedLayerIds
       })
-    });
+    }, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeSceneLibraryItem(payload, { expectedRevision: 1 }));
 }
@@ -1161,7 +1161,7 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
   sceneLayers: unknown[];
   selectedLayerId: string;
   collapsedLayerIds: string[];
-}): Promise<SceneLibraryItemPayload> {
+}, context?: DiagnosticContext): Promise<SceneLibraryItemPayload> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "PUT",
       headers: {
@@ -1176,7 +1176,7 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
         selected_layer_id: input.selectedLayerId,
         collapsed_layer_ids: input.collapsedLayerIds
       })
-    });
+    }, context);
   const payload = await readJson<unknown>(diagnosticResponse);
   return diagnosticDecode(diagnosticResponse, () => decodeSceneLibraryItem(payload, {
     expectedSceneId: sceneId,

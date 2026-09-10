@@ -84,7 +84,7 @@ class DiagnosticHarnessReferenceV1(BaseModel):
 
 class DiagnosticResourceReferenceV1(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    resource_type: Literal["persona"]
+    resource_type: Literal["persona", "scene"]
     resource_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9:._-]{1,160}$")]
     revision: Annotated[int, Field(ge=0)] | None = None
 

@@ -2331,7 +2331,10 @@
       "additionalProperties": false,
       "properties": {
         "resource_type": {
-          "const": "persona",
+          "enum": [
+            "persona",
+            "scene"
+          ],
           "title": "Resource Type",
           "type": "string"
         },

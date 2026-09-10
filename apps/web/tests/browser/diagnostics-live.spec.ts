@@ -171,3 +171,51 @@ test("global timeline loads on demand, expands canonical links and reports unava
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText("诊断读取失败");
   await expect(page.getByRole("dialog")).not.toContainText("PRIVATE_DIAGNOSTIC_SERVER_ERROR");
 });
+
+
+test("Scene generation, candidate application and saves share flow with committed resource references", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: false } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const sent: { path: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => { if (item.method() === "POST" || item.method() === "PUT") sent.push({ path: new URL(item.url()).pathname, headers: item.headers() }); });
+  await page.goto("/scene-setup");
+  await page.getByPlaceholder("输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播").fill("PRIVATE_SCENE_DIAGNOSTIC_SENTINEL");
+  await page.getByRole("button", { name: "根据关键词生成场景树", exact: true }).click();
+  await page.getByRole("button", { name: "应用到编辑区", exact: true }).click();
+  const creating = page.waitForResponse(response => response.url().endsWith("/scene-library") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "保存到场景库", exact: true }).click();
+  const createdResponse = await creating; expect(createdResponse.status()).toBe(200);
+  const created = await createdResponse.json();
+  const updating = page.waitForResponse(response => response.url().endsWith(`/scene-library/${created.scene_id}`) && response.request().method() === "PUT");
+  await page.getByRole("button", { name: "更新已保存场景", exact: true }).click();
+  const updatedResponse = await updating; expect(updatedResponse.status()).toBe(200);
+  const updated = await updatedResponse.json();
+  const calls = sent.filter(item => item.path === "/scene-setup/generate" || item.path.startsWith("/scene-library"));
+  expect(calls).toHaveLength(3);
+  const flow = calls[0].headers["x-debug-flow-id"];
+  expect(flow).toBeTruthy();
+  expect(new Set(calls.map(item => item.headers["x-debug-flow-id"])).size).toBe(1);
+  expect(new Set(calls.map(item => item.headers["x-debug-action-id"])).size).toBe(3);
+  let events: any[] = [];
+  await expect.poll(async () => {
+    const response = await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${flow}`);
+    events = (await response.json()).items.map((item: any) => item.event);
+    return events.filter(item => item.source === "browser" && item.name === "request_finished").length;
+  }).toBe(3);
+  expect(events.filter(item => item.resource?.resource_type === "scene").map(item => item.resource)).toEqual([
+    { resource_type: "scene", resource_id: created.scene_id, revision: created.revision },
+    { resource_type: "scene", resource_id: updated.scene_id, revision: updated.revision },
+  ]);
+  expect(events.some(item => item.harness?.workflow === "scene")).toBe(true);
+  expect(JSON.stringify(events)).not.toContain("PRIVATE_SCENE_DIAGNOSTIC_SENTINEL");
+  const conflict = await request.put(`http://127.0.0.1:18998/scene-library/${created.scene_id}`, { data: {
+    contract_version: "scene-committed-save-v1", expected_revision: created.revision,
+    scene_name: created.scene_name, scene_summary: created.scene_summary, scene_layers: created.scene_layers,
+    selected_layer_id: created.selected_layer_id, collapsed_layer_ids: created.collapsed_layer_ids,
+  }, headers: { "X-Debug-Flow-Id": flow } });
+  expect(conflict.status()).toBe(409);
+  const references = await request.get(`http://127.0.0.1:18998/diagnostics/events?resource_type=scene&resource_id=${created.scene_id}`);
+  expect((await references.json()).items).toHaveLength(2);
+});

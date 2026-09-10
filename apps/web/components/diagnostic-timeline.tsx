@@ -119,7 +119,7 @@ export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnl
   return <section aria-label={currentPageOnly ? "当前页面诊断" : "全局诊断时间线"}>
     <h2>{currentPageOnly ? "当前页面诊断" : "全局诊断时间线"}</h2>
     <p>按入库顺序显示保留记录。HTTP 完成不等于业务提交；父子耗时不应相加。</p>
-    {!currentPageOnly && <p>事件与导出中的资源条件匹配直接记录的资源引用（目前为 Persona 保存）。跨域 canonical 资源请在 Harness 索引中筛选，再展开关联请求；两者的匹配范围不同。</p>}
+    {!currentPageOnly && <p>事件与导出中的资源条件匹配直接记录的资源引用（目前为 Persona 和 Scene 保存）。跨域 canonical 资源请在 Harness 索引中筛选，再展开关联请求；两者的匹配范围不同。</p>}
     {!currentPageOnly && <>
       <form onSubmit={submit} style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))" }}>
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>流程<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="workflow" aria-label="流程"><option value="">全部</option>{schemas.index.$defs.HarnessWorkflow.enum.map(value => <option key={value}>{value}</option>)}</select></label>

@@ -2,6 +2,9 @@ import { dom } from "./support/dom.js";
 import assert from "node:assert/strict";
 import { after, afterEach, test } from "node:test";
 import { act, cleanup, renderHook } from "@testing-library/react";
+import { useSceneGeneration } from "../hooks/use-scene-generation.ts";
+import { useSceneLibrary } from "../hooks/use-scene-library.ts";
+import { registerDiagnosticPage } from "../lib/diagnostics.ts";
 import { useSceneDraft } from "../hooks/use-scene-draft.ts";
 import { INITIAL_SCENE } from "../lib/scene-editor-model.ts";
 import { saveClock } from "./support/save-clock.js";
@@ -63,4 +66,49 @@ test("invalid stored draft leaves the default editor usable with an explicit not
   assert.match(h.notices[0], /解析失败/);
   act(() => h.result.current.selectSceneLayer(INITIAL_SCENE[0].id));
   assert.ok(h.result.current.selectedLayer);
+});
+
+
+test("Scene generation/application/save preserve flow and imports start a fresh flow", async () => {
+  const page = registerDiagnosticPage("/scene-setup"), calls = [];
+  const port = {
+    listSceneLibrary: async () => [], listReusableSceneNodes: async () => [],
+    createSceneLibraryItem: async (_input, context) => { calls.push(context); return { sceneId: "saved", revision: 1 }; },
+    updateSceneLibraryItem: async (_id, _input, context) => { calls.push(context); return { sceneId: "saved", revision: 2 }; },
+  };
+  const view = renderHook(() => {
+    const draft = useSceneDraft({ onSelectionChange() {}, onImported() {}, onNotice() {} }, { read: () => null, write() {} }, saveClock());
+    const library = useSceneLibrary(port);
+    const generation = useSceneGeneration(draft.currentSceneAsyncScope, async (_input, context) => {
+      calls.push(context);
+      return { ...saved(), usedModel: "mock", usedWebSearch: false, mode: "keywords", modelRecoveries: [] };
+    }, draft.beginDiagnosticAction);
+    return { draft, library, generation };
+  });
+  act(() => view.result.current.generation.setSceneKeywordInput("private keywords"));
+  await act(async () => view.result.current.generation.handleGenerateScene("keywords"));
+  act(() => view.result.current.draft.applySceneImport(view.result.current.generation.generatedSceneCandidate, "apply", "scene-editor:local", true));
+  await act(async () => view.result.current.library.createSceneLibraryItem(saved(), view.result.current.draft.beginDiagnosticAction()));
+  await act(async () => view.result.current.library.updateSceneLibraryItem("saved", { ...saved(), expectedRevision: 1 }, view.result.current.draft.beginDiagnosticAction()));
+  assert.equal(calls.length, 3);
+  assert.ok(calls[0].flow_id);
+  assert.equal(new Set(calls.map(context => context.flow_id)).size, 1);
+  assert.equal(new Set(calls.map(context => context.action_id)).size, 3);
+  assert.ok(calls.every(context => context.page_view_id === page.id));
+  assert.ok(!JSON.stringify(calls).includes("private keywords"));
+  act(() => view.result.current.draft.applySceneImport(saved(), "load", "scene-library:other"));
+  assert.notEqual(view.result.current.draft.beginDiagnosticAction().flow_id, calls[0].flow_id);
+  page.dispose();
+});
+
+test("diagnostic identity failure cannot break Scene editing or import", () => {
+  const h = fixture();
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto");
+  try {
+    Object.defineProperty(globalThis, "crypto", { configurable: true, value: { randomUUID() { throw new Error("unavailable"); } } });
+    assert.doesNotThrow(() => h.result.current.beginDiagnosticAction());
+    assert.equal(h.result.current.beginDiagnosticAction().flow_id, null);
+    act(() => h.result.current.applySceneImport(saved(), "import"));
+    assert.equal(h.result.current.sceneName, "saved scene");
+  } finally { if (descriptor) Object.defineProperty(globalThis, "crypto", descriptor); else delete globalThis.crypto; }
 });

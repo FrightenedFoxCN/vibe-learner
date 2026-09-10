@@ -15,7 +15,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.core.logging import get_logger
-from app.core.diagnostics import reference_persona
+from app.core.diagnostics import reference_persona, reference_scene
 from app.core.bootstrap import Container
 from app.api.dependencies import get_container
 from fastapi import Depends
@@ -502,6 +502,7 @@ def create_scene_library_item(payload: UpsertSceneLibraryRequest, *, container: 
         collapsed_layer_ids=payload.collapsed_layer_ids,
         expected_revision=payload.expected_revision,
     )
+    reference_scene(record)
     return _into_response(SceneLibraryResponse, record)
 
 
@@ -516,6 +517,7 @@ def update_scene_library_item(scene_id: str, payload: UpsertSceneLibraryRequest,
         collapsed_layer_ids=payload.collapsed_layer_ids,
         expected_revision=payload.expected_revision,
     )
+    reference_scene(record)
     return _into_response(SceneLibraryResponse, record)
 
 

@@ -17,11 +17,12 @@ function fixture() {
       onImported: () => rewrite.resetRewrite(), onNotice() {},
     }, { read: () => null, write() {} }, clock);
     const rewrite = useSceneRewrite({
+      beginDiagnosticAction: draft.beginDiagnosticAction,
       sceneLayers: draft.sceneLayers, currentSceneAsyncScope: draft.currentSceneAsyncScope,
       setSceneFieldTarget: draft.setSceneFieldTarget,
       updateLayer: (id, update) => draft.updateSceneLayersState(layers => updateLayerTree(layers, id, update)),
       updateObject: (layerId, objectId, key, value) => draft.updateSceneLayersState(layers => updateLayerTree(layers, layerId, layer => ({ ...layer, objects: layer.objects.map(object => object.id === objectId ? { ...object, [key]: value } : object) }))),
-    }, input => new Promise((resolve, reject) => requests.push({ input, resolve: content => resolve({ slot: { ...input.slot, content }, modelRecoveries: [] }), reject })));
+    }, (input, context) => new Promise((resolve, reject) => requests.push({ input, context, resolve: content => resolve({ slot: { ...input.slot, content }, modelRecoveries: [] }), reject })));
     return { draft, rewrite };
   }) };
 }
@@ -51,6 +52,9 @@ test("a superseded failure does not clear a newer request or display its error",
   const h = fixture(), layer = h.result.current.draft.sceneLayers[0]; let old, current;
   act(() => { old = h.result.current.rewrite.rewriteLayerField(layer.id, "summary", "Summary"); });
   act(() => { current = h.result.current.rewrite.rewriteLayerField(layer.id, "rules", "Rules"); });
+  assert.ok(h.requests[0].context.flow_id);
+  assert.equal(h.requests[0].context.flow_id, h.requests[1].context.flow_id);
+  assert.notEqual(h.requests[0].context.action_id, h.requests[1].context.action_id);
   await act(async () => { h.requests[0].reject(new Error("old")); await old; });
   assert.equal(h.result.current.rewrite.rewritePendingKey, `${layer.id}:rules`);
   assert.equal(h.result.current.rewrite.rewriteError, "");

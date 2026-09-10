@@ -1383,7 +1383,7 @@ Operation/workflow/stage event filters match direct Harness references or the
 same server request via durable operation links. New links retain canonical
 workflow/stage labels; older links without these labels remain queryable by
 operation ID but cannot certify complete historical workflow/stage coverage.
-Resource filters currently select directly referenced Persona events, while
+Resource filters currently select directly referenced Persona/Scene save events, while
 page-path filters select events carrying the reviewed browser page label.
 These filters are diagnostic projections, not authorization or commit proof.
 
@@ -1398,7 +1398,7 @@ canonical projections requiring read-back, not current resource state or proof
 of every side effect. SQLite scanning has a cooperative five-second deadline.
 The Timeline exposes resource type/ID and a Harness-only role selector, with
 operation → request → event drilldown. Event/export resource filters still
-select direct resource events (currently Persona saves); they do not implicitly
+select direct resource events (currently Persona/Scene saves); they do not implicitly
 join the independently refreshed canonical index. Query uses a read-only connection: absent/unavailable index storage
 reports `coverage.freshness=unavailable` and never creates a blank index as a
 side effect. The worker remains responsible for index creation/rebuild.
@@ -1502,3 +1502,15 @@ are process-local and do not establish current admission or complete collection.
 budget; a conservative write reservation can still fail. Installation-wide disk
 certification remains false. Diagnostic export embeds the same independent
 observation as `storage_observation`, separate from its pinned database snapshots.
+
+
+Scene editor diagnostics keep a local, content-free flow across generation,
+candidate application, field rewriting and Scene library create/update requests.
+Each explicit request action captures its own action ID and current page identity.
+Loading a saved Scene or importing a different draft resets this local flow;
+applying the active generated candidate preserves it. The current Scene library
+load action applies an already-loaded snapshot and does not issue HTTP read-back.
+No flow identity is persisted in the Scene/model proposal or local draft JSON.
+Scene library saves emit a safe `resource_reference` using the returned server
+record's `scene_id` and revision. Validation/CAS failures emit no saved reference;
+a diagnostic allocation/write failure cannot alter the Scene save result.
