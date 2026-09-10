@@ -558,3 +558,22 @@ and the notice omitted its revision suffix; the final test follows the actual
 new-Room action, explicit Participant Roster selection and rendered notice.
 Production behavior did not change. Browser cancellation, OCR/native success,
 performance and consolidated final acceptance remain open.
+
+## Tavern browser cancellation ownership
+
+The disposable provider waits, for one exact test-only message, until its real
+lease continuation check fails (bounded by ten seconds). Chromium sends a turn,
+waits for the actual cancel control, clicks it, and observes a saved `canceled`
+run and the original turn's HTTP 409. Only the user Message remains. Cancellation
+allocates a different action while inheriting the active turn flow; its three
+or more Room/list/recovery GETs retain the cancellation action and flow. Persisted
+diagnostics contain the canceled Run observation, original request's 409 and
+Tavern Harness references, with no actor Message observation or trigger content.
+The production cancel controller and server are unchanged; this uses a cooperative
+test provider and does not claim hard cancellation of an upstream request.
+
+All thirteen production Chromium scenarios passed in 17.8 seconds; log:
+`/tmp/diagnostic-tavern-cancel-browser.log`. This completes the explicit browser
+partial/retry/cancel cases identified in the preceding Tavern slices. Successful
+real OCR/native paths, performance and consolidated full-scope acceptance remain
+open; no top-level goal item is closed by this checkpoint.

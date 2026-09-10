@@ -14,6 +14,11 @@ from app.services.model_provider import MockModelProvider
 class DiagnosticScenarioProvider(MockModelProvider):
     """Scripted provider output only; production admission/commit/read-back run normally."""
     def generate_tavern_actor_reply(self, **kwargs):
+        if kwargs.get("user_message") == "PRIVATE_TAVERN_CANCEL_TRIGGER":
+            import time
+            deadline = time.monotonic() + 10
+            while kwargs["should_continue"]() and time.monotonic() < deadline:
+                time.sleep(0.05)
         if kwargs.get("user_message") == "PRIVATE_TAVERN_PARTIAL_TRIGGER":
             self.partial_calls = getattr(self, "partial_calls", 0) + 1
             if self.partial_calls == 2:

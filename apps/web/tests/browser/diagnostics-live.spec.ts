@@ -653,3 +653,50 @@ test("Tavern partial replay and explicit child retry correlate their own browser
     for (const secret of ["PRIVATE_TAVERN_PARTIAL_TRIGGER", "PRIVATE_TAVERN_PARTIAL_FAILURE"]) expect(JSON.stringify(events)).not.toContain(secret);
   }
 });
+
+test("Tavern browser cancel inherits the active flow and fences the waiting actor", async ({ page, request }) => {
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  await page.goto("/tavern");
+  await page.getByRole("button", { name: "新建酒馆", exact: true }).click();
+  const setup = page.getByRole("region", { name: "创建房间", exact: true });
+  await setup.getByRole("textbox", { name: "标题", exact: true }).fill("Diagnostic canceled Tavern");
+  await setup.getByRole("checkbox").first().check();
+  const creating = page.waitForResponse(item => item.url().endsWith("/tavern/rooms") && item.request().method() === "POST");
+  await setup.getByRole("button", { name: "创建并进入", exact: true }).click();
+  const room = (await (await creating).json()).room;
+  const calls: { path: string; method: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => { if (item.url().includes("/tavern/rooms")) calls.push({ path: new URL(item.url()).pathname, method: item.method(), headers: item.headers() }); });
+  const turning = page.waitForResponse(item => item.url().endsWith(`/${room.id}/turns`));
+  await page.getByPlaceholder("输入消息。Enter 发送，Shift + Enter 换行。").fill("PRIVATE_TAVERN_CANCEL_TRIGGER");
+  await page.getByRole("button", { name: "发送并回应", exact: true }).click();
+  await expect(page.getByRole("button", { name: "取消接收结果", exact: true })).toBeEnabled();
+  const canceling = page.waitForResponse(item => item.url().endsWith("/cancel") && item.request().method() === "POST");
+  await page.getByRole("button", { name: "取消接收结果", exact: true }).click();
+  const canceled = await canceling; expect(canceled.status()).toBe(200);
+  const saved = await canceled.json(); expect(saved.run.status).toBe("canceled");
+  expect(saved.generated_messages).toHaveLength(0);
+  const late = await turning; expect(late.status()).toBe(409);
+  await expect(page.getByRole("button", { name: "取消接收结果", exact: true })).toHaveCount(0);
+  const turn = calls.find(item => item.path.endsWith("/turns"))!;
+  const cancelHeaders = canceled.request().headers();
+  expect(turn.headers["x-debug-flow-id"]).toBeTruthy();
+  expect(cancelHeaders["x-debug-flow-id"]).toBe(turn.headers["x-debug-flow-id"]);
+  expect(cancelHeaders["x-debug-action-id"]).not.toBe(turn.headers["x-debug-action-id"]);
+  const reads = calls.filter(item => item.method === "GET" && item.headers["x-debug-action-id"] === cancelHeaders["x-debug-action-id"]);
+  expect(reads.length).toBeGreaterThanOrEqual(3);
+  expect(reads.every(item => item.headers["x-debug-flow-id"] === cancelHeaders["x-debug-flow-id"])).toBe(true);
+  const persisted = await (await request.get(`http://127.0.0.1:18998/tavern/rooms/${room.id}`)).json();
+  expect(persisted.messages).toHaveLength(1);
+  expect(persisted.messages[0].author_kind).toBe("user");
+  let events: any[] = [];
+  await expect.poll(async () => {
+    events = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${cancelHeaders["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+    return events.some(event => event.request_id === late.headers()["x-request-id"] && event.status_code === 409);
+  }).toBe(true);
+  expect(events.some(event => event.harness?.workflow === "tavern")).toBe(true);
+  expect(events.some(event => event.request_id === canceled.headers()["x-request-id"] && event.resource?.resource_id === saved.run.id)).toBe(true);
+  expect(events.filter(event => event.resource?.resource_type === "tavern_message").every(event => event.resource.resource_id === persisted.messages[0].id)).toBe(true);
+  expect(JSON.stringify(events)).not.toContain("PRIVATE_TAVERN_CANCEL_TRIGGER");
+});
