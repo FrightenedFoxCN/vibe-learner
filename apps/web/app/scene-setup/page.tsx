@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode, SetStateAction } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { ModelRecovery } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
@@ -16,24 +16,17 @@ import {
   createSceneLayer,
   cloneSceneObjectFromLibrary,
   cloneSceneLayerFromLibrary,
-  INITIAL_SCENE,
-  SCENE_STORAGE_KEY,
-  SCENE_SIDEBAR_WIDTH,
-  deriveSceneProfile,
   normalizeSceneTreeNodeForProfile,
   countSceneNodes,
-  countSceneObjects,
   removeLayerTree,
   canDeleteLayerSafely,
-  collectLayerIds,
   parseSceneImportPayload,
   updateLayerTree,
   findLayerById,
-  findObjectById,
-  findLayerPath,
   inferTemplateIndexFromLayer,
 } from "../../lib/scene-editor-model";
 import { SceneDeleteDialog } from "../../components/scene/scene-delete-dialog";
+import { useSceneDraft } from "../../hooks/use-scene-draft";
 import { useSceneGeneration } from "../../hooks/use-scene-generation";
 import { readBoundedJsonImport } from "../../lib/bounded-json-import";
 import { exportJson } from "../../lib/export-json";
@@ -54,7 +47,6 @@ import {
 import {
   applyAsyncResult,
   AsyncResultFence,
-  type AsyncResultScope,
 } from "../../lib/async-result-fence";
 
 type RewriteUndoEntry =
@@ -94,11 +86,6 @@ function formatDate(value: string) {
 
 export default function SceneSetupPage() {
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
-  const [sceneLayers, setSceneLayers] = useState<SceneLayer[]>(INITIAL_SCENE);
-  const [sceneName, setSceneName] = useState("示例场景");
-  const [sceneSummary, setSceneSummary] = useState("从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。");
-  const [selectedLayerId, setSelectedLayerId] = useState(INITIAL_SCENE[0]?.id ?? "");
-  const [collapsedLayerIds, setCollapsedLayerIds] = useState<string[]>([]);
   const [savedScenes, setSavedScenes] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSavedSceneId, setSelectedSavedSceneId] = useState("");
   const [rewriteStrength, setRewriteStrength] = useState(0.6);
@@ -113,6 +100,37 @@ export default function SceneSetupPage() {
   const [reusableActionPendingId, setReusableActionPendingId] = useState("");
   const [reusableMessage, setReusableMessage] = useState("");
   const [reusableError, setReusableError] = useState("");
+  const {
+    sceneLayers,
+    sceneName,
+    setSceneName,
+    sceneSummary,
+    setSceneSummary,
+    selectedLayerId,
+    collapsedLayerIds,
+    setCollapsedLayerIds,
+    selectedObjectId,
+    currentSceneAsyncScope,
+    updateSceneLayersState,
+    updateSceneGenerationInput,
+    selectSceneLayer,
+    selectSceneObject,
+    selectedLayer,
+    selectedObjectTarget,
+    sceneSelectionLayerId,
+    selectedPath,
+    sceneProfilePreview,
+    sceneNodeCount,
+    sceneObjectCount,
+    applySceneImport,
+    setSceneFieldTarget,
+    toggleLayerSelection,
+    toggleObjectSelection,
+  } = useSceneDraft({
+    onSelectionChange: () => { rewriteFenceRef.current.invalidate(); setRewritePendingKey(""); },
+    onImported: () => resetSceneGeneration(),
+    onNotice: setSceneIoMessage,
+  });
   const {
     sceneKeywordInput,
     setSceneKeywordInput,
@@ -131,76 +149,13 @@ export default function SceneSetupPage() {
     resetSceneGeneration,
   } = useSceneGeneration(currentSceneAsyncScope);
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const sceneDraftRevisionRef = useRef(0);
-  const sceneSubjectIdRef = useRef("scene-editor:local");
-  const selectedLayerIdRef = useRef(INITIAL_SCENE[0]?.id ?? "");
-  const selectedObjectIdRef = useRef("");
-  const activeSceneFieldTargetRef = useRef(
-    `scene-layer:${INITIAL_SCENE[0]?.id ?? "none"}`,
-  );
   const rewriteFenceRef = useRef(new AsyncResultFence());
   const sceneImportFenceRef = useRef(new AsyncResultFence());
 
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
   const [collapsedNodeEditorSectionsByLayer, setCollapsedNodeEditorSectionsByLayer] = useState<Record<string, string[]>>({});
-  const [selectedObjectId, setSelectedObjectId] = useState("");
   const [isCompactLayout, setIsCompactLayout] = useState(false);
 
-  function currentSceneAsyncScope(fieldTarget = activeSceneFieldTargetRef.current): AsyncResultScope {
-    return {
-      subjectId: sceneSubjectIdRef.current,
-      draftRevision: sceneDraftRevisionRef.current,
-      fieldTarget,
-    };
-  }
-
-  function updateSceneLayersState(next: SetStateAction<SceneLayer[]>): void {
-    sceneDraftRevisionRef.current += 1;
-    setSceneLayers(next);
-  }
-
-  function updateSceneGenerationInput(update: () => void): void {
-    sceneDraftRevisionRef.current += 1;
-    update();
-  }
-
-  function selectSceneLayer(layerId: string): void {
-    rewriteFenceRef.current.invalidate();
-    setRewritePendingKey("");
-    selectedLayerIdRef.current = layerId;
-    selectedObjectIdRef.current = "";
-    activeSceneFieldTargetRef.current = `scene-layer:${layerId || "none"}`;
-    setSelectedObjectId("");
-    setSelectedLayerId(layerId);
-  }
-
-  function selectSceneObject(objectId: string): void {
-    rewriteFenceRef.current.invalidate();
-    setRewritePendingKey("");
-    selectedLayerIdRef.current = "";
-    selectedObjectIdRef.current = objectId;
-    activeSceneFieldTargetRef.current = `scene-object:${objectId || "none"}`;
-    setSelectedLayerId("");
-    setSelectedObjectId(objectId);
-  }
-
-  const selectedLayer = useMemo(() => findLayerById(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
-  const selectedObjectTarget = useMemo(
-    () => (selectedObjectId ? findObjectById(sceneLayers, selectedObjectId) : null),
-    [sceneLayers, selectedObjectId]
-  );
-  // Editor focus may be an object or collapsed; persisted scenes still need a layer.
-  const sceneSelectionLayerId = selectedLayer?.id ?? selectedObjectTarget?.layer.id ?? sceneLayers[0]?.id ?? "";
-  const selectedPath = useMemo(() => findLayerPath(sceneLayers, selectedLayerId), [sceneLayers, selectedLayerId]);
-  const sceneProfilePreview = useMemo(
-    () => deriveSceneProfile(sceneLayers, sceneSelectionLayerId, sceneName.trim(), sceneSummary.trim()),
-    [sceneLayers, sceneSelectionLayerId, sceneName, sceneSummary]
-  );
-  const sceneNodeCount = useMemo(
-    () => countSceneNodes(sceneLayers.map((layer) => normalizeSceneTreeNodeForProfile(layer))),
-    [sceneLayers]
-  );
-  const sceneObjectCount = useMemo(() => countSceneObjects(sceneLayers), [sceneLayers]);
   const filteredReusableNodes = useMemo(() => {
     const query = reusableSearchQuery.trim().toLowerCase();
     if (!query) {
@@ -257,18 +212,6 @@ export default function SceneSetupPage() {
   }, [headerMessage, pendingDeleteLayerId, reusableActionPendingId, rewritePendingKey, sceneGeneratePending, selectedLayer, selectedObjectTarget]);
 
   useEffect(() => {
-    if (selectedLayerId && !selectedLayer && sceneLayers[0]?.id) {
-      selectSceneLayer(sceneLayers[0].id);
-    }
-  }, [sceneLayers, selectedLayer, selectedLayerId]);
-
-  useEffect(() => {
-    if (selectedObjectId && !selectedObjectTarget) {
-      selectSceneObject("");
-    }
-  }, [selectedObjectId, selectedObjectTarget]);
-
-  useEffect(() => {
     const syncLayout = () => {
       setIsCompactLayout(window.innerWidth < 1320);
     };
@@ -290,30 +233,6 @@ export default function SceneSetupPage() {
       window.clearTimeout(timer);
     };
   }, [selectedLayerId]);
-
-  useEffect(() => {
-    let active = true;
-    const hydrateScene = async () => {
-      try {
-        const raw = globalThis.localStorage?.getItem(SCENE_STORAGE_KEY);
-        if (!raw || !active) {
-          return;
-        }
-        const parsed = JSON.parse(raw);
-        const imported = parseSceneImportPayload(parsed);
-        applySceneImport(imported, "已加载本地保存场景。");
-      } catch {
-        if (active) {
-          setSceneIoMessage("本地保存内容解析失败，已忽略。");
-        }
-      }
-    };
-
-    void hydrateScene();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const debugSnapshot = useMemo(
     () => ({
@@ -384,56 +303,6 @@ export default function SceneSetupPage() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    const timer = globalThis.setTimeout(() => {
-      const payload = {
-        version: 1,
-        savedAt: new Date().toISOString(),
-        sceneName,
-        sceneSummary,
-        sceneLayers,
-        selectedLayerId: sceneSelectionLayerId,
-        collapsedLayerIds,
-      };
-      try {
-        globalThis.localStorage?.setItem(SCENE_STORAGE_KEY, JSON.stringify(payload));
-      } catch {
-        // local fallback write best effort
-      }
-    }, 700);
-
-    return () => {
-      globalThis.clearTimeout(timer);
-    };
-  }, [sceneLayers, sceneName, sceneSummary, sceneSelectionLayerId, collapsedLayerIds]);
-
-  function applySceneImport(
-    imported: SceneImportPayload,
-    message: string,
-    subjectId = "scene-editor:local",
-  ) {
-    const knownIds = new Set(collectLayerIds(imported.sceneLayers));
-    const nextSelectedLayerId =
-      imported.selectedLayerId && knownIds.has(imported.selectedLayerId)
-        ? imported.selectedLayerId
-        : imported.sceneLayers[0]?.id ?? "";
-    sceneDraftRevisionRef.current += 1;
-    sceneSubjectIdRef.current = subjectId;
-    selectedLayerIdRef.current = nextSelectedLayerId;
-    selectedObjectIdRef.current = "";
-    activeSceneFieldTargetRef.current = `scene-layer:${nextSelectedLayerId || "none"}`;
-    rewriteFenceRef.current.invalidate();
-    setRewritePendingKey("");
-    resetSceneGeneration();
-    setSceneLayers(imported.sceneLayers);
-    setSceneName(String(imported.sceneName || ""));
-    setSceneSummary(String(imported.sceneSummary || ""));
-    setSelectedLayerId(nextSelectedLayerId);
-    setSelectedObjectId("");
-    setCollapsedLayerIds(imported.collapsedLayerIds.filter((id) => knownIds.has(id)));
-    setSceneIoMessage(message);
-  }
 
   function updateLayer(targetId: string, updater: (layer: SceneLayer) => SceneLayer) {
     updateSceneLayersState((current) => updateLayerTree(current, targetId, updater));
@@ -814,7 +683,7 @@ export default function SceneSetupPage() {
     }
 
     const pendingKey = `${layerId}:${field}`;
-    activeSceneFieldTargetRef.current = pendingKey;
+    setSceneFieldTarget(pendingKey);
     setRewriteError("");
     setRewriteModelRecoveries([]);
     setRewritePendingKey(pendingKey);
@@ -874,7 +743,7 @@ export default function SceneSetupPage() {
     }
 
     const pendingKey = `${layerId}:${objectId}:${field}`;
-    activeSceneFieldTargetRef.current = pendingKey;
+    setSceneFieldTarget(pendingKey);
     setRewriteError("");
     setRewriteModelRecoveries([]);
     setRewritePendingKey(pendingKey);
@@ -943,11 +812,11 @@ export default function SceneSetupPage() {
   }
 
   function toggleLayerEditor(layerId: string) {
-    selectSceneLayer(selectedLayerIdRef.current === layerId ? "" : layerId);
+    toggleLayerSelection(layerId);
   }
 
   function toggleObjectEditor(objectId: string) {
-    selectSceneObject(selectedObjectIdRef.current === objectId ? "" : objectId);
+    toggleObjectSelection(objectId);
   }
 
   function handleSelectLayer(layerId: string) {
@@ -1938,6 +1807,8 @@ function RewriteStateButton({
     </div>
   );
 }
+
+const SCENE_SIDEBAR_WIDTH = 360;
 
 const styles: Record<string, CSSProperties> = {
   // ── page shell ────────────────────────────────────────────

@@ -206,7 +206,6 @@ export const INITIAL_SCENE: SceneLayer[] = [
 ];
 
 export const SCENE_STORAGE_KEY = "vibe-learner.scene-setup.v1";
-export const SCENE_SIDEBAR_WIDTH = 360;
 
 export function deriveSceneProfile(
   layers: SceneLayer[],
