@@ -1,0 +1,1040 @@
+{
+  "schema_version": "diagnostic-persona-workflow-benchmark-v1",
+  "timestamp": "2026-09-10T13:13:24.900446+00:00",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.12.13",
+  "warmup_pairs": 3,
+  "sample_pairs": 30,
+  "scope": "Actual in-process ASGI Persona generation with mock provider, application of generated card contents to saved Persona, and persisted reload. Fresh app/storage per sample; timing excludes startup, post-response drain, browser/native UI, network and live provider. Structured console logging remains the same in both modes.",
+  "disabled_control": "Test-only null event sink, middleware bypass, index/spool workers not started; canonical Harness lifecycle unchanged.",
+  "budget_ms": 50,
+  "gate": "P95 paired enabled-minus-disabled request-chain overhead <=50 ms; signed deltas retained.",
+  "passed": true,
+  "summary": {
+    "enabled": {
+      "sample_count": 30,
+      "p50_ms": 24.94575,
+      "p95_ms": 41.608167,
+      "max_ms": 87.249875
+    },
+    "disabled": {
+      "sample_count": 30,
+      "p50_ms": 22.0925,
+      "p95_ms": 88.678375,
+      "max_ms": 96.606
+    },
+    "paired_delta": {
+      "sample_count": 30,
+      "p50_ms": 2.7669999999999995,
+      "p95_ms": 18.879542,
+      "max_ms": 64.76637500000001
+    },
+    "post_response_drain": {
+      "sample_count": 30,
+      "p50_ms": 1.509208,
+      "p95_ms": 2.655042,
+      "max_ms": 3.091917
+    }
+  },
+  "raw": [
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 24.475708,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507417,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.71625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.759458000000002
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.495542,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.508958,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 68.671625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": -44.176083000000006
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 23.932625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.508958,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.976,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 1.9566250000000025
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.102,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 2.655042,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.335,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.7669999999999995
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 26.3905,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.512125,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.553625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 4.836874999999999
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.816625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.463416,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.18,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 3.6366249999999987
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 25.003167,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.518833,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.418834,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.584333000000001
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 23.960041,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507083,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.041916,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.918125
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 23.927334,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.509459,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.753833,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 1.1735009999999981
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.14325,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507667,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.554458,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.588791999999998
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 25.394041,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.513583,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.014125,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 4.3799160000000015
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.113875,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.506334,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.420584,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.6932909999999985
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 25.87525,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507083,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.162542,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 4.712708000000003
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 26.835625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.515167,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 20.155042,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 6.680582999999999
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 26.18825,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.51025,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.0925,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 4.095749999999999
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.022291,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.509125,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.264333,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.7579579999999986
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 24.751916,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.519625,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.415417,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.336499
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 41.608167,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 3.091917,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.728625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 18.879542
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 87.249875,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507458,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.4835,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 64.76637500000001
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 26.940209,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.526417,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 21.024875,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 5.915333999999998
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 24.352625,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507458,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 88.678375,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": -64.32575
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 27.141792,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.507917,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.713458,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 4.4283339999999995
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 26.653667,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.520375,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.777375,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 3.8762919999999994
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 26.168666,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.509,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 96.606,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": -70.43733399999999
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 24.94575,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.513334,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.869792,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 2.075958
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 26.51725,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.509208,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 20.808,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 5.709250000000001
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 24.929334,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.512042,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 24.395417,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 0.5339170000000024
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 24.122541,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.508084,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.598333,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 1.524207999999998
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 27.021583,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.519,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.398334,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 4.623249000000001
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 26.382958,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true,
+        "post_response_drain_ms": 1.509541,
+        "events": 15,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 22.396333,
+        "saved_revision": 0,
+        "generated_cards": 6,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "not_applicable"
+        ],
+        "generated_content_read_back": true
+      },
+      "delta_ms": 3.986625
+    }
+  ],
+  "probe_sha256": "13002bf2bea418d9afe1a53cd9524af0965fad3f4cc38546596938544bf6499a",
+  "source_revision": "3a43527",
+  "source_sha256": {
+    "services/ai/app/app_factory.py": "0709a65107cd4cc489732653dc47ddae932c8dfe37a9485d318f2d1e3d0a0194",
+    "services/ai/app/api/diagnostic_middleware.py": "401f92b7e5feb28b9e6e49ac65f257bda13e35ddd7b1cd4c67a2b1b936a51bba",
+    "services/ai/app/api/routes.py": "4eca7c8413bedf3b4c3378dfd549b40ce03903181046cb9caab180d808a420eb",
+    "services/ai/app/core/diagnostics.py": "d6659cc69cd7b0c56a483e374d13d69d8789f5f1771c020b9ace0644e4652b82",
+    "services/ai/app/services/diagnostic_index.py": "8b34784bc0ac5eac1d46f920a7266e776111ab6e4ef9c747070a40893bcb9722"
+  }
+}

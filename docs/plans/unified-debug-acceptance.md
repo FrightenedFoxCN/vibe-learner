@@ -792,3 +792,15 @@ production Web build, and all 16 Chromium diagnostic scenarios passed (24.8 s).
 Logs: `/tmp/diagnostic-import-{tests,backend,check,build,browser}.log`.
 The prior import-action audit gap is resolved. Remaining native creation/clear,
 whole-workflow overhead and final acceptance requirements stay open.
+
+## Persona full request-chain overhead
+
+Thirty paired enabled/disabled samples now execute actual mock-provider generation,
+save generated card contents as a Persona and reload persisted content. Both sides
+retain canonical Harness; the control only bypasses diagnostic collection/workers.
+The signed paired P95 overhead is 18.88 ms against a predeclared 50 ms budget,
+with maximum delta 64.77 ms explicitly retained. Candidate generation has actual
+`not_applicable` commit status, while Persona persistence is verified separately.
+See [method and complete raw report](../performance/diagnostic-persona-workflow-v1.md).
+This fills one backend workflow comparison; it does not close all-workflow,
+browser/native, saturated-spool or remaining native functional acceptance.
