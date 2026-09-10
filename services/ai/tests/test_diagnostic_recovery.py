@@ -11,6 +11,57 @@ from app.services.diagnostic_index import DiagnosticHarnessIndex
 
 
 class DiagnosticRecoveryTests(unittest.TestCase):
+    def test_schema_quota_contention_retries_and_drains_accepted_event(self):
+        from threading import Event
+        with TemporaryDirectory() as directory:
+            store = DiagnosticStore(Path(directory) / "events.sqlite3")
+            original = store._initialize_schema
+            ready = Event()
+            calls = 0
+
+            def initialize(db):
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    # A separate descriptor holds the actual admission lock after
+                    # configure succeeds, reproducing the native startup window.
+                    with store.quota.lock():
+                        return original(db)
+                original(db)
+                ready.set()
+
+            with patch.object(store, "_initialize_schema", side_effect=initialize):
+                store.emit("lifecycle_started")
+                store.start()
+                try:
+                    self.assertTrue(ready.wait(4))
+                finally:
+                    store.close()
+            self.assertGreaterEqual(calls, 2)
+            self.assertGreaterEqual(store.write_failures, 1)
+            self.assertEqual(store.dropped, 0)
+            self.assertEqual(len(store.query(0, 100, {})), 1)
+
+    def test_close_during_schema_refusal_stops_retry_and_accounts_queue(self):
+        from threading import Event
+        from app.core.diagnostic_quota import DiagnosticQuotaExceeded
+        with TemporaryDirectory() as directory:
+            store = DiagnosticStore(Path(directory) / "events.sqlite3")
+            refused = Event()
+
+            def initialize(db):
+                refused.set()
+                raise DiagnosticQuotaExceeded("diagnostic_quota_unavailable")
+
+            with patch.object(store, "_initialize_schema", side_effect=initialize):
+                store.emit("lifecycle_started")
+                store.start()
+                self.assertTrue(refused.wait(2))
+                store.close()
+            self.assertFalse(store.health()["writer_alive"])
+            self.assertEqual(store.queue.unfinished_tasks, 0)
+            self.assertEqual(store.dropped, 1)
+
     def seed_events(self, path, count=200):
         with sqlite3.connect(path) as db:
             db.execute("CREATE TABLE events(sequence INTEGER PRIMARY KEY AUTOINCREMENT,event_id TEXT UNIQUE NOT NULL,payload TEXT NOT NULL)")

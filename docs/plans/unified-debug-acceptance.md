@@ -612,3 +612,32 @@ retained; flush uses a local acknowledgement stub and excludes network. See
 This does not close React/native/full-workflow overhead acceptance. Native UI
 verification is ongoing in an isolated application; prior bundled sidecar output
 is not evidence for the current source backend.
+
+## Native-discovered event schema admission recovery
+
+The isolated native application first used an older packaged sidecar and a Web
+port outside the desktop allowlist; those setup results do not certify the current
+backend. Switching the temporary app package to the source sidecar on port 3000
+exposed a real collector startup gap: connection setup retried quota contention,
+but a refusal while admitting the subsequent schema transaction terminated the
+writer. The observed event file had no tables and two quota-unavailable counts;
+other diagnostic storage continued operating.
+
+Connection configuration and transactional schema initialization now share one
+startup retry loop. Failures roll back before waiting; successful startup still
+drains accepted events even if close races initialization, while repeated refusal
+stops promptly on close and accounts for discarded events. Two regressions cover
+actual separately-held quota-lock contention in the schema window and close during
+schema refusal. All 33 diagnostic recovery/disk/core tests passed in 3.819 seconds.
+The isolated native app was restarted with the fix and its event table contained
+39 events; a later query also observed the real Vault-unlock start and excluded
+the synthetic saved-key sentinel. Full release verification follows separately.
+This fixes retry handling; it does not claim all possible native startup failures
+are resolved or complete Vault/export acceptance.
+
+Schema-retry release verification passed: `npm run check:release` completed
+shared/Web checks, all Harness PR suites, 745 backend tests in 78.999 seconds and
+production Web build. Log: `/tmp/diagnostic-schema-release.log`. Continued native
+inspection found a separate Settings current-page debug projection exposing raw
+runtime secret/probe endpoint fields; only a synthetic invalid key was used in the
+isolated app. That projection requires correction before native/full acceptance.

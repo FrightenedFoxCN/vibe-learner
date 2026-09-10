@@ -325,6 +325,18 @@ class DiagnosticStore:
                 self.disk_maintenance.configure(db)
                 db.execute("PRAGMA journal_mode=WAL")
 
+    def _initialize_schema(self, db):
+        with self.quota.transaction(db):
+            db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
+            db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
+            db.execute("CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)")
+            for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
+                db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
+            self.retention.initialize(db)
+            self.link_retention.initialize(db)
+            self.writer_coverage.initialize(db)
+            self._observe_writer(db)
+
     def _run(self):
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -332,26 +344,19 @@ class DiagnosticStore:
                 while True:
                     try:
                         self._configure_database(db)
+                        # Schema admission can contend independently after connection
+                        # setup releases its quota lock. Retry both as one startup
+                        # unit so a transient refusal cannot permanently kill logging.
+                        self._initialize_schema(db)
                         break
                     except Exception:
+                        db.rollback()
                         self.write_failures += 1
                         if self._stop.is_set():
                             return
-                        # Stay alive so a pinned reader or space shortage can
-                        # recover without a business-service restart.
                         self._stop.wait(1)
-                # Successful initialization must drain accepted events even if
-                # close raced startup; stop only prevents further retry attempts.
-                with self.quota.transaction(db):
-                    db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
-                    db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")
-                    db.execute("CREATE INDEX IF NOT EXISTS operation_links_request ON operation_links(request_id,operation_id)")
-                    for field in ("request_id", "action_id", "page_view_id", "flow_id", "source"):
-                        db.execute(f"CREATE INDEX IF NOT EXISTS events_{field} ON events(json_extract(payload, '$.{field}'), sequence)")
-                    self.retention.initialize(db)
-                    self.link_retention.initialize(db)
-                    self.writer_coverage.initialize(db)
-                    self._observe_writer(db)
+                # Successful initialization drains accepted events even if close
+                # raced startup; stop only prevents further retry attempts.
                 self.disk_maintenance.maintain(db)
                 last_cleanup = 0.0
                 while not self._stop.is_set() or not self.queue.empty():
