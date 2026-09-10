@@ -233,3 +233,9 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 原请求读回不再次调用 provider，子重试仅执行剩余演员。诊断引用匹配真实父子
 operation/trace 和消息 identity/sequence；502 不被解释为整轮无提交。36 项
 专项测试通过；浏览器重试及取消/重启诊断关联仍需验收，详见验收记录。
+
+2026-09-10 Tavern 并发取消验收：真实 HTTP 在 provider 等待时取消，迟到有效回复
+被提交围栏拒绝，只有用户消息保留；resume 读回 canceled 且不再调用 provider。
+诊断保持各请求身份，资源引用和 not_committed actor trace 均核对持久化记录。
+37 项专项测试及强化后的 2 项诊断回归通过，取消 upstream 调用与重启恢复未由
+本场景证明；浏览器/重启/OCR/原生/性能验收继续。

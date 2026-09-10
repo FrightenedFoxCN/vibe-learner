@@ -473,3 +473,28 @@ cancel/lease/recovery behavior, but this added diagnostic acceptance specificall
 covers partial/replay/child retry. Browser retry flow ownership and diagnostic
 cancel/restart correlation still need direct verification. No production behavior
 changed; native/OCR/performance and deferred independent review remain open.
+
+## Tavern concurrent cancel and late-result HTTP acceptance
+
+A full-application test holds a scripted synchronous provider call behind an event
+barrier while another real HTTP request cancels the admitted run. Releasing the
+provider returns a valid reply, but commit fencing rejects the original worker
+with HTTP 409; no actor Message persists and the Room retains only its input
+Message. A later resume is HTTP 200 replay of `canceled`, with no generated Messages
+or further provider call. The initial test's assumed resume conflict was corrected
+to this existing terminal read-back contract.
+
+Turn, cancel and resume diagnostic events retain the supplied flow and their own
+server request/action identities. Cancel/resume resource observations identify
+exactly the Room, Run and persisted input Message; the failed worker emits no
+saved-resource event. Harness references resolve to the admitted operation and
+canonical traces, whose actor commit outcomes are `not_committed`. Room/message
+and injected exception sentinels stay out of diagnostics. This proves late-result
+fencing in a live process, not cancellation of an upstream synchronous request or
+process-restart recovery.
+
+All 37 diagnostic/facilitated tests passed in 7.381 seconds; after strengthening
+resource-set and canonical trace assertions, both diagnostic Tavern tests passed
+again in 0.448 seconds. Logs: `/tmp/diagnostic-tavern-cancel-{python,final}.log`.
+No production change was needed. Browser cancellation ownership, restart/lease
+correlation, OCR/native success and performance gates remain open.

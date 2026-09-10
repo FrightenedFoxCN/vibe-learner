@@ -95,3 +95,83 @@ class DiagnosticTavernFlowTests(TestCase):
                 self.assertFalse(any(event.get("resource") for event in by_action["turn"]))
                 for secret in ("PRIVATE_PERSONA", "PRIVATE_ROOM", "PRIVATE_MESSAGE", "PRIVATE_GUIDANCE", "planned_actor_failure"):
                     self.assertNotIn(secret, json.dumps(by_action))
+
+    def test_cancel_fences_late_provider_and_retains_separate_request_diagnostics(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Event
+        from unittest.mock import patch
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = create_app(settings=Settings(database_url=f"sqlite:///{root / 'domain.db'}",
+                storage_root=str(root / "data"), plan_provider="mock", ocr_engine="disabled"),
+                container_factory=TavernDiagnosticContainer)
+            with TestClient(app) as client:
+                personas = client.get("/personas").json()["items"]
+                persona_id = personas[0]["id"]
+                created = client.post("/tavern/rooms", json={"title": "PRIVATE_CANCEL_ROOM", "persona_ids": [persona_id], "idempotency_key": "cancel-room"})
+                self.assertEqual(created.status_code, 200, created.text)
+                room_id = created.json()["room"]["id"]
+                service = app.state.container.tavern_service
+                provider = service.model_provider
+                started, released = Event(), Event()
+                original = provider.generate_tavern_actor_reply
+
+                def waiting_provider(**kwargs):
+                    started.set()
+                    if not released.wait(timeout=10):
+                        raise RuntimeError("PRIVATE_CANCEL_WAIT_TIMEOUT")
+                    return original(**kwargs)
+
+                headers = {"X-Debug-Flow-Id": "cancel_flow", "X-Debug-Action-Id": "turn"}
+                payload = {"input": {"kind": "user_message", "content": "PRIVATE_CANCEL_MESSAGE"}, "mode": "direct",
+                    "target_persona_ids": [persona_id], "idempotency_key": "cancel-turn", "expected_room_revision": 0}
+                with patch.object(provider, "generate_tavern_actor_reply", side_effect=waiting_provider), ThreadPoolExecutor(max_workers=1) as executor:
+                    worker = executor.submit(client.post, f"/tavern/rooms/{room_id}/turns", json=payload, headers=headers)
+                    try:
+                        self.assertTrue(started.wait(timeout=5))
+                        run = service.repository.get_run_by_idempotency_key(room_id=room_id, idempotency_key="cancel-turn")
+                        self.assertIsNotNone(run)
+                        canceled = client.post(f"/tavern/rooms/{room_id}/runs/{run.id}/cancel", headers={**headers, "X-Debug-Action-Id": "cancel"})
+                        self.assertEqual(canceled.status_code, 200, canceled.text)
+                        self.assertEqual(canceled.json()["run"]["status"], "canceled")
+                    finally:
+                        released.set()
+                    late = worker.result(timeout=5)
+                self.assertEqual(late.status_code, 409, late.text)
+                self.assertEqual(late.json()["detail"]["code"], "tavern_run_canceled")
+                self.assertEqual(len(provider.calls), 1)
+                self.assertEqual(service.repository.list_run_messages(run.id), [])
+                room = service.repository.require_room(room_id)
+                self.assertEqual([item.author_kind.value for item in room.messages], ["user"])
+                resumed = client.post(f"/tavern/rooms/{room_id}/runs/{run.id}/resume", headers={**headers, "X-Debug-Action-Id": "resume"})
+                self.assertEqual(resumed.status_code, 200, resumed.text)
+                self.assertEqual(resumed.json()["run"]["status"], "canceled")
+                self.assertEqual(resumed.json()["generated_messages"], [])
+                self.assertEqual(len(provider.calls), 1)
+                store = app.state.diagnostics
+                store.queue.join()
+                all_events = []
+                for action, response in (("turn", late), ("cancel", canceled), ("resume", resumed)):
+                    events = [item["event"] for item in store.query(0, 100, {"action_id": action})]
+                    self.assertTrue(events)
+                    self.assertLess(len(events), 100)
+                    self.assertTrue(all(event["flow_id"] == "cancel_flow" for event in events))
+                    self.assertTrue(all(event["request_id"] == response.headers["x-request-id"] for event in events))
+                    self.assertTrue(all(event["resource"]["resource_id"] in {room_id, run.id, room.messages[0].id} for event in events if event.get("resource")))
+                    if action == "turn":
+                        self.assertFalse(any(event.get("resource") for event in events))
+                    else:
+                        self.assertEqual({event["resource"]["resource_id"] for event in events if event.get("resource")}, {room_id, run.id, room.messages[0].id})
+                    all_events.extend(events)
+                binding = service.repository.require_harness_operation(run.id)
+                refs = [event["harness"] for event in all_events if event.get("harness")]
+                self.assertTrue(refs)
+                self.assertEqual({ref["operation_id"] for ref in refs}, {binding.harness_operation_id})
+                traces = HarnessRuntimeRepository(app.state.container.database).list_operation_traces(binding.harness_operation_id)
+                self.assertTrue({ref["trace_id"] for ref in refs if ref["trace_id"]}.issubset({trace.trace_id for trace in traces}))
+                terminal = [trace.terminal_trace for trace in traces if trace.terminal_trace]
+                self.assertTrue(terminal)
+                self.assertTrue(all(trace.commit_evidence.status.value == "not_committed" for trace in terminal))
+                for secret in ("PRIVATE_CANCEL_ROOM", "PRIVATE_CANCEL_MESSAGE", "PRIVATE_CANCEL_WAIT_TIMEOUT"):
+                    self.assertNotIn(secret, json.dumps(all_events))
