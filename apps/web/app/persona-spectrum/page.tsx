@@ -15,7 +15,6 @@ import {
   PERSONA_SLOT_KINDS,
   type CreatePersonaInput,
   type PersonaCard,
-  type ModelRecovery,
   type PersonaProfile,
   type PersonaSlot,
   type PersonaSlotKind,
@@ -30,8 +29,6 @@ import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
 import {
-  assistPersonaSlot,
-  assistPersonaSetting,
   createPersona,
   deletePersona,
   listPersonas,
@@ -46,6 +43,7 @@ import {
   applyAsyncResult,
   AsyncResultFence,
 } from "../../lib/async-result-fence";
+import { usePersonaAssist } from "../../hooks/use-persona-assist";
 import { usePersonaDraft } from "../../hooks/use-persona-draft";
 import { usePersonaCardGeneration } from "../../hooks/use-persona-card-generation";
 import { matchesPersonaCard, matchesPersonaProfile } from "../../lib/persona-editor-model";
@@ -56,7 +54,6 @@ import {
   draftToCreatePersonaInput,
   duplicatePersonaDraft,
   EMPTY_PERSONA_DRAFT,
-  mergePersonaAssistSlots,
   mergeReferenceHints,
   normalizeImportedPersonaConfig,
   personaToDraft,
@@ -99,7 +96,6 @@ const SIDEBAR_PANE_WIDTH = 360;
 export default function PersonaSpectrumPage() {
   const configImportInputRef = useRef<HTMLInputElement>(null);
   const [personas, setPersonas] = useState<PersonaProfile[]>([]);
-  const assistFenceRef = useRef(new AsyncResultFence());
   const configImportFenceRef = useRef(new AsyncResultFence());
   const saveFenceRef = useRef(new AsyncResultFence());
   const reloadFenceRef = useRef(new AsyncResultFence());
@@ -122,20 +118,31 @@ export default function PersonaSpectrumPage() {
   } = usePersonaDraft({
     personas,
     onSelectionChange: () => {
-      assistFenceRef.current.invalidate(); reloadFenceRef.current.invalidate();
-      setAssistPending(false); setSlotAssistIndex(null); resetCardGeneration();
+      resetPersonaAssist(); reloadFenceRef.current.invalidate();
+      resetCardGeneration();
     },
-    onPromptDismiss: dismissSystemPromptSuggestion,
+    onPromptDismiss: () => dismissSystemPromptSuggestion(),
   });
   const [savingPersona, setSavingPersona] = useState(false);
 
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [assistPending, setAssistPending] = useState(false);
-  const [slotAssistIndex, setSlotAssistIndex] = useState<number | null>(null);
-  const [assistError, setAssistError] = useState("");
-  const [assistModelRecoveries, setAssistModelRecoveries] = useState<ModelRecovery[]>([]);
-  const [retainRatio, setRetainRatio] = useState(0.7);
+  const {
+    assistPending,
+    slotAssistIndex,
+    assistError,
+    assistModelRecoveries,
+    retainRatio,
+    setRetainRatio,
+    systemPromptSuggestion,
+    systemPromptSuggestionSource,
+    applySystemPromptSuggestion,
+    dismissSystemPromptSuggestion,
+    handleAssistSlot,
+    handleAssistSetting,
+    resetPersonaAssist,
+    clearAssistError,
+  } = usePersonaAssist({ draft, updatePersonaDraft, currentPersonaAsyncScope, onSettingStarted: () => setIsRewritePopoverOpen(false) });
   const [configMessage, setConfigMessage] = useState("");
   const [configError, setConfigError] = useState("");
   const [personaCards, setPersonaCards] = useState<PersonaCard[]>([]);
@@ -167,8 +174,6 @@ export default function PersonaSpectrumPage() {
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
   const [slotInsertIndex, setSlotInsertIndex] = useState<number | null>(null);
-  const [systemPromptSuggestion, setSystemPromptSuggestion] = useState("");
-  const [systemPromptSuggestionSource, setSystemPromptSuggestionSource] = useState("");
   const [draggingSlotIndex, setDraggingSlotIndex] = useState<number | null>(null);
   const [expandedSlotIndex, setExpandedSlotIndex] = useState<number | null>(null);
   const [movePulse, setMovePulse] = useState<{ index: number; direction: -1 | 1 } | null>(null);
@@ -375,28 +380,8 @@ export default function PersonaSpectrumPage() {
     });
   }
 
-  function setPromptSuggestion(value: string, source: string) {
-    const trimmed = value.trim();
-    setSystemPromptSuggestion(trimmed);
-    setSystemPromptSuggestionSource(trimmed ? source : "");
-  }
-
-  function applySystemPromptSuggestion() {
-    if (!systemPromptSuggestion) {
-      return;
-    }
-    updateDraft("systemPrompt", systemPromptSuggestion);
-    setSystemPromptSuggestion("");
-    setSystemPromptSuggestionSource("");
-  }
-
-  function dismissSystemPromptSuggestion() {
-    setSystemPromptSuggestion("");
-    setSystemPromptSuggestionSource("");
-  }
-
   function updateDraft<K extends keyof PersonaDraft>(key: K, value: PersonaDraft[K]) {
-    if (assistError) setAssistError("");
+    if (assistError) clearAssistError();
     updatePersonaDraft((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -426,7 +411,7 @@ export default function PersonaSpectrumPage() {
   }
 
   function handleUpdateSlot(index: number, field: keyof PersonaSlot, value: PersonaSlot[keyof PersonaSlot]) {
-    if (assistError) setAssistError("");
+    if (assistError) clearAssistError();
     updatePersonaDraft((prev) => {
       const next = [...prev.slots];
       let nextValue = value;
@@ -550,81 +535,6 @@ export default function PersonaSpectrumPage() {
   function handleDragEnd() {
     setDraggingSlotIndex(null);
     setSlotInsertIndex(null);
-  }
-
-  async function handleAssistSlot(index: number) {
-    const targetSlot = draft.slots[index];
-    if (!targetSlot) {
-      return;
-    }
-    setAssistError("");
-    setAssistModelRecoveries([]);
-    setAssistPending(false);
-    setSlotAssistIndex(index);
-    const fieldTarget = `persona-slot:${index}`;
-    const ticket = assistFenceRef.current.begin(currentPersonaAsyncScope(fieldTarget));
-    try {
-      const result = await assistPersonaSlot({
-        name: draft.name.trim(),
-        summary: draft.summary.trim(),
-        slot: targetSlot,
-        rewriteStrength: Number((1 - retainRatio).toFixed(2))
-      });
-      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) !== "apply") {
-        return;
-      }
-      updatePersonaDraft((prev) => {
-        const next = [...prev.slots];
-        next[index] = result.slot;
-        return { ...prev, slots: next };
-      });
-      setAssistModelRecoveries(result.modelRecoveries ?? []);
-    } catch (error) {
-      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) === "apply") {
-        setAssistError(String(error));
-      }
-    } finally {
-      if (assistFenceRef.current.settle(ticket)) {
-        setSlotAssistIndex(null);
-      }
-    }
-  }
-
-  async function handleAssistSetting() {
-    setAssistError("");
-    setAssistModelRecoveries([]);
-    setSlotAssistIndex(null);
-    setAssistPending(true);
-    setIsRewritePopoverOpen(false);
-    const fieldTarget = "persona-setting";
-    const ticket = assistFenceRef.current.begin(currentPersonaAsyncScope(fieldTarget));
-    try {
-      const result = await assistPersonaSetting({
-        name: draft.name.trim(),
-        summary: draft.summary.trim(),
-        slots: draft.slots,
-        rewriteStrength: Number((1 - retainRatio).toFixed(2))
-      });
-      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) !== "apply") {
-        return;
-      }
-      updatePersonaDraft((prev) => ({
-        ...prev,
-        slots: result.slots.length
-          ? mergePersonaAssistSlots(prev.slots, result.slots)
-          : prev.slots,
-      }));
-      setPromptSuggestion(result.systemPromptSuggestion, "AI 辅助设定");
-      setAssistModelRecoveries(result.modelRecoveries ?? []);
-    } catch (error) {
-      if (assistFenceRef.current.decide(ticket, currentPersonaAsyncScope(fieldTarget)) === "apply") {
-        setAssistError(String(error));
-      }
-    } finally {
-      if (assistFenceRef.current.settle(ticket)) {
-        setAssistPending(false);
-      }
-    }
   }
 
   async function handleCreatePersona() {

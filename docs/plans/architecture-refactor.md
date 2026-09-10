@@ -127,6 +127,8 @@
 
 - [x] Persona 草稿、已保存基线、选中身份和未保存离页保护归入 `usePersonaDraft`。晚到初始列表只初始化未操作过的草稿；已保存旧快照仅更新基线，不替换后续编辑。5 项真实 Hook 测试覆盖初始化竞争、切换确认、baseline 与链接/beforeunload 清理。名称输入补齐关联 label；真实浏览器验证拒绝离页保留输入及接受后导航。Web 类型/可靠性/生产构建及 17 项 Chromium 验收通过。
 
+- [x] Persona 单插槽/整体模型辅助与提示词建议归入 `usePersonaAssist`，独立 API port、请求归属与卸载清理；建议仍须显式接受，整体辅助保留锁定插槽。5 项真实草稿/辅助 Hook 协作测试通过；修正拆分后的回调初始化顺序，Web 类型/可靠性/生产构建及 17 项 Chromium 回归通过。组件测试以 `test:scene`、`test:persona` 领域聚合，各子模块可独立执行。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

@@ -21,6 +21,8 @@
 | `npm --workspace @vibe-learner/web run test:persona:generation:browser` | 真实数量输入的名称、1–24 上下限与可选语义；不检查源码字符串 |
 | `npm --workspace @vibe-learner/web run test:persona:draft` | Persona 草稿/基线/身份、迟到初始化、未保存确认与事件监听清理 |
 | `npm --workspace @vibe-learner/web run test:persona:draft:browser` | 未保存 Persona 输入在拒绝离页后保留，确认后正常导航 |
+| `npm --workspace @vibe-learner/web run test:persona:assist` | Persona 单插槽/整体辅助、锁定插槽、提示词手动接受、过期请求与失败不重放 |
+| `npm --workspace @vibe-learner/web run test:scene` / `test:persona` | 分别聚合该领域全部无网络 Hook/组件模块；浏览器流程单独运行 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |
