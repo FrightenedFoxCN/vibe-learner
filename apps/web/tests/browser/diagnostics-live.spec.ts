@@ -368,3 +368,133 @@ test("Tavern turn and recovery reads share action without repeating a committed 
     expect(JSON.stringify(events)).not.toContain("PRIVATE_TAVERN_DIAGNOSTIC_SENTINEL");
   }
 });
+
+
+test("Study attachments persist through the real multipart path and rejected media has no saved-resource claim", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: false } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  await page.goto("/study");
+  await expect(page.getByRole("button", { name: "发送", exact: true })).toBeEnabled();
+  const filename = "PRIVATE_DIAGNOSTIC_ATTACHMENT_NAME.txt";
+  const contents = "PRIVATE_DIAGNOSTIC_ATTACHMENT_CONTENT";
+  const message = "PRIVATE_DIAGNOSTIC_ATTACHMENT_MESSAGE";
+  await page.locator('input[type="file"]').setInputFiles({ name: filename, mimeType: "text/plain", buffer: Buffer.from(contents) });
+  await page.getByPlaceholder("输入本节学习问题…").fill(message);
+  const sending = page.waitForResponse(response => response.url().endsWith("/chat-with-attachments") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "发送", exact: true }).click();
+  const response = await sending;
+  expect(response.status()).toBe(200);
+  const receipt = await response.json(); expect(receipt.status).toBe("committed");
+  const headers = response.request().headers();
+  const sessionId = new URL(response.url()).pathname.split("/")[2];
+  await expect(page.getByRole("button", { name: "发送", exact: true })).toBeEnabled();
+  const persisted = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  const turn = persisted.turns.find((turn: any) => turn.learner_message === message);
+  expect(turn.learner_attachments).toHaveLength(1);
+  expect(turn.learner_attachments[0].name).toBe(filename);
+  expect(turn.learner_attachments[0].text_excerpt).toContain(contents);
+  expect(turn.learner_attachments[0]).not.toHaveProperty("stored_path");
+  let events: any[] = [];
+  await expect.poll(async () => {
+    events = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${headers["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+    return events.some(event => event.resource?.resource_type === "study_session" && event.resource.resource_id === sessionId);
+  }).toBe(true);
+  expect(events.some(event => event.harness?.workflow === "study_chat")).toBe(true);
+  for (const secret of [filename, contents, message]) expect(JSON.stringify(events)).not.toContain(secret);
+  await page.locator('input[type="file"]').setInputFiles({ name: "PRIVATE_DIAGNOSTIC_UNSUPPORTED.bin", mimeType: "application/octet-stream", buffer: Buffer.from("PRIVATE_UNSUPPORTED_CONTENT") });
+  await page.getByPlaceholder("输入本节学习问题…").fill("PRIVATE_UNSUPPORTED_MESSAGE");
+  const rejected = page.waitForResponse(item => item.url().endsWith("/chat-with-attachments") && item.request().method() === "POST");
+  await page.getByRole("button", { name: "发送", exact: true }).click();
+  const failure = await rejected; expect(failure.status()).toBe(200);
+  const rejectedReceipt = await failure.json();
+  expect(rejectedReceipt.status).toBe("not_committed");
+  expect(rejectedReceipt.committed_session_revision).toBeNull();
+  expect(rejectedReceipt.error_code).toBe("study_chat_not_committed_chat_attachment_unsupported_media_type");
+  const failedHeaders = failure.request().headers();
+  const after = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  expect(after.revision).toBe(persisted.revision);
+  let failed: any[] = [];
+  await expect.poll(async () => {
+    failed = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${failedHeaders["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+    return failed.some(event => event.name === "request_finished" && event.status_code === 200);
+  }).toBe(true);
+  expect(failed.some(event => event.resource)).toBe(false);
+  for (const secret of ["PRIVATE_DIAGNOSTIC_UNSUPPORTED", "PRIVATE_UNSUPPORTED_CONTENT", "PRIVATE_UNSUPPORTED_MESSAGE"]) expect(JSON.stringify(failed)).not.toContain(secret);
+});
+
+
+test("interactive question CAS conflict and retry use persisted read-back while diagnostics exclude grading material", async ({ page, request }) => {
+  await request.patch("http://127.0.0.1:18998/runtime-settings", { data: { show_debug_info: false } });
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  const sent: { path: string; method: string; headers: Record<string, string> }[] = [];
+  page.on("request", item => {
+    if (item.url().includes("/study-sessions/")) sent.push({ path: new URL(item.url()).pathname, method: item.method(), headers: item.headers() });
+  });
+  await page.goto("/study");
+  await expect(page.getByRole("button", { name: "发送", exact: true })).toBeEnabled();
+  await page.getByPlaceholder("输入本节学习问题…").fill("PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER");
+  const generated = page.waitForResponse(item => item.url().endsWith("/chat") && item.request().postDataJSON()?.message === "PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER");
+  await page.getByRole("button", { name: "发送", exact: true }).click();
+  const generation = await generated; expect(generation.status()).toBe(200);
+  const sessionId = new URL(generation.url()).pathname.split("/")[2];
+  const before = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  const questionTurn = before.turns.find((turn: any) => turn.learner_message === "PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER");
+  expect(questionTurn.interactive_question.result).toBeNull();
+  const publicQuestion = JSON.stringify(questionTurn.interactive_question);
+  for (const secret of ["grading_spec", "answer_key", "correct_option_key", "PRIVATE_DIAGNOSTIC_GRADING_EXPLANATION"]) expect(publicQuestion).not.toContain(secret);
+  await expect(page.getByRole("button", { name: "A. Diagnostic first choice", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "A. Diagnostic first choice", exact: true }).click();
+  let firstAttempt = true;
+  await page.route(`**/study-sessions/${sessionId}/attempt`, async route => {
+    if (!firstAttempt) { await route.continue(); return; }
+    firstAttempt = false;
+    const stale = { ...route.request().postDataJSON(), expected_session_revision: 0 };
+    const upstream = await route.fetch({ postData: stale });
+    await route.fulfill({ response: upstream });
+  });
+  const conflicting = page.waitForResponse(item => item.url().endsWith(`/${sessionId}/attempt`));
+  await page.getByRole("button", { name: "提交答案", exact: true }).click();
+  const conflict = await conflicting; expect(conflict.status()).toBe(409);
+  await expect(page.getByRole("button", { name: "重新提交答案", exact: true })).toBeEnabled();
+  const afterConflict = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  expect(afterConflict.revision).toBe(before.revision);
+  expect(afterConflict.turns.find((turn: any) => turn.id === questionTurn.id).interactive_question.result).toBeNull();
+  const saving = page.waitForResponse(item => item.url().endsWith(`/${sessionId}/attempt`));
+  const callback = page.waitForResponse(item => item.url().endsWith(`/${sessionId}/chat`) && item.request().postDataJSON()?.message_kind === "interactive_callback");
+  await page.getByRole("button", { name: "重新提交答案", exact: true }).click();
+  const saved = await saving; expect(saved.status()).toBe(200);
+  const attempt = await saved.json();
+  const continued = await callback; expect(continued.status()).toBe(200);
+  expect((await continued.json()).status).toBe("committed");
+  await expect(page.getByText(/已记录/).first()).toBeVisible();
+  const successful = saved.request().headers();
+  const readBack = sent.find(item => item.method === "GET" && item.path === `/study-sessions/${sessionId}` && item.headers["x-debug-action-id"] === successful["x-debug-action-id"]);
+  expect(readBack).toBeTruthy();
+  expect(readBack!.headers["x-debug-flow-id"]).toBe(successful["x-debug-flow-id"]);
+  const persisted = await (await request.get(`http://127.0.0.1:18998/study-sessions/${sessionId}`)).json();
+  const result = persisted.turns.find((turn: any) => turn.id === questionTurn.id).interactive_question.result;
+  expect(result.is_correct).toBe(true);
+  expect(result.explanation).toBe("PRIVATE_DIAGNOSTIC_GRADING_EXPLANATION");
+  expect(persisted.turns.filter((turn: any) => turn.learner_message_kind === "interactive_callback")).toHaveLength(1);
+  let successfulEvents: any[] = [];
+  await expect.poll(async () => {
+    successfulEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${successful["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+    return successfulEvents.some(event => event.resource?.resource_id === sessionId && event.resource.revision === attempt.committed_revision);
+  }).toBe(true);
+  const failedEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${conflict.request().headers()["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+  expect(failedEvents.some((event: any) => event.resource)).toBe(false);
+  expect(failedEvents.some((event: any) => event.status_code === 409)).toBe(true);
+  let callbackEvents: any[] = [];
+  await expect.poll(async () => {
+    callbackEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${continued.request().headers()["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+    return callbackEvents.some(event => event.resource?.resource_id === sessionId);
+  }).toBe(true);
+  const generationEvents = (await (await request.get(`http://127.0.0.1:18998/diagnostics/events?flow_id=${generation.request().headers()["x-debug-flow-id"]}`)).json()).items.map((item: any) => item.event);
+  expect(generationEvents.some((event: any) => event.harness?.workflow === "study_chat")).toBe(true);
+  const all = JSON.stringify([...generationEvents, ...successfulEvents, ...failedEvents, ...callbackEvents]);
+  for (const secret of ["PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER", "PRIVATE_DIAGNOSTIC_QUESTION_PROMPT", "PRIVATE_DIAGNOSTIC_GRADING_EXPLANATION", "grading_spec", "answer_key", "correct_option_key", "accepted_answers"]) expect(all).not.toContain(secret);
+});

@@ -202,3 +202,11 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 最终 release gate（739 项后端测试、13 个 Harness suite、共享/Web 门与构建）
 及 11 项 Rust 测试通过，见[组合存储报告](../performance/diagnostic-installation-v1.md)。
 异常/分支流程、原生 Vault/导出成功路径和前端/原生开销验收继续进行。
+
+2026-09-10 Study 分支验收：新增附件 multipart 成功/不支持类型拒绝、互动题
+版本冲突→重试→持久化读回→自动续接的真实 Chromium 场景，9 项场景与 42 项
+后端专项测试通过。评分材料提交前不进入公共题目，附件名/内容、题目与评分
+内容不进入诊断记录；HTTP 200 的 `not_committed` 不被当作保存成功。互动题
+保存后的 Session 资源引用使用已验证回执中的 identity/revision。自动续接仍
+使用独立 flow，继承关联以及其他异常、原生和性能验收继续，见
+[验收记录](unified-debug-acceptance.md)。

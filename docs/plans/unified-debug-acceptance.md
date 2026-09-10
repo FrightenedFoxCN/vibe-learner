@@ -349,3 +349,40 @@ Final inventory was complete and both SQLite integrity checks passed. Logs:
 `/tmp/diagnostic-installation-{release,native,python}.log`; the probe's raw report
 is archived with the implementation. This does not certify an atomic disk peak,
 unknown external files, Windows behavior or transient recovery below 200 MiB.
+
+## Study attachments and interactive-question acceptance slice
+
+Question-attempt responses now emit a Session resource observation only after the
+saved receipt has passed response validation, using its own Session identity and
+committed revision. No answer, grading material, prompt or newly fabricated
+Harness identity is included. Stale-revision failure emits no saved resource.
+
+Two additional real Chromium scenarios passed (nine total). The attachment case
+sends a real multipart text file, checks its persisted public Turn attachment and
+content, verifies Study Harness/Session correlation, then submits unsupported
+media. That rejection is an HTTP 200 **not_committed** receipt, not a transport
+error: the Session revision stays unchanged and diagnostics have no saved-resource
+claim. The test checks both successful and rejected requests for content/name
+exclusion. Existing backend attachment effect tests separately exercise staging,
+read-back, tamper rejection and uncertain-operation recovery.
+
+The question case uses a scripted, typed mock-provider question in the disposable
+acceptance server only. Admission, protected snapshot, proposal handling, Session
+commit, question CAS, grading, HTTP decoding, UI read-back and automatic callback
+use production paths. Before submission, the public question excludes grading
+fields/explanation. A deliberately stale revision produces a real 409 and leaves
+the question unanswered; retry persists the result and triggers one committed
+interactive callback. POST and mandatory Session read-back share the action/flow.
+Generation, answer, failure and callback diagnostics exclude prompt/grading
+sentinels. The callback currently owns a separate flow and is associated through
+Session/canonical records; inherited callback-flow wiring remains follow-up work.
+This is scripted-output integration evidence, not independent model-quality review.
+
+Verification: 42 backend question/effect/diagnostic-query tests and all nine
+production Chromium scenarios passed. The first browser run exposed test
+assumptions about HTTP rejection status and the public Turn field name; assertions
+were corrected to the actual `not_committed` receipt and `learner_message_kind`,
+then all scenarios passed. Logs: `/tmp/diagnostic-study-alternates-{python,browser}.log`.
+No shared/public response shape changed. Remaining callback-flow wiring,
+Document/OCR fault paths, Tavern partial/retry/cancel/recovery, native success and
+performance acceptance remain open; no top-level goal item is closed here.

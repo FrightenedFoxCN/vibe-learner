@@ -1511,7 +1511,9 @@ def record_study_question_attempt(
         client_attempt_id=payload.client_attempt_id,
         submitted_answer=payload.submitted_answer,
     )
-    return StudyQuestionAttemptResponse.model_validate(result.model_dump(mode="json"))
+    response = StudyQuestionAttemptResponse.model_validate(result.model_dump(mode="json"))
+    reference_resource("study_session", response.session_id, revision=response.committed_revision)
+    return response
 
 
 @router.patch("/study-sessions/{session_id}", response_model=StudySessionResponse)
