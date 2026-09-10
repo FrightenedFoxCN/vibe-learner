@@ -721,3 +721,14 @@ storage mutation was performed.
 Native creation diagnostics, performance coverage and the consolidated audit
 remain required. The earlier raw Settings projection issue is fixed, and native
 save/lock and diagnostic save-dialog paths now have concrete evidence.
+
+## React and native spool overhead checkpoint
+
+The production React timeline/query decoder now has a reproducible Chromium
+measurement at the 500-row cap. Thirty samples per operation pass predeclared
+150 ms mount/append and 100 ms expand/unmount P95 budgets. Native synchronous
+spool emission was also measured through the real writer: sparse/contended cases
+pass, but saturated-ring P95 25.21 ms exceeds its 25 ms budget. The failed report
+is retained and native overhead remains open. See [method and raw reports](../performance/diagnostic-render-and-spool-v1.md).
+These scopes do not replace native creation, maximum nested-record rendering,
+full-workflow overhead or the consolidated requirement audit.

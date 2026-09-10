@@ -288,6 +288,66 @@ fn sync_directory(path: &Path) -> std::io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    #[ignore = "opt-in native spool timing; synthetic temporary files only"]
+    fn spool_performance_probe() {
+        let output = std::env::var("DIAGNOSTIC_SPOOL_BENCH_OUTPUT")
+            .expect("set DIAGNOSTIC_SPOOL_BENCH_OUTPUT to the report path");
+        let root = std::env::temp_dir().join(identity());
+        let diagnostics = DesktopDiagnostics::new(&root);
+        let mut sparse = Vec::new();
+        let mut saturated = Vec::new();
+        let mut contended = Vec::new();
+        for index in 0..33 {
+            let start = Instant::now();
+            diagnostics.emit(DesktopEvent::DesktopStarted, None, None);
+            if index >= 3 { sparse.push(start.elapsed().as_secs_f64() * 1000.0); }
+        }
+        for _ in 33..MAX_EVENTS { diagnostics.emit(DesktopEvent::DesktopStarted, None, None); }
+        for index in 0..33 {
+            let start = Instant::now();
+            diagnostics.emit(DesktopEvent::SidecarReady, Some(1), None);
+            if index >= 3 { saturated.push(start.elapsed().as_secs_f64() * 1000.0); }
+        }
+        assert_eq!(diagnostics.failures.load(Ordering::Relaxed), 0);
+        assert_eq!(read_counter(&diagnostics.root.join("drops.count")).unwrap(), Some(33));
+        let held = fs::OpenOptions::new().read(true).write(true)
+            .open(diagnostics.root.join("spool.quota-lock")).unwrap();
+        held.lock().unwrap();
+        for index in 0..33 {
+            let start = Instant::now();
+            diagnostics.emit(DesktopEvent::SidecarStopped, None, None);
+            if index >= 3 { contended.push(start.elapsed().as_secs_f64() * 1000.0); }
+        }
+        drop(held);
+        assert_eq!(diagnostics.failures.load(Ordering::Relaxed), 33);
+        diagnostics.emit(DesktopEvent::DesktopStopped, None, None);
+        assert_eq!(diagnostics.failures.load(Ordering::Relaxed), 33);
+        let retained = fs::read_dir(&diagnostics.root).unwrap().filter_map(Result::ok)
+            .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "json")).count();
+        assert_eq!(retained, MAX_EVENTS);
+        fn summary(values: &[f64], budget: f64) -> serde_json::Value {
+            let mut sorted = values.to_vec();
+            sorted.sort_by(f64::total_cmp);
+            let p95 = sorted[(sorted.len() as f64 * 0.95).ceil() as usize - 1];
+            serde_json::json!({"count": sorted.len(), "p50": sorted[(sorted.len() as f64 * 0.5).ceil() as usize - 1],
+                "p95": p95, "max": sorted.last().unwrap(), "budget_ms": budget, "passed": p95 <= budget})
+        }
+        let summaries = serde_json::json!({"sparse_emit_ms": summary(&sparse, 25.0),
+            "saturated_emit_ms": summary(&saturated, 25.0), "contended_emit_ms": summary(&contended, 100.0)});
+        let passed = summaries.as_object().unwrap().values().all(|value| value["passed"] == true);
+        let report = serde_json::json!({"schema_version": "native-spool-benchmark-v1",
+            "unix_time_ms": SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(),
+            "os": std::env::consts::OS, "arch": std::env::consts::ARCH, "debug_assertions": cfg!(debug_assertions),
+            "scope": "Actual native emit, file lock, scan, fsync and rotation in a temporary directory; no sidecar consumer or WebView.",
+            "gate_rationale": "P95 successful emit <=25 ms limits three startup events to a nominal 75 ms contribution; contended emit <=100 ms allows scheduling headroom over the existing 50 ms lock deadline. Local probe, not a hard filesystem latency bound.",
+            "retained_events": retained, "observed_refused_emits": 33, "recovered_after_contention": true,
+            "warmups_per_case": 3, "passed": passed, "summary": summaries,
+            "raw": {"sparse_emit_ms": sparse, "saturated_emit_ms": saturated, "contended_emit_ms": contended}});
+        fs::write(output, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+        fs::remove_dir_all(root).unwrap();
+        assert!(passed, "native spool performance budget exceeded; see report");
+    }
     use super::*;
     #[test]
     fn native_wire_matches_shared_fixture() {
