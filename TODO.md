@@ -12,9 +12,9 @@
 
 ## Now（下一批可领取）
 
-专项计划已独立落盘，在 0.3.0 之后逐步实施，不计为本次发布已实现功能：
+专项计划独立维护；重构已实施，尚未作为后续版本发布，不追溯计入 0.3.0 已发布功能：
 
-- [代码解耦重构](docs/plans/architecture-refactor.md)：7 项中 5 项已完成，剩余前端领域拆分与测试边界；保留现有事务/恢复语义。
+- [代码解耦重构](docs/plans/architecture-refactor.md)：7 项已完成，分别提交并通过 release/recovery 与 23 项生产浏览器验收；保留事务/恢复语义，相关独立 UX 复核继续按原条目跟踪。
 - [统一 Logging 与 Debug](docs/plans/unified-debug.md)：4 项，打通页面视图、全局记录和性能审计。
 
 - [ ] `UX-A11Y-STUDY-QUESTION-001` `[P1]` 完成 Interactive Question 无障碍语义。
@@ -41,7 +41,7 @@
 
 - [ ] `PERF-WEB-PROVIDER-001` `[P2]` 建立路由级 Provider ownership。
   - 已实现：学习 Provider 限于 Plan/Study，Debug Overlay 独立；默认教师/空业务数据下，十个顶级页面及 focus 的 Chromium 网络清单通过。
-  - 已补充：历史 goal-only Plan/Session、未准备章节的 uncertain 刷新恢复、聊天 POST 在途离页后查询原身份；浏览器断言没有额外 POST。最终架构阶段门禁完成后收口。
+  - 已补充：历史 goal-only Plan/Session、未准备章节的 uncertain 刷新恢复、聊天 POST 在途离页后查询原身份；浏览器断言没有额外 POST。实现与最终架构阶段门禁已完成；待独立复核路由网络/恢复证据后关闭本项。
   - 验收：为每个顶级路由冻结允许请求清单，并以浏览器网络记录和自动化测试验证。
 
 ## Next（已定义、待排期）

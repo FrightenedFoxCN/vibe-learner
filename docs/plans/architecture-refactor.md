@@ -1,6 +1,6 @@
 # 代码解耦重构计划
 
-状态：实施中；在 0.3.0 之后的小版本逐步推进，不属于 0.3.0 已实现功能。本文件维护七项重构的明细，根 [TODO](../../TODO.md) 作为统一索引。与 [统一 Logging / Debug](unified-debug.md) 共享基础边界，不要求先做完全仓重构。
+状态：七项重构已实施并通过阶段门禁（2026-09-10）；尚未作为后续版本发布，不追溯计入 0.3.0 已发布功能。本文件维护七项重构的明细，根 [TODO](../../TODO.md) 作为统一索引。与 [统一 Logging / Debug](unified-debug.md) 共享基础边界，不要求先做完全仓重构。
 
 - [x] `ARCH-TRANSACTION-001` `[P1]` 明确领域事务校验边界。
   - 当前 `Database.session()` 在存在未 flush ORM 变更时执行 Tavern 全图扫描。审计实测普通 Settings 写入扫描三张 Tavern 表；提前 flush 则不触发该检查。
@@ -27,7 +27,7 @@
   - 移除真实 provider 对 mock provider 的隐式继承；独立练习生成/提交评价等沿用 mock 的能力必须显式标记或实现，不能悄悄改变行为。
   - 验收：逐能力 contract tests；配置快照在一次操作内稳定；调用/重试上限、取消能力和 truthful provider 状态保持。
 
-- [ ] `ARCH-WEB-001` `[P2]` 收窄前端状态范围并拆分领域控制器。
+- [x] `ARCH-WEB-001` `[P2]` 收窄前端状态范围并拆分领域控制器。
   - DebugProvider 独立于 LearningWorkspaceProvider；Settings/Model Usage 等路由不初始化学习数据。此部分与 `OBS-DEBUG-001` / `PERF-WEB-PROVIDER-001` 共用同一实现。
   - 将大型学习 controller、Persona Spectrum 和 Scene Setup 页面拆成数据访问、编辑草稿、动作/恢复控制器与展示组件。
   - 验收：路由请求清单、focus 刷新、取消/过期响应、草稿保存和页面切换保持正确；不以单纯文件拆分作为完成标准。
@@ -107,7 +107,7 @@
 - [x] 生产 Chromium 的 12 项路由/导航测试通过：十个顶级页面初始请求清单、focus 请求上限、Plan/Study 切换不重复初始化、离开后不刷新学习数据、目标/PDF 草稿跨 Settings 导航。`test:web:workspace` 2 项组件/选择初始化测试通过；Web 类型检查、可靠性门禁和生产构建通过。请求 JSON 附件输出到 `/tmp/vibe-learner-route-report.json`；范围详见 `docs/frontend-test-boundaries.md`。
 - [x] 补充历史 goal-only Plan/Session、在途聊天离页与 uncertain 刷新恢复的生产浏览器验收；断言已提交内容与草稿恢复、查询原身份、禁止额外 POST。路由网络基线与恢复矩阵分别运行。
 - [x] 学习快照查询归入 `WorkspaceSnapshotLoader`，首次/focus/手动刷新共享响应归属判断；卸载后禁止新查询和旧结果投影，初始化被刷新取代时仍加载 Persona。独立 `test:workspace:data` 4 项并发/失败/卸载测试通过，Web 类型、可靠性回归、生产构建及 12 项 Chromium 路由验收通过。
-- [ ] 继续拆分学习动作/恢复、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。
+- [x] 完成学习动作/恢复、Persona、Scene controller 的领域拆分、直接相关 UX 改动及前端阶段门禁；更广泛的 UX 独立复核仍由原 TODO 跟踪。
 
 - [x] 计划生成归入 `usePlanGeneration`，以显式 API port 注入上传/解析/计划/Session 请求，主 controller 只保留选择与视图投影。每轮生成持有独立响应归属，旧进度和 finally 不清空新任务；Scene 在生成入口捕获并用于初始 Session。独立 `test:workspace:generation` 6 项真实 Hook 行为测试通过，Web 类型、可靠性门禁、生产构建与 12 项 Chromium 路由验收通过。
 
@@ -156,3 +156,9 @@
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。
 - [x] 剩余 Document/Planning operation、Scene proposal、Tavern provider、Alembic 与 Harness runtime 公共 fixture 归入 `tests/support`，移除跨 TestCase 私有 helper 及手动调用其他 TestCase setUp 的依赖。故障注入位置与 24 个子进程退出场景不变；新增迁移/runtime/性能/输入上限/进程中断独立脚本，详见 `docs/backend-test-boundaries.md`。
 - [x] 2026-09-10 测试 seam 阶段门禁通过：相关 93 项测试；`check:release`（635 项后端、13 个 eval suite、shared/Web 和生产构建）；`test:acceptance:recovery-limits`（193 项后端及 Web decoder/Hook/组件聚合）。真实 HTTP 重启 read-back 覆盖保留，剩余学习 controller 变更仍须重新执行受影响与阶段验收。
+
+## 最终阶段验收
+
+2026-09-10 七项重构均完成，各子任务分别提交。最后一轮 `check:release` 通过（635 项后端测试、13 个 eval suite、shared/Web 检查与生产构建）；`test:acceptance:recovery-limits` 通过（193 项后端测试及 Web decoder/Hook/组件聚合，保留 24 个真实进程中断场景与 HTTP 重启 read-back）；生产 Chromium 23 项通过。事务 PostgreSQL 17 实例验收已在事务阶段完成，共 22 项通过。
+
+工程实现与确定性故障/恢复门的完成，不代替 TODO 中明确要求的独立 UX、全设备或 live-provider 质量验收。Persona/Scene 完整搜索筛选、危险操作分层、全页面 44px/屏幕阅读及独立复核继续保留原待办。

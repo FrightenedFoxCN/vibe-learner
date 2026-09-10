@@ -27,4 +27,4 @@
 - [代码解耦重构](plans/architecture-refactor.md)：分步重构顺序及验收边界。
 - [统一 Logging 与 Debug](plans/unified-debug.md)：独立任务、诊断链路和数据留存设计。
 
-两份计划均为待实施设计；产品及其他验收任务继续维护在根 TODO。
+代码解耦重构已实施并通过阶段门禁；统一 Logging 与 Debug 的进度由对应计划维护。产品及其他验收任务继续维护在根 TODO。
