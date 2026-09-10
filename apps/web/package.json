@@ -33,10 +33,11 @@
     "test:persona:draft:browser": "playwright test tests/browser/persona-draft.spec.ts",
     "test:persona:assist": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-assist.test.jsx",
     "test:scene": "npm run test:scene:generation && npm run test:scene:draft && npm run test:scene:rewrite && npm run test:scene:library && npm run test:scene:components",
-    "test:persona": "npm run test:persona:generation && npm run test:persona:draft && npm run test:persona:assist && npm run test:persona:library && npm run test:persona:persistence",
+    "test:persona": "npm run test:persona:generation && npm run test:persona:draft && npm run test:persona:assist && npm run test:persona:library && npm run test:persona:persistence && npm run test:persona:components",
     "test:persona:library": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-library.test.jsx",
     "test:persona:persistence": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-persistence.test.jsx",
-    "test:persona:persistence:browser": "playwright test tests/browser/persona-persistence.spec.ts"
+    "test:persona:persistence:browser": "playwright test tests/browser/persona-persistence.spec.ts",
+    "test:persona:components": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/persona-library-cards.test.jsx"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

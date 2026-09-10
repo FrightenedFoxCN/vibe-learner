@@ -19,6 +19,7 @@ test("Persona create read-back binds the saved record while retaining edits made
   const name = page.getByRole("textbox", { name: "名称", exact: true });
   await expect(name).toHaveValue("Fixture Mentor");
   await page.getByRole("button", { name: "新建人格草稿", exact: true }).click();
+  await expect(page.getByRole("option", { name: "新建人格（未保存）", exact: true })).toHaveAttribute("value", "");
   await name.fill("Submitted name");
   const sent = page.waitForRequest(request => request.method() === "POST" && request.url().endsWith("/personas"));
   await page.getByRole("button", { name: "创建人格", exact: true }).click();

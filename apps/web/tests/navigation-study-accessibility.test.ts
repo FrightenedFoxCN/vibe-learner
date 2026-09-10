@@ -30,10 +30,7 @@ const settingsStylesSource = readFileSync(
   new URL("../components/settings/settings-styles.ts", import.meta.url),
   "utf8",
 );
-const personaSpectrumSource = readFileSync(
-  new URL("../app/persona-spectrum/page.tsx", import.meta.url),
-  "utf8",
-);
+
 
 test("mobile primary navigation keeps labelled 44px touch targets", () => {
   assert.match(topNavSource, /aria-label=\{item\.label\}/);
@@ -69,12 +66,8 @@ test("Tavern sequence updates are announced without appearing in the transcript"
   assert.match(globalStyles, /\.sr-only \{[\s\S]*?clip: rect\(0, 0, 0, 0\);/);
 });
 
-test("model scope connection fields stay compact and new personas begin as drafts", () => {
+test("model scope connection fields stay compact", () => {
   assert.match(settingsSectionsSource, /<label style=\{styles\.compactConnectionField\}>[\s\S]*?<span style=\{styles\.label\}>访问密钥/);
   assert.match(settingsSectionsSource, /<label style=\{styles\.compactConnectionField\}>[\s\S]*?<span style=\{styles\.label\}>服务地址/);
   assert.match(settingsStylesSource, /compactConnectionField:[\s\S]*?maxWidth: 280/);
-  assert.match(personaSpectrumSource, /function handleNewPersonaDraft\(\)/);
-  assert.match(personaSpectrumSource, /onClick=\{handleNewPersonaDraft\}/);
-  assert.match(personaSpectrumSource, /selectedPersonaId \? handleUpdatePersona\(\) : handleCreatePersona\(\)/);
-  assert.match(personaSpectrumSource, /<option value="">新建人格（未保存）<\/option>/);
 });

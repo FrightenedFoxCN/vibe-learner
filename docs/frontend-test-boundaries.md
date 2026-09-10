@@ -26,6 +26,7 @@
 | `npm --workspace @vibe-learner/web run test:persona:library` | Persona 库查询版本、并发提交对账、后续权威刷新、失败/重复写与离页广播 |
 | `npm --workspace @vibe-learner/web run test:persona:persistence` | Persona 保存/重载/删除与草稿实例、后续编辑和 revision 的协作；注入持久化 port |
 | `npm --workspace @vibe-learner/web run test:persona:persistence:browser` | 创建请求在途时继续编辑，服务端读回绑定记录并保留新输入 |
+| `npm --workspace @vibe-learner/web run test:persona:components` | Persona 库卡片插入、拖拽、载入、内置删除边界及 pending 禁用态；不初始化领域 controller |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |
