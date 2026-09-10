@@ -4,7 +4,7 @@ import re
 import time
 from uuid import uuid4
 
-from app.core.diagnostics import correlation
+from app.core.diagnostics import correlation, active_store
 
 
 class DiagnosticMiddleware:
@@ -23,6 +23,7 @@ class DiagnosticMiddleware:
             if re.fullmatch(r"[a-zA-Z0-9_-]{1,96}", value):
                 fields[field] = value
         token = correlation.set(fields)
+        store_token = active_store.set(store)
         start = time.perf_counter()
         status = None
         completed = False
@@ -61,3 +62,4 @@ class DiagnosticMiddleware:
         finally:
             emit(outcome, status_code=status, duration_ms=(time.perf_counter() - start) * 1000)
             correlation.reset(token)
+            active_store.reset(store_token)

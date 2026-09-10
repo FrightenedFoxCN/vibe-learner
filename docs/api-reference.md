@@ -1244,3 +1244,13 @@ Server events use an isolated append SQLite database under
 `storage_root/diagnostics/events.sqlite3`. Current limits are 1,000 queued events
 and 10,000 retained rows; time/byte retention and audit export are subsequent
 implementation steps in `docs/plans/unified-debug.md`.
+
+Persona generate/save/reload accepts diagnostic correlation through the common
+`X-Debug-Client-Instance-Id`, `X-Debug-Page-View-Id`, `X-Debug-Flow-Id`, and
+`X-Debug-Action-Id` headers. The editor captures an action before transport and
+passes it explicitly through save and its refresh; no global async action state
+is used. These fields never enter model proposals or business request payloads.
+Server-only `harness_reference` events point to admitted operations and canonical
+terminal traces. `resource_reference` events identify saved Persona records with
+the actual revision. Both are diagnostic references, not substitutes for receipt
+or resource read-back. Browser ingestion rejects these names and reference fields.

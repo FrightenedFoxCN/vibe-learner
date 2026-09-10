@@ -110,7 +110,7 @@ export function usePersonaWorkspaceController() {
     insertCardsIntoDraft,
     handleGenerateCards,
     resetCardGeneration,
-  } = usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope });
+  } = usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope, beginDiagnosticAction: personaEditor.beginDiagnosticAction });
   const [cardSearchQuery, setCardSearchQuery] = useState("");
   const [cardDeletePendingId, setCardDeletePendingId] = useState("");
   const [draggingPersonaCardId, setDraggingPersonaCardId] = useState("");
@@ -479,6 +479,7 @@ export function usePersonaWorkspaceController() {
     setConfigMessage("");
     setSaveError("");
     setPersonaLibraryError("");
+    personaEditor.resetDiagnosticFlow();
     selectPersonaDraft("");
     replacePersonaDraft({ ...EMPTY_PERSONA_DRAFT }, true);
     dismissSystemPromptSuggestion();
@@ -491,6 +492,7 @@ export function usePersonaWorkspaceController() {
     setConfigMessage("");
     setSaveError("");
     setPersonaLibraryError("");
+    personaEditor.resetDiagnosticFlow();
     selectPersonaDraft("");
     markPersonaDraftSaved(EMPTY_PERSONA_DRAFT);
     replacePersonaDraft(duplicated, false);

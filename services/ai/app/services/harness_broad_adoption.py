@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from app.core.diagnostics import reference_harness
+
 from app.services.persona_harness_adapter import PersonaHarnessAdapter
 from app.services.scene_harness_adapter import SceneHarnessAdapter
 from app.services.document_harness_adapter import DocumentHarnessAdapter
@@ -398,6 +400,7 @@ class HarnessProposalRuntimeService:
             kind=kind,
             request_manifest=manifest.model_dump(mode="json", exclude_none=False),
         )
+        reference_harness(binding)
         try:
             snapshot, grant_id = self._register_snapshot(
                 binding=binding,
@@ -501,6 +504,7 @@ class HarnessProposalRuntimeService:
             trace = execution.terminal_trace
             if trace is None:
                 raise RuntimeError("harness_broad_runtime_trace_missing")
+            reference_harness(binding, trace)
             success = trace.status in {HarnessStatus.PASSED, HarnessStatus.REPAIRED}
             self.workflow_operations.terminalize(
                 binding=binding,

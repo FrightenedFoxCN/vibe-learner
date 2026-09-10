@@ -1,4 +1,4 @@
-import { diagnosticFetch } from "./diagnostics";
+import { diagnosticFetch, type DiagnosticContext } from "./diagnostics";
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
@@ -299,9 +299,9 @@ function extractErrorMessage(payload: unknown, fallbackMessage: string) {
 
 const AI_BASE_URL = () => getAiBaseUrl();
 
-async function request(input: string, init?: RequestInit): Promise<Response> {
+async function request(input: string, init?: RequestInit, context?: DiagnosticContext): Promise<Response> {
   try {
-    return await diagnosticFetch(input, init);
+    return await diagnosticFetch(input, init, context);
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error;
     const startupError = getDesktopRuntimeConfig()?.startupError.trim();
@@ -627,9 +627,9 @@ function normalizePlan(
   return decodeLearningPlan(plan, options);
 }
 
-export async function listPersonas(): Promise<PersonaProfile[]> {
+export async function listPersonas(context?: DiagnosticContext): Promise<PersonaProfile[]> {
   const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas`)
+    await request(`${AI_BASE_URL()}/personas`, undefined, context)
   );
   return decodePersonaList(payload);
 }
@@ -832,7 +832,7 @@ export async function cancelTavernRun(
   return normalizeTavernTurnResult(payload, roomId);
 }
 
-export async function createPersona(input: CreatePersonaInput): Promise<PersonaProfile> {
+export async function createPersona(input: CreatePersonaInput, context?: DiagnosticContext): Promise<PersonaProfile> {
   const payload = await readJson<unknown>(
     await request(`${AI_BASE_URL()}/personas`, {
       method: "POST",
@@ -840,14 +840,15 @@ export async function createPersona(input: CreatePersonaInput): Promise<PersonaP
         "Content-Type": "application/json"
       },
       body: JSON.stringify(serializePersonaInput(input))
-    })
+    }, context)
   );
   return decodePersonaProfile(payload, { expectedSource: "user" });
 }
 
 export async function updatePersona(
   personaId: string,
-  input: UpdatePersonaInput
+  input: UpdatePersonaInput,
+  context?: DiagnosticContext
 ): Promise<PersonaProfile> {
   const encodedPersonaId = encodeURIComponent(personaId);
   const payload = await readJson<unknown>(
@@ -857,7 +858,7 @@ export async function updatePersona(
         "Content-Type": "application/json"
       },
       body: JSON.stringify(serializePersonaInput(input))
-    })
+    }, context)
   );
   return decodePersonaProfile(payload, {
     expectedPersonaId: personaId,
@@ -931,7 +932,7 @@ export async function generatePersonaCards(input: {
   mode: PersonaCardGenerationMode;
   inputText: string;
   count?: number | null;
-}): Promise<PersonaCardGenerateResult> {
+}, context?: DiagnosticContext): Promise<PersonaCardGenerateResult> {
   const requestBody: Record<string, unknown> = {
     mode: input.mode,
     input_text: input.inputText
@@ -946,7 +947,7 @@ export async function generatePersonaCards(input: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
-    })
+    }, context)
   );
   return decodePersonaCardGenerateResult(payload, { expectedMode: input.mode });
 }

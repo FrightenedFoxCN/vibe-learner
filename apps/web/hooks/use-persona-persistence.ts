@@ -43,11 +43,12 @@ export function usePersonaPersistence({ editor, library, onStarted, onPromptDism
     const epoch = editor.getDraftEpoch();
     const scope = editor.currentPersonaAsyncScope("persona-save");
     const request = ++feedback.current;
+    const diagnostic = editor.beginDiagnosticAction();
     saveRunning.current = true; setSavingPersona(true);
     try {
       const committed = mode === "create"
-        ? await library.createPersona(payload)
-        : await library.updatePersona(target!.id, { ...payload, expectedRevision: target!.revision });
+        ? await library.createPersona(payload, diagnostic)
+        : await library.updatePersona(target!.id, { ...payload, expectedRevision: target!.revision }, diagnostic);
       if (!active.current) return;
       if (editor.getDraftEpoch() === epoch) {
         const current = editor.currentPersonaAsyncScope("persona-save");
@@ -63,7 +64,7 @@ export function usePersonaPersistence({ editor, library, onStarted, onPromptDism
       }
       const message = `已${mode === "create" ? "创建" : "更新"}人格「${committed.name}」。`;
       if (ownsFeedback(request)) { setPersonaLibraryMessage(message); setPersonaLibraryError(""); }
-      try { await library.listPersonas(); }
+      try { await library.listPersonas(diagnostic); }
       catch (error) {
         if (ownsFeedback(request)) setPersonaLibraryMessage(`${message}但人格库刷新失败：${String(error)}`);
       }
@@ -82,8 +83,9 @@ export function usePersonaPersistence({ editor, library, onStarted, onPromptDism
     const scope = editor.currentPersonaAsyncScope("persona-reload");
     const request = ++feedback.current;
     setLoadError("");
+    const diagnostic = editor.beginDiagnosticAction();
     try {
-      const latest = await library.listPersonas();
+      const latest = await library.listPersonas(diagnostic);
       if (!ownsFeedback(request)) return;
       const current = editor.currentPersonaAsyncScope("persona-reload");
       if (editor.getDraftEpoch() !== epoch || current.draftRevision !== scope.draftRevision || current.subjectId !== scope.subjectId) {

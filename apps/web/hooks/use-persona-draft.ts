@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type SetStateAction } from "react";
 import type { PersonaProfile } from "@vibe-learner/shared";
+import { diagnosticContext } from "../lib/diagnostics";
 import type { AsyncResultScope } from "../lib/async-result-fence";
 import { EMPTY_PERSONA_DRAFT, personaDraftFingerprint, personaToDraft, type PersonaDraft } from "../lib/persona-draft";
 
@@ -16,6 +17,11 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
   const selectedPersonaIdRef = useRef("");
   const draftRevisionRef = useRef(0);
   const draftEpochRef = useRef(0);
+  const diagnosticFlow = useRef<string | null>(null);
+  function beginDiagnosticAction() {
+    diagnosticFlow.current ??= crypto.randomUUID();
+    return diagnosticContext(diagnosticFlow.current);
+  }
   const [draft, setDraft] = useState<PersonaDraft>(EMPTY_PERSONA_DRAFT);
   const [draftBaselineFingerprint, setDraftBaselineFingerprint] = useState(
     personaDraftFingerprint(EMPTY_PERSONA_DRAFT),
@@ -76,6 +82,7 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
     if (!confirmDiscardPersonaDraft(action)) {
       return false;
     }
+    diagnosticFlow.current = null;
     const nextPersona = personas.find((persona) => persona.id === normalizedPersonaId) ?? null;
     const nextDraft = nextPersona ? personaToDraft(nextPersona) : { ...EMPTY_PERSONA_DRAFT };
     selectPersonaDraft(normalizedPersonaId);
@@ -143,6 +150,8 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
     replacePersonaDraft(personaToDraft(persona), true);
   }
   return {
+    beginDiagnosticAction,
+    resetDiagnosticFlow: () => { diagnosticFlow.current = null; },
     getDraftEpoch: () => draftEpochRef.current,
     selectedPersonaId,
     draft,

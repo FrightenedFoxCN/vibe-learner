@@ -86,6 +86,44 @@ class DiagnosticTests(unittest.TestCase):
                 self.assertEqual(client.post("/diagnostics/events", json={"events": [{**event, "source": "server"}]}).status_code, 422)
                 self.assertEqual(len(client.get("/diagnostics/events").json()["items"]), 1)
 
+    def test_persona_generation_references_real_runtime_identity(self):
+        from fastapi.testclient import TestClient
+        from app.app_factory import create_app
+        from app.core.settings import Settings
+        from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
+        from tests.test_persona_lifecycle import create_request
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = create_app(settings=Settings(database_url=f"sqlite:///{root / 'domain.db'}",
+                                               storage_root=str(root / "data"), ocr_engine="disabled"))
+            with TestClient(app) as client:
+                headers = {"X-Debug-Flow-Id": "persona_flow", "X-Debug-Action-Id": "generate"}
+                generated = client.post("/persona-cards/generate", json={"mode": "keywords", "input_text": "PRIVATE_PROMPT"}, headers=headers)
+                self.assertEqual(generated.status_code, 200, generated.text)
+                store = app.state.diagnostics
+                store.queue.join()
+                events = store.query(0, 100, {"action_id": "generate"})
+                refs = [row["event"]["harness"] for row in events if row["event"]["name"] == "harness_reference"]
+                self.assertEqual(len(refs), 2)
+                self.assertIsNone(refs[0]["trace_id"])
+                self.assertEqual(refs[0]["operation_id"], refs[1]["operation_id"])
+                canonical = HarnessRuntimeRepository(app.state.container.database).list_operation_traces(refs[0]["operation_id"])
+                self.assertIn(refs[1]["trace_id"], [item.terminal_trace.trace_id for item in canonical if item.terminal_trace])
+                self.assertNotIn("PRIVATE_PROMPT", json.dumps(events))
+                forged = {**events[0]["event"], "source": "browser", "harness": refs[1]}
+                self.assertEqual(client.post("/diagnostics/events", json={"events": [forged]}).status_code, 422)
+                saved = client.post("/personas", json=create_request().model_dump(mode="json"),
+                                    headers={**headers, "X-Debug-Action-Id": "save"})
+                self.assertEqual(saved.status_code, 200, saved.text)
+                reloaded = client.get("/personas", headers={**headers, "X-Debug-Action-Id": "reload"})
+                self.assertIn(saved.json()["id"], [item["id"] for item in reloaded.json()["items"]])
+                self.assertEqual(len({generated.headers["X-Request-ID"], saved.headers["X-Request-ID"], reloaded.headers["X-Request-ID"]}), 3)
+                store.queue.join()
+                flow = store.query(0, 100, {"flow_id": "persona_flow"})
+                self.assertEqual({row["event"]["action_id"] for row in flow}, {"generate", "save", "reload"})
+                resource = next(row["event"]["resource"] for row in flow if row["event"]["name"] == "resource_reference")
+                self.assertEqual(resource, {"resource_type": "persona", "resource_id": saved.json()["id"], "revision": saved.json()["revision"]})
+
     def test_asgi_records_body_completion_and_resets_context(self):
         async def scenario(failure=False):
             events = []

@@ -15,6 +15,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.core.logging import get_logger
+from app.core.diagnostics import reference_persona
 from app.core.bootstrap import Container
 from app.api.dependencies import get_container
 from fastapi import Depends
@@ -989,12 +990,14 @@ def list_personas(*, container: Container = Depends(get_container)) -> PersonaLi
 @router.post("/personas", response_model=PersonaResponse)
 def create_persona(payload: CreatePersonaRequest, *, container: Container = Depends(get_container)) -> PersonaResponse:
     persona = container.persona_engine.create_persona(payload)
+    reference_persona(persona)
     return _into_response(PersonaResponse, persona)
 
 
 @router.patch("/personas/{persona_id}", response_model=PersonaResponse)
 def update_persona(persona_id: str, payload: UpdatePersonaRequest, *, container: Container = Depends(get_container)) -> PersonaResponse:
     persona = container.persona_engine.update_persona(persona_id, payload)
+    reference_persona(persona)
     return _into_response(PersonaResponse, persona)
 
 

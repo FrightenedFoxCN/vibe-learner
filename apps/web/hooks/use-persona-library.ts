@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { DiagnosticContext } from "../lib/diagnostics";
 import * as personasApi from "../lib/data/personas";
 import * as cardsApi from "../lib/data/persona-cards";
 import { broadcastPersonaLibraryUpdated } from "../lib/persona-library-sync";
@@ -8,7 +9,7 @@ import { broadcastPersonaLibraryUpdated } from "../lib/persona-library-sync";
 type PersonaLibraryPort = Pick<typeof personasApi, "listPersonas" | "createPersona" | "updatePersona" | "deletePersona"> & Pick<typeof cardsApi, "listPersonaCards" | "deletePersonaCard"> & { broadcast: () => void };
 const defaultPort: PersonaLibraryPort = { ...personasApi, ...cardsApi, broadcast: broadcastPersonaLibraryUpdated };
 
-function usePersonaRecords<T extends { id: string }>(load: () => Promise<T[]>) {
+function usePersonaRecords<T extends { id: string }>(load: (context?: DiagnosticContext) => Promise<T[]>) {
   const [items, setItems] = useState<T[]>([]);
   const snapshot = useRef<T[]>([]);
   const active = useRef(true);
@@ -27,12 +28,12 @@ function usePersonaRecords<T extends { id: string }>(load: () => Promise<T[]>) {
     publish(item === null ? current.filter(value => value.id !== id)
       : current.some(value => value.id === id) ? current.map(value => value.id === id ? item : value) : [item, ...current]);
   }
-  async function list() {
+  async function list(context?: DiagnosticContext) {
     if (!active.current) return snapshot.current;
     const request = ++query.current;
     const startedVersion = version.current;
     try {
-      const result = await load();
+      const result = await load(context);
       if (!active.current || request !== query.current) return snapshot.current;
       const merged = new Map(result.map(item => [item.id, item]));
       for (const [id, write] of writes.current) {
@@ -62,12 +63,12 @@ export function usePersonaLibrary(port: PersonaLibraryPort = defaultPort) {
     try { return await action(); }
     finally { pending.current.delete(key); }
   }
-  const createPersona: typeof personasApi.createPersona = input => mutate("persona:create", async () => {
-    const result = await port.createPersona(input);
+  const createPersona: typeof personasApi.createPersona = (input, context) => mutate("persona:create", async () => {
+    const result = await port.createPersona(input, context);
     personas.commit(result.id, result); port.broadcast(); return result;
   });
-  const updatePersona: typeof personasApi.updatePersona = (id, input) => mutate(`persona:${id}`, async () => {
-    const result = await port.updatePersona(id, input);
+  const updatePersona: typeof personasApi.updatePersona = (id, input, context) => mutate(`persona:${id}`, async () => {
+    const result = await port.updatePersona(id, input, context);
     personas.commit(result.id, result); port.broadcast(); return result;
   });
   const deletePersona: typeof personasApi.deletePersona = (id, revision) => mutate(`persona:${id}`, async () => {

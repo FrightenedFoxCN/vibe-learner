@@ -10,9 +10,45 @@ import sqlite3
 import threading
 from uuid import uuid4
 
-from app.models.diagnostic import DiagnosticEventV1
+from app.models.diagnostic import DiagnosticEventV1, DiagnosticHarnessReferenceV1, DiagnosticResourceReferenceV1
 
 correlation: ContextVar[dict[str, str]] = ContextVar("diagnostic_correlation", default={})
+
+active_store: ContextVar["DiagnosticStore | None"] = ContextVar("active_diagnostic_store", default=None)
+
+
+def reference_harness(binding, trace=None):
+    """Called only with admitted server bindings and canonical runtime traces."""
+    try:
+        store = active_store.get()
+        if store is None:
+            return
+        if trace is not None and trace.operation_id != binding.harness_operation_id:
+            return
+        store.emit("harness_reference", harness=DiagnosticHarnessReferenceV1(
+            operation_id=binding.harness_operation_id,
+            workflow=trace.workflow if trace is not None else binding.workflow,
+            stage=trace.stage if trace is not None else binding.entry_stage,
+            trace_id=trace.trace_id if trace is not None else None,
+        ))
+    except Exception:
+        # No diagnostic validation/storage failure may change the domain outcome.
+        if active_store.get() is not None:
+            active_store.get().dropped += 1
+
+
+def reference_persona(persona):
+    """Identity/revision from the saved domain record, without any persona content."""
+    store = active_store.get()
+    if store is None:
+        return
+    try:
+        store.emit("resource_reference", resource=DiagnosticResourceReferenceV1(
+            resource_type="persona", resource_id=persona.id, revision=persona.revision,
+        ))
+    except Exception:
+        store.dropped += 1
+
 
 
 class DiagnosticStore:

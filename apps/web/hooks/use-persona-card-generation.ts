@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PersonaCard, ModelRecovery } from "@vibe-learner/shared";
+import { diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { generatePersonaCards } from "../lib/data/persona-cards";
 import { AsyncResultFence, type AsyncResultScope, type AsyncResultTicket } from "../lib/async-result-fence";
 import { isApiHttpError } from "../lib/http-error";
@@ -16,7 +17,8 @@ interface GeneratedPersonaMeta {
 
 type CardGenerationMode = "keywords" | "long_text";
 
-export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope }: {
+export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPersonaAsyncScope, beginDiagnosticAction = diagnosticContext }: {
+  beginDiagnosticAction?: () => DiagnosticContext;
   draft: PersonaDraft;
   updatePersonaDraft: (draft: PersonaDraft) => void;
   currentPersonaAsyncScope: (fieldTarget: string) => AsyncResultScope;
@@ -156,7 +158,7 @@ export function usePersonaCardGeneration({ draft, updatePersonaDraft, currentPer
         mode,
         inputText,
         count,
-      });
+      }, beginDiagnosticAction());
       if (!canApply(ticket)) {
         return;
       }
