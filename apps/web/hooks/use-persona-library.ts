@@ -48,7 +48,7 @@ function usePersonaRecords<T extends { id: string }>(load: () => Promise<T[]>) {
       throw error;
     }
   }
-  return { items, active, list, commit };
+  return { items, active, list, commit, getSnapshot: () => snapshot.current };
 }
 
 export function usePersonaLibrary(port: PersonaLibraryPort = defaultPort) {
@@ -78,6 +78,9 @@ export function usePersonaLibrary(port: PersonaLibraryPort = defaultPort) {
     const result = await port.deletePersonaCard(id); cards.commit(id, null); return result;
   });
   return { personas: personas.items, personaCards: cards.items,
+    getPersonasSnapshot: personas.getSnapshot,
     listPersonas: personas.list, listPersonaCards: cards.list,
     createPersona, updatePersona, deletePersona, deletePersonaCard };
 }
+
+export type PersonaLibraryController = ReturnType<typeof usePersonaLibrary>;

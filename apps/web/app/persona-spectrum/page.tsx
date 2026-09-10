@@ -28,6 +28,7 @@ import { MaterialIcon, type MaterialIconName } from "../../components/material-i
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
+import { usePersonaPersistence } from "../../hooks/use-persona-persistence";
 import { usePersonaLibrary } from "../../hooks/use-persona-library";
 import {
   applyAsyncResult,
@@ -37,7 +38,6 @@ import { usePersonaAssist } from "../../hooks/use-persona-assist";
 import { usePersonaDraft } from "../../hooks/use-persona-draft";
 import { usePersonaCardGeneration } from "../../hooks/use-persona-card-generation";
 import { matchesPersonaCard, matchesPersonaProfile } from "../../lib/persona-editor-model";
-import { isApiHttpError } from "../../lib/http-error";
 import {
   clampPersonaWeight,
   createPersonaInputToDraft,
@@ -85,11 +85,18 @@ const SIDEBAR_PANE_WIDTH = 360;
 
 export default function PersonaSpectrumPage() {
   const configImportInputRef = useRef<HTMLInputElement>(null);
-  const { personas, personaCards, listPersonas, listPersonaCards, createPersona, updatePersona, deletePersona, deletePersonaCard } = usePersonaLibrary();
+  const personaLibrary = usePersonaLibrary();
+  const { personas, personaCards, listPersonas, listPersonaCards, deletePersonaCard } = personaLibrary;
   const configImportFenceRef = useRef(new AsyncResultFence());
-  const saveFenceRef = useRef(new AsyncResultFence());
-  const reloadFenceRef = useRef(new AsyncResultFence());
 
+  const personaEditor = usePersonaDraft({
+    personas,
+    onSelectionChange: () => {
+      resetPersonaAssist();
+      resetCardGeneration();
+    },
+    onPromptDismiss: () => dismissSystemPromptSuggestion(),
+  });
   const {
     selectedPersonaId,
     draft,
@@ -105,18 +112,8 @@ export default function PersonaSpectrumPage() {
     markPersonaDraftSaved,
     initializePersonaFromLibrary,
     getSelectedPersonaId,
-  } = usePersonaDraft({
-    personas,
-    onSelectionChange: () => {
-      resetPersonaAssist(); reloadFenceRef.current.invalidate();
-      resetCardGeneration();
-    },
-    onPromptDismiss: () => dismissSystemPromptSuggestion(),
-  });
-  const [savingPersona, setSavingPersona] = useState(false);
+  } = personaEditor;
 
-  const [loadError, setLoadError] = useState("");
-  const [saveError, setSaveError] = useState("");
   const {
     assistPending,
     slotAssistIndex,
@@ -172,9 +169,15 @@ export default function PersonaSpectrumPage() {
   const [isSystemPromptExpanded, setIsSystemPromptExpanded] = useState(false);
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
   const [personaLibraryQuery, setPersonaLibraryQuery] = useState("");
-  const [personaDeletePendingId, setPersonaDeletePendingId] = useState("");
-  const [personaLibraryMessage, setPersonaLibraryMessage] = useState("");
-  const [personaLibraryError, setPersonaLibraryError] = useState("");
+  const {
+    savingPersona, saveError, setSaveError, loadError, setLoadError,
+    personaDeletePendingId, personaLibraryMessage, setPersonaLibraryMessage, personaLibraryError, setPersonaLibraryError,
+    handleCreatePersona, handleUpdatePersona, handleReloadSelectedPersona, handleDeletePersona,
+  } = usePersonaPersistence({
+    editor: personaEditor, library: personaLibrary,
+    onStarted: () => { setConfigError(""); setConfigMessage(""); },
+    onPromptDismiss: () => dismissSystemPromptSuggestion(),
+  });
   const rewritePopoverRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!movePulse) {
@@ -513,46 +516,6 @@ export default function PersonaSpectrumPage() {
     setSlotInsertIndex(null);
   }
 
-  async function handleCreatePersona() {
-    setConfigError(""); setConfigMessage(""); setSaveError("");
-    const payload = draftToCreatePersonaInput(draft);
-    if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
-    const saveScope = currentPersonaAsyncScope("persona-save");
-    const ticket = saveFenceRef.current.begin(saveScope);
-    setSavingPersona(true);
-    try {
-      const created = await createPersona(payload);
-      const decision = saveFenceRef.current.decide(
-        ticket,
-        currentPersonaAsyncScope("persona-save"),
-      );
-      if (decision === "apply") {
-        selectPersonaDraft(created.id);
-        replacePersonaDraft(personaToDraft(created), true);
-        dismissSystemPromptSuggestion();
-      } else if (getSelectedPersonaId() === "") {
-        // The create committed, but the user kept editing the same new draft.
-        // Bind that draft to the new record without replacing the newer edits.
-        selectPersonaDraft(created.id);
-        markPersonaDraftSaved(personaToDraft(created));
-      }
-      setPersonaLibraryMessage(`已创建人格「${created.name}」。`);
-      setPersonaLibraryError("");
-      try {
-        await listPersonas();
-      } catch (refreshError) {
-        setPersonaLibraryMessage(
-          `已创建人格「${created.name}」，但人格库刷新失败：${String(refreshError)}`,
-        );
-      }
-    } catch (error) {
-      setSaveError(humanizePersonaSaveError(error));
-    } finally {
-      saveFenceRef.current.settle(ticket);
-      setSavingPersona(false);
-    }
-  }
-
   function handleNewPersonaDraft() {
     if (!confirmDiscardPersonaDraft("新建空白人格")) {
       return;
@@ -575,91 +538,9 @@ export default function PersonaSpectrumPage() {
     setPersonaLibraryError("");
     selectPersonaDraft("");
     markPersonaDraftSaved(EMPTY_PERSONA_DRAFT);
-    updatePersonaDraft(duplicated);
+    replacePersonaDraft(duplicated, false);
     dismissSystemPromptSuggestion();
     setPersonaLibraryMessage(`已复制为新草稿「${duplicated.name}」，保存后创建新人格。`);
-  }
-
-  async function handleReloadSelectedPersona() {
-    if (!selectedPersonaId) {
-      return;
-    }
-    if (!confirmDiscardPersonaDraft("重新载入人格")) {
-      return;
-    }
-    setLoadError("");
-    const targetPersonaId = getSelectedPersonaId();
-    const reloadScope = currentPersonaAsyncScope("persona-reload");
-    const ticket = reloadFenceRef.current.begin(reloadScope);
-    try {
-      const latest = await listPersonas();
-      const decision = reloadFenceRef.current.decide(
-        ticket,
-        currentPersonaAsyncScope("persona-reload"),
-      );
-      if (decision !== "apply") {
-        setPersonaLibraryMessage("人格库已刷新，期间的编辑已保留。");
-        return;
-      }
-      const reloaded = latest.find((persona) => persona.id === targetPersonaId);
-      if (!reloaded) {
-        setLoadError("当前人格已不存在，请选择其他人格。");
-        return;
-      }
-      replacePersonaDraft(personaToDraft(reloaded), true);
-      dismissSystemPromptSuggestion();
-      setPersonaLibraryMessage(`已重新载入人格「${reloaded.name}」。`);
-    } catch (error) {
-      setLoadError(String(error));
-    } finally {
-      reloadFenceRef.current.settle(ticket);
-    }
-  }
-
-  async function handleUpdatePersona() {
-    setConfigError(""); setConfigMessage("");
-    if (!selectedPersonaId) { setSaveError("请先选择要更新的人格。"); return; }
-    if (isReadonlyPersona) { setSaveError("内置人格为只读，无法更新。请使用「创建新人格」另存。"); return; }
-    setSaveError("");
-    const payload = draftToCreatePersonaInput(draft);
-    if (!payload.name) { setSaveError("请先填写人格名称。"); return; }
-    if (!selectedPersona) { setSaveError("当前人格不存在，请刷新人格库后重试。"); return; }
-    const targetPersonaId = selectedPersona.id;
-    const saveScope = currentPersonaAsyncScope("persona-save");
-    const ticket = saveFenceRef.current.begin(saveScope);
-    setSavingPersona(true);
-    try {
-      const updated = await updatePersona(targetPersonaId, {
-        ...payload,
-        expectedRevision: selectedPersona.revision,
-      });
-      const decision = saveFenceRef.current.decide(
-        ticket,
-        currentPersonaAsyncScope("persona-save"),
-      );
-      if (decision === "apply") {
-        replacePersonaDraft(personaToDraft(updated), true);
-        dismissSystemPromptSuggestion();
-      } else if (getSelectedPersonaId() === updated.id) {
-        // Preserve edits made while PATCH was in flight, but advance the
-        // comparison baseline to the exact committed response.
-        markPersonaDraftSaved(personaToDraft(updated));
-      }
-      setPersonaLibraryMessage(`已更新人格「${updated.name}」。`);
-      setPersonaLibraryError("");
-      try {
-        await listPersonas();
-      } catch (refreshError) {
-        setPersonaLibraryMessage(
-          `已更新人格「${updated.name}」，但人格库刷新失败：${String(refreshError)}`,
-        );
-      }
-    } catch (error) {
-      setSaveError(humanizePersonaSaveError(error));
-    } finally {
-      saveFenceRef.current.settle(ticket);
-      setSavingPersona(false);
-    }
   }
 
   async function handleExportConfig() {
@@ -756,54 +637,6 @@ export default function PersonaSpectrumPage() {
       setCardError(String(error));
     } finally {
       setCardDeletePendingId("");
-    }
-  }
-
-  async function handleDeletePersona(persona: PersonaProfile) {
-    if (persona.source === "builtin") {
-      setPersonaLibraryError("内置人格不能删除。");
-      return;
-    }
-    setPersonaLibraryError("");
-    setPersonaLibraryMessage("");
-    const dirtyWarning = selectedPersonaId === persona.id && isDraftDirty
-      ? " 当前草稿的未保存修改也会丢失。"
-      : "";
-    if (!window.confirm(`确认删除人格「${persona.name}」？${dirtyWarning}`)) {
-      return;
-    }
-    setPersonaDeletePendingId(persona.id);
-    try {
-      await deletePersona(persona.id, persona.revision);
-      let latest = personas.filter((item) => item.id !== persona.id);
-      let refreshFailed = false;
-      try {
-        latest = await listPersonas();
-      } catch (refreshError) {
-        refreshFailed = true;
-        setPersonaLibraryMessage(
-          `已删除人格「${persona.name}」，但人格库刷新失败：${String(refreshError)}`,
-        );
-      }
-      if (
-        selectedPersonaId === persona.id ||
-        !latest.some((item) => item.id === selectedPersonaId)
-      ) {
-        const nextSelectedPersona = latest[0] ?? null;
-        selectPersonaDraft(nextSelectedPersona?.id ?? "");
-        replacePersonaDraft(
-          nextSelectedPersona ? personaToDraft(nextSelectedPersona) : { ...EMPTY_PERSONA_DRAFT },
-          true,
-        );
-        dismissSystemPromptSuggestion();
-      }
-      if (!refreshFailed) {
-        setPersonaLibraryMessage(`已删除人格「${persona.name}」。`);
-      }
-    } catch (error) {
-      setPersonaLibraryError(humanizePersonaDeleteError(error));
-    } finally {
-      setPersonaDeletePendingId("");
     }
   }
 
@@ -1579,44 +1412,6 @@ function IconGlyphButton({
       <MaterialIcon name={icon} size={15} />
     </button>
   );
-}
-
-function humanizePersonaDeleteError(error: unknown): string {
-  const raw = String(error).replace(/^Error:\s*/, "");
-  if (raw.includes("persona_readonly_builtin")) {
-    return "内置人格不能删除。";
-  }
-  if (!raw.includes("persona_in_use")) {
-    return raw;
-  }
-
-  const countSpecs = [
-    { key: "plans", label: "学习计划" },
-    { key: "sessions", label: "学习会话" },
-    { key: "scene_instances", label: "场景实例" },
-    { key: "tavern_rooms", label: "酒馆房间" },
-  ];
-  const parts = countSpecs.flatMap(({ key, label }) => {
-    const match = raw.match(new RegExp(`${key}=(\\d+)`));
-    const count = Number(match?.[1] ?? 0);
-    if (!count) {
-      return [];
-    }
-    return [`${label} ${count} 条`];
-  });
-  return parts.length
-    ? `该人格仍被${parts.join("、")}引用，暂时不能删除。`
-    : "该人格仍被现有数据引用，暂时不能删除。";
-}
-
-function humanizePersonaSaveError(error: unknown): string {
-  if (isApiHttpError(error) && error.code === "persona_revision_conflict") {
-    return "人格已在其他窗口更新。当前草稿已保留，请重新载入最新人格后再合并保存。";
-  }
-  if (isApiHttpError(error) && error.status === 422) {
-    return "人格内容未通过校验，请检查名称、插槽权重和排序。";
-  }
-  return String(error).replace(/^Error:\s*/, "");
 }
 
 /* ─── Styles ─── */

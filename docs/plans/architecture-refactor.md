@@ -131,6 +131,8 @@
 
 - [x] Persona/Profile 卡片库读写归入 `usePersonaLibrary`，列表查询序号与提交版本共同防止迟到快照覆盖并发写入；后续权威刷新可正常覆盖旧本地投影。保留 create/PATCH/delete 的 expectedRevision 与跨页面广播；同记录并发写守卫不重放请求，卸载后的成功提交仍通知其他页面但不更新旧视图。5 项独立 API-port Hook 测试、Web 类型/可靠性/生产构建及 17 项 Chromium 验收通过。
 
+- [x] Persona 保存/重载/删除应用流程归入 `usePersonaPersistence`，草稿 epoch 区分继续编辑与替换新草稿，保存旧快照只为同一草稿推进基线。删除期间的新编辑保留为未保存草稿，切换后的草稿不受旧删除影响；重复保存被入口守卫合并为单次写。7 项并发/卸载测试保留 PATCH/delete revision 证据，生产浏览器验证创建在途改名及读回绑定；Web 类型/可靠性/生产构建和 18 项 Chromium 验收通过。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

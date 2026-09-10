@@ -15,6 +15,7 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
   const [selectedPersonaId, setSelectedPersonaId] = useState("");
   const selectedPersonaIdRef = useRef("");
   const draftRevisionRef = useRef(0);
+  const draftEpochRef = useRef(0);
   const [draft, setDraft] = useState<PersonaDraft>(EMPTY_PERSONA_DRAFT);
   const [draftBaselineFingerprint, setDraftBaselineFingerprint] = useState(
     personaDraftFingerprint(EMPTY_PERSONA_DRAFT),
@@ -42,6 +43,7 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
   }
 
   function replacePersonaDraft(next: PersonaDraft, markClean: boolean): void {
+    draftEpochRef.current++;
     updatePersonaDraft(next);
     if (markClean) {
       setDraftBaselineFingerprint(personaDraftFingerprint(next));
@@ -51,6 +53,7 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
   function selectPersonaDraft(personaId: string): void {
     const normalizedPersonaId = personaId.trim();
     if (selectedPersonaIdRef.current !== normalizedPersonaId) {
+      draftEpochRef.current++;
       draftRevisionRef.current += 1;
       onSelectionChange();
     }
@@ -140,6 +143,7 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
     replacePersonaDraft(personaToDraft(persona), true);
   }
   return {
+    getDraftEpoch: () => draftEpochRef.current,
     selectedPersonaId,
     draft,
     isDraftDirty,
@@ -156,3 +160,5 @@ export function usePersonaDraft({ personas, onSelectionChange, onPromptDismiss }
     getSelectedPersonaId,
   };
 }
+
+export type PersonaDraftController = ReturnType<typeof usePersonaDraft>;
