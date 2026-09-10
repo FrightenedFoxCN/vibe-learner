@@ -74,6 +74,8 @@
 
   - 2026-09-10 桌面 spool 恢复切片：Rust/Python 共用进程文件锁；原生 ring 同时约束 256 文件/4 MiB，单记录 16 KiB，双方按文件修改时间清理七天过期记录。驱逐计数使用同步临时文件、原子替换与 Unix 目录同步，恢复完整 checkpoint，残缺 checkpoint 保留旧下限；消费端恢复完整 `.pending`，有界/no-follow 读取并核对文件身份后删除。10 项 Rust 测试（含双进程写入和真实 sidecar 退出）及 36 项后端回归通过；原生构建最低 Rust 1.89。计数仍是已观察下限，Windows/power-loss、原生 Vault、未知旧文件及总体目录配额保持未认证。
 
+  - 2026-09-10 完整检查点：在 `8fdf4f1` 上 `npm run check:release` 通过，包含 715 项后端测试、共享/Web reliability 与类型门、全部 13 个 Harness PR suite 和生产构建。逐项范围审计见 [验收检查点](unified-debug-acceptance.md)：明确保留其他领域资源筛选、跨请求逻辑 flow、完整流程诊断链、旧超限恢复、原生成功路径及前端/原生性能等未完项，不因 release gate 通过而关闭总目标。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
