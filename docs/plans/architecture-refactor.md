@@ -141,6 +141,8 @@
 
 - [x] `useStudySessionNavigation` 负责历史 Session、显式创建和串行章节切换；晚到历史查询不能覆盖新创建/导航或降低已展示 revision，创建入口合并重复提交。快速 A→B→A 复用 A 的在途写入并废弃 B；Scene 在查询前捕获，卸载/切换 Plan 后不继续创建。6 项独立 Hook 测试、Web 类型/可靠性/生产构建和 21 项 Chromium 回归通过。
 
+- [x] `useStudyMessages` 持有 learner 发送入口和自动请求身份，使用显式 send/query port 与恢复控制器协作。Session lookup 期间即合并重复发送，结果不明或需刷新时拒绝新 POST；保留 revision、附件、隐藏答题前缀和 truthful admission/uncertain 区分。6 项真实发送/恢复 Hook 测试、Web 类型/可靠性/生产构建及 21 项 Chromium 回归通过。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。
