@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from "react";
-import type { ModelRecovery } from "@vibe-learner/shared";
 
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
@@ -32,7 +31,7 @@ import { readBoundedJsonImport } from "../../lib/bounded-json-import";
 import { exportJson } from "../../lib/export-json";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
-import { assistPersonaSlot } from "../../lib/data/personas";
+import { useSceneRewrite, type RewriteUndoEntry } from "../../hooks/use-scene-rewrite";
 import {
   createReusableSceneNode,
   createSceneLibraryItem,
@@ -48,25 +47,6 @@ import {
   applyAsyncResult,
   AsyncResultFence,
 } from "../../lib/async-result-fence";
-
-type RewriteUndoEntry =
-  | {
-      kind: "layer";
-      key: string;
-      label: string;
-      layerId: string;
-      field: "summary" | "atmosphere" | "rules" | "entrance";
-      previousValue: string;
-    }
-  | {
-      kind: "object";
-      key: string;
-      label: string;
-      layerId: string;
-      objectId: string;
-      field: "description" | "interaction";
-      previousValue: string;
-    };
 
 function formatDate(value: string) {
   if (!value) {
@@ -88,11 +68,6 @@ export default function SceneSetupPage() {
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const [savedScenes, setSavedScenes] = useState<SceneLibraryItemPayload[]>([]);
   const [selectedSavedSceneId, setSelectedSavedSceneId] = useState("");
-  const [rewriteStrength, setRewriteStrength] = useState(0.6);
-  const [rewritePendingKey, setRewritePendingKey] = useState("");
-  const [rewriteError, setRewriteError] = useState("");
-  const [rewriteModelRecoveries, setRewriteModelRecoveries] = useState<ModelRecovery[]>([]);
-  const [lastRewrite, setLastRewrite] = useState<RewriteUndoEntry | null>(null);
   const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
   const [sceneIoMessage, setSceneIoMessage] = useState("");
   const [reusableNodes, setReusableNodes] = useState<ReusableSceneNodePayload[]>([]);
@@ -127,8 +102,8 @@ export default function SceneSetupPage() {
     toggleLayerSelection,
     toggleObjectSelection,
   } = useSceneDraft({
-    onSelectionChange: () => { rewriteFenceRef.current.invalidate(); setRewritePendingKey(""); },
-    onImported: () => resetSceneGeneration(),
+    onSelectionChange: () => invalidateRewrite(),
+    onImported: () => { resetSceneGeneration(); resetRewrite(); },
     onNotice: setSceneIoMessage,
   });
   const {
@@ -148,8 +123,20 @@ export default function SceneSetupPage() {
     handleGenerateScene,
     resetSceneGeneration,
   } = useSceneGeneration(currentSceneAsyncScope);
+  const {
+    rewriteStrength,
+    setRewriteStrength,
+    rewritePendingKey,
+    rewriteError,
+    rewriteModelRecoveries,
+    lastRewrite,
+    undoLastRewrite,
+    rewriteLayerField,
+    rewriteObjectField,
+    invalidateRewrite,
+    resetRewrite,
+  } = useSceneRewrite({ sceneLayers, currentSceneAsyncScope, setSceneFieldTarget, updateLayer, updateObject });
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const rewriteFenceRef = useRef(new AsyncResultFence());
   const sceneImportFenceRef = useRef(new AsyncResultFence());
 
   const [collapsedSidebarSections, setCollapsedSidebarSections] = useState<string[]>([]);
@@ -505,22 +492,6 @@ export default function SceneSetupPage() {
     setPendingDeleteLayerId("");
   }
 
-  function undoLastRewrite() {
-    if (!lastRewrite || rewritePendingKey) {
-      return;
-    }
-    if (lastRewrite.kind === "layer") {
-      updateLayer(lastRewrite.layerId, (layer) => ({
-        ...layer,
-        [lastRewrite.field]: lastRewrite.previousValue
-      }));
-    } else {
-      updateObject(lastRewrite.layerId, lastRewrite.objectId, lastRewrite.field, lastRewrite.previousValue);
-    }
-    setLastRewrite(null);
-    setRewriteError("");
-  }
-
   async function saveLibraryScene(mode: "upsert" | "create" = "upsert") {
     try {
       const trimmedSceneName = sceneName.trim();
@@ -669,123 +640,6 @@ export default function SceneSetupPage() {
       return;
     }
     applySceneImport(generatedSceneCandidate, "已将生成场景树应用到当前编辑区。");
-  }
-
-  async function rewriteLayerField(layerId: string, field: "summary" | "atmosphere" | "rules" | "entrance", label: string) {
-    const layer = findLayerById(sceneLayers, layerId);
-    if (!layer) {
-      return;
-    }
-    const sourceText = layer[field].trim();
-    if (!sourceText) {
-      setRewriteError("请先填写内容，再进行 AI 重写。");
-      return;
-    }
-
-    const pendingKey = `${layerId}:${field}`;
-    setSceneFieldTarget(pendingKey);
-    setRewriteError("");
-    setRewriteModelRecoveries([]);
-    setRewritePendingKey(pendingKey);
-    const ticket = rewriteFenceRef.current.begin(currentSceneAsyncScope());
-    try {
-      const previousValue = layer[field];
-      const result = await assistPersonaSlot({
-        name: `场景层级 ${layer.title}`,
-        summary: `${layer.scopeLabel}：${layer.summary}`,
-        slot: {
-          kind: "custom",
-          label,
-          content: layer[field],
-          weight: 1,
-          locked: false,
-          sortOrder: 0
-        },
-        rewriteStrength: Number(rewriteStrength.toFixed(2))
-      });
-      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) !== "apply") {
-        return;
-      }
-      updateLayer(layerId, (currentLayer) => ({
-        ...currentLayer,
-        [field]: result.slot.content
-      }));
-      setRewriteModelRecoveries(result.modelRecoveries ?? []);
-      setLastRewrite({
-        kind: "layer",
-        key: pendingKey,
-        label,
-        layerId,
-        field,
-        previousValue
-      });
-    } catch (error) {
-      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) === "apply") {
-        setRewriteError(String(error));
-      }
-    } finally {
-      if (rewriteFenceRef.current.settle(ticket)) {
-        setRewritePendingKey("");
-      }
-    }
-  }
-
-  async function rewriteObjectField(layerId: string, objectId: string, field: "description" | "interaction", label: string) {
-    const layer = findLayerById(sceneLayers, layerId);
-    const object = layer?.objects.find((item) => item.id === objectId);
-    if (!layer || !object) {
-      return;
-    }
-    const sourceText = object[field].trim();
-    if (!sourceText) {
-      setRewriteError("请先填写内容，再进行 AI 重写。");
-      return;
-    }
-
-    const pendingKey = `${layerId}:${objectId}:${field}`;
-    setSceneFieldTarget(pendingKey);
-    setRewriteError("");
-    setRewriteModelRecoveries([]);
-    setRewritePendingKey(pendingKey);
-    const ticket = rewriteFenceRef.current.begin(currentSceneAsyncScope());
-    try {
-      const previousValue = object[field];
-      const result = await assistPersonaSlot({
-        name: `场景物体 ${object.name}`,
-        summary: `${layer.title} / ${object.name}`,
-        slot: {
-          kind: "custom",
-          label,
-          content: object[field],
-          weight: 1,
-          locked: false,
-          sortOrder: 0
-        },
-        rewriteStrength: Number(rewriteStrength.toFixed(2))
-      });
-      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) !== "apply") {
-        return;
-      }
-      updateObject(layerId, objectId, field, result.slot.content);
-      setRewriteModelRecoveries(result.modelRecoveries ?? []);
-      setLastRewrite({
-        kind: "object",
-        key: pendingKey,
-        label,
-        layerId,
-        objectId,
-        field,
-        previousValue
-      });
-    } catch (error) {
-      if (rewriteFenceRef.current.decide(ticket, currentSceneAsyncScope()) === "apply") {
-        setRewriteError(String(error));
-      }
-    } finally {
-      if (rewriteFenceRef.current.settle(ticket)) {
-        setRewritePendingKey("");
-      }
-    }
   }
 
   function toggleSidebarSection(key: string) {

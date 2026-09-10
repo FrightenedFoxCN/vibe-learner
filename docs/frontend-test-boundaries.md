@@ -14,6 +14,7 @@
 | `npm --workspace @vibe-learner/web run test:scene:draft` | Scene 编辑状态、导入作用域、localStorage 防抖/离页保存；注入存储与时钟 |
 | `npm --workspace @vibe-learner/web run test:scene:draft:browser` | Scene 立即离页、返回和完整刷新后的草稿恢复 |
 | `npm --workspace @vibe-learner/web run test:browser` | 聚合独立生产浏览器模块；先构建 |
+| `npm --workspace @vibe-learner/web run test:scene:rewrite` | Scene 字段重写与草稿协作，覆盖撤销保护、旧错误、切换/导入/卸载与失败不重放；注入模型 port |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |
