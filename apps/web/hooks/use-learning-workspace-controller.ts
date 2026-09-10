@@ -2,6 +2,7 @@
 
 
 import { useState } from "react";
+import { useStudyCommitActions } from "./use-study-commit-actions";
 import { useStudyMessages } from "./use-study-messages";
 import { useStudySessionNavigation } from "./use-study-session-navigation";
 import { useStudyChatRecovery } from "./use-study-chat-recovery";
@@ -30,8 +31,6 @@ import { listPersonas } from "../lib/data/personas";
 import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
 import {
   cancelStudySessionFollowUps,
-  resolveStudyPlanConfirmation,
-  submitStudyQuestionAttempt,
 } from "../lib/data/study-sessions";
 import { mockPersonas } from "../lib/mock-data";
 import {
@@ -65,7 +64,6 @@ import {
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
-import { decideStudyQuestionAttemptApply } from "../lib/study-question-attempt";
 import {
   logWorkspaceError,
   logWorkspaceInfo
@@ -650,138 +648,16 @@ export function useLearningWorkspaceController({
     }
   };
 
-  const handleSubmitQuestionAttempt = async (input: {
-    turnId: string;
-    submittedAnswer: string;
-  }) => {
-    const currentSession = studyViewFenceRef.current.session;
-    if (!currentSession) {
-      return false;
-    }
-    const attemptKey = `attempt:${currentSession.id}:${input.turnId}`;
-    const attemptIdentity = automaticStudyRequest(
-      attemptKey,
-      "attempt",
-    );
-    try {
-      const committed = await submitStudyQuestionAttempt({
-        sessionId: currentSession.id,
-        turnId: input.turnId,
-        expectedSessionRevision: currentSession.revision,
-        clientAttemptId: attemptIdentity.clientRequestId,
-        submittedAnswer: input.submittedAnswer,
-      });
-      const nextSession = committed.session;
-      const latestSession = studyViewFenceRef.current.session;
-      const applyDecision = decideStudyQuestionAttemptApply({
-        before: currentSession,
-        after: nextSession,
-        current: latestSession,
-        turnId: input.turnId,
-        submittedAnswer: input.submittedAnswer,
-        attempt: committed.attempt,
-      });
-      if (applyDecision === "reject") {
-        throw new Error("study_question_attempt_read_back_mismatch");
-      }
-      if (applyDecision === "apply_returned") {
-        activateStudySessionView(nextSession);
-        dispatch({
-          type: "study_session_set",
-          studySession: nextSession,
-          clearResponse: false
-        });
-      }
-      const authoritativeSession = applyDecision === "apply_returned"
-        ? nextSession
-        : applyDecision === "keep_current"
-          ? latestSession
-          : null;
-      if (authoritativeSession) {
-        void triggerInteractiveQuestionCallback(authoritativeSession, {
-          turnId: input.turnId,
-        });
-      }
-      forgetAutomaticStudyRequest(
-        attemptKey,
-      );
-      return true;
-    } catch (error) {
-      dispatch({
-        type: "notice_set",
-        notice: resolveStudySessionErrorNotice(
-          error,
-          `记录答案失败：${String(error)}`,
-          "update",
-        )
-      });
-      logWorkspaceError("workflow:study_attempt:error", error);
-      return false;
-    }
-  };
-
-  const handleResolvePlanConfirmation = async (input: {
-    confirmationId: string;
-    decision: "approve" | "reject";
-    note?: string;
-  }) => {
-    const targetSession = studyViewFenceRef.current.session;
-    if (!targetSession) {
-      return false;
-    }
-    const targetViewRevision = studyViewFenceRef.current.viewRevision;
-    try {
-      dispatch({ type: "busy_started" });
-      const next = await resolveStudyPlanConfirmation({
-        sessionId: targetSession.id,
-        confirmationId: input.confirmationId,
-        decision: input.decision,
-        note: input.note,
-      });
-      if (
-        studyViewFenceRef.current.session?.id !== targetSession.id ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision
-      ) {
-        return false;
-      }
-      activateStudySessionView(next.session);
-      dispatch({
-        type: "study_session_set",
-        studySession: next.session,
-        clearResponse: false,
-      });
-      if (next.plan) {
-        dispatch({
-          type: "plan_updated",
-          plan: next.plan,
-        });
-      }
-      dispatch({
-        type: "notice_set",
-        notice: input.decision === "approve" ? "计划已更新。" : "已保留原计划。",
-      });
-      return true;
-    } catch (error) {
-      if (
-        studyViewFenceRef.current.session?.id !== targetSession.id ||
-        studyViewFenceRef.current.viewRevision !== targetViewRevision
-      ) {
-        return false;
-      }
-      dispatch({
-        type: "notice_set",
-        notice: resolveStudySessionErrorNotice(
-          error,
-          `处理计划变更失败：${String(error)}`,
-          "update",
-        ),
-      });
-      logWorkspaceError("workflow:study_plan_confirmation:error", error);
-      return false;
-    } finally {
-      dispatch({ type: "busy_finished" });
-    }
-  };
+  const { handleSubmitQuestionAttempt, handleResolvePlanConfirmation, isApplying } = useStudyCommitActions({
+    view: studyViewFenceRef.current, automaticStudyRequest, forgetAutomaticStudyRequest,
+    onSession: (studySession) => {
+      activateStudySessionView(studySession);
+      dispatch({ type: "study_session_set", studySession, clearResponse: false });
+    },
+    onPlan: (plan) => dispatch({ type: "plan_updated", plan }),
+    onCommittedQuestion: triggerInteractiveQuestionCallback,
+    onNotice: (notice) => dispatch({ type: "notice_set", notice }),
+  });
 
   const interruptDialogue = async () => {
     const session = studyViewFenceRef.current.session;
@@ -921,7 +797,7 @@ export function useLearningWorkspaceController({
     }
     const session = state.studySession;
     const studyUnitId = session.studyUnitId;
-    if (!studyUnitId || state.isBusy || isMutating || isQuerying || isNavigating || isSending) {
+    if (!studyUnitId || state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying) {
       return;
     }
     void runSessionPrelude({
@@ -931,7 +807,7 @@ export function useLearningWorkspaceController({
       themeHint: session.themeHint ?? "",
       force: false,
     });
-  }, [state.isBusy, isMutating, isQuerying, isNavigating, isSending, state.studySession]);
+  }, [state.isBusy, isMutating, isQuerying, isNavigating, isSending, isApplying, state.studySession]);
 
   useEffect(() => {
     const session = state.studySession;
@@ -1005,7 +881,7 @@ export function useLearningWorkspaceController({
         }, delay);
         timers.set(item.id, timer);
       });
-  }, [state.isBusy, isMutating, isQuerying, isNavigating, isSending, state.studySession]);
+  }, [state.isBusy, isMutating, isQuerying, isNavigating, isSending, isApplying, state.studySession]);
 
   useEffect(() => {
     return () => {
@@ -1033,7 +909,7 @@ export function useLearningWorkspaceController({
     studySession: state.studySession,
     response: state.response,
     notice: state.notice,
-    isBusy: state.isBusy || isMutating || isQuerying || isNavigating || isSending,
+    isBusy: state.isBusy || isMutating || isQuerying || isNavigating || isSending || isApplying,
     chatImageUploadEnabled: Boolean(runtimeSettings.settings?.openaiChatModelMultimodal),
     isGeneratingPlan,
     isInterruptingPlan,

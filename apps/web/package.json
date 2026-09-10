@@ -14,7 +14,7 @@
     "test:reliability": "node --experimental-strip-types --test tests/async-result-fence.test.ts tests/debug-overlay-accessibility.test.ts tests/desktop-startup.test.ts tests/document-decode.test.ts tests/navigation-study-accessibility.test.ts tests/planning-decode.test.ts tests/persona-draft.test.ts tests/scene-import-structure.test.ts tests/bounded-json-import.test.ts tests/persona-scene-decode.test.ts tests/rich-text-normalize.test.ts tests/shared-adversarial-fixtures.test.ts tests/stream-decode.test.ts tests/tavern-workspace-state.test.ts tests/tavern-real-response-decode.test.ts tests/study-dialog-empty-state.test.ts tests/study-session-decode.test.ts tests/study-chat-operation-decode.test.ts tests/study-chat-admission-error.test.ts tests/study-question-attempt.test.ts tests/study-real-response-decode.test.ts && npm run test:components",
     "test:debug": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/debug-provider.test.jsx",
     "test:components": "npm run test:debug && npm run test:workspace && npm run test:settings:save && npm run test:scene && npm run test:persona",
-    "test:workspace": "npm run test:workspace:data && TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/learning-page-cache.test.jsx && npm run test:workspace:generation && npm run test:workspace:mutations && npm run test:workspace:recovery && npm run test:workspace:sessions && npm run test:workspace:messages",
+    "test:workspace": "npm run test:workspace:data && TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/learning-page-cache.test.jsx && npm run test:workspace:generation && npm run test:workspace:mutations && npm run test:workspace:recovery && npm run test:workspace:sessions && npm run test:workspace:messages && npm run test:workspace:commits",
     "test:routes": "playwright test tests/browser/route-ownership.spec.ts",
     "test:workspace:data": "node --experimental-strip-types --test tests/workspace-snapshot-loader.test.ts",
     "test:workspace:generation": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/plan-generation.test.jsx",
@@ -42,7 +42,8 @@
     "test:workspace:recovery": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-operation-state.test.jsx tests/study-chat-recovery.test.jsx",
     "test:workspace:recovery:browser": "playwright test tests/browser/learning-recovery.spec.ts",
     "test:workspace:sessions": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-session-navigation.test.jsx",
-    "test:workspace:messages": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-messages.test.jsx"
+    "test:workspace:messages": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-messages.test.jsx",
+    "test:workspace:commits": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/study-commit-actions.test.jsx"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",
