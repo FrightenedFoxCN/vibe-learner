@@ -113,6 +113,8 @@
 
 - [x] Scene 草稿结构、树操作、导入与 Profile 投影归入 `scene-editor-model`；候选生成归入 `useSceneGeneration`，以独立 port 调用生成 API。请求身份覆盖长文本文件读取，卸载/新请求/草稿变更/导入均阻止旧候选回写，成功结果仍需用户显式应用。独立 `test:scene:generation` 5 项真实 Hook 测试通过，Web 类型、可靠性门禁、生产构建与 12 项 Chromium 路由验收通过。
 
+- [x] Scene 删除确认展示提取为独立原生模态组件，取消/Escape 返回触发控件，确认删除移除触发控件时落到 Scene 标题；提供 44px 按钮、背景 inert 与 Tab 循环。2 项生产 Chromium 键盘/删除测试、12 项路由回归及 Web 类型/可靠性/构建通过；原 TODO UX 项保留独立复核要求。浏览器 API fixture 移为公共模块。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

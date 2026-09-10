@@ -33,6 +33,7 @@ import {
   findLayerPath,
   inferTemplateIndexFromLayer,
 } from "../../lib/scene-editor-model";
+import { SceneDeleteDialog } from "../../components/scene/scene-delete-dialog";
 import { useSceneGeneration } from "../../hooks/use-scene-generation";
 import { readBoundedJsonImport } from "../../lib/bounded-json-import";
 import { exportJson } from "../../lib/export-json";
@@ -92,6 +93,7 @@ function formatDate(value: string) {
 }
 
 export default function SceneSetupPage() {
+  const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const [sceneLayers, setSceneLayers] = useState<SceneLayer[]>(INITIAL_SCENE);
   const [sceneName, setSceneName] = useState("示例场景");
   const [sceneSummary, setSceneSummary] = useState("从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。");
@@ -1181,7 +1183,7 @@ export default function SceneSetupPage() {
 
       <div style={styles.heading}>
         <div style={styles.headingRow}>
-          <h1 style={styles.pageTitle}>场景搭建</h1>
+          <h1 ref={pageHeadingRef} tabIndex={-1} style={styles.pageTitle}>场景搭建</h1>
           <ProviderTruth scope="scene" />
           <div style={styles.notice}>{pageNotice}</div>
         </div>
@@ -1551,18 +1553,12 @@ export default function SceneSetupPage() {
       </div>
 
       {pendingDeleteLayerId ? (
-        <div style={styles.confirmOverlay} role="presentation">
-          <div style={styles.confirmDialog} role="dialog" aria-modal="true" aria-label="删除层级确认">
-            <h2 style={styles.confirmTitle}>确认删除层级？</h2>
-            <p style={styles.confirmText}>
-              即将删除“{findLayerById(sceneLayers, pendingDeleteLayerId)?.title ?? "当前层级"}”及其所有子层级与物体。此操作不可自动恢复。
-            </p>
-            <div style={styles.confirmActions}>
-              <button type="button" style={styles.btnGhost} onClick={cancelDeleteLayer}>取消</button>
-              <button type="button" style={styles.btnDanger} onClick={confirmDeleteLayer}>确认删除</button>
-            </div>
-          </div>
-        </div>
+        <SceneDeleteDialog
+          layerName={findLayerById(sceneLayers, pendingDeleteLayerId)?.title ?? "当前层级"}
+          onCancel={cancelDeleteLayer}
+          onConfirm={confirmDeleteLayer}
+          fallbackFocus={pageHeadingRef}
+        />
       ) : null}
 
     </main>
@@ -2418,9 +2414,4 @@ const styles: Record<string, CSSProperties> = {
   iconButtonMicro: { borderWidth: 1, borderStyle: "solid", borderColor: "var(--border)", background: "transparent", color: "var(--muted)", height: 22, minWidth: 22, padding: 0, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   iconButtonMicroAccent: { borderColor: "color-mix(in srgb, var(--accent) 40%, var(--border))", color: "var(--accent)", background: "color-mix(in srgb, white 84%, var(--accent-soft))" },
   iconButtonMicroDanger: { borderColor: "color-mix(in srgb, var(--danger, #b42318) 38%, var(--border))", color: "var(--danger, #b42318)", background: "color-mix(in srgb, white 92%, var(--danger, #b42318))" },
-  confirmOverlay: { position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.35)", display: "grid", placeItems: "center", zIndex: 30, padding: 16 },
-  confirmDialog: { width: "min(480px, 100%)", background: "var(--bg)", border: "1px solid var(--border)", display: "grid", gap: 12, padding: 20, boxShadow: "0 14px 28px rgba(15, 23, 42, 0.12)" },
-  confirmTitle: { margin: 0, fontSize: 15, fontWeight: 700, color: "var(--ink)" },
-  confirmText: { margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--muted)" },
-  confirmActions: { display: "flex", justifyContent: "flex-end", gap: 8 },
 };

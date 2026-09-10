@@ -1,0 +1,15 @@
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  padding: 20px;
+  box-shadow: 0 14px 28px rgb(15 23 42 / 12%);
+}
+.dialog::backdrop { background: rgb(15 23 42 / 35%); }
+.dialog h2 { margin: 0 0 12px; font-size: 15px; }
+.dialog p { margin: 0 0 12px; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.actions button { min-height: 44px; min-width: 64px; padding: 0 12px; border: 1px solid var(--border); background: transparent; color: var(--ink); cursor: pointer; }
+.actions .danger { background: var(--danger, #b42318); color: white; border: none; }

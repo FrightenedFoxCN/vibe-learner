@@ -10,6 +10,7 @@
 | `npm --workspace @vibe-learner/web run test:workspace:generation` | 完整生成 Hook 的取消、过期请求、卸载、视图切换、Scene 快照和文档成功流程 |
 | `npm --workspace @vibe-learner/web run test:settings:save` | 保存协调器的队列/防抖/失败/恢复原值；完整 Hook 的 pagehide 与卸载，不读取或切片源码 |
 | `npm --workspace @vibe-learner/web run test:scene:generation` | Scene 候选生成的文件读取竞争、旧错误、草稿变更、卸载与输入校验；不启动数据库或模型 |
+| `npm --workspace @vibe-learner/web run test:scene:dialog` | 生产 Chromium 的模态焦点、Tab/Escape、背景 inert、取消与确认删除后的焦点；需先构建 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |

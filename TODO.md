@@ -23,7 +23,8 @@
 
 - [ ] `UX-A11Y-SCENE-DIALOG-001` `[P1]` 完成 Scene 删除层级 Dialog 的模态行为。
   - 补齐初始焦点、focus trap、Escape、背景 inert，以及取消/确认后的焦点恢复。
-  - 验收：键盘无法逃逸到背景，关闭后焦点回到发起控件。
+  - 验收：键盘无法逃逸到背景，取消后焦点回到发起控件；确认删除移除控件时回到 Scene 标题。
+  - 2026-09-10：独立 SceneDeleteDialog 使用原生 showModal 背景 inert，补齐初始焦点、Tab 循环、Escape 与焦点恢复。生产 Chromium 2 项完整键盘/删除测试通过；仍待独立复核后关闭。
 
 - [ ] `TAV-UX-COPY-001` `[P2]` 完成 Tavern 状态文案的关闭验收。
   - 增加表驱动 copy contract，覆盖 run/step、partial、failed、blocked、retry、stale、archived、cancel 与 raw-code 隔离。
