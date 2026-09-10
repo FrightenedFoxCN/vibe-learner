@@ -90,6 +90,8 @@ class DiagnosticHarnessIndex:
             return {"items": [], "has_more": False, "next_cursor": after, "coverage": {"failures": self.failures, "freshness": "unavailable", "canonical_read_back_required": True}}
 
     def start(self):
+        if self._thread is not None or self._stop.is_set():
+            return
         def run():
             while not self._stop.is_set():
                 count = 0
@@ -98,13 +100,20 @@ class DiagnosticHarnessIndex:
                 except Exception:
                     self.failures += 1
                 self._stop.wait(0.1 if count == 25 else 2)
-        self._thread = threading.Thread(target=run, daemon=True, name="diagnostic-harness-index")
-        self._thread.start()
+        try:
+            self._thread = threading.Thread(target=run, daemon=True, name="diagnostic-harness-index")
+            self._thread.start()
+        except RuntimeError:
+            self.failures += 1
+            self._thread = None
 
     def close(self):
         self._stop.set()
         if self._thread is not None:
-            self._thread.join(timeout=6)
+            try:
+                self._thread.join(timeout=6)
+            except RuntimeError:
+                self.failures += 1
 
 
 def project_execution(execution):

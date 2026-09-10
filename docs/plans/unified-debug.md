@@ -52,6 +52,8 @@
 
 
 
+  - 2026-09-10 故障隔离切片：诊断 writer/index/spool 线程启动失败不阻断业务生命周期；重复启动不产生额外 writer，终止后拒收并清空未处理队列，失败事件事务回滚后可继续写入。34 项后端回归通过，其中真实应用在三个诊断线程均启动失败时仍完成设置持久化、人格生成与 canonical Harness 终态；重启读回和队列记账也通过。丢弃/失败计数目前仍为进程内状态，跨崩溃 writer epoch 和持久覆盖证据尚待下一步。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

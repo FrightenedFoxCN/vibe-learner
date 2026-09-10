@@ -98,12 +98,35 @@ class DiagnosticStore:
         self.dropped = 0
         self.write_failures = 0
         self.read_failures = 0
+        self._admission = threading.Lock()
+        self._accepting = True
+        self._started = False
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
     def start(self):
-        self._thread = threading.Thread(target=self._run, daemon=True, name="diagnostic-writer")
-        self._thread.start()
+        with self._admission:
+            if self._started or self._stop.is_set():
+                return
+            self._started = True
+            try:
+                self._thread = threading.Thread(target=self._run, daemon=True, name="diagnostic-writer")
+                self._thread.start()
+            except RuntimeError:
+                self.write_failures += 1
+                self._thread = None
+                self._accepting = False
+                self._discard_pending()
+
+    def _discard_pending(self):
+        # Caller owns admission: no producer can race the terminal drain.
+        while True:
+            try:
+                self.queue.get_nowait()
+            except queue.Empty:
+                return
+            self.dropped += 1
+            self.queue.task_done()
 
     def emit(self, name: str, **fields):
         try:
@@ -117,12 +140,16 @@ class DiagnosticStore:
             self.dropped += 1
 
     def enqueue(self, event: DiagnosticEventV1) -> bool:
-        try:
-            self.queue.put_nowait(event)
-            return True
-        except queue.Full:
-            self.dropped += 1
-            return False
+        with self._admission:
+            if not self._accepting:
+                self.dropped += 1
+                return False
+            try:
+                self.queue.put_nowait(event)
+                return True
+            except queue.Full:
+                self.dropped += 1
+                return False
 
     def health(self):
         return {"dropped": self.dropped, "write_failures": self.write_failures, "read_failures": self.read_failures,
@@ -245,14 +272,26 @@ class DiagnosticStore:
                         self.retention.prune(db)
                         db.commit()
                     except Exception:
-                        db.rollback()
                         self.write_failures += 1
+                        self.dropped += 1
+                        db.rollback()
                     finally:
                         self.queue.task_done()
         except Exception:
             self.write_failures += 1
+        finally:
+            with self._admission:
+                self._accepting = False
+                self._discard_pending()
 
     def close(self):
-        self._stop.set()
+        with self._admission:
+            self._accepting = False
+            self._stop.set()
+            if self._thread is None:
+                self._discard_pending()
         if self._thread is not None:
-            self._thread.join(timeout=2)
+            try:
+                self._thread.join(timeout=2)
+            except RuntimeError:
+                self.write_failures += 1

@@ -1422,3 +1422,14 @@ The 64 MiB limit measures event payload bytes only: SQLite page allocation, WAL,
 indexes, operation links and desktop spool are excluded. Accordingly
 `disk_size_limit_certified` is false until aggregate retention is implemented
 and measured. Canonical business/Harness evidence is untouched.
+
+
+Diagnostic writer/index/spool thread-start failures are best effort and do not
+abort the business lifespan. Writer start is idempotent; a stopped or failed
+writer rejects new queue admissions, counts discarded queued events, and
+balances queue completion bookkeeping. A failed event transaction is rolled
+back and counted before the next event can proceed. Query-only native spool
+persistence retains its separate synchronous acknowledgement boundary.
+These failure/drop counters remain process-local and are not yet durable
+writer-epoch coverage. A timed-out join does not claim a fully flushed writer;
+`writer_alive` continues to report its observed thread state.

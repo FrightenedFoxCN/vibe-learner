@@ -61,6 +61,8 @@ class DesktopDiagnosticSpool:
                 self.failures += 1
 
     def start(self):
+        if self._thread is not None or self._stop.is_set():
+            return
         def run():
             while not self._stop.is_set():
                 try:
@@ -68,8 +70,8 @@ class DesktopDiagnosticSpool:
                 except Exception:
                     self.failures += 1
                 self._stop.wait(1)
-        self._thread = threading.Thread(target=run, daemon=True, name="desktop-diagnostic-spool")
         try:
+            self._thread = threading.Thread(target=run, daemon=True, name="desktop-diagnostic-spool")
             self._thread.start()
         except RuntimeError:
             self.failures += 1
@@ -78,4 +80,7 @@ class DesktopDiagnosticSpool:
     def close(self):
         self._stop.set()
         if self._thread is not None:
-            self._thread.join(timeout=2)
+            try:
+                self._thread.join(timeout=2)
+            except RuntimeError:
+                self.failures += 1
