@@ -31,7 +31,7 @@ excluded from implementation commits and this change-scope claim.
 | Logical action/flow correlation across requests and navigation | Default `diagnosticFetch` creates a request action context; Persona draft owns an explicit flow; Settings/Vault/import/export adapters exist | Audit other controllers' multi-request actions. A default per-request context with null flow does not prove one logical user flow is correlated. |
 | Resources and full association filtering | Persona/Scene/Document/Plan/Session/Tavern saved-resource references; canonical index and request drilldown | Canonical index projections and resource type/ID/role filters now cover the shared Harness vocabulary. Direct event references cover main saved-resource boundaries across these domains. Full fault/alternate-flow acceptance remains. Do not infer committed identity from URL parameters or HTTP success. |
 | Provider/tool timing, usage, recovery and missing evidence | Provider parent/attempt spans; 6 Planning and 31 Study tools; audit fixtures/tests | Implemented bounded telemetry with explicit missing cost/endpoint/context evidence. Existing missing-evidence labels must remain honest. |
-| Settings/Vault/import/export and desktop lifecycle | Local action adapters; bounded native spool; Python consumer; real sidecar subprocess tests | Actual native Vault create/unlock/save/read-back and native save-dialog acceptance remain unverified. Frontend unavailable/locked-path tests do not establish successful native behavior. |
+| Settings/Vault/import/export and desktop lifecycle | Local adapters/spool tests; existing native Vault unlock/read-back; macOS save-dialog export with strict JSON contract read-back | Existing Vault unlock and diagnostic export now verified on macOS. Settings Debug raw-secret exposure corrected and natively rechecked. Native create/save/lock diagnostic-chain evidence remains incomplete; do not infer it from unlock or synthetic library probes. |
 | Independent DebugProvider and page-view ownership | `debug-provider.tsx`, `owned-debug-snapshot.tsx`, StrictMode/unmount/route tests and Chromium navigation | Implemented and locally verified. Full task closure still depends on the unfinished flow coverage. |
 | Global filters, lazy queries, stale-response fencing and association drilldown | Timeline/query hooks, strict schemas, component tests, Chromium operation → request → events, 390px screenshots | Implemented for current filter/resource vocabulary; resource scope above remains incomplete. |
 | Retention, pagination, export and statistics | Event/link/index retention, writer epochs, pinned snapshot export, audit observations and P50/P95; browser downloads | Implemented slices with explicit gaps. No generic full-history or business-commit certification is made. |
@@ -652,3 +652,40 @@ snapshot compatibility are unchanged. See [measurements and reproduction](../per
 All 11 ordinary native tests and both opt-in timing probes passed. This closes the
 specific slow-unlock investigation, not the remaining Settings debug projection,
 native export, full overhead or consolidated acceptance work.
+
+## Settings safe projection and native diagnostic export
+
+The Settings current-page snapshot previously passed whole runtime settings,
+numeric drafts, provider probe caches and desktop state into Debug. Native
+inspection found the synthetic test key both in settings and an `endpointKey`.
+The adapter now constructs explicit summaries: configured-key booleans, committed
+numeric values and draft validity, probe counts and allowlisted readiness states,
+and desktop/error presence. Arbitrary URLs, model names, paths, drafts, timestamps,
+provider/error text and future fields are not copied. Unknown enum values map to
+`unknown`. Product controller state is left intact.
+
+Two adversarial projection tests cover raw secrets across those fields, future
+fields and malformed enum/numeric inputs. Ten Settings tests, `npm run check`
+(including shared/Web reliability and all 13 Harness suites), production build,
+and all 14 real Chromium diagnostic scenarios passed. The new browser case feeds
+synthetic settings into the actual controller, checks rendered Debug and reload,
+and leaves the live backend's settings untouched.
+
+The isolated macOS app restarted against the new production Web build, unlocked
+its existing test Vault, and displayed only safe summaries. Screenshot inspection
+confirmed the current-page rendering; persisted unlock/read-back took 860/1 ms.
+The global export was saved through the actual macOS save dialog to
+`/tmp/unified-debug-native-acceptance.json`. The 95,379-byte file contains 122
+unique events and passes `DiagnosticExportV1.model_validate_json`. Both spelling
+variants of the synthetic test key are absent, including the actual value whose
+underscores were dropped during earlier native typing. This corrects the weaker
+earlier sentinel-exclusion observation. No real provider credential was used.
+The package honestly reports zero Harness metrics for this settings-only run.
+
+The [archived native result](../acceptance/unified-debug-native-v1.json) contains
+the package digest, counts and Vault event metadata, not its secret or raw UI state.
+Logs: `/tmp/settings-debug-tests.log`, `/tmp/settings-debug-check.log`,
+`/tmp/settings-debug-build.log`, `/tmp/settings-debug-browser.log`.
+Native create/save/lock evidence, remaining performance and consolidated scope
+audit remain open. Current native spool failure counters also require inspection;
+successful export does not certify complete collection.

@@ -1,6 +1,36 @@
 import { readFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 
+test("Settings current-page Debug excludes secrets from actual controller state and probe cache", async ({ page }) => {
+  const sentinel = "PRIVATE_SETTINGS_BROWSER_SENTINEL";
+  await page.addInitScript(() => {
+    window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };
+  });
+  await page.route("http://127.0.0.1:18998/runtime-settings", async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    await route.fulfill({ response, json: {
+      ...body, show_debug_info: true, plan_provider: "mock",
+      openai_api_key: sentinel, openai_api_key_configured: true,
+      openai_base_url: `https://example.invalid/${sentinel}`,
+      openai_plan_model: sentinel
+    } });
+  });
+  await page.goto("/settings");
+  await page.getByRole("button", { name: /Debug/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("运行时设置摘要", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("能力探测摘要", { exact: true })).toBeVisible();
+  const text = await dialog.innerText();
+  expect(text).toContain('"global": true');
+  expect(text).not.toContain(sentinel);
+  expect(text).not.toContain("endpointKey");
+  expect(text).not.toContain("https://example.invalid");
+  await page.reload();
+  await expect(dialog.getByText("运行时设置摘要", { exact: true })).toBeVisible();
+  expect(await dialog.innerText()).not.toContain(sentinel);
+});
+
 test("closed Debug still records a real Persona generate/save/reload chain without protected content", async ({ page, request }) => {
   await page.addInitScript(() => {
     window.__VIBE_LEARNER_DESKTOP_CONFIG__ = { aiBaseUrl: "http://127.0.0.1:18998", isDesktop: false, platform: "unknown", secretStorageMode: "plain_text", vaultState: "unconfigured", vaultPath: "", storageRoot: "", startupError: "" };

@@ -18,7 +18,7 @@
     "test:routes": "playwright test tests/browser/route-ownership.spec.ts",
     "test:workspace:data": "node --experimental-strip-types --test tests/workspace-snapshot-loader.test.ts",
     "test:workspace:generation": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/plan-generation.test.jsx",
-    "test:settings:save": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/settings-save-coordinator.test.jsx tests/settings-save-hook.test.jsx",
+    "test:settings:save": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/settings-save-coordinator.test.jsx tests/settings-save-hook.test.jsx tests/settings-debug-snapshot.test.jsx",
     "test:scene:generation": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-generation.test.jsx",
     "test:scene:dialog": "playwright test tests/browser/scene-dialog.spec.ts",
     "test:scene:draft": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/scene-draft.test.jsx",

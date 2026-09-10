@@ -1,0 +1,51 @@
+{
+  "schema_version": "native-diagnostic-acceptance-v1",
+  "platform": "macOS",
+  "app_version": "0.3.1",
+  "export_created_at": "2026-09-10T12:42:06.734680Z",
+  "export_bytes": 95379,
+  "export_sha256": "8b6f4eed9d3f4dd46bdfbae8446f7e02114aefa36734ba4fcedc4df8f08b52dc",
+  "schema_valid": true,
+  "event_count": 122,
+  "event_ids_unique": true,
+  "synthetic_secret_excluded": true,
+  "vault_outcomes": [
+    {
+      "event_id": "8f3c4358-c10c-459a-a375-ac977c7b1014",
+      "action": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 45953
+    },
+    {
+      "event_id": "4e6e48d3-a6a9-42ef-8b3c-5228eae66d76",
+      "action": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1.999999999985448
+    },
+    {
+      "event_id": "cb6e4640-83ab-4b4a-af1b-c5d0c9963fb4",
+      "action": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 972
+    },
+    {
+      "event_id": "a15d1796-9dbf-4af4-91b8-a7a9a311f1d8",
+      "action": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1
+    },
+    {
+      "event_id": "1f31a281-5393-4660-a906-0ef49a3109a0",
+      "action": "vault_unlock",
+      "outcome": "completed",
+      "duration_ms": 860
+    },
+    {
+      "event_id": "25043ccb-c690-42bd-86ec-b0ce66fcca07",
+      "action": "vault_load_secrets",
+      "outcome": "completed",
+      "duration_ms": 1
+    }
+  ],
+  "scope": "Native current-page safe-summary inspection, existing Vault unlock/read-back, save-dialog export and schema read-back; no create/save or platform-wide claim."
+}
