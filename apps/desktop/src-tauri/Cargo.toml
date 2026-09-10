@@ -3,6 +3,7 @@ name = "vibe-learner-desktop"
 version = "0.3.1"
 description = "Desktop shell for Vibe Learner"
 edition = "2021"
+rust-version = "1.89"
 
 [lib]
 name = "vibe_learner_desktop_lib"

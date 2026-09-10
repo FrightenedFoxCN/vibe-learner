@@ -72,6 +72,8 @@
 
   - 2026-09-10 存储状态切片：新增只读、no-store `/diagnostics/storage` 与独立 Debug「存储状态」，展示两库文件长度/预算、配额拒绝/锁不可用及维护观察；缺失文件、未配置索引和文件读取失败有明确缺口。诊断包纳入独立 live observation，不混同其数据库快照；前端严格验证总数、身份、状态与未认证标志，关闭/切换 fence 迟到响应。18 项后端、11 项查询、8 项时间线、共享契约、生产构建与 3 项 Chromium 场景通过。桌面 spool、旧超限恢复和安装目录总体配额仍待完成。
 
+  - 2026-09-10 桌面 spool 恢复切片：Rust/Python 共用进程文件锁；原生 ring 同时约束 256 文件/4 MiB，单记录 16 KiB，双方按文件修改时间清理七天过期记录。驱逐计数使用同步临时文件、原子替换与 Unix 目录同步，恢复完整 checkpoint，残缺 checkpoint 保留旧下限；消费端恢复完整 `.pending`，有界/no-follow 读取并核对文件身份后删除。10 项 Rust 测试（含双进程写入和真实 sidecar 退出）及 36 项后端回归通过；原生构建最低 Rust 1.89。计数仍是已观察下限，Windows/power-loss、原生 Vault、未知旧文件及总体目录配额保持未认证。
+
 ## Target architecture
 
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,

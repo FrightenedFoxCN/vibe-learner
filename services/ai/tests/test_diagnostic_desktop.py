@@ -120,3 +120,53 @@ class DesktopDiagnosticTests(unittest.TestCase):
             spool.step()
             self.assertFalse(path.exists())
             self.assertEqual(len(store.query(0, 100, {"source": "desktop"})), 1)
+
+    def test_complete_pending_file_recovers_but_partial_pending_is_rejected(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = DiagnosticStore(root / "events.sqlite3")
+            store.start(); store.emit("lifecycle_started"); store.queue.join(); store.close()
+            spool = DesktopDiagnosticSpool(store, root / "spool")
+            complete = self.record(spool.root).rename(spool.root / "desktop-abc-123.pending")
+            partial = spool.root / "desktop-b.pending"
+            partial.write_bytes(b'{"schema_version":')
+            spool.step()
+            self.assertFalse(complete.exists())
+            self.assertFalse(partial.exists())
+            self.assertEqual(spool.rejected, 1)
+            self.assertEqual(len(store.query(0, 100, {"source": "desktop"})), 1)
+
+    def test_shared_process_lock_defers_consumption_and_replacement_is_not_unlinked(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = DiagnosticStore(root / "events.sqlite3")
+            store.start(); store.emit("lifecycle_started"); store.queue.join(); store.close()
+            spool = DesktopDiagnosticSpool(store, root / "spool")
+            path = self.record(spool.root)
+            with spool._lock.lock():
+                spool.step()
+            self.assertTrue(path.exists())
+            original = store.persist_external_event
+            def persist_then_replace(event):
+                result = original(event)
+                path.unlink()
+                self.record(spool.root, exit_code=99)
+                return result
+            with patch.object(store, "persist_external_event", side_effect=persist_then_replace):
+                spool.step()
+            self.assertTrue(path.exists())
+            self.assertEqual(json.loads(path.read_text())["exit_code"], 99)
+            self.assertEqual(store.query(0, 100, {"source": "desktop"})[0]["event"]["desktop_metric"]["exit_code"], 7)
+
+    def test_expired_spool_file_is_not_reintroduced_as_newly_ingested_history(self):
+        import os
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            store = DiagnosticStore(root / "events.sqlite3")
+            spool = DesktopDiagnosticSpool(store, root / "spool")
+            path = self.record(spool.root)
+            os.utime(path, (1, 1))
+            spool.step()
+            self.assertFalse(path.exists())
+            self.assertEqual(spool.rejected, 1)
+            self.assertFalse(store.path.exists())

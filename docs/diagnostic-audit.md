@@ -228,3 +228,48 @@ and metadata, external writers and VACUUM temporary files. The strict browser
 schema/decoder checks database identity/order, totals, gap/state coherence and
 false certification flags. Counts remain process-local; cross-crash writer
 coverage is a separate existing view.
+
+
+## Desktop spool recovery and concurrency
+
+Native emitters and the Python consumer now share `spool.quota-lock`. Rust uses
+standard-library file locking (Rust 1.89 minimum); Unix interoperability with the
+Python `flock` protocol is tested. A native emitter waits at most 50 ms for this
+process lock and then reports a best-effort failure. The Python consumer defers a
+busy scan. Neither deletes the stable lock inode. Each consumer record remains
+locked through validation, diagnostic persistence and acknowledgement.
+
+Recognized native event files (`desktop-<hex/hyphen identity>.json` or `.pending`)
+share a 256-file / 4 MiB payload ring. New records are at most 16 KiB; a full
+record is reserved before creation. Both native cleanup and consumption expire
+event files after seven days by filesystem modification time. This is not proof
+of original creation time across copying/restoration or clock changes. Directory
+scans stop at 1,024 entries instead of growing memory without bound. Unknown
+files/types and pre-existing corrupt counters are not silently treated as a
+certified installation budget.
+
+`drops.count` is a durable lower bound on native evictions. On Unix, directory
+deletions are synced before writing/syncing `drops.pending`, atomically renaming
+it to `drops.count` and syncing the directory. A complete interrupted checkpoint
+can advance the count; an incomplete/stale temporary checkpoint preserves the
+last valid durable count and increments the process failure observation.
+Crash gaps between deletion and count persistence can undercount, and saturation
+or failed storage cannot establish exact global losses. The original count file
+is never reset to zero on invalid contents. Process write-failure counts still
+reset with the native instance.
+
+The consumer now recovers complete `.pending` event files after a producer
+crash. Invalid/partial files are rejected; acknowledgement still requires
+idempotent diagnostic commit. Reads are bounded and use no-follow/nonblocking
+opens where supported, regular-file checks and identity checks before unlink.
+A replacement file is not acknowledged as the file just committed. These checks
+protect the cooperative protocol; arbitrary hostile filesystem modification and
+Windows directory-flush/power-loss behavior remain outside current certification.
+Wire fields are unchanged; `dropped_before` and `write_failures_before` must be
+read with the lower-bound/process-scope limits above.
+
+Verification: full Rust library tests include actual sidecar subprocess exit and
+two concurrent native writer processes; backend tests cover pending recovery,
+shared lock deferral, replacement preservation, expiry, symlink rejection,
+offline retry and duplicate identity. Installation-wide size/legacy recovery and
+real native Vault success remain separate pending acceptance.
