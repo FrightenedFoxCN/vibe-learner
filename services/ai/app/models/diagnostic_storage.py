@@ -26,11 +26,21 @@ class DiagnosticStorageCountersV1(StorageModel):
     legacy_migrations: int = Field(ge=0)
 
 
+class DiagnosticStorageRecoveryV1(StorageModel):
+    attempts: int = Field(ge=0)
+    completed: int = Field(ge=0)
+    deferred: int = Field(ge=0)
+    failures: int = Field(ge=0)
+    workspace_bytes: int = Field(ge=0)
+    temporary_overage_possible: Literal[True] = True
+
+
 class DiagnosticStorageDatabaseV1(StorageModel):
     name: Literal["events", "index"]
     max_bytes: int | None = Field(ge=0)
     files: DiagnosticStorageFilesV1 | None
     counters: DiagnosticStorageCountersV1 | None
+    recovery: DiagnosticStorageRecoveryV1 | None
     status: Literal["within_observed_limit", "over_observed_limit", "unavailable"]
     gap: Literal["not_configured", "database_absent", "filesystem_unavailable"] | None
 

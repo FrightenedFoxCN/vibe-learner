@@ -49,19 +49,40 @@ class DiagnosticHarnessIndex:
         from app.core.diagnostic_quota import DiagnosticDatabaseQuota
         self.quota = DiagnosticDatabaseQuota(path, max_bytes=64 * 1024 * 1024)
         self.disk_maintenance.quota = self.quota
+        from app.core.diagnostic_recovery import DiagnosticOversizeRecovery
+        self.oversize_recovery = DiagnosticOversizeRecovery(self.quota, self._prune_for_recovery, pressure_prune=self._prune_for_pressure)
+        self.disk_maintenance.oversize_recovery = self.oversize_recovery
         self.failures = 0
         self._stop = threading.Event()
         self._thread = None
+
+    def _prune_for_recovery(self, db):
+        self.retention.initialize(db)
+
+    def _prune_for_pressure(self, db):
+        from app.core.diagnostic_record_retention import DiagnosticRecordRetention
+        DiagnosticRecordRetention("projections", max_rows=min(self.retention.max_rows, max(1, self.quota.max_bytes // 16384)),
+            max_payload_bytes=min(self.retention.max_payload_bytes, max(1, self.quota.max_bytes // 8)),
+            max_age_seconds=self.retention.max_age_seconds).initialize(db)
 
     @contextmanager
     def _connect(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         db = sqlite3.connect(self.path, timeout=0.1)
         try:
-            with self.quota.lock():
-                self.quota.reserve(db)
-                self.disk_maintenance.configure(db)
-                db.execute("PRAGMA journal_mode=WAL")
+            from app.core.diagnostic_quota import DiagnosticQuotaExceeded
+            try:
+                with self.quota.lock():
+                    self.quota.reserve(db)
+                    self.disk_maintenance.configure(db)
+                    db.execute("PRAGMA journal_mode=WAL")
+            except DiagnosticQuotaExceeded:
+                if not self.oversize_recovery.recover(db):
+                    raise
+                with self.quota.lock():
+                    self.quota.reserve(db)
+                    self.disk_maintenance.configure(db)
+                    db.execute("PRAGMA journal_mode=WAL")
             with self.quota.transaction(db):
                 db.execute("CREATE TABLE IF NOT EXISTS projections (trace_id TEXT PRIMARY KEY, operation_id TEXT, workflow TEXT, stage TEXT, payload TEXT NOT NULL)")
                 if "last_seen_sweep" not in {row[1] for row in db.execute("PRAGMA table_info(projections)")}:

@@ -175,3 +175,13 @@ results link to their request events. Seven real Chromium scenarios plus the
 cumulative `check:release` passed. See [current acceptance audit](unified-debug-acceptance.md)
 for tested boundaries and remaining fault, native, storage-recovery and performance
 work; no top-level item is closed by this checkpoint.
+
+2026-09-10 存储恢复检查点：桌面 spool 已加入有界只读文件统计；事件库与
+Harness 索引支持旧超限库原地恢复。先保留正常留存集并回收空页，压缩后仍无法
+恢复普通写入时才缩短留存后缀，删除计数随事务保存。恢复有独立的 512 MiB
+临时工作空间检查、5 秒协作式 SQL 时限与一分钟重试节流；超出工作空间或读者
+占用时安全暂缓，不声称安装目录 200 MiB 总上限。11 项恢复回归包含清理提交
+前后及 VACUUM 中真实进程退出；最终 `check:release`（732 后端测试、13 个
+Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过。
+[验收记录](unified-debug-acceptance.md)与[本机旧库探针](../performance/diagnostic-legacy-recovery-v1.md)
+已归档；安装目录总量核算、其余异常流程、原生成功路径与开销验收继续进行。

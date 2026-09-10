@@ -178,6 +178,8 @@ test("storage observations retain gaps and reject fake totals or admission claim
     x => { x.databases[0].files.total_bytes++; },
     x => { x.databases[0].name = "index"; },
     x => { x.databases[0].status = "over_observed_limit"; },
+    x => { x.databases[0].recovery = null; },
+    x => { x.databases[0].recovery.temporary_overage_possible = false; },
     x => { x.databases[0].counters.path = "PRIVATE"; },
     x => { x.desktop_spool.total_bytes++; },
     x => { x.desktop_spool.status = "observed"; },

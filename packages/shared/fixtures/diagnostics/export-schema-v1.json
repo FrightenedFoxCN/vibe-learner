@@ -2617,6 +2617,16 @@
             }
           ]
         },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DiagnosticStorageRecoveryV1"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "status": {
           "enum": [
             "within_observed_limit",
@@ -2648,6 +2658,7 @@
         "max_bytes",
         "files",
         "counters",
+        "recovery",
         "status",
         "gap"
       ],
@@ -2697,6 +2708,51 @@
         "total_bytes"
       ],
       "title": "DiagnosticStorageFilesV1",
+      "type": "object"
+    },
+    "DiagnosticStorageRecoveryV1": {
+      "additionalProperties": false,
+      "properties": {
+        "attempts": {
+          "minimum": 0,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "completed": {
+          "minimum": 0,
+          "title": "Completed",
+          "type": "integer"
+        },
+        "deferred": {
+          "minimum": 0,
+          "title": "Deferred",
+          "type": "integer"
+        },
+        "failures": {
+          "minimum": 0,
+          "title": "Failures",
+          "type": "integer"
+        },
+        "workspace_bytes": {
+          "minimum": 0,
+          "title": "Workspace Bytes",
+          "type": "integer"
+        },
+        "temporary_overage_possible": {
+          "const": true,
+          "default": true,
+          "title": "Temporary Overage Possible",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "attempts",
+        "completed",
+        "deferred",
+        "failures",
+        "workspace_bytes"
+      ],
+      "title": "DiagnosticStorageRecoveryV1",
       "type": "object"
     },
     "DiagnosticStorageV1": {

@@ -5,6 +5,7 @@ can pin WAL frames. Busy/failed work is retried by a later maintenance cycle.
 """
 import time
 from contextlib import nullcontext
+from app.core.diagnostic_quota import DiagnosticQuotaExceeded
 
 
 class DiagnosticDiskMaintenance:
@@ -77,8 +78,14 @@ class DiagnosticDiskMaintenance:
                     self.busy += 1
                 else:
                     self.completed += 1
-        except Exception:
+        except Exception as error:
             self.failures += 1
+            recovery = getattr(self, "oversize_recovery", None)
+            if recovery is not None and isinstance(error, DiagnosticQuotaExceeded):
+                # Clear this cycle's short deadline before the separately bounded
+                # legacy recovery path. It retains the ordinary admission limit.
+                db.set_progress_handler(None, 0)
+                recovery.recover(db)
         finally:
             try:
                 db.set_progress_handler(None, 0)

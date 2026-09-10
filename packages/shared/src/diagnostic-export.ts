@@ -121,6 +121,7 @@ export interface DiagnosticStorageDatabaseV1 {
   max_bytes: number | null;
   files: { database: number; wal: number; shm: number; journal: number; lock: number; total_bytes: number } | null;
   counters: { quota_refusals: number; quota_unavailable: number; maintenance_busy: number; maintenance_failures: number; maintenance_completed: number; legacy_migrations: number } | null;
+  recovery: { attempts: number; completed: number; deferred: number; failures: number; workspace_bytes: number; temporary_overage_possible: true } | null;
   status: "within_observed_limit" | "over_observed_limit" | "unavailable";
   gap: "not_configured" | "database_absent" | "filesystem_unavailable" | null;
 }

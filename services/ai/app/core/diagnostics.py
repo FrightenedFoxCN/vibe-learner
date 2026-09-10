@@ -168,6 +168,9 @@ class DiagnosticStore:
         from app.core.diagnostic_quota import DiagnosticDatabaseQuota
         self.quota = DiagnosticDatabaseQuota(path)
         self.disk_maintenance.quota = self.quota
+        from app.core.diagnostic_recovery import DiagnosticOversizeRecovery
+        self.oversize_recovery = DiagnosticOversizeRecovery(self.quota, self._prune_for_recovery, pressure_prune=self._prune_for_pressure)
+        self.disk_maintenance.oversize_recovery = self.oversize_recovery
         self.queue: queue.Queue[DiagnosticEventV1] = queue.Queue(maxsize=capacity)
         self.dropped = 0
         self.write_failures = 0
@@ -290,14 +293,54 @@ class DiagnosticStore:
             self.read_failures += 1
             return {"items": [], "next_cursor": after, "gap": "diagnostic_store_unavailable"}
 
+    def _prune_for_recovery(self, db):
+        self.retention.initialize(db)
+        self.link_retention.initialize(db)
+
+    def _prune_for_pressure(self, db):
+        from app.core.diagnostic_retention import DiagnosticEventRetention
+        from app.core.diagnostic_record_retention import DiagnosticRecordRetention
+        # Physical pressure can require a smaller retained suffix than the normal
+        # payload ceiling. Existing deletion triggers preserve coverage evidence.
+        DiagnosticEventRetention(max_rows=min(self.retention.max_rows, max(1, self.quota.max_bytes // 16384)),
+            max_payload_bytes=min(self.retention.max_payload_bytes, max(1, self.quota.max_bytes // 8)),
+            max_age_seconds=self.retention.max_age_seconds).initialize(db)
+        DiagnosticRecordRetention("operation_links", max_rows=min(self.link_retention.max_rows, max(1, self.quota.max_bytes // 32768)),
+            max_payload_bytes=min(self.link_retention.max_payload_bytes, max(1, self.quota.max_bytes // 16)),
+            max_age_seconds=self.link_retention.max_age_seconds).initialize(db)
+
+    def _configure_database(self, db):
+        from app.core.diagnostic_quota import DiagnosticQuotaExceeded
+        try:
+            with self.quota.lock():
+                self.quota.reserve(db)
+                self.disk_maintenance.configure(db)
+                db.execute("PRAGMA journal_mode=WAL")
+        except DiagnosticQuotaExceeded:
+            if not self.oversize_recovery.recover(db):
+                raise
+            with self.quota.lock():
+                self.quota.reserve(db)
+                self.disk_maintenance.configure(db)
+                db.execute("PRAGMA journal_mode=WAL")
+
     def _run(self):
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with sqlite3.connect(self.path, timeout=0.1) as db:
-                with self.quota.lock():
-                    self.quota.reserve(db)
-                    self.disk_maintenance.configure(db)
-                    db.execute("PRAGMA journal_mode=WAL")
+                while True:
+                    try:
+                        self._configure_database(db)
+                        break
+                    except Exception:
+                        self.write_failures += 1
+                        if self._stop.is_set():
+                            return
+                        # Stay alive so a pinned reader or space shortage can
+                        # recover without a business-service restart.
+                        self._stop.wait(1)
+                # Successful initialization must drain accepted events even if
+                # close raced startup; stop only prevents further retry attempts.
                 with self.quota.transaction(db):
                     db.execute("CREATE TABLE IF NOT EXISTS events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT UNIQUE NOT NULL, payload TEXT NOT NULL)")
                     db.execute("CREATE TABLE IF NOT EXISTS operation_links (operation_id TEXT NOT NULL, request_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(operation_id,request_id))")

@@ -1,0 +1,25 @@
+{
+  "observed_at": "2026-09-10T10:47:48.702482+00:00",
+  "source_sha256": {
+    "app/core/diagnostic_quota.py": "cb5a3643510625fd70edd8bc2da30762e17376937eb56bdb9d61b41ae0ca9b93",
+    "app/core/diagnostic_recovery.py": "41e104d28bb1df5675dc5f49aad7c19a0a5798c7dea73e44cdcaf877de800105",
+    "app/core/diagnostics.py": "5eba1e98513680f03f9cb4ea1060b655b7b799eb6f7c323edac85451e8ec516e",
+    "app/services/diagnostic_index.py": "8b34784bc0ac5eac1d46f920a7266e776111ab6e4ef9c747070a40893bcb9722"
+  },
+  "schema_version": "diagnostic-recovery-local-observation-v1",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "sqlite_version": "3.50.4",
+  "quota_bytes": 134217728,
+  "workspace_bytes": 536870912,
+  "before_bytes": 151289856,
+  "after_bytes": 245760,
+  "elapsed_ms": 113.30750002525747,
+  "attempts": 1,
+  "completed": 1,
+  "retained_events": 201,
+  "removed_events": 0,
+  "integrity": "ok",
+  "scenario": "144_MiB_freelist_legacy_event_database_200_safe_events",
+  "samples": 1,
+  "installation_limit_certified": false
+}

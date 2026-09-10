@@ -66,9 +66,12 @@ def observe_spool(root):
 def observe_diagnostic_storage(store, index):
     databases = []
     for name, owner in (("events", store), ("index", index)):
-        value = dict(name=name, max_bytes=None, files=None, counters=None, status="unavailable", gap="not_configured")
+        value = dict(name=name, max_bytes=None, files=None, counters=None, recovery=None, status="unavailable", gap="not_configured")
         if owner is not None:
             quota, maintenance = owner.quota, owner.disk_maintenance
+            recovery = owner.oversize_recovery
+            value["recovery"] = dict(attempts=recovery.attempts, completed=recovery.completed,
+                deferred=recovery.deferred, failures=recovery.failures, workspace_bytes=recovery.workspace_bytes)
             value.update(max_bytes=quota.max_bytes, counters=dict(quota_refusals=quota.rejected, quota_unavailable=quota.unavailable,
                 maintenance_busy=maintenance.busy, maintenance_failures=maintenance.failures,
                 maintenance_completed=maintenance.completed, legacy_migrations=maintenance.legacy_migrations))

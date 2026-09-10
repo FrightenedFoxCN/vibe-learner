@@ -23,6 +23,14 @@
           "maintenance_completed": 2,
           "legacy_migrations": 0
         },
+        "recovery": {
+          "attempts": 0,
+          "completed": 0,
+          "deferred": 0,
+          "failures": 0,
+          "workspace_bytes": 536870912,
+          "temporary_overage_possible": true
+        },
         "status": "within_observed_limit",
         "gap": null
       },
@@ -44,6 +52,14 @@
           "maintenance_failures": 0,
           "maintenance_completed": 1,
           "legacy_migrations": 0
+        },
+        "recovery": {
+          "attempts": 0,
+          "completed": 0,
+          "deferred": 0,
+          "failures": 0,
+          "workspace_bytes": 536870912,
+          "temporary_overage_possible": true
         },
         "status": "within_observed_limit",
         "gap": null

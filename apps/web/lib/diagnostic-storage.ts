@@ -16,10 +16,10 @@ export function decodeDiagnosticStorage(raw: unknown): DiagnosticStorageV1 {
       (spool.status === "observed" && spool.skipped_entries !== 0)) invalid();
   for (const row of value.databases) {
     if (row.gap === "not_configured") {
-      if (row.status !== "unavailable" || row.files !== null || row.counters !== null || row.max_bytes !== null) invalid();
+      if (row.status !== "unavailable" || row.files !== null || row.counters !== null || row.recovery !== null || row.max_bytes !== null) invalid();
       continue;
     }
-    if (row.counters === null || row.max_bytes === null) invalid();
+    if (row.counters === null || row.recovery === null || row.max_bytes === null) invalid();
     if (row.gap === "filesystem_unavailable") {
       if (row.status !== "unavailable" || row.files !== null) invalid();
       continue;

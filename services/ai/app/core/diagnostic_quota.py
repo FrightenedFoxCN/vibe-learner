@@ -73,7 +73,7 @@ class DiagnosticDatabaseQuota:
                 result[name] = 0
         return result
 
-    def reserve(self, db, *, initial_pages=0, migration=False):
+    def reserve(self, db, *, initial_pages=0, migration=False, limit_bytes=None):
         sizes = self.sizes()
         page_size = db.execute("PRAGMA page_size").fetchone()[0]
         pages = max(initial_pages, db.execute("PRAGMA page_count").fetchone()[0])
@@ -85,7 +85,7 @@ class DiagnosticDatabaseQuota:
         projected = max(sizes["database"], logical) + wal + shm + sizes["journal"] + max(sizes["lock"], 1)
         if migration:
             projected += 2 * logical  # SQLite VACUUM temporary database/rebuild allowance.
-        if projected > self.max_bytes:
+        if projected > (self.max_bytes if limit_bytes is None else limit_bytes):
             self.rejected += 1
             raise DiagnosticQuotaExceeded("diagnostic_quota_exceeded")
         return projected

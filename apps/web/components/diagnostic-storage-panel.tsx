@@ -13,6 +13,7 @@ export function DiagnosticStorageObservation({ value }: { value: DiagnosticStora
       <p>{row.status === "over_observed_limit" ? "观察到文件超出预算" : row.status === "within_observed_limit" ? "已观察文件大小在预算内" : "空间状态不可用"}；预算 {row.max_bytes === null ? "未知" : mib(row.max_bytes)}。</p>
       {row.gap && <p>{row.gap === "not_configured" ? "索引未配置。" : row.gap === "database_absent" ? "尚无可观察的数据库文件。" : "文件大小读取失败。"}</p>}
       {row.files && <p>文件合计 {mib(row.files.total_bytes)}；主文件 {mib(row.files.database)}；WAL {mib(row.files.wal)}；SHM {mib(row.files.shm)}；journal {mib(row.files.journal)}；锁文件 {row.files.lock} 字节。</p>}
+      {row.recovery && <p>旧库恢复尝试 {row.recovery.attempts}；完成 {row.recovery.completed}；暂缓 {row.recovery.deferred}；失败 {row.recovery.failures}。恢复期间可能临时超过常规预算，额外工作空间上限 {mib(row.recovery.workspace_bytes)}；空间不足或读者占用时暂缓。</p>}
       {row.counters && <p>配额预留拒绝 {row.counters.quota_refusals}；锁不可用 {row.counters.quota_unavailable}；维护忙 {row.counters.maintenance_busy}；维护失败 {row.counters.maintenance_failures}；完成维护 {row.counters.maintenance_completed}；旧库转换 {row.counters.legacy_migrations}。</p>}
     </article>)}
     <article style={{ padding: 12, border: "1px solid var(--border)", borderRadius: 12 }}>

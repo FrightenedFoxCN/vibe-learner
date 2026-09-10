@@ -35,7 +35,7 @@ excluded from implementation commits and this change-scope claim.
 | Independent DebugProvider and page-view ownership | `debug-provider.tsx`, `owned-debug-snapshot.tsx`, StrictMode/unmount/route tests and Chromium navigation | Implemented and locally verified. Full task closure still depends on the unfinished flow coverage. |
 | Global filters, lazy queries, stale-response fencing and association drilldown | Timeline/query hooks, strict schemas, component tests, Chromium operation → request → events, 390px screenshots | Implemented for current filter/resource vocabulary; resource scope above remains incomplete. |
 | Retention, pagination, export and statistics | Event/link/index retention, writer epochs, pinned snapshot export, audit observations and P50/P95; browser downloads | Implemented slices with explicit gaps. No generic full-history or business-commit certification is made. |
-| Physical disk budget, cleanup and restart recovery | Incremental vacuum/checkpoint, guarded 128 MiB event and 64 MiB index admission; low-budget pinned-reader tests | Cooperating local Python writers are guarded. Pre-existing oversized database recovery and installation-wide accounting/certification still need completion. |
+| Physical disk budget, cleanup and restart recovery | Incremental vacuum/checkpoint, guarded 128 MiB event and 64 MiB index admission; low-budget pinned-reader tests | Cooperating local Python writers are guarded. Bounded in-place legacy recovery now has startup/crash evidence; sources outside its workspace envelope defer safely. Installation-wide accounting/certification remains unfinished. |
 | Desktop spool process/crash behavior | Shared file lock, 256-file/4 MiB ring, modification-time expiry, atomic counter checkpoint, `.pending` recovery, two-process Rust tests | Local Unix evidence exists. Counter lower bounds, unknown files, legacy metadata and Windows/directory-sync limits remain explicit; spool now has bounded file-length observations; installation-wide accounting remains unfinished. |
 | Offline, crash, write failure, overflow, duplicates and large volume | Browser retry/overflow tests; writer/spool/quota tests; real process crash tests; 12,000-event benchmark | Substantial fault evidence exists. Complete a consolidated requirement-to-test audit, including any uncovered mixed/restart scenarios; don't close from happy-path samples. |
 | Performance overhead measurement | Reproducible local baseline and post-quota raw reports under `docs/performance/` | Server middleware/storage/query/export measured. Full-feature/native/browser collection/render overhead and justified acceptance gates remain unverified. |
@@ -44,8 +44,8 @@ excluded from implementation commits and this change-scope claim.
 
 1. Complete the diagnostic resource vocabulary/associations and logical-flow
    wiring, then validate each named product flow through its real boundaries.
-2. Complete old oversize recovery and spool/installation accounting, retaining
-   safe refusal and explicit loss evidence through crash/restart.
+2. Complete installation accounting and validate the combined storage envelope,
+   retaining bounded legacy recovery, safe refusal and explicit crash/restart loss evidence.
 3. Exercise the successful native Vault/export paths and measure the remaining
    frontend/native overhead within their actual platform scope.
 4. Re-run the necessary broad gates after those changes and repeat this audit.
@@ -221,3 +221,60 @@ strict response totals and schema/export compatibility. Production Web build als
 passed. This slice changes neither native writes nor retention. Old oversized DB
 recovery, installation accounting, native acceptance and the other audit gaps
 remain open.
+
+## Legacy oversize recovery slice
+
+Events and index startup now attempt a separate bounded recovery when normal
+admission refuses the existing file. Event startup stays alive and retries after
+reader/space deferral; the index uses its existing retry loop. Maintenance can
+also request the same throttled recovery. Checkpoint release that restores normal
+admission does not shorten retention. Otherwise the diagnostic retention owners first preserve the normal retained set
+and compact free pages. Only if ordinary admission still fails do they keep a
+smaller newest suffix under physical pressure, committing existing removal
+counters with deletions before another compaction. In-place SQLite VACUUM reclaims pages; no open DB is
+renamed/replaced and canonical repositories are never written by recovery.
+
+This is an explicit transient exception to the steady-state admission envelope:
+recovery reserves up to 512 MiB additional workspace above independently observed
+starting file lengths, checks available space, disables cache spill, caps source page
+growth, uses memory temporary storage, and applies a cooperative five-second SQL
+deadline. Attempts are throttled to once per minute. Readers, workspace shortage,
+overlarge sources or SQL failure defer/fail safely; these cases do not certify a
+200 MiB installation maximum. Successful recovery means ordinary reservation
+passes again, not that the whole installation is certified. Storage query/export
+and UI expose process-local attempts/completions/deferrals/failures plus the
+possible temporary overage and workspace envelope.
+
+Eleven direct recovery tests cover real event/index startup, preserved/newest
+records and durable loss evidence, space/workspace refusal, deadline rollback,
+active transaction ownership, reader release without restarting the writer,
+unchanged ordinary admission, lossless freelist compaction versus necessary
+pressure eviction, the initialization/close race, and hard subprocess exits before deletion commit,
+after deletion commit, and during VACUUM. Restart verifies SQLite integrity and
+no repeated deletion counts. The broader targeted diagnostic run passed 36 tests
+before the final preservation/race regressions; all eleven final recovery tests
+passed. Browser query and Timeline suites passed (13 and 10 tests).
+
+A reproducible local 144 MiB freelist probe is archived under
+`docs/performance/diagnostic-legacy-recovery-v1.json` with its scope note. It is one
+observation, not native/browser overhead acceptance or an installation budget
+certification. Full fault-flow, native success, aggregate accounting/performance
+and deferred independent review remain open.
+
+
+The first full gate exposed a startup/close race: a stop observed before schema
+initialization discarded accepted queued events. Initialization now makes one
+attempt and drains accepted events after success; only failed retry attempts stop
+on closure. Existing shutdown/coverage tests and a deterministic paused-startup
+race validate the fix. The next broad gate passed, followed by the final
+preserve-first refinement and its dedicated tests; final gate results follow.
+
+Final `npm run check:release` passed on the final recovery implementation:
+shared/Web reliability and type gates, all 13 Harness PR suites, 732 backend tests
+in 59.325 seconds, and production Web build. Raw output:
+`/tmp/diagnostic-recovery-release-final.log`. All seven production Chromium
+scenarios also passed against the isolated real mock backend, including the
+storage view and diagnostic download (`/tmp/diagnostic-recovery-browser.log`).
+This closes this bounded recovery implementation slice; the overall goal and the
+remaining installation, workflow-fault, native and performance acceptance remain
+active.
