@@ -1,5 +1,106 @@
 {
   "$defs": {
+    "DiagnosticSpoolStorageV1": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "absent",
+            "incomplete",
+            "unavailable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "gap": {
+          "anyOf": [
+            {
+              "enum": [
+                "not_configured",
+                "filesystem_unavailable",
+                "scan_limit",
+                "unsupported_entry"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gap"
+        },
+        "event_files": {
+          "maximum": 1024,
+          "minimum": 0,
+          "title": "Event Files",
+          "type": "integer"
+        },
+        "event_bytes": {
+          "minimum": 0,
+          "title": "Event Bytes",
+          "type": "integer"
+        },
+        "metadata_bytes": {
+          "minimum": 0,
+          "title": "Metadata Bytes",
+          "type": "integer"
+        },
+        "other_files": {
+          "maximum": 1024,
+          "minimum": 0,
+          "title": "Other Files",
+          "type": "integer"
+        },
+        "other_bytes": {
+          "minimum": 0,
+          "title": "Other Bytes",
+          "type": "integer"
+        },
+        "skipped_entries": {
+          "maximum": 1024,
+          "minimum": 0,
+          "title": "Skipped Entries",
+          "type": "integer"
+        },
+        "total_bytes": {
+          "minimum": 0,
+          "title": "Total Bytes",
+          "type": "integer"
+        },
+        "max_event_files": {
+          "const": 256,
+          "default": 256,
+          "title": "Max Event Files",
+          "type": "integer"
+        },
+        "max_event_bytes": {
+          "const": 4194304,
+          "default": 4194304,
+          "title": "Max Event Bytes",
+          "type": "integer"
+        },
+        "scan_limit": {
+          "const": 1024,
+          "default": 1024,
+          "title": "Scan Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "gap",
+        "event_files",
+        "event_bytes",
+        "metadata_bytes",
+        "other_files",
+        "other_bytes",
+        "skipped_entries",
+        "total_bytes"
+      ],
+      "title": "DiagnosticSpoolStorageV1",
+      "type": "object"
+    },
     "DiagnosticStorageCountersV1": {
       "additionalProperties": false,
       "properties": {
@@ -193,6 +294,9 @@
       "title": "Databases",
       "type": "array"
     },
+    "desktop_spool": {
+      "$ref": "#/$defs/DiagnosticSpoolStorageV1"
+    },
     "observation_scope": {
       "const": "independent_live_file_lengths_and_process_counters",
       "default": "independent_live_file_lengths_and_process_counters",
@@ -226,15 +330,14 @@
     "unmeasured": {
       "items": {
         "enum": [
-          "desktop_spool",
           "filesystem_allocation_and_metadata",
           "external_writers",
           "vacuum_temporary_files"
         ],
         "type": "string"
       },
-      "maxItems": 4,
-      "minItems": 4,
+      "maxItems": 3,
+      "minItems": 3,
       "title": "Unmeasured",
       "type": "array"
     }
@@ -242,6 +345,7 @@
   "required": [
     "observed_at",
     "databases",
+    "desktop_spool",
     "unmeasured"
   ],
   "title": "DiagnosticStorageV1",

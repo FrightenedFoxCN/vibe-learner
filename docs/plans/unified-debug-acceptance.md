@@ -36,7 +36,7 @@ excluded from implementation commits and this change-scope claim.
 | Global filters, lazy queries, stale-response fencing and association drilldown | Timeline/query hooks, strict schemas, component tests, Chromium operation → request → events, 390px screenshots | Implemented for current filter/resource vocabulary; resource scope above remains incomplete. |
 | Retention, pagination, export and statistics | Event/link/index retention, writer epochs, pinned snapshot export, audit observations and P50/P95; browser downloads | Implemented slices with explicit gaps. No generic full-history or business-commit certification is made. |
 | Physical disk budget, cleanup and restart recovery | Incremental vacuum/checkpoint, guarded 128 MiB event and 64 MiB index admission; low-budget pinned-reader tests | Cooperating local Python writers are guarded. Pre-existing oversized database recovery and installation-wide accounting/certification still need completion. |
-| Desktop spool process/crash behavior | Shared file lock, 256-file/4 MiB ring, modification-time expiry, atomic counter checkpoint, `.pending` recovery, two-process Rust tests | Local Unix evidence exists. Counter lower bounds, unknown files, legacy metadata and Windows/directory-sync limits remain explicit; spool is still unmeasured in the storage DTO. |
+| Desktop spool process/crash behavior | Shared file lock, 256-file/4 MiB ring, modification-time expiry, atomic counter checkpoint, `.pending` recovery, two-process Rust tests | Local Unix evidence exists. Counter lower bounds, unknown files, legacy metadata and Windows/directory-sync limits remain explicit; spool now has bounded file-length observations; installation-wide accounting remains unfinished. |
 | Offline, crash, write failure, overflow, duplicates and large volume | Browser retry/overflow tests; writer/spool/quota tests; real process crash tests; 12,000-event benchmark | Substantial fault evidence exists. Complete a consolidated requirement-to-test audit, including any uncovered mixed/restart scenarios; don't close from happy-path samples. |
 | Performance overhead measurement | Reproducible local baseline and post-quota raw reports under `docs/performance/` | Server middleware/storage/query/export measured. Full-feature/native/browser collection/render overhead and justified acceptance gates remain unverified. |
 
@@ -200,3 +200,24 @@ shared/Web contracts, reliability/type gates, all 13 Harness PR suites, the full
 backend suite (718 tests in 57.909 seconds) and production Web build. Raw output is retained at
 `/tmp/unified-debug-domain-release.log`. Native tests and the still-open acceptance
 items are outside this gate; overall completion remains unproven.
+
+
+## Desktop spool storage observation slice
+
+Storage queries and exports now scan the conventional sibling `desktop-spool`
+directory without reading file contents. At most 1,024 entries contribute event,
+metadata and unknown regular-file counts/lengths. Unknown names and paths are not
+returned. The directory is pinned with a no-follow descriptor on supported Unix
+platforms; symlinks, nested directories, filesystem failures and scan overflow
+produce explicit incomplete/unavailable gaps. Unsupported platforms do not fall
+back to following paths. Absent directories are distinguished from read failures.
+The observation is read-only, independently sampled and not an admission or full
+installation disk-budget guarantee. Unknown files are counted, not deleted.
+
+Verification: 14 backend storage/export tests and eight desktop spool regressions,
+13 browser query tests and 10 Timeline component tests passed. Tests cover real
+pending files, metadata, unknown files, symlinks, scan overflow, absence/failure,
+strict response totals and schema/export compatibility. Production Web build also
+passed. This slice changes neither native writes nor retention. Old oversized DB
+recovery, installation accounting, native acceptance and the other audit gaps
+remain open.

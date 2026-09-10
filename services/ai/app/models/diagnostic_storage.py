@@ -35,13 +35,29 @@ class DiagnosticStorageDatabaseV1(StorageModel):
     gap: Literal["not_configured", "database_absent", "filesystem_unavailable"] | None
 
 
+class DiagnosticSpoolStorageV1(StorageModel):
+    status: Literal["observed", "absent", "incomplete", "unavailable"]
+    gap: Literal["not_configured", "filesystem_unavailable", "scan_limit", "unsupported_entry"] | None
+    event_files: int = Field(ge=0, le=1024)
+    event_bytes: int = Field(ge=0)
+    metadata_bytes: int = Field(ge=0)
+    other_files: int = Field(ge=0, le=1024)
+    other_bytes: int = Field(ge=0)
+    skipped_entries: int = Field(ge=0, le=1024)
+    total_bytes: int = Field(ge=0)
+    max_event_files: Literal[256] = 256
+    max_event_bytes: Literal[4194304] = 4194304
+    scan_limit: Literal[1024] = 1024
+
+
 class DiagnosticStorageV1(StorageModel):
     schema_version: Literal["diagnostic-storage-v1"] = "diagnostic-storage-v1"
     observed_at: datetime
     databases: list[DiagnosticStorageDatabaseV1] = Field(min_length=2, max_length=2)
+    desktop_spool: DiagnosticSpoolStorageV1
     observation_scope: Literal["independent_live_file_lengths_and_process_counters"] = "independent_live_file_lengths_and_process_counters"
     sizes_are_atomic: Literal[False] = False
     counters_are_process_local: Literal[True] = True
     admission_guarantee: Literal[False] = False
     installation_disk_limit_certified: Literal[False] = False
-    unmeasured: list[Literal["desktop_spool", "filesystem_allocation_and_metadata", "external_writers", "vacuum_temporary_files"]] = Field(min_length=4, max_length=4)
+    unmeasured: list[Literal["filesystem_allocation_and_metadata", "external_writers", "vacuum_temporary_files"]] = Field(min_length=3, max_length=3)

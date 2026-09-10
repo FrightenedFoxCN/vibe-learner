@@ -6,7 +6,14 @@ export function decodeDiagnosticStorage(raw: unknown): DiagnosticStorageV1 {
   validateDiagnosticExportSchema(raw, schema);
   const value = raw as DiagnosticStorageV1;
   const invalid = (): never => { throw new DiagnosticQueryError("invalid_response"); };
-  if (value.databases[0].name !== "events" || value.databases[1].name !== "index" || new Set(value.unmeasured).size !== 4) invalid();
+  if (value.databases[0].name !== "events" || value.databases[1].name !== "index" || new Set(value.unmeasured).size !== 3) invalid();
+  const spool = value.desktop_spool;
+  const spoolTotal = spool.event_bytes + spool.metadata_bytes + spool.other_bytes;
+  if (!Number.isSafeInteger(spoolTotal) || spoolTotal !== spool.total_bytes ||
+      spool.event_files + spool.other_files + spool.skipped_entries > spool.scan_limit ||
+      ((spool.status === "observed" || spool.status === "absent") !== (spool.gap === null)) ||
+      (spool.status === "absent" && (spoolTotal !== 0 || spool.event_files + spool.other_files + spool.skipped_entries !== 0)) ||
+      (spool.status === "observed" && spool.skipped_entries !== 0)) invalid();
   for (const row of value.databases) {
     if (row.gap === "not_configured") {
       if (row.status !== "unavailable" || row.files !== null || row.counters !== null || row.max_bytes !== null) invalid();

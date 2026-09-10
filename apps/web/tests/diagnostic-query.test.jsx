@@ -167,12 +167,22 @@ test("storage observations retain gaps and reject fake totals or admission claim
   const { decodeDiagnosticStorage, queryDiagnosticStorage } = await import("../lib/diagnostic-storage.ts");
   const sample = JSON.parse(readFileSync(new URL("../../../packages/shared/fixtures/diagnostics/storage-sample-v1.json", import.meta.url), "utf8"));
   assert.deepEqual(decodeDiagnosticStorage(sample), sample);
+  const observed = structuredClone(sample);
+  Object.assign(observed.desktop_spool, { status: "observed", gap: null, event_files: 2, event_bytes: 9, metadata_bytes: 2, other_files: 1, other_bytes: 3, total_bytes: 14 });
+  assert.deepEqual(decodeDiagnosticStorage(observed), observed);
+  const partial = structuredClone(observed);
+  Object.assign(partial.desktop_spool, { status: "incomplete", gap: "unsupported_entry", skipped_entries: 1 });
+  assert.deepEqual(decodeDiagnosticStorage(partial), partial);
   for (const mutate of [
     x => { x.admission_guarantee = true; },
     x => { x.databases[0].files.total_bytes++; },
     x => { x.databases[0].name = "index"; },
     x => { x.databases[0].status = "over_observed_limit"; },
     x => { x.databases[0].counters.path = "PRIVATE"; },
+    x => { x.desktop_spool.total_bytes++; },
+    x => { x.desktop_spool.status = "observed"; },
+    x => { x.desktop_spool.path = "PRIVATE"; },
+    x => { x.desktop_spool.event_files = 1025; },
     x => { x.unmeasured[1] = x.unmeasured[0]; },
   ]) { const value = structuredClone(sample); mutate(value); assert.throws(() => decodeDiagnosticStorage(value), DiagnosticQueryError); }
   const before = globalThis.fetch;

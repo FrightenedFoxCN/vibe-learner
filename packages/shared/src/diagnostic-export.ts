@@ -128,10 +128,17 @@ export interface DiagnosticStorageV1 {
   schema_version: "diagnostic-storage-v1";
   observed_at: string;
   databases: DiagnosticStorageDatabaseV1[];
+  desktop_spool: {
+    status: "observed" | "absent" | "incomplete" | "unavailable";
+    gap: "not_configured" | "filesystem_unavailable" | "scan_limit" | "unsupported_entry" | null;
+    event_files: number; event_bytes: number; metadata_bytes: number;
+    other_files: number; other_bytes: number; skipped_entries: number; total_bytes: number;
+    max_event_files: 256; max_event_bytes: 4194304; scan_limit: 1024;
+  };
   observation_scope: "independent_live_file_lengths_and_process_counters";
   sizes_are_atomic: false;
   counters_are_process_local: true;
   admission_guarantee: false;
   installation_disk_limit_certified: false;
-  unmeasured: ("desktop_spool" | "filesystem_allocation_and_metadata" | "external_writers" | "vacuum_temporary_files")[];
+  unmeasured: ("filesystem_allocation_and_metadata" | "external_writers" | "vacuum_temporary_files")[];
 }

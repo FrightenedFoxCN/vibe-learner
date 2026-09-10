@@ -49,13 +49,26 @@
         "gap": null
       }
     ],
+    "desktop_spool": {
+      "status": "unavailable",
+      "gap": "not_configured",
+      "event_files": 0,
+      "event_bytes": 0,
+      "metadata_bytes": 0,
+      "other_files": 0,
+      "other_bytes": 0,
+      "skipped_entries": 0,
+      "total_bytes": 0,
+      "max_event_files": 256,
+      "max_event_bytes": 4194304,
+      "scan_limit": 1024
+    },
     "observation_scope": "independent_live_file_lengths_and_process_counters",
     "sizes_are_atomic": false,
     "counters_are_process_local": true,
     "admission_guarantee": false,
     "installation_disk_limit_certified": false,
     "unmeasured": [
-      "desktop_spool",
       "filesystem_allocation_and_metadata",
       "external_writers",
       "vacuum_temporary_files"
