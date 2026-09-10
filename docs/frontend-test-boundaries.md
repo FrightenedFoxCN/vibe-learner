@@ -34,6 +34,7 @@
 | `npm --workspace @vibe-learner/web run test:workspace:messages` | learner 发送与恢复协作、lookup 期间去重、revision/附件、admission 拒绝、过期 POST 和自动身份查询 |
 | `npm --workspace @vibe-learner/web run test:workspace:commits` | 答题和计划确认的去重、持久化读回、自动续问前置条件、revision 与导航边界 |
 | `npm --workspace @vibe-learner/web run test:workspace:continuation` | 自动预处理/续问、注入时钟的 follow-up、暂停/取消、恢复优先与在途答题回调消费 |
+| `npm --workspace @vibe-learner/web run test:workspace:libraries` | 学习域 Persona/Scene 库刷新归属、失败保留、实时选择与事件订阅清理 |
 | `npm run test:web:reliability` | 领域 decoder/recovery 单元测试与组件测试 |
 | `npm run check:web` | Web 类型约束 |
 | `npm run build:web` | 生产 Web 构建 |

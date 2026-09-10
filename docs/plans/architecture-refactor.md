@@ -147,6 +147,8 @@
 
 - [x] `useStudyContinuation` 独立持有章节预处理、答题续问、计时器与暂停状态；注入时钟/API/存储，timer 发送读取当前 Session revision，失败反馈不自行形成轮询。恢复中的 pending 操作阻止新的自动消息，已确认的自动终态只清理匹配身份；learner 完成只消费发送前带入的回调，保留在途新增答案。8 项续接模块、11 项存储/恢复测试以及 Web 类型/可靠性/构建和 21 项 Chromium 验收通过；浏览器增加未准备章节恢复 uncertain 的无额外 POST 断言。
 
+- [x] 学习工作区 Persona/Scene 库刷新归入 `useWorkspaceLibraries`，查询序号隔离迟到结果、临时失败保留已知 Scene 选择、事件订阅仅随学习 owner 存活。标题/主题/章节目录与配置提示归入纯 `learning-workspace-model`；主 controller 约 450 行，负责组合 owners 和 reducer/页面投影。4 项库刷新 Hook 测试、Web 类型及可靠性聚合通过。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

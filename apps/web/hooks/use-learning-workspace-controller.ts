@@ -1,7 +1,7 @@
 "use client";
 
-
-import { useState } from "react";
+import { useWorkspaceLibraries } from "./use-workspace-libraries";
+import { resolvePlanGenerationBlockedReason, resolveSceneProfileFromLibrary, buildPlanDirectorySections, resolveStudyUnitTitle, resolveThemeHintByStudyUnitId } from "../lib/learning-workspace-model";
 import { useStudyContinuation } from "./use-study-continuation";
 import { useStudyCommitActions } from "./use-study-commit-actions";
 import { useStudyMessages } from "./use-study-messages";
@@ -12,11 +12,8 @@ import { usePlanMutations } from "./use-plan-mutations";
 import { usePlanGeneration } from "./use-plan-generation";
 import { useEffect, useMemo, useReducer, useRef } from "react";
 import type {
-  DocumentRecord,
-  DocumentSection,
   LearningPlan,
   PersonaProfile,
-  SceneProfile,
   StudyChatResponse,
   StudySessionRecord
 } from "@vibe-learner/shared";
@@ -29,7 +26,6 @@ import {
 } from "../lib/data/learning-plans";
 import { WorkspaceSnapshotLoader } from "../lib/workspace-snapshot-loader";
 import { listPersonas } from "../lib/data/personas";
-import { listSceneLibrary, type SceneLibraryItemPayload } from "../lib/data/scenes";
 import { mockPersonas } from "../lib/mock-data";
 import {
   buildPlanHistoryItems,
@@ -42,10 +38,6 @@ import {
 } from "../lib/learning-workspace-state";
 import { readSceneProfileFromLocalStorage } from "../lib/scene-profile";
 import {
-  PERSONA_LIBRARY_UPDATED_EVENT,
-  isPersonaLibraryStorageEvent,
-} from "../lib/persona-library-sync";
-import {
   createInitialLearningWorkspaceState,
   learningWorkspaceReducer
 } from "../lib/learning-workspace-reducer";
@@ -55,10 +47,7 @@ import {
   SNAPSHOT_REFRESHED_NOTICE
 } from "../lib/learning-workspace-copy";
 import { resolveStudySessionErrorNotice } from "../lib/study-session-decode";
-import {
-  logWorkspaceError,
-  logWorkspaceInfo
-} from "../lib/learning-workspace-telemetry";
+import { logWorkspaceError } from "../lib/learning-workspace-telemetry";
 import { getDesktopRuntimeConfig } from "../lib/runtime-config";
 import { useRuntimeSettings } from "../components/runtime-settings-provider";
 import {
@@ -88,8 +77,6 @@ export function useLearningWorkspaceController({
       initialPersonas
     })
   );
-  const [sceneLibraryItems, setSceneLibraryItems] = useState<SceneLibraryItemPayload[]>([]);
-  const [selectedSceneLibraryId, setSelectedSceneLibraryId] = useState(initialSelection?.sceneLibraryId ?? "");
   const mountedRef = useRef(true);
   const selectedPersonaIdRef = useRef(state.selectedPersonaId);
   const selectedPlanIdRef = useRef(state.selectedPlanId);
@@ -128,6 +115,11 @@ export function useLearningWorkspaceController({
     planSections.find((section) => section.id === state.studySession?.studyUnitId) ??
     planSections[0] ??
     null;
+  const { sceneLibraryItems, selectedSceneLibraryId, setSelectedSceneLibraryId,
+    refreshPersonaLibrary, refreshSceneLibrary } = useWorkspaceLibraries({
+    initialSceneId: initialSelection?.sceneLibraryId, planScene: activePlan?.sceneProfile,
+    onPersonas: (personas) => dispatch({ type: "personas_refreshed", personas }),
+  });
   const selectedSceneProfile = useMemo(
     () => resolveSceneProfileFromLibrary(sceneLibraryItems, selectedSceneLibraryId),
     [sceneLibraryItems, selectedSceneLibraryId]
@@ -176,81 +168,6 @@ export function useLearningWorkspaceController({
     }
     studyViewFenceRef.current.session = nextSession;
   }, [state.studySession]);
-
-  const resolveStudyUnitTitle = (studyUnitId: string) => {
-    const sectionFromPlan = planSections.find((section) => section.id === studyUnitId);
-    if (sectionFromPlan?.title) {
-      return sectionFromPlan.title;
-    }
-    const sectionFromDocument = activeDocument?.sections.find((section) => section.id === studyUnitId);
-    if (sectionFromDocument?.title) {
-      return sectionFromDocument.title;
-    }
-    return studyUnitId;
-  };
-
-  const resolveThemeHintByStudyUnitId = (studyUnitId: string) => {
-    if (!activePlan) {
-      return "";
-    }
-    const studyUnitProgress = activePlan.studyUnitProgress.find((item) => item.unitId === studyUnitId);
-    if (studyUnitProgress?.objectiveFragment?.trim()) {
-      return studyUnitProgress.objectiveFragment.trim();
-    }
-    const scheduleItem = activePlan.schedule.find((item) => item.unitId === studyUnitId);
-    if (scheduleItem?.focus) {
-      return scheduleItem.focus;
-    }
-    const containingUnit = activePlan.studyUnits.find((unit) =>
-      unit.id === studyUnitId ||
-      unit.sourceSectionIds.includes(studyUnitId) ||
-      (
-        activeDocument?.sections.some((section) =>
-          section.id === studyUnitId &&
-          Math.max(unit.pageStart, section.pageStart) <= Math.min(unit.pageEnd, section.pageEnd)
-        ) ?? false
-      )
-    );
-    if (containingUnit) {
-      const containingSchedule = activePlan.schedule.find((item) => item.unitId === containingUnit.id);
-      if (containingSchedule?.focus) {
-        return containingSchedule.focus;
-      }
-      const containingChapter = containingSchedule?.scheduleChapters.find((chapter) => chapter.title.trim());
-      if (containingChapter?.title) {
-        return containingChapter.title;
-      }
-    }
-    return activePlan.schedule[0]?.scheduleChapters[0]?.title ?? activePlan.objective;
-  };
-
-  const refreshSceneLibrary = async () => {
-    try {
-      const items = await listSceneLibrary();
-      setSceneLibraryItems(items);
-      setSelectedSceneLibraryId((current) => {
-        if (current && items.some((item) => item.sceneId === current)) {
-          return current;
-        }
-        return items[0]?.sceneId ?? "";
-      });
-    } catch {
-      setSceneLibraryItems([]);
-      setSelectedSceneLibraryId("");
-    }
-  };
-
-  const refreshPersonaLibrary = async () => {
-    try {
-      const personas = await listPersonas();
-      dispatch({
-        type: "personas_refreshed",
-        personas,
-      });
-    } catch (error) {
-      logWorkspaceError("workflow:persona_library:refresh_error", error);
-    }
-  };
 
   const applyWorkspaceSnapshot = (
     snapshot: WorkspaceSnapshot,
@@ -396,7 +313,8 @@ export function useLearningWorkspaceController({
     plan: activePlan, document: activeDocument, view: studyViewFenceRef.current,
     getSelectedPlanId: () => selectedPlanIdRef.current,
     resolveSceneProfile: resolveActiveSceneProfile,
-    resolveStudyUnitTitle, resolveThemeHint: resolveThemeHintByStudyUnitId,
+    resolveStudyUnitTitle: (id) => resolveStudyUnitTitle(id, planSections, activeDocument),
+    resolveThemeHint: (id) => resolveThemeHintByStudyUnitId(id, activePlan, activeDocument),
     onTransition: transitionStudyView,
     onSession: (studySession, clearResponse) => {
       if (studySession) activateStudySessionView(studySession);
@@ -449,22 +367,6 @@ export function useLearningWorkspaceController({
   }, []);
 
   useEffect(() => {
-    void refreshSceneLibrary();
-  }, []);
-
-  useEffect(() => {
-    if (!activePlan?.sceneProfile || selectedSceneLibraryId) {
-      return;
-    }
-    const matched = sceneLibraryItems.find(
-      (item) => item.sceneName === activePlan.sceneProfile?.sceneName
-    );
-    if (matched) {
-      setSelectedSceneLibraryId(matched.sceneId);
-    }
-  }, [activePlan?.id, activePlan?.sceneProfile, sceneLibraryItems, selectedSceneLibraryId]);
-
-  useEffect(() => {
     const handleFocus = () => {
       void syncWorkspaceSnapshot({
         includePersonas: false,
@@ -476,24 +378,6 @@ export function useLearningWorkspaceController({
     window.addEventListener("focus", handleFocus);
     return () => {
       window.removeEventListener("focus", handleFocus);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handlePersonasUpdated = () => {
-      void refreshPersonaLibrary();
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (isPersonaLibraryStorageEvent(event)) {
-        void refreshPersonaLibrary();
-      }
-    };
-
-    window.addEventListener(PERSONA_LIBRARY_UPDATED_EVENT, handlePersonasUpdated);
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      window.removeEventListener(PERSONA_LIBRARY_UPDATED_EVENT, handlePersonasUpdated);
-      window.removeEventListener("storage", handleStorage);
     };
   }, []);
 
@@ -559,102 +443,4 @@ export function useLearningWorkspaceController({
         successNotice: SNAPSHOT_REFRESHED_NOTICE
       })
   };
-}
-
-function resolvePlanGenerationBlockedReason(input: {
-  runtimeSettings: ReturnType<typeof useRuntimeSettings>["settings"];
-  runtimeSettingsLoading: boolean;
-  desktopRuntimeConfig: ReturnType<typeof getDesktopRuntimeConfig>;
-}) {
-  if (input.runtimeSettingsLoading) {
-    return "";
-  }
-  const settings = input.runtimeSettings;
-  if (!settings || settings.planProvider !== "litellm") {
-    return "";
-  }
-  if (settings.openaiPlanApiKeyConfigured || settings.openaiApiKeyConfigured) {
-    return "";
-  }
-  if (input.desktopRuntimeConfig?.isDesktop) {
-    return input.desktopRuntimeConfig.vaultState !== "unlocked"
-      ? "当前计划提供器设为 LiteLLM，但桌面 Vault 尚未解锁；继续会静默回退到 mock。先去统一设置解锁 Vault。"
-      : "当前计划提供器设为 LiteLLM，但还没有可用的计划模型密钥。先去统一设置补齐连接信息。";
-  }
-  return "当前计划提供器设为 LiteLLM，但还没有可用的计划模型密钥。先去统一设置补齐连接信息。";
-}
-
-function resolveSceneProfileFromLibrary(
-  items: SceneLibraryItemPayload[],
-  selectedSceneLibraryId: string
-): SceneProfile | undefined {
-  if (!selectedSceneLibraryId) {
-    return undefined;
-  }
-  const selectedItem = items.find((item) => item.sceneId === selectedSceneLibraryId);
-  if (!selectedItem) {
-    return undefined;
-  }
-  if (selectedItem.sceneProfile) {
-    return selectedItem.sceneProfile;
-  }
-  return {
-    sceneName: selectedItem.sceneName,
-    sceneId: selectedItem.selectedLayerId || selectedItem.sceneId,
-    title: selectedItem.sceneName || "未命名场景",
-    summary: selectedItem.sceneSummary || "",
-    tags: [],
-    selectedPath: [],
-    focusObjectNames: [],
-    sceneTree: [],
-  };
-}
-
-function buildPlanDirectorySections(
-  plan: LearningPlan | null,
-  document: DocumentRecord | null
-): DocumentSection[] {
-  if (!plan) {
-    return [];
-  }
-
-  const studyUnitById = new Map(
-    (document?.studyUnits ?? plan.studyUnits).map((unit) => [unit.id, unit])
-  );
-  const sections: DocumentSection[] = [];
-
-  for (const item of plan.schedule) {
-    const unit = studyUnitById.get(item.unitId);
-    if (!unit) {
-      continue;
-    }
-    sections.push({
-      id: unit.id,
-      documentId: unit.documentId,
-      title: item.title || unit.title,
-      pageStart: unit.pageStart,
-      pageEnd: unit.pageEnd,
-      level: 1
-    });
-  }
-
-  if (!sections.length) {
-    const baseSections = document?.sections.length
-      ? document.sections
-      : plan.studyUnits
-          .filter((unit) => unit.includeInPlan)
-          .map((unit) => ({
-            id: unit.id,
-            documentId: unit.documentId,
-            title: unit.title,
-            pageStart: unit.pageStart,
-            pageEnd: unit.pageEnd,
-            level: 1 as const,
-          }));
-    return baseSections;
-  }
-
-  return sections.filter(
-    (section, index) => sections.findIndex((candidate) => candidate.id === section.id) === index
-  );
 }
