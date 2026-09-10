@@ -8,8 +8,10 @@ import os from 'node:os';
 
 const output = process.argv[2];
 if (!output) throw new Error('usage: node tests/diagnostic-render-benchmark.mjs OUTPUT.json');
+const rich = process.argv.includes('--rich');
 const root = fileURLToPath(new URL('../', import.meta.url));
 const fixture = JSON.parse(await readFile(new URL('../../../packages/shared/fixtures/diagnostics/query-pages-v1.json', import.meta.url), 'utf8'));
+if (rich) fixture.events.items[0].event = JSON.parse(await readFile(new URL('./fixtures/diagnostic-render-rich-event.json', import.meta.url), 'utf8'));
 const bundle = await build({
   stdin: { contents: `import React from 'react'; import {createRoot} from 'react-dom/client';
     import {DiagnosticTimeline} from './components/diagnostic-timeline';
@@ -27,7 +29,8 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.route('https://diagnostic.test/**', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><meta charset="utf-8"><title>Timeline benchmark</title><style>body{font:14px system-ui}#root{width:560px;height:720px;overflow:auto;--border:#ccc;--bg:white}*{box-sizing:border-box}</style><div id="root"></div>` }));
   await page.goto('https://diagnostic.test/');
-  await page.evaluate(fixture => {
+  await page.evaluate(({fixture, rich}) => {
+    window.benchmarkPageBytes = 0;
     window.fetch = async url => {
       const parsed = new URL(url);
       if (!parsed.pathname.endsWith('/diagnostics/events')) throw new Error('unexpected-query');
@@ -35,7 +38,7 @@ try {
       const result = structuredClone(fixture.events);
       result.items = Array.from({ length: 100 }, (_, i) => {
         const sequence = after + i + 1;
-        return { sequence, event: { ...result.items[0].event,
+        return { sequence, event: { ...structuredClone(result.items[0].event),
           event_id: `benchmark-event-${sequence}`, request_id: `benchmark-request-${sequence}`,
           client_instance_id: 'synthetic-client', page_view_id: 'synthetic-page',
           flow_id: 'synthetic-flow', action_id: `synthetic-action-${sequence}`,
@@ -46,9 +49,19 @@ try {
       result.has_more = true; // UI must enforce the cap even if the server has more.
       result.retention.retained_events = 10000;
       result.retention.retained_payload_bytes = 10000000;
+      if (rich) {
+        // Fill the pattern-valid synthetic manifest label to approach the query
+        // transport ceiling and decoder 4096-character fallback; this is
+        // schema stress, not a registered tool.
+        const available = 2 * 1024 * 1024 - 4096 - new TextEncoder().encode(JSON.stringify(result)).length;
+        if (available < 0) throw new Error('fixture-over-budget');
+        const padding = 'x'.repeat(Math.min(Math.floor(available / 100), 4096 - result.items[0].event.tool_metric.manifest_key.length));
+        for (const item of result.items) item.event.tool_metric.manifest_key += padding;
+      }
+      window.benchmarkPageBytes = Math.max(window.benchmarkPageBytes, new TextEncoder().encode(JSON.stringify(result)).length);
       return Response.json(result);
     };
-  }, fixture);
+  }, {fixture, rich});
   await page.addScriptTag({ content: bundle.outputFiles[0].text });
   if (errors.length) throw new Error(`bundle-errors: ${JSON.stringify(errors)}`);
   const raw = await page.evaluate(async () => {
@@ -104,6 +117,7 @@ try {
     return [key, { count: sorted.length, p50: sorted[Math.ceil(sorted.length * .5) - 1], p95: sorted[Math.ceil(sorted.length * .95) - 1], max: sorted.at(-1), budget_ms: budgets[key], passed: sorted[Math.ceil(sorted.length * .95) - 1] <= budgets[key] }];
   }));
   const report = { schema_version: 'diagnostic-react-render-benchmark-v1', timestamp: new Date().toISOString(),
+    profile: rich ? 'wide-nested-bounded-label' : 'small-transport', response_page_bytes: await page.evaluate(() => window.benchmarkPageBytes),
     platform: `${os.platform()} ${os.arch()}`, browser: browser.version(), viewport: [1280, 900], panel: [560, 720], warmups: 3,
     bundle_sha256: createHash('sha256').update(bundle.outputFiles[0].contents).digest('hex'),
     bundled_inputs: Object.keys(bundle.metafile.inputs).sort(),

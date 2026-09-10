@@ -56,7 +56,7 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
-| Performance overhead | Backend baseline/quota reports; Chromium collector and actual React timeline reports; native spool stages and Vault measurements | Collection and bounded transport-row rendering pass local budgets. Native saturated spool has both failed 25.21 ms and passing later observations; no acceptance closure from selected reruns. Persona paired overhead passed; Original Scene paired P95 failed at 67.74 ms versus 50 ms; stage profiling found GC overlap, and a distinct process-isolated population passed at 6.23 ms (original retained). Remaining workflow comparisons and maximum nested-record/native WebView overhead remain unmeasured. |
+| Performance overhead | Backend baseline/quota reports; Chromium collector and actual React timeline reports; native spool stages and Vault measurements | Collection and bounded transport-row rendering pass local budgets. Native saturated spool has both failed 25.21 ms and passing later observations; no acceptance closure from selected reruns. Persona paired overhead passed; Original Scene paired P95 failed at 67.74 ms versus 50 ms; stage profiling found GC overlap, and a distinct process-isolated population passed at 6.23 ms (original retained). Remaining workflow comparisons and wide nested event rendering is measured separately; native WebView overhead remains unmeasured. |
 | Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
 ## Remaining completion work
@@ -928,3 +928,13 @@ median improvement does not establish a tail benefit. No runtime protocol change
 was adopted. [Method and raw report](../performance/diagnostic-native-sync-overlap-v1.md)
 retain the experiment's narrow scope; actual saturated emit still has its original
 25.21 ms failure against 25 ms. Native/rendering and final acceptance remain open.
+
+## Wide nested event rendering
+
+The existing production React/strict decoder benchmark now has a synthetic nested
+profile: all five nested event sections, a 4096-character bounded label and up to
+725,309 bytes per 100-row page, accumulating to the actual 500-row cap. Thirty
+samples pass the unchanged mount/append/expand/unmount budgets, with P95
+50.5/50.7/30.9/34.0 ms. [Method and raw samples](../performance/diagnostic-render-rich-v1.md)
+retain exact scope. This covers wide event content, not every schema combination,
+separate index/association views or native WebView; no decoder bound is weakened.
