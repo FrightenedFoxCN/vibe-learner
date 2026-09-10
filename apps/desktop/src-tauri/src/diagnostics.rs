@@ -317,6 +317,60 @@ fn sync_directory(path: &Path) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     #[test]
+    #[ignore = "opt-in independent pending-file sync experiment"]
+    fn pending_sync_overlap_probe() {
+        let output = std::env::var("DIAGNOSTIC_SYNC_BENCH_OUTPUT").unwrap();
+        let root = std::env::temp_dir().join(identity());
+        fs::create_dir_all(&root).unwrap();
+        let mut pairs = Vec::new();
+        for index in 0..33 {
+            let mut values = [0.0; 2];
+            let order = if index % 2 == 0 { [0, 1] } else { [1, 0] };
+            for mode in order {
+                let counter_pending = root.join("counter.pending");
+                let event_pending = root.join("event.pending");
+                let started = Instant::now();
+                // Common durable-deletion barrier from the actual rotation path.
+                sync_directory(&root).unwrap();
+                let mut counter = fs::File::create(&counter_pending).unwrap();
+                counter.write_all(b"123").unwrap();
+                let mut event = fs::File::create(&event_pending).unwrap();
+                event.write_all(&[b'x'; 512]).unwrap();
+                if mode == 0 {
+                    counter.sync_all().unwrap();
+                    event.sync_all().unwrap();
+                } else {
+                    std::thread::scope(|scope| {
+                        let other = scope.spawn(|| counter.sync_all());
+                        event.sync_all().unwrap();
+                        other.join().unwrap().unwrap();
+                    });
+                }
+                drop(counter);
+                drop(event);
+                // Keep both publication barriers and counter-before-event order.
+                fs::rename(&counter_pending, root.join("counter.count")).unwrap();
+                sync_directory(&root).unwrap();
+                fs::rename(&event_pending, root.join("event.json")).unwrap();
+                sync_directory(&root).unwrap();
+                values[mode] = started.elapsed().as_secs_f64() * 1000.0;
+                assert_eq!(fs::read(root.join("counter.count")).unwrap(), b"123");
+                assert_eq!(fs::read(root.join("event.json")).unwrap(), [b'x'; 512]);
+            }
+            if index >= 3 {
+                pairs.push(serde_json::json!({"first": if order[0] == 0 { "sequential" } else { "overlap" },
+                    "sequential_ms": values[0], "overlap_ms": values[1], "delta_ms": values[1] - values[0]}));
+            }
+        }
+        let report = serde_json::json!({"schema_version": "native-pending-sync-experiment-v1",
+            "scope": "Synthetic two-file sync overlap, same three directory barriers; excludes native event serialization, scan, lock and actual crash recovery. No production protocol change.",
+            "os": std::env::consts::OS, "arch": std::env::consts::ARCH,
+            "warmup_pairs": 3, "sample_pairs": 30, "raw": pairs});
+        fs::write(output, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     #[ignore = "opt-in native spool timing; synthetic temporary files only"]
     fn spool_performance_probe() {
         let output = std::env::var("DIAGNOSTIC_SPOOL_BENCH_OUTPUT")

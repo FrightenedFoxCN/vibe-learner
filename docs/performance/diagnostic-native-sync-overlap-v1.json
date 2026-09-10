@@ -1,0 +1,190 @@
+{
+  "arch": "aarch64",
+  "os": "macos",
+  "raw": [
+    {
+      "delta_ms": 0.9263329999999996,
+      "first": "overlap",
+      "overlap_ms": 17.882583,
+      "sequential_ms": 16.95625
+    },
+    {
+      "delta_ms": -0.9102909999999991,
+      "first": "sequential",
+      "overlap_ms": 15.71925,
+      "sequential_ms": 16.629541
+    },
+    {
+      "delta_ms": -4.917874999999999,
+      "first": "overlap",
+      "overlap_ms": 12.92625,
+      "sequential_ms": 17.844125
+    },
+    {
+      "delta_ms": -3.8076670000000004,
+      "first": "sequential",
+      "overlap_ms": 12.743208000000001,
+      "sequential_ms": 16.550875
+    },
+    {
+      "delta_ms": -4.071707999999999,
+      "first": "overlap",
+      "overlap_ms": 12.637209,
+      "sequential_ms": 16.708917
+    },
+    {
+      "delta_ms": -0.18154200000000031,
+      "first": "sequential",
+      "overlap_ms": 17.677625,
+      "sequential_ms": 17.859167
+    },
+    {
+      "delta_ms": 0.859458,
+      "first": "overlap",
+      "overlap_ms": 17.55575,
+      "sequential_ms": 16.696292
+    },
+    {
+      "delta_ms": -1.8079999999999998,
+      "first": "sequential",
+      "overlap_ms": 16.777959,
+      "sequential_ms": 18.585959
+    },
+    {
+      "delta_ms": -0.15525000000000588,
+      "first": "overlap",
+      "overlap_ms": 17.645874999999997,
+      "sequential_ms": 17.801125000000003
+    },
+    {
+      "delta_ms": 0.07520900000000097,
+      "first": "sequential",
+      "overlap_ms": 17.795542,
+      "sequential_ms": 17.720333
+    },
+    {
+      "delta_ms": -3.2559580000000015,
+      "first": "overlap",
+      "overlap_ms": 12.788874999999999,
+      "sequential_ms": 16.044833
+    },
+    {
+      "delta_ms": 1.971667,
+      "first": "sequential",
+      "overlap_ms": 18.605292,
+      "sequential_ms": 16.633625
+    },
+    {
+      "delta_ms": -4.165875,
+      "first": "overlap",
+      "overlap_ms": 13.71,
+      "sequential_ms": 17.875875
+    },
+    {
+      "delta_ms": -4.491833,
+      "first": "sequential",
+      "overlap_ms": 12.831792,
+      "sequential_ms": 17.323625
+    },
+    {
+      "delta_ms": -0.30370900000000134,
+      "first": "overlap",
+      "overlap_ms": 16.633625,
+      "sequential_ms": 16.937334
+    },
+    {
+      "delta_ms": 0.20716700000000188,
+      "first": "sequential",
+      "overlap_ms": 16.7805,
+      "sequential_ms": 16.573332999999998
+    },
+    {
+      "delta_ms": 1.877165999999999,
+      "first": "overlap",
+      "overlap_ms": 17.62725,
+      "sequential_ms": 15.750084000000001
+    },
+    {
+      "delta_ms": -3.175417000000003,
+      "first": "sequential",
+      "overlap_ms": 14.578875,
+      "sequential_ms": 17.754292000000003
+    },
+    {
+      "delta_ms": -3.246041999999999,
+      "first": "overlap",
+      "overlap_ms": 13.608833,
+      "sequential_ms": 16.854875
+    },
+    {
+      "delta_ms": -3.909291999999997,
+      "first": "sequential",
+      "overlap_ms": 12.81925,
+      "sequential_ms": 16.728541999999997
+    },
+    {
+      "delta_ms": -3.0189590000000006,
+      "first": "overlap",
+      "overlap_ms": 12.754,
+      "sequential_ms": 15.772959
+    },
+    {
+      "delta_ms": -1.0697499999999973,
+      "first": "sequential",
+      "overlap_ms": 15.758250000000002,
+      "sequential_ms": 16.828
+    },
+    {
+      "delta_ms": -3.2766669999999998,
+      "first": "overlap",
+      "overlap_ms": 12.601708,
+      "sequential_ms": 15.878375
+    },
+    {
+      "delta_ms": 2.6399589999999993,
+      "first": "sequential",
+      "overlap_ms": 18.608667,
+      "sequential_ms": 15.968708000000001
+    },
+    {
+      "delta_ms": -0.07220799999999628,
+      "first": "overlap",
+      "overlap_ms": 15.849667000000002,
+      "sequential_ms": 15.921874999999998
+    },
+    {
+      "delta_ms": 0.0077920000000020195,
+      "first": "sequential",
+      "overlap_ms": 16.719917000000002,
+      "sequential_ms": 16.712125
+    },
+    {
+      "delta_ms": -5.0635829999999995,
+      "first": "overlap",
+      "overlap_ms": 11.836875000000001,
+      "sequential_ms": 16.900458
+    },
+    {
+      "delta_ms": -0.8096249999999969,
+      "first": "sequential",
+      "overlap_ms": 15.767875,
+      "sequential_ms": 16.577499999999997
+    },
+    {
+      "delta_ms": -3.125124999999999,
+      "first": "overlap",
+      "overlap_ms": 12.6765,
+      "sequential_ms": 15.801625
+    },
+    {
+      "delta_ms": -4.024541000000001,
+      "first": "sequential",
+      "overlap_ms": 12.739959,
+      "sequential_ms": 16.7645
+    }
+  ],
+  "sample_pairs": 30,
+  "schema_version": "native-pending-sync-experiment-v1",
+  "scope": "Synthetic two-file sync overlap, same three directory barriers; excludes native event serialization, scan, lock and actual crash recovery. No production protocol change.",
+  "warmup_pairs": 3
+}

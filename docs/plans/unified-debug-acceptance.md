@@ -918,3 +918,13 @@ passing the unchanged 50 ms gate. [Method/raw report](../performance/diagnostic-
 retain all samples, stage/GC observations and three source digests. Existing
 workflow branches receive compatibility smokes; remaining native/rendering and
 final acceptance continue.
+
+## Native sync-overlap experiment rejected
+
+A test-only 30-pair microexperiment overlaps independent counter/event pending
+file syncs while keeping both file syncs before publication and the same three
+directory barriers. P95 is 18.61 ms overlapping versus 17.88 ms sequential; the
+median improvement does not establish a tail benefit. No runtime protocol change
+was adopted. [Method and raw report](../performance/diagnostic-native-sync-overlap-v1.md)
+retain the experiment's narrow scope; actual saturated emit still has its original
+25.21 ms failure against 25 ms. Native/rendering and final acceptance remain open.
