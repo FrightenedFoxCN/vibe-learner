@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { DesktopVaultState, RuntimeFeatureProbeName, RuntimeSettings } from "@vibe-learner/shared";
+import { useSettingsSave } from "../../hooks/use-settings-save";
 import { useRuntimeSettings } from "../runtime-settings-provider";
 import {
   applyRuntimeSessionSecrets,
@@ -87,11 +88,6 @@ interface CachedProbeResult {
   sourceScope: ProbeScope;
 }
 
-interface PendingSettingsSave {
-  snapshot: RuntimeSettings;
-  serialized: string;
-}
-
 export function useSettingsController(): SettingsController {
   const runtimeSettings = useRuntimeSettings();
   const desktopRuntimeConfig = getDesktopRuntimeConfig();
@@ -102,7 +98,6 @@ export function useSettingsController(): SettingsController {
   const [savePhase, setSavePhase] = useState<SettingsSavePhase>("idle");
   const [saveError, setSaveError] = useState("");
   const [lastSavedAt, setLastSavedAt] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
   const [desktopSecurity, setDesktopSecurity] = useState<DesktopSecurityState>({
     enabled: desktopEnabled,
     vaultState: isDesktopVaultUnlocked() ? "unlocked" : desktopRuntimeConfig?.vaultState ?? "unconfigured",
@@ -130,11 +125,6 @@ export function useSettingsController(): SettingsController {
   const initializedRef = useRef(false);
   const settingsRef = useRef<RuntimeSettings | null>(null);
   const desktopSecurityRef = useRef(desktopSecurity);
-  const lastSavedSerializedRef = useRef("");
-  const blockedSerializedRef = useRef("");
-  const savingRef = useRef(false);
-  const pendingSaveRef = useRef<PendingSettingsSave | null>(null);
-  const flushRequestedRef = useRef(false);
   const probeCacheRef = useRef<Map<string, CachedProbeResult>>(new Map());
 
   useEffect(() => {
@@ -169,7 +159,7 @@ export function useSettingsController(): SettingsController {
     setSettings(nextSettings);
     setNumericDrafts(buildNumericDrafts(nextSettings));
     setLastSavedAt(nextSettings.updatedAt);
-    lastSavedSerializedRef.current = serializeSettings(nextSettings);
+    saveCoordinator.acceptSaved(nextSettings);
     setSavePhase("saved");
   }, [runtimeSettings.settings]);
 
@@ -199,142 +189,42 @@ export function useSettingsController(): SettingsController {
     });
   }, [settings]);
 
-  const persistSnapshot = useEffectEvent(async (snapshot: RuntimeSettings, serialized: string) => {
-    if (savingRef.current) {
-      return;
-    }
-
-    savingRef.current = true;
-    setIsSaving(true);
-    setSavePhase("saving");
-    setSaveError("");
-
-    try {
-      const shouldPersistSecrets =
-        desktopSecurityRef.current.enabled && desktopSecurityRef.current.vaultState === "unlocked";
-
-      if (shouldPersistSecrets) {
-        const secrets = extractSecretPatch(snapshot);
-        await saveDesktopVaultSecrets(secrets);
-        await applyRuntimeSessionSecrets(secrets);
-      }
-
-      const backendNext = await updateRuntimeSettings(
-        buildRuntimeSettingsPatch(snapshot, {
-          includeSecrets: !desktopSecurityRef.current.enabled
-        })
-      );
-      const next = shouldPersistSecrets
-        ? mergeRuntimeSettingsWithSecrets(backendNext, extractSecretPatch(snapshot))
-        : backendNext;
-      const nextSerialized = serializeSettings(next);
-      lastSavedSerializedRef.current = nextSerialized;
-      if (pendingSaveRef.current?.serialized === serialized) {
-        pendingSaveRef.current = null;
-      }
-      blockedSerializedRef.current = "";
-      setLastSavedAt(next.updatedAt);
-      runtimeSettings.replaceSettings(next);
-
-      if (settingsRef.current && serializeSettings(settingsRef.current) === serialized) {
-        settingsRef.current = next;
-        setSettings(next);
-        setNumericDrafts(buildNumericDrafts(next));
-      }
-
-      setSavePhase("saved");
-    } catch (err) {
-      if (pendingSaveRef.current?.serialized === serialized) {
-        pendingSaveRef.current = null;
-      }
-      blockedSerializedRef.current = serialized;
-      setSaveError(String(err));
-      setSavePhase("error");
-    } finally {
-      savingRef.current = false;
-      setIsSaving(false);
-      // A navigation flush must survive this controller's unmount, including
-      // when an older request was already running at the time of navigation.
-      if (flushRequestedRef.current) {
-        flushRequestedRef.current = false;
-        const pending = pendingSaveRef.current;
-        if (pending) {
-          pendingSaveRef.current = null;
-          void persistSnapshot(pending.snapshot, pending.serialized);
+  const saveCoordinator = useSettingsSave(
+    settings,
+    initializedRef.current && !runtimeSettings.loading,
+    {
+      serialize: serializeSettings,
+      persist: async (snapshot: RuntimeSettings) => {
+        const security = desktopSecurityRef.current;
+        const shouldPersistSecrets = security.enabled && security.vaultState === "unlocked";
+        if (shouldPersistSecrets) {
+          const secrets = extractSecretPatch(snapshot);
+          await saveDesktopVaultSecrets(secrets);
+          await applyRuntimeSessionSecrets(secrets);
         }
-      }
-    }
-  });
-
-  const flushPendingSave = useEffectEvent(() => {
-    const pending = pendingSaveRef.current;
-    if (!pending) {
-      return;
-    }
-    if (savingRef.current) {
-      flushRequestedRef.current = true;
-      return;
-    }
-    pendingSaveRef.current = null;
-    void persistSnapshot(pending.snapshot, pending.serialized);
-  });
-
-  useEffect(() => {
-    const handlePageHide = () => flushPendingSave();
-    window.addEventListener("pagehide", handlePageHide);
-    return () => {
-      window.removeEventListener("pagehide", handlePageHide);
-      // Route transitions unmount this controller before the 900ms debounce
-      // fires. Flush the latest snapshot so navigation cannot drop a change.
-      flushPendingSave();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!initializedRef.current || !settings || runtimeSettings.loading) {
-      return;
-    }
-
-    const serialized = serializeSettings(settings);
-    if (!savingRef.current && serialized === lastSavedSerializedRef.current) {
-      pendingSaveRef.current = null;
-      if (!isSaving) {
-        setSavePhase("saved");
-      }
-      return;
-    }
-
-    if (serialized === blockedSerializedRef.current) {
-      if (pendingSaveRef.current?.serialized === serialized) {
-        pendingSaveRef.current = null;
-      }
-      if (!isSaving) {
-        setSavePhase("error");
-      }
-      return;
-    }
-
-    if (!isSaving) {
-      setSavePhase("pending");
-    }
-    pendingSaveRef.current = { snapshot: settings, serialized };
-    if (isSaving) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      const pending = pendingSaveRef.current;
-      if (!pending || pending.serialized !== serialized) {
-        return;
-      }
-      pendingSaveRef.current = null;
-      void persistSnapshot(pending.snapshot, pending.serialized);
-    }, AUTO_SAVE_DELAY_MS);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [isSaving, runtimeSettings.loading, settings]);
+        const backendNext = await updateRuntimeSettings(
+          buildRuntimeSettingsPatch(snapshot, { includeSecrets: !security.enabled })
+        );
+        return shouldPersistSecrets
+          ? mergeRuntimeSettingsWithSecrets(backendNext, extractSecretPatch(snapshot))
+          : backendNext;
+      },
+      saved: (next, submittedKey) => {
+        setLastSavedAt(next.updatedAt);
+        runtimeSettings.replaceSettings(next);
+        if (settingsRef.current && serializeSettings(settingsRef.current) === submittedKey) {
+          settingsRef.current = next;
+          setSettings(next);
+          setNumericDrafts(buildNumericDrafts(next));
+        }
+      },
+      status: (phase, error) => {
+        setSavePhase(phase);
+        if (phase !== "error" || error) setSaveError(error);
+      },
+    },
+    AUTO_SAVE_DELAY_MS,
+  );
 
   function setSettingField<K extends keyof RuntimeSettings>(key: K, value: RuntimeSettings[K]) {
     setSaveError("");
@@ -518,7 +408,7 @@ export function useSettingsController(): SettingsController {
       setSettings(next);
       setNumericDrafts(buildNumericDrafts(next));
       runtimeSettings.replaceSettings(next);
-      lastSavedSerializedRef.current = serializeSettings(next);
+      saveCoordinator.acceptSaved(next);
       setLastSavedAt(next.updatedAt);
       setSavePhase("saved");
       setSaveError("");
@@ -545,7 +435,7 @@ export function useSettingsController(): SettingsController {
         settingsRef.current = next;
         setSettings(next);
         runtimeSettings.replaceSettings(next);
-        lastSavedSerializedRef.current = serializeSettings(next);
+        saveCoordinator.acceptSaved(next);
       }
       setDesktopSecurity((prev) => ({
         ...prev,
@@ -577,7 +467,7 @@ export function useSettingsController(): SettingsController {
       setSettings(next);
       setNumericDrafts(buildNumericDrafts(next));
       runtimeSettings.replaceSettings(next);
-      lastSavedSerializedRef.current = serializeSettings(next);
+      saveCoordinator.acceptSaved(next);
       setLastSavedAt(next.updatedAt);
       setSavePhase("saved");
       setDesktopSecurity((prev) => ({ ...prev, busy: false, error: "" }));
@@ -594,10 +484,7 @@ export function useSettingsController(): SettingsController {
     if (!settings) {
       return;
     }
-    blockedSerializedRef.current = "";
-    pendingSaveRef.current = null;
-    setSavePhase("pending");
-    void persistSnapshot(settings, serializeSettings(settings));
+    saveCoordinator.retry(settings);
   }
 
   return {

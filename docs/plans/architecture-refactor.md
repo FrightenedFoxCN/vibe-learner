@@ -110,3 +110,8 @@
 - [ ] 继续拆分学习动作/恢复、Persona、Scene controller 并完成相关 UX 和前端阶段门禁。
 
 - [x] 计划生成归入 `usePlanGeneration`，以显式 API port 注入上传/解析/计划/Session 请求，主 controller 只保留选择与视图投影。每轮生成持有独立响应归属，旧进度和 finally 不清空新任务；Scene 在生成入口捕获并用于初始 Session。独立 `test:workspace:generation` 6 项真实 Hook 行为测试通过，Web 类型、可靠性门禁、生产构建与 12 项 Chromium 路由验收通过。
+
+### ARCH-TEST-SEAMS-001
+
+- [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。
+- [ ] 完成剩余跨 TestCase 公共 fixture/helper 迁移，并运行最终 release/recovery 阶段门禁。
