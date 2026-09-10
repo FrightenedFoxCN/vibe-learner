@@ -1,3 +1,4 @@
+import { diagnosticFetch } from "./diagnostics";
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
@@ -298,33 +299,11 @@ function extractErrorMessage(payload: unknown, fallbackMessage: string) {
 
 const AI_BASE_URL = () => getAiBaseUrl();
 
-function clientLog(stage: string, payload: Record<string, unknown>) {
-  console.info(`[vibe-learner] ${stage}`, payload);
-}
-
 async function request(input: string, init?: RequestInit): Promise<Response> {
-  const method = init?.method ?? "GET";
-  const startedAt = performance.now();
-  clientLog("request:start", { method, input });
   try {
-    const response = await fetch(input, init);
-    clientLog("request:end", {
-      method,
-      input,
-      status: response.status,
-      durationMs: Math.round(performance.now() - startedAt)
-    });
-    return response;
+    return await diagnosticFetch(input, init);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw error;
-    }
-    clientLog("request:error", {
-      method,
-      input,
-      durationMs: Math.round(performance.now() - startedAt),
-      error: String(error)
-    });
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
     const startupError = getDesktopRuntimeConfig()?.startupError.trim();
     const detail = startupError ? ` (${startupError})` : "";
     throw new Error(`Cannot reach AI service at ${AI_BASE_URL()}${detail}`);

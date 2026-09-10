@@ -11,6 +11,7 @@ from app.api.diagnostic_middleware import DiagnosticMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.diagnostic_routes import router as diagnostic_router
 from app.api.routes import router
 from app.api.tavern_routes import router as tavern_router
 from app.core.logging import configure_logging
@@ -36,10 +37,12 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
             yield
         finally:
             app.state.container = None
-            if container is not None:
-                container.close()
-            diagnostics.emit("lifecycle_stopped")
-            diagnostics.close()
+            try:
+                if container is not None:
+                    container.close()
+            finally:
+                diagnostics.emit("lifecycle_stopped")
+                diagnostics.close()
 
     app = FastAPI(title="Vibe Learner AI Service", version="0.3.1", lifespan=lifespan)
     app.add_middleware(
@@ -53,6 +56,7 @@ def create_app(*, settings: Settings | None = None, container_factory: Callable[
 
     app.add_middleware(DiagnosticMiddleware)
 
+    app.include_router(diagnostic_router)
     app.include_router(router)
     app.include_router(tavern_router)
     return app

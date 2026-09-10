@@ -1222,3 +1222,25 @@ When updating this API, keep these files aligned:
 - `services/ai/app/models/harness.py`
 - `apps/web/lib/api.ts`
 - `packages/shared/src/`
+
+
+## Diagnostic events (foundation)
+
+`POST /diagnostics/events` accepts at most 100 closed `diagnostic-event-v1`
+objects from source `browser` in `{ "events": [...] }` (batch limit 1.6 MiB).
+It returns queue acceptance/drop counts, **not durable persistence or business
+commit evidence**. Clients retry offline batches with the same event IDs;
+the local diagnostic database deduplicates persisted IDs. Invalid content is
+rejected with a fixed error code without echoing inputs.
+
+`GET /diagnostics/events?after=0&limit=100` returns ordered `{sequence,event}`
+items, `next_cursor`, and writer health. Optional filters: `request_id`,
+`action_id`, `page_view_id`, `flow_id`, `source`. Diagnostic requests do not
+recursively collect events. Source `browser` correlation fields are untrusted
+hints; source `server` request IDs are allocated anew for each HTTP request.
+A transport `request_finished` (including HTTP 200) does not prove domain commit.
+
+Server events use an isolated append SQLite database under
+`storage_root/diagnostics/events.sqlite3`. Current limits are 1,000 queued events
+and 10,000 retained rows; time/byte retention and audit export are subsequent
+implementation steps in `docs/plans/unified-debug.md`.

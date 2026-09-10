@@ -56,6 +56,36 @@ class DiagnosticTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
             self.assertEqual(json.loads(rows[0][0])["request_id"], "real_request")
 
+    def test_ingest_deduplicates_and_filters_without_recursive_collection(self):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from app.api.diagnostic_routes import router
+        with TemporaryDirectory() as directory:
+            store = DiagnosticStore(Path(directory) / "events.db")
+            store.start()
+            self.addCleanup(store.close)
+            app = FastAPI()
+            app.state.diagnostics = store
+            app.add_middleware(DiagnosticMiddleware)
+            app.include_router(router)
+            event = DiagnosticEventV1(event_id="browser_event", source="browser",
+                                      name="request_started", timestamp="2026-09-10",
+                                      action_id="persona_save").model_dump()
+            with TestClient(app) as client:
+                for _ in range(2):
+                    self.assertEqual(client.post("/diagnostics/events", json={"events": [event]}).status_code, 200)
+                store.queue.join()
+                result = client.get("/diagnostics/events?action_id=persona_save").json()
+                self.assertEqual(len(result["items"]), 1)
+                cursor = result["next_cursor"]
+                self.assertEqual(client.get(f"/diagnostics/events?after={cursor}").json()["items"], [])
+                self.assertEqual(client.get("/diagnostics/events?action_id=other").json()["items"], [])
+                bad = client.post("/diagnostics/events", json={"events": [{**event, "prompt": "secret_material"}]})
+                self.assertEqual(bad.status_code, 422)
+                self.assertNotIn("secret_material", bad.text)
+                self.assertEqual(client.post("/diagnostics/events", json={"events": [{**event, "source": "server"}]}).status_code, 422)
+                self.assertEqual(len(client.get("/diagnostics/events").json()["items"]), 1)
+
     def test_asgi_records_body_completion_and_resets_context(self):
         async def scenario(failure=False):
             events = []

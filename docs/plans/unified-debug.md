@@ -9,6 +9,7 @@
   - 结构化 Python logging、前端请求入口及有界事件存储；在容器构造前初始化 logging。先打通 Persona 生成 → 保存 → 重载的纵向样例。
   - 关联 ID 仅用于诊断，不参与授权或幂等判断；跨线程、流式结束、取消和请求重放都必须正确关联。
   - 2026-09-10 基础切片 A：已建立封闭 Python/TypeScript 事件契约、独立 SQLite 有界异步写入、结构化脱敏 Python 输出及 ASGI 请求/流式终态关联；原生 stream worker 显式复制上下文。10 项诊断/生命周期测试和 shared contracts 门通过。尚待浏览器采集、Persona 纵向关联、摄取/查询及更完整故障门；本项保持未完成。
+  - 2026-09-10 基础切片 B：浏览器统一请求采集、关闭浮窗持续记录、100 条批量上传与原 ID 离线重试、摄取白名单、游标查询及 request/action/page-view/flow/source 索引已接入。11 项后端诊断/生命周期测试、Web 类型检查及完整 Web reliability 门通过（原有两个 live-backend 用例按配置跳过）。Persona 跨动作 flow 与真实 Harness 引用仍待接入。
 
 - [ ] `OBS-FLOWS-001` `[P1]` 覆盖全部功能流程和 Harness 性能记录；依赖 `OBS-FOUNDATION-001`。
   - 覆盖 Document/OCR/清洗、Planning/tools、Persona/Scene、Study/题目/附件、Tavern、Settings/Vault、导入导出及桌面启动/sidecar 退出。
@@ -32,7 +33,8 @@
 Implementation is tracked by the four tasks above; the root [TODO](../../TODO.md) links here. This section is the target architecture,
 not a claim that every component is implemented. The initial server event store
 exists under `storage_root/diagnostics/events.sqlite3`; it retains at most 10,000
-rows using a 1,000-event queue. Time/byte retention, ingestion, query, exports and
+rows using a 1,000-event queue. Browser ingestion and cursor query are available at `/diagnostics/events`,
+including writer health counters. Time/byte retention, exports and global UI
 health visibility are still pending. Console logging intentionally excludes
 unreviewed formatted messages and exception text.
 

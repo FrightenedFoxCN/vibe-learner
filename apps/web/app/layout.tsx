@@ -2,6 +2,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { DiagnosticCollector } from "../components/diagnostic-collector";
 import { DebugProvider } from "../components/debug-provider";
 import { DebugOverlay } from "../components/debug-overlay";
 import { DesktopStartupGuard } from "../components/desktop-startup-guard";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <RuntimeSettingsProvider>
           <DesktopStartupGuard />
+          <DiagnosticCollector />
           <DebugProvider>
             <PageDebugProvider>
               <LearningPageCacheProvider>
