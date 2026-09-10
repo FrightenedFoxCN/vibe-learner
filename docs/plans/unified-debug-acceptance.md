@@ -4,55 +4,83 @@ This is a requirement audit of [the active plan](unified-debug.md), not a
 replacement scope. The overall goal remains active. Independent quality review
 is deferred as requested; implementer tests are not presented as that review.
 
-## Verified release checkpoint
+## Current evidence checkpoint (2026-09-10)
 
-Code revision: `8fdf4f1fe461704c1048a4c6daa777264ba2a8ae`.
-On 2026-09-10, `npm run check:release` exited successfully:
+Audited source revision: `2616b10`. This replaces the old summary matrix;
+chronological sections below remain historical evidence with their original scope.
+Only `OBS-FOUNDATION-001` is checked in the implementation plan. The other three
+items remain open; implemented slices are distinguished from final acceptance.
 
-- Shared contracts and Web type/reliability gates passed.
-- All 13 Harness PR suites passed (three pilots and ten stage regressions).
-- All 715 backend tests passed in 58.715 seconds.
-- Production Next.js build passed.
+The latest complete release run is `/tmp/diagnostic-schema-release.log`: 745
+backend tests passed in 78.999 seconds, shared/Web reliability and type gates,
+all 13 Harness PR suites, and the production build passed. Since that run,
+Settings safe projections passed `npm run check`, production build and all 14
+Chromium diagnostic scenarios (`/tmp/settings-debug-{check,build,browser}.log`).
+Native existing-Vault unlock and save-dialog export were inspected in the actual
+macOS application. Eleven ordinary native tests passed after adding opt-in
+performance probes. The final native normal-build check passed after the
+unsuccessful sorting experiment was reverted. These are different scopes and
+must not be reported as a single fresh full release run.
 
-This gate does not run native tests or certify all diagnostic interaction chains.
-The immediately preceding spool slice separately passed all 10 Rust library
-tests, including actual sidecar subprocess exits and concurrent native writers.
-The production Chromium diagnostic suite most recently passed all three
-scenarios in the storage-state slice. The user's unrelated icon modification is
-excluded from implementation commits and this change-scope claim.
+For this audit, `uv run --directory services/ai python -m unittest discover -s
+tests -p 'test_diagnostic*.py'` passed all 110 diagnostic tests in 9.976 seconds
+using the configured temporary uv cache. Output:
+`/tmp/diagnostic-consolidated-audit-tests.log`. This targeted run covers the
+diagnostic fault/query/export suites named below, not the full backend suite.
 
-## Requirement audit
+The unrelated desktop icon modification is excluded from all these commits.
+Independent quality review remains deferred by the user. No implementer test,
+benchmark or native inspection is represented as that review.
 
-| Plan requirement | Current evidence | Remaining work / conclusion |
+## Requirement-to-evidence audit
+
+Paths in this table are relative to repository root. Passing tests establish only
+their described cases; an unavailable measurement or platform remains unknown.
+
+| Requirement | Inspected authoritative evidence | Current conclusion |
 | --- | --- | --- |
-| Shared event identities, safe fields, classification and bounded browser/server collection | `models/diagnostic.py`, `packages/shared/src/diagnostic.ts`, classification fixtures; diagnostic/query tests | Foundation implemented; it remains the only completed top-level item. |
-| Persona generate → save → reload correlation with Debug closed | `persona-diagnostics.test.jsx`, `diagnostics-live.spec.ts` real mock-backend Chromium chain | Verified for that chain; not evidence for every other feature. |
-| All workflow/stage and terminal Harness references | `harness_runtime.py`, `harness_broad_adoption.py`, restartable `diagnostic_index.py`; index/runtime and 13 Harness suites | Shared hooks exist. Per-workflow diagnostic-chain acceptance still needed for Document/OCR/cleanup, Planning, Scene, Study/question/attachment and Tavern. |
-| Logical action/flow correlation across requests and navigation | Default `diagnosticFetch` creates a request action context; Persona draft owns an explicit flow; Settings/Vault/import/export adapters exist | Audit other controllers' multi-request actions. A default per-request context with null flow does not prove one logical user flow is correlated. |
-| Resources and full association filtering | Persona/Scene/Document/Plan/Session/Tavern saved-resource references; canonical index and request drilldown | Canonical index projections and resource type/ID/role filters now cover the shared Harness vocabulary. Direct event references cover main saved-resource boundaries across these domains. Full fault/alternate-flow acceptance remains. Do not infer committed identity from URL parameters or HTTP success. |
-| Provider/tool timing, usage, recovery and missing evidence | Provider parent/attempt spans; 6 Planning and 31 Study tools; audit fixtures/tests | Implemented bounded telemetry with explicit missing cost/endpoint/context evidence. Existing missing-evidence labels must remain honest. |
-| Settings/Vault/import/export and desktop lifecycle | Local adapters/spool tests; existing native Vault unlock/read-back; macOS save-dialog export with strict JSON contract read-back | Existing Vault unlock and diagnostic export now verified on macOS. Settings Debug raw-secret exposure corrected and natively rechecked. Native create/save/lock diagnostic-chain evidence remains incomplete; do not infer it from unlock or synthetic library probes. |
-| Independent DebugProvider and page-view ownership | `debug-provider.tsx`, `owned-debug-snapshot.tsx`, StrictMode/unmount/route tests and Chromium navigation | Implemented and locally verified. Full task closure still depends on the unfinished flow coverage. |
-| Global filters, lazy queries, stale-response fencing and association drilldown | Timeline/query hooks, strict schemas, component tests, Chromium operation → request → events, 390px screenshots | Implemented for current filter/resource vocabulary; resource scope above remains incomplete. |
-| Retention, pagination, export and statistics | Event/link/index retention, writer epochs, pinned snapshot export, audit observations and P50/P95; browser downloads | Implemented slices with explicit gaps. No generic full-history or business-commit certification is made. |
-| Physical disk budget, cleanup and restart recovery | Incremental vacuum/checkpoint, guarded 128 MiB event and 64 MiB index admission; low-budget pinned-reader tests | Cooperating local Python writers are guarded. Bounded in-place legacy recovery now has startup/crash evidence; sources outside its workspace envelope defer safely. Installation-wide accounting/certification remains unfinished. |
-| Desktop spool process/crash behavior | Shared file lock, 256-file/4 MiB ring, modification-time expiry, atomic counter checkpoint, `.pending` recovery, two-process Rust tests | Local Unix evidence exists. Counter lower bounds, unknown files, legacy metadata and Windows/directory-sync limits remain explicit; spool now has bounded file-length observations; installation-wide accounting remains unfinished. |
-| Offline, crash, write failure, overflow, duplicates and large volume | Browser retry/overflow tests; writer/spool/quota tests; real process crash tests; 12,000-event benchmark | Substantial fault evidence exists. Complete a consolidated requirement-to-test audit, including any uncovered mixed/restart scenarios; don't close from happy-path samples. |
-| Performance overhead measurement | Reproducible local baseline and post-quota raw reports under `docs/performance/` | Server middleware/storage/query/export measured. Full-feature/native/browser collection/render overhead and justified acceptance gates remain unverified. |
+| Shared identities, categories, safe fields and initialization before container construction | `services/ai/app/models/diagnostic.py`, `packages/shared/src/diagnostic.ts`, classification fixture; `test_diagnostics.py` formatter, closed-contract, lifecycle and context tests | Foundation complete. Untrusted browser hints are not authority or admission IDs. |
+| Bounded client/server append collection and failure isolation | `diagnostics.ts`, `core/diagnostics.py`; queue, thread-start and failed-transaction tests in `test_diagnostics.py` and `test_diagnostic_failure_isolation.py` | Implemented; business commits survive diagnostic failures in tested actual application cases. |
+| Document, OCR and Study Unit cleanup | Real Chromium upload/parse/plan chain and corrupt-PDF correction; `test_diagnostic_document_flows.py`; `diagnostic_ocr_probe.py` and archived `unified-debug-ocr-v1.json` | Successful real local OCR and six canonical stage references verified; unavailable OCR and failed stream/retry have explicit not-committed evidence. OCR quality across documents is not certified. |
+| Planning and tools | Real Chromium parse → plan stream → Session action; `test_diagnostic_tool.py` exercises all 37 known tools' rejection telemetry plus actual Planning/Study success and budget failure | Plan identity, committed resource and tool observations verified within the named cases. Tool success does not establish an effect commit. |
+| Persona and Scene | Actual mock-backend Chromium generation/application/save/reload/CAS conflict; Persona/Scene hook diagnostic tests | Tested chains have editor-owned flows, separate actions and persisted resource identity; no generated content copied into global events. |
+| Study, attachments and interactive questions | Chromium lost-reply reload recovery, multipart success/rejection, answer CAS conflict/retry and automatic callback recovery | These branches have persisted read-back, callback flow retention and grading/content exclusion checks. No provider exactly-once claim. |
+| Tavern direct, partial/retry, cancellation and restart | Chromium direct/recovery, partial child retry and cancel; `test_diagnostic_tavern_flows.py`, `test_diagnostic_tavern_crash.py` | Canonical IDs and committed Message sequence inspected; actual child process exit and expired-lease takeover covered. Unflushed crash events remain unknown. |
+| Settings and native Vault | Safe-projection adversarial tests and actual controller Chromium test; native UI/save package plus `unified-debug-native-v1.json` and `unified-debug-native-save-v1.json` | Existing Vault unlock/read-back, two settings/Vault saves, lock and subsequent unlock verified on macOS. Successful creation and clear-secrets diagnostic chains remain unverified; locked/unavailable helper tests do not close them. |
+| JSON import and export actions | `bounded-json-import.ts`, `diagnostic-actions.test.ts`, `export-json.ts`; browser package download and native save-dialog file validated against `DiagnosticExportV1` | Read/JSON syntax/size outcomes and export handoff verified. **Gap found:** Persona/Scene domain normalization and stale-result rejection occur after the read span finishes; no complete import action currently records those outcomes. |
+| Native startup/sidecar exit and offline spool | `src/diagnostics.rs`, `diagnostic_desktop_spool.py`, real sidecar exit tests, native saved startup/shutdown events | Local Unix lifecycle and retry/acknowledgement verified. Spool empty and stable refusal counters indicate recovery, not proof of complete collection. Other platforms/power-loss semantics unverified. |
+| Provider timing, usage source, retry and configuration | `test_diagnostic_provider.py` plus `test_diagnostic_audit.py` real observer retry input | Parent/attempt identity, measured duration, reported-token-only aggregation and explicit missing fields verified. No current live MiniMax request or cost evidence; missing endpoint/configuration evidence is retained. |
+| Canonical index rebuild, late commits and resource links | `test_diagnostic_index.py`, query/export tests, browser operation → request → event drilldown | Source-owned projection, restart deduplication, late updates, deletion/unavailability and bounded resource vocabulary covered. Index is never substituted for current commit read-back. |
+| Independent Debug ownership and lazy querying | `debug-provider.tsx`, `owned-debug-snapshot.tsx`, route/StrictMode tests and actual navigation browser case | Implemented and locally verified; stale owner cleanup and responses cannot replace a current page. Closed Debug still collects, without preloading all domain data. |
+| Page/global timeline, filters, pagination and association expansion | 13 query tests, 10 timeline tests and real global-timeline Chromium scenario | Current filter vocabulary, strict nested decode, pagination limits, resource drilldown, 390px layout and unavailable-state rendering verified. |
+| Retention, cleanup and missing coverage | Event/link/index retention tests, writer epochs, exact byte limits and actual process-exit tests | Seven-day/row/payload retention and atomic loss counters verified; no full-history or zero-loss claim. |
+| Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
+| Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
+| Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
+| Performance overhead | Backend baseline/quota reports; Chromium collector and actual React timeline reports; native spool stages and Vault measurements | Collection and bounded transport-row rendering pass local budgets. Native saturated spool has both failed 25.21 ms and passing later observations; no acceptance closure from selected reruns. Complete business-workflow enabled/disabled comparisons and maximum nested-record/native WebView overhead remain unmeasured. |
+| Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
-## Completion sequence retained
+## Remaining completion work
 
-1. Complete the diagnostic resource vocabulary/associations and logical-flow
-   wiring, then validate each named product flow through its real boundaries.
-2. Complete installation accounting and validate the combined storage envelope,
-   retaining bounded legacy recovery, safe refusal and explicit crash/restart loss evidence.
-3. Exercise the successful native Vault/export paths and measure the remaining
-   frontend/native overhead within their actual platform scope.
-4. Re-run the necessary broad gates after those changes and repeat this audit.
-   Keep deferred independent review separate from implementer verification.
+1. Record complete Persona/Scene import actions through domain validation and
+   guarded draft application, including cancellation/stale-result outcomes. Keep
+   the existing read subspan distinct from importing a valid draft or saving it.
+2. Obtain native creation and clear-secrets success evidence in a separate
+   disposable test Vault, preserving the existing test Vault. Creation through
+   the UI requires the user to enter and submit the new credential under the
+   computer-use policy; synthetic library tests alone cannot certify that UI.
+3. Complete whole-workflow and remaining native/rendering overhead comparisons.
+   Retain the failed saturated-spool sample; do not weaken durability or widen
+   budgets solely to produce a passing result.
+4. Reconcile the documented physical-storage exceptions with final acceptance
+   claims; never certify an installation-wide 200 MiB hard limit from partial
+   scans or the normal-envelope arithmetic.
+5. Run the appropriate final release/native/browser gates, update the four
+   top-level plan items only to the extent proven, and archive the final result.
+   Deferred independent review stays separately identified.
 
-No top-level task is closed by this checkpoint. Full test/build success is a
-regression result; the missing acceptance items above remain required work.
+The table does not reopen verified chains merely because unrelated gates are
+unfinished, and it does not narrow any requirement to the subset already tested.
 
 ## Canonical resource projection slice
 
