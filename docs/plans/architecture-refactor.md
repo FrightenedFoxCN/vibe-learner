@@ -119,6 +119,8 @@
 
 - [x] Scene 字段重写、请求归属、恢复记录与撤销归入 `useSceneRewrite`；卸载、切换选中对象和导入场景均废弃旧回复。撤销核对场景 subject 与已应用字段值，拒绝覆盖后续手工编辑，导入清空旧撤销记录。5 项完整草稿/重写 Hook 协作测试通过，Web 类型/可靠性/生产构建及 15 项 Chromium 回归通过。
 
+- [x] Scene 场景库与可复用节点读写归入 `useSceneLibrary`，晚到初始列表与本地已确认写入/删除对账，单个列表失败不清空另一列表；同场景并发写入受本地守卫约束，API expectedRevision 保持不变。保存不覆盖后续用户选择，可复用节点状态由请求序号归属。6 项独立 Hook 测试、Web 类型/可靠性/生产构建及 15 项 Chromium 回归通过；读取失败提供页面 alert，常规进度提供 status。
+
 ### ARCH-TEST-SEAMS-001
 
 - [x] Settings 保存队列归入显式 `SettingsSaveCoordinator`，计时与持久化依赖可注入；`useSettingsSave` 负责 React 生命周期和 pagehide，密钥持久化仍由 Settings 领域适配器执行。移除源码切片/VM 模拟 effect 的测试，保留原 5 类故障/离页/恢复原值场景，新增归一化读回及普通保存队列覆盖。`test:settings:save` 包含 6 项协调器与 2 项真实 Hook 测试；Web 类型、可靠性门禁、生产构建和 12 项 Chromium 路由验收通过。该结果不替代桌面 Vault 与完整进程故障阶段门禁。

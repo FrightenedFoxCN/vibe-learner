@@ -25,6 +25,7 @@ import {
   inferTemplateIndexFromLayer,
 } from "../../lib/scene-editor-model";
 import { SceneDeleteDialog } from "../../components/scene/scene-delete-dialog";
+import { useSceneLibrary } from "../../hooks/use-scene-library";
 import { useSceneDraft } from "../../hooks/use-scene-draft";
 import { useSceneGeneration } from "../../hooks/use-scene-generation";
 import { readBoundedJsonImport } from "../../lib/bounded-json-import";
@@ -33,15 +34,7 @@ import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { useSceneRewrite, type RewriteUndoEntry } from "../../hooks/use-scene-rewrite";
 import {
-  createReusableSceneNode,
-  createSceneLibraryItem,
-  deleteReusableSceneNode,
-  deleteSceneLibraryItem,
-  listReusableSceneNodes,
-  listSceneLibrary,
   type ReusableSceneNodePayload,
-  type SceneLibraryItemPayload,
-  updateSceneLibraryItem,
 } from "../../lib/data/scenes";
 import {
   applyAsyncResult,
@@ -65,16 +58,16 @@ function formatDate(value: string) {
 }
 
 export default function SceneSetupPage() {
+  const {
+    savedScenes, reusableNodes, selectedSavedSceneId, setSelectedSavedSceneId,
+    createSceneLibraryItem, updateSceneLibraryItem, deleteSceneLibraryItem,
+    createReusableSceneNode, deleteReusableSceneNode, libraryError,
+    reusableActionPendingId, reusableMessage, reusableError, setReusableMessage, setReusableError, runReusableAction,
+  } = useSceneLibrary();
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
-  const [savedScenes, setSavedScenes] = useState<SceneLibraryItemPayload[]>([]);
-  const [selectedSavedSceneId, setSelectedSavedSceneId] = useState("");
   const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
   const [sceneIoMessage, setSceneIoMessage] = useState("");
-  const [reusableNodes, setReusableNodes] = useState<ReusableSceneNodePayload[]>([]);
   const [reusableSearchQuery, setReusableSearchQuery] = useState("");
-  const [reusableActionPendingId, setReusableActionPendingId] = useState("");
-  const [reusableMessage, setReusableMessage] = useState("");
-  const [reusableError, setReusableError] = useState("");
   const {
     sceneLayers,
     sceneName,
@@ -225,7 +218,7 @@ export default function SceneSetupPage() {
     () => ({
       title: "场景页调试面板",
       subtitle: "查看场景树、生成结果和错误。",
-      error: [rewriteError, sceneGenerateError, reusableError].filter(Boolean).join("；"),
+      error: [rewriteError, sceneGenerateError, reusableError, libraryError].filter(Boolean).join("；"),
       summary: [
         { label: "场景名称", value: sceneName || "-" },
         { label: "选中层级", value: selectedLayer?.title || selectedLayerId || "-" },
@@ -246,6 +239,7 @@ export default function SceneSetupPage() {
     }),
     [
       generatedSceneCandidate,
+      libraryError,
       reusableError,
       reusableNodes,
       rewriteModelRecoveries,
@@ -263,34 +257,6 @@ export default function SceneSetupPage() {
 
   usePageDebugSnapshot(debugSnapshot);
 
-  useEffect(() => {
-    let active = true;
-    const hydrateLibrary = async () => {
-      try {
-        const [items, reusableItems] = await Promise.all([
-          listSceneLibrary(),
-          listReusableSceneNodes(),
-        ]);
-        if (!active) {
-          return;
-        }
-        setSavedScenes(items);
-        setReusableNodes(reusableItems);
-        setSelectedSavedSceneId((current) => current || items[0]?.sceneId || "");
-      } catch {
-        if (active) {
-          setSavedScenes([]);
-          setReusableNodes([]);
-        }
-      }
-    };
-
-    void hydrateLibrary();
-    return () => {
-      active = false;
-    };
-  }, []);
-
   function updateLayer(targetId: string, updater: (layer: SceneLayer) => SceneLayer) {
     updateSceneLayersState((current) => updateLayerTree(current, targetId, updater));
   }
@@ -304,11 +270,7 @@ export default function SceneSetupPage() {
     if (!targetLayer) {
       return;
     }
-    setReusableError("");
-    setReusableMessage("");
-    setReusableActionPendingId(targetLayer.id);
-    try {
-      const created = await createReusableSceneNode({
+    await runReusableAction(targetLayer.id, `已将层级 "${targetLayer.title}" 加入可复用节点库。`, () => createReusableSceneNode({
         nodeType: "layer",
         title: targetLayer.title,
         summary: targetLayer.summary,
@@ -318,22 +280,11 @@ export default function SceneSetupPage() {
         sourceSceneId: sceneProfilePreview?.sceneId ?? "",
         sourceSceneName: sceneName.trim(),
         layerNode: normalizeSceneTreeNodeForProfile(targetLayer),
-      });
-      setReusableNodes((current) => [created, ...current]);
-      setReusableMessage(`已将层级 "${targetLayer.title}" 加入可复用节点库。`);
-    } catch (error) {
-      setReusableError(String(error));
-    } finally {
-      setReusableActionPendingId("");
-    }
+      }));
   }
 
   async function saveObjectToReusableLibrary(object: SceneObject) {
-    setReusableError("");
-    setReusableMessage("");
-    setReusableActionPendingId(object.id);
-    try {
-      const created = await createReusableSceneNode({
+    await runReusableAction(object.id, `已将物体 "${object.name}" 加入可复用节点库。`, () => createReusableSceneNode({
         nodeType: "object",
         title: object.name,
         summary: object.description,
@@ -351,28 +302,11 @@ export default function SceneSetupPage() {
           reuseId: object.reuseId,
           reuseHint: object.reuseHint,
         },
-      });
-      setReusableNodes((current) => [created, ...current]);
-      setReusableMessage(`已将物体 "${object.name}" 加入可复用节点库。`);
-    } catch (error) {
-      setReusableError(String(error));
-    } finally {
-      setReusableActionPendingId("");
-    }
+      }));
   }
 
   async function deleteReusableNode(nodeId: string) {
-    setReusableError("");
-    setReusableMessage("");
-    setReusableActionPendingId(nodeId);
-    try {
-      await deleteReusableSceneNode(nodeId);
-      setReusableNodes((current) => current.filter((item) => item.nodeId !== nodeId));
-    } catch (error) {
-      setReusableError(String(error));
-    } finally {
-      setReusableActionPendingId("");
-    }
+    await runReusableAction(nodeId, "", () => deleteReusableSceneNode(nodeId));
   }
 
   function insertReusableNode(item: ReusableSceneNodePayload) {
@@ -519,13 +453,10 @@ export default function SceneSetupPage() {
           ...payload,
           expectedRevision: selectedSavedScene.revision,
         });
-        setSavedScenes((current) => current.map((item) => (item.sceneId === updated.sceneId ? updated : item)));
         setSceneIoMessage(`已更新已保存场景“${updated.sceneName}”。`);
         return;
       }
       const created = await createSceneLibraryItem(payload);
-      setSavedScenes((current) => [created, ...current.filter((item) => item.sceneId !== created.sceneId)]);
-      setSelectedSavedSceneId(created.sceneId);
       setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
     } catch {
       setSceneIoMessage("保存到场景库失败，请稍后重试。");
@@ -566,10 +497,6 @@ export default function SceneSetupPage() {
     }
     try {
       await deleteSceneLibraryItem(sceneId);
-      setSavedScenes((current) => current.filter((item) => item.sceneId !== sceneId));
-      if (selectedSavedSceneId === sceneId) {
-        setSelectedSavedSceneId("");
-      }
       setSceneIoMessage(`已删除场景“${target.sceneName}”。`);
     } catch {
       setSceneIoMessage("删除场景失败，请稍后重试。");
@@ -908,7 +835,8 @@ export default function SceneSetupPage() {
         <div style={styles.headingRow}>
           <h1 ref={pageHeadingRef} tabIndex={-1} style={styles.pageTitle}>场景搭建</h1>
           <ProviderTruth scope="scene" />
-          <div style={styles.notice}>{pageNotice}</div>
+          <div style={styles.notice} role="status" aria-live="polite">{pageNotice}</div>
+          {libraryError ? <p role="alert" style={styles.errorText}>部分场景库数据未能读取，请刷新页面重试。</p> : null}
         </div>
       </div>
 
