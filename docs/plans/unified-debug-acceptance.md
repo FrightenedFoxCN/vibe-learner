@@ -904,3 +904,17 @@ both pass 50 ms. Every enabled sample has zero drops/read/write failures.
 [Method and both raw populations](../performance/diagnostic-tavern-workflow-v1.md)
 retain all samples and code digests. This does not certify live-provider latency
 or reopen separately tested fault paths. Study/native performance remains open.
+
+## Study full request-chain overhead
+
+Thirty isolated pairs create Session → chat → query receipt → reload Session
+using actual mock-provider admission/commit. The entire committed receipt and
+Session match read-back; Turn ID/sequence, reply, citations and Character Events
+agree, with exactly one revision increment and appended Turn. Prerequisite
+Document traces are excluded by a pre-chain snapshot. All samples reference one
+new committed `study_chat_reply` trace. Enabled emits 16 correlated events with
+zero drops/read/write failures. P95 signed overhead is 22.07 ms, maximum 24.87 ms,
+passing the unchanged 50 ms gate. [Method/raw report](../performance/diagnostic-study-workflow-v1.md)
+retain all samples, stage/GC observations and three source digests. Existing
+workflow branches receive compatibility smokes; remaining native/rendering and
+final acceptance continue.

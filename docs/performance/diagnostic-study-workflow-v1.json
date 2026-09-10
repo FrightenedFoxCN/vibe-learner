@@ -1,0 +1,7191 @@
+{
+  "schema_version": "diagnostic-study-workflow-benchmark-v1",
+  "timestamp": "2026-09-10T14:13:21.489444+00:00",
+  "stage_profiling": true,
+  "isolated_sample_processes": true,
+  "gc_policy": "Python default; no forced collection or disabling",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "python": "3.12.13",
+  "warmup_pairs": 3,
+  "sample_pairs": 30,
+  "scope": "Actual in-process ASGI study generation with mock provider and persisted reload; document_plan includes PDF upload and actual parsing and Planning streams. Fresh app/storage per sample; timing excludes startup, post-response drain, browser/native UI, network and live provider. Structured console logging remains the same in both modes.",
+  "disabled_control": "Test-only null event sink, middleware bypass, index/spool workers not started; canonical Harness lifecycle unchanged.",
+  "budget_ms": 50,
+  "gate": "P95 paired enabled-minus-disabled request-chain overhead <=50 ms; signed deltas retained.",
+  "passed": true,
+  "summary": {
+    "enabled": {
+      "sample_count": 30,
+      "p50_ms": 50.161292,
+      "p95_ms": 70.011333,
+      "max_ms": 70.932166
+    },
+    "disabled": {
+      "sample_count": 30,
+      "p50_ms": 47.922667,
+      "p95_ms": 51.018333,
+      "max_ms": 79.164458
+    },
+    "paired_delta": {
+      "sample_count": 30,
+      "p50_ms": 2.278958000000003,
+      "p95_ms": 22.071249999999992,
+      "max_ms": 24.871040999999998
+    },
+    "post_response_drain": {
+      "sample_count": 30,
+      "p50_ms": 1.259084,
+      "p95_ms": 1.264459,
+      "max_ms": 1.26475
+    }
+  },
+  "raw": [
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 48.295708,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.964208,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 41.802208,
+            "gc_overlap_ms": 1.181293
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.059459,
+            "gc_overlap_ms": 0.102042
+          },
+          "session_reload": {
+            "elapsed_ms": 1.250709,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.103709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028125
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.318833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.107334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.102042
+          }
+        ],
+        "post_response_drain_ms": 1.262084,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 46.04575,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.351417,
+            "gc_overlap_ms": 0.09275
+          },
+          "chat": {
+            "elapsed_ms": 40.945625,
+            "gc_overlap_ms": 1.110709
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.748709,
+            "gc_overlap_ms": 0.113709
+          },
+          "session_reload": {
+            "elapsed_ms": 0.791167,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.09275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0705
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027875
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.413042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.024541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0715
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.080583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.113709
+          }
+        ]
+      },
+      "delta_ms": 2.2499579999999995
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 49.314458,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.765125,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 42.963,
+            "gc_overlap_ms": 1.211794
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.295834,
+            "gc_overlap_ms": 0.1135
+          },
+          "session_reload": {
+            "elapsed_ms": 1.073542,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.122166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02875
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.410625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.025625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06075
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.1135
+          }
+        ],
+        "post_response_drain_ms": 1.258209,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.83925,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.326292,
+            "gc_overlap_ms": 0.088292
+          },
+          "chat": {
+            "elapsed_ms": 43.707625,
+            "gc_overlap_ms": 1.084209
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.794833,
+            "gc_overlap_ms": 0.106667
+          },
+          "session_reload": {
+            "elapsed_ms": 0.816959,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.088292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.035291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.372875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.032084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.077834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106667
+          }
+        ]
+      },
+      "delta_ms": 0.4752080000000021
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 70.932166,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 6.635583,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 60.495291,
+            "gc_overlap_ms": 1.232499
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.498708,
+            "gc_overlap_ms": 0.119583
+          },
+          "session_reload": {
+            "elapsed_ms": 1.066875,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.123625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02875
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.404417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05525
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.085208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.119583
+          }
+        ],
+        "post_response_drain_ms": 1.259125,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 46.061125,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.337875,
+            "gc_overlap_ms": 0.089625
+          },
+          "chat": {
+            "elapsed_ms": 40.811083,
+            "gc_overlap_ms": 1.04425
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.862125,
+            "gc_overlap_ms": 0.110125
+          },
+          "session_reload": {
+            "elapsed_ms": 0.859542,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.089625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.077791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027584
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.340667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02775
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.078
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.110125
+          }
+        ]
+      },
+      "delta_ms": 24.871040999999998
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 48.793042,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.736917,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 42.6455,
+            "gc_overlap_ms": 1.168582
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.168041,
+            "gc_overlap_ms": 0.1165
+          },
+          "session_reload": {
+            "elapsed_ms": 1.02275,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.111375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028125
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.355542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0675
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.01725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05425
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.088417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.1165
+          }
+        ],
+        "post_response_drain_ms": 1.131333,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 46.747666,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.734,
+            "gc_overlap_ms": 0.098875
+          },
+          "chat": {
+            "elapsed_ms": 41.19475,
+            "gc_overlap_ms": 1.025667
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.740875,
+            "gc_overlap_ms": 0.106584
+          },
+          "session_reload": {
+            "elapsed_ms": 0.86125,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.098875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.078334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027167
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.323166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03475
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.025541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.091375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106584
+          }
+        ]
+      },
+      "delta_ms": 2.0453759999999974
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 50.12375,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.940458,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.882583,
+            "gc_overlap_ms": 1.229832
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.02375,
+            "gc_overlap_ms": 0.107083
+          },
+          "session_reload": {
+            "elapsed_ms": 1.063375,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.117083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02825
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.377291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.019042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0665
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.092625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.107083
+          }
+        ],
+        "post_response_drain_ms": 1.26475,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.820583,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.337416,
+            "gc_overlap_ms": 0.095
+          },
+          "chat": {
+            "elapsed_ms": 42.017708,
+            "gc_overlap_ms": 1.106085
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.337291,
+            "gc_overlap_ms": 0.109333
+          },
+          "session_reload": {
+            "elapsed_ms": 0.925,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.095
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03475
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.36275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.08525
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.077
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.109333
+          }
+        ]
+      },
+      "delta_ms": 2.303167000000002
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 51.593083,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.70225,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 45.128042,
+            "gc_overlap_ms": 1.151626
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.376417,
+            "gc_overlap_ms": 0.135917
+          },
+          "session_reload": {
+            "elapsed_ms": 1.164334,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.121209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028166
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.315042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.034333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.019292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.135917
+          }
+        ],
+        "post_response_drain_ms": 1.260042,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 79.164458,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.482416,
+            "gc_overlap_ms": 0.100542
+          },
+          "chat": {
+            "elapsed_ms": 73.755125,
+            "gc_overlap_ms": 2.537625
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.910333,
+            "gc_overlap_ms": 0.104541
+          },
+          "session_reload": {
+            "elapsed_ms": 0.824209,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.100542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0775
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.239167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.096541
+          },
+          {
+            "generation": 1,
+            "duration_ms": 1.028042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.141
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.183125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.08925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0995
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.094958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104541
+          }
+        ]
+      },
+      "delta_ms": -27.571374999999996
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 49.609959,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.7335,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.0515,
+            "gc_overlap_ms": 1.174331
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.531583,
+            "gc_overlap_ms": 0.151584
+          },
+          "session_reload": {
+            "elapsed_ms": 1.083625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.120125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026541
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.363791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02975
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.016208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.081708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.151584
+          }
+        ],
+        "post_response_drain_ms": 1.256375,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.25375,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.470375,
+            "gc_overlap_ms": 0.0885
+          },
+          "chat": {
+            "elapsed_ms": 41.984292,
+            "gc_overlap_ms": 1.14629
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.692542,
+            "gc_overlap_ms": 0.114666
+          },
+          "session_reload": {
+            "elapsed_ms": 0.908833,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.0885
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029542
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.394208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.114666
+          }
+        ]
+      },
+      "delta_ms": 2.356209000000007
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 49.080917,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.66275,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.00975,
+            "gc_overlap_ms": 1.188542
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.118792,
+            "gc_overlap_ms": 0.132417
+          },
+          "session_reload": {
+            "elapsed_ms": 1.0785,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.120125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0405
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029333
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.366583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.087541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.132417
+          }
+        ],
+        "post_response_drain_ms": 1.259833,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.103958,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.6015,
+            "gc_overlap_ms": 0.109375
+          },
+          "chat": {
+            "elapsed_ms": 42.700875,
+            "gc_overlap_ms": 1.109085
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.777,
+            "gc_overlap_ms": 0.103083
+          },
+          "session_reload": {
+            "elapsed_ms": 0.83575,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.109375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.079458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0385
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029667
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.366667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.025875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0715
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103083
+          }
+        ]
+      },
+      "delta_ms": 0.9769590000000008
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 50.220708,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.756,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.989291,
+            "gc_overlap_ms": 1.247792
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.167958,
+            "gc_overlap_ms": 0.107875
+          },
+          "session_reload": {
+            "elapsed_ms": 1.093083,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.106416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0785
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029125
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.384333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.099625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.107875
+          }
+        ],
+        "post_response_drain_ms": 1.259083,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.747167,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.875375,
+            "gc_overlap_ms": 0.101042
+          },
+          "chat": {
+            "elapsed_ms": 42.139375,
+            "gc_overlap_ms": 1.117336
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.736875,
+            "gc_overlap_ms": 0.099292
+          },
+          "session_reload": {
+            "elapsed_ms": 0.794333,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.101042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.077042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029541
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.343959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.084917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.095625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.099292
+          }
+        ]
+      },
+      "delta_ms": 2.4735410000000044
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 50.567208,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.735625,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.267875,
+            "gc_overlap_ms": 1.219039
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.25125,
+            "gc_overlap_ms": 0.106667
+          },
+          "session_reload": {
+            "elapsed_ms": 1.108708,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.121292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05775
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026083
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.383792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.019291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.085791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106667
+          }
+        ],
+        "post_response_drain_ms": 1.259625,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.579542,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.440333,
+            "gc_overlap_ms": 0.099709
+          },
+          "chat": {
+            "elapsed_ms": 41.784959,
+            "gc_overlap_ms": 1.188416
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.223833,
+            "gc_overlap_ms": 0.122333
+          },
+          "session_reload": {
+            "elapsed_ms": 0.898708,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.099709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028917
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.481875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0295
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.073
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.076875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.122333
+          }
+        ]
+      },
+      "delta_ms": 2.9876660000000044
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 49.389666,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.731917,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.233333,
+            "gc_overlap_ms": 1.195456
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.169459,
+            "gc_overlap_ms": 0.111417
+          },
+          "session_reload": {
+            "elapsed_ms": 1.039375,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.107
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0425
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02925
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.356042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.086666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.111417
+          }
+        ],
+        "post_response_drain_ms": 1.258334,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.805375,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.569792,
+            "gc_overlap_ms": 0.089083
+          },
+          "chat": {
+            "elapsed_ms": 43.049834,
+            "gc_overlap_ms": 1.077086
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.052792,
+            "gc_overlap_ms": 0.107583
+          },
+          "session_reload": {
+            "elapsed_ms": 0.90825,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.089083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.078333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0305
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029417
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.353208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.032459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.077917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.107583
+          }
+        ]
+      },
+      "delta_ms": 0.5842910000000003
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 50.64725,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.881208,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.756083,
+            "gc_overlap_ms": 1.205794
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.518792,
+            "gc_overlap_ms": 0.124458
+          },
+          "session_reload": {
+            "elapsed_ms": 1.266417,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.10825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028625
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.351834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.080667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.088042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.124458
+          }
+        ],
+        "post_response_drain_ms": 1.256083,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.116167,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.808417,
+            "gc_overlap_ms": 0.100042
+          },
+          "chat": {
+            "elapsed_ms": 42.401708,
+            "gc_overlap_ms": 1.052292
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.790625,
+            "gc_overlap_ms": 0.113875
+          },
+          "session_reload": {
+            "elapsed_ms": 0.903959,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.100042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027334
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.328708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.078292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.025917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.093209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.113875
+          }
+        ]
+      },
+      "delta_ms": 2.5310830000000024
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 50.177792,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.8095,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.587583,
+            "gc_overlap_ms": 1.175376
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.180917,
+            "gc_overlap_ms": 0.122917
+          },
+          "session_reload": {
+            "elapsed_ms": 1.383125,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.110334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027375
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.344042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.09925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.122917
+          }
+        ],
+        "post_response_drain_ms": 1.260041,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.504625,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.894416,
+            "gc_overlap_ms": 0.109042
+          },
+          "chat": {
+            "elapsed_ms": 41.713583,
+            "gc_overlap_ms": 1.056751
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.728959,
+            "gc_overlap_ms": 0.112041
+          },
+          "session_reload": {
+            "elapsed_ms": 0.973667,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.109042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028792
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.334333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0285
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.091084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.112041
+          }
+        ]
+      },
+      "delta_ms": 2.6731669999999994
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 51.526125,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.804333,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 45.322958,
+            "gc_overlap_ms": 1.203626
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.091292,
+            "gc_overlap_ms": 0.103083
+          },
+          "session_reload": {
+            "elapsed_ms": 1.092667,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.105083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.035125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.034042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.034666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029667
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.38375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.087042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103083
+          }
+        ],
+        "post_response_drain_ms": 1.259084,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.686291,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.547333,
+            "gc_overlap_ms": 0.089833
+          },
+          "chat": {
+            "elapsed_ms": 42.32725,
+            "gc_overlap_ms": 1.087418
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.786667,
+            "gc_overlap_ms": 0.104042
+          },
+          "session_reload": {
+            "elapsed_ms": 0.829958,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.089833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0345
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029583
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.3565
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0285
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.08325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104042
+          }
+        ]
+      },
+      "delta_ms": 3.8398340000000033
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 50.695208,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.823916,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.291542,
+            "gc_overlap_ms": 1.240249
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.221291,
+            "gc_overlap_ms": 0.125209
+          },
+          "session_reload": {
+            "elapsed_ms": 1.134041,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.106958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028958
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.381541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06075
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0185
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05425
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.089375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.080959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.125209
+          }
+        ],
+        "post_response_drain_ms": 1.257708,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.507208,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.395542,
+            "gc_overlap_ms": 0.092042
+          },
+          "chat": {
+            "elapsed_ms": 43.3535,
+            "gc_overlap_ms": 1.150372
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.736042,
+            "gc_overlap_ms": 0.104792
+          },
+          "session_reload": {
+            "elapsed_ms": 0.820791,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.092042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027709
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.386041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.087083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104792
+          }
+        ]
+      },
+      "delta_ms": 2.1880000000000024
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 51.263583,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.025958,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.823875,
+            "gc_overlap_ms": 1.235042
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.113916,
+            "gc_overlap_ms": 0.108167
+          },
+          "session_reload": {
+            "elapsed_ms": 1.068208,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.134916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028917
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.377959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.093541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0735
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.108167
+          }
+        ],
+        "post_response_drain_ms": 1.257583,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.922667,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.695125,
+            "gc_overlap_ms": 0.107875
+          },
+          "chat": {
+            "elapsed_ms": 42.55325,
+            "gc_overlap_ms": 1.065045
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.679541,
+            "gc_overlap_ms": 0.115
+          },
+          "session_reload": {
+            "elapsed_ms": 0.814792,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.107875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.073292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0285
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.324834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02675
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.084875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.097459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0615
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.115
+          }
+        ]
+      },
+      "delta_ms": 3.340916
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 50.908291,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.265708,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.040917,
+            "gc_overlap_ms": 1.23575
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.185875,
+            "gc_overlap_ms": 0.11
+          },
+          "session_reload": {
+            "elapsed_ms": 1.185167,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.115459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02925
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.368417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.035958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.092959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.11
+          }
+        ],
+        "post_response_drain_ms": 1.264459,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.102541,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.562958,
+            "gc_overlap_ms": 0.099458
+          },
+          "chat": {
+            "elapsed_ms": 42.317917,
+            "gc_overlap_ms": 1.088832
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.1625,
+            "gc_overlap_ms": 0.11725
+          },
+          "session_reload": {
+            "elapsed_ms": 0.850417,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.099458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.355792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.035833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0615
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.11725
+          }
+        ]
+      },
+      "delta_ms": 2.805749999999996
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 49.824834,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.013458,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.447417,
+            "gc_overlap_ms": 1.152706
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.065375,
+            "gc_overlap_ms": 0.097167
+          },
+          "session_reload": {
+            "elapsed_ms": 1.08875,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.107375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.035375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02975
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028167
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.319666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.095833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.097167
+          }
+        ],
+        "post_response_drain_ms": 1.259458,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 51.018333,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.16425,
+            "gc_overlap_ms": 0.127
+          },
+          "chat": {
+            "elapsed_ms": 44.971209,
+            "gc_overlap_ms": 1.156376
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.815875,
+            "gc_overlap_ms": 0.110167
+          },
+          "session_reload": {
+            "elapsed_ms": 0.858917,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.127
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.07925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028625
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.391958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.086375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.088041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.110167
+          }
+        ]
+      },
+      "delta_ms": -1.1934989999999956
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 49.439375,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.803708,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 42.992708,
+            "gc_overlap_ms": 1.169376
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.246542,
+            "gc_overlap_ms": 0.121833
+          },
+          "session_reload": {
+            "elapsed_ms": 1.172166,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.106875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028708
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.3245
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.019
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.079209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.121833
+          }
+        ],
+        "post_response_drain_ms": 1.261459,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.157708,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.709417,
+            "gc_overlap_ms": 0.102375
+          },
+          "chat": {
+            "elapsed_ms": 42.543833,
+            "gc_overlap_ms": 1.09204
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.802791,
+            "gc_overlap_ms": 0.115458
+          },
+          "session_reload": {
+            "elapsed_ms": 0.90125,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.102375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.071875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027458
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.358625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.077458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.090042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.115458
+          }
+        ]
+      },
+      "delta_ms": 1.2816669999999988
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 70.011333,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.445125,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 62.942458,
+            "gc_overlap_ms": 1.803293
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.2035,
+            "gc_overlap_ms": 0.123333
+          },
+          "session_reload": {
+            "elapsed_ms": 1.199209,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.282
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.169959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.086833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040958
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.475334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.154875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.019042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.123333
+          }
+        ],
+        "post_response_drain_ms": 1.257917,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.940083,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.50125,
+            "gc_overlap_ms": 0.111125
+          },
+          "chat": {
+            "elapsed_ms": 42.521333,
+            "gc_overlap_ms": 1.146748
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.813084,
+            "gc_overlap_ms": 0.119709
+          },
+          "session_reload": {
+            "elapsed_ms": 0.892625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.111125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.082167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028875
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.356583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0305
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.112583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.023416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.096084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.119709
+          }
+        ]
+      },
+      "delta_ms": 22.071249999999992
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 51.005708,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.734667,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.466375,
+            "gc_overlap_ms": 1.223915
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.390292,
+            "gc_overlap_ms": 0.12825
+          },
+          "session_reload": {
+            "elapsed_ms": 1.208208,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.120042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.046959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.043042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027583
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.356875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.09925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.084333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.12825
+          }
+        ],
+        "post_response_drain_ms": 1.258125,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.649875,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.528375,
+            "gc_overlap_ms": 0.09225
+          },
+          "chat": {
+            "elapsed_ms": 41.848083,
+            "gc_overlap_ms": 1.119291
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.12225,
+            "gc_overlap_ms": 0.133875
+          },
+          "session_reload": {
+            "elapsed_ms": 0.945,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.09225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.076166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.052083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.032209
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.386875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06175
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03975
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.025625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.081667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.133875
+          }
+        ]
+      },
+      "delta_ms": 3.355832999999997
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 50.367042,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.167,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.62675,
+            "gc_overlap_ms": 1.192628
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.229875,
+            "gc_overlap_ms": 0.103334
+          },
+          "session_reload": {
+            "elapsed_ms": 1.116584,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.113458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0295
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.351542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.01925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.091917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.103334
+          }
+        ],
+        "post_response_drain_ms": 1.258541,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.853333,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.459,
+            "gc_overlap_ms": 0.098834
+          },
+          "chat": {
+            "elapsed_ms": 43.49175,
+            "gc_overlap_ms": 1.127832
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.867209,
+            "gc_overlap_ms": 0.112792
+          },
+          "session_reload": {
+            "elapsed_ms": 0.822,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.098834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.083458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.379417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0275
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.073875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.086625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0605
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.112792
+          }
+        ]
+      },
+      "delta_ms": 1.5137089999999986
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 49.972958,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.833208,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.820792,
+            "gc_overlap_ms": 1.224334
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.093208,
+            "gc_overlap_ms": 0.117791
+          },
+          "session_reload": {
+            "elapsed_ms": 1.012625,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.10025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05775
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0285
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.377791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0515
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.098834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.117791
+          }
+        ],
+        "post_response_drain_ms": 1.258834,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.119959,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.490208,
+            "gc_overlap_ms": 0.1035
+          },
+          "chat": {
+            "elapsed_ms": 41.576417,
+            "gc_overlap_ms": 1.053459
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.870333,
+            "gc_overlap_ms": 0.112791
+          },
+          "session_reload": {
+            "elapsed_ms": 0.967459,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.1035
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0675
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028917
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.34925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.068875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.082458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.058
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.112791
+          }
+        ]
+      },
+      "delta_ms": 2.852998999999997
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 50.495459,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.942125,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.147708,
+            "gc_overlap_ms": 1.202083
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.131417,
+            "gc_overlap_ms": 0.102917
+          },
+          "session_reload": {
+            "elapsed_ms": 1.061209,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.112792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.063333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.034
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027542
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.37925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.082792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.102917
+          }
+        ],
+        "post_response_drain_ms": 1.260291,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.130291,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.356208,
+            "gc_overlap_ms": 0.083916
+          },
+          "chat": {
+            "elapsed_ms": 42.104,
+            "gc_overlap_ms": 1.114832
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.693625,
+            "gc_overlap_ms": 0.106542
+          },
+          "session_reload": {
+            "elapsed_ms": 0.78375,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.083916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.082541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.051292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030625
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.380458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02475
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.090583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.080292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106542
+          }
+        ]
+      },
+      "delta_ms": 3.365167999999997
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 50.161292,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.090917,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.422625,
+            "gc_overlap_ms": 1.238043
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.133292,
+            "gc_overlap_ms": 0.114083
+          },
+          "session_reload": {
+            "elapsed_ms": 1.279083,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.117667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029916
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.391917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.092792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.114083
+          }
+        ],
+        "post_response_drain_ms": 1.259584,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.882334,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.391209,
+            "gc_overlap_ms": 0.096209
+          },
+          "chat": {
+            "elapsed_ms": 42.198583,
+            "gc_overlap_ms": 1.117833
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.194083,
+            "gc_overlap_ms": 0.120709
+          },
+          "session_reload": {
+            "elapsed_ms": 0.888083,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.096209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.047292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029083
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.397708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.081833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.057042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.120709
+          }
+        ]
+      },
+      "delta_ms": 2.278958000000003
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 49.987125,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.0185,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.318542,
+            "gc_overlap_ms": 1.213833
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.205875,
+            "gc_overlap_ms": 0.110875
+          },
+          "session_reload": {
+            "elapsed_ms": 1.214833,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.119167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0585
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028667
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.361584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064916
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059166
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0705
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.091125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.110875
+          }
+        ],
+        "post_response_drain_ms": 1.260416,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.720666,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.641792,
+            "gc_overlap_ms": 0.098458
+          },
+          "chat": {
+            "elapsed_ms": 42.0935,
+            "gc_overlap_ms": 1.094541
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.874333,
+            "gc_overlap_ms": 0.108667
+          },
+          "session_reload": {
+            "elapsed_ms": 0.891083,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.098458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0305
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02925
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.359375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.091541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.108667
+          }
+        ]
+      },
+      "delta_ms": 2.2664589999999976
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 49.946792,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 3.194292,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.395917,
+            "gc_overlap_ms": 1.254416
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.031,
+            "gc_overlap_ms": 0.114166
+          },
+          "session_reload": {
+            "elapsed_ms": 1.104291,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.114208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028958
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.3765
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.018334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.066708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.106292
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.114166
+          }
+        ],
+        "post_response_drain_ms": 1.263708,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.034125,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.597084,
+            "gc_overlap_ms": 0.105834
+          },
+          "chat": {
+            "elapsed_ms": 42.746,
+            "gc_overlap_ms": 1.151665
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.692958,
+            "gc_overlap_ms": 0.10325
+          },
+          "session_reload": {
+            "elapsed_ms": 0.813542,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.105834
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.102584
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.054666
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040041
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03075
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029875
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.373667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.070042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.044042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0685
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.101291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.10325
+          }
+        ]
+      },
+      "delta_ms": 1.912666999999999
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 49.752417,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.760583,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.637209,
+            "gc_overlap_ms": 1.205248
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.021875,
+            "gc_overlap_ms": 0.098958
+          },
+          "session_reload": {
+            "elapsed_ms": 1.12275,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.145167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.042875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031791
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030084
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.340208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.050416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.01825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.053541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055958
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.090083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.098958
+          }
+        ],
+        "post_response_drain_ms": 1.26275,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 50.871542,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.395917,
+            "gc_overlap_ms": 0.099167
+          },
+          "chat": {
+            "elapsed_ms": 45.499625,
+            "gc_overlap_ms": 1.337875
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.82075,
+            "gc_overlap_ms": 0.111125
+          },
+          "session_reload": {
+            "elapsed_ms": 0.9295,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.099167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.140458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.056458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.112542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.033541
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030417
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.450458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0295
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.030459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.03725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.025208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.079375
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.082417
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.111125
+          }
+        ]
+      },
+      "delta_ms": -1.1191249999999968
+    },
+    {
+      "first": "enabled",
+      "enabled": {
+        "elapsed_ms": 49.7535,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.868417,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 43.545208,
+            "gc_overlap_ms": 1.204334
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.058833,
+            "gc_overlap_ms": 0.105708
+          },
+          "session_reload": {
+            "elapsed_ms": 1.072209,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.12125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.061625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.040083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.039167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02825
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.355708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.048084
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.059959
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.07225
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.01875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05025
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.062208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.098583
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.06075
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.105708
+          }
+        ],
+        "post_response_drain_ms": 1.2575,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 48.205625,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.544125,
+            "gc_overlap_ms": 0.089708
+          },
+          "chat": {
+            "elapsed_ms": 42.386583,
+            "gc_overlap_ms": 1.125126
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.197833,
+            "gc_overlap_ms": 0.442208
+          },
+          "session_reload": {
+            "elapsed_ms": 0.875584,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.089708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.075542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05475
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.037833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028709
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0275
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.35
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028291
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026625
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0675
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.074792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.041042
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02725
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0695
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.088875
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.064083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.036292
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.442208
+          }
+        ]
+      },
+      "delta_ms": 1.5478750000000048
+    },
+    {
+      "first": "disabled",
+      "enabled": {
+        "elapsed_ms": 50.8355,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.691625,
+            "gc_overlap_ms": 0.0
+          },
+          "chat": {
+            "elapsed_ms": 44.716709,
+            "gc_overlap_ms": 1.233708
+          },
+          "receipt_reload": {
+            "elapsed_ms": 2.144583,
+            "gc_overlap_ms": 0.10925
+          },
+          "session_reload": {
+            "elapsed_ms": 1.061417,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.112708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.0575
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.049917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029084
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.384833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029542
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.029416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05075
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.069708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.060333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.017792
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05325
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.087917
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.065083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.10925
+          }
+        ],
+        "post_response_drain_ms": 1.258791,
+        "canonical_operations_verified": 1,
+        "events": 16,
+        "health": {
+          "dropped": 0,
+          "write_failures": 0,
+          "read_failures": 0,
+          "queued": 0,
+          "writer_alive": true
+        }
+      },
+      "disabled": {
+        "elapsed_ms": 47.990583,
+        "domain_result": {
+          "revision": 1,
+          "turn_count": 1,
+          "last_turn_sequence": 1,
+          "operation_status": "committed",
+          "persisted_projections_equal": true
+        },
+        "revision": 1,
+        "turn_count": 1,
+        "last_turn_sequence": 1,
+        "operation_status": "committed",
+        "persisted_projections_equal": true,
+        "canonical_terminals": 1,
+        "canonical_commit_statuses": [
+          "committed"
+        ],
+        "generated_content_read_back": true,
+        "stages": {
+          "create": {
+            "elapsed_ms": 2.395458,
+            "gc_overlap_ms": 0.089833
+          },
+          "chat": {
+            "elapsed_ms": 42.823459,
+            "gc_overlap_ms": 1.104126
+          },
+          "receipt_reload": {
+            "elapsed_ms": 1.774333,
+            "gc_overlap_ms": 0.104833
+          },
+          "session_reload": {
+            "elapsed_ms": 0.80175,
+            "gc_overlap_ms": 0.0
+          }
+        },
+        "gc_collections": [
+          {
+            "generation": 0,
+            "duration_ms": 0.089833
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.072667
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.05075
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.04925
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.031334
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.028709
+          },
+          {
+            "generation": 1,
+            "duration_ms": 0.369083
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.02825
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027209
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.027458
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.055416
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067167
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.038708
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.026459
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.078208
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.086125
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.067333
+          },
+          {
+            "generation": 0,
+            "duration_ms": 0.104833
+          }
+        ]
+      },
+      "delta_ms": 2.8449170000000024
+    }
+  ],
+  "probe_sha256": "7fd0bd0e62ac7f77af55f56feaa01dbb2cd9b799e900610e456b564563ca1abf",
+  "helper_sha256": "62f94f5d5e639a2c319beed1cb20415dd17d1e88cd6054c7087b9df4565b3402",
+  "preparation_helper_sha256": "f37775c76e9c361920c891ca10fb96f604d9c437f7359452f8037e603e2b83b1"
+}

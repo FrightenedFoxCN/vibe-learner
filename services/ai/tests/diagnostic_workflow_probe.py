@@ -55,6 +55,11 @@ def sample(enabled, workflow="persona", profile_stages=False):
             elif workflow.startswith("tavern_"):
                 from tests.diagnostic_tavern_workflow_probe import prepare, chain
                 prepared = prepare(client, workflow)
+            elif workflow == "study":
+                from tests.diagnostic_study_workflow_probe import prepare, chain
+                prepared = prepare(client)
+            canonical = HarnessRuntimeRepository(app.state.container.database)
+            prerequisite_trace_ids = set(canonical.list_trace_ids(limit=100))
             stages = {}
             collections = []
             active_collections = {}
@@ -142,7 +147,7 @@ def sample(enabled, workflow="persona", profile_stages=False):
                     "duration_ms": (c["end_ns"] - c["start_ns"]) / 1_000_000}
                     for c in collections if c["start_ns"] >= started]
             canonical = HarnessRuntimeRepository(app.state.container.database)
-            traces = [canonical.get(identity) for identity in canonical.list_trace_ids(limit=100)]
+            traces = [canonical.get(identity) for identity in canonical.list_trace_ids(limit=100) if identity not in prerequisite_trace_ids]
             terminals = [trace.terminal_trace for trace in traces if trace.terminal_trace]
             assert terminals
             measured = dict(elapsed_ms=elapsed, domain_result=domain_result, **domain_result,
@@ -173,6 +178,16 @@ def sample(enabled, workflow="persona", profile_stages=False):
                     for stage in ("document_parse", "plan_generation"):
                         parents = [t for t in terminals if t.stage.value == stage]
                         assert len(parents) == 1 and parents[0].commit_evidence.status.value == "committed"
+                    assert refs <= {t.trace_id for t in terminals}
+                    measured["canonical_operations_verified"] = len(operations)
+                elif workflow == "study":
+                    operations = {e["harness"]["operation_id"] for e in events if e["harness"]}
+                    assert len(operations) == 1
+                    linked = canonical.list_operation_traces(next(iter(operations)))
+                    assert {t.trace_id for t in linked} == {t.trace_id for t in terminals}
+                    assert len(terminals) == 1
+                    assert terminals[0].stage.value == "study_chat_reply"
+                    assert terminals[0].commit_evidence.status.value == "committed"
                     assert refs <= {t.trace_id for t in terminals}
                     measured["canonical_operations_verified"] = len(operations)
                 elif workflow.startswith("tavern_"):
@@ -237,7 +252,11 @@ def run(samples, workflow="persona", profile_stages=False, isolate_samples=False
         helper_sha256=(hashlib.sha256(Path(__file__).with_name("diagnostic_document_plan_probe.py").read_bytes()).hexdigest()
                        if workflow == "document_plan" else
                        hashlib.sha256(Path(__file__).with_name("diagnostic_tavern_workflow_probe.py").read_bytes()).hexdigest()
-                       if workflow.startswith("tavern_") else None))
+                       if workflow.startswith("tavern_") else
+                       hashlib.sha256(Path(__file__).with_name("diagnostic_study_workflow_probe.py").read_bytes()).hexdigest()
+                       if workflow == "study" else None),
+        preparation_helper_sha256=(hashlib.sha256(Path(__file__).with_name("diagnostic_document_plan_probe.py").read_bytes()).hexdigest()
+                                   if workflow == "study" else None))
 
 
 if __name__ == "__main__":
@@ -245,7 +264,7 @@ if __name__ == "__main__":
     parser.add_argument("--isolate-samples", action="store_true")
     parser.add_argument("--single-mode", choices=("enabled", "disabled"), help=argparse.SUPPRESS)
     parser.add_argument("--profile-stages", action="store_true")
-    parser.add_argument("--workflow", choices=("persona", "scene", "document_plan", "tavern_direct", "tavern_facilitated"), default="persona")
+    parser.add_argument("--workflow", choices=("persona", "scene", "document_plan", "tavern_direct", "tavern_facilitated", "study"), default="persona")
     parser.add_argument("--samples", type=int, default=30)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
