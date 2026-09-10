@@ -13,6 +13,7 @@ Identity = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]{1,96}$")]
 
 
 DIAGNOSTIC_EVENT_CATALOG = {
+    "decode_failed": ("decode", "error", "failed", "decode_failure"),
     "page_entered": ("page", "info", "started", None),
     "page_left": ("page", "info", "completed", None),
     "request_started": ("transport", "info", "started", None),
@@ -93,7 +94,7 @@ class DiagnosticEventV1(BaseModel):
     schema_version: Literal["diagnostic-event-v1"] = "diagnostic-event-v1"
     event_id: Identity
     source: Literal["server", "browser", "desktop"]
-    name: Literal["page_entered", "page_left", "request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference", "provider_started", "provider_finished", "provider_failed", "provider_attempt_started", "provider_attempt_finished", "provider_attempt_failed", "tool_started", "tool_finished", "tool_failed", "tool_unknown", "action_started", "action_finished", "action_failed", "action_cancelled", "desktop_started", "sidecar_spawned", "sidecar_ready", "sidecar_startup_failed", "sidecar_exited", "desktop_shutdown_requested", "sidecar_stopped", "sidecar_shutdown_unknown", "desktop_stopped"]
+    name: Literal["decode_failed", "page_entered", "page_left", "request_started", "response_headers", "request_finished", "request_failed", "request_cancelled", "lifecycle_started", "lifecycle_stopped", "harness_reference", "resource_reference", "provider_started", "provider_finished", "provider_failed", "provider_attempt_started", "provider_attempt_finished", "provider_attempt_failed", "tool_started", "tool_finished", "tool_failed", "tool_unknown", "action_started", "action_finished", "action_failed", "action_cancelled", "desktop_started", "sidecar_spawned", "sidecar_ready", "sidecar_startup_failed", "sidecar_exited", "desktop_shutdown_requested", "sidecar_stopped", "sidecar_shutdown_unknown", "desktop_stopped"]
     page_path: DiagnosticPagePath | None = None
     desktop_metric: DiagnosticDesktopMetricV1 | None = None
     action_name: Literal["json_import_read_persona", "json_import_read_scene", "json_export_handoff", "settings_save", "vault_create", "vault_unlock", "vault_lock", "vault_load_secrets", "vault_save_secrets", "vault_clear_secrets"] | None = None
@@ -103,10 +104,10 @@ class DiagnosticEventV1(BaseModel):
     provider_metric: DiagnosticProviderMetricV1 | None = None
     harness: DiagnosticHarnessReferenceV1 | None = None
     resource: DiagnosticResourceReferenceV1 | None = None
-    category: Literal["transport", "lifecycle", "harness", "resource", "provider", "tool", "action", "desktop", "page"]
+    category: Literal["transport", "lifecycle", "harness", "resource", "provider", "tool", "action", "desktop", "page", "decode"]
     severity: Literal["info", "warning", "error"]
     outcome: Literal["started", "headers_received", "completed", "failed", "cancelled", "observed", "unknown"]
-    error_code: Literal["transport_failure", "http_error", "cancelled", "provider_failure", "tool_failure", "action_failure", "desktop_failure"] | None
+    error_code: Literal["transport_failure", "http_error", "cancelled", "provider_failure", "tool_failure", "action_failure", "desktop_failure", "decode_failure"] | None
 
     @model_validator(mode="before")
     @classmethod

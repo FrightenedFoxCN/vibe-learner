@@ -9,6 +9,28 @@ let events: DiagnosticEventV1[] = [];
 let pending: DiagnosticEventV1[] = [];
 let dropped = 0;
 let uploading = false;
+const responseContexts = new WeakMap<Response, { context: DiagnosticContext; method: DiagnosticEventV1["method"] }>();
+
+export function diagnosticDecode<T>(response: Response, decode: () => T): T {
+  const started = performance.now();
+  try { return decode(); }
+  catch (error) {
+    recordDecodeFailure(response, performance.now() - started);
+    throw error;
+  }
+}
+
+export function recordDecodeFailure(response: Response, duration: number) {
+  try {
+    const captured = responseContexts.get(response);
+    if (!captured) return;
+    emitDiagnostic("decode_failed", captured.context, {
+      request_id: response.headers.get("X-Request-ID"), status_code: response.status,
+      method: captured.method, duration_ms: duration,
+    });
+  } catch { /* Telemetry never replaces the original decoder error. */ }
+}
+
 
 export function createDiagnosticId(): string | null {
   try { return crypto.randomUUID(); } catch { return null; }
@@ -110,7 +132,7 @@ export async function diagnosticFetch(input: string, init?: RequestInit, context
     requestId = response.headers.get("X-Request-ID");
     status = response.status;
     emit("response_headers");
-    if (!response.body) { emit("request_finished"); return response; }
+    if (!response.body) { emit("request_finished"); responseContexts.set(response, { context: { ...context }, method: safeMethod }); return response; }
     const reader = response.body.getReader();
     let terminal = false;
     const finish = (name: DiagnosticEventV1["name"]) => { if (!terminal) { terminal = true; emit(name); } };
@@ -127,7 +149,9 @@ export async function diagnosticFetch(input: string, init?: RequestInit, context
       },
       async cancel(reason) { finish("request_cancelled"); await reader.cancel(reason); },
     });
-    return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+    const wrapped = new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+    responseContexts.set(wrapped, { context: { ...context }, method: safeMethod });
+    return wrapped;
   } catch (error) {
     emit(init?.signal?.aborted ? "request_cancelled" : "request_failed");
     throw error;

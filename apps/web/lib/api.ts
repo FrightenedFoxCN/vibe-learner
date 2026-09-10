@@ -1,4 +1,4 @@
-import { diagnosticFetch, type DiagnosticContext } from "./diagnostics";
+import { diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
 import type {
   CreatePersonaInput,
   CreatePersonaCardInput,
@@ -51,6 +51,7 @@ import {
   DocumentDecodeError,
 } from "./document-decode";
 import {
+  PlanningDecodeError,
   decodeDocumentPlanningContext,
   decodeDocumentPlanningTraceResponse,
   decodeDocumentStudyUnitUpdate,
@@ -82,6 +83,7 @@ import {
   decodeSceneTreeGenerateResult,
 } from "./persona-scene-decode";
 import {
+  StreamDecodeError,
   consumeVersionedStream,
   decodeStreamReport,
   StrictStreamStateMachine,
@@ -329,7 +331,12 @@ async function readJson<T>(response: Response): Promise<T> {
       payload,
     });
   }
-  return (await response.json()) as T;
+  const started = performance.now();
+  try { return (await response.json()) as T; }
+  catch (error) {
+    if (error instanceof SyntaxError) recordDecodeFailure(response, performance.now() - started);
+    throw error;
+  }
 }
 
 export function decodeTavernHttpError(error: unknown): TavernErrorDetail | null {
@@ -344,9 +351,11 @@ export function decodeTavernHttpError(error: unknown): TavernErrorDetail | null 
 async function requestTavernMutationWithRecovery(
   input: string,
   init: RequestInit
-): Promise<unknown> {
+): Promise<Response> {
   try {
-    return await readJson<unknown>(await request(input, init));
+    const response = await request(input, init);
+    if (!response.ok) await readJson<unknown>(response);
+    return response;
   } catch (error) {
     const detail = decodeTavernHttpError(error);
     if (
@@ -357,7 +366,18 @@ async function requestTavernMutationWithRecovery(
     }
     // The server has already committed terminal evidence. Replaying the exact
     // request key is query-only recovery and must not invoke the model again.
-    return await readJson<unknown>(await request(input, init));
+    return await request(input, init);
+  }
+}
+
+async function consumeDiagnosticStream(response: Response, ...args: Parameters<typeof consumeVersionedStream>) {
+  const started = performance.now();
+  try { return await consumeVersionedStream(...args); }
+  catch (error) {
+    if (error instanceof StreamDecodeError || error instanceof DocumentDecodeError || error instanceof PlanningDecodeError) {
+      recordDecodeFailure(response, performance.now() - started);
+    }
+    throw error;
   }
 }
 
@@ -628,10 +648,9 @@ function normalizePlan(
 }
 
 export async function listPersonas(context?: DiagnosticContext): Promise<PersonaProfile[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas`, undefined, context)
-  );
-  return decodePersonaList(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/personas`, undefined, context);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaList(payload));
 }
 
 export async function listTavernRooms(
@@ -641,17 +660,15 @@ export async function listTavernRooms(
   if (input.limit !== undefined) params.set("limit", String(input.limit));
   if (input.cursor) params.set("cursor", input.cursor);
   const suffix = params.toString();
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/tavern/rooms${suffix ? `?${suffix}` : ""}`)
-  );
-  return normalizeTavernRoomList(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms${suffix ? `?${suffix}` : ""}`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomList(payload));
 }
 
 export async function createTavernRoom(
   input: CreateTavernRoomInput
 ): Promise<TavernRoomDetail> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/tavern/rooms`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -671,9 +688,9 @@ export async function createTavernRoom(
           : undefined,
         idempotency_key: input.idempotencyKey,
       }),
-    })
-  );
-  return normalizeTavernRoomDetail(payload);
+    });
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomDetail(payload));
 }
 
 export async function getTavernRoom(input: {
@@ -697,12 +714,11 @@ export async function getTavernRoom(input: {
     query.set("limit", String(input.limit));
   }
   const suffix = query.toString();
-  const payload = await readJson<any>(
-    await request(
+  const diagnosticResponse = await request(
       `${AI_BASE_URL()}/tavern/rooms/${input.roomId}${suffix ? `?${suffix}` : ""}`
-    )
-  );
-  return normalizeTavernRoomDetail(payload, input.roomId);
+    );
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomDetail(payload, input.roomId));
 }
 
 export async function updateTavernRoom(
@@ -718,14 +734,13 @@ export async function updateTavernRoom(
     body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);
   }
   if (input.status !== undefined) body.status = input.status;
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    })
-  );
-  return normalizeTavernRoomDetail(payload, roomId);
+    });
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernRoomDetail(payload, roomId));
 }
 
 export async function deleteTavernRoom(
@@ -744,20 +759,18 @@ export async function listTavernRuns(
   roomId: string,
   limit = 50
 ): Promise<TavernRun[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs?limit=${limit}`)
-  );
-  return normalizeTavernRunList(payload, roomId);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs?limit=${limit}`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernRunList(payload, roomId));
 }
 
 export async function getTavernRunRecovery(
   roomId: string,
   limit = 50
 ): Promise<TavernRunRecoveryChain[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/run-recovery?limit=${limit}`)
-  );
-  return normalizeTavernRunRecovery(payload, roomId);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/run-recovery?limit=${limit}`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernRunRecovery(payload, roomId));
 }
 
 function serializeTavernTurnInput(input: TavernTurnInput) {
@@ -778,7 +791,7 @@ export async function runTavernTurn(
   roomId: string,
   input: TavernTurnInput
 ): Promise<TavernTurnResult> {
-  const payload = await requestTavernMutationWithRecovery(
+  const diagnosticResponse = await requestTavernMutationWithRecovery(
     `${AI_BASE_URL()}/tavern/rooms/${roomId}/turns`,
     {
       method: "POST",
@@ -786,7 +799,8 @@ export async function runTavernTurn(
       body: JSON.stringify(serializeTavernTurnInput(input)),
     }
   );
-  return normalizeTavernTurnResult(payload, roomId);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
 }
 
 export async function retryTavernRun(
@@ -794,7 +808,7 @@ export async function retryTavernRun(
   runId: string,
   input: RetryTavernRunInput
 ): Promise<TavernTurnResult> {
-  const payload = await requestTavernMutationWithRecovery(
+  const diagnosticResponse = await requestTavernMutationWithRecovery(
     `${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/retry`,
     {
       method: "POST",
@@ -805,44 +819,42 @@ export async function retryTavernRun(
       }),
     }
   );
-  return normalizeTavernTurnResult(payload, roomId);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
 }
 
 export async function resumeTavernRun(
   roomId: string,
   runId: string
 ): Promise<TavernTurnResult> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/resume`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/resume`, {
       method: "POST",
-    })
-  );
-  return normalizeTavernTurnResult(payload, roomId);
+    });
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
 }
 
 export async function cancelTavernRun(
   roomId: string,
   runId: string
 ): Promise<TavernTurnResult> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/cancel`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/tavern/rooms/${roomId}/runs/${runId}/cancel`, {
       method: "POST",
-    })
-  );
-  return normalizeTavernTurnResult(payload, roomId);
+    });
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeTavernTurnResult(payload, roomId));
 }
 
 export async function createPersona(input: CreatePersonaInput, context?: DiagnosticContext): Promise<PersonaProfile> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/personas`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(serializePersonaInput(input))
-    }, context)
-  );
-  return decodePersonaProfile(payload, { expectedSource: "user" });
+    }, context);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaProfile(payload, { expectedSource: "user" }));
 }
 
 export async function updatePersona(
@@ -851,58 +863,53 @@ export async function updatePersona(
   context?: DiagnosticContext
 ): Promise<PersonaProfile> {
   const encodedPersonaId = encodeURIComponent(personaId);
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/${encodedPersonaId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/personas/${encodedPersonaId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(serializePersonaInput(input))
-    }, context)
-  );
-  return decodePersonaProfile(payload, {
+    }, context);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaProfile(payload, {
     expectedPersonaId: personaId,
     expectedSource: "user",
-  });
+  }));
 }
 
 export async function deletePersona(personaId: string, expectedRevision: number): Promise<void> {
   const encodedPersonaId = encodeURIComponent(personaId);
-  const payload = await readJson<unknown>(
-    await request(
+  const diagnosticResponse = await request(
       `${AI_BASE_URL()}/personas/${encodedPersonaId}?expected_revision=${expectedRevision}`,
       {
       method: "DELETE"
       },
-    )
-  );
-  decodeDeletedIdentity(payload, {
+    );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  diagnosticDecode(diagnosticResponse, () => decodeDeletedIdentity(payload, {
     wireField: "deleted_persona_id",
     expectedId: personaId,
     path: "persona_delete",
-  });
+  }));
 }
 
 export async function getPersonaAssets(personaId: string): Promise<PersonaAssets> {
   const encodedPersonaId = encodeURIComponent(personaId);
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/${encodedPersonaId}/assets`)
-  );
-  return decodePersonaAssets(payload, personaId);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/personas/${encodedPersonaId}/assets`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaAssets(payload, personaId));
 }
 
 export async function listPersonaCards(): Promise<PersonaCard[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/persona-cards`)
-  );
-  return decodePersonaCardList(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/persona-cards`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaCardList(payload));
 }
 
 export async function createPersonaCardsBatch(
   items: CreatePersonaCardInput[]
 ): Promise<PersonaCard[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/persona-cards/batch`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/persona-cards/batch`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -910,22 +917,21 @@ export async function createPersonaCardsBatch(
       body: JSON.stringify({
         items: items.map(serializePersonaCardInput)
       })
-    })
-  );
-  return decodePersonaCardList(payload, "persona_card_batch");
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaCardList(payload, "persona_card_batch"));
 }
 
 export async function deletePersonaCard(cardId: string): Promise<void> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/persona-cards/${cardId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/persona-cards/${cardId}`, {
       method: "DELETE"
-    })
-  );
-  decodeDeletedIdentity(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  diagnosticDecode(diagnosticResponse, () => decodeDeletedIdentity(payload, {
     wireField: "deleted_persona_card_id",
     expectedId: cardId,
     path: "persona_card_delete",
-  });
+  }));
 }
 
 export async function generatePersonaCards(input: {
@@ -940,16 +946,15 @@ export async function generatePersonaCards(input: {
   if (typeof input.count === "number" && Number.isFinite(input.count)) {
     requestBody.count = input.count;
   }
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/persona-cards/generate`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/persona-cards/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
-    }, context)
-  );
-  return decodePersonaCardGenerateResult(payload, { expectedMode: input.mode });
+    }, context);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaCardGenerateResult(payload, { expectedMode: input.mode }));
 }
 
 export async function generateSceneTree(input: {
@@ -964,23 +969,21 @@ export async function generateSceneTree(input: {
   if (typeof input.layerCount === "number" && Number.isFinite(input.layerCount)) {
     requestBody.layer_count = input.layerCount;
   }
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-setup/generate`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-setup/generate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
-    })
-  );
-  return decodeSceneTreeGenerateResult(payload, { expectedMode: input.mode });
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneTreeGenerateResult(payload, { expectedMode: input.mode }));
 }
 
 export async function assistPersonaSetting(
   input: PersonaSettingAssistInput
 ): Promise<PersonaSettingAssistOutput> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/assist-setting`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/personas/assist-setting`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -991,16 +994,15 @@ export async function assistPersonaSetting(
         slots: input.slots.map(serializeSlot),
         rewrite_strength: input.rewriteStrength
       })
-    })
-  );
-  return decodePersonaSettingAssistOutput(payload);
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaSettingAssistOutput(payload));
 }
 
 export async function assistPersonaSlot(
   input: PersonaSlotAssistInput
 ): Promise<PersonaSlotAssistOutput> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/personas/assist-slot`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/personas/assist-slot`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1011,58 +1013,52 @@ export async function assistPersonaSlot(
         slot: serializeSlot(input.slot),
         rewrite_strength: input.rewriteStrength
       })
-    })
-  );
-  return decodePersonaSlotAssistOutput(payload, input.slot);
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodePersonaSlotAssistOutput(payload, input.slot));
 }
 
 export async function listDocuments(): Promise<DocumentRecord[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents`)
-  );
-  return decodeDocumentList(payload).map((document) => ({
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeDocumentList(payload)).map((document) => ({
     ...document,
     previewExcerpt: compactPreviewString(document.previewExcerpt, 240),
   }));
 }
 
 export async function getDocumentDebug(documentId: string): Promise<DocumentDebugRecord> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/debug`)
-  );
-  return normalizeDebugRecord(payload, documentId);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/debug`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeDebugRecord(payload, documentId));
 }
 
 export async function getDocumentPlanningContext(
   documentId: string
 ): Promise<DocumentPlanningContext> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/planning-context`)
-  );
-  return normalizePlanningContext(payload, documentId);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/planning-context`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizePlanningContext(payload, documentId));
 }
 
 export async function getDocumentPlanningTrace(
   documentId: string
 ): Promise<DocumentPlanningTraceResponse> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/planning-trace`)
-  );
-  return normalizePlanningTraceResponse(payload, documentId);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/planning-trace`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizePlanningTraceResponse(payload, documentId));
 }
 
 export async function getModelToolConfig(): Promise<ModelToolConfig> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/model-tools/config`)
-  );
-  return normalizeModelToolConfig(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/model-tools/config`);
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeModelToolConfig(payload));
 }
 
 export async function updateModelToolConfig(
   toggles: ModelToolToggle[]
 ): Promise<ModelToolConfig> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/model-tools/config`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/model-tools/config`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1074,23 +1070,21 @@ export async function updateModelToolConfig(
           enabled: toggle.enabled
         }))
       })
-    })
-  );
-  return normalizeModelToolConfig(payload);
+    });
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeModelToolConfig(payload));
 }
 
 export async function getRuntimeSettings(): Promise<RuntimeSettings> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/runtime-settings`)
-  );
-  return normalizeRuntimeSettings(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings`);
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
 }
 
 export async function getSceneSetupState(): Promise<SceneSetupStatePayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-setup`)
-  );
-  return decodeSceneSetupState(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-setup`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneSetupState(payload));
 }
 
 export async function updateSceneSetupState(input: {
@@ -1101,8 +1095,7 @@ export async function updateSceneSetupState(input: {
   sceneName?: string;
   sceneSummary?: string;
 }): Promise<SceneSetupStatePayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-setup`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-setup`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -1116,25 +1109,23 @@ export async function updateSceneSetupState(input: {
         selected_layer_id: input.selectedLayerId,
         collapsed_layer_ids: input.collapsedLayerIds
       })
-    })
-  );
-  return decodeSceneSetupState(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneSetupState(payload, {
     expectedRevision: input.expectedRevision + 1,
-  });
+  }));
 }
 
 export async function listSceneLibrary(): Promise<SceneLibraryItemPayload[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-library`)
-  );
-  return decodeSceneLibraryList(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneLibraryList(payload));
 }
 
 export async function getSceneLibraryItem(sceneId: string): Promise<SceneLibraryItemPayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-library/${sceneId}`)
-  );
-  return decodeSceneLibraryItem(payload, { expectedSceneId: sceneId });
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library/${sceneId}`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneLibraryItem(payload, { expectedSceneId: sceneId }));
 }
 
 export async function createSceneLibraryItem(input: {
@@ -1144,8 +1135,7 @@ export async function createSceneLibraryItem(input: {
   selectedLayerId: string;
   collapsedLayerIds: string[];
 }): Promise<SceneLibraryItemPayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-library`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1159,9 +1149,9 @@ export async function createSceneLibraryItem(input: {
         selected_layer_id: input.selectedLayerId,
         collapsed_layer_ids: input.collapsedLayerIds
       })
-    })
-  );
-  return decodeSceneLibraryItem(payload, { expectedRevision: 1 });
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneLibraryItem(payload, { expectedRevision: 1 }));
 }
 
 export async function updateSceneLibraryItem(sceneId: string, input: {
@@ -1172,8 +1162,7 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
   selectedLayerId: string;
   collapsedLayerIds: string[];
 }): Promise<SceneLibraryItemPayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -1187,34 +1176,32 @@ export async function updateSceneLibraryItem(sceneId: string, input: {
         selected_layer_id: input.selectedLayerId,
         collapsed_layer_ids: input.collapsedLayerIds
       })
-    })
-  );
-  return decodeSceneLibraryItem(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeSceneLibraryItem(payload, {
     expectedSceneId: sceneId,
     expectedRevision: input.expectedRevision + 1,
-  });
+  }));
 }
 
 export async function deleteSceneLibraryItem(sceneId: string): Promise<{ deletedSceneId: string }> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/scene-library/${sceneId}`, {
       method: "DELETE"
-    })
-  );
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
   return {
-    deletedSceneId: decodeDeletedIdentity(payload, {
+    deletedSceneId: diagnosticDecode(diagnosticResponse, () => decodeDeletedIdentity(payload, {
       wireField: "deleted_scene_id",
       expectedId: sceneId,
       path: "scene_library_delete",
-    }),
+    })),
   };
 }
 
 export async function listReusableSceneNodes(): Promise<ReusableSceneNodePayload[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/reusable-scene-nodes`)
-  );
-  return decodeReusableSceneNodeList(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/reusable-scene-nodes`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeReusableSceneNodeList(payload));
 }
 
 export async function createReusableSceneNode(input: {
@@ -1229,8 +1216,7 @@ export async function createReusableSceneNode(input: {
   layerNode?: import("@vibe-learner/shared").SceneTreeNode | null;
   objectNode?: import("@vibe-learner/shared").SceneObjectSnapshot | null;
 }): Promise<ReusableSceneNodePayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/reusable-scene-nodes`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/reusable-scene-nodes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1257,23 +1243,22 @@ export async function createReusableSceneNode(input: {
             }
           : null,
       })
-    })
-  );
-  return decodeReusableSceneNode(payload);
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeReusableSceneNode(payload));
 }
 
 export async function deleteReusableSceneNode(nodeId: string): Promise<{ deletedReusableSceneNodeId: string }> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/reusable-scene-nodes/${nodeId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/reusable-scene-nodes/${nodeId}`, {
       method: "DELETE"
-    })
-  );
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
   return {
-    deletedReusableSceneNodeId: decodeDeletedIdentity(payload, {
+    deletedReusableSceneNodeId: diagnosticDecode(diagnosticResponse, () => decodeDeletedIdentity(payload, {
       wireField: "deleted_reusable_scene_node_id",
       expectedId: nodeId,
       path: "reusable_scene_node_delete",
-    }),
+    })),
   };
 }
 
@@ -1281,8 +1266,7 @@ export async function updateRuntimeSettings(
   patch: RuntimeSettingsPatch,
   context?: DiagnosticContext
 ): Promise<RuntimeSettings> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/runtime-settings`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1315,9 +1299,9 @@ export async function updateRuntimeSettings(
         openai_plan_fallback_disable_tools: patch.openaiPlanFallbackDisableTools,
         show_debug_info: patch.showDebugInfo
       })
-    }, context)
-  );
-  return normalizeRuntimeSettings(payload);
+    }, context);
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
 }
 
 export async function applyRuntimeSessionSecrets(patch: {
@@ -1326,8 +1310,7 @@ export async function applyRuntimeSessionSecrets(patch: {
   openaiSettingApiKey?: string;
   openaiChatApiKey?: string;
 }, context?: DiagnosticContext): Promise<RuntimeSettings> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json"
@@ -1338,18 +1321,17 @@ export async function applyRuntimeSessionSecrets(patch: {
         openai_setting_api_key: patch.openaiSettingApiKey,
         openai_chat_api_key: patch.openaiChatApiKey
       })
-    }, context)
-  );
-  return normalizeRuntimeSettings(payload);
+    }, context);
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
 }
 
 export async function clearRuntimeSessionSecrets(): Promise<RuntimeSettings> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings/session-secrets`, {
       method: "DELETE"
-    })
-  );
-  return normalizeRuntimeSettings(payload);
+    });
+  const payload = await readJson<any>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeRuntimeSettings(payload));
 }
 
 export async function probeRuntimeOpenAIModels(input: {
@@ -1358,8 +1340,7 @@ export async function probeRuntimeOpenAIModels(input: {
   model?: string;
   features?: RuntimeFeatureProbeName[];
 }): Promise<RuntimeOpenAIProbeResult> {
-  const payload = await readJson<any>(
-    await request(`${AI_BASE_URL()}/runtime-settings/check-openai-models`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/runtime-settings/check-openai-models`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1370,8 +1351,8 @@ export async function probeRuntimeOpenAIModels(input: {
         model: input.model ?? "",
         features: input.features ?? []
       })
-    })
-  );
+    });
+  const payload = await readJson<any>(diagnosticResponse);
   return {
     available: Boolean(payload.available),
     models: Array.isArray(payload.models)
@@ -1426,17 +1407,15 @@ export async function probeRuntimeOpenAIModels(input: {
 }
 
 export async function getDocumentProcessEvents(documentId: string): Promise<StreamReport> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/process-events`)
-  );
-  return normalizeStreamReport(payload, documentId, "document_process");
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/process-events`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeStreamReport(payload, documentId, "document_process"));
 }
 
 export async function getDocumentPlanEvents(documentId: string): Promise<StreamReport> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/plan-events`)
-  );
-  return normalizeStreamReport(payload, documentId, "learning_plan");
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/plan-events`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeStreamReport(payload, documentId, "learning_plan"));
 }
 
 export async function uploadDocument(
@@ -1445,14 +1424,13 @@ export async function uploadDocument(
 ): Promise<DocumentRecord> {
   const form = new FormData();
   form.append("file", file);
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents`, {
       method: "POST",
       body: form,
       signal: options?.signal,
-    })
-  );
-  return normalizeDocument(payload);
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizeDocument(payload));
 }
 
 export async function uploadAndProcessDocument(file: File): Promise<DocumentRecord> {
@@ -1466,8 +1444,7 @@ export async function processDocument(
     forceOcr?: boolean;
   }
 ): Promise<DocumentRecord> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/process`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/process`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1475,9 +1452,9 @@ export async function processDocument(
       body: JSON.stringify({
         force_ocr: Boolean(options?.forceOcr)
       })
-    })
-  );
-  const decoded = decodeDocumentRecord(payload, documentId, "document", true);
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  const decoded = diagnosticDecode(diagnosticResponse, () => decodeDocumentRecord(payload, documentId, "document", true));
   return {
     ...decoded,
     previewExcerpt: compactPreviewString(decoded.previewExcerpt, 240),
@@ -1512,7 +1489,7 @@ export async function processDocumentStream(
     streamKind: "document_process",
     subject: { subjectType: "document", subjectId: documentId },
   });
-  const terminal = await consumeVersionedStream(response.body, machine, (event) => {
+  const terminal = await consumeDiagnosticStream(response, response.body, machine, (event) => {
     if (event.stage === "stream_completed") {
       const decoded = decodeDocumentRecord(
         event.committedProjection,
@@ -1549,8 +1526,7 @@ function createLearningPlanRequestId(): string {
 export async function createLearningPlan(goal: LearningGoal): Promise<LearningPlan> {
   const clientRequestId = goal.clientRequestId?.trim() || createLearningPlanRequestId();
   const sceneSummary = goal.sceneProfileSummary ?? goal.sceneProfile?.summary ?? "";
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/learning-plans`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1564,19 +1540,18 @@ export async function createLearningPlan(goal: LearningGoal): Promise<LearningPl
         scene_profile_summary: sceneSummary,
         scene_profile: serializeSceneProfile(goal.sceneProfile)
       })
-    })
-  );
-  return normalizePlan(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizePlan(payload, {
     expectedDocumentId: goal.documentId ?? "",
     requireHarnessTrace: true,
-  });
+  }));
 }
 
 export async function listLearningPlans(): Promise<LearningPlan[]> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/learning-plans`)
-  );
-  return decodeLearningPlanList(payload);
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeLearningPlanList(payload));
 }
 
 export async function updateDocumentStudyUnitTitle(
@@ -1584,8 +1559,7 @@ export async function updateDocumentStudyUnitTitle(
   studyUnitId: string,
   title: string
 ): Promise<DocumentStudyUnitUpdatePayload> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/documents/${documentId}/study-units/${studyUnitId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/documents/${documentId}/study-units/${studyUnitId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1593,9 +1567,9 @@ export async function updateDocumentStudyUnitTitle(
       body: JSON.stringify({
         title
       })
-    })
-  );
-  const decoded = decodeDocumentStudyUnitUpdate(payload, documentId);
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  const decoded = diagnosticDecode(diagnosticResponse, () => decodeDocumentStudyUnitUpdate(payload, documentId));
   if (!decoded.document.studyUnits.some((unit) => unit.id === studyUnitId)) {
     throw new DocumentDecodeError(
       "document_study_unit_update.document.study_units",
@@ -1609,8 +1583,7 @@ export async function updateLearningPlanTitle(
   planId: string,
   courseTitle: string
 ): Promise<LearningPlan> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1618,9 +1591,9 @@ export async function updateLearningPlanTitle(
       body: JSON.stringify({
         course_title: courseTitle
       })
-    })
-  );
-  return normalizePlan(payload, { expectedPlanId: planId });
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizePlan(payload, { expectedPlanId: planId }));
 }
 
 export async function updateLearningPlanProgress(input: {
@@ -1629,8 +1602,7 @@ export async function updateLearningPlanProgress(input: {
   status: string;
   note?: string;
 }): Promise<LearningPlan> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/learning-plans/${input.planId}/progress`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans/${input.planId}/progress`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -1640,9 +1612,9 @@ export async function updateLearningPlanProgress(input: {
         status: input.status,
         note: input.note ?? ""
       })
-    })
-  );
-  return normalizePlan(payload, { expectedPlanId: input.planId });
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizePlan(payload, { expectedPlanId: input.planId }));
 }
 
 export async function answerLearningPlanQuestion(input: {
@@ -1650,8 +1622,7 @@ export async function answerLearningPlanQuestion(input: {
   questionId: string;
   answer: string;
 }): Promise<LearningPlan> {
-  const payload = await readJson<unknown>(
-    await request(
+  const diagnosticResponse = await request(
       `${AI_BASE_URL()}/learning-plans/${input.planId}/planning-questions/${input.questionId}`,
       {
         method: "PATCH",
@@ -1662,9 +1633,9 @@ export async function answerLearningPlanQuestion(input: {
           answer: input.answer
         })
       }
-    )
-  );
-  return normalizePlan(payload, { expectedPlanId: input.planId });
+    );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => normalizePlan(payload, { expectedPlanId: input.planId }));
 }
 
 export async function deleteLearningPlan(planId: string): Promise<void> {
@@ -1711,7 +1682,7 @@ export async function createLearningPlanStream(
       ? { subjectType: "document", subjectId: expectedDocumentId }
       : { subjectType: "learning_plan_request", subjectId: clientRequestId },
   });
-  const terminal = await consumeVersionedStream(response.body, machine, (event) => {
+  const terminal = await consumeDiagnosticStream(response, response.body, machine, (event) => {
     if (event.stage === "stream_completed") {
       finalPlan = normalizePlan(event.committedProjection, {
         expectedPlanId: event.terminalEvidence?.resourceId ?? undefined,
@@ -1743,8 +1714,7 @@ export async function createStudySession(input: {
   studyUnitTitle?: string;
   themeHint?: string;
 }): Promise<StudySessionRecord> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/study-sessions`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1760,14 +1730,14 @@ export async function createStudySession(input: {
         section_title: input.studyUnitTitle ?? "",
         theme_hint: input.themeHint ?? ""
       })
-    })
-  );
-  return decodeStudySession(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, {
     expectedDocumentId: input.documentId,
     expectedPersonaId: input.personaId,
     expectedPlanId: input.planId ?? null,
     expectedStudyUnitId: input.studyUnitId,
-  });
+  }));
 }
 
 export async function cancelStreamRun(streamId: string): Promise<void> {
@@ -1793,22 +1763,20 @@ export async function listStudySessions(input: {
     query.set("section_id", input.studyUnitId);
   }
   const suffix = query.toString();
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`)
-  );
-  return decodeStudySessionList(payload, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions${suffix ? `?${suffix}` : ""}`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudySessionList(payload, {
     ...(input.documentId ? { expectedDocumentId: input.documentId } : {}),
     ...(input.personaId ? { expectedPersonaId: input.personaId } : {}),
     ...(input.planId ? { expectedPlanId: input.planId } : {}),
     ...(input.studyUnitId ? { expectedStudyUnitId: input.studyUnitId } : {}),
-  });
+  }));
 }
 
 export async function getStudySession(sessionId: string): Promise<StudySessionRecord> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`)
-  );
-  return decodeStudySession(payload, { expectedSessionId: sessionId });
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${sessionId}`);
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, { expectedSessionId: sessionId }));
 }
 
 export async function updateStudySessionStudyUnit(input: {
@@ -1824,33 +1792,31 @@ export async function updateStudySessionStudyUnit(input: {
   if (Object.prototype.hasOwnProperty.call(input, "sceneProfile")) {
     body.scene_profile = serializeSceneProfile(input.sceneProfile ?? null);
   }
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(body)
-    })
-  );
-  return decodeStudySession(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, {
     expectedSessionId: input.sessionId,
     ...(input.studyUnitId ? { expectedStudyUnitId: input.studyUnitId } : {}),
-  });
+  }));
 }
 
 export async function cancelStudySessionFollowUps(input: {
   sessionId: string;
 }): Promise<StudySessionRecord> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/follow-ups/cancel`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/follow-ups/cancel`, {
       method: "POST",
-    })
-  );
-  return decodeStudySession(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudySession(payload, {
     expectedSessionId: input.sessionId,
     requireNoPendingFollowUps: true,
-  });
+  }));
 }
 
 export async function sendStudyMessage(input: {
@@ -1895,23 +1861,25 @@ export async function sendStudyMessage(input: {
           hidden_message_prefix: input.hiddenMessagePrefix ?? "",
         })
       });
-  const payload = await readJson<unknown>(response);
-  return decodeStudyChatOperationResponse(payload, {
+  const diagnosticResponse = response;
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudyChatOperationResponse(payload, {
     sessionId: input.sessionId,
     clientRequestId: input.clientRequestId,
-  });
+  }));
 }
 
 export async function getStudyChatOperation(input: {
   sessionId: string;
   clientRequestId: string;
 }): Promise<StudyChatOperationResponse> {
-  const payload = await readJson<unknown>(
-    await request(
+  const diagnosticResponse = await request(
       `${AI_BASE_URL()}/study-sessions/${encodeURIComponent(input.sessionId)}/chat-operations/${encodeURIComponent(input.clientRequestId)}`,
-    ),
+    );
+  const payload = await readJson<unknown>(
+    diagnosticResponse,
   );
-  return decodeStudyChatOperationResponse(payload, input);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudyChatOperationResponse(payload, input));
 }
 
 function decodeStudyChatOperationResponse(
@@ -1937,8 +1905,7 @@ export async function submitStudyQuestionAttempt(input: {
   clientAttemptId: string;
   submittedAnswer: string;
 }): Promise<StudyQuestionAttemptCommitResult> {
-  const payload = await readJson<unknown>(
-    await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`, {
+  const diagnosticResponse = await request(`${AI_BASE_URL()}/study-sessions/${input.sessionId}/attempt`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -1949,14 +1916,14 @@ export async function submitStudyQuestionAttempt(input: {
         client_attempt_id: input.clientAttemptId,
         submitted_answer: input.submittedAnswer,
       })
-    })
-  );
-  const attempt = decodeStudyQuestionAttemptResponse(payload, {
+    });
+  const payload = await readJson<unknown>(diagnosticResponse);
+  const attempt = diagnosticDecode(diagnosticResponse, () => decodeStudyQuestionAttemptResponse(payload, {
     sessionId: input.sessionId,
     turnId: input.turnId,
     clientAttemptId: input.clientAttemptId,
     expectedSessionRevision: input.expectedSessionRevision,
-  });
+  }));
   const session = await getStudySession(input.sessionId);
   return { attempt, session };
 }
@@ -1967,8 +1934,7 @@ export async function resolveStudyPlanConfirmation(input: {
   decision: "approve" | "reject";
   note?: string;
 }): Promise<StudyPlanConfirmationDecisionResponse> {
-  const payload = await readJson<unknown>(
-    await request(
+  const diagnosticResponse = await request(
       `${AI_BASE_URL()}/study-sessions/${input.sessionId}/plan-confirmations/${input.confirmationId}`,
       {
         method: "POST",
@@ -1980,9 +1946,9 @@ export async function resolveStudyPlanConfirmation(input: {
           note: input.note ?? "",
         })
       }
-    )
-  );
-  return decodeStudyPlanConfirmationDecisionResponse(payload, {
+    );
+  const payload = await readJson<unknown>(diagnosticResponse);
+  return diagnosticDecode(diagnosticResponse, () => decodeStudyPlanConfirmationDecisionResponse(payload, {
     expectedSessionId: input.sessionId,
     expectedConfirmationId: input.confirmationId,
     expectedDecision: input.decision,
@@ -1991,7 +1957,7 @@ export async function resolveStudyPlanConfirmation(input: {
       expectedPlanId,
       expectedDocumentId,
     }),
-  });
+  }));
 }
 
 export async function getModelUsageStats(): Promise<TokenUsageStats> {

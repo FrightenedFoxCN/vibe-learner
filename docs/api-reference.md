@@ -1351,3 +1351,16 @@ page after navigation. Cleanup is idempotent and cannot clear a newer view;
 StrictMode replay produces separate balanced lifetimes. Page-left duration is
 observed mounted lifetime, not foreground attention or domain execution time.
 A browser crash may omit page-left; absence does not establish completion.
+
+
+Browser `decode_failed` events identify response JSON syntax, domain decoder or
+versioned stream contract rejection separately from HTTP/body transport outcomes.
+The event retains the Response's captured action/page and server request ID,
+including scalar/null payloads and completions after navigation. Diagnostic
+storage receives no payload, decoder path, exception text or grading content.
+Existing decoder errors are rethrown unchanged. The duration measures the
+observed decode boundary (stream duration includes waiting for bytes), not an
+additional additive stage. A successful transport can coexist with a failed
+decode; neither event establishes domain commit. Tavern query-only terminal
+replay remains bounded to the original explicit server directive; decoder
+rejection after replay refers to that replay's distinct request ID.

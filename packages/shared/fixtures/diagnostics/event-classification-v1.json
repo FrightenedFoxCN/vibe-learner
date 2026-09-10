@@ -1,5 +1,45 @@
 [
   {
+    "name": "decode_failed",
+    "status_code": null,
+    "classification": {
+      "category": "decode",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "decode_failure"
+    }
+  },
+  {
+    "name": "decode_failed",
+    "status_code": 200,
+    "classification": {
+      "category": "decode",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "decode_failure"
+    }
+  },
+  {
+    "name": "decode_failed",
+    "status_code": 409,
+    "classification": {
+      "category": "decode",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "decode_failure"
+    }
+  },
+  {
+    "name": "decode_failed",
+    "status_code": 503,
+    "classification": {
+      "category": "decode",
+      "severity": "error",
+      "outcome": "failed",
+      "error_code": "decode_failure"
+    }
+  },
+  {
     "name": "page_entered",
     "status_code": null,
     "classification": {
