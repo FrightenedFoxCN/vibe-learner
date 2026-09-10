@@ -1,4 +1,4 @@
-"""Opt-in paired Persona generation -> save -> reload backend overhead probe."""
+"""Opt-in paired Persona/Scene generation -> save -> reload backend overhead probe."""
 import argparse
 from contextlib import ExitStack
 from datetime import datetime, timezone
@@ -31,7 +31,7 @@ async def without_middleware(self, scope, receive, send):
     return await self.app(scope, receive, send)
 
 
-def sample(enabled):
+def sample(enabled, workflow="persona"):
     with TemporaryDirectory() as directory, ExitStack() as stack:
         root = Path(directory)
         if not enabled:
@@ -46,34 +46,62 @@ def sample(enabled):
             flow = "synthetic-workflow"
             headers = {"X-Debug-Flow-Id": flow}
             started = time.perf_counter_ns()
-            generated_response = client.post("/persona-cards/generate",
-                json={"mode": "keywords", "input_text": "PRIVATE_WORKFLOW_PROMPT"},
-                headers={**headers, "X-Debug-Action-Id": "generate"})
-            assert generated_response.status_code == 200
-            generated = generated_response.json()
-            assert generated["items"]
-            payload = create_request("Synthetic benchmark persona").model_dump(mode="json")
-            payload.update(summary=generated["summary"], relationship=generated["relationship"],
-                           learner_address=generated["learner_address"])
-            payload["slots"] = [{"kind": card["kind"], "label": card["label"], "content": card["content"],
-                                 "weight": 50, "locked": False, "sort_order": i} for i, card in enumerate(generated["items"])]
-            saved_response = client.post("/personas", json=payload, headers={**headers, "X-Debug-Action-Id": "save"})
-            assert saved_response.status_code == 200
-            saved = saved_response.json()
-            reloaded_response = client.get("/personas", headers={**headers, "X-Debug-Action-Id": "reload"})
-            elapsed = (time.perf_counter_ns() - started) / 1_000_000
-            assert reloaded_response.status_code == 200
-            reloaded = next(item for item in reloaded_response.json()["items"] if item["id"] == saved["id"])
-            assert reloaded == saved
-            assert [slot["content"] for slot in reloaded["slots"]] == [card["content"] for card in generated["items"]]
+            if workflow == "persona":
+                generated_response = client.post("/persona-cards/generate",
+                    json={"mode": "keywords", "input_text": "PRIVATE_WORKFLOW_PROMPT"},
+                    headers={**headers, "X-Debug-Action-Id": "generate"})
+                assert generated_response.status_code == 200
+                generated = generated_response.json()
+                assert generated["items"]
+                payload = create_request("Synthetic benchmark persona").model_dump(mode="json")
+                payload.update(summary=generated["summary"], relationship=generated["relationship"],
+                               learner_address=generated["learner_address"])
+                payload["slots"] = [{"kind": card["kind"], "label": card["label"], "content": card["content"],
+                                     "weight": 50, "locked": False, "sort_order": i} for i, card in enumerate(generated["items"])]
+                saved_response = client.post("/personas", json=payload, headers={**headers, "X-Debug-Action-Id": "save"})
+                assert saved_response.status_code == 200
+                saved = saved_response.json()
+                reloaded_response = client.get("/personas", headers={**headers, "X-Debug-Action-Id": "reload"})
+                elapsed = (time.perf_counter_ns() - started) / 1_000_000
+                assert reloaded_response.status_code == 200
+                reloaded = next(item for item in reloaded_response.json()["items"] if item["id"] == saved["id"])
+                assert reloaded == saved
+                assert [slot["content"] for slot in reloaded["slots"]] == [card["content"] for card in generated["items"]]
+            else:
+                generated_response = client.post("/scene-setup/generate",
+                    json={"mode": "keywords", "input_text": "PRIVATE_WORKFLOW_PROMPT"},
+                    headers={**headers, "X-Debug-Action-Id": "generate"})
+                assert generated_response.status_code == 200
+                generated = generated_response.json()
+                payload = {key: generated[key] for key in (
+                    "scene_name", "scene_summary", "scene_layers", "selected_layer_id")}
+                payload.update(contract_version="scene-committed-save-v1",
+                               expected_revision=0, collapsed_layer_ids=[])
+                saved_response = client.post("/scene-library", json=payload,
+                    headers={**headers, "X-Debug-Action-Id": "save"})
+                assert saved_response.status_code == 200
+                saved = saved_response.json()
+                reloaded_response = client.get(f"/scene-library/{saved['scene_id']}",
+                    headers={**headers, "X-Debug-Action-Id": "reload"})
+                elapsed = (time.perf_counter_ns() - started) / 1_000_000
+                assert reloaded_response.status_code == 200
+                reloaded = reloaded_response.json()
+                assert reloaded == saved
+                for key in ("scene_name", "scene_summary", "scene_layers", "selected_layer_id"):
+                    assert reloaded[key] == generated[key], f"scene_read_back_mismatch_{key}"
+                assert reloaded["collapsed_layer_ids"] == []
             canonical = HarnessRuntimeRepository(app.state.container.database)
             traces = [canonical.get(identity) for identity in canonical.list_trace_ids(limit=100)]
             terminals = [trace.terminal_trace for trace in traces if trace.terminal_trace]
             assert terminals
             measured = dict(elapsed_ms=elapsed, saved_revision=saved["revision"],
-                            generated_cards=len(generated["items"]), canonical_terminals=len(terminals),
+                            canonical_terminals=len(terminals),
                             canonical_commit_statuses=sorted(trace.commit_evidence.status.value for trace in terminals),
                             generated_content_read_back=True)
+            count_key = "generated_cards" if workflow == "persona" else "generated_root_layers"
+            measured[count_key] = len(generated["items" if workflow == "persona" else "scene_layers"])
+            assert measured[count_key] > 0
+            resource_id = saved["id" if workflow == "persona" else "scene_id"]
             if enabled:
                 store = app.state.diagnostics
                 drain_start = time.perf_counter_ns()
@@ -83,7 +111,7 @@ def sample(enabled):
                     time.sleep(.001)
                 measured["post_response_drain_ms"] = (time.perf_counter_ns() - drain_start) / 1_000_000
                 events = [row["event"] for row in store.query(0, 100, {"flow_id": flow})]
-                assert any(e["resource"] and e["resource"]["resource_id"] == saved["id"] for e in events)
+                assert any(e["resource"] and e["resource"]["resource_id"] == resource_id for e in events)
                 assert {e["action_id"] for e in events} == {"generate", "save", "reload"}
                 refs = {e["harness"]["trace_id"] for e in events if e["harness"] and e["harness"]["trace_id"]}
                 assert refs and refs <= {t.trace_id for t in terminals}
@@ -95,15 +123,15 @@ def sample(enabled):
             return measured
 
 
-def run(samples):
+def run(samples, workflow="persona"):
     # Fixed before sampling: paired absolute overhead leaves most of the 200 ms
     # interactive response target to domain work; mock timing is not provider SLA.
     budget_ms = 50
     raw = []
     for index in range(samples + 3):
         order = [True, False] if index % 2 else [False, True]
-        pair = {enabled: sample(enabled) for enabled in order}
-        for key in ("saved_revision", "generated_cards", "canonical_terminals", "canonical_commit_statuses"):
+        pair = {enabled: sample(enabled, workflow) for enabled in order}
+        for key in ("saved_revision", "generated_cards" if workflow == "persona" else "generated_root_layers", "canonical_terminals", "canonical_commit_statuses"):
             assert pair[True][key] == pair[False][key], f"unequal_domain_result_{key}"
         if index >= 3:
             raw.append({"first": "enabled" if order[0] else "disabled", "enabled": pair[True], "disabled": pair[False],
@@ -111,9 +139,9 @@ def run(samples):
     summaries = {name: summary([pair[name]["elapsed_ms"] for pair in raw]) for name in ("enabled", "disabled")}
     summaries["paired_delta"] = summary([pair["delta_ms"] for pair in raw])
     summaries["post_response_drain"] = summary([pair["enabled"]["post_response_drain_ms"] for pair in raw])
-    return dict(schema_version="diagnostic-persona-workflow-benchmark-v1", timestamp=datetime.now(timezone.utc).isoformat(),
+    return dict(schema_version=f"diagnostic-{workflow}-workflow-benchmark-v1", timestamp=datetime.now(timezone.utc).isoformat(),
         platform=platform.platform(), python=platform.python_version(), warmup_pairs=3, sample_pairs=samples,
-        scope="Actual in-process ASGI Persona generation with mock provider, application of generated card contents to saved Persona, and persisted reload. Fresh app/storage per sample; timing excludes startup, post-response drain, browser/native UI, network and live provider. Structured console logging remains the same in both modes.",
+        scope=f"Actual in-process ASGI {workflow} generation with mock provider, application of generated contents to a domain save, and persisted reload. Fresh app/storage per sample; timing excludes startup, post-response drain, browser/native UI, network and live provider. Structured console logging remains the same in both modes.",
         disabled_control="Test-only null event sink, middleware bypass, index/spool workers not started; canonical Harness lifecycle unchanged.",
         budget_ms=budget_ms, gate="P95 paired enabled-minus-disabled request-chain overhead <=50 ms; signed deltas retained.",
         passed=summaries["paired_delta"]["p95_ms"] <= budget_ms, summary=summaries, raw=raw,
@@ -122,10 +150,11 @@ def run(samples):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--workflow", choices=("persona", "scene"), default="persona")
     parser.add_argument("--samples", type=int, default=30)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples < 1: parser.error("samples must be positive")
-    report = run(args.samples)
+    report = run(args.samples, args.workflow)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     if not report["passed"]: raise SystemExit("workflow_overhead_budget_exceeded")
