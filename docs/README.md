@@ -10,6 +10,7 @@
 | [Tavern 架构](tavern-architecture.md) | 房间、消息、调度、事务和恢复 |
 | [API 参考](api-reference.md) | HTTP 和流式协议 |
 | [诊断审计统计](diagnostic-audit.md) | 统计分组、分位数、去重与未知数据语义 |
+| [诊断存储策略](diagnostic-storage-policy.md) | 已验证的分库配额、留存与恢复例外；200 MiB 非安装硬上限 |
 | [桌面打包](desktop-packaging.md) | 本地构建、sidecar、Vault 与发布配置 |
 | [性能预算](performance-budgets-v1.md) | Room 分页、Harness 字节/调用/时延门 |
 | [解析与规划数据流](parsing-and-planning-data-flow.md) | Document → Study Unit → Learning Plan |

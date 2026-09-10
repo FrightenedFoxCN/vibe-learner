@@ -6,22 +6,23 @@ is deferred as requested; implementer tests are not presented as that review.
 
 ## Current evidence checkpoint (2026-09-10)
 
-Audited source revision: `4fe96d7`. This replaces the old summary matrix;
+Audited source revision: `c20ef1f` (current requirement reconciliation). This replaces the old summary matrix;
 chronological sections below remain historical evidence with their original scope.
 Only `OBS-FOUNDATION-001` is checked in the implementation plan. The other three
 items remain open; implemented slices are distinguished from final acceptance.
 
-The latest complete release run is `/tmp/diagnostic-current-release.log` on
-`4fe96d7`: all 745 backend tests passed in 63.292 seconds, shared/Web reliability
-and type gates, all 13 Harness PR suites, and the production build passed. The
-separate real Chromium suite most recently passed 16 cases after the import
-boundary fix (`/tmp/diagnostic-import-browser.log`). Native existing-Vault unlock,
-save/lock/read-back and save-dialog export were inspected in the actual macOS app.
-Eleven ordinary native tests and the normal-build check passed in preceding native
-slices; the new isolated creation application also built successfully. None of
-these checks closes the remaining functional/performance items below.
+The current complete release run is `/tmp/diagnostic-release-c20ef1f.log` on
+`c20ef1f`: all 745 backend tests passed in 62.455 seconds, shared/Web reliability
+and type gates, all 13 Harness PR suites, and the production build passed.
+The current real Chromium suite passed all 16 cases in 24.9 seconds
+(`/tmp/diagnostic-browser-c20ef1f.log`). All 11 ordinary native tests passed in
+4.66 seconds, with four opt-in probes ignored (`/tmp/diagnostic-native-c20ef1f.log`).
+Actual macOS Vault creation, save/lock/unlock, clear/restart/read-back and native
+save-dialog export have their separately scoped evidence below. These fresh
+checks do not close the failed native saturated-spool budget or missing native
+WebView overhead measurement.
 
-For this audit, `uv run --directory services/ai python -m unittest discover -s
+The earlier targeted audit `uv run --directory services/ai python -m unittest discover -s
 tests -p 'test_diagnostic*.py'` passed all 110 diagnostic tests in 9.976 seconds
 using the configured temporary uv cache. Output:
 `/tmp/diagnostic-consolidated-audit-tests.log`. This targeted run covers the
@@ -56,24 +57,24 @@ their described cases; an unavailable measurement or platform remains unknown.
 | Physical storage and oversize recovery | Quota/disk/recovery/directory tests; real Rust+Python installation probe under pinned SQLite readers | Per-DB/spool admission and bounded recovery/observation implemented. Normal envelopes total 196 MiB; 200 MiB remains a reference, not a proven hard installation cap. Unknown files and up-to-512 MiB recovery workspace remain explicit exceptions. |
 | Export and grouped audit statistics | `test_diagnostic_export.py`, `test_diagnostic_audit.py`, strict browser decoding, real browser/native saved files | Pinned event snapshot plus independent canonical index snapshot, raw observations, P50/P95 and outcome/unknown groups verified. Parent/child durations and retry token counts are not added twice. |
 | Offline, process exit, disk failure, overflow, duplicates and volume | Failure-isolation/desktop/quota/retention/recovery tests; actual Tavern crash recovery; 12,000-event and combined-storage probes | Required fault categories have concrete scoped evidence. Concurrent snapshots and retry identity are covered; failures are not treated as business rollback or lossless logging. |
-| Performance overhead | Backend baseline/quota reports; Chromium collector and actual React timeline reports; native spool stages and Vault measurements | Collection and bounded transport-row rendering pass local budgets. Native saturated spool has both failed 25.21 ms and passing later observations; no acceptance closure from selected reruns. Persona paired overhead passed; Original Scene paired P95 failed at 67.74 ms versus 50 ms; stage profiling found GC overlap, and a distinct process-isolated population passed at 6.23 ms (original retained). Remaining workflow comparisons and wide nested event rendering is measured separately; native WebView overhead remains unmeasured. |
+| Performance overhead | Backend baseline/quota reports; six request-chain populations; small/wide React timeline reports; native spool/Vault measurements | Persona, isolated Scene, Document→Planning, Study and direct/facilitated Tavern have passing scoped mock-backend paired measurements. Small and wide nested event rendering pass Chromium budgets. Original Scene GC-affected failure remains archived. Native saturated spool still has the original 25.21 ms failure against 25 ms; rejected sorting/sync experiments do not close it. Native WebView measurement remains outstanding. |
 | Final checks, commits and archive | Git history and named raw reports/logs | Stepwise commits and evidence exist. A fresh final broad gate and completion audit are required after remaining implementation/acceptance work. |
 
 ## Remaining completion work
 
-1. Native creation and clear-secrets success evidence is now complete for the
-   isolated macOS test Vault (see below), including the capability fix and
-   restart/read-back. Preserve this evidence in the final native/release audit;
-   it does not certify other platforms.
-2. Complete whole-workflow and remaining native/rendering overhead comparisons.
-   Retain the failed saturated-spool sample; do not weaken durability or widen
-   budgets solely to produce a passing result.
-3. Reconcile the documented physical-storage exceptions with final acceptance
-   claims; never certify an installation-wide 200 MiB hard limit from partial
-   scans or the normal-envelope arithmetic.
-4. Run the appropriate final release/native/browser gates, update the four
-   top-level plan items only to the extent proven, and archive the final result.
-   Deferred independent review stays separately identified.
+1. Resolve the native saturated-spool performance failure and complete native
+   WebView overhead evidence. Keep all failed observations; do not weaken
+   durability or widen budgets solely to produce a passing result.
+2. Complete current release/native/browser gates, reconcile each top-level plan
+   item against the evidence and archive the final result. Deferred independent
+   review remains separate.
+
+Native creation/clear, the six scoped backend workflow populations and wide
+nested-event Chromium measurement are completed evidence, not pending tasks.
+Storage claim reconciliation is recorded in [the storage policy](../diagnostic-storage-policy.md):
+owner-specific quotas and recovery are verified, while a 200 MiB installation
+hard cap is not certified. This distinction follows the original candidate-default
+language and does not change implementation limits or erase their exceptions.
 
 The table does not reopen verified chains merely because unrelated gates are
 unfinished, and it does not narrow any requirement to the subset already tested.
@@ -938,3 +939,15 @@ samples pass the unchanged mount/append/expand/unmount budgets, with P95
 50.5/50.7/30.9/34.0 ms. [Method and raw samples](../performance/diagnostic-render-rich-v1.md)
 retain exact scope. This covers wide event content, not every schema combination,
 separate index/association views or native WebView; no decoder bound is weakened.
+
+## Current release reconciliation
+
+After the workflow/native-clear/rendering additions, `check:release`, all 16 real
+Chromium cases and all 11 ordinary native tests passed again on `c20ef1f`, as
+recorded at the top. The performance row and remaining checklist now reflect the
+completed six backend populations and wide nested-event rendering. The original
+candidate storage limit is reconciled with owner-specific enforcement and
+recovery exceptions in the linked storage policy; no installation hard-cap claim
+is made. Remaining actual blockers are native saturated-spool performance,
+native WebView overhead and the final requirement-by-requirement closure audit.
+The goal remains active; no top-level completion box is changed by this checkpoint.

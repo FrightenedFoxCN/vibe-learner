@@ -141,7 +141,8 @@ as successful execution or complete audit coverage. Desktop events before
 sidecar readiness use a bounded local spool and the same event identity when
 forwarded later.
 
-Candidate defaults to validate during implementation: 1,000 in-memory client
+Initial candidate defaults (current enforcement and exceptions are recorded in
+[the verified storage policy](../diagnostic-storage-policy.md)): 1,000 in-memory client
 events, 100 events per upload batch, 16 KiB per event, and persistent retention
 of seven days or 200 MiB, whichever is reached first. Diagnostic ingestion and
 query traffic must not recursively log themselves. Queue backpressure, dropped
@@ -339,3 +340,9 @@ Debug 摘要仍发现原始凭据字段暴露，正作为下一项修复，不�
 每页约 725KB 下累积至 500 条；30 样本 P95 首屏/追加/展开/卸载分别
 50.5/50.7/30.9/34.0ms，均通过原预算。未放宽解码边界，不代替原生 WebView
 或所有 schema 组合；原生满载性能与最终验收继续。
+
+2026-09-10 当前收尾审计：c20ef1f 完整 release（745 后端测试、13 组 Harness、
+共享/Web 与生产构建）、16 项真实 Chromium、11 项普通原生测试全部通过。
+存储候选值与实际分库准入/恢复例外集中记录于 diagnostic-storage-policy.md；
+已完成的六组业务开销及复杂事件渲染不再列为待测。原生满载、WebView 开销和
+最终逐项关闭审计仍未完成，目标继续。
