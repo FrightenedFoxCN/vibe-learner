@@ -412,3 +412,26 @@ build passed. Logs: `/tmp/diagnostic-callback-{check,build,browser}.log`.
 This supersedes the separate immediate-callback flow limitation above. Remaining
 Document/OCR faults, Tavern partial/retry/cancel/recovery, native Vault/export,
 performance acceptance and deferred independent review remain open.
+
+## Document parser fault and retry HTTP acceptance
+
+`test_diagnostic_document_flows.py` exercises the real multipart upload, threaded
+NDJSON route, parser, durable admission and Harness runtime in a temporary local
+installation. A corrupt PDF and forced OCR with the engine disabled each produce
+HTTP 200 plus terminal `stream_error` and persisted Document `failed`. Their
+process diagnostics retain the supplied flow and server request identity, reference
+real canonical operations/traces, and contain no saved-resource observation,
+filename or document-content sentinel. The Document parse parent is failed and
+`not_committed`; separately admitted child-stage operations are checked against
+their own canonical records rather than assumed to share one operation identity.
+
+Retrying the OCR-unavailable document without forced OCR succeeds through real text
+extraction with the same supplied flow, a new action and disjoint admitted operation
+identities. Its parse parent has committed evidence and its saved-resource event
+references the original Document. This is backend HTTP evidence; browser ownership
+of the retry action and successful real OCR-engine execution remain to be tested.
+No production behavior changed in this slice. All 25 diagnostic/document operation
+and stage-metrics tests passed in 2.034 seconds; log:
+`/tmp/diagnostic-document-fault-python.log`. The initial test draft incorrectly
+assumed one operation per entire parse and exceeded the query page limit; the final
+assertions follow the actual bounded query and independent stage-admission contracts.

@@ -217,3 +217,9 @@ Harness suite、共享/Web 门与生产构建）和 7 项 Chromium 场景通过�
 学习动作的 callback 仍随该动作使用独立 flow。`npm run check`、生产构建及
 10 项真实 Chromium 场景通过，含真实提交后丢失响应、刷新查询和唯一 Turn
 验证。详见[验收记录](unified-debug-acceptance.md)，其他异常/原生/性能项继续。
+
+2026-09-10 Document 异常 HTTP 验收：真实损坏 PDF、强制 OCR 但引擎不可用均
+验证 HTTP 200 与业务 stream_error 的区别、失败主操作的 not_committed 证据、
+真实阶段身份以及内容/文件名排除；关闭强制 OCR 后的重试可提交同一 Document，
+沿用传入 flow 并获得新的 operation。25 项后端专项测试通过；浏览器重试动作
+归属、真实 OCR 引擎成功路径与其余异常/原生/性能验收仍继续。
