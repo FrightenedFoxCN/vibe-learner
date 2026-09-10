@@ -175,7 +175,7 @@ async function query(path: string, parameters: Record<string, unknown>, signal?:
 export async function queryDiagnosticEvents(filters: DiagnosticEventFilters = {}, after = 0, signal?: AbortSignal) {
   return decodeDiagnosticEvents(await query("events", { ...filters, after, limit: 100 }, signal), after);
 }
-export async function queryDiagnosticIndex(filters: Pick<DiagnosticEventFilters, "operation_id" | "workflow" | "stage"> = {}, after = "", signal?: AbortSignal) {
+export async function queryDiagnosticIndex(filters: import("@vibe-learner/shared").DiagnosticIndexFilters = {}, after = "", signal?: AbortSignal) {
   return decodeDiagnosticIndex(await query("harness-index", { ...filters, after, limit: 25 }, signal), after);
 }
 export async function queryDiagnosticLinks(operationId: string, after = "", signal?: AbortSignal) {

@@ -1428,15 +1428,13 @@
         "resource_type": {
           "anyOf": [
             {
-              "const": "persona",
-              "type": "string"
+              "$ref": "#/$defs/HarnessResourceType"
             },
             {
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Resource Type"
+          "default": null
         },
         "since": {
           "anyOf": [

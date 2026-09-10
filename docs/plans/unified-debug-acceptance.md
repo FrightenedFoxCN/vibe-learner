@@ -29,7 +29,7 @@ excluded from implementation commits and this change-scope claim.
 | Persona generate → save → reload correlation with Debug closed | `persona-diagnostics.test.jsx`, `diagnostics-live.spec.ts` real mock-backend Chromium chain | Verified for that chain; not evidence for every other feature. |
 | All workflow/stage and terminal Harness references | `harness_runtime.py`, `harness_broad_adoption.py`, restartable `diagnostic_index.py`; index/runtime and 13 Harness suites | Shared hooks exist. Per-workflow diagnostic-chain acceptance still needed for Document/OCR/cleanup, Planning, Scene, Study/question/attachment and Tavern. |
 | Logical action/flow correlation across requests and navigation | Default `diagnosticFetch` creates a request action context; Persona draft owns an explicit flow; Settings/Vault/import/export adapters exist | Audit other controllers' multi-request actions. A default per-request context with null flow does not prove one logical user flow is correlated. |
-| Resources and full association filtering | Persona save/update emits saved identity/revision; operation links and timeline drilldown work | `DiagnosticResourceReferenceV1.resource_type` and resource filters currently only accept Persona. Extend reviewed canonical resource references/filtering for the other domains; do not infer committed identity from URL parameters or HTTP success. |
+| Resources and full association filtering | Persona save/update emits saved identity/revision; operation links and timeline drilldown work | Canonical index projections and resource type/ID/role filters now cover the shared Harness vocabulary. Direct event references still only emit Persona saves; cross-domain event associations and flow acceptance remain. Do not infer committed identity from URL parameters or HTTP success. |
 | Provider/tool timing, usage, recovery and missing evidence | Provider parent/attempt spans; 6 Planning and 31 Study tools; audit fixtures/tests | Implemented bounded telemetry with explicit missing cost/endpoint/context evidence. Existing missing-evidence labels must remain honest. |
 | Settings/Vault/import/export and desktop lifecycle | Local action adapters; bounded native spool; Python consumer; real sidecar subprocess tests | Actual native Vault create/unlock/save/read-back and native save-dialog acceptance remain unverified. Frontend unavailable/locked-path tests do not establish successful native behavior. |
 | Independent DebugProvider and page-view ownership | `debug-provider.tsx`, `owned-debug-snapshot.tsx`, StrictMode/unmount/route tests and Chromium navigation | Implemented and locally verified. Full task closure still depends on the unfinished flow coverage. |
@@ -71,3 +71,21 @@ Browser query tests cover the nested vocabulary, null revisions, size limits and
 rejection of digests/unreviewed fields; Web type checking passed. This slice does
 not yet add cross-domain event resource emitters, resource filters or logical-flow
 acceptance, and closes no top-level requirement.
+
+## Canonical resource filtering slice
+
+Harness index queries and Timeline now filter by shared resource type, ID and
+optional canonical role. Type/ID match one reference; attempted and committed
+roles are never substituted. Pagination and stale-response fencing remain active,
+and absent/unavailable/unbackfilled resources cannot silently match. A bounded
+read-only SQL scan resolves the filtered trace to the existing operation/request
+association drilldown. Event and export selectors explicitly retain their direct
+resource-event semantics; cross-domain event emitters remain follow-up work.
+
+Verification: 13 backend query/index/export tests, 12 browser query decoder tests,
+9 Timeline component tests, Web type checking and production build passed. All
+three production Chromium scenarios passed, including selecting a resource from
+the real Persona canonical index through the new controls at 390px width. The
+resource screenshot was inspected (`/tmp/unified-debug-resource-index.png`);
+there was no horizontal overflow. This validates the index query path, not every
+product flow or the unfinished event/flow wiring.

@@ -1387,8 +1387,19 @@ Resource filters currently select directly referenced Persona events, while
 page-path filters select events carrying the reviewed browser page label.
 These filters are diagnostic projections, not authorization or commit proof.
 
-Harness index queries additionally accept `workflow` and `stage` and return
-`has_more`. Query uses a read-only connection: absent/unavailable index storage
+Harness index queries additionally accept `workflow`, `stage`, `resource_type`,
+`resource_id` and `resource_role` and return `has_more`. Resource types use the
+shared Harness resource vocabulary. The optional role is `context_subjects`,
+`attempted_outputs` or `committed_outputs`; omitted role searches all three.
+Type and ID must match the same reference. A role without an ID selects records
+with at least one reference in that role. Old `not_backfilled` and source-gap
+projections do not match resource filters. Resource results are historical
+canonical projections requiring read-back, not current resource state or proof
+of every side effect. SQLite scanning has a cooperative five-second deadline.
+The Timeline exposes resource type/ID and a Harness-only role selector, with
+operation → request → event drilldown. Event/export resource filters still
+select direct resource events (currently Persona saves); they do not implicitly
+join the independently refreshed canonical index. Query uses a read-only connection: absent/unavailable index storage
 reports `coverage.freshness=unavailable` and never creates a blank index as a
 side effect. The worker remains responsible for index creation/rebuild.
 

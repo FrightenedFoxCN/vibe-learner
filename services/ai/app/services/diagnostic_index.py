@@ -11,9 +11,31 @@ from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
 import threading
+import time
 
 from app.models.diagnostic_index import DiagnosticHarnessIndexV1
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
+
+
+RESOURCE_ROLES = ("context_subjects", "attempted_outputs", "committed_outputs")
+
+
+def diagnostic_index_resource_predicate(resource_id=None, resource_type=None, resource_role=None):
+    """Match type and identity on one canonical reference, never across arrays."""
+    if resource_role is not None and resource_role not in RESOURCE_ROLES:
+        raise ValueError("diagnostic_index_resource_role_invalid")
+    if all(value is None for value in (resource_id, resource_type, resource_role)):
+        return "1", []
+    clauses, params = [], []
+    for role in (resource_role,) if resource_role else RESOURCE_ROLES:
+        matches = []
+        for field, value in (("resource_id", resource_id), ("resource_type", resource_type)):
+            if value is not None:
+                matches.append(f"json_extract(r.value, '$.{field}')=?")
+                params.append(value)
+        clauses.append(f"EXISTS (SELECT 1 FROM json_each(payload, '$.resources.{role}') r" +
+                       (" WHERE " + " AND ".join(matches) if matches else "") + ")")
+    return "(json_extract(payload, '$.resources_gap') IS NULL AND json_type(payload, '$.resources')='object' AND (" + " OR ".join(clauses) + "))", params
 
 
 class DiagnosticHarnessIndex:
@@ -94,15 +116,18 @@ class DiagnosticHarnessIndex:
             self.disk_maintenance.maintain(db)
             return len(ids)
 
-    def query(self, after="", limit=100, operation_id=None, workflow=None, stage=None):
+    def query(self, after="", limit=100, operation_id=None, workflow=None, stage=None, resource_id=None, resource_type=None, resource_role=None):
         if not 1 <= limit <= 100:
             raise ValueError("diagnostic_index_page_limit")
+        resource_predicate, resource_params = diagnostic_index_resource_predicate(resource_id, resource_type, resource_role)
         try:
             from contextlib import closing
             with closing(sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=0.1)) as db:
+                deadline = time.monotonic() + 5
+                db.set_progress_handler(lambda: int(time.monotonic() >= deadline), 1000)
                 db.execute("BEGIN")
-                rows = db.execute("SELECT payload FROM projections WHERE trace_id > ? AND (? IS NULL OR operation_id=?) AND (? IS NULL OR workflow=?) AND (? IS NULL OR stage=?) ORDER BY trace_id LIMIT ?",
-                                  (after, operation_id, operation_id, workflow, workflow, stage, stage, limit + 1)).fetchall()
+                rows = db.execute("SELECT payload FROM projections WHERE trace_id > ? AND (? IS NULL OR operation_id=?) AND (? IS NULL OR workflow=?) AND (? IS NULL OR stage=?) AND " + resource_predicate + " ORDER BY trace_id LIMIT ?",
+                                  [after, operation_id, operation_id, workflow, workflow, stage, stage, *resource_params, limit + 1]).fetchall()
                 cursor, sweeps = db.execute("SELECT cursor,sweeps FROM checkpoint WHERE name='runtime'").fetchone()
             items = [DiagnosticHarnessIndexV1.model_validate_json(row[0]).model_dump(mode="json") for row in rows[:limit]]
             return {"items": items, "has_more": len(rows) > limit, "next_cursor": items[-1]["trace_id"] if items else after,

@@ -10,7 +10,7 @@ from app.models.diagnostic_index import DiagnosticHarnessIndexV1
 from app.models.diagnostic_retention import DiagnosticRecordRetentionV1
 from app.models.diagnostic_storage import DiagnosticStorageV1
 from app.models.diagnostic_writer import DiagnosticWriterCoverageV1
-from app.models.harness import HarnessWorkflow, HarnessStage
+from app.models.harness import HarnessWorkflow, HarnessStage, HarnessResourceType
 
 
 class DiagnosticExportFiltersV1(AuditModel):
@@ -25,7 +25,7 @@ class DiagnosticExportFiltersV1(AuditModel):
     workflow: HarnessWorkflow | None = None
     stage: HarnessStage | None = None
     resource_id: str | None = Field(default=None, max_length=160, pattern=r"^[A-Za-z0-9:._-]{1,160}$")
-    resource_type: Literal["persona"] | None = None
+    resource_type: HarnessResourceType | None = None
     since: datetime | None = None
     until: datetime | None = None
 

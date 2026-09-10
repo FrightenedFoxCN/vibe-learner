@@ -94,6 +94,29 @@ test("global timeline loads on demand, expands canonical links and reports unava
   await requestDetails.getByRole("button", { name: "查看关联请求事件" }).click();
   await expect.poll(() => reads.some(url => url.includes("/diagnostics/events?") && new URL(url).searchParams.has("request_id"))).toBe(true);
   await timeline.getByRole("button", { name: "收起 operation 关联" }).click();
+  // Resolve a resource from the real canonical projection, then exercise the
+  // production UI/query path without fabricating a resource from a URL.
+  let indexed: any;
+  await expect.poll(async () => {
+    const result = await request.get("http://127.0.0.1:18998/diagnostics/harness-index?workflow=persona");
+    indexed = (await result.json()).items.find((item: any) => item.resources?.context_subjects.length);
+    return Boolean(indexed);
+  }).toBe(true);
+  const resource = indexed.resources.context_subjects[0];
+  await timeline.getByLabel("资源类型", { exact: true }).selectOption(resource.resource_type);
+  await timeline.getByLabel("resource_id", { exact: true }).fill(resource.resource_id);
+  await timeline.getByRole("button", { name: "应用筛选" }).click();
+  await timeline.getByRole("button", { name: "Harness 索引", exact: true }).click();
+  await timeline.getByLabel("资源关联来源", { exact: true }).selectOption("context_subjects");
+  await expect(timeline.getByRole("button", { name: "展开 operation 关联" })).toHaveCount(1);
+  await expect.poll(() => reads.some(url => url.includes("/harness-index?") && new URL(url).searchParams.get("resource_id") === resource.resource_id && new URL(url).searchParams.get("resource_role") === "context_subjects")).toBe(true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await timeline.getByLabel("资源关联来源", { exact: true }).scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: "/tmp/unified-debug-resource-index.png" });
+  await timeline.getByLabel("资源类型", { exact: true }).selectOption("");
+  await timeline.getByLabel("resource_id", { exact: true }).fill("");
+  await timeline.getByRole("button", { name: "应用筛选" }).click();
   await timeline.getByRole("button", { name: "采集覆盖", exact: true }).click();
   await expect(timeline.getByRole("region", { name: "采集覆盖" })).toContainText("计数为已观察下限");
   await expect.poll(() => reads.some(url => url.includes("/diagnostics/writers?"))).toBe(true);

@@ -176,7 +176,7 @@ export interface DiagnosticEventFilters {
   workflow?: HarnessWorkflow;
   stage?: HarnessStage;
   resource_id?: string;
-  resource_type?: "persona";
+  resource_type?: HarnessResourceType;
   since?: string;
   until?: string;
 }
@@ -238,4 +238,9 @@ export interface DiagnosticWriterCoverageV1 {
   startup_before_epoch_gap: true;
   unclosed_meaning: "active_or_interrupted";
   complete_collection_claim: false;
+}
+
+
+export interface DiagnosticIndexFilters extends Pick<DiagnosticEventFilters, "operation_id" | "workflow" | "stage" | "resource_id" | "resource_type"> {
+  resource_role?: "context_subjects" | "attempted_outputs" | "committed_outputs";
 }

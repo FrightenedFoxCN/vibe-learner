@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from "react";
-import type { DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1, DiagnosticWriterEpochV1 } from "@vibe-learner/shared";
+import type { DiagnosticIndexFilters, DiagnosticEventFilters, DiagnosticEventPageV1, DiagnosticHarnessIndexV1, DiagnosticOperationLinkV1, DiagnosticWriterEpochV1 } from "@vibe-learner/shared";
 import { queryDiagnosticEvents, queryDiagnosticIndex, queryDiagnosticLinks, queryDiagnosticWriters } from "../lib/diagnostic-query";
 import { currentDiagnosticPage, subscribeDiagnosticPage } from "../lib/diagnostics";
 import { useDiagnosticPages } from "../hooks/use-diagnostic-pages";
@@ -70,11 +70,16 @@ function EventResults({ filters, allowOperation = true }: { filters: DiagnosticE
 }
 function IndexResults({ filters }: { filters: DiagnosticEventFilters }) {
   const [operation, setOperation] = useState<string | null>(null);
-  const serialized = JSON.stringify({ workflow: filters.workflow, stage: filters.stage, operation_id: filters.operation_id });
+  const [role, setRole] = useState<DiagnosticIndexFilters["resource_role"]>();
+  const serialized = JSON.stringify({ workflow: filters.workflow, stage: filters.stage, operation_id: filters.operation_id,
+    resource_id: filters.resource_id, resource_type: filters.resource_type, resource_role: role });
   const query = useCallback((after: string, signal: AbortSignal) => queryDiagnosticIndex(JSON.parse(serialized), after, signal), [serialized]);
   const state = useDiagnosticPages(query, "" as string, traceId, 250);
   return <>
-    <p>索引使用流程、阶段和 operation 筛选；事件的页面、时间及资源条件不适用于此视图。</p>
+    <p>索引使用流程、阶段、operation 和资源筛选；页面与时间条件不适用于此视图。资源来自历史 canonical 记录，不表示当前状态；未回填或源记录缺失的资源无法匹配。</p>
+    <label>资源关联来源<select aria-label="资源关联来源" style={{ minHeight: 44 }} value={role ?? ""} onChange={event => { setRole((event.target.value || undefined) as DiagnosticIndexFilters["resource_role"]); setOperation(null); }}>
+      <option value="">全部来源</option><option value="context_subjects">上下文资源</option><option value="attempted_outputs">尝试输出</option><option value="committed_outputs">已提交输出</option>
+    </select></label>
     <Status loading={state.loading} error={state.error} count={state.items.length} />
     <button style={button} disabled={state.loading} onClick={state.refresh}>刷新索引</button>
     {state.page && <p>覆盖状态：{state.page.coverage.freshness}；完成扫描 {state.page.coverage.completed_sweeps ?? "未知"}；失败 {state.page.coverage.failures}。索引可能滞后，不能代替提交回执。</p>}
@@ -114,6 +119,7 @@ export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnl
   return <section aria-label={currentPageOnly ? "当前页面诊断" : "全局诊断时间线"}>
     <h2>{currentPageOnly ? "当前页面诊断" : "全局诊断时间线"}</h2>
     <p>按入库顺序显示保留记录。HTTP 完成不等于业务提交；父子耗时不应相加。</p>
+    {!currentPageOnly && <p>事件与导出中的资源条件匹配直接记录的资源引用（目前为 Persona 保存）。跨域 canonical 资源请在 Harness 索引中筛选，再展开关联请求；两者的匹配范围不同。</p>}
     {!currentPageOnly && <>
       <form onSubmit={submit} style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(min(180px, 100%), 1fr))" }}>
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>流程<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="workflow" aria-label="流程"><option value="">全部</option>{schemas.index.$defs.HarnessWorkflow.enum.map(value => <option key={value}>{value}</option>)}</select></label>
@@ -121,6 +127,7 @@ export function DiagnosticTimeline({ currentPageOnly = false }: { currentPageOnl
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>页面<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="page_path" aria-label="页面"><option value="">全部</option>{paths.map(value => <option key={value}>{value}</option>)}</select></label>
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>来源<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="source" aria-label="来源"><option value="">全部</option>{["browser", "server", "desktop"].map(value => <option key={value}>{value}</option>)}</select></label>
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>级别<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="severity" aria-label="级别"><option value="">全部</option>{["info", "warning", "error"].map(value => <option key={value}>{value}</option>)}</select></label>
+        <label style={{ display: "grid", gap: 4, minWidth: 0 }}>资源类型<select style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name="resource_type" aria-label="资源类型"><option value="">全部</option>{schemas.index.$defs.HarnessResourceType.enum.map(value => <option key={value}>{value}</option>)}</select></label>
         {["operation_id", "request_id", "flow_id", "action_id", "resource_id"].map(key => <label key={key} style={{ display: "grid", gap: 4, minWidth: 0 }}>{key}<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} name={key} maxLength={160} /></label>)}
         <label style={{ display: "grid", gap: 4, minWidth: 0 }}>开始时间（本地）<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} type="datetime-local" name="since" /></label><label style={{ display: "grid", gap: 4, minWidth: 0 }}>结束时间（本地）<input style={{ width: "100%", minWidth: 0, minHeight: 44, boxSizing: "border-box" }} type="datetime-local" name="until" /></label>
         <button style={button} type="submit">应用筛选</button>

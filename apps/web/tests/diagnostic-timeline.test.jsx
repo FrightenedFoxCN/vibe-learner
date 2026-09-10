@@ -156,3 +156,30 @@ test("storage view loads lazily and fences responses after leaving the view", as
   await act(async () => pending[1].resolve(Response.json(sample)));
   assert.equal(view.queryByRole("heading", { name: "诊断存储状态" }), null);
 });
+
+
+test("resource type, identity and role reach the index and role changes fence stale results", async () => {
+  const calls = [], pending = [];
+  globalThis.fetch = (url, init) => {
+    calls.push(url);
+    if (url.includes("harness-index")) return new Promise(resolve => pending.push({ url, resolve, signal: init.signal }));
+    return Promise.resolve(Response.json(fixture.events));
+  };
+  const view = render(<DiagnosticTimeline />);
+  fireEvent.change(view.getByLabelText("资源类型"), { target: { value: "document" } });
+  fireEvent.change(view.getByLabelText("resource_id"), { target: { value: "document-id" } });
+  fireEvent.click(view.getByRole("button", { name: "应用筛选" }));
+  fireEvent.click(view.getByRole("button", { name: "Harness 索引" }));
+  await waitFor(() => assert.equal(pending.length, 1));
+  assert.equal(new URL(pending[0].url).searchParams.get("resource_type"), "document");
+  assert.equal(new URL(pending[0].url).searchParams.get("resource_id"), "document-id");
+  fireEvent.change(view.getByLabelText("资源关联来源"), { target: { value: "committed_outputs" } });
+  await waitFor(() => assert.equal(pending.length, 2));
+  assert.equal(pending[0].signal.aborted, true);
+  assert.equal(new URL(pending[1].url).searchParams.get("resource_role"), "committed_outputs");
+  const stale = structuredClone(fixture.index); stale.items[0].trace_id = "stale-resource"; stale.next_cursor = "stale-resource";
+  await act(async () => { pending[1].resolve(Response.json(fixture.index)); pending[0].resolve(Response.json(stale)); });
+  assert.ok(!view.container.textContent.includes("stale-resource"));
+  assert.ok(view.container.textContent.includes("未回填或源记录缺失"));
+  assert.ok(!calls.some(url => url.includes("operation-links")));
+});

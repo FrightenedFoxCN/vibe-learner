@@ -14,6 +14,48 @@ from app.services.diagnostic_index import DiagnosticHarnessIndex
 
 
 class DiagnosticQueryTests(unittest.TestCase):
+    def test_canonical_resource_filters_match_one_reference_role_and_page(self):
+        from app.models.diagnostic_index import DiagnosticHarnessIndexV1
+        with TemporaryDirectory() as directory:
+            index = DiagnosticHarnessIndex(None, Path(directory) / "index.db")
+            def projection(trace_id, subjects=(), attempted=(), committed=(), gap=None):
+                return DiagnosticHarnessIndexV1.model_validate(dict(trace_id=trace_id,
+                    resources=dict(context_subjects=list(subjects), attempted_outputs=list(attempted), committed_outputs=list(committed)),
+                    resources_gap=gap)).model_dump_json()
+            def ref(kind, identity):
+                return dict(resource_type=kind, resource_id=identity, revision=None)
+            with index._connect() as db:
+                with index.quota.transaction(db):
+                    for trace_id, payload in [
+                        ("a", projection("a", [ref("document", "same"), ref("scene", "other")])),
+                        ("b", projection("b", attempted=[ref("document", "same")])),
+                        ("c", projection("c", committed=[dict(resource_type="learning_plan", resource_id="same")])),
+                        ("d", projection("d", [ref("document", "same")], gap="not_backfilled")),
+                        ("e", DiagnosticHarnessIndexV1(trace_id="e").model_dump_json()),
+                    ]:
+                        db.execute("INSERT INTO projections(trace_id,payload) VALUES (?,?)", (trace_id, payload))
+            app = FastAPI(); app.include_router(router); app.state.diagnostic_index = index
+            with TestClient(app) as client:
+                path = "/diagnostics/harness-index"
+                def read(**params):
+                    result = client.get(path, params=params)
+                    self.assertEqual(result.status_code, 200, result.text)
+                    return result.json()
+                first = read(resource_type="document", resource_id="same", limit=1)
+                self.assertEqual([item["trace_id"] for item in first["items"]], ["a"])
+                self.assertTrue(first["has_more"])
+                second = read(resource_type="document", resource_id="same", limit=1, after=first["next_cursor"])
+                self.assertEqual([item["trace_id"] for item in second["items"]], ["b"])
+                self.assertFalse(second["has_more"])
+                self.assertEqual(read(resource_type="document", resource_id="other")["items"], [])
+                self.assertEqual(read(resource_type="scene", resource_id="same")["items"], [])
+                self.assertEqual([item["trace_id"] for item in read(resource_role="attempted_outputs")["items"]], ["b"])
+                self.assertEqual([item["trace_id"] for item in read(resource_id="same", resource_role="committed_outputs")["items"]], ["c"])
+                self.assertEqual(read(resource_type="document", resource_role="committed_outputs")["items"], [])
+                self.assertEqual(client.get(path, params={"resource_type": "invented"}).status_code, 422)
+                self.assertEqual(client.get(path, params={"resource_role": "private"}).status_code, 422)
+                self.assertEqual(client.get(path, params={"resource_id": "' OR 1=1"}).status_code, 422)
+
     def test_browser_query_schemas_match_current_backend_models(self):
         from app.models.diagnostic import DiagnosticOperationLinkV1
         from app.models.diagnostic_index import DiagnosticHarnessIndexV1

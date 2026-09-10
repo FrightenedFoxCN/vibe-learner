@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.core.diagnostics import DiagnosticQueryUnavailable
-from app.models.harness import HarnessWorkflow, HarnessStage
+from app.models.harness import HarnessWorkflow, HarnessStage, HarnessResourceType
 from app.models.diagnostic import DiagnosticEventV1, Identity, DiagnosticPagePath
 
 router = APIRouter(prefix="/diagnostics", tags=["diagnostics"])
@@ -44,7 +44,7 @@ def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Que
                  severity: Literal["info", "warning", "error"] | None = None,
                  operation_id: Identity | None = None, workflow: HarnessWorkflow | None = None, stage: HarnessStage | None = None,
                  resource_id: str | None = Query(None, max_length=160, pattern=r"^[A-Za-z0-9:._-]{1,160}$"),
-                 resource_type: Literal["persona"] | None = None,
+                 resource_type: HarnessResourceType | None = None,
                  since: datetime | None = None, until: datetime | None = None):
     if any(value is not None and value.utcoffset() is None for value in (since, until)):
         raise HTTPException(422, "diagnostic_time_timezone_required")
@@ -70,11 +70,15 @@ def query_events(request: Request, after: int = Query(0, ge=0), limit: int = Que
 @router.get("/harness-index")
 def query_harness_index(request: Request, after: str = Query("", max_length=160),
                         limit: int = Query(100, ge=1, le=100), operation_id: Identity | None = None,
-                        workflow: HarnessWorkflow | None = None, stage: HarnessStage | None = None):
+                        workflow: HarnessWorkflow | None = None, stage: HarnessStage | None = None,
+                        resource_id: str | None = Query(None, max_length=160, pattern=r"^[A-Za-z0-9:._-]{1,160}$"),
+                        resource_type: HarnessResourceType | None = None,
+                        resource_role: Literal["context_subjects", "attempted_outputs", "committed_outputs"] | None = None):
     index = getattr(request.app.state, "diagnostic_index", None)
     if index is None:
         raise HTTPException(503, "diagnostic_index_unavailable")
-    return index.query(after=after, limit=limit, operation_id=operation_id, workflow=workflow, stage=stage)
+    return index.query(after=after, limit=limit, operation_id=operation_id, workflow=workflow, stage=stage,
+                       resource_id=resource_id, resource_type=resource_type, resource_role=resource_role)
 
 
 @router.get("/operation-links")
