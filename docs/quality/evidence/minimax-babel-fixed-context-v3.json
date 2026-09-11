@@ -1,0 +1,102 @@
+{
+  "scope": "SDK initial planning context equality after removing persona only; source content kept in memory, not this evidence",
+  "limitations": "Same prepared source and five-tool catalog. Page images differ by experimental injection; not production retrieval adoption or independent quality certification.",
+  "rows": [
+    {
+      "persona": "rigorous",
+      "mode": "text",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-8db2787b5d3046fa993add5899f894ec",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-e17edb863aea4aee8851ebfff81c900a",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "mode": "text",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-64102ca4d9ad48318a74c062486f5aac",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-06f55c925f724fbaaaffaba64ab852d0",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "mode": "text_image_crops",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-cbfb4a77439d41158d5495ec1b62ac44",
+      "boundary_success": false
+    },
+    {
+      "persona": "explorer",
+      "mode": "text_image_crops",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-4b415022c1064a54a816095eb2c780ec",
+      "boundary_success": true
+    }
+  ]
+}

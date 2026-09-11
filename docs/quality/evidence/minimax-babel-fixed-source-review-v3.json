@@ -1,0 +1,262 @@
+{
+  "scope": "Maintainer review of six newly admitted Planning operations against one copied completed document snapshot",
+  "limitations": [
+    "All initial nonpersona JSON contexts match; all offer the same five tools.",
+    "The shared snapshot already contains an OCR-derived Study Unit from a previous plan; tests do not establish unbiased initial document processing.",
+    "One sample per cell; provider history and call paths differ after initial input.",
+    "No independent quality certification or stable cache/latency effect estimate."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-64102ca4d9ad48318a74c062486f5aac",
+      "cell": "explorer-text",
+      "boundary_success": true,
+      "tool_failures": 0,
+      "tool_diagnostics": [
+        {
+          "tool_name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "revise_study_units",
+          "ok": true,
+          "error": null
+        }
+      ],
+      "image_parts_per_request": [
+        0,
+        0,
+        0
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 15677,
+      "completion_tokens": 3873,
+      "terminal_errors": [],
+      "commentary_theme": "missing",
+      "time_allocation": "partial",
+      "issues": [
+        "Adds a movie/novel/song comparison activity outside the requested page-only scope; not a fabricated quotation."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-e17edb863aea4aee8851ebfff81c900a",
+      "cell": "explorer-text_image",
+      "boundary_success": true,
+      "tool_failures": 0,
+      "tool_diagnostics": [
+        {
+          "tool_name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ],
+      "image_parts_per_request": [
+        1,
+        1,
+        1
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 19459,
+      "completion_tokens": 11252,
+      "terminal_errors": [],
+      "commentary_theme": "present_but_distorted",
+      "time_allocation": "5+10+8+5+2=30",
+      "issues": [
+        "Recasts period character as timelessness and a choice between 1930 and 1992."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-4b415022c1064a54a816095eb2c780ec",
+      "cell": "explorer-text_image_crops",
+      "boundary_success": true,
+      "tool_failures": 0,
+      "tool_diagnostics": [
+        {
+          "tool_name": "revise_study_units",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ],
+      "image_parts_per_request": [
+        3,
+        3,
+        3
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 20705,
+      "completion_tokens": 4847,
+      "terminal_errors": [],
+      "commentary_theme": "present_with_reading_errors",
+      "time_allocation": "4+6+8+4=22 plus untimed closing activity",
+      "issues": [
+        "Misreads 时期性 as 时朝性.",
+        "Suggests Chinese translation examples 耽溺, 恭顺, 勉为其难 not visible on this page.",
+        "Correctly connects Chinese translation from lower left to upper right."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-8db2787b5d3046fa993add5899f894ec",
+      "cell": "rigorous-text",
+      "boundary_success": true,
+      "tool_failures": 1,
+      "tool_diagnostics": [
+        {
+          "tool_name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "revise_study_units",
+          "ok": false,
+          "error": "invalid_study_unit_revision"
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ],
+      "image_parts_per_request": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "provider_requests": 7,
+      "prompt_tokens": 42575,
+      "completion_tokens": 3127,
+      "terminal_errors": [
+        "stage_evidence_failed"
+      ],
+      "commentary_theme": "missing",
+      "time_allocation": "3+12+10+5=30",
+      "issues": [
+        "Treats OCR fragments Aa, +*, ALAL, 3 as lexical annotations instead of clearly identifying undecipherable Chinese."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-06f55c925f724fbaaaffaba64ab852d0",
+      "cell": "rigorous-text_image",
+      "boundary_success": true,
+      "tool_failures": 2,
+      "tool_diagnostics": [
+        {
+          "tool_name": "get_study_unit_detail",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "revise_study_units",
+          "ok": false,
+          "error": "invalid_study_unit_revision"
+        },
+        {
+          "tool_name": "revise_study_units",
+          "ok": false,
+          "error": "invalid_study_unit_revision"
+        },
+        {
+          "tool_name": "read_page_range_content",
+          "ok": true,
+          "error": null
+        },
+        {
+          "tool_name": "estimate_plan_completion",
+          "ok": true,
+          "error": null
+        }
+      ],
+      "image_parts_per_request": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "provider_requests": 6,
+      "prompt_tokens": 39233,
+      "completion_tokens": 4607,
+      "terminal_errors": [
+        "stage_evidence_failed",
+        "stage_evidence_failed"
+      ],
+      "commentary_theme": "missing",
+      "time_allocation": "partial",
+      "issues": [
+        "Continues framing core problem as dramatic love confirmation, despite image evidence of historical-semantic commentary."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-cbfb4a77439d41158d5495ec1b62ac44",
+      "cell": "rigorous-text_image_crops",
+      "boundary_success": false,
+      "tool_failures": 0,
+      "tool_diagnostics": [],
+      "image_parts_per_request": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "provider_requests": 7,
+      "prompt_tokens": 58329,
+      "completion_tokens": 7180,
+      "terminal_errors": [
+        "plan_proposal_schema_invalid:$:plan_model_invalid_json"
+      ],
+      "commentary_theme": "not_reviewable",
+      "time_allocation": "not_reviewable",
+      "issues": [
+        "No committed plan; final proposal JSON invalid."
+      ]
+    }
+  ]
+}
