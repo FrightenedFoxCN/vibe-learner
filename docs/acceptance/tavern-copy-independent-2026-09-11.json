@@ -1,0 +1,77 @@
+{
+  "build_id": "kdGcFhfhMHkFwdndKUgdC",
+  "stats": {
+    "startTime": "2026-09-11T14:20:41.134Z",
+    "duration": 4176.920999999999,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "independent Tavern copy: partial has readable primary feedback and blocked is unexecuted",
+      "status": "passed",
+      "duration_ms": 660,
+      "evidence": [
+        {
+          "name": "visible-copy.json",
+          "data": {
+            "status": "partial",
+            "visibleText": "Vibe Learner\n导航首页\n计划生成\n章节对话\n角色酒馆\n人格色谱\n场景搭建\n感官工具\n统一设置\n用量审计\n收起\n\nTAVERN WORKSPACE\n\nIndependent Copy Room\n\n部分角色已回应 · revision 1\n本地模拟\n\n刷新\n归档\n新建酒馆\n部分角色回应未完成；已保存的回应不会重复生成，可在下方仅恢复未完成角色。\n\nTAVERN SESSION PANEL\n\n最近酒馆\n1\nIndependent Copy Room\nCompleted Actor · Failed Actor · Blocked Actor\n2 条消息 · 8/12 08:00\n\n已显示全部房间\n\nINTERACTION COMPOSER\n\n发起互动\n\n本轮回应：Completed Actor → Failed Actor → Blocked Actor\n\n上次多人互动还有角色未回应\n\n1/3 位已回应；Failed Actor、Blocked Actor 尚未完成。已保存的回应不会重复生成。\n\n仅重试未完成角色\n你的消息\n下一轮引导（可选，不会显示在对话中）\n发送并回应\n继续角色互动\n\nPARTICIPANT ROSTER\n\n角色与目标\n3 已选\nC\nCompleted Actor\n上一轮已回应\nF\nFailed Actor\n上一轮未完成\nB\nBlocked Actor\n上一轮尚未执行\n\n选 1 位为单聊；选 2–4 位时，服务器按名册顺序引导讨论。\n\nRELIABILITY DETAILS\n可靠性摘要\n待恢复 1\n\nTAVERN CONVERSATION PANEL\n\n对话记录\n2/2\n\n最新消息序号 2\n\n已到达对话起点\n\n你\n#1 · 8/12 08:00\nCompleted Actor\n#2 · 8/12 08:00",
+            "details": "RELIABILITY DETAILS\n可靠性摘要\n待恢复 1\n\n这里只显示可读恢复摘要；完整 Harness trace 可在全局调试层查看。\n\n部分角色已回应\n多人引导 · 8/12 08:00\nCompleted Actor\n已回应\nFailed Actor\n回应未完成\nBlocked Actor\n因前序回应未完成而暂未执行\n仅重试未完成角色"
+          }
+        }
+      ]
+    },
+    {
+      "title": "independent Tavern copy: failed has readable primary feedback and blocked is unexecuted",
+      "status": "passed",
+      "duration_ms": 350,
+      "evidence": [
+        {
+          "name": "visible-copy.json",
+          "data": {
+            "status": "failed",
+            "visibleText": "Vibe Learner\n导航首页\n计划生成\n章节对话\n角色酒馆\n人格色谱\n场景搭建\n感官工具\n统一设置\n用量审计\n收起\n\nTAVERN WORKSPACE\n\nIndependent Copy Room\n\n本轮未完成 · revision 1\n本地模拟\n\n刷新\n归档\n新建酒馆\n本轮角色回应未完成；可从恢复入口继续尚未完成的角色。\n\nTAVERN SESSION PANEL\n\n最近酒馆\n1\nIndependent Copy Room\nCompleted Actor · Failed Actor · Blocked Actor\n1 条消息 · 8/12 08:00\n\n已显示全部房间\n\nINTERACTION COMPOSER\n\n发起互动\n\n本轮回应：Completed Actor → Failed Actor → Blocked Actor\n\n上次多人互动还有角色未回应\n\n0/3 位已回应；Completed Actor、Failed Actor、Blocked Actor 尚未完成。已保存的回应不会重复生成。\n\n仅重试未完成角色\n你的消息\n下一轮引导（可选，不会显示在对话中）\n发送并回应\n继续角色互动\n\nPARTICIPANT ROSTER\n\n角色与目标\n3 已选\nC\nCompleted Actor\n上一轮未完成\nF\nFailed Actor\n上一轮尚未执行\nB\nBlocked Actor\n上一轮尚未执行\n\n选 1 位为单聊；选 2–4 位时，服务器按名册顺序引导讨论。\n\nRELIABILITY DETAILS\n可靠性摘要\n待恢复 1\n\nTAVERN CONVERSATION PANEL\n\n对话记录\n1/1\n\n最新消息序号 1\n\n已到达对话起点\n\n你\n#1 · 8/12 08:00",
+            "details": "RELIABILITY DETAILS\n可靠性摘要\n待恢复 1\n\n这里只显示可读恢复摘要；完整 Harness trace 可在全局调试层查看。\n\n本轮未完成\n多人引导 · 8/12 08:00\nCompleted Actor\n回应未完成\nFailed Actor\n因前序回应未完成而暂未执行\nBlocked Actor\n因前序回应未完成而暂未执行\n仅重试未完成角色"
+          }
+        }
+      ]
+    },
+    {
+      "title": "independent Tavern copy: archived room explicitly stays read-only",
+      "status": "passed",
+      "duration_ms": 140,
+      "evidence": []
+    },
+    {
+      "title": "independent Tavern copy: retry error tavern_retry_context_changed stays readable without raw leakage",
+      "status": "passed",
+      "duration_ms": 1152,
+      "evidence": [
+        {
+          "name": "retry-visible-copy.json",
+          "data": {
+            "code": "tavern_retry_context_changed",
+            "visibleText": "Vibe Learner\n导航首页\n计划生成\n章节对话\n角色酒馆\n人格色谱\n场景搭建\n感官工具\n统一设置\n用量审计\n收起\n\nTAVERN WORKSPACE\n\nIndependent Copy Room\n\n已同步 · 部分角色已回应 · revision 1\n本地模拟\n\n刷新\n归档\n新建酒馆\n房间内容或角色设定已变化，不能继续旧恢复任务。\n\nTAVERN SESSION PANEL\n\n最近酒馆\n1\nIndependent Copy Room\nCompleted Actor · Failed Actor · Blocked Actor\n2 条消息 · 8/12 08:00\n\n已显示全部房间\n\nINTERACTION COMPOSER\n\n发起互动\n\n本轮回应：Completed Actor → Failed Actor → Blocked Actor\n\n上次多人互动还有角色未回应\n\n1/3 位已回应；Failed Actor、Blocked Actor 尚未完成。已保存的回应不会重复生成。\n\n仅重试未完成角色\n你的消息\n下一轮引导（可选，不会显示在对话中）\n发送并回应\n继续角色互动\n\nPARTICIPANT ROSTER\n\n角色与目标\n3 已选\nC\nCompleted Actor\n上一轮已回应\nF\nFailed Actor\n上一轮未完成\nB\nBlocked Actor\n上一轮尚未执行\n\n选 1 位为单聊；选 2–4 位时，服务器按名册顺序引导讨论。\n\nRELIABILITY DETAILS\n可靠性摘要\n待恢复 1\n\nTAVERN CONVERSATION PANEL\n\n对话记录\n2/2\n\n最新消息序号 2\n\n已到达对话起点\n\n你\n#1 · 8/12 08:00\n\nIndependent round\n\nCompleted Actor\n#2 · 8/12 08:00\n\nCommitted actor reply"
+          }
+        }
+      ]
+    },
+    {
+      "title": "independent Tavern copy: retry error UNKNOWN_INDEPENDENT_PRIVATE_CODE stays readable without raw leakage",
+      "status": "passed",
+      "duration_ms": 1146,
+      "evidence": [
+        {
+          "name": "retry-visible-copy.json",
+          "data": {
+            "code": "UNKNOWN_INDEPENDENT_PRIVATE_CODE",
+            "visibleText": "Vibe Learner\n导航首页\n计划生成\n章节对话\n角色酒馆\n人格色谱\n场景搭建\n感官工具\n统一设置\n用量审计\n收起\n\nTAVERN WORKSPACE\n\nIndependent Copy Room\n\n已同步 · 部分角色已回应 · revision 1\n本地模拟\n\n刷新\n归档\n新建酒馆\n重试未完整返回；已重新同步已保存的结果。\n\nTAVERN SESSION PANEL\n\n最近酒馆\n1\nIndependent Copy Room\nCompleted Actor · Failed Actor · Blocked Actor\n2 条消息 · 8/12 08:00\n\n已显示全部房间\n\nINTERACTION COMPOSER\n\n发起互动\n\n本轮回应：Completed Actor → Failed Actor → Blocked Actor\n\n上次多人互动还有角色未回应\n\n1/3 位已回应；Failed Actor、Blocked Actor 尚未完成。已保存的回应不会重复生成。\n\n仅重试未完成角色\n你的消息\n下一轮引导（可选，不会显示在对话中）\n发送并回应\n继续角色互动\n\nPARTICIPANT ROSTER\n\n角色与目标\n3 已选\nC\nCompleted Actor\n上一轮已回应\nF\nFailed Actor\n上一轮未完成\nB\nBlocked Actor\n上一轮尚未执行\n\n选 1 位为单聊；选 2–4 位时，服务器按名册顺序引导讨论。\n\nRELIABILITY DETAILS\n可靠性摘要\n待恢复 1\n\nTAVERN CONVERSATION PANEL\n\n对话记录\n2/2\n\n最新消息序号 2\n\n已到达对话起点\n\n你\n#1 · 8/12 08:00\n\nIndependent round\n\nCompleted Actor\n#2 · 8/12 08:00\n\nCommitted actor reply"
+          }
+        }
+      ]
+    }
+  ]
+}

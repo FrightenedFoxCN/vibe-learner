@@ -61,13 +61,13 @@ import {
   TAVERN_PAGE_SIZE,
   TAVERN_ROOM_PAGE_SIZE,
   TAVERN_ROOM_SUMMARY_LIMIT,
-  type TavernParticipantGenerationState,
 } from "../lib/tavern-workspace-state";
 import { createDiagnosticId, diagnosticContext, type DiagnosticContext } from "../lib/diagnostics";
 import { MaterialIcon } from "./material-icon";
 import { usePageDebugSnapshot } from "./page-debug-context";
 import { RichTextMessage } from "./rich-text-message";
 import { TopNav } from "./top-nav";
+import { RUN_STATUS_LABELS, STEP_STATUS_LABELS, TAVERN_COPY, tavernFailureNotice } from "../lib/tavern-copy";
 
 type BusyAction = "bootstrap" | "room" | "create" | "archive" | "turn" | "retry" | "cancel" | null;
 type MutationAction = Exclude<BusyAction, "bootstrap" | "room" | null>;
@@ -78,28 +78,6 @@ interface MutationOperation {
   action: MutationAction;
   roomId: string;
 }
-
-const RUN_STATUS_LABELS: Record<TavernRun["status"], string> = {
-  pending: "等待生成",
-  completed: "已完成",
-  partial: "部分角色已回应",
-  failed: "本轮未完成",
-  canceled: "已取消",
-};
-
-const STEP_STATUS_LABELS: Record<TavernParticipantGenerationState, string> = {
-  idle: "就绪",
-  pending: "等待发言",
-  generating: "正在生成",
-  completed: "已回应",
-  failed: "回应未完成",
-  blocked: "等待前序恢复",
-  canceled: "已取消",
-  previous_completed: "上一轮已回应",
-  previous_failed: "上一轮未完成",
-  previous_blocked: "上一轮待恢复",
-  previous_canceled: "上一轮已取消",
-};
 
 export function TavernWorkspace() {
   const [rooms, setRooms] = useState<TavernRoomSummary[]>([]);
@@ -887,8 +865,8 @@ export function TavernWorkspace() {
         if (result.run.status === "partial" || result.run.status === "failed") {
           setVisibleError(
             result.run.status === "partial"
-              ? "部分角色回应未完成；已保存的回应不会重复生成，可在下方仅恢复未完成角色。"
-              : "本轮角色回应未完成；服务端已保存失败证据，可从恢复入口再次尝试。"
+              ? TAVERN_COPY.partial
+              : TAVERN_COPY.failed
           );
         }
         await Promise.all([updateRooms(operation.diagnostic), updateRunRecovery(roomId, operation.diagnostic)]);
@@ -957,12 +935,12 @@ export function TavernWorkspace() {
           setVisibleError("");
         } else if (!canceled) {
           setVisibleError(
-            "取消响应未能确认；已重新同步服务器状态，请按当前状态决定是否重试。"
+            TAVERN_COPY.cancelUnconfirmed
           );
         }
         releaseForegroundOperation(operation);
         if (finishMutation(operation) && cancelConfirmed) {
-          setNotice("已取消接收本轮结果；已发出的模型请求可能仍运行到超时");
+          setNotice(TAVERN_COPY.canceled);
         }
       }
     }
@@ -997,7 +975,7 @@ export function TavernWorkspace() {
         if (!syncTurnResult(result)) return;
         setNotice(result.run.status === "completed" ? "剩余角色已完成回应" : RUN_STATUS_LABELS[result.run.status]);
         if (result.run.status === "partial" || result.run.status === "failed") {
-          setVisibleError("恢复运行仍有角色未完成；已完成回应不会重复生成，可继续恢复当前叶节点。");
+          setVisibleError(TAVERN_COPY.retryIncomplete);
         }
         await Promise.all([updateRooms(operation.diagnostic), updateRunRecovery(operation.roomId, operation.diagnostic)]);
       } catch (error) {
@@ -1819,7 +1797,7 @@ function InteractionComposer({
                 : "上次多人互动还有角色未回应"}
             </strong>
             {recovery.chainStatus === "recovered" ? (
-              <p>{recovery.completedCount}/{recovery.totalCount} 位已完成回应，旧的部分结果不会再次暴露为可重试操作。</p>
+              <p>{recovery.completedCount}/{recovery.totalCount} {TAVERN_COPY.recovered}</p>
             ) : (
               <p>
                 {recovery.completedCount}/{recovery.totalCount} 位已回应；
@@ -1864,7 +1842,7 @@ function InteractionComposer({
             roomActive
               ? "输入消息。Enter 发送，Shift + Enter 换行。"
               : roomAvailable
-                ? "归档房间为只读状态。"
+                ? TAVERN_COPY.archived
                 : "请先创建或打开一个酒馆。"
           }
         />
@@ -1956,7 +1934,7 @@ function ReliabilityDetails({
                 {run.speakerSteps.map((step) => (
                   <li key={`${run.id}-${step.stepIndex}`}>
                     <span>{names.get(step.personaId) || "房间角色"}</span>
-                    <span>{step.status === "blocked" ? "因前序回应未完成而暂未执行" : STEP_STATUS_LABELS[step.status]}</span>
+                    <span>{step.status === "blocked" ? TAVERN_COPY.blocked : STEP_STATUS_LABELS[step.status]}</span>
                   </li>
                 ))}
               </ul>
@@ -1968,7 +1946,7 @@ function ReliabilityDetails({
               ) : recoveredRootIds.has(run.id) ? (
                 <p className="tavern-repair-note">该部分结果已由后续范围重试完整恢复。</p>
               ) : run.parentRunId ? (
-                <p className="tavern-repair-note">这是一次范围受限的恢复运行。</p>
+                <p className="tavern-repair-note">{TAVERN_COPY.retryScope}</p>
               ) : null}
             </div>
           );
@@ -2010,17 +1988,8 @@ function recordError(
 function friendlyTavernError(error: unknown, fallback: string): string {
   const detail = decodeTavernHttpError(error);
   const code = detail?.code ?? "";
-  if (code === "tavern_revision_conflict") return "房间刚刚发生了更新，已重新同步；请确认内容后重试。";
-  if (code === "tavern_run_in_progress") return "这个房间已有一轮互动正在生成，请稍后刷新。";
-  if (code === "tavern_continue_anchor_stale") return "对话已出现更新；请基于最新一条消息继续。";
-  if (code === "tavern_retry_context_changed") return "房间内容或角色设定已变化，不能继续旧恢复任务。";
-  if (code === "tavern_retry_already_created") return "这次未完成互动已经创建过恢复任务，已重新同步。";
-  if (code === "tavern_room_not_active") return "这个房间已归档；恢复使用后才能继续互动。";
-  if (code === "tavern_run_failed") return "部分角色回应未通过可靠性检查。已保存的消息不会丢失，可从恢复入口继续未完成角色。";
   const raw = error instanceof Error ? error.message : String(error);
-  if (raw.includes("tavern_response_decode_error") || / at tavern\./.test(raw)) {
-    return "服务器返回的数据未通过可靠性校验；页面已保留现有内容，请刷新恢复，若持续出现请查看调试详情。";
-  }
-  if (raw.includes("Cannot reach AI service")) return "无法连接 AI 服务，请检查服务是否已启动。";
-  return fallback;
+  const kind = raw.includes("tavern_response_decode_error") || / at tavern\./.test(raw)
+    ? "decode" : raw.includes("Cannot reach AI service") ? "network" : "other";
+  return tavernFailureNotice(code, kind, fallback);
 }
