@@ -1,0 +1,51 @@
+{
+  "scope": "Maintainer multi-window source-position review",
+  "limitations": [
+    "Four isolated targets with fixed seed sessions; two repetitions per window condition.",
+    "Live fixture wording and full query differ from the local single-window counterexample. Both live window variants retain the update, so this is not evidence of superiority.",
+    "Up to three windows; long sentences and more than three relevant regions remain uncovered.",
+    "Normalized character offsets describe selected source locations, not complete provenance or a production authorized replay artifact."
+  ],
+  "rows": [
+    {
+      "variant": "query_window",
+      "repetition": 0,
+      "operation_id": "harness-operation-3e5d19415cb246af9ad387aa4fd73f01",
+      "boundary_success": true,
+      "new_location_in_excerpts": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "核对完了，给你最新版本：\n\n- 复习地点：白桦阅览室（最新约定）\n- 暗号：不设新暗号（旧暗号\"晴鸟\"已撤销）\n\n旧约定撤销清单：\n\n- 复习地点\"青石阅览室\"已撤销\n- 暗号\"晴鸟\"已撤销，不再沿用"
+    },
+    {
+      "variant": "query_windows",
+      "repetition": 0,
+      "operation_id": "harness-operation-48c4dfc18fab4528a5e97e59a89780dc",
+      "boundary_success": true,
+      "new_location_in_excerpts": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "- 最新有效约定：\n  - 复习地点：白桦阅览室\n  - 暗号：无（原暗号已撤销，未设新暗号）\n  - 状态：尚未去过\n- 已撤销的旧约定：\n  - 复习地点：青石阅览室（已撤销）\n  - 暗号：晴鸟（已撤销）"
+    },
+    {
+      "variant": "query_windows",
+      "repetition": 1,
+      "operation_id": "harness-operation-09c66b3d0dde4c9e8f2b4c28f52069c6",
+      "boundary_success": true,
+      "new_location_in_excerpts": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "- **当前生效约定**\n  - 复习地点：白桦阅览室\n  - 暗号：不设新暗号（无暗号）\n  - 是否去过：尚未去过\n- **已撤销的旧约定**\n  - 原约定地点「青石阅览室」已撤销\n  - 原暗号「晴鸟」已撤销"
+    },
+    {
+      "variant": "query_window",
+      "repetition": 1,
+      "operation_id": "harness-operation-eff004f5d24c4423a2a6f1526f927c54",
+      "boundary_success": true,
+      "new_location_in_excerpts": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "最新复习约定与旧约定撤销情况如下：\n\n- 复习地点：白桦阅览室\n- 暗号：不设新暗号\n\n- 撤销：旧约定地点——青石阅览室\n- 撤销：旧暗号——晴鸟\n\n补充说明：我们尚未去过白桦阅览室，以上仅为约定记录，不做未发生的事实的补全。"
+    }
+  ]
+}
