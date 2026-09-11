@@ -1,0 +1,70 @@
+{
+  "scope": "Maintainer actual Planning image-tool path review",
+  "sdk_chat_calls": 7,
+  "limitations": [
+    "Initial tool_choice forced experimentally; not default autonomous tool selection.",
+    "Only one of two operations actually used image tool.",
+    "Both same rigorous persona/source; not an image-vs-text controlled efficacy experiment.",
+    "Application adapter forwards tool_choice in inspected source; this batch lacks serialized wire observation, so do not attribute mismatch solely to provider."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "boundary_success": true,
+      "image_tool_requested": true,
+      "image_parts_per_request": [
+        0,
+        2
+      ],
+      "first_tool_choice": {
+        "type": "function",
+        "function": {
+          "name": "read_page_range_images"
+        }
+      },
+      "first_returned_tools": [
+        "read_page_range_content",
+        "read_page_range_images",
+        "get_study_unit_detail"
+      ],
+      "timing": "Contiguous 0–5/5–13/13–22/22–28/28–30 = 30 minutes",
+      "noise": "No OCR snippet study activity in generated tasks or titles",
+      "visual": "Swords/axes/shields/flags and central armor supported; no pictured identity claimed",
+      "issues": [
+        "Quoted age omits I think.",
+        "Quotes all things on earth could be seen without the following at least / wishes qualifier in the visual comparison activity.",
+        "Printed-page paragraph numbers are inaccurate: sisters abilities is third body paragraph, not fourth; Macbeth name is fourth, not fifth."
+      ]
+    },
+    {
+      "cell": 1,
+      "boundary_success": true,
+      "image_tool_requested": false,
+      "image_parts_per_request": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "first_tool_choice": {
+        "type": "function",
+        "function": {
+          "name": "read_page_range_images"
+        }
+      },
+      "first_returned_tools": [
+        "get_study_unit_detail",
+        "read_page_range_content"
+      ],
+      "timing": "Total 30 only; no stage allocations",
+      "noise": "Continues AAV snippet observation activity",
+      "visual": "No image received; not a successful native-vision sample",
+      "issues": [
+        "Forced tool_choice request did not produce image tool call; wire not observed in this batch.",
+        "No per-stage time allocation.",
+        "OCR artifacts remain activity content."
+      ]
+    }
+  ]
+}

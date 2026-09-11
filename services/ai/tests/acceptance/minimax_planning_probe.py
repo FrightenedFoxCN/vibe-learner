@@ -23,6 +23,7 @@ from app.services.plan_tool_runtime import PlanToolRuntime
 from app.services.provider_transport import _normalize_completed_tool_indexes
 from app.services.tool_provider_projection import ToolExecutionBudgetTracker
 from tests.acceptance.minimax_study_probe import SOURCE
+from tests.acceptance.planning_payload_observation import observe_planning_content
 from tests.test_persona_lifecycle import create_request
 
 
@@ -204,6 +205,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
             choices = raw.get("choices", [])
             call["usage"] = raw.get("usage")
             call["finish_reason"] = choices[0].get("finish_reason") if choices else None
+            call["content_envelope"] = observe_planning_content(
+                (choices[0].get("message") or {}).get("content") if choices else None)
             call["requested_tools"] = [c.get("function", {}).get("name")
                 for c in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
             call["tool_envelope_shapes"] = [{"keys": sorted(c),
