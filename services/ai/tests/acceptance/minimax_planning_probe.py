@@ -102,6 +102,21 @@ def run(root, repetitions):
                         if response.status_code == 200:
                             result = LearningPlanCreateResponse.model_validate(response.json())
                             row["result"] = result.model_dump(mode="json")
+                            # Snapshot each operation before a later plan replaces
+                            # the document-scoped latest debug trace. Keep only
+                            # content-free tool status, never arguments/reasoning.
+                            trace_path = root / "data" / "planning_trace" / f"{payload.get('document_id') or result.id}.json"
+                            if trace_path.exists():
+                                debug = json.loads(trace_path.read_text())
+                                row["tool_diagnostics"] = []
+                                for round_record in debug.get("rounds", []):
+                                    for tool in round_record.get("tool_calls", []):
+                                        result_summary = json.loads(tool["result_json"])
+                                        row["tool_diagnostics"].append({
+                                            "tool_name": tool["tool_name"],
+                                            "ok": result_summary.get("ok"),
+                                            "error": result_summary.get("error") if result_summary.get("content_free") is True else None,
+                                        })
                             readback = client.get(f"/learning-plans/{result.id}")
                             row["readback_equal"] = readback.status_code == 200 and readback.json() == LearningPlanResponse.model_validate(result.model_dump()).model_dump(mode="json")
                         operation = app.state.container.plan_service.operation_repository.get_by_client_request_id(client_request_id=request_id)

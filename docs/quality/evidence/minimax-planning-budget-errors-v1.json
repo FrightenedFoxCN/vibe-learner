@@ -1,0 +1,26 @@
+[
+  {
+    "plan_id": "plan-c9e99c067c",
+    "tool_name": "get_study_unit_detail",
+    "error": "tool_round_budget_exceeded",
+    "content_free": true
+  },
+  {
+    "plan_id": "plan-c9e99c067c",
+    "tool_name": "get_study_unit_detail",
+    "error": "tool_round_budget_exceeded",
+    "content_free": true
+  },
+  {
+    "plan_id": "plan-c62dc448ad",
+    "tool_name": "get_study_unit_detail",
+    "error": "tool_round_budget_exceeded",
+    "content_free": true
+  },
+  {
+    "plan_id": "plan-c62dc448ad",
+    "tool_name": "get_study_unit_detail",
+    "error": "tool_round_budget_exceeded",
+    "content_free": true
+  }
+]
