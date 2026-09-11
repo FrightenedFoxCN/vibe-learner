@@ -36,8 +36,16 @@ GROUNDING_CANDIDATE = """
 - 保持用户要求的句数、条目数和 Markdown 格式；角色风格通过选词体现，不额外添加开场白或总结。
 """
 
+UNKNOWN_HISTORY = """
+本轮事实边界：recent transcript 为空，没有提供此前互动记录。人物职业与性格不等于具体经历的证据。
+不要为自然口吻补写刚才、昨日、上回、某次旅程、某地发生的事件，或人物做这行多少年。
+可以用一般经验、明确的假设、当前由用户提到的雨和疲惫来回应。被问及过去的约定时，简短说明现在没有那段记录，并请对方补充。
+例如无历史时可说“雨打伞面的声音，听着像慢拍子”，不可说“昨天我们在某城听了一晚雨”。
+这段事实边界只帮助保持角色连续性，不要向用户复述内部资料名或检查规则。
+"""
 
-def run(output: Path, repetitions: int, reasoning_split: bool, thinking: str, grounding_candidate: bool, transport: str) -> None:
+
+def run(output: Path, repetitions: int, reasoning_split: bool, thinking: str, grounding_candidate: bool, transport: str, unknown_history: bool) -> None:
     key = os.environ["K3_API_KEY"]
     if not key.strip():
         raise SystemExit("K3_API_KEY is empty")
@@ -76,6 +84,9 @@ def run(output: Path, repetitions: int, reasoning_split: bool, thinking: str, gr
                     if grounding_candidate:
                         payload["messages"] = [dict(item) for item in payload["messages"]]
                         payload["messages"][0]["content"] += "\n" + GROUNDING_CANDIDATE
+                    if unknown_history:
+                        payload["messages"] = [dict(item) for item in payload["messages"]]
+                        payload["messages"][0]["content"] += "\n" + UNKNOWN_HISTORY
                     if reasoning_split:
                         payload["reasoning_split"] = True
                     if thinking != "default":
@@ -121,6 +132,7 @@ def run(output: Path, repetitions: int, reasoning_split: bool, thinking: str, gr
                        "reasoning_split": reasoning_split, "thinking": thinking,
                        "prompt_candidate": "grounding-experiment-v1" if grounding_candidate else None,
                        "transport": transport,
+                       "unknown_history_candidate": "empty-transcript-v1" if unknown_history else None,
                        "calls": calls}
                 try:
                     reply = RemoteTavernProvider("MiniMax-M3", 0.35, 2048, request).generate_tavern_actor_reply(
@@ -154,7 +166,8 @@ if __name__ == "__main__":
     parser.add_argument("--thinking", choices=["default", "adaptive", "disabled"], default="default")
     parser.add_argument("--grounding-candidate", action="store_true", help="experiment only; does not change registered production prompt")
     parser.add_argument("--transport", choices=["native", "sdk"], default="native")
+    parser.add_argument("--unknown-history", action="store_true", help="explicit empty-transcript experimental boundary")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 30:
         parser.error("repetitions must be between 1 and 30")
-    run(args.output, args.repetitions, args.reasoning_split, args.thinking, args.grounding_candidate, args.transport)
+    run(args.output, args.repetitions, args.reasoning_split, args.thinking, args.grounding_candidate, args.transport, args.unknown_history)

@@ -1,0 +1,119 @@
+{
+  "scope": "boundary_checks_not_semantic_quality",
+  "reason": "Generation routes return proposals with not_applicable commit evidence; user save/readback is separate. Original probe wrongly required committed for proposal generation. Passed and repaired are successful terminal states, reported separately.",
+  "source": "minimax-domain-baseline-v1.jsonl",
+  "rows": [
+    {
+      "case_id": "persona-0",
+      "repetition": 0,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": false,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "persona-1",
+      "repetition": 0,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": false,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "scene-0",
+      "repetition": 0,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": false,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "scene-1",
+      "repetition": 0,
+      "original_probe_success": false,
+      "boundary_check_success": false,
+      "generation_repaired": false,
+      "generation_http_status": 502,
+      "errors": [
+        "setting_model_invalid_json"
+      ]
+    },
+    {
+      "case_id": "persona-0",
+      "repetition": 1,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": false,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "persona-1",
+      "repetition": 1,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": true,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "scene-0",
+      "repetition": 1,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": true,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "scene-1",
+      "repetition": 1,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": true,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "persona-0",
+      "repetition": 2,
+      "original_probe_success": false,
+      "boundary_check_success": false,
+      "generation_repaired": false,
+      "generation_http_status": 502,
+      "errors": [
+        "setting_model_invalid_payload"
+      ]
+    },
+    {
+      "case_id": "persona-1",
+      "repetition": 2,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": false,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "scene-0",
+      "repetition": 2,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": true,
+      "generation_http_status": 200,
+      "errors": []
+    },
+    {
+      "case_id": "scene-1",
+      "repetition": 2,
+      "original_probe_success": false,
+      "boundary_check_success": true,
+      "generation_repaired": true,
+      "generation_http_status": 200,
+      "errors": []
+    }
+  ]
+}
