@@ -218,3 +218,12 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [正式预算的两个新操作](evidence/minimax-planning-detail-budget-production-v2.jsonl)没有实验覆盖，2/2 提交并等值读回，工具失败为 0。后续仍需覆盖更大教材与长期成本，当前没有关闭 QG-MODEL-QUALITY-001。
 
 验证：npm run check 通过（包含当前 pilot、stage 和 Plan revision gates）；完整后端 789 项通过。上述正式预算样本在提交前运行，git_revision 表示基线 bfab1ca，实际测试版本包含本轮 manifest 与回归迁移修改；不是单独 checkout 基线的结果。
+
+
+## 轮次 15：Study 静态 system 前缀候选（不采用）
+
+[12 个交错新会话](evidence/minimax-study-cache-pairs-v1.jsonl)，基线和候选各六例。候选仅把原 system 开头的 persona/session 占位块移至结尾，完整静态内容、工具和历史消息顺序不变；本地核对 system 字符数与行内容多重集合完全一致，实验未修改生产提示。
+
+两边 6/6 提交并读回一致，全部恰好三条 Markdown 列表。基线六次 provider 请求，五次缓存 128 token、一次未知；候选七次请求，五次 128、一次 0、一次 5367。高命中出现在同一操作的工具调用后续请求中，不是跨会话首次调用的稳定收益。不得把缺失 usage/prompt_tokens_details 计为零。基线/候选操作中位时延 4909.5/4679ms，样本小且候选多一次工具调用，不据此宣称稳定性能优化，暂不采用排序改动。
+
+下一轮使用 98 条合成长历史对照完整历史、最近八条、实际模型摘要加最近八条；分别计量事实召回和摘要生成成本。该实验只验证 provider 上下文策略，不伪造领域准入，也不声称实现了生产压缩器。

@@ -72,7 +72,14 @@ QUESTION_CONTRACT_CANDIDATE = (
 )
 
 
-def run(root, repetitions, selected_case=None, question_contract_candidate=False):
+def stable_system_prefix_candidate(system):
+    dynamic = "{{PERSONA_RUNTIME_PROMPT}}\n{{SESSION_RUNTIME_CONTEXT}}"
+    if not system.startswith(dynamic + "\n\n") or system.count(dynamic) != 1:
+        raise ValueError("study_cache_candidate_template_changed")
+    return system[len(dynamic) + 2:] + "\n\n" + dynamic
+
+
+def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
@@ -123,6 +130,8 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     app = create_app(settings=settings)
     sections = _chat_prompt_sections()
+    if stable_prefix_candidate:
+        sections = {**sections, "system": stable_system_prefix_candidate(sections["system"])}
     if question_contract_candidate:
         sections = {key: value + QUESTION_CONTRACT_CANDIDATE if key in {"system", "recovery"} else value
             for key, value in sections.items()}
@@ -161,6 +170,10 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "message": message, "calls": calls}
                     row["prompt_variant"] = "question-contract-experiment-v1" if question_contract_candidate else "production"
+                    if stable_prefix_candidate:
+                        row["cache_variant"] = "study-static-system-prefix-experiment-v1"
+                        row["cache_transform"] = "Move unchanged leading persona/session placeholders to end of system; keep all static instructions, tools, and message order unchanged."
+                        row["trace_limitation"] = "Experimental system order; traces prove lifecycle only, not production prompt adoption."
                     if question_contract_candidate:
                         row["experimental_prompt_suffix"] = QUESTION_CONTRACT_CANDIDATE
                         row["trace_limitation"] = "Experimental prompt override; traces prove domain lifecycle only, not reviewed production prompt adoption."
@@ -206,7 +219,8 @@ if __name__ == "__main__":
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--case", choices=CASES)
     parser.add_argument("--question-contract-candidate", action="store_true")
+    parser.add_argument("--stable-prefix-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate)
