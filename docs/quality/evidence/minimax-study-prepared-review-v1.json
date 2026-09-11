@@ -1,0 +1,96 @@
+{
+  "scope": "synthetic PDF highlight then clear; interleaved prepared-state suffix experiment",
+  "limitations": [
+    "Small developer-authored study, not independent quality certification.",
+    "Repeated identical clear requests counted only for this fixture with no intervening writes.",
+    "Final empty overlays alone does not prove intermediate highlighting; inspect recorded tool receipts."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-cfaecee7da0d477f8268e99df307c698",
+      "pair": 0,
+      "variant": "production",
+      "boundary_success": true,
+      "requested_tools": {
+        "project_uploaded_pdf": 1,
+        "highlight_projected_pdf_text": 1,
+        "clear_projected_pdf_overlays": 1
+      },
+      "final_overlays_empty": true,
+      "provider_requests": 3,
+      "prompt_tokens": 18463
+    },
+    {
+      "operation_id": "harness-operation-ce6c2500b0424bb891216e77abac3b0c",
+      "pair": 0,
+      "variant": "prepared-clarification",
+      "boundary_success": true,
+      "requested_tools": {
+        "project_uploaded_pdf": 1,
+        "highlight_projected_pdf_text": 1,
+        "clear_projected_pdf_overlays": 1
+      },
+      "final_overlays_empty": true,
+      "provider_requests": 4,
+      "prompt_tokens": 25834
+    },
+    {
+      "operation_id": "harness-operation-09c2a05243c04554a4dbcd0cead0bcf5",
+      "pair": 1,
+      "variant": "prepared-clarification",
+      "boundary_success": true,
+      "requested_tools": {
+        "project_uploaded_pdf": 1,
+        "focus_projected_pdf_page": 1,
+        "highlight_projected_pdf_text": 1,
+        "clear_projected_pdf_overlays": 2
+      },
+      "final_overlays_empty": true,
+      "provider_requests": 5,
+      "prompt_tokens": 34031
+    },
+    {
+      "operation_id": "harness-operation-7aa1a28c02864434a7dc254a38febd18",
+      "pair": 1,
+      "variant": "production",
+      "boundary_success": true,
+      "requested_tools": {
+        "project_uploaded_pdf": 1,
+        "highlight_projected_pdf_text": 1,
+        "clear_projected_pdf_overlays": 1
+      },
+      "final_overlays_empty": true,
+      "provider_requests": 3,
+      "prompt_tokens": 18486
+    },
+    {
+      "operation_id": "harness-operation-ece4c150839a4869b212682fef55ee6d",
+      "pair": 2,
+      "variant": "production",
+      "boundary_success": true,
+      "requested_tools": {
+        "project_uploaded_pdf": 1,
+        "highlight_projected_pdf_text": 1,
+        "clear_projected_pdf_overlays": 1,
+        "read_projected_pdf_content": 1
+      },
+      "final_overlays_empty": true,
+      "provider_requests": 5,
+      "prompt_tokens": 33096
+    },
+    {
+      "operation_id": "harness-operation-39d0279dc27148dda4797402668fc626",
+      "pair": 2,
+      "variant": "prepared-clarification",
+      "boundary_success": true,
+      "requested_tools": {
+        "project_uploaded_pdf": 1,
+        "highlight_projected_pdf_text": 1,
+        "clear_projected_pdf_overlays": 1
+      },
+      "final_overlays_empty": true,
+      "provider_requests": 4,
+      "prompt_tokens": 26248
+    }
+  ]
+}

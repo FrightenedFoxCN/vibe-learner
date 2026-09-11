@@ -372,3 +372,9 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 [私有字段与格式示例约束候选六例](evidence/minimax-study-fill-blank-contract-v2.jsonl)明确禁止把正确答案当格式例子、答题前展示解法，仍有三例公开给出答案。其中一例连互动题都没有，却称题目已准备好；其真实提交返回404，不计为判分通过。其余五例判分与重复提交均正确。[事后检查](evidence/minimax-study-fill-blank-review-v1.json)只对本合成fixture扫描答案字面值，不冒充通用语义泄露检测；维护者复核默认组无字面答案的那例仍提前给出解法。候选尚未采用为生产修复，两个连续批次也不被解释为因果或稳定泛化结论。
 
 探针新增失败后的只读operation receipt与terminal trace回查，不自动重放失败或不确定操作。答题流程只提交已知合成答案，不读取私有grading spec；证据保留公开题目、回复及提交之后的判分结果。覆盖统计将成功的ask_fill_blank_question纳入领域准入工具覆盖，但不把工具成功或Chat提交等同于有效互动题和保密质量。另已启动六例交错对照，检查明确prepared表示待提交、不是失败，是否减少重复清除工具。
+
+## 轮次 30：prepared状态解释没有减少本批重复写入
+
+[六例交错对照](evidence/minimax-study-prepared-pairs-v1.jsonl)均完成PDF投射、高亮指定文字、清除，最终overlays为空。候选在工具后明确ok=true且prepared是待提交集合、committed=false不是失败、无需重复执行相同写入，同时提醒独立配额和总预算。[工具请求复核](evidence/minimax-study-prepared-review-v1.json)显示基线三例各清除一次，候选两例一次、一例两次；没有支持减少重复调用的收益，未采用生产提示修改。不把几秒到几十秒的单次时延波动解释为缓存或性能提升。
+
+当前成功工具加领域提交的覆盖为Planning 6/6、Study 19/31，新增填空题与focus_projected_pdf_page。填空题泄露和图像定位错误仍未解决，覆盖上升不是质量认证。下一轮继续检查工具结果的信息质量：当前填空题工具返回的是泛化模板与占位式答案，最终具体题目依靠主模型重写；其作用和可靠性需要单独对照，而非只增加提示词。继续补足场景、计划确认与实际Tavern领域准入测试。

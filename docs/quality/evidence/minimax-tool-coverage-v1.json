@@ -1,6 +1,6 @@
 {
   "scope": "admitted-operation tool coverage lower bound",
-  "git_revision": "ad9d6eb4a34779518fa72175b25a8d502bcaa2d7",
+  "git_revision": "0b875eae8060fa9331bbc0485a934b80145ad70a",
   "limitations": [
     "Deduplicated by Harness operation ID, including duplicated evidence exports.",
     "Missing tool result diagnostics are unknown, not failure.",
@@ -51,6 +51,7 @@
     "minimax-study-grid-pairs-v1.jsonl",
     "minimax-study-image-delivery-v2.jsonl",
     "minimax-study-observed-v1.jsonl",
+    "minimax-study-prepared-pairs-v1.jsonl",
     "minimax-study-question-contract-candidate-v1.jsonl",
     "minimax-study-question-diagnostics-v1.jsonl",
     "minimax-study-question-guards-v1.jsonl",
@@ -160,9 +161,9 @@
     {
       "workflow": "study_chat",
       "tool": "clear_projected_pdf_overlays",
-      "requested_operations": 2,
-      "successful_tool_operations": 2,
-      "successful_tool_and_boundary_operations": 2
+      "requested_operations": 8,
+      "successful_tool_operations": 8,
+      "successful_tool_and_boundary_operations": 8
     },
     {
       "workflow": "study_chat",
@@ -174,9 +175,9 @@
     {
       "workflow": "study_chat",
       "tool": "focus_projected_pdf_page",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 1,
+      "successful_tool_operations": 1,
+      "successful_tool_and_boundary_operations": 1
     },
     {
       "workflow": "study_chat",
@@ -188,9 +189,9 @@
     {
       "workflow": "study_chat",
       "tool": "highlight_projected_pdf_text",
-      "requested_operations": 2,
-      "successful_tool_operations": 2,
-      "successful_tool_and_boundary_operations": 2
+      "requested_operations": 8,
+      "successful_tool_operations": 8,
+      "successful_tool_and_boundary_operations": 8
     },
     {
       "workflow": "study_chat",
@@ -209,9 +210,9 @@
     {
       "workflow": "study_chat",
       "tool": "project_uploaded_pdf",
-      "requested_operations": 4,
-      "successful_tool_operations": 4,
-      "successful_tool_and_boundary_operations": 4
+      "requested_operations": 10,
+      "successful_tool_operations": 10,
+      "successful_tool_and_boundary_operations": 10
     },
     {
       "workflow": "study_chat",
@@ -244,9 +245,9 @@
     {
       "workflow": "study_chat",
       "tool": "read_projected_pdf_content",
-      "requested_operations": 2,
-      "successful_tool_operations": 2,
-      "successful_tool_and_boundary_operations": 2
+      "requested_operations": 3,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
