@@ -81,12 +81,18 @@ class ProviderRequestAdapter:
             request_kind=request_kind,
             model=model,
             invoke=lambda: self.completion(
-                **resolved_payload,
-                **self._build_litellm_request_kwargs(
-                    api_base=request_base_url,
-                    api_key=request_api_key,
-                    model=str(resolved_payload.get("model") or model),
-                ),
+                **{
+                    **resolved_payload,
+                    **self._build_litellm_request_kwargs(
+                        api_base=request_base_url,
+                        api_key=request_api_key,
+                        model=str(resolved_payload.get("model") or model),
+                    ),
+                    # ProviderTransport owns retries and checks the Harness budget.
+                    # Prevent hidden SDK retries from multiplying each attempt.
+                    "num_retries": 0,
+                    "max_retries": 0,
+                },
             ),
         )
         self._record_token_usage(raw_payload, feature=request_kind, model=model)
@@ -346,4 +352,3 @@ def _known_litellm_providers(sdk: Any) -> set[str]:
         "openai_like",
         "text-completion-openai",
     }
-

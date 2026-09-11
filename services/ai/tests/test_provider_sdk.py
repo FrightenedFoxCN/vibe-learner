@@ -37,6 +37,8 @@ assert "app.services.model_provider" not in sys.modules
                 self.assertEqual(call["api_base"], f"https://{kind}.invalid/v1")
                 self.assertEqual(call["api_key"], f"{kind}-key")
                 self.assertEqual(call["timeout"], 7)
+                self.assertEqual(call["num_retries"], 0)
+                self.assertEqual(call["max_retries"], 0)
                 self.assertEqual(call["model"], "openai/gpt-5-mini")
                 self.assertEqual(call["max_completion_tokens"], 32)
                 self.assertNotIn("temperature", call)

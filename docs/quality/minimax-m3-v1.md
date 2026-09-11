@@ -312,3 +312,9 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [法文长书预算保护版复测](evidence/minimax-french-budget-guard-v2.jsonl)五次provider请求、71807ms后以schedule_chapters.0.anchor_page_start:outside_unit失败，operation为not_committed。本轮没有触及总期限，因此不作为真实超时保护触发的证据，也不以比旧样本快就声称性能提升。严格不变量阻止了错误页锚点提交，页码质量问题仍待修复。
 
 显式目录文字/文字加图的人格对照目前已收到三个提交，图片组每次请求确实携带一图。人工审查仍见明显问题：严谨图片计划把目录中的书内26、45等直接作为PDF章节锚点；探索图片计划引入“Cang–Sinai”替代证明，202页原生文字中cang和sinai均无命中。新候选明确目录仅支持名称/顺序/书内起始页，具体证明方法须有正文依据，所有page字段使用PDF物理页，并区分章与小节起点。已启动相同图文证据、人格、目标的两组交错候选/基线实测；结果未收齐前不修改生产提示词。
+
+## 轮次 23：消除Chat Completion隐藏SDK重试
+
+[本机HTTP 503故障注入](evidence/minimax-sdk-retry-observed-v1.json)通过实际安装的LiteLLM/OpenAI兼容路径验证：仓库记录3次传输attempt，默认SDK实际发出9次HTTP请求；显式num_retries=0、max_retries=0后，实际请求降为3。这里没有调用外部模型，也没有使用真实密钥，不把本地延迟差当作M3性能收益。
+
+Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统一重试和执行Harness预算检查。[生产路径与恢复场景复测](evidence/minimax-sdk-retry-production-v2.json)确认持续503仍为3次HTTP请求且错误分类不变；503一次后恢复的两种配置都用了2次HTTP请求并返回相同内容，但生产路径将两次尝试都纳入传输记录。Responses与Embedding不在这次验证范围，未宣称消除其SDK内部重试。28项定向回归、完整后端793项通过。
