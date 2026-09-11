@@ -1,0 +1,51 @@
+{
+  "scope": "Maintainer review, fixed synthetic memory fact-scope comparison",
+  "sdk_chat_calls": 9,
+  "limitations": [
+    "Two operations per condition; no independent certification.",
+    "One scoped reply still extends non-visit claim to the new destination.",
+    "No production adoption."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "condition": "combined",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "unsupported_visit_assertion": true,
+      "agreement_history_complete": true,
+      "reply": "- 小林，最新约定：复习地点是南门阅览室，所有暗号均撤销；我们尚未去过那里。\n- 旧约定均已撤销：青石阅览室/晴鸟、红杉阅览室/晨星、白桦阅览室/春风 都被后续指令覆盖并最终全部作废。"
+    },
+    {
+      "cell": 1,
+      "condition": "scoped",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "unsupported_visit_assertion": false,
+      "agreement_history_complete": true,
+      "reply": "- 小林，最新约定是复习地点为南门阅览室，所有暗号均已撤销；此前的青石/晴鸟、红杉/晨星、白桦/春风三套约定都被后续更新覆盖，不再有效\n- 截至目前，跨会话记录里没有任何一次实际到访的证据，所以不能说你去过其中任何一处"
+    },
+    {
+      "cell": 2,
+      "condition": "scoped",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "unsupported_visit_assertion": true,
+      "agreement_history_complete": true,
+      "reply": "- 小林，当前最新约定是复习地点改为南门阅览室，所有暗号均撤销；你们尚未去过那里。\n- 旧约定均已撤销：青石阅览室（暗号晴鸟）、红杉阅览室（暗号晨星）、白桦阅览室（暗号春风）不再生效。"
+    },
+    {
+      "cell": 3,
+      "condition": "combined",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "unsupported_visit_assertion": true,
+      "agreement_history_complete": true,
+      "reply": "- 小林，最新约定是去南门阅览室，所有暗号均已撤销。\n- 已撤销的旧约定包括：青石阅览室/晴鸟、红杉阅览室/晨星、白桦阅览室/春风；我们从未实际去过任何一处。"
+    }
+  ]
+}
