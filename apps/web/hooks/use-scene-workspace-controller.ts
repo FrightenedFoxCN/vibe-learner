@@ -37,6 +37,17 @@ export function useSceneWorkspaceController() {
   const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const [pendingDeleteLayerId, setPendingDeleteLayerId] = useState("");
   const [sceneIoMessage, setSceneIoMessage] = useState("");
+  const [sceneIoPendingCount, setSceneIoPendingCount] = useState(0);
+  const [sceneIoError, setSceneIoError] = useState("");
+  const sceneIoPending = sceneIoPendingCount > 0;
+  function beginSceneIo() {
+    setSceneIoError("");
+    setSceneIoMessage("");
+    setSceneIoPendingCount((count) => count + 1);
+  }
+  function finishSceneIo() {
+    setSceneIoPendingCount((count) => Math.max(0, count - 1));
+  }
   const [reusableSearchQuery, setReusableSearchQuery] = useState("");
   const {
     sceneLayers,
@@ -136,6 +147,9 @@ export function useSceneWorkspaceController() {
   );
 
   const pageNotice = useMemo(() => {
+    if (sceneIoPending) {
+      return "正在处理场景文件与场景库";
+    }
     if (rewritePendingKey) {
       return "AI 正在重写场景字段";
     }
@@ -161,7 +175,7 @@ export function useSceneWorkspaceController() {
       return `当前编辑 · ${selectedLayer.title}`;
     }
     return "从左侧层级结构中选择一个节点开始编辑";
-  }, [headerMessage, pendingDeleteLayerId, reusableActionPendingId, rewritePendingKey, sceneGeneratePending, selectedLayer, selectedObjectTarget]);
+  }, [sceneIoPending, headerMessage, pendingDeleteLayerId, reusableActionPendingId, rewritePendingKey, sceneGeneratePending, selectedLayer, selectedObjectTarget]);
 
   useEffect(() => {
     const syncLayout = () => {
@@ -190,7 +204,7 @@ export function useSceneWorkspaceController() {
     () => ({
       title: "场景页调试面板",
       subtitle: "查看场景树、生成结果和错误。",
-      error: [rewriteError, sceneGenerateError, reusableError, libraryError].filter(Boolean).join("；"),
+      error: [sceneIoError, rewriteError, sceneGenerateError, reusableError, libraryError].filter(Boolean).join("；"),
       summary: [
         { label: "场景名称", value: sceneName || "-" },
         { label: "选中层级", value: selectedLayer?.title || selectedLayerId || "-" },
@@ -219,6 +233,7 @@ export function useSceneWorkspaceController() {
       savedScenes,
       sceneGenerateModelRecoveries,
       sceneGenerateError,
+      sceneIoError,
       sceneName,
       sceneProfilePreview,
       selectedLayer,
@@ -399,11 +414,12 @@ export function useSceneWorkspaceController() {
   }
 
   async function saveLibraryScene(mode: "upsert" | "create" = "upsert") {
+    beginSceneIo();
     try {
       const trimmedSceneName = sceneName.trim();
       const trimmedSceneSummary = sceneSummary.trim();
       if (!trimmedSceneName || !trimmedSceneSummary) {
-        setSceneIoMessage("请先填写场景名和 summary。");
+        setSceneIoError("请先填写场景名称和场景摘要。");
         return;
       }
       const payload = {
@@ -419,7 +435,7 @@ export function useSceneWorkspaceController() {
           (item) => item.sceneId === selectedSavedSceneId
         );
         if (!selectedSavedScene) {
-          setSceneIoMessage("当前保存版本已不存在，请刷新场景库后重试。");
+          setSceneIoError("当前保存版本已不存在，请刷新场景库后重试。");
           return;
         }
         const updated = await updateSceneLibraryItem(selectedSavedSceneId, {
@@ -432,7 +448,9 @@ export function useSceneWorkspaceController() {
       const created = await createSceneLibraryItem(payload, diagnostic);
       setSceneIoMessage(`已保存场景“${created.sceneName}”。`);
     } catch {
-      setSceneIoMessage("保存到场景库失败，请稍后重试。");
+      setSceneIoError("保存到场景库失败，请稍后重试。");
+    } finally {
+      finishSceneIo();
     }
   }
 
@@ -441,6 +459,7 @@ export function useSceneWorkspaceController() {
     if (!target) {
       return;
     }
+    beginSceneIo();
     try {
       const imported = parseSceneImportPayload({
         sceneName: target.sceneName,
@@ -456,7 +475,9 @@ export function useSceneWorkspaceController() {
       );
       setSelectedSavedSceneId(target.sceneId);
     } catch {
-      setSceneIoMessage(`载入场景“${target.sceneName}”时数据格式异常。`);
+      setSceneIoError(`载入场景“${target.sceneName}”时数据格式异常。`);
+    } finally {
+      finishSceneIo();
     }
   }
 
@@ -468,15 +489,19 @@ export function useSceneWorkspaceController() {
     if (!globalThis.confirm(`确认删除已保存场景“${target.sceneName}”？`)) {
       return;
     }
+    beginSceneIo();
     try {
       await deleteSceneLibraryItem(sceneId);
       setSceneIoMessage(`已删除场景“${target.sceneName}”。`);
     } catch {
-      setSceneIoMessage("删除场景失败，请稍后重试。");
+      setSceneIoError("删除场景失败，请稍后重试。");
+    } finally {
+      finishSceneIo();
     }
   }
 
   async function exportScene() {
+    beginSceneIo();
     try {
       const payload = {
         version: 1,
@@ -490,7 +515,9 @@ export function useSceneWorkspaceController() {
       const saved = await exportJson(`scene-setup-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.json`, payload);
       setSceneIoMessage(saved ? "场景已导出为 JSON 文件。" : "已取消导出。");
     } catch {
-      setSceneIoMessage("导出失败，请稍后重试。");
+      setSceneIoError("导出失败，请稍后重试。");
+    } finally {
+      finishSceneIo();
     }
   }
 
@@ -503,6 +530,7 @@ export function useSceneWorkspaceController() {
     if (!file) {
       return;
     }
+    beginSceneIo();
     const fieldTarget = "scene-file-import";
     const ticket = sceneImportFenceRef.current.begin(
         currentSceneAsyncScope(fieldTarget),
@@ -523,9 +551,10 @@ export function useSceneWorkspaceController() {
           currentSceneAsyncScope(fieldTarget),
         ) === "apply"
       ) {
-        setSceneIoMessage("导入失败：文件格式不正确。");
+        setSceneIoError("导入失败：文件格式不正确。");
       }
     } finally {
+      finishSceneIo();
       sceneImportFenceRef.current.settle(ticket);
       event.target.value = "";
     }
@@ -625,6 +654,8 @@ export function useSceneWorkspaceController() {
     filteredReusableNodes,
     currentCollapsedNodeEditorSections,
     pageNotice,
+    sceneIoPending,
+    sceneIoError,
     updateLayer,
     saveLayerToReusableLibrary,
     saveObjectToReusableLibrary,

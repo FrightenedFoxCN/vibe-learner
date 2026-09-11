@@ -39,6 +39,7 @@ import {
   updateTavernRoom,
   type SceneLibraryItemPayload,
 } from "../lib/api";
+import { AsyncFeedback } from "./async-feedback";
 import { AppLink } from "../lib/app-navigation";
 import { ProviderTruth } from "./provider-truth";
 import {
@@ -100,6 +101,7 @@ export function TavernWorkspace() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [notice, setNotice] = useState("正在载入酒馆记录…");
   const [visibleError, setVisibleError] = useState("");
+  const feedbackAction = useRef<Element | null>(null);
   const [rawError, setRawError] = useState("");
   const roomLoadVersion = useRef(0);
   const roomRefreshVersion = useRef(0);
@@ -1091,7 +1093,7 @@ export function TavernWorkspace() {
   );
 
   return (
-    <main className="with-app-nav tavern-page">
+    <main className="with-app-nav tavern-page" onClickCapture={(event) => { feedbackAction.current = (event.target as Element).closest("button, input, select"); }}>
       <TopNav currentPath="/tavern" />
 
       <TavernHeader
@@ -1107,11 +1109,7 @@ export function TavernWorkspace() {
         onArchiveToggle={() => void handleArchiveToggle()}
       />
 
-      {visibleError ? (
-        <div className="tavern-alert" role="alert">
-          {visibleError}
-        </div>
-      ) : null}
+      <AsyncFeedback actionRef={feedbackAction} pending={busyAction !== null} error={visibleError} message="" />
 
       <div className={`tavern-workspace-grid ${activeRoom ? "has-room" : "empty-room"}`}>
         <div className="tavern-left-rail">
@@ -1223,7 +1221,7 @@ function TavernHeader({
       <div>
         <p className="tavern-eyebrow">Tavern Workspace</p>
         <h1>{room?.title || "角色酒馆"}</h1>
-        <p className="tavern-header-status" aria-live="polite">
+        <p className="tavern-header-status" role="status" aria-live="polite">
           <span
             className={
               !room

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { ModelToolConfig, ModelToolConfigItem, ModelToolStageConfig } from "@vibe-learner/shared";
 
+import { AsyncFeedback } from "../../components/async-feedback";
 import { TopNav } from "../../components/top-nav";
 import { usePageDebugSnapshot } from "../../components/page-debug-context";
 import { getModelToolConfig, updateModelToolConfig } from "../../lib/data/model-tools";
@@ -12,6 +13,8 @@ export default function SensoryToolsPage() {
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState("");
   const [error, setError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
+  const feedbackAction = useRef<Element | null>(null);
   const configRef = useRef<ModelToolConfig | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingSaveCountRef = useRef(0);
@@ -79,7 +82,8 @@ export default function SensoryToolsPage() {
         pendingSaveCountRef,
         setConfig,
         setSavingKey,
-        setError
+        setError,
+        setSaveMessage
       },
       [
         {
@@ -109,7 +113,8 @@ export default function SensoryToolsPage() {
         pendingSaveCountRef,
         setConfig,
         setSavingKey,
-        setError
+        setError,
+        setSaveMessage
       },
       toggles,
       `batch:${stage.name}:${tools[0]?.category ?? "unknown"}:${enabled ? "on" : "off"}`
@@ -117,15 +122,15 @@ export default function SensoryToolsPage() {
   }
 
   return (
-    <main className="with-app-nav" style={styles.page}>
+    <main onClickCapture={(event) => { feedbackAction.current = (event.target as Element).closest("button, input"); }} className="with-app-nav sensory-tools-page" style={styles.page}>
       <TopNav currentPath="/sensory-tools" />
 
       <header style={styles.header}>
         <h1 style={styles.title}>感官工具</h1>
       </header>
 
-      {loading ? <div style={styles.loading}>正在加载工具配置…</div> : null}
-      {error ? <div style={styles.error}>配置更新失败：{error}</div> : null}
+      <AsyncFeedback actionRef={feedbackAction} pending={Boolean(savingKey)} error={error ? `配置操作失败：${error}` : ""}
+        message={loading ? "正在加载工具配置…" : savingKey ? "正在保存工具配置…" : saveMessage} />
 
       {!loading && config ? (
         <section style={styles.stageList}>
@@ -142,7 +147,7 @@ export default function SensoryToolsPage() {
                 <StageBadge enabled={stage.stageEnabled} reason={stage.stageDisabledReason} />
               </div>
 
-              <div style={styles.categoryWrap}>
+              <div className="sensory-category-grid" style={styles.categoryWrap}>
                 {groupByCategory(stage.tools).map((group) => (
                   <div key={`${stage.name}:${group.category}`} style={styles.categoryCard}>
                     <div style={styles.categoryHeader}>
@@ -185,6 +190,7 @@ export default function SensoryToolsPage() {
                             </div>
                             <input
                               type="checkbox"
+                              aria-label={tool.label}
                               checked={tool.enabled}
                               disabled={!tool.available || busy}
                               onChange={(event) => handleToggle(stage, tool, event.target.checked)}
@@ -262,6 +268,7 @@ async function handleBatchUpdate(
     setConfig: (next: ModelToolConfig) => void;
     setSavingKey: (next: string) => void;
     setError: (next: string) => void;
+    setSaveMessage: (next: string) => void;
   },
   toggles: Array<{ stageName: string; toolName: string; enabled: boolean }>,
   key: string
@@ -271,6 +278,7 @@ async function handleBatchUpdate(
   }
   input.pendingSaveCountRef.current += 1;
   input.setSavingKey(key);
+  input.setSaveMessage("");
 
   const run = async () => {
     const snapshot = input.configRef.current ?? input.config;
@@ -282,6 +290,7 @@ async function handleBatchUpdate(
       const nextConfig = await updateModelToolConfig(toggles);
       input.configRef.current = nextConfig;
       input.setConfig(nextConfig);
+      input.setSaveMessage("工具配置已保存。");
     } catch (err) {
       // Requests are serialized so this rollback cannot erase a newer
       // optimistic update or a newer server response.

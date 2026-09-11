@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 import { PERSONA_SLOT_KIND_LABELS, PERSONA_SLOT_KINDS, type PersonaCard, type PersonaProfile, type PersonaSlotKind } from "@vibe-learner/shared";
+import { AsyncFeedback } from "../async-feedback";
 import { TopNav } from "../../components/top-nav";
 import { MaterialIcon } from "../../components/material-icon";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
@@ -23,6 +24,7 @@ const SLOT_KIND_HINTS: Record<string, string> = {
 };
 
 export function PersonaWorkspaceView({ controller }: { controller: PersonaWorkspaceController }) {
+  const feedbackAction = useRef<Element | null>(null);
   const {
     activateLibraryPersona,
     configImportInputRef,
@@ -131,14 +133,18 @@ export function PersonaWorkspaceView({ controller }: { controller: PersonaWorksp
     deletePending={personaDeletePendingId === persona.id} onActivate={activateLibraryPersona} onDelete={handleDeletePersona}
   />;
 return (
-    <main className="with-app-nav" style={styles.page}>
+    <main onClickCapture={(event) => { feedbackAction.current = (event.target as Element).closest("button, input, select"); }} className="with-app-nav persona-workspace-page" style={styles.page}>
       <TopNav currentPath="/persona-spectrum" />
 
       <div style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 style={styles.pageTitle}>人格色谱</h1>
           <ProviderTruth scope="persona" />
-          <div style={styles.notice}>{pageNotice}</div>
+          <AsyncFeedback actionRef={feedbackAction} synchronousError={saveError}
+            pending={savingPersona || assistPending || slotAssistIndex !== null || Boolean(cardActionPending) || Boolean(personaDeletePendingId) || Boolean(cardDeletePendingId)}
+            error={[saveError, assistError, configError, cardError, personaLibraryError].filter(Boolean).join("；")}
+            message={savingPersona ? "正在保存人格…" : assistPending ? "正在生成建议…" : slotAssistIndex !== null || cardActionPending ? pageNotice : personaLibraryMessage || cardMessage || configMessage || pageNotice}
+          />
         </div>
       </div>
 
@@ -193,6 +199,7 @@ return (
                         <input
                           style={styles.range}
                           type="range"
+                          aria-label="保留原文比例"
                           min={0}
                           max={1}
                           step={0.05}
@@ -255,9 +262,10 @@ return (
               <section style={styles.basicPaneCard}>
                 <div style={styles.basicPanePrimarySection}>
                 <div style={styles.fieldGroup}>
-                <label style={styles.fieldLabel}>人格</label>
+                <label htmlFor="persona-select" style={styles.fieldLabel}>人格</label>
                 <select
                   style={styles.select}
+                  id="persona-select"
                   value={selectedPersonaId}
                   onChange={(event) => {
                     void activatePersonaDraft(event.target.value);
@@ -277,7 +285,7 @@ return (
 
               <div style={styles.summaryFieldGroup}>
                 <label style={styles.fieldLabel}>摘要</label>
-                <textarea style={styles.summaryTextarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
+                <textarea aria-label="摘要" style={styles.summaryTextarea} value={draft.summary} onChange={(e) => updateDraft("summary", e.target.value)} />
               </div>
 
               <div style={styles.compactGrid}>
@@ -285,6 +293,7 @@ return (
                   <label style={styles.fieldLabel}>关系</label>
                   <input
                     style={styles.input}
+                    aria-label="关系"
                     value={draft.relationship}
                     onChange={(e) => updateDraft("relationship", e.target.value)}
                     placeholder="例如：师生、学伴、导师"
@@ -294,6 +303,7 @@ return (
                   <label style={styles.fieldLabel}>学习者称呼</label>
                   <input
                     style={styles.input}
+                    aria-label="学习者称呼"
                     value={draft.learnerAddress}
                     onChange={(e) => updateDraft("learnerAddress", e.target.value)}
                     placeholder="例如：同学、伙伴、学员"
@@ -302,7 +312,7 @@ return (
               </div>
 
               <ModelFallbackNotice recoveries={assistModelRecoveries} />
-        {assistError ? <span role="alert" style={styles.errorInline}>{assistError}</span> : null}
+        {assistError ? <span style={styles.errorInline}>{assistError}</span> : null}
                 </div>
 
               <div style={{ ...styles.basicPaneSection, ...styles.basicPaneSectionSeparated }}>
@@ -310,6 +320,7 @@ return (
                   <button
                     type="button"
                     style={styles.collapsibleFieldToggle}
+                    aria-expanded={isSystemPromptExpanded}
                     onClick={() => setIsSystemPromptExpanded((current) => !current)}
                   >
                     <span style={styles.fieldLabel}>附加系统约束（可选）</span>
@@ -321,6 +332,7 @@ return (
                     <>
                       <textarea
                         style={styles.textareaLg}
+                        aria-label="附加系统约束"
                         value={draft.systemPrompt}
                         onChange={(e) => updateDraft("systemPrompt", e.target.value)}
                         placeholder="例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。"
@@ -357,12 +369,12 @@ return (
                   <button type="button" style={styles.ghostBtn} onClick={() => configImportInputRef.current?.click()}>导入配置</button>
                   <input ref={configImportInputRef} type="file" accept="application/json,.json" style={styles.hiddenInput} onChange={handleImportConfig} />
                 </div>
-                {saveError ? <span role="alert" style={styles.errorInline}>{saveError}</span> : null}
+                {saveError ? <span style={styles.errorInline}>{saveError}</span> : null}
                 {isReadonlyPersona ? (
                   <span style={styles.mutedText}>内置人格只读；点击复制按钮可保留当前设定并另存为新人格。</span>
                 ) : null}
                 {configMessage ? <span role="status" style={styles.mutedText}>{configMessage}</span> : null}
-                {configError ? <span role="alert" style={styles.errorInline}>{configError}</span> : null}
+                {configError ? <span style={styles.errorInline}>{configError}</span> : null}
               </section>
               </section>
             </div>
@@ -438,13 +450,15 @@ return (
                             </span>
                             <select
                               style={styles.slotKindSelect}
+                              aria-label={`插槽 ${index + 1} 类型`}
                               value={slot.kind}
                               onChange={(e) => handleUpdateSlot(index, "kind", e.target.value)}
                               disabled={Boolean(slot.locked)}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {!PERSONA_SLOT_KINDS.some((kind) => kind === slot.kind) ? (
-                                <option value={slot.kind}>{slot.label || slot.kind}（自定义）</option>
+                                <option
+                              value={slot.kind}>{slot.label || slot.kind}（自定义）</option>
                               ) : null}
                               {PERSONA_SLOT_KINDS.map((k) => (
                                 <option key={k} value={k}>{PERSONA_SLOT_KIND_LABELS[k]}</option>
@@ -452,6 +466,7 @@ return (
                             </select>
                             <input
                               style={styles.slotLabelInput}
+                              aria-label={`插槽 ${index + 1} 标签`}
                               value={slot.label}
                               placeholder="显示标签"
                               onChange={(e) => handleUpdateSlot(index, "label", e.target.value)}
@@ -462,6 +477,8 @@ return (
                               <button
                                 type="button"
                                 style={styles.slotToggleBtn}
+                                aria-label={`${expandedSlotIndex === index ? "收起" : "展开"}插槽 ${slot.label || index + 1}`}
+                                aria-expanded={expandedSlotIndex === index}
                                 onClick={(e) => { e.stopPropagation(); setExpandedSlotIndex((prev) => (prev === index ? null : index)); }}
                               >
                                 <MaterialIcon name={expandedSlotIndex === index ? "expand_more" : "chevron_right"} size={16} />
@@ -469,6 +486,7 @@ return (
                               <button
                                 type="button"
                                 style={styles.removeBtn}
+                                aria-label={`删除插槽 ${slot.label || index + 1}`}
                                 onClick={(e) => { e.stopPropagation(); handleRemoveSlot(index); }}
                               ><MaterialIcon name="close" size={16} /></button>
                             </div>
@@ -481,6 +499,7 @@ return (
                           <>
                             <textarea
                               style={styles.slotContent}
+                              aria-label={`插槽 ${index + 1} 内容`}
                               value={slot.content}
                               placeholder={`请填写"${PERSONA_SLOT_KIND_LABELS[slot.kind as PersonaSlotKind] ?? slot.kind}"的具体内容。`}
                               onChange={(e) => handleUpdateSlot(index, "content", e.target.value)}
@@ -491,6 +510,7 @@ return (
                               <input
                                 style={styles.range}
                                 type="range"
+                          aria-label={`插槽 ${index + 1} 权重`}
                                 min={0}
                                 max={100}
                                 step={1}
@@ -661,7 +681,8 @@ return (
                   <label key="keywords-mode" style={styles.fieldGroup}>
                     <input
                       style={styles.input}
-                      value={cardKeywordInput}
+                      aria-label="卡片生成关键词"
+                        value={cardKeywordInput}
                       onChange={(e) => updatePersonaAssistInput(() => setCardKeywordInput(e.target.value))}
                       placeholder="例如：冷静学术、学院派导师、侦探式推理"
                     />
@@ -670,6 +691,7 @@ return (
                   <label key="long-text-mode" style={styles.fieldGroup}>
                     <input
                       type="file"
+                      aria-label="长文本文件"
                       accept=".txt,.md,text/plain,text/markdown"
                       style={styles.fileInput}
                       onChange={(event) => updatePersonaAssistInput(() => setCardLongTextFile(event.target.files?.[0] ?? null))}
@@ -677,7 +699,7 @@ return (
                     {cardLongTextFile ? <span style={styles.mutedText}>{cardLongTextFile.name}</span> : null}
                   </label>
                 )}
-                {cardError ? <p role="alert" style={styles.errorText}>{cardError}</p> : null}
+                {cardError ? <p style={styles.errorText}>{cardError}</p> : null}
                 {cardMessage ? <p role="status" style={styles.sidebarHint}>{cardMessage}</p> : null}
                 {(generatedCards.length || generatedPersonaMeta.summary || generatedPersonaMeta.relationship || generatedPersonaMeta.learnerAddress) ? (
                   <div style={styles.generatedResultCard}>
@@ -724,6 +746,7 @@ return (
               <div style={styles.sidebarSectionBody}>
                 <input
                   style={styles.input}
+                  aria-label="搜索卡片库"
                   value={cardSearchQuery}
                   onChange={(e) => setCardSearchQuery(e.target.value)}
                   placeholder="搜索标题、内容、标签、关键词"
@@ -746,12 +769,13 @@ return (
               <div style={styles.sidebarSectionBody}>
                 <input
                   style={styles.input}
+                  aria-label="搜索人格库"
                   value={personaLibraryQuery}
                   onChange={(e) => setPersonaLibraryQuery(e.target.value)}
                   placeholder="搜索人格名称、摘要、关系或称呼"
                 />
                 {personaLibraryMessage ? <p role="status" style={styles.sidebarHint}>{personaLibraryMessage}</p> : null}
-                {personaLibraryError ? <p role="alert" style={styles.errorText}>{personaLibraryError}</p> : null}
+                {personaLibraryError ? <p style={styles.errorText}>{personaLibraryError}</p> : null}
 
                 {builtinPersonas.length ? (
                   <div style={styles.cardList}>

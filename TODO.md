@@ -2,7 +2,7 @@
 
 本文件是产品、Harness 和桌面工作的统一待办入口；用户指定的专项计划独立维护明细并在此链接，不复制 checkbox。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-11：本文件保留 17 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
+2026-09-12：本文件保留 16 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -33,9 +33,7 @@ Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` �
 
 `UX-NAV-001` 已完成学习、角色与世界、系统三组及全部 10 个页面入口；移动端以完整文字菜单替代隐藏横向滚动。[独立验收](docs/plans/navigation-independent-acceptance-2026-09-11.md)通过 10 项导航与 13 项路由浏览器检查，涵盖 390/760/1440 宽度、正反向键盘遍历、当前组/页语义、Vault 限制和断点返焦；[源码复核](docs/plans/navigation-source-review-2026-09-11.md)发现的焦点时序遗漏已修复并独立重验。
 
-- [ ] `UX-A11Y-ASYNC-TOUCH-001` `[P2]` 收口跨页面异步播报和触控门。
-  - 覆盖 Persona Spectrum、Scene Setup、Sensory Tools 及 Tavern 的 `status` / `alert`、错误定位和 44px 控件；修复 Persona 无可访问名称的图标按钮。
-  - 验收必须包含 390×844 设备级视口，不以静态 CSS contract 代替真实量测。
+`UX-A11Y-ASYNC-TOUCH-001` 已补齐 Persona、Scene、Sensory、Tavern 的异步状态/错误、触控尺寸和名称；[24项独立浏览器验收](docs/plans/async-touch-independent-acceptance-2026-09-12.md)在390×844通过，包括深层控件实际量测、错误定位、主动移焦保护及后台告警不抢焦点。Scene移动布局遮挡和Persona/Sensory禁用后返焦问题已修复重验；不将浏览器语义认证扩大为原生读屏/真实设备认证。
 
 - [ ] `UX-DENSITY-SENSORY-001` `[P2]` 为 Sensory Tools 增加搜索、筛选和渐进披露；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
 - [ ] `UX-DENSITY-PERSONA-001` `[P2]` 收口 Persona 的默认折叠、搜索/筛选和主次动作；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。

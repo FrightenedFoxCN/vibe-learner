@@ -1305,3 +1305,25 @@ textarea {
     padding: 10px 11px;
   }
 }
+
+/* Effective touch targets for the editor and tool configuration controls. */
+.persona-workspace-page button,
+.persona-workspace-page select,
+.persona-workspace-page textarea,
+.persona-workspace-page input:not([type="hidden"]),
+.sensory-tools-page button,
+.sensory-tools-page input,
+.tavern-page button,
+.tavern-page select,
+.tavern-page input:not([type="hidden"]),
+.tavern-page textarea {
+  min-height: 44px !important;
+  min-width: 44px !important;
+}
+.async-feedback-status { margin: 0; color: var(--muted); }
+.async-feedback-status:empty { display: none; }
+.async-feedback-error { color: var(--negative); padding: 12px; border: 1px solid var(--negative); scroll-margin-top: 64px; }
+.async-feedback-error:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 760px) {
+  .sensory-tools-page .sensory-category-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}

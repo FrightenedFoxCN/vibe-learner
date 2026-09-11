@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { AsyncFeedback } from "../async-feedback";
 import { MaterialIcon } from "../../components/material-icon";
 import { ModelFallbackNotice } from "../../components/model-fallback-notice";
 import { ProviderTruth } from "../../components/provider-truth";
@@ -84,6 +85,8 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     filteredReusableNodes,
     currentCollapsedNodeEditorSections,
     pageNotice,
+    sceneIoPending,
+    sceneIoError,
     updateLayer,
     saveLayerToReusableLibrary,
     saveObjectToReusableLibrary,
@@ -111,6 +114,19 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     toggleObjectEditor,
     handleSelectLayer,
   } = controller;
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const actionTriggerRef = useRef<Element | null>(null);
+  const actionPending = Boolean(sceneIoPending || sceneGeneratePending || rewritePendingKey || reusableActionPendingId);
+  const userError = [sceneIoError, sceneGenerateError, rewriteError, reusableError].filter(Boolean).join("；");
+  const previousUserError = useRef(userError);
+  useEffect(() => {
+    // Synchronous validation may be batched without rendering a pending state.
+    // Background library failures are deliberately excluded from this focus path.
+    if (userError && userError !== previousUserError.current && document.activeElement === actionTriggerRef.current && document.activeElement !== document.body) {
+      feedbackRef.current?.querySelector<HTMLElement>('[role="alert"]')?.focus();
+    }
+    previousUserError.current = userError;
+  }, [userError]);
   function renderSelectedLayerEditor(): ReactNode {
     if (!selectedLayer) {
       return <p style={styles.emptyState}>选择层级后在这里编辑。</p>;
@@ -119,14 +135,9 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     return (
       <>
         <ModelFallbackNotice recoveries={rewriteModelRecoveries} />
-        {rewriteError ? (
-          <div style={styles.rewriteControlRow}>
-            <span style={styles.errorText}>{rewriteError}</span>
-          </div>
-        ) : null}
 
         <div style={styles.editorSection}>
-          <button type="button" style={styles.editorSectionHeader} onClick={() => toggleNodeEditorSection("basic")}> 
+          <button type="button" style={styles.editorSectionHeader} aria-expanded={!currentCollapsedNodeEditorSections.includes("basic")} onClick={() => toggleNodeEditorSection("basic")}>
             <span style={styles.panelTitle}>基础设定</span>
             <span style={styles.sidebarToggleIcon}><MaterialIcon name={currentCollapsedNodeEditorSections.includes("basic") ? "chevron_right" : "expand_more"} size={16} /></span>
           </button>
@@ -161,7 +172,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             />
           </label>
 
-          <label style={styles.fieldGroup}>
+          <label htmlFor={`scene-layer-${selectedLayer.id}-summary`} style={styles.fieldGroup}>
             <span style={styles.fieldLabelRow}>
               <span style={styles.fieldLabel}>层级总述</span>
               <RewriteStateButton
@@ -177,12 +188,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             </span>
             <textarea
               style={styles.textarea}
+              id={`scene-layer-${selectedLayer.id}-summary`}
+              aria-label="层级总述"
               value={selectedLayer.summary}
               onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, summary: event.target.value }))}
             />
           </label>
 
-          <label style={styles.fieldGroup}>
+          <label htmlFor={`scene-layer-${selectedLayer.id}-atmosphere`} style={styles.fieldGroup}>
             <span style={styles.fieldLabelRow}>
               <span style={styles.fieldLabel}>氛围与感知</span>
               <RewriteStateButton
@@ -198,12 +211,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             </span>
             <textarea
               style={styles.textarea}
+              id={`scene-layer-${selectedLayer.id}-atmosphere`}
+              aria-label="氛围与感知"
               value={selectedLayer.atmosphere}
               onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, atmosphere: event.target.value }))}
             />
           </label>
 
-          <label style={styles.fieldGroup}>
+          <label htmlFor={`scene-layer-${selectedLayer.id}-entrance`} style={styles.fieldGroup}>
             <span style={styles.fieldLabelRow}>
               <span style={styles.fieldLabel}>进入方式 / 过渡</span>
               <RewriteStateButton
@@ -219,12 +234,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             </span>
             <textarea
               style={styles.textarea}
+              id={`scene-layer-${selectedLayer.id}-entrance`}
+              aria-label="进入方式 / 过渡"
               value={selectedLayer.entrance}
               onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, entrance: event.target.value }))}
             />
           </label>
 
-          <label style={styles.fieldGroup}>
+          <label htmlFor={`scene-layer-${selectedLayer.id}-rules`} style={styles.fieldGroup}>
             <span style={styles.fieldLabelRow}>
               <span style={styles.fieldLabel}>层级规则</span>
               <RewriteStateButton
@@ -240,6 +257,8 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             </span>
             <textarea
               style={styles.textarea}
+              id={`scene-layer-${selectedLayer.id}-rules`}
+              aria-label="层级规则"
               value={selectedLayer.rules}
               onChange={(event) => updateLayer(selectedLayer.id, (layer) => ({ ...layer, rules: event.target.value }))}
             />
@@ -257,11 +276,6 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
     return (
       <>
         <ModelFallbackNotice recoveries={rewriteModelRecoveries} />
-        {rewriteError ? (
-          <div style={styles.rewriteControlRow}>
-            <span style={styles.errorText}>{rewriteError}</span>
-          </div>
-        ) : null}
 
         <div style={styles.editorSection}>
           <div style={styles.editorSectionBody}>
@@ -275,7 +289,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 />
               </label>
 
-              <label style={styles.fieldGroup}>
+              <label htmlFor={`scene-object-${layerId}-${object.id}-description`} style={styles.fieldGroup}>
                 <span style={styles.fieldLabelRow}>
                   <span style={styles.fieldLabel}>外观 / 说明</span>
                   <RewriteStateButton
@@ -291,12 +305,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 </span>
                 <textarea
                   style={styles.textarea}
+                  id={`scene-object-${layerId}-${object.id}-description`}
+                  aria-label="外观 / 说明"
                   value={object.description}
                   onChange={(event) => updateObject(layerId, object.id, "description", event.target.value)}
                 />
               </label>
 
-              <label style={styles.fieldGroup}>
+              <label htmlFor={`scene-object-${layerId}-${object.id}-interaction`} style={styles.fieldGroup}>
                 <span style={styles.fieldLabelRow}>
                   <span style={styles.fieldLabel}>交互方式</span>
                   <RewriteStateButton
@@ -312,6 +328,8 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                 </span>
                 <textarea
                   style={styles.textarea}
+                  id={`scene-object-${layerId}-${object.id}-interaction`}
+                  aria-label="交互方式"
                   value={object.interaction}
                   onChange={(event) => updateObject(layerId, object.id, "interaction", event.target.value)}
                 />
@@ -335,14 +353,16 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
   }
 
   return (
-    <main className="with-app-nav" style={styles.page}>
+    <main className="with-app-nav" style={styles.page} onClickCapture={(event) => {
+      if (!actionPending && (event.target as HTMLElement).closest("button")) actionTriggerRef.current = document.activeElement;
+    }}>
       <TopNav currentPath="/scene-setup" />
 
       <div style={styles.heading}>
         <div style={styles.headingRow}>
           <h1 ref={pageHeadingRef} tabIndex={-1} style={styles.pageTitle}>场景搭建</h1>
           <ProviderTruth scope="scene" />
-          <div style={styles.notice} role="status" aria-live="polite">{pageNotice}</div>
+          <div ref={feedbackRef} style={styles.notice}><AsyncFeedback actionRef={actionTriggerRef} pending={actionPending} error={userError} message={pageNotice} /></div>
           {libraryError ? <p role="alert" style={styles.errorText}>部分场景库数据未能读取，请刷新页面重试。</p> : null}
         </div>
       </div>
@@ -358,7 +378,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
           style={{
             ...styles.panel,
             ...(isCompactLayout ? styles.panelCompact : null),
-            flex: 1,
+            flex: isCompactLayout ? "0 0 auto" : 1,
             minWidth: 0,
           }}
         >
@@ -408,6 +428,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
             ref={importInputRef}
             type="file"
             accept="application/json,.json"
+            aria-label="导入场景 JSON 文件"
             style={styles.hiddenInput}
             onChange={(event) => void importSceneFromFile(event)}
           />
@@ -501,6 +522,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                   <div style={styles.modeSwitch}>
                     <button
                       type="button"
+                      aria-pressed={sceneGenerateMode === "keywords"}
                       style={sceneGenerateMode === "keywords" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
                       onClick={() => updateSceneGenerationInput(() => setSceneGenerateMode("keywords"))}
                     >
@@ -508,6 +530,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     </button>
                     <button
                       type="button"
+                      aria-pressed={sceneGenerateMode === "long_text"}
                       style={sceneGenerateMode === "long_text" ? styles.modeSwitchButtonActive : styles.modeSwitchButton}
                       onClick={() => updateSceneGenerationInput(() => setSceneGenerateMode("long_text"))}
                     >
@@ -544,6 +567,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                   <label key="keywords-mode" style={styles.fieldGroup}>
                     <input
                       style={styles.input}
+                      aria-label="场景生成关键词"
                       value={sceneKeywordInput}
                       onChange={(event) => updateSceneGenerationInput(() => setSceneKeywordInput(event.target.value))}
                       placeholder="输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
@@ -554,13 +578,14 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     <input
                       type="file"
                       accept=".txt,.md,text/plain,text/markdown"
+                      aria-label="场景生成长文本文件"
                       style={styles.fileInput}
                       onChange={(event) => updateSceneGenerationInput(() => setSceneLongTextFile(event.target.files?.[0] ?? null))}
                     />
                     {sceneLongTextFile ? <span style={styles.helperText}>{sceneLongTextFile.name}</span> : null}
                   </label>
                 )}
-                {sceneGenerateError ? <p style={styles.errorText}>{sceneGenerateError}</p> : null}
+
                 {generatedSceneCandidate ? (
                   <div style={styles.generatedSceneCard}>
                     <strong style={styles.generatedSceneTitle}>{generatedSceneCandidate.sceneName}</strong>
@@ -603,7 +628,7 @@ export function SceneWorkspaceView({ controller }: { controller: SceneWorkspaceC
                     placeholder="搜索标题、标签、复用说明"
                   />
                 </label>
-                {reusableError ? <p style={styles.errorText}>{reusableError}</p> : null}
+
                 <div style={styles.reusableNodeList}>
                   {filteredReusableNodes.length ? filteredReusableNodes.map((item) => (
                     <article key={item.nodeId} style={styles.reusableNodeCard}>

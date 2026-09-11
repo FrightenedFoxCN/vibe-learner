@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import { MaterialIcon, type MaterialIconName } from "../../components/material-icon";
 import { type SceneObject, type SceneLayer } from "../../lib/scene-editor-model";
@@ -119,6 +119,8 @@ export function SceneLayerCard({
           <SceneIconButton
             icon={isSelected ? "expand_more" : "chevron_right"}
             label={isSelected ? "收起节点编辑器" : "展开节点编辑器"}
+            expanded={isSelected}
+            controls={isSelected ? `scene-node-editor-${layer.id}` : undefined}
             size="micro"
             onClick={stopCardAction(() => onToggleEditor(layer.id))}
           />
@@ -248,6 +250,8 @@ export function SceneObjectCard({
           <SceneIconButton
             icon={isSelected ? "expand_more" : "chevron_right"}
             label={isSelected ? "收起物体编辑器" : "展开物体编辑器"}
+            expanded={isSelected}
+            controls={isSelected ? `scene-object-editor-${layerId}-${object.id}` : undefined}
             size="micro"
             onClick={stopCardAction(() => onSelect(object.id))}
           />
@@ -266,6 +270,8 @@ export function SceneIconButton({
   disabled = false,
   variant = "default",
   size = "small",
+  expanded,
+  controls,
 }: {
   icon: MaterialIconName;
   label: string;
@@ -273,6 +279,8 @@ export function SceneIconButton({
   disabled?: boolean;
   variant?: "default" | "accent" | "danger";
   size?: "small" | "micro";
+  expanded?: boolean;
+  controls?: string;
 }) {
   const style = {
     ...(size === "micro" ? styles.iconButtonMicro : styles.iconButton),
@@ -289,7 +297,7 @@ export function SceneIconButton({
     minHeight: 44,
   };
   return (
-    <button type="button" aria-label={label} title={label} style={style} onClick={onClick} disabled={disabled}>
+    <button type="button" aria-label={label} aria-expanded={expanded} aria-controls={controls} title={label} style={style} onClick={onClick} disabled={disabled}>
       <MaterialIcon name={icon} size={size === "micro" ? 14 : 16} />
     </button>
   );
@@ -314,6 +322,8 @@ export function RewriteStateButton({
   onRewrite: () => void;
   onUndo: () => void;
 }) {
+  const popoverId = useId();
+  const actionGroupRef = useRef<HTMLDivElement>(null);
   const [isStrengthOpen, setIsStrengthOpen] = useState(false);
   const strengthPopoverRef = useRef<HTMLDivElement | null>(null);
 
@@ -346,10 +356,18 @@ export function RewriteStateButton({
   }, [isPending]);
 
   return (
-    <div style={styles.rewriteActionGroup}>
+    <div ref={actionGroupRef} style={styles.rewriteActionGroup} onKeyDown={(event) => {
+      if (event.key === "Escape" && isStrengthOpen) {
+        event.stopPropagation();
+        setIsStrengthOpen(false);
+        actionGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      }
+    }}>
       <SceneIconButton
         icon={icon}
         label={buttonLabel}
+        expanded={!isUndo && isStrengthOpen}
+        controls={isStrengthOpen ? popoverId : undefined}
         onClick={(event) => {
           event.stopPropagation();
           if (isPending) {
@@ -364,7 +382,7 @@ export function RewriteStateButton({
         disabled={Boolean(pendingKey)}
       />
       {(!isPending && !isUndo && isStrengthOpen) ? (
-        <div ref={strengthPopoverRef} style={styles.rewritePopoverWrap}>
+        <div id={popoverId} ref={strengthPopoverRef} style={styles.rewritePopoverWrap}>
           <div style={styles.rewritePopover} onClick={(event) => event.stopPropagation()}>
             <div style={styles.rewritePopoverSection}>
               <span style={styles.rewritePopoverTitle}>重写强度</span>
@@ -372,6 +390,8 @@ export function RewriteStateButton({
             </div>
             <input
               style={styles.rewriteSlider}
+              aria-label={`${label}重写强度`}
+              aria-valuetext={`${(rewriteStrength * 100).toFixed(0)}%`}
               type="range"
               min={0.05}
               max={1}
@@ -385,6 +405,7 @@ export function RewriteStateButton({
               style={styles.rewritePopoverButton}
               onClick={(event) => {
                 event.stopPropagation();
+                actionGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
                 setIsStrengthOpen(false);
                 onRewrite();
               }}

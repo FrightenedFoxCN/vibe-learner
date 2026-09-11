@@ -1,0 +1,2873 @@
+{
+  "production_build": "BWV5UeFVRL5_Bb8zvDB48",
+  "inventories": [
+    {
+      "path": "/persona-spectrum",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "items": [
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 人格色谱全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 人格色谱 全部导航\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "新建人格草稿",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"新建人格草稿\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "复制为新人格",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"复制为新人格\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "重新载入人格",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"重新载入人格\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "更新人格",
+          "width": 44,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"更新人格\" [disabled]"
+        },
+        {
+          "state": "default",
+          "tag": "SELECT",
+          "type": "select-one",
+          "text": "新建人格（未保存）Fixture Mentor（内置）",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- combobox \"人格\":\n  - option \"新建人格（未保存）\"\n  - option \"Fixture Mentor（内置）\" [selected]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"名称\": Fixture Mentor"
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "摘要",
+          "width": 358,
+          "height": 68.1875,
+          "disabled": false,
+          "accessibility": "- textbox \"摘要\": Tutor"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "关系",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"关系\":\n  - /placeholder: 例如：师生、学伴、导师\n  - text: Teacher"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "学习者称呼",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"学习者称呼\":\n  - /placeholder: 例如：同学、伙伴、学员\n  - text: Student"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "附加系统约束（可选）",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"附加系统约束（可选）\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "下载模板",
+          "width": 74,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"下载模板\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导出配置",
+          "width": 74,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导出配置\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导入配置",
+          "width": 74,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导入配置\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "清空",
+          "width": 50,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"清空\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加",
+          "width": 50,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "按优先级整理",
+          "width": 98,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"按优先级整理\""
+        },
+        {
+          "state": "default",
+          "tag": "SELECT",
+          "type": "select-one",
+          "text": "插槽 1 类型",
+          "width": 132,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- combobox \"插槽 1 类型\":\n  - option \"世界观起点\"\n  - option \"过往经历\"\n  - option \"思维风格\"\n  - option \"教学方法\"\n  - option \"叙事模式\"\n  - option \"鼓励策略\"\n  - option \"纠错策略\"\n  - option \"自定义\" [selected]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "插槽 1 标签",
+          "width": 62,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"插槽 1 标签\":\n  - /placeholder: 显示标签\n  - text: 自定义"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开插槽 自定义",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开插槽 自定义\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除插槽 自定义",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除插槽 自定义\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "生成卡片",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"生成卡片\" [expanded]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "number",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- spinbutton \"精确卡片数量（可选）\""
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 332,
+          "height": 50,
+          "disabled": false,
+          "accessibility": "- checkbox \"应用前清空摘要、关系、称呼、参考提示和全部插槽\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "关键词搜索",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"关键词搜索\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "长文本提取",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"长文本提取\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "根据关键词生成人格卡片",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"根据关键词生成人格卡片\""
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "卡片生成关键词",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"卡片生成关键词\":\n  - /placeholder: 例如：冷静学术、学院派导师、侦探式推理"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "卡片库",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"卡片库\" [expanded]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "搜索卡片库",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"搜索卡片库\":\n  - /placeholder: 搜索标题、内容、标签、关键词"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "人格库",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"人格库\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 人格色谱全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 人格色谱 全部导航\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "range",
+          "text": "保留原文比例",
+          "width": 194,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- slider \"保留原文比例\": \"0.7\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "开始重写",
+          "width": 194,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"开始重写\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "新建人格草稿",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"新建人格草稿\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "复制为新人格",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"复制为新人格\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "重新载入人格",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"重新载入人格\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "更新人格",
+          "width": 44,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"更新人格\" [disabled]"
+        },
+        {
+          "state": "expanded",
+          "tag": "SELECT",
+          "type": "select-one",
+          "text": "新建人格（未保存）Fixture Mentor（内置）",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- combobox \"人格\":\n  - option \"新建人格（未保存）\"\n  - option \"Fixture Mentor（内置）\" [selected]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"名称\": Fixture Mentor"
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "摘要",
+          "width": 358,
+          "height": 68.1875,
+          "disabled": false,
+          "accessibility": "- textbox \"摘要\": Tutor"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "关系",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"关系\":\n  - /placeholder: 例如：师生、学伴、导师\n  - text: Teacher"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "学习者称呼",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"学习者称呼\":\n  - /placeholder: 例如：同学、伙伴、学员\n  - text: Student"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "附加系统约束（可选）",
+          "width": 358,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"附加系统约束（可选）\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "附加系统约束",
+          "width": 358,
+          "height": 68.1875,
+          "disabled": false,
+          "accessibility": "- textbox \"附加系统约束\":\n  - /placeholder: 例如：始终优先引用教材原话；避免过度角色扮演；默认先给步骤再给总结。\n  - text: Teach"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "下载模板",
+          "width": 74,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"下载模板\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导出配置",
+          "width": 74,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导出配置\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导入配置",
+          "width": 74,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导入配置\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "清空",
+          "width": 50,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"清空\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加",
+          "width": 50,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "按优先级整理",
+          "width": 98,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"按优先级整理\""
+        },
+        {
+          "state": "expanded",
+          "tag": "SELECT",
+          "type": "select-one",
+          "text": "插槽 1 类型",
+          "width": 132,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- combobox \"插槽 1 类型\":\n  - option \"世界观起点\"\n  - option \"过往经历\"\n  - option \"思维风格\"\n  - option \"教学方法\"\n  - option \"叙事模式\"\n  - option \"鼓励策略\"\n  - option \"纠错策略\"\n  - option \"自定义\" [selected]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "插槽 1 标签",
+          "width": 62,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"插槽 1 标签\":\n  - /placeholder: 显示标签\n  - text: 自定义"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开插槽 自定义",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开插槽 自定义\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除插槽 自定义",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除插槽 自定义\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "生成卡片",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"生成卡片\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "number",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- spinbutton \"精确卡片数量（可选）\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 332,
+          "height": 50,
+          "disabled": false,
+          "accessibility": "- checkbox \"应用前清空摘要、关系、称呼、参考提示和全部插槽\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "关键词搜索",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"关键词搜索\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "长文本提取",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"长文本提取\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "根据长文本提取人格卡片",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"根据长文本提取人格卡片\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "file",
+          "text": "长文本文件",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"长文本文件\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "卡片库",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"卡片库\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "搜索卡片库",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"搜索卡片库\":\n  - /placeholder: 搜索标题、内容、标签、关键词"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "人格库",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"人格库\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "搜索人格库",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"搜索人格库\":\n  - /placeholder: 搜索人格名称、摘要、关系或称呼"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "编辑中",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"编辑中\""
+        }
+      ]
+    },
+    {
+      "path": "/scene-setup",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "items": [
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 场景搭建全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 场景搭建 全部导航\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "保存到场景库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"保存到场景库\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "另存为新场景",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"另存为新场景\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导入 JSON",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导入 JSON\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导出 JSON",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导出 JSON\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "收起世界整体的子层和物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"收起世界整体的子层和物体\" [expanded]"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加子层",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加子层\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加物体\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除当前层级",
+          "width": 44,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"删除当前层级\" [disabled]"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "收起节点编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"收起节点编辑器\" [expanded]"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "基础设定",
+          "width": 318,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"基础设定\" [expanded]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 298,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"层级名称\": 世界整体"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 298,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"层级作用\": 宏观世界"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 298,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"层级标签\":\n  - /placeholder: 用逗号分隔\n  - text: 宏观世界,可复用节点"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写层级总述",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写层级总述\""
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "层级总述",
+          "width": 298,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- textbox \"层级总述\": 学术秩序、文明规则与公共资源的总背景。"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写氛围与感知",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写氛围与感知\""
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "氛围与感知",
+          "width": 298,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- textbox \"氛围与感知\": 整体气候、信息流速与社会节奏都在这里被定义。"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写进入方式 / 过渡",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写进入方式 / 过渡\""
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "进入方式 / 过渡",
+          "width": 298,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- textbox \"进入方式 / 过渡\": 从世界层出发，先决定这套知识世界如何运转。"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写层级规则",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写层级规则\""
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "层级规则",
+          "width": 298,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- textbox \"层级规则\": 所有更小的场景必须继承这里的基础物理与文化规则。"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除物体\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开物体编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开物体编辑器\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开大区 / 城市群的子层和物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开大区 / 城市群的子层和物体\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加子层",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加子层\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加物体\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除当前层级",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除当前层级\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开节点编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开节点编辑器\""
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"场景名称\":\n  - /placeholder: 例如：高一物理-力学基础\n  - text: 示例场景"
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。",
+          "width": 332,
+          "height": 80,
+          "disabled": false,
+          "accessibility": "- textbox \"场景摘要\":\n  - /placeholder: 用自己的话描述这个场景。\n  - text: 从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "场景树生成器",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"场景树生成器\" [expanded]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "number",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- spinbutton \"层级偏好（可选）\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "关键词搜索",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"关键词搜索\" [pressed]"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "长文本提取",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"长文本提取\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "根据关键词生成场景树",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"根据关键词生成场景树\""
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "场景生成关键词",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"场景生成关键词\":\n  - /placeholder: 输入关键词，例如：赛博校园, 物理实验, 夜间自习, 钟楼广播"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "可复用节点库",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"可复用节点库\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "已保存场景",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"已保存场景\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 场景搭建全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 场景搭建 全部导航\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "保存到场景库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"保存到场景库\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "另存为新场景",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"另存为新场景\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导入 JSON",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导入 JSON\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "导出 JSON",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"导出 JSON\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "收起世界整体的子层和物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"收起世界整体的子层和物体\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加子层",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加子层\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加物体\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除当前层级",
+          "width": 44,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"删除当前层级\" [disabled]"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开节点编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开节点编辑器\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除物体\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开物体编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开物体编辑器\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除物体\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "收起物体编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"收起物体编辑器\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 284,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"物体名称\": 新物体"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写物体外观 / 说明",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写物体外观 / 说明\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "range",
+          "text": "物体外观 / 说明重写强度",
+          "width": 194,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- slider \"物体外观 / 说明重写强度\": \"0.6\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "开始重写",
+          "width": 194,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"开始重写\""
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "外观 / 说明",
+          "width": 284,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- textbox \"外观 / 说明\": 补充这个物体在场景中的外观、状态或用途。"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "AI 重写物体交互方式",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"AI 重写物体交互方式\""
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "交互方式",
+          "width": 284,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- textbox \"交互方式\": 说明学习者或角色如何与它交互。"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 284,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"标签\":\n  - /placeholder: 用逗号分隔"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开大区 / 城市群的子层和物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开大区 / 城市群的子层和物体\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加子层",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加子层\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "添加物体",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"添加物体\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "加入节点库",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"加入节点库\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "删除当前层级",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"删除当前层级\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "展开节点编辑器",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"展开节点编辑器\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"场景名称\":\n  - /placeholder: 例如：高一物理-力学基础\n  - text: 示例场景"
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。",
+          "width": 332,
+          "height": 80,
+          "disabled": false,
+          "accessibility": "- textbox \"场景摘要\":\n  - /placeholder: 用自己的话描述这个场景。\n  - text: 从世界整体的学术框架出发，逐层建立观察者在微观教室中的完整感受。这个示例展示了如何从宏观规则层层推导到具体互动对象。"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "场景树生成器",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"场景树生成器\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "number",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- spinbutton \"层级偏好（可选）\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "关键词搜索",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"关键词搜索\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "长文本提取",
+          "width": 139,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"长文本提取\" [pressed]"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "根据长文本提取场景树",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"根据长文本提取场景树\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "file",
+          "text": "场景生成长文本文件",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"场景生成长文本文件\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "可复用节点库",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"可复用节点库\" [expanded]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "text",
+          "text": "",
+          "width": 332,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- textbox \"搜索节点\":\n  - /placeholder: 搜索标题、标签、复用说明"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "已保存场景",
+          "width": 356,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"已保存场景\" [expanded]"
+        }
+      ]
+    },
+    {
+      "path": "/sensory-tools",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "items": [
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 感官工具全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 感官工具 全部导航\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "全开",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"全开\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "全关",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"全关\""
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "独立阅读工具",
+          "width": 306,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- checkbox \"独立阅读工具\" [checked]"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 感官工具全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 感官工具 全部导航\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "全开",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"全开\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "全关",
+          "width": 44,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"全关\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "独立阅读工具",
+          "width": 306,
+          "height": 72,
+          "disabled": false,
+          "accessibility": "- checkbox \"独立阅读工具\" [checked]"
+        }
+      ]
+    },
+    {
+      "path": "/tavern",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "items": [
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 角色酒馆全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 角色酒馆 全部导航\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "刷新",
+          "width": 249.84375,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"刷新\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "归档",
+          "width": 249.84375,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"归档\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "新建酒馆",
+          "width": 249.84375,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"新建酒馆\""
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "Independent Copy RoomCompleted Actor · Failed Actor · Blocked Actor0 条消息 · 8/12 08:00",
+          "width": 368,
+          "height": 81.5,
+          "disabled": false,
+          "accessibility": "- button \"Independent Copy Room Completed Actor · Failed Actor · Blocked Actor 0 条消息 · 8/12 08:00\" [pressed]"
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "",
+          "width": 342,
+          "height": 94.375,
+          "disabled": false,
+          "accessibility": "- textbox \"你的消息\":\n  - /placeholder: 输入消息。Enter 发送，Shift + Enter 换行。"
+        },
+        {
+          "state": "default",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "",
+          "width": 342,
+          "height": 57.1875,
+          "disabled": false,
+          "accessibility": "- textbox \"下一轮引导（可选，不会显示在对话中）\":\n  - /placeholder: 例如：让角色互相回应，但保留各自立场。"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "发送并回应",
+          "width": 167,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"发送并回应\" [disabled]"
+        },
+        {
+          "state": "default",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "继续角色互动",
+          "width": 167,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"继续角色互动\" [disabled]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 368,
+          "height": 69,
+          "disabled": false,
+          "accessibility": "- checkbox \"Completed Actor 本轮目标\" [checked]"
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 368,
+          "height": 69,
+          "disabled": false,
+          "accessibility": "- checkbox \"Failed Actor 就绪\""
+        },
+        {
+          "state": "default",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 368,
+          "height": 69,
+          "disabled": false,
+          "accessibility": "- checkbox \"Blocked Actor 就绪\""
+        },
+        {
+          "state": "default",
+          "tag": "SUMMARY",
+          "text": "Reliability Details可靠性摘要待恢复 0",
+          "width": 368,
+          "height": 64.5,
+          "accessibility": "- text: Reliability Details\n- strong: 可靠性摘要\n- text: 待恢复 0"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "角色与世界 · 角色酒馆全部导航",
+          "width": 330,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"角色与世界 · 角色酒馆 全部导航\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "刷新",
+          "width": 249.84375,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"刷新\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "归档",
+          "width": 249.84375,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"归档\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "新建酒馆",
+          "width": 249.84375,
+          "height": 44,
+          "disabled": false,
+          "accessibility": "- button \"新建酒馆\""
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "Independent Copy RoomCompleted Actor · Failed Actor · Blocked Actor0 条消息 · 8/12 08:00",
+          "width": 368,
+          "height": 81.5,
+          "disabled": false,
+          "accessibility": "- button \"Independent Copy Room Completed Actor · Failed Actor · Blocked Actor 0 条消息 · 8/12 08:00\" [pressed]"
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "",
+          "width": 342,
+          "height": 94.375,
+          "disabled": false,
+          "accessibility": "- textbox \"你的消息\":\n  - /placeholder: 输入消息。Enter 发送，Shift + Enter 换行。"
+        },
+        {
+          "state": "expanded",
+          "tag": "TEXTAREA",
+          "type": "textarea",
+          "text": "",
+          "width": 342,
+          "height": 57.1875,
+          "disabled": false,
+          "accessibility": "- textbox \"下一轮引导（可选，不会显示在对话中）\":\n  - /placeholder: 例如：让角色互相回应，但保留各自立场。"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "发送并回应",
+          "width": 167,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"发送并回应\" [disabled]"
+        },
+        {
+          "state": "expanded",
+          "tag": "BUTTON",
+          "type": "button",
+          "text": "继续角色互动",
+          "width": 167,
+          "height": 44,
+          "disabled": true,
+          "accessibility": "- button \"继续角色互动\" [disabled]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 368,
+          "height": 69,
+          "disabled": false,
+          "accessibility": "- checkbox \"Completed Actor 本轮目标\" [checked]"
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 368,
+          "height": 69,
+          "disabled": false,
+          "accessibility": "- checkbox \"Failed Actor 就绪\""
+        },
+        {
+          "state": "expanded",
+          "tag": "INPUT",
+          "type": "checkbox",
+          "text": "",
+          "width": 368,
+          "height": 69,
+          "disabled": false,
+          "accessibility": "- checkbox \"Blocked Actor 就绪\""
+        },
+        {
+          "state": "expanded",
+          "tag": "SUMMARY",
+          "text": "Reliability Details可靠性摘要待恢复 0",
+          "width": 368,
+          "height": 64.5,
+          "accessibility": "- text: Reliability Details\n- strong: 可靠性摘要\n- text: 待恢复 0"
+        }
+      ]
+    }
+  ],
+  "playwright": {
+    "config": {
+      "argv": [
+        "/opt/homebrew/Cellar/node/26.8.1/bin/node",
+        "/Users/ffox/vibe-learner/node_modules/.bin/playwright",
+        "test",
+        "tests/browser/async-touch-independent.spec.ts",
+        "tests/browser/tavern-copy-independent.spec.ts"
+      ],
+      "configFile": "/Users/ffox/vibe-learner/apps/web/playwright.config.ts",
+      "rootDir": "/Users/ffox/vibe-learner/apps/web/tests/browser",
+      "failOnFlakyTests": false,
+      "forbidOnly": false,
+      "fullyParallel": false,
+      "globalSetup": null,
+      "globalTeardown": null,
+      "globalTimeout": 0,
+      "grep": {},
+      "grepInvert": null,
+      "maxFailures": 0,
+      "metadata": {
+        "actualWorkers": 1
+      },
+      "preserveOutput": "always",
+      "projects": [
+        {
+          "outputDir": "/tmp/vibe-learner-browser-results",
+          "repeatEach": 1,
+          "retries": 0,
+          "metadata": {
+            "actualWorkers": 1
+          },
+          "id": "",
+          "name": "",
+          "testDir": "/Users/ffox/vibe-learner/apps/web/tests/browser",
+          "testIgnore": [
+            "**/diagnostics-live.spec.ts"
+          ],
+          "testMatch": [
+            "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+          ],
+          "timeout": 30000
+        }
+      ],
+      "quiet": false,
+      "reporter": [
+        [
+          "list",
+          null
+        ],
+        [
+          "json",
+          {
+            "outputFile": "/tmp/vibe-learner-route-report.json"
+          }
+        ]
+      ],
+      "reportSlowTests": {
+        "max": 5,
+        "threshold": 300000
+      },
+      "shard": null,
+      "tags": [],
+      "updateSnapshots": "missing",
+      "updateSourceMethod": "patch",
+      "version": "1.63.0",
+      "workers": 1,
+      "webServer": {
+        "command": "npm run start -- --hostname 127.0.0.1 --port 3417",
+        "url": "http://127.0.0.1:3417",
+        "reuseExistingServer": false,
+        "timeout": 30000
+      }
+    },
+    "suites": [
+      {
+        "title": "async-touch-independent.spec.ts",
+        "file": "async-touch-independent.spec.ts",
+        "column": 0,
+        "line": 0,
+        "specs": [
+          {
+            "title": "independent async touch inventory /persona-spectrum",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 1332,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:23:57.141Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "touch-inventory.json",
+                        "contentType": "application/json",
+                        "body": "eyJwYXRoIjoiL3BlcnNvbmEtc3BlY3RydW0iLCJ2aWV3cG9ydCI6eyJ3aWR0aCI6MzkwLCJoZWlnaHQiOjg0NH0sIml0ZW1zIjpbeyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuinkuiJsuS4juS4lueVjCDCtyDkurrmoLzoibLosLHlhajpg6jlr7zoiKoiLCJ3aWR0aCI6MzMwLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuinkuiJsuS4juS4lueVjCDCtyDkurrmoLzoibLosLEg5YWo6YOo5a+86IiqXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0IjoiQUkg6YeN5YaZIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIkFJIOmHjeWGmVwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuaWsOW7uuS6uuagvOiNieeovyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmlrDlu7rkurrmoLzojYnnqL9cIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlpI3liLbkuLrmlrDkurrmoLwiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5aSN5Yi25Li65paw5Lq65qC8XCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6YeN5paw6L295YWl5Lq65qC8Iiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIumHjeaWsOi9veWFpeS6uuagvFwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuabtOaWsOS6uuagvCIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOnRydWUsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuabtOaWsOS6uuagvFwiIFtkaXNhYmxlZF0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IlNFTEVDVCIsInR5cGUiOiJzZWxlY3Qtb25lIiwidGV4dCI6IuaWsOW7uuS6uuagvO+8iOacquS/neWtmO+8iUZpeHR1cmUgTWVudG9y77yI5YaF572u77yJIiwid2lkdGgiOjM1OCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBjb21ib2JveCBcIuS6uuagvFwiOlxuICAtIG9wdGlvbiBcIuaWsOW7uuS6uuagvO+8iOacquS/neWtmO+8iVwiXG4gIC0gb3B0aW9uIFwiRml4dHVyZSBNZW50b3LvvIjlhoXnva7vvIlcIiBbc2VsZWN0ZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IiIsIndpZHRoIjozNTgsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWQjeensFwiOiBGaXh0dXJlIE1lbnRvciJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0Ijoi5pGY6KaBIiwid2lkdGgiOjM1OCwiaGVpZ2h0Ijo2OC4xODc1LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmkZjopoFcIjogVHV0b3IifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IklOUFVUIiwidHlwZSI6InRleHQiLCJ0ZXh0Ijoi5YWz57O7Iiwid2lkdGgiOjM1OCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5YWz57O7XCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDkvovlpoLvvJrluIjnlJ/jgIHlrabkvLTjgIHlr7zluIhcbiAgLSB0ZXh0OiBUZWFjaGVyIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IuWtpuS5oOiAheensOWRvCIsIndpZHRoIjozNTgsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWtpuS5oOiAheensOWRvFwiOlxuICAtIC9wbGFjZWhvbGRlcjog5L6L5aaC77ya5ZCM5a2m44CB5LyZ5Ly044CB5a2m5ZGYXG4gIC0gdGV4dDogU3R1ZGVudCJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLpmYTliqDns7vnu5/nuqbmnZ/vvIjlj6/pgInvvIkiLCJ3aWR0aCI6MzU4LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIumZhOWKoOezu+e7n+e6puadn++8iOWPr+mAie+8iVwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuS4i+i9veaooeadvyIsIndpZHRoIjo3NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLkuIvovb3mqKHmnb9cIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlr7zlh7rphY3nva4iLCJ3aWR0aCI6NzQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5a+85Ye66YWN572uXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5a+85YWl6YWN572uIiwid2lkdGgiOjc0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWvvOWFpemFjee9rlwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6Iua4heepuiIsIndpZHRoIjo1MCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmuIXnqbpcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmt7vliqAiLCJ3aWR0aCI6NTAsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5re75YqgXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5oyJ5LyY5YWI57qn5pW055CGIiwid2lkdGgiOjk4LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuaMieS8mOWFiOe6p+aVtOeQhlwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJTRUxFQ1QiLCJ0eXBlIjoic2VsZWN0LW9uZSIsInRleHQiOiLmj5Lmp70gMSDnsbvlnosiLCJ3aWR0aCI6MTMyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNvbWJvYm94IFwi5o+S5qe9IDEg57G75Z6LXCI6XG4gIC0gb3B0aW9uIFwi5LiW55WM6KeC6LW354K5XCJcbiAgLSBvcHRpb24gXCLov4flvoDnu4/ljoZcIlxuICAtIG9wdGlvbiBcIuaAnee7tOmjjuagvFwiXG4gIC0gb3B0aW9uIFwi5pWZ5a2m5pa55rOVXCJcbiAgLSBvcHRpb24gXCLlj5nkuovmqKHlvI9cIlxuICAtIG9wdGlvbiBcIum8k+WKseetlueVpVwiXG4gIC0gb3B0aW9uIFwi57qg6ZSZ562W55WlXCJcbiAgLSBvcHRpb24gXCLoh6rlrprkuYlcIiBbc2VsZWN0ZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IuaPkuanvSAxIOagh+etviIsIndpZHRoIjo2MiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5o+S5qe9IDEg5qCH562+XCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDmmL7npLrmoIfnrb5cbiAgLSB0ZXh0OiDoh6rlrprkuYkifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5bGV5byA5o+S5qe9IOiHquWumuS5iSIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlsZXlvIDmj5Lmp70g6Ieq5a6a5LmJXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Yig6Zmk5o+S5qe9IOiHquWumuS5iSIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLliKDpmaTmj5Lmp70g6Ieq5a6a5LmJXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi55Sf5oiQ5Y2h54mHIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLnlJ/miJDljaHniYdcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJudW1iZXIiLCJ0ZXh0IjoiIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBzcGluYnV0dG9uIFwi57K+56Gu5Y2h54mH5pWw6YeP77yI5Y+v6YCJ77yJXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IklOUFVUIiwidHlwZSI6ImNoZWNrYm94IiwidGV4dCI6IiIsIndpZHRoIjozMzIsImhlaWdodCI6NTAsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gY2hlY2tib3ggXCLlupTnlKjliY3muIXnqbrmkZjopoHjgIHlhbPns7vjgIHnp7DlkbzjgIHlj4LogIPmj5DnpLrlkozlhajpg6jmj5Lmp71cIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlhbPplK7or43mkJzntKIiLCJ3aWR0aCI6MTM5LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWFs+mUruivjeaQnOe0olwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IumVv+aWh+acrOaPkOWPliIsIndpZHRoIjoxMzksImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi6ZW/5paH5pys5o+Q5Y+WXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5qC55o2u5YWz6ZSu6K+N55Sf5oiQ5Lq65qC85Y2h54mHIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuagueaNruWFs+mUruivjeeUn+aIkOS6uuagvOWNoeeJh1wiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IuWNoeeJh+eUn+aIkOWFs+mUruivjSIsIndpZHRoIjozMzIsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWNoeeJh+eUn+aIkOWFs+mUruivjVwiOlxuICAtIC9wbGFjZWhvbGRlcjog5L6L5aaC77ya5Ya36Z2Z5a2m5pyv44CB5a2m6Zmi5rS+5a+85biI44CB5L6m5o6i5byP5o6o55CGIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWNoeeJh+W6kyIsIndpZHRoIjozNTYsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Y2h54mH5bqTXCIgW2V4cGFuZGVkXSJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiLmkJzntKLljaHniYflupMiLCJ3aWR0aCI6MzMyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmkJzntKLljaHniYflupNcIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOaQnOe0ouagh+mimOOAgeWGheWuueOAgeagh+etvuOAgeWFs+mUruivjSJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLkurrmoLzlupMiLCJ3aWR0aCI6MzU2LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuS6uuagvOW6k1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLop5LoibLkuI7kuJbnlYwgwrcg5Lq65qC86Imy6LCx5YWo6YOo5a+86IiqIiwid2lkdGgiOjMzMCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLop5LoibLkuI7kuJbnlYwgwrcg5Lq65qC86Imy6LCxIOWFqOmDqOWvvOiIqlwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiJBSSDph43lhpkiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwiQUkg6YeN5YaZXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJyYW5nZSIsInRleHQiOiLkv53nlZnljp/mlofmr5TkvosiLCJ3aWR0aCI6MTk0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHNsaWRlciBcIuS/neeVmeWOn+aWh+avlOS+i1wiOiBcIjAuN1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlvIDlp4vph43lhpkiLCJ3aWR0aCI6MTk0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuW8gOWni+mHjeWGmVwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmlrDlu7rkurrmoLzojYnnqL8iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5paw5bu65Lq65qC86I2J56i/XCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWkjeWItuS4uuaWsOS6uuagvCIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlpI3liLbkuLrmlrDkurrmoLxcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6YeN5paw6L295YWl5Lq65qC8Iiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIumHjeaWsOi9veWFpeS6uuagvFwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmm7TmlrDkurrmoLwiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjp0cnVlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmm7TmlrDkurrmoLxcIiBbZGlzYWJsZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiU0VMRUNUIiwidHlwZSI6InNlbGVjdC1vbmUiLCJ0ZXh0Ijoi5paw5bu65Lq65qC877yI5pyq5L+d5a2Y77yJRml4dHVyZSBNZW50b3LvvIjlhoXnva7vvIkiLCJ3aWR0aCI6MzU4LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNvbWJvYm94IFwi5Lq65qC8XCI6XG4gIC0gb3B0aW9uIFwi5paw5bu65Lq65qC877yI5pyq5L+d5a2Y77yJXCJcbiAgLSBvcHRpb24gXCJGaXh0dXJlIE1lbnRvcu+8iOWGhee9ru+8iVwiIFtzZWxlY3RlZF0ifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IiIsIndpZHRoIjozNTgsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWQjeensFwiOiBGaXh0dXJlIE1lbnRvciJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IlRFWFRBUkVBIiwidHlwZSI6InRleHRhcmVhIiwidGV4dCI6IuaRmOimgSIsIndpZHRoIjozNTgsImhlaWdodCI6NjguMTg3NSwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5pGY6KaBXCI6IFR1dG9yIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiLlhbPns7siLCJ3aWR0aCI6MzU4LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLlhbPns7tcIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOS+i+Wmgu+8muW4iOeUn+OAgeWtpuS8tOOAgeWvvOW4iFxuICAtIHRleHQ6IFRlYWNoZXIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IuWtpuS5oOiAheensOWRvCIsIndpZHRoIjozNTgsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWtpuS5oOiAheensOWRvFwiOlxuICAtIC9wbGFjZWhvbGRlcjog5L6L5aaC77ya5ZCM5a2m44CB5LyZ5Ly044CB5a2m5ZGYXG4gIC0gdGV4dDogU3R1ZGVudCJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6ZmE5Yqg57O757uf57qm5p2f77yI5Y+v6YCJ77yJIiwid2lkdGgiOjM1OCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLpmYTliqDns7vnu5/nuqbmnZ/vvIjlj6/pgInvvIlcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0Ijoi6ZmE5Yqg57O757uf57qm5p2fIiwid2lkdGgiOjM1OCwiaGVpZ2h0Ijo2OC4xODc1LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLpmYTliqDns7vnu5/nuqbmnZ9cIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOS+i+Wmgu+8muWni+e7iOS8mOWFiOW8leeUqOaVmeadkOWOn+ivne+8m+mBv+WFjei/h+W6puinkuiJsuaJrua8lO+8m+m7mOiupOWFiOe7meatpemqpOWGjee7meaAu+e7k+OAglxuICAtIHRleHQ6IFRlYWNoIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLkuIvovb3mqKHmnb8iLCJ3aWR0aCI6NzQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5LiL6L295qih5p2/XCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWvvOWHuumFjee9riIsIndpZHRoIjo3NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlr7zlh7rphY3nva5cIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5a+85YWl6YWN572uIiwid2lkdGgiOjc0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWvvOWFpemFjee9rlwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmuIXnqboiLCJ3aWR0aCI6NTAsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5riF56m6XCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6Iua3u+WKoCIsIndpZHRoIjo1MCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmt7vliqBcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5oyJ5LyY5YWI57qn5pW055CGIiwid2lkdGgiOjk4LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuaMieS8mOWFiOe6p+aVtOeQhlwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiU0VMRUNUIiwidHlwZSI6InNlbGVjdC1vbmUiLCJ0ZXh0Ijoi5o+S5qe9IDEg57G75Z6LIiwid2lkdGgiOjEzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBjb21ib2JveCBcIuaPkuanvSAxIOexu+Wei1wiOlxuICAtIG9wdGlvbiBcIuS4lueVjOingui1t+eCuVwiXG4gIC0gb3B0aW9uIFwi6L+H5b6A57uP5Y6GXCJcbiAgLSBvcHRpb24gXCLmgJ3nu7Tpo47moLxcIlxuICAtIG9wdGlvbiBcIuaVmeWtpuaWueazlVwiXG4gIC0gb3B0aW9uIFwi5Y+Z5LqL5qih5byPXCJcbiAgLSBvcHRpb24gXCLpvJPlirHnrZbnlaVcIlxuICAtIG9wdGlvbiBcIue6oOmUmeetlueVpVwiXG4gIC0gb3B0aW9uIFwi6Ieq5a6a5LmJXCIgW3NlbGVjdGVkXSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6InRleHQiLCJ0ZXh0Ijoi5o+S5qe9IDEg5qCH562+Iiwid2lkdGgiOjYyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmj5Lmp70gMSDmoIfnrb5cIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOaYvuekuuagh+etvlxuICAtIHRleHQ6IOiHquWumuS5iSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5bGV5byA5o+S5qe9IOiHquWumuS5iSIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlsZXlvIDmj5Lmp70g6Ieq5a6a5LmJXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWIoOmZpOaPkuanvSDoh6rlrprkuYkiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yig6Zmk5o+S5qe9IOiHquWumuS5iVwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLnlJ/miJDljaHniYciLCJ3aWR0aCI6MzU2LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIueUn+aIkOWNoeeJh1wiIFtleHBhbmRlZF0ifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJudW1iZXIiLCJ0ZXh0IjoiIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBzcGluYnV0dG9uIFwi57K+56Gu5Y2h54mH5pWw6YeP77yI5Y+v6YCJ77yJXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJjaGVja2JveCIsInRleHQiOiIiLCJ3aWR0aCI6MzMyLCJoZWlnaHQiOjUwLCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNoZWNrYm94IFwi5bqU55So5YmN5riF56m65pGY6KaB44CB5YWz57O744CB56ew5ZG844CB5Y+C6ICD5o+Q56S65ZKM5YWo6YOo5o+S5qe9XCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWFs+mUruivjeaQnOe0oiIsIndpZHRoIjoxMzksImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5YWz6ZSu6K+N5pCc57SiXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IumVv+aWh+acrOaPkOWPliIsIndpZHRoIjoxMzksImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi6ZW/5paH5pys5o+Q5Y+WXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuagueaNrumVv+aWh+acrOaPkOWPluS6uuagvOWNoeeJhyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmoLnmja7plb/mlofmnKzmj5Dlj5bkurrmoLzljaHniYdcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6ImZpbGUiLCJ0ZXh0Ijoi6ZW/5paH5pys5paH5Lu2Iiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLplb/mlofmnKzmlofku7ZcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Y2h54mH5bqTIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLljaHniYflupNcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiLmkJzntKLljaHniYflupMiLCJ3aWR0aCI6MzMyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmkJzntKLljaHniYflupNcIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOaQnOe0ouagh+mimOOAgeWGheWuueOAgeagh+etvuOAgeWFs+mUruivjSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Lq65qC85bqTIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLkurrmoLzlupNcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiLmkJzntKLkurrmoLzlupMiLCJ3aWR0aCI6MzMyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmkJzntKLkurrmoLzlupNcIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOaQnOe0ouS6uuagvOWQjeensOOAgeaRmOimgeOAgeWFs+ezu+aIluensOWRvCJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi57yW6L6R5LitIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIue8lui+keS4rVwiIn1dfQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-f52b42779eddab24deb9",
+            "file": "async-touch-independent.spec.ts",
+            "line": 7,
+            "column": 3
+          },
+          {
+            "title": "independent async touch inventory /scene-setup",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 1348,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:23:58.548Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "touch-inventory.json",
+                        "contentType": "application/json",
+                        "body": "eyJwYXRoIjoiL3NjZW5lLXNldHVwIiwidmlld3BvcnQiOnsid2lkdGgiOjM5MCwiaGVpZ2h0Ijo4NDR9LCJpdGVtcyI6W3sic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLop5LoibLkuI7kuJbnlYwgwrcg5Zy65pmv5pCt5bu65YWo6YOo5a+86IiqIiwid2lkdGgiOjMzMCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLop5LoibLkuI7kuJbnlYwgwrcg5Zy65pmv5pCt5bu6IOWFqOmDqOWvvOiIqlwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuS/neWtmOWIsOWcuuaZr+W6kyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLkv53lrZjliLDlnLrmma/lupNcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlj6blrZjkuLrmlrDlnLrmma8iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Y+m5a2Y5Li65paw5Zy65pmvXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5a+85YWlIEpTT04iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5a+85YWlIEpTT05cIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlr7zlh7ogSlNPTiIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlr7zlh7ogSlNPTlwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuaUtui1t+S4lueVjOaVtOS9k+eahOWtkOWxguWSjOeJqeS9kyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmlLbotbfkuJbnlYzmlbTkvZPnmoTlrZDlsYLlkozniankvZNcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6Iua3u+WKoOWtkOWxgiIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmt7vliqDlrZDlsYJcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmt7vliqDniankvZMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5re75Yqg54mp5L2TXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Yqg5YWl6IqC54K55bqTIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWKoOWFpeiKgueCueW6k1wiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWIoOmZpOW9k+WJjeWxgue6pyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOnRydWUsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWIoOmZpOW9k+WJjeWxgue6p1wiIFtkaXNhYmxlZF0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5pS26LW36IqC54K557yW6L6R5ZmoIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuaUtui1t+iKgueCuee8lui+keWZqFwiIFtleHBhbmRlZF0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Z+656GA6K6+5a6aIiwid2lkdGgiOjMxOCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLln7rnoYDorr7lrppcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IiIsIndpZHRoIjoyOTgsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWxgue6p+WQjeensFwiOiDkuJbnlYzmlbTkvZMifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IklOUFVUIiwidHlwZSI6InRleHQiLCJ0ZXh0IjoiIiwid2lkdGgiOjI5OCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5bGC57qn5L2c55SoXCI6IOWuj+inguS4lueVjCJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiIiLCJ3aWR0aCI6Mjk4LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLlsYLnuqfmoIfnrb5cIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOeUqOmAl+WPt+WIhumalFxuICAtIHRleHQ6IOWuj+inguS4lueVjCzlj6/lpI3nlKjoioLngrkifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0IjoiQUkg6YeN5YaZ5bGC57qn5oC76L+wIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIkFJIOmHjeWGmeWxgue6p+aAu+i/sFwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJURVhUQVJFQSIsInR5cGUiOiJ0ZXh0YXJlYSIsInRleHQiOiLlsYLnuqfmgLvov7AiLCJ3aWR0aCI6Mjk4LCJoZWlnaHQiOjcyLCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLlsYLnuqfmgLvov7BcIjog5a2m5pyv56ep5bqP44CB5paH5piO6KeE5YiZ5LiO5YWs5YWx6LWE5rqQ55qE5oC76IOM5pmv44CCIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IkFJIOmHjeWGmeawm+WbtOS4juaEn+efpSIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCJBSSDph43lhpnmsJvlm7TkuI7mhJ/nn6VcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0Ijoi5rCb5Zu05LiO5oSf55+lIiwid2lkdGgiOjI5OCwiaGVpZ2h0Ijo3MiwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5rCb5Zu05LiO5oSf55+lXCI6IOaVtOS9k+awlOWAmeOAgeS/oeaBr+a1gemAn+S4juekvuS8muiKguWlj+mDveWcqOi/memHjOiiq+WumuS5ieOAgiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiJBSSDph43lhpnov5vlhaXmlrnlvI8gLyDov4fmuKEiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwiQUkg6YeN5YaZ6L+b5YWl5pa55byPIC8g6L+H5rihXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IlRFWFRBUkVBIiwidHlwZSI6InRleHRhcmVhIiwidGV4dCI6Iui/m+WFpeaWueW8jyAvIOi/h+a4oSIsIndpZHRoIjoyOTgsImhlaWdodCI6NzIsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIui/m+WFpeaWueW8jyAvIOi/h+a4oVwiOiDku47kuJbnlYzlsYLlh7rlj5HvvIzlhYjlhrPlrprov5nlpZfnn6Xor4bkuJbnlYzlpoLkvZXov5DovazjgIIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0IjoiQUkg6YeN5YaZ5bGC57qn6KeE5YiZIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIkFJIOmHjeWGmeWxgue6p+inhOWImVwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJURVhUQVJFQSIsInR5cGUiOiJ0ZXh0YXJlYSIsInRleHQiOiLlsYLnuqfop4TliJkiLCJ3aWR0aCI6Mjk4LCJoZWlnaHQiOjcyLCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLlsYLnuqfop4TliJlcIjog5omA5pyJ5pu05bCP55qE5Zy65pmv5b+F6aG757un5om/6L+Z6YeM55qE5Z+656GA54mp55CG5LiO5paH5YyW6KeE5YiZ44CCIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWKoOWFpeiKgueCueW6kyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLliqDlhaXoioLngrnlupNcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliKDpmaTniankvZMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yig6Zmk54mp5L2TXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5bGV5byA54mp5L2T57yW6L6R5ZmoIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWxleW8gOeJqeS9k+e8lui+keWZqFwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWxleW8gOWkp+WMuiAvIOWfjuW4gue+pOeahOWtkOWxguWSjOeJqeS9kyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlsZXlvIDlpKfljLogLyDln47luILnvqTnmoTlrZDlsYLlkozniankvZNcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmt7vliqDlrZDlsYIiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5re75Yqg5a2Q5bGCXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5re75Yqg54mp5L2TIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIua3u+WKoOeJqeS9k1wiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWKoOWFpeiKgueCueW6kyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLliqDlhaXoioLngrnlupNcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliKDpmaTlvZPliY3lsYLnuqciLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yig6Zmk5b2T5YmN5bGC57qnXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5bGV5byA6IqC54K557yW6L6R5ZmoIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWxleW8gOiKgueCuee8lui+keWZqFwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJ0ZXh0IiwidGV4dCI6IiIsIndpZHRoIjozMzIsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuWcuuaZr+WQjeensFwiOlxuICAtIC9wbGFjZWhvbGRlcjog5L6L5aaC77ya6auY5LiA54mp55CGLeWKm+WtpuWfuuehgFxuICAtIHRleHQ6IOekuuS+i+WcuuaZryJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0Ijoi5LuO5LiW55WM5pW05L2T55qE5a2m5pyv5qGG5p625Ye65Y+R77yM6YCQ5bGC5bu656uL6KeC5a+f6ICF5Zyo5b6u6KeC5pWZ5a6k5Lit55qE5a6M5pW05oSf5Y+X44CC6L+Z5Liq56S65L6L5bGV56S65LqG5aaC5L2V5LuO5a6P6KeC6KeE5YiZ5bGC5bGC5o6o5a+85Yiw5YW35L2T5LqS5Yqo5a+56LGh44CCIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo4MCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5Zy65pmv5pGY6KaBXCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDnlKjoh6rlt7HnmoTor53mj4/ov7Dov5nkuKrlnLrmma/jgIJcbiAgLSB0ZXh0OiDku47kuJbnlYzmlbTkvZPnmoTlrabmnK/moYbmnrblh7rlj5HvvIzpgJDlsYLlu7rnq4vop4Llr5/ogIXlnKjlvq7op4LmlZnlrqTkuK3nmoTlrozmlbTmhJ/lj5fjgILov5nkuKrnpLrkvovlsZXnpLrkuoblpoLkvZXku47lro/op4Lop4TliJnlsYLlsYLmjqjlr7zliLDlhbfkvZPkupLliqjlr7nosaHjgIIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Zy65pmv5qCR55Sf5oiQ5ZmoIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlnLrmma/moJHnlJ/miJDlmahcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJudW1iZXIiLCJ0ZXh0IjoiIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBzcGluYnV0dG9uIFwi5bGC57qn5YGP5aW977yI5Y+v6YCJ77yJXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5YWz6ZSu6K+N5pCc57SiIiwid2lkdGgiOjEzOSwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlhbPplK7or43mkJzntKJcIiBbcHJlc3NlZF0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6ZW/5paH5pys5o+Q5Y+WIiwid2lkdGgiOjEzOSwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLplb/mlofmnKzmj5Dlj5ZcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmoLnmja7lhbPplK7or43nlJ/miJDlnLrmma/moJEiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5qC55o2u5YWz6ZSu6K+N55Sf5oiQ5Zy65pmv5qCRXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IklOUFVUIiwidHlwZSI6InRleHQiLCJ0ZXh0Ijoi5Zy65pmv55Sf5oiQ5YWz6ZSu6K+NIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5Zy65pmv55Sf5oiQ5YWz6ZSu6K+NXCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDovpPlhaXlhbPplK7or43vvIzkvovlpoLvvJrotZvljZrmoKHlm60sIOeJqeeQhuWunumqjCwg5aSc6Ze06Ieq5LmgLCDpkp/mpbzlub/mkq0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Y+v5aSN55So6IqC54K55bqTIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlj6/lpI3nlKjoioLngrnlupNcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlt7Lkv53lrZjlnLrmma8iLCJ3aWR0aCI6MzU2LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuW3suS/neWtmOWcuuaZr1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLop5LoibLkuI7kuJbnlYwgwrcg5Zy65pmv5pCt5bu65YWo6YOo5a+86IiqIiwid2lkdGgiOjMzMCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLop5LoibLkuI7kuJbnlYwgwrcg5Zy65pmv5pCt5bu6IOWFqOmDqOWvvOiIqlwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLkv53lrZjliLDlnLrmma/lupMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5L+d5a2Y5Yiw5Zy65pmv5bqTXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWPpuWtmOS4uuaWsOWcuuaZryIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlj6blrZjkuLrmlrDlnLrmma9cIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5a+85YWlIEpTT04iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5a+85YWlIEpTT05cIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5a+85Ye6IEpTT04iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5a+85Ye6IEpTT05cIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5pS26LW35LiW55WM5pW05L2T55qE5a2Q5bGC5ZKM54mp5L2TIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuaUtui1t+S4lueVjOaVtOS9k+eahOWtkOWxguWSjOeJqeS9k1wiIFtleHBhbmRlZF0ifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6Iua3u+WKoOWtkOWxgiIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmt7vliqDlrZDlsYJcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5re75Yqg54mp5L2TIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIua3u+WKoOeJqeS9k1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliqDlhaXoioLngrnlupMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yqg5YWl6IqC54K55bqTXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWIoOmZpOW9k+WJjeWxgue6pyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOnRydWUsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWIoOmZpOW9k+WJjeWxgue6p1wiIFtkaXNhYmxlZF0ifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWxleW8gOiKgueCuee8lui+keWZqCIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlsZXlvIDoioLngrnnvJbovpHlmahcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Yqg5YWl6IqC54K55bqTIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWKoOWFpeiKgueCueW6k1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliKDpmaTniankvZMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yig6Zmk54mp5L2TXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWxleW8gOeJqeS9k+e8lui+keWZqCIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlsZXlvIDniankvZPnvJbovpHlmahcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Yqg5YWl6IqC54K55bqTIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWKoOWFpeiKgueCueW6k1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliKDpmaTniankvZMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yig6Zmk54mp5L2TXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuaUtui1t+eJqeS9k+e8lui+keWZqCIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmlLbotbfniankvZPnvJbovpHlmahcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiIiLCJ3aWR0aCI6Mjg0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLniankvZPlkI3np7BcIjog5paw54mp5L2TIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiJBSSDph43lhpnniankvZPlpJbop4IgLyDor7TmmI4iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwiQUkg6YeN5YaZ54mp5L2T5aSW6KeCIC8g6K+05piOXCIgW2V4cGFuZGVkXSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6InJhbmdlIiwidGV4dCI6IueJqeS9k+WkluingiAvIOivtOaYjumHjeWGmeW8uuW6piIsIndpZHRoIjoxOTQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gc2xpZGVyIFwi54mp5L2T5aSW6KeCIC8g6K+05piO6YeN5YaZ5by65bqmXCI6IFwiMC42XCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuW8gOWni+mHjeWGmSIsIndpZHRoIjoxOTQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5byA5aeL6YeN5YaZXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJURVhUQVJFQSIsInR5cGUiOiJ0ZXh0YXJlYSIsInRleHQiOiLlpJbop4IgLyDor7TmmI4iLCJ3aWR0aCI6Mjg0LCJoZWlnaHQiOjcyLCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLlpJbop4IgLyDor7TmmI5cIjog6KGl5YWF6L+Z5Liq54mp5L2T5Zyo5Zy65pmv5Lit55qE5aSW6KeC44CB54q25oCB5oiW55So6YCU44CCIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiJBSSDph43lhpnniankvZPkuqTkupLmlrnlvI8iLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwiQUkg6YeN5YaZ54mp5L2T5Lqk5LqS5pa55byPXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJURVhUQVJFQSIsInR5cGUiOiJ0ZXh0YXJlYSIsInRleHQiOiLkuqTkupLmlrnlvI8iLCJ3aWR0aCI6Mjg0LCJoZWlnaHQiOjcyLCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLkuqTkupLmlrnlvI9cIjog6K+05piO5a2m5Lmg6ICF5oiW6KeS6Imy5aaC5L2V5LiO5a6D5Lqk5LqS44CCIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiIiLCJ3aWR0aCI6Mjg0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmoIfnrb5cIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOeUqOmAl+WPt+WIhumalCJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5bGV5byA5aSn5Yy6IC8g5Z+O5biC576k55qE5a2Q5bGC5ZKM54mp5L2TIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWxleW8gOWkp+WMuiAvIOWfjuW4gue+pOeahOWtkOWxguWSjOeJqeS9k1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLmt7vliqDlrZDlsYIiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5re75Yqg5a2Q5bGCXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6Iua3u+WKoOeJqeS9kyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmt7vliqDniankvZNcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Yqg5YWl6IqC54K55bqTIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWKoOWFpeiKgueCueW6k1wiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliKDpmaTlvZPliY3lsYLnuqciLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yig6Zmk5b2T5YmN5bGC57qnXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWxleW8gOiKgueCuee8lui+keWZqCIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlsZXlvIDoioLngrnnvJbovpHlmahcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6InRleHQiLCJ0ZXh0IjoiIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5Zy65pmv5ZCN56ewXCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDkvovlpoLvvJrpq5jkuIDniannkIYt5Yqb5a2m5Z+656GAXG4gIC0gdGV4dDog56S65L6L5Zy65pmvIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0Ijoi5LuO5LiW55WM5pW05L2T55qE5a2m5pyv5qGG5p625Ye65Y+R77yM6YCQ5bGC5bu656uL6KeC5a+f6ICF5Zyo5b6u6KeC5pWZ5a6k5Lit55qE5a6M5pW05oSf5Y+X44CC6L+Z5Liq56S65L6L5bGV56S65LqG5aaC5L2V5LuO5a6P6KeC6KeE5YiZ5bGC5bGC5o6o5a+85Yiw5YW35L2T5LqS5Yqo5a+56LGh44CCIiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo4MCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5Zy65pmv5pGY6KaBXCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDnlKjoh6rlt7HnmoTor53mj4/ov7Dov5nkuKrlnLrmma/jgIJcbiAgLSB0ZXh0OiDku47kuJbnlYzmlbTkvZPnmoTlrabmnK/moYbmnrblh7rlj5HvvIzpgJDlsYLlu7rnq4vop4Llr5/ogIXlnKjlvq7op4LmlZnlrqTkuK3nmoTlrozmlbTmhJ/lj5fjgILov5nkuKrnpLrkvovlsZXnpLrkuoblpoLkvZXku47lro/op4Lop4TliJnlsYLlsYLmjqjlr7zliLDlhbfkvZPkupLliqjlr7nosaHjgIIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWcuuaZr+agkeeUn+aIkOWZqCIsIndpZHRoIjozNTYsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Zy65pmv5qCR55Sf5oiQ5ZmoXCIgW2V4cGFuZGVkXSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6Im51bWJlciIsInRleHQiOiIiLCJ3aWR0aCI6MzMyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHNwaW5idXR0b24gXCLlsYLnuqflgY/lpb3vvIjlj6/pgInvvIlcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5YWz6ZSu6K+N5pCc57SiIiwid2lkdGgiOjEzOSwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlhbPplK7or43mkJzntKJcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6ZW/5paH5pys5o+Q5Y+WIiwid2lkdGgiOjEzOSwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLplb/mlofmnKzmj5Dlj5ZcIiBbcHJlc3NlZF0ifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuagueaNrumVv+aWh+acrOaPkOWPluWcuuaZr+agkSIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmoLnmja7plb/mlofmnKzmj5Dlj5blnLrmma/moJFcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6ImZpbGUiLCJ0ZXh0Ijoi5Zy65pmv55Sf5oiQ6ZW/5paH5pys5paH5Lu2Iiwid2lkdGgiOjMzMiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlnLrmma/nlJ/miJDplb/mlofmnKzmlofku7ZcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Y+v5aSN55So6IqC54K55bqTIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlj6/lpI3nlKjoioLngrnlupNcIiBbZXhwYW5kZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoidGV4dCIsInRleHQiOiIiLCJ3aWR0aCI6MzMyLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIHRleHRib3ggXCLmkJzntKLoioLngrlcIjpcbiAgLSAvcGxhY2Vob2xkZXI6IOaQnOe0ouagh+mimOOAgeagh+etvuOAgeWkjeeUqOivtOaYjiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5bey5L+d5a2Y5Zy65pmvIiwid2lkdGgiOjM1NiwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlt7Lkv53lrZjlnLrmma9cIiBbZXhwYW5kZWRdIn1dfQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-c15238c17f048ebfe2b4",
+            "file": "async-touch-independent.spec.ts",
+            "line": 7,
+            "column": 3
+          },
+          {
+            "title": "independent async touch inventory /sensory-tools",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 712,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:23:59.900Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "touch-inventory.json",
+                        "contentType": "application/json",
+                        "body": "eyJwYXRoIjoiL3NlbnNvcnktdG9vbHMiLCJ2aWV3cG9ydCI6eyJ3aWR0aCI6MzkwLCJoZWlnaHQiOjg0NH0sIml0ZW1zIjpbeyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuinkuiJsuS4juS4lueVjCDCtyDmhJ/lrpjlt6Xlhbflhajpg6jlr7zoiKoiLCJ3aWR0aCI6MzMwLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuinkuiJsuS4juS4lueVjCDCtyDmhJ/lrpjlt6Xlhbcg5YWo6YOo5a+86IiqXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5YWo5byAIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWFqOW8gFwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWFqOWFsyIsIndpZHRoIjo0NCwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLlhajlhbNcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiSU5QVVQiLCJ0eXBlIjoiY2hlY2tib3giLCJ0ZXh0Ijoi54us56uL6ZiF6K+75bel5YW3Iiwid2lkdGgiOjMwNiwiaGVpZ2h0Ijo3MiwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBjaGVja2JveCBcIueLrOeri+mYheivu+W3peWFt1wiIFtjaGVja2VkXSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6KeS6Imy5LiO5LiW55WMIMK3IOaEn+WumOW3peWFt+WFqOmDqOWvvOiIqiIsIndpZHRoIjozMzAsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi6KeS6Imy5LiO5LiW55WMIMK3IOaEn+WumOW3peWFtyDlhajpg6jlr7zoiKpcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5YWo5byAIiwid2lkdGgiOjQ0LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWFqOW8gFwiIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlhajlhbMiLCJ3aWR0aCI6NDQsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5YWo5YWzXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJjaGVja2JveCIsInRleHQiOiLni6znq4vpmIXor7vlt6XlhbciLCJ3aWR0aCI6MzA2LCJoZWlnaHQiOjcyLCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNoZWNrYm94IFwi54us56uL6ZiF6K+75bel5YW3XCIgW2NoZWNrZWRdIn1dfQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-bdea7cec35c3048d7b87",
+            "file": "async-touch-independent.spec.ts",
+            "line": 7,
+            "column": 3
+          },
+          {
+            "title": "independent async touch inventory /tavern",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 874,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:00.616Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "touch-inventory.json",
+                        "contentType": "application/json",
+                        "body": "eyJwYXRoIjoiL3RhdmVybiIsInZpZXdwb3J0Ijp7IndpZHRoIjozOTAsImhlaWdodCI6ODQ0fSwiaXRlbXMiOlt7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi6KeS6Imy5LiO5LiW55WMIMK3IOinkuiJsumFkummhuWFqOmDqOWvvOiIqiIsIndpZHRoIjozMzAsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi6KeS6Imy5LiO5LiW55WMIMK3IOinkuiJsumFkummhiDlhajpg6jlr7zoiKpcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLliLfmlrAiLCJ3aWR0aCI6MjQ5Ljg0Mzc1LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWIt+aWsFwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuW9kuahoyIsIndpZHRoIjoyNDkuODQzNzUsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5b2S5qGjXCIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5paw5bu66YWS6aaGIiwid2lkdGgiOjI0OS44NDM3NSwiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSBidXR0b24gXCLmlrDlu7rphZLppoZcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiJJbmRlcGVuZGVudCBDb3B5IFJvb21Db21wbGV0ZWQgQWN0b3IgwrcgRmFpbGVkIEFjdG9yIMK3IEJsb2NrZWQgQWN0b3IwIOadoea2iOaBryDCtyA4LzEyIDA4OjAwIiwid2lkdGgiOjM2OCwiaGVpZ2h0Ijo4MS41LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIkluZGVwZW5kZW50IENvcHkgUm9vbSBDb21wbGV0ZWQgQWN0b3IgwrcgRmFpbGVkIEFjdG9yIMK3IEJsb2NrZWQgQWN0b3IgMCDmnaHmtojmga8gwrcgOC8xMiAwODowMFwiIFtwcmVzc2VkXSJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0IjoiIiwid2lkdGgiOjM0MiwiaGVpZ2h0Ijo5NC4zNzUsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuS9oOeahOa2iOaBr1wiOlxuICAtIC9wbGFjZWhvbGRlcjog6L6T5YWl5raI5oGv44CCRW50ZXIg5Y+R6YCB77yMU2hpZnQgKyBFbnRlciDmjaLooYzjgIIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IlRFWFRBUkVBIiwidHlwZSI6InRleHRhcmVhIiwidGV4dCI6IiIsIndpZHRoIjozNDIsImhlaWdodCI6NTcuMTg3NSwiZGlzYWJsZWQiOmZhbHNlLCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0Ym94IFwi5LiL5LiA6L2u5byV5a+877yI5Y+v6YCJ77yM5LiN5Lya5pi+56S65Zyo5a+56K+d5Lit77yJXCI6XG4gIC0gL3BsYWNlaG9sZGVyOiDkvovlpoLvvJrorqnop5LoibLkupLnm7jlm57lupTvvIzkvYbkv53nlZnlkIToh6rnq4vlnLrjgIIifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi5Y+R6YCB5bm25Zue5bqUIiwid2lkdGgiOjE2NywiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOnRydWUsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuWPkemAgeW5tuWbnuW6lFwiIFtkaXNhYmxlZF0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi57un57ut6KeS6Imy5LqS5YqoIiwid2lkdGgiOjE2NywiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOnRydWUsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIue7p+e7reinkuiJsuS6kuWKqFwiIFtkaXNhYmxlZF0ifSx7InN0YXRlIjoiZGVmYXVsdCIsInRhZyI6IklOUFVUIiwidHlwZSI6ImNoZWNrYm94IiwidGV4dCI6IiIsIndpZHRoIjozNjgsImhlaWdodCI6NjksImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gY2hlY2tib3ggXCJDb21wbGV0ZWQgQWN0b3Ig5pys6L2u55uu5qCHXCIgW2NoZWNrZWRdIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJjaGVja2JveCIsInRleHQiOiIiLCJ3aWR0aCI6MzY4LCJoZWlnaHQiOjY5LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNoZWNrYm94IFwiRmFpbGVkIEFjdG9yIOWwsee7qlwiIn0seyJzdGF0ZSI6ImRlZmF1bHQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJjaGVja2JveCIsInRleHQiOiIiLCJ3aWR0aCI6MzY4LCJoZWlnaHQiOjY5LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNoZWNrYm94IFwiQmxvY2tlZCBBY3RvciDlsLHnu6pcIiJ9LHsic3RhdGUiOiJkZWZhdWx0IiwidGFnIjoiU1VNTUFSWSIsInRleHQiOiJSZWxpYWJpbGl0eSBEZXRhaWxz5Y+v6Z2g5oCn5pGY6KaB5b6F5oGi5aSNIDAiLCJ3aWR0aCI6MzY4LCJoZWlnaHQiOjY0LjUsImFjY2Vzc2liaWxpdHkiOiItIHRleHQ6IFJlbGlhYmlsaXR5IERldGFpbHNcbi0gc3Ryb25nOiDlj6/pnaDmgKfmkZjopoFcbi0gdGV4dDog5b6F5oGi5aSNIDAifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuinkuiJsuS4juS4lueVjCDCtyDop5LoibLphZLppoblhajpg6jlr7zoiKoiLCJ3aWR0aCI6MzMwLCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIuinkuiJsuS4juS4lueVjCDCtyDop5LoibLphZLppoYg5YWo6YOo5a+86IiqXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuWIt+aWsCIsIndpZHRoIjoyNDkuODQzNzUsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Yi35pawXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuW9kuahoyIsIndpZHRoIjoyNDkuODQzNzUsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5b2S5qGjXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IuaWsOW7uumFkummhiIsIndpZHRoIjoyNDkuODQzNzUsImhlaWdodCI6NDQsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5paw5bu66YWS6aaGXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJCVVRUT04iLCJ0eXBlIjoiYnV0dG9uIiwidGV4dCI6IkluZGVwZW5kZW50IENvcHkgUm9vbUNvbXBsZXRlZCBBY3RvciDCtyBGYWlsZWQgQWN0b3IgwrcgQmxvY2tlZCBBY3RvcjAg5p2h5raI5oGvIMK3IDgvMTIgMDg6MDAiLCJ3aWR0aCI6MzY4LCJoZWlnaHQiOjgxLjUsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwiSW5kZXBlbmRlbnQgQ29weSBSb29tIENvbXBsZXRlZCBBY3RvciDCtyBGYWlsZWQgQWN0b3IgwrcgQmxvY2tlZCBBY3RvciAwIOadoea2iOaBryDCtyA4LzEyIDA4OjAwXCIgW3ByZXNzZWRdIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiVEVYVEFSRUEiLCJ0eXBlIjoidGV4dGFyZWEiLCJ0ZXh0IjoiIiwid2lkdGgiOjM0MiwiaGVpZ2h0Ijo5NC4zNzUsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuS9oOeahOa2iOaBr1wiOlxuICAtIC9wbGFjZWhvbGRlcjog6L6T5YWl5raI5oGv44CCRW50ZXIg5Y+R6YCB77yMU2hpZnQgKyBFbnRlciDmjaLooYzjgIIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJURVhUQVJFQSIsInR5cGUiOiJ0ZXh0YXJlYSIsInRleHQiOiIiLCJ3aWR0aCI6MzQyLCJoZWlnaHQiOjU3LjE4NzUsImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gdGV4dGJveCBcIuS4i+S4gOi9ruW8leWvvO+8iOWPr+mAie+8jOS4jeS8muaYvuekuuWcqOWvueivneS4re+8iVwiOlxuICAtIC9wbGFjZWhvbGRlcjog5L6L5aaC77ya6K6p6KeS6Imy5LqS55u45Zue5bqU77yM5L2G5L+d55WZ5ZCE6Ieq56uL5Zy644CCIn0seyJzdGF0ZSI6ImV4cGFuZGVkIiwidGFnIjoiQlVUVE9OIiwidHlwZSI6ImJ1dHRvbiIsInRleHQiOiLlj5HpgIHlubblm57lupQiLCJ3aWR0aCI6MTY3LCJoZWlnaHQiOjQ0LCJkaXNhYmxlZCI6dHJ1ZSwiYWNjZXNzaWJpbGl0eSI6Ii0gYnV0dG9uIFwi5Y+R6YCB5bm25Zue5bqUXCIgW2Rpc2FibGVkXSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IkJVVFRPTiIsInR5cGUiOiJidXR0b24iLCJ0ZXh0Ijoi57un57ut6KeS6Imy5LqS5YqoIiwid2lkdGgiOjE2NywiaGVpZ2h0Ijo0NCwiZGlzYWJsZWQiOnRydWUsImFjY2Vzc2liaWxpdHkiOiItIGJ1dHRvbiBcIue7p+e7reinkuiJsuS6kuWKqFwiIFtkaXNhYmxlZF0ifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJjaGVja2JveCIsInRleHQiOiIiLCJ3aWR0aCI6MzY4LCJoZWlnaHQiOjY5LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNoZWNrYm94IFwiQ29tcGxldGVkIEFjdG9yIOacrOi9ruebruagh1wiIFtjaGVja2VkXSJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IklOUFVUIiwidHlwZSI6ImNoZWNrYm94IiwidGV4dCI6IiIsIndpZHRoIjozNjgsImhlaWdodCI6NjksImRpc2FibGVkIjpmYWxzZSwiYWNjZXNzaWJpbGl0eSI6Ii0gY2hlY2tib3ggXCJGYWlsZWQgQWN0b3Ig5bCx57uqXCIifSx7InN0YXRlIjoiZXhwYW5kZWQiLCJ0YWciOiJJTlBVVCIsInR5cGUiOiJjaGVja2JveCIsInRleHQiOiIiLCJ3aWR0aCI6MzY4LCJoZWlnaHQiOjY5LCJkaXNhYmxlZCI6ZmFsc2UsImFjY2Vzc2liaWxpdHkiOiItIGNoZWNrYm94IFwiQmxvY2tlZCBBY3RvciDlsLHnu6pcIiJ9LHsic3RhdGUiOiJleHBhbmRlZCIsInRhZyI6IlNVTU1BUlkiLCJ0ZXh0IjoiUmVsaWFiaWxpdHkgRGV0YWlsc+WPr+mdoOaAp+aRmOimgeW+heaBouWkjSAwIiwid2lkdGgiOjM2OCwiaGVpZ2h0Ijo2NC41LCJhY2Nlc3NpYmlsaXR5IjoiLSB0ZXh0OiBSZWxpYWJpbGl0eSBEZXRhaWxzXG4tIHN0cm9uZzog5Y+v6Z2g5oCn5pGY6KaBXG4tIHRleHQ6IOW+heaBouWkjSAwIn1dfQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-e2d618c6d64de7ba9144",
+            "file": "async-touch-independent.spec.ts",
+            "line": 7,
+            "column": 3
+          },
+          {
+            "title": "independent async persona success",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 207,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:01.494Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-58099e884ded0f317b5e",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async persona failure",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 224,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:01.704Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-e27cd50c917b0d729479",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async persona moved-focus",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 201,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:01.932Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-2d2a297f8fd0ad5e0f8d",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async persona residual-error",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 243,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:02.136Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-82d3b1d43209e981bc84",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async scene success",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 236,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:02.383Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-ee259f921df0026a79fd",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async scene failure",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 191,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:02.622Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-1b2e82ccf06cd36da537",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async scene moved-focus",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 208,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:02.817Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-538b68a7341ec2341acf",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async sensory success",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 213,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:03.028Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-39f1517091d1a00d0ff3",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async sensory failure",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 238,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:03.244Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-ce49a5b4f8e3c30a06cf",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async sensory moved-focus",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 163,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:03.486Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-b46acdaefccbdf6f69f5",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async tavern success",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 1054,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:03.653Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-ed58c5902e63ea42a6e0",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async tavern failure",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 309,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:04.713Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-4f43b51969d30d1c930b",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent async tavern moved-focus",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 284,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:05.027Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-d5c0b13dc0e7adc02fca",
+            "file": "async-touch-independent.spec.ts",
+            "line": 55,
+            "column": 2
+          },
+          {
+            "title": "independent background sensory failure preserves user focus",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 106,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:05.314Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-1ca88a75bd2bb9474b86",
+            "file": "async-touch-independent.spec.ts",
+            "line": 110,
+            "column": 2
+          },
+          {
+            "title": "independent background tavern failure preserves user focus",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 119,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:05.425Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "6cef588c52e899c7afab-776fd05a154661824c70",
+            "file": "async-touch-independent.spec.ts",
+            "line": 110,
+            "column": 2
+          }
+        ]
+      },
+      {
+        "title": "tavern-copy-independent.spec.ts",
+        "file": "tavern-copy-independent.spec.ts",
+        "column": 0,
+        "line": 0,
+        "specs": [
+          {
+            "title": "independent Tavern copy: partial has readable primary feedback and blocked is unexecuted",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 608,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:05.551Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "visible-copy.json",
+                        "contentType": "application/json",
+                        "body": "eyJzdGF0dXMiOiJwYXJ0aWFsIiwidmlzaWJsZVRleHQiOiJWaWJlIExlYXJuZXJcbuWtpuS5oFxu5a+86Iiq6aaW6aG1XG7orqHliJLnlJ/miJBcbueroOiKguWvueivnVxu6KeS6Imy5LiO5LiW55WMXG7lvZPliY1cbuinkuiJsumFkummhlxu5Lq65qC86Imy6LCxXG7lnLrmma/mkK3lu7pcbuaEn+WumOW3peWFt1xu57O757ufXG7nu5/kuIDorr7nva5cbueUqOmHj+WuoeiuoVxu5L2/55So5omL5YaMXG7mlLbotbdcblxuVEFWRVJOIFdPUktTUEFDRVxuXG5JbmRlcGVuZGVudCBDb3B5IFJvb21cblxu6YOo5YiG6KeS6Imy5bey5Zue5bqUIMK3IHJldmlzaW9uIDFcbuacrOWcsOaooeaLn1xuXG7liLfmlrBcbuW9kuaho1xu5paw5bu66YWS6aaGXG5cbumDqOWIhuinkuiJsuWbnuW6lOacquWujOaIkO+8m+W3suS/neWtmOeahOWbnuW6lOS4jeS8mumHjeWkjeeUn+aIkO+8jOWPr+WcqOS4i+aWueS7heaBouWkjeacquWujOaIkOinkuiJsuOAglxuXG5UQVZFUk4gU0VTU0lPTiBQQU5FTFxuXG7mnIDov5HphZLppoZcbjFcbkluZGVwZW5kZW50IENvcHkgUm9vbVxuQ29tcGxldGVkIEFjdG9yIMK3IEZhaWxlZCBBY3RvciDCtyBCbG9ja2VkIEFjdG9yXG4yIOadoea2iOaBryDCtyA4LzEyIDA4OjAwXG5cbuW3suaYvuekuuWFqOmDqOaIv+mXtFxuXG5JTlRFUkFDVElPTiBDT01QT1NFUlxuXG7lj5HotbfkupLliqhcblxu5pys6L2u5Zue5bqU77yaQ29tcGxldGVkIEFjdG9yIOKGkiBGYWlsZWQgQWN0b3Ig4oaSIEJsb2NrZWQgQWN0b3Jcblxu5LiK5qyh5aSa5Lq65LqS5Yqo6L+Y5pyJ6KeS6Imy5pyq5Zue5bqUXG5cbjEvMyDkvY3lt7Llm57lupTvvJtGYWlsZWQgQWN0b3LjgIFCbG9ja2VkIEFjdG9yIOWwmuacquWujOaIkOOAguW3suS/neWtmOeahOWbnuW6lOS4jeS8mumHjeWkjeeUn+aIkOOAglxuXG7ku4Xph43or5XmnKrlrozmiJDop5LoibJcbuS9oOeahOa2iOaBr1xu5LiL5LiA6L2u5byV5a+877yI5Y+v6YCJ77yM5LiN5Lya5pi+56S65Zyo5a+56K+d5Lit77yJXG7lj5HpgIHlubblm57lupRcbue7p+e7reinkuiJsuS6kuWKqFxuXG5QQVJUSUNJUEFOVCBST1NURVJcblxu6KeS6Imy5LiO55uu5qCHXG4zIOW3sumAiVxuQ1xuQ29tcGxldGVkIEFjdG9yXG7kuIrkuIDova7lt7Llm57lupRcbkZcbkZhaWxlZCBBY3Rvclxu5LiK5LiA6L2u5pyq5a6M5oiQXG5CXG5CbG9ja2VkIEFjdG9yXG7kuIrkuIDova7lsJrmnKrmiafooYxcblxu6YCJIDEg5L2N5Li65Y2V6IGK77yb6YCJIDLigJM0IOS9jeaXtu+8jOacjeWKoeWZqOaMieWQjeWGjOmhuuW6j+W8leWvvOiuqOiuuuOAglxuXG5SRUxJQUJJTElUWSBERVRBSUxTXG7lj6/pnaDmgKfmkZjopoFcbuW+heaBouWkjSAxXG5cblRBVkVSTiBDT05WRVJTQVRJT04gUEFORUxcblxu5a+56K+d6K6w5b2VXG4yLzJcblxu5pyA5paw5raI5oGv5bqP5Y+3IDJcblxu5bey5Yiw6L6+5a+56K+d6LW354K5XG5cbuS9oFxuIzEgwrcgOC8xMiAwODowMFxuQ29tcGxldGVkIEFjdG9yXG4jMiDCtyA4LzEyIDA4OjAwIiwiZGV0YWlscyI6IlJFTElBQklMSVRZIERFVEFJTFNcbuWPr+mdoOaAp+aRmOimgVxu5b6F5oGi5aSNIDFcblxu6L+Z6YeM5Y+q5pi+56S65Y+v6K+75oGi5aSN5pGY6KaB77yb5a6M5pW0IEhhcm5lc3MgdHJhY2Ug5Y+v5Zyo5YWo5bGA6LCD6K+V5bGC5p+l55yL44CCXG5cbumDqOWIhuinkuiJsuW3suWbnuW6lFxu5aSa5Lq65byV5a+8IMK3IDgvMTIgMDg6MDBcbkNvbXBsZXRlZCBBY3Rvclxu5bey5Zue5bqUXG5GYWlsZWQgQWN0b3JcbuWbnuW6lOacquWujOaIkFxuQmxvY2tlZCBBY3Rvclxu5Zug5YmN5bqP5Zue5bqU5pyq5a6M5oiQ6ICM5pqC5pyq5omn6KGMXG7ku4Xph43or5XmnKrlrozmiJDop5LoibIifQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "0cd2c81c6f8baf18f3f4-498fe554ebb8be42f757",
+            "file": "tavern-copy-independent.spec.ts",
+            "line": 6,
+            "column": 3
+          },
+          {
+            "title": "independent Tavern copy: failed has readable primary feedback and blocked is unexecuted",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 339,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:06.163Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "visible-copy.json",
+                        "contentType": "application/json",
+                        "body": "eyJzdGF0dXMiOiJmYWlsZWQiLCJ2aXNpYmxlVGV4dCI6IlZpYmUgTGVhcm5lclxu5a2m5LmgXG7lr7zoiKrpppbpobVcbuiuoeWIkueUn+aIkFxu56ug6IqC5a+56K+dXG7op5LoibLkuI7kuJbnlYxcbuW9k+WJjVxu6KeS6Imy6YWS6aaGXG7kurrmoLzoibLosLFcbuWcuuaZr+aQreW7ulxu5oSf5a6Y5bel5YW3XG7ns7vnu59cbue7n+S4gOiuvue9rlxu55So6YeP5a6h6K6hXG7kvb/nlKjmiYvlhoxcbuaUtui1t1xuXG5UQVZFUk4gV09SS1NQQUNFXG5cbkluZGVwZW5kZW50IENvcHkgUm9vbVxuXG7mnKzova7mnKrlrozmiJAgwrcgcmV2aXNpb24gMVxu5pys5Zyw5qih5oufXG5cbuWIt+aWsFxu5b2S5qGjXG7mlrDlu7rphZLppoZcblxu5pys6L2u6KeS6Imy5Zue5bqU5pyq5a6M5oiQ77yb5Y+v5LuO5oGi5aSN5YWl5Y+j57un57ut5bCa5pyq5a6M5oiQ55qE6KeS6Imy44CCXG5cblRBVkVSTiBTRVNTSU9OIFBBTkVMXG5cbuacgOi/kemFkummhlxuMVxuSW5kZXBlbmRlbnQgQ29weSBSb29tXG5Db21wbGV0ZWQgQWN0b3IgwrcgRmFpbGVkIEFjdG9yIMK3IEJsb2NrZWQgQWN0b3JcbjEg5p2h5raI5oGvIMK3IDgvMTIgMDg6MDBcblxu5bey5pi+56S65YWo6YOo5oi/6Ze0XG5cbklOVEVSQUNUSU9OIENPTVBPU0VSXG5cbuWPkei1t+S6kuWKqFxuXG7mnKzova7lm57lupTvvJpDb21wbGV0ZWQgQWN0b3Ig4oaSIEZhaWxlZCBBY3RvciDihpIgQmxvY2tlZCBBY3RvclxuXG7kuIrmrKHlpJrkurrkupLliqjov5jmnInop5LoibLmnKrlm57lupRcblxuMC8zIOS9jeW3suWbnuW6lO+8m0NvbXBsZXRlZCBBY3RvcuOAgUZhaWxlZCBBY3RvcuOAgUJsb2NrZWQgQWN0b3Ig5bCa5pyq5a6M5oiQ44CC5bey5L+d5a2Y55qE5Zue5bqU5LiN5Lya6YeN5aSN55Sf5oiQ44CCXG5cbuS7hemHjeivleacquWujOaIkOinkuiJslxu5L2g55qE5raI5oGvXG7kuIvkuIDova7lvJXlr7zvvIjlj6/pgInvvIzkuI3kvJrmmL7npLrlnKjlr7nor53kuK3vvIlcbuWPkemAgeW5tuWbnuW6lFxu57un57ut6KeS6Imy5LqS5YqoXG5cblBBUlRJQ0lQQU5UIFJPU1RFUlxuXG7op5LoibLkuI7nm67moIdcbjMg5bey6YCJXG5DXG5Db21wbGV0ZWQgQWN0b3JcbuS4iuS4gOi9ruacquWujOaIkFxuRlxuRmFpbGVkIEFjdG9yXG7kuIrkuIDova7lsJrmnKrmiafooYxcbkJcbkJsb2NrZWQgQWN0b3JcbuS4iuS4gOi9ruWwmuacquaJp+ihjFxuXG7pgIkgMSDkvY3kuLrljZXogYrvvJvpgIkgMuKAkzQg5L2N5pe277yM5pyN5Yqh5Zmo5oyJ5ZCN5YaM6aG65bqP5byV5a+86K6o6K6644CCXG5cblJFTElBQklMSVRZIERFVEFJTFNcbuWPr+mdoOaAp+aRmOimgVxu5b6F5oGi5aSNIDFcblxuVEFWRVJOIENPTlZFUlNBVElPTiBQQU5FTFxuXG7lr7nor53orrDlvZVcbjEvMVxuXG7mnIDmlrDmtojmga/luo/lj7cgMVxuXG7lt7LliLDovr7lr7nor53otbfngrlcblxu5L2gXG4jMSDCtyA4LzEyIDA4OjAwIiwiZGV0YWlscyI6IlJFTElBQklMSVRZIERFVEFJTFNcbuWPr+mdoOaAp+aRmOimgVxu5b6F5oGi5aSNIDFcblxu6L+Z6YeM5Y+q5pi+56S65Y+v6K+75oGi5aSN5pGY6KaB77yb5a6M5pW0IEhhcm5lc3MgdHJhY2Ug5Y+v5Zyo5YWo5bGA6LCD6K+V5bGC5p+l55yL44CCXG5cbuacrOi9ruacquWujOaIkFxu5aSa5Lq65byV5a+8IMK3IDgvMTIgMDg6MDBcbkNvbXBsZXRlZCBBY3Rvclxu5Zue5bqU5pyq5a6M5oiQXG5GYWlsZWQgQWN0b3JcbuWboOWJjeW6j+WbnuW6lOacquWujOaIkOiAjOaaguacquaJp+ihjFxuQmxvY2tlZCBBY3Rvclxu5Zug5YmN5bqP5Zue5bqU5pyq5a6M5oiQ6ICM5pqC5pyq5omn6KGMXG7ku4Xph43or5XmnKrlrozmiJDop5LoibIifQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "0cd2c81c6f8baf18f3f4-78ef6afd0c14f2a1237b",
+            "file": "tavern-copy-independent.spec.ts",
+            "line": 6,
+            "column": 3
+          },
+          {
+            "title": "independent Tavern copy: archived room explicitly stays read-only",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 122,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:06.508Z",
+                    "annotations": [],
+                    "attachments": []
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "0cd2c81c6f8baf18f3f4-635d2d2e1c89b3c771b2",
+            "file": "tavern-copy-independent.spec.ts",
+            "line": 29,
+            "column": 1
+          },
+          {
+            "title": "independent Tavern copy: retry error tavern_retry_context_changed stays readable without raw leakage",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 1134,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:06.633Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "retry-visible-copy.json",
+                        "contentType": "application/json",
+                        "body": "eyJjb2RlIjoidGF2ZXJuX3JldHJ5X2NvbnRleHRfY2hhbmdlZCIsInZpc2libGVUZXh0IjoiVmliZSBMZWFybmVyXG7lrabkuaBcbuWvvOiIqummlumhtVxu6K6h5YiS55Sf5oiQXG7nq6DoioLlr7nor51cbuinkuiJsuS4juS4lueVjFxu5b2T5YmNXG7op5LoibLphZLppoZcbuS6uuagvOiJsuiwsVxu5Zy65pmv5pCt5bu6XG7mhJ/lrpjlt6Xlhbdcbuezu+e7n1xu57uf5LiA6K6+572uXG7nlKjph4/lrqHorqFcbuS9v+eUqOaJi+WGjFxu5pS26LW3XG5cblRBVkVSTiBXT1JLU1BBQ0VcblxuSW5kZXBlbmRlbnQgQ29weSBSb29tXG5cbuW3suWQjOatpSDCtyDpg6jliIbop5LoibLlt7Llm57lupQgwrcgcmV2aXNpb24gMVxu5pys5Zyw5qih5oufXG5cbuWIt+aWsFxu5b2S5qGjXG7mlrDlu7rphZLppoZcblxu5oi/6Ze05YaF5a655oiW6KeS6Imy6K6+5a6a5bey5Y+Y5YyW77yM5LiN6IO957un57ut5pen5oGi5aSN5Lu75Yqh44CCXG5cblRBVkVSTiBTRVNTSU9OIFBBTkVMXG5cbuacgOi/kemFkummhlxuMVxuSW5kZXBlbmRlbnQgQ29weSBSb29tXG5Db21wbGV0ZWQgQWN0b3IgwrcgRmFpbGVkIEFjdG9yIMK3IEJsb2NrZWQgQWN0b3JcbjIg5p2h5raI5oGvIMK3IDgvMTIgMDg6MDBcblxu5bey5pi+56S65YWo6YOo5oi/6Ze0XG5cbklOVEVSQUNUSU9OIENPTVBPU0VSXG5cbuWPkei1t+S6kuWKqFxuXG7mnKzova7lm57lupTvvJpDb21wbGV0ZWQgQWN0b3Ig4oaSIEZhaWxlZCBBY3RvciDihpIgQmxvY2tlZCBBY3RvclxuXG7kuIrmrKHlpJrkurrkupLliqjov5jmnInop5LoibLmnKrlm57lupRcblxuMS8zIOS9jeW3suWbnuW6lO+8m0ZhaWxlZCBBY3RvcuOAgUJsb2NrZWQgQWN0b3Ig5bCa5pyq5a6M5oiQ44CC5bey5L+d5a2Y55qE5Zue5bqU5LiN5Lya6YeN5aSN55Sf5oiQ44CCXG5cbuS7hemHjeivleacquWujOaIkOinkuiJslxu5L2g55qE5raI5oGvXG7kuIvkuIDova7lvJXlr7zvvIjlj6/pgInvvIzkuI3kvJrmmL7npLrlnKjlr7nor53kuK3vvIlcbuWPkemAgeW5tuWbnuW6lFxu57un57ut6KeS6Imy5LqS5YqoXG5cblBBUlRJQ0lQQU5UIFJPU1RFUlxuXG7op5LoibLkuI7nm67moIdcbjMg5bey6YCJXG5DXG5Db21wbGV0ZWQgQWN0b3JcbuS4iuS4gOi9ruW3suWbnuW6lFxuRlxuRmFpbGVkIEFjdG9yXG7kuIrkuIDova7mnKrlrozmiJBcbkJcbkJsb2NrZWQgQWN0b3JcbuS4iuS4gOi9ruWwmuacquaJp+ihjFxuXG7pgIkgMSDkvY3kuLrljZXogYrvvJvpgIkgMuKAkzQg5L2N5pe277yM5pyN5Yqh5Zmo5oyJ5ZCN5YaM6aG65bqP5byV5a+86K6o6K6644CCXG5cblJFTElBQklMSVRZIERFVEFJTFNcbuWPr+mdoOaAp+aRmOimgVxu5b6F5oGi5aSNIDFcblxuVEFWRVJOIENPTlZFUlNBVElPTiBQQU5FTFxuXG7lr7nor53orrDlvZVcbjIvMlxuXG7mnIDmlrDmtojmga/luo/lj7cgMlxuXG7lt7LliLDovr7lr7nor53otbfngrlcblxu5L2gXG4jMSDCtyA4LzEyIDA4OjAwXG5cbkluZGVwZW5kZW50IHJvdW5kXG5cbkNvbXBsZXRlZCBBY3RvclxuIzIgwrcgOC8xMiAwODowMFxuXG5Db21taXR0ZWQgYWN0b3IgcmVwbHkifQ=="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "0cd2c81c6f8baf18f3f4-a01ecbfec61dd73a5257",
+            "file": "tavern-copy-independent.spec.ts",
+            "line": 40,
+            "column": 3
+          },
+          {
+            "title": "independent Tavern copy: retry error UNKNOWN_INDEPENDENT_PRIVATE_CODE stays readable without raw leakage",
+            "ok": true,
+            "tags": [],
+            "tests": [
+              {
+                "timeout": 30000,
+                "annotations": [],
+                "expectedStatus": "passed",
+                "projectId": "",
+                "projectName": "",
+                "results": [
+                  {
+                    "workerIndex": 0,
+                    "parallelIndex": 0,
+                    "status": "passed",
+                    "duration": 1129,
+                    "errors": [],
+                    "stdout": [],
+                    "stderr": [],
+                    "retry": 0,
+                    "startTime": "2026-09-11T16:24:07.771Z",
+                    "annotations": [],
+                    "attachments": [
+                      {
+                        "name": "retry-visible-copy.json",
+                        "contentType": "application/json",
+                        "body": "eyJjb2RlIjoiVU5LTk9XTl9JTkRFUEVOREVOVF9QUklWQVRFX0NPREUiLCJ2aXNpYmxlVGV4dCI6IlZpYmUgTGVhcm5lclxu5a2m5LmgXG7lr7zoiKrpppbpobVcbuiuoeWIkueUn+aIkFxu56ug6IqC5a+56K+dXG7op5LoibLkuI7kuJbnlYxcbuW9k+WJjVxu6KeS6Imy6YWS6aaGXG7kurrmoLzoibLosLFcbuWcuuaZr+aQreW7ulxu5oSf5a6Y5bel5YW3XG7ns7vnu59cbue7n+S4gOiuvue9rlxu55So6YeP5a6h6K6hXG7kvb/nlKjmiYvlhoxcbuaUtui1t1xuXG5UQVZFUk4gV09SS1NQQUNFXG5cbkluZGVwZW5kZW50IENvcHkgUm9vbVxuXG7lt7LlkIzmraUgwrcg6YOo5YiG6KeS6Imy5bey5Zue5bqUIMK3IHJldmlzaW9uIDFcbuacrOWcsOaooeaLn1xuXG7liLfmlrBcbuW9kuaho1xu5paw5bu66YWS6aaGXG5cbumHjeivleacquWujOaVtOi/lOWbnu+8m+W3sumHjeaWsOWQjOatpeW3suS/neWtmOeahOe7k+aenOOAglxuXG5UQVZFUk4gU0VTU0lPTiBQQU5FTFxuXG7mnIDov5HphZLppoZcbjFcbkluZGVwZW5kZW50IENvcHkgUm9vbVxuQ29tcGxldGVkIEFjdG9yIMK3IEZhaWxlZCBBY3RvciDCtyBCbG9ja2VkIEFjdG9yXG4yIOadoea2iOaBryDCtyA4LzEyIDA4OjAwXG5cbuW3suaYvuekuuWFqOmDqOaIv+mXtFxuXG5JTlRFUkFDVElPTiBDT01QT1NFUlxuXG7lj5HotbfkupLliqhcblxu5pys6L2u5Zue5bqU77yaQ29tcGxldGVkIEFjdG9yIOKGkiBGYWlsZWQgQWN0b3Ig4oaSIEJsb2NrZWQgQWN0b3Jcblxu5LiK5qyh5aSa5Lq65LqS5Yqo6L+Y5pyJ6KeS6Imy5pyq5Zue5bqUXG5cbjEvMyDkvY3lt7Llm57lupTvvJtGYWlsZWQgQWN0b3LjgIFCbG9ja2VkIEFjdG9yIOWwmuacquWujOaIkOOAguW3suS/neWtmOeahOWbnuW6lOS4jeS8mumHjeWkjeeUn+aIkOOAglxuXG7ku4Xph43or5XmnKrlrozmiJDop5LoibJcbuS9oOeahOa2iOaBr1xu5LiL5LiA6L2u5byV5a+877yI5Y+v6YCJ77yM5LiN5Lya5pi+56S65Zyo5a+56K+d5Lit77yJXG7lj5HpgIHlubblm57lupRcbue7p+e7reinkuiJsuS6kuWKqFxuXG5QQVJUSUNJUEFOVCBST1NURVJcblxu6KeS6Imy5LiO55uu5qCHXG4zIOW3sumAiVxuQ1xuQ29tcGxldGVkIEFjdG9yXG7kuIrkuIDova7lt7Llm57lupRcbkZcbkZhaWxlZCBBY3Rvclxu5LiK5LiA6L2u5pyq5a6M5oiQXG5CXG5CbG9ja2VkIEFjdG9yXG7kuIrkuIDova7lsJrmnKrmiafooYxcblxu6YCJIDEg5L2N5Li65Y2V6IGK77yb6YCJIDLigJM0IOS9jeaXtu+8jOacjeWKoeWZqOaMieWQjeWGjOmhuuW6j+W8leWvvOiuqOiuuuOAglxuXG5SRUxJQUJJTElUWSBERVRBSUxTXG7lj6/pnaDmgKfmkZjopoFcbuW+heaBouWkjSAxXG5cblRBVkVSTiBDT05WRVJTQVRJT04gUEFORUxcblxu5a+56K+d6K6w5b2VXG4yLzJcblxu5pyA5paw5raI5oGv5bqP5Y+3IDJcblxu5bey5Yiw6L6+5a+56K+d6LW354K5XG5cbuS9oFxuIzEgwrcgOC8xMiAwODowMFxuXG5JbmRlcGVuZGVudCByb3VuZFxuXG5Db21wbGV0ZWQgQWN0b3JcbiMyIMK3IDgvMTIgMDg6MDBcblxuQ29tbWl0dGVkIGFjdG9yIHJlcGx5In0="
+                      }
+                    ]
+                  }
+                ],
+                "status": "expected"
+              }
+            ],
+            "id": "0cd2c81c6f8baf18f3f4-cfb215c57dd254d50735",
+            "file": "tavern-copy-independent.spec.ts",
+            "line": 40,
+            "column": 3
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "stats": {
+      "startTime": "2026-09-11T16:23:56.541Z",
+      "duration": 12413.929,
+      "expected": 24,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  }
+}
