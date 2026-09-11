@@ -40,6 +40,7 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "follow_up_deliver": "请使用工具安排10秒后续接一次对话，提醒我核对教材里的2x+3=11。届时先问我是否已经求出x，不要假设我做过题，也不要另换方程。现在只用一句话说明安排状态，不出题、不重复安排。",
     "follow_up_cancel": "请使用工具安排60秒后续接一次当前学习对话，届时提醒我用代入法核对方程答案。不要现在出题，也不要重复安排。最后用一句话说明安排状态，不要承诺关闭页面后仍一定能触发。",
     "plan_title_confirmation": "请先读取当前学习计划，把课程标题改为‘方程求解与代入检验’，通过工具提出待确认提案，等我确认后再生效。最后用一句话明确说明现在仍待确认，不改学习进度，不出题。",
     "plan_progress_confirmation": "请先读取当前学习计划进度，只把第一项‘等式变形练习’提出为已完成，第二项‘代入检验练习’保持未开始。通过工具提出待确认提案，等我确认后再生效；最后用两条Markdown无序列表分别说明两项当前状态，不出题。",
@@ -371,6 +372,36 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 t["status"] in {"passed", "repaired"} and t["commit_evidence"]["status"] == "committed"
                                 for t in row["terminal_traces"]
                             ) and len(row["terminal_traces"]) == len(executions)
+                            if case_id == "follow_up_deliver" and receipt.result:
+                                pending = receipt.result.session.pending_follow_ups
+                                row["delivery"] = {"scope": "Backend API after due_at; browser timer is not exercised.", "scheduled_count": len(pending)}
+                                if len(pending) == 1:
+                                    follow_up = pending[0]
+                                    delay = max(0, (datetime.fromisoformat(follow_up.due_at.replace("Z", "+00:00")) - datetime.now().astimezone()).total_seconds())
+                                    row["delivery"]["wait_seconds"] = delay
+                                    if delay <= 60:
+                                        time.sleep(delay)
+                                        start_call = len(calls)
+                                        delivery_payload = {"client_request_id": f"delivery-{repetition}",
+                                            "expected_session_revision": receipt.result.session.revision,
+                                            "message_kind": "scheduled_follow_up", "follow_up_id": follow_up.id,
+                                            "message": follow_up.hidden_message}
+                                        delivered = client.post(f"/study-sessions/{initial.id}/chat", json=delivery_payload)
+                                        row["delivery"]["http_status"] = delivered.status_code
+                                        row["delivery"]["calls"] = calls[start_call:]
+                                        del calls[start_call:]
+                                        if delivered.status_code == 200:
+                                            delivered_receipt = StudyChatOperationReceiptResponse.model_validate(delivered.json())
+                                            row["delivery"]["receipt"] = delivered_receipt.model_dump(mode="json")
+                                            dbinding = app.state.container.study_chat_operation_repository.require_harness_operation(delivered_receipt.operation_id)
+                                            row["delivery"]["harness_operation_id"] = dbinding.harness_operation_id
+                                            dexecutions = runtime.list_operation_traces(dbinding.harness_operation_id)
+                                            row["delivery"]["terminal_traces"] = [e.terminal_trace.model_dump(mode="json") for e in dexecutions if e.terminal_trace]
+                                            replay = client.post(f"/study-sessions/{initial.id}/chat", json=delivery_payload)
+                                            after = client.get(f"/study-sessions/{initial.id}")
+                                            row["delivery"]["replay_equal"] = replay.status_code == 200 and replay.json() == delivered.json()
+                                            row["delivery"]["replay_provider_calls"] = len(calls) - start_call
+                                            row["delivery"]["readback_equal"] = bool(delivered_receipt.result) and after.status_code == 200 and after.json() == delivered_receipt.result.session.model_dump(mode="json")
                             if case_id == "follow_up_cancel" and receipt.result:
                                 cancelled = client.post(f"/study-sessions/{initial.id}/follow-ups/cancel")
                                 final_session = client.get(f"/study-sessions/{initial.id}")

@@ -1,0 +1,55 @@
+{
+  "scope": "due-time backend delivery with original model-generated hidden message",
+  "limitations": [
+    "Real clock wait then API invocation; no browser timer or closed-page behavior tested.",
+    "User request explicitly specifies equation and asks not to assume prior work; not a production prompt change or controlled comparison to vague requests.",
+    "Developer review, not independent general grounding certification."
+  ],
+  "rows": [
+    {
+      "schedule_operation_id": "harness-operation-e13554833e1f4d53abffdb82c6b94f57",
+      "delivery_operation_id": "harness-operation-e190ba90bad9422a8a55c147fc478dec",
+      "repetition": 0,
+      "schedule_boundary_success": true,
+      "wait_seconds": 9.975677,
+      "delivery_committed": true,
+      "delivery_trace_committed": true,
+      "exactly_one_completed_follow_up": true,
+      "readback_equal": true,
+      "replay_equal": true,
+      "replay_provider_calls": 0,
+      "reply": "小林，关于教材里 $2x + 3 = 11$ 这道例题，你现在求出 $x$ 了吗？",
+      "interactive_question": false
+    },
+    {
+      "schedule_operation_id": "harness-operation-b2646e1d405b4fd89815b7db4a2df57a",
+      "delivery_operation_id": "harness-operation-ff0c80a8105a450ab760ae10aafa3c7a",
+      "repetition": 1,
+      "schedule_boundary_success": true,
+      "wait_seconds": 9.979253,
+      "delivery_committed": true,
+      "delivery_trace_committed": true,
+      "exactly_one_completed_follow_up": true,
+      "readback_equal": true,
+      "replay_equal": true,
+      "replay_provider_calls": 0,
+      "reply": "小林，关于教材里那道例题 2x + 3 = 11，你现在求出 x 了吗？",
+      "interactive_question": false
+    },
+    {
+      "schedule_operation_id": "harness-operation-c6cc8f0afa2942a08bbb132cb96c0181",
+      "delivery_operation_id": "harness-operation-da8170c59d644ed6b549488ca0e49002",
+      "repetition": 2,
+      "schedule_boundary_success": true,
+      "wait_seconds": 9.979756,
+      "delivery_committed": true,
+      "delivery_trace_committed": true,
+      "exactly_one_completed_follow_up": true,
+      "readback_equal": true,
+      "replay_equal": true,
+      "replay_provider_calls": 0,
+      "reply": "小林，关于教材里 $2x + 3 = 11$ 这道例题，你现在求出 $x$ 了吗？说说你是怎么做的，或者卡在哪一步，我们一起看。",
+      "interactive_question": false
+    }
+  ]
+}

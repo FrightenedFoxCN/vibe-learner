@@ -420,3 +420,9 @@ Study成功工具加领域提交覆盖增至29/31，仍缺retrieve_memory_contex
 [逐条格式与链接检查](evidence/minimax-tavern-domain-review-v1.json)九条均恰好两个无序列表行。人格差异在本fixture中可见：顾言先核时间/预算，林岚侧重光线和街景；两人仍共享测试helper的Socratic slot与grounded system prompt，不把本结果当作人格泛化认证。事实/约束质量仍有问题：最后一轮顾言建议单程一小时、休息二十分钟、原路返回，合计至少140分钟，超出用户120分钟限制；林岚未指出超时，并在未知城市下给出“河道西段、四点侧光”等缺少场地依据的细节。因此格式与身份通过不等于行程可行。
 
 [三例取消后迟到投递](evidence/minimax-study-follow-up-late-v2.jsonl)先真实安排60秒续接、取消，再模拟客户端发送scheduled_follow_up。三例均没有provider调用、Session保持不变；HTTP200返回的是not_committed操作回执，持久化错误为study_chat_not_committed_follow_up_not_pending。回执通过重开服务后的只读查询再次确认，未重放失败操作。这里只验证后端取消保护，正常到期的客户端计时与续接内容尚需继续测试。
+
+## 轮次 36：正常到期续接的独立准入与内容核对
+
+[三组安排→到期投递](evidence/minimax-study-follow-up-delivery-v1.jsonl)共包含六次真实Study操作：先让M3安排10秒续接，实际等待记录的due_at，再原样投递生成的hidden_message。安排与投递分别记录操作身份、provider调用和v3 trace；投递调用没有混入安排操作的调用计数。[读回检查](evidence/minimax-study-follow-up-delivery-review-v1.json)三例均提交，恰好一条续接由pending转为completed，无新续接或互动题；同一投递请求重放均返回相同回执，没有再次调用模型。
+
+这次用户请求明确指定教材方程2x+3=11，要求先询问是否求出x、不假设已经做题。三例最终回复都先询问该方程的求解状态，没有另换方程、提前给答案或声称用户已经完成。它说明本批明确约束被传递到了实际回复，不证明默认模糊续接请求的幻觉已修复；生产提示未修改，也没有将本批与之前不同请求直接解释为因果对照。测试通过真实时间等待后调用后端API，尚未覆盖浏览器计时器或关闭页面行为。
