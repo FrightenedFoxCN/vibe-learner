@@ -1,0 +1,52 @@
+{
+  "scope": "Maintainer six-query reuse cost and correctness review",
+  "limitations": [
+    "First 12 requests omitted field meanings, making address ambiguous; retain as probe-design failure, not memory quality score.",
+    "Repaired experiment reuses one previously successful synthetic state chain, creating selection bias.",
+    "One source and six follow-up queries, no cold/warm cache control or provider billing estimate.",
+    "Summary costs come from the actual prior run and are charged once; answer requests are new, with different server/cache conditions.",
+    "No domain admission or production compactor adoption."
+  ],
+  "metrics": {
+    "full": {
+      "requests": 6,
+      "semantic_pass": 6,
+      "strict_json": 6,
+      "answer_prompt_tokens": 107822,
+      "summary_prompt_tokens": 0,
+      "elapsed_ms_answers": 22085,
+      "summary_elapsed_ms": 0,
+      "reported_cached_tokens": [
+        128,
+        128,
+        128,
+        17792,
+        17972,
+        17970
+      ],
+      "cache_unknown_requests": 0,
+      "total_prompt_tokens": 107822,
+      "total_elapsed_ms": 22085
+    },
+    "memory": {
+      "requests": 6,
+      "semantic_pass": 6,
+      "strict_json": 6,
+      "answer_prompt_tokens": 3218,
+      "summary_prompt_tokens": 20402,
+      "elapsed_ms_answers": 48306,
+      "summary_elapsed_ms": 18773,
+      "reported_cached_tokens": [
+        null,
+        256,
+        256,
+        384,
+        384,
+        384
+      ],
+      "cache_unknown_requests": 1,
+      "total_prompt_tokens": 23620,
+      "total_elapsed_ms": 67079
+    }
+  }
+}

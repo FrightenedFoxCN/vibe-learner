@@ -640,3 +640,11 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [保持撤销18次调用](evidence/minimax-memory-status-v4.jsonl)和[第四轮启用新暗号22次调用](evidence/minimax-memory-renewal-v5.jsonl)全部严格JSON与schema通过。[字段及成本审查](evidence/minimax-memory-state-semantics-review-v5.json)12个最终回答的地点、暗号值、状态、新称呼与平等同行关系均正确；“平等同行（非师生）”按等价语义计入。结构化链保留值来源u1、撤销来源u2，启用新暗号后两者都改为u4，没有固守旧撤销状态。
 
 本批每条件仅两条合成链，且同时修改状态说明与来源结构，不能独立归因或宣称泛化。preference仍把语言、称呼、关系合并成一个值，单个来源对无法完整表达每个子事实的不同出处；后续需要原子事实粒度。摘要创建输入量与延迟均计入成本，缓存按provider原报告保留，不声称稳定缓存收益。探针通过Python编译和schema/四阶段fixture检查；无生产Harness采用声明。
+
+## 轮次 59：六次摘要复用减少输入量，但没有降低延迟
+
+新增`minimax_memory_reuse_probe.py`，复用轮次58已成功的四轮结构化摘要，不重新生成摘要；交错比较同一合成长历史和该摘要的六个后续问法。将此前实际四次摘要生成成本只计一次。首批[12次请求](evidence/minimax-memory-reuse-ambiguous-v1.jsonl)漏掉address等字段的中文释义，模型多次把address理解为地址；这是探针指令歧义，不归为压缩丢失。保留原始失败并恢复字段含义，明确address为用户称呼。
+
+[修复后12次请求](evidence/minimax-memory-reuse-explicit-v2.jsonl)两组各6/6严格JSON、字段语义通过。[完整成本核算](evidence/minimax-memory-reuse-review-v2.json)完整历史输入107822 token，摘要复用回答3218加四次摘要生成20402，共23620，约少78.1%。然而完整历史累计22085ms，摘要回答48306加摘要生成18773，共67079ms；本批总时延约3倍，不能说压缩更快。
+
+完整历史后3次实际报告缓存17792、17972、17970 token，前3次仅128；摘要组一例cache usage缺失，其余为256或384。缺失不补零，不把总输入减少当作同等比例计费降低。缓存未控制冷暖、模型延迟有波动，摘要还选自一个已成功链，因此只报告这次观测，不宣称稳定收益或泛化。本轮没有生产压缩器采用；后续需要在领域任务中验证复用频率、成本和质量，不能仅凭摘要更短上线。
