@@ -1,0 +1,25 @@
+{
+  "scope": "Maintainer source check for real one-page scanned excerpt",
+  "original_physical_page": 21,
+  "excerpt_physical_page": 1,
+  "native_text_chars": 0,
+  "ocr_character_count": 2025,
+  "ocr_han_characters": 0,
+  "ocr_exact_phrase_presence": {
+    "Private Lives": false,
+    "Romeo": false,
+    "Copperfield": false,
+    "particle": true,
+    "biscuit box": true,
+    "lint white": true
+  },
+  "visual_findings": [
+    "The Chinese dialogue at the lower left continues at the upper right; the page does not present two alternative Chinese translations.",
+    "Page footnote 1 concerns particle, not biscuit box.",
+    "A play title, its act number, and examples from Romeo and Juliet or David Copperfield are not supplied on this page."
+  ],
+  "limitations": [
+    "Presence checks use OCR output and do not replace source-image review.",
+    "Book body and page image omitted from repository evidence."
+  ]
+}

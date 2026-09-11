@@ -508,3 +508,13 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 此前OnnxtrOcrEngine在成功、失败、不可用时都标language_hint=multilingual，DocumentParser又无视engine结果固定写ocr_language=multilingual。修复不再凭空声明语言：ONNXTR无语言检测时保持null，Parser仅汇总引擎明确提供的语言提示；多个不同提示才写multilingual。API字段保持原有nullable string，未改变识别模型或宣称新增中文OCR能力。
 
 两项新增测试在旧实现失败，覆盖不可用引擎不声明语言、Parser保留未知或明确fr提示。定向5项、完整后端813项通过。中文字符仍未识别，这是尚未解决的实质能力缺口；下一步用该实际扫描页比较OCR文字与OCR文字加原生图片对规划内容的影响，并审查人格关联，而不是把诊断修复当作OCR质量通过。
+
+## 轮次 46：扫描页规划的主动图片获取与版面误读
+
+[四例真实Planning](evidence/minimax-babel-agentic-image-v1.jsonl)使用原书物理第21页复制成的一页PDF，OCR默认配置不变，切换证据核对型导师与探索阅读同行。目标为本页30分钟阅读。[审查标准](evidence/minimax-babel-review-criteria-v1.json)覆盖来源、时间、页码、人格活动与实际图片接收；[源页核对](evidence/minimax-babel-source-review-v1.json)确认中文译文从左下续接右上，脚注1解释particle，而非biscuit box。
+
+两例名义文字组都主动调用read_page_range_images，后续实际收到图片；加图组也有一例再次调用页图。因此四例都有图片，这说明模型在OCR不足时会主动补视觉证据，但不能算图片开关的有效对照。各组重新解析还会使Study Unit清理结果变化，后续需要固定处理后的文档上下文。
+
+[逐条复核](evidence/minimax-babel-agentic-image-review-v1.json)4/4提交，结构页锚点均为上传片段物理第1页。人格活动差异可见：导师侧重引文/译注核对，同行偏比较与讨论。两例明确分配的分钟合计30，另两例只声明30分钟、分配不完整。事实质量均有问题：一例把左右连续译文分成“译文A/译文B”并安排不存在的版本对照；另一例加入本页没有的《罗密欧与朱丽叶》《大卫·科波菲尔》例子；还有剧名/幕数扩写及脚注错配。即使某些外部剧名常识可能正确，也不满足“只依据本页”的要求。
+
+探针新增可选物理页、文本阅读人格、双方同样移除页图工具的证据控制，以及原图加同分辨率左右裁剪候选。另准备复用已处理文档并在内存比较去掉人格后的初始上下文，不保存原文或以裸摘要代替受保护证据。候选均为实验注入，不是生产工具或prompt采用；后续结果单独记录。

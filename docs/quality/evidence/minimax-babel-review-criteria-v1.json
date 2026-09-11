@@ -1,0 +1,28 @@
+{
+  "scope": "Pre-review criteria for one-page Babel Planning comparison",
+  "source": {
+    "book": "巴别塔之后 语言及翻译面面观",
+    "original_physical_page": 21,
+    "excerpt_physical_page": 1,
+    "printed_spread_pages": [
+      20,
+      21
+    ],
+    "native_text_chars": 0,
+    "source_visual_review": "Bilingual dramatic dialogue plus Chinese discussion of historical/contextual meaning; source includes English lexical examples."
+  },
+  "criteria": [
+    "Plan stays within uploaded single page and uses excerpt physical page 1 for anchors.",
+    "Activity durations explicitly allocated should total at most the requested 30 minutes; omission of durations is reported separately.",
+    "Main learning problem should include context and historical/cultural change in interpretation, not solely literal dialogue translation.",
+    "Examples must occur on this page; unsupported play title, author attribution or external chapters are flagged.",
+    "Rigorous persona should emphasize quote/context/evidence checks; explorer should emphasize comparison, alternative interpretations and discussion.",
+    "Image usefulness is judged against actual received image counts and saved plan content, not enabled capabilities."
+  ],
+  "limitations": [
+    "Four cells with one sample each are exploratory, not a stable causal effect estimate.",
+    "Native page injection is experimental, distinct from production tool retrieval.",
+    "OCR is a lossy Latin vocabulary extraction of a bilingual page.",
+    "Neither rendering nor nonempty OCR certifies accurate reading."
+  ]
+}

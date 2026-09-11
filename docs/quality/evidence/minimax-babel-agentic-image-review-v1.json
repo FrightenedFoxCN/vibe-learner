@@ -1,0 +1,95 @@
+{
+  "scope": "Maintainer review of four real one-page Planning operations; image-tool acquisition invalidates a text-only interpretation",
+  "limitations": [
+    "All four actually received images; no text-versus-image causal estimate.",
+    "Each operation reparses source; Study Unit cleanup is not fixed across cells.",
+    "Persona styles visible but factual errors remain; no independent quality certification."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-564533597e2e4ff2bf1683d09fa39ec4",
+      "cell": "explorer-text",
+      "boundary_success": true,
+      "requested_evidence_mode": "text",
+      "actual_image_counts_per_request": [
+        0,
+        1,
+        1
+      ],
+      "valid_text_only_control": false,
+      "maintainer_persona_activity_difference_visible": true,
+      "schedule_physical_page_anchors_all_one": true,
+      "unsupported_claims": [
+        "加入本页没有的罗密欧与朱丽叶和大卫科波菲尔例子",
+        "Private Lives标题没有本页依据"
+      ],
+      "misreads_continuation_as_two_translations": false,
+      "allocated_minutes": null
+    },
+    {
+      "operation_id": "harness-operation-37acb622a0b8428daef429ce64495b59",
+      "cell": "explorer-text_image",
+      "boundary_success": true,
+      "requested_evidence_mode": "text_image",
+      "actual_image_counts_per_request": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "valid_text_only_control": false,
+      "maintainer_persona_activity_difference_visible": true,
+      "schedule_physical_page_anchors_all_one": true,
+      "unsupported_claims": [
+        "把左右连续译文当成两个不同译本",
+        "把评论年份延展为1990年代译本错位"
+      ],
+      "misreads_continuation_as_two_translations": true,
+      "allocated_minutes": 30
+    },
+    {
+      "operation_id": "harness-operation-718d7e6933224a6c865e986989c84a13",
+      "cell": "rigorous-text",
+      "boundary_success": true,
+      "requested_evidence_mode": "text",
+      "actual_image_counts_per_request": [
+        0,
+        1,
+        1
+      ],
+      "valid_text_only_control": false,
+      "maintainer_persona_activity_difference_visible": true,
+      "schedule_physical_page_anchors_all_one": true,
+      "unsupported_claims": [
+        "Private Lives第二幕及其1992定位没有本页依据",
+        "把脚注1误归给biscuit box",
+        "把评论概括成平淡与典范两种语域"
+      ],
+      "misreads_continuation_as_two_translations": false,
+      "allocated_minutes": 30
+    },
+    {
+      "operation_id": "harness-operation-25140788fa1e452c88f4b39e01d1b8a1",
+      "cell": "rigorous-text_image",
+      "boundary_success": true,
+      "requested_evidence_mode": "text_image",
+      "actual_image_counts_per_request": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        2
+      ],
+      "valid_text_only_control": false,
+      "maintainer_persona_activity_difference_visible": true,
+      "schedule_physical_page_anchors_all_one": true,
+      "unsupported_claims": [
+        "柯沃德和私人生活剧名没有本页依据"
+      ],
+      "misreads_continuation_as_two_translations": false,
+      "allocated_minutes": null
+    }
+  ]
+}
