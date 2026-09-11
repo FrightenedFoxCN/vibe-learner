@@ -1,0 +1,42 @@
+[
+  {
+    "case": "unpunctuated_chinese",
+    "input_chars": 2422,
+    "query": "复习地点和暗号",
+    "expected_fragment": "南门",
+    "retained": false,
+    "excerpt_chars": 800,
+    "elapsed_ms": 0.832,
+    "excerpt": "复习地点青石暗号晴鸟整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材..."
+  },
+  {
+    "case": "oversized_preceding_sentence",
+    "input_chars": 2427,
+    "query": "复习地点和暗号",
+    "expected_fragment": "南门",
+    "retained": false,
+    "excerpt_chars": 800,
+    "elapsed_ms": 0.34,
+    "excerpt": "复习地点青石，暗号晴鸟。整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整理材料整..."
+  },
+  {
+    "case": "cross_language_query",
+    "input_chars": 4156,
+    "query": "复习地点和暗号",
+    "expected_fragment": "Bouleau",
+    "retained": false,
+    "excerpt_chars": 800,
+    "elapsed_ms": 0.23,
+    "excerpt": "Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de ca..."
+  },
+  {
+    "case": "same_language_control",
+    "input_chars": 4156,
+    "query": "lieu et mot de passe actuel",
+    "expected_fragment": "Bouleau",
+    "retained": true,
+    "excerpt_chars": 785,
+    "elapsed_ms": 0.58,
+    "excerpt": "原文节选（位置为规范化文本字符，未覆盖全文）：\n[字符0:622] Le lieu est la salle Pierre-Verte. Le mot de passe est Oiseau. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul. Exercice de calcul.\n[字符4042:4156]  Exercice de calcul.Correction : le lieu devient la salle Bouleau. Le mot de passe est révoqué, sans remplacement."
+  }
+]
