@@ -1,0 +1,180 @@
+{
+  "scope": "Maintainer review of contract diagnostics and explicit schema candidate",
+  "limitations": [
+    "Two repetitions per condition, independent generated memories; not a paired fixed-memory causal comparison.",
+    "Exact dictionary equality over-penalizes semantically equivalent relationship phrases; field checks are reported separately.",
+    "All costs include generated summaries; cache values are provider reports without cold/warm control.",
+    "Source id is underspecified for a fact with an old value and a newer revocation event; next contract should distinguish value source from status source."
+  ],
+  "counts": {
+    "baseline": {
+      "requests": 14,
+      "strict_json": 9,
+      "contract_valid": 12
+    },
+    "candidate": {
+      "requests": 18,
+      "strict_json": 18,
+      "contract_valid": 18
+    }
+  },
+  "findings": [
+    "Baseline state repetition 0 fails preference.value string_type; repetition 1 fails JSON extraction at stage 2.",
+    "Candidate state summaries all pass schema, but repetition 0 final answer says unknown despite explicit revoked in supplied structured memory.",
+    "Candidate prose repetition 0 also answers unknown despite explicit revocation in its final summary; this failure occurs during answer interpretation, not loss of the revocation string.",
+    "Candidate repetition 1 prose/state answers are semantically correct despite relationship wording differences.",
+    "Candidate state repetition 1 code.source_id remains u1 while status is revoked; cannot establish whether this denotes original code or revocation under current underspecified source_id."
+  ],
+  "answers": [
+    {
+      "batch": "diagnostics-v2",
+      "repetition": 0,
+      "variant": "prose",
+      "strict_json": false,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": true
+    },
+    {
+      "batch": "diagnostics-v2",
+      "repetition": 0,
+      "variant": "full_history",
+      "strict_json": false,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": true
+    },
+    {
+      "batch": "diagnostics-v2",
+      "repetition": 1,
+      "variant": "prose",
+      "strict_json": false,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": true
+    },
+    {
+      "batch": "diagnostics-v2",
+      "repetition": 1,
+      "variant": "full_history",
+      "strict_json": false,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": true
+    },
+    {
+      "batch": "schema-v3",
+      "repetition": 0,
+      "variant": "prose",
+      "strict_json": true,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": false,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": false,
+      "lexical_exact_match": false
+    },
+    {
+      "batch": "schema-v3",
+      "repetition": 0,
+      "variant": "state",
+      "strict_json": true,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": false,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": false,
+      "lexical_exact_match": false
+    },
+    {
+      "batch": "schema-v3",
+      "repetition": 0,
+      "variant": "full_history",
+      "strict_json": true,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": true
+    },
+    {
+      "batch": "schema-v3",
+      "repetition": 1,
+      "variant": "state",
+      "strict_json": true,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": false
+    },
+    {
+      "batch": "schema-v3",
+      "repetition": 1,
+      "variant": "prose",
+      "strict_json": true,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": false
+    },
+    {
+      "batch": "schema-v3",
+      "repetition": 1,
+      "variant": "full_history",
+      "strict_json": true,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship_semantic": true
+      },
+      "semantic_answer_pass": true,
+      "lexical_exact_match": true
+    }
+  ]
+}

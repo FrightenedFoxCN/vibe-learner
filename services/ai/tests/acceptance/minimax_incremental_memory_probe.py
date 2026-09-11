@@ -11,7 +11,7 @@ import subprocess
 import time
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.services.provider_sdk import ProviderSDK, ProviderRequestAdapter
 from app.services.provider_transport import ProviderTransport
 from app.services.provider_payload import _extract_choice_content, _extract_json_payload
@@ -56,7 +56,7 @@ def segments(rep):
         for i in range(15)] for stage,update in enumerate(updates)]
 
 
-def run(output, repetitions):
+def run(output, repetitions, schema_candidate=False):
     sdk=ProviderSDK.load(); key=os.environ['K3_API_KEY']; endpoint='https://api.minimax.cn/v1'
     adapter=ProviderRequestAdapter(api_key=key,base_url=endpoint,plan_api_key=key,plan_base_url=endpoint,
         setting_api_key=key,setting_base_url=endpoint,chat_api_key=key,chat_base_url=endpoint,
@@ -67,6 +67,11 @@ def run(output, repetitions):
 
     def call(messages, contract):
         row={}; start=time.perf_counter(); decoded=None
+        if schema_candidate:
+            messages = [{**m, 'content': m['content'] +
+                '\n输出必须符合以下JSON Schema；直接输出对象，不加Markdown围栏或解释。所有字段类型以schema为准。\n' +
+                json.dumps(contract.model_json_schema(), ensure_ascii=False)} if m.get('role') == 'system' else m
+                for m in messages]
         try:
             raw,_=adapter.request_chat_completion({'model':'MiniMax-M3','messages':messages,
                 'temperature':0.2,'max_tokens':3072,'response_format':{'type':'json_object'}},request_kind='chat',model='MiniMax-M3')
@@ -79,6 +84,11 @@ def run(output, repetitions):
                 obj=_extract_json_payload(content)
             decoded=contract.model_validate(obj)
             row['contract_valid']=True;row['reply']=decoded.model_dump()
+        except ValidationError as exc:
+            row['contract_valid']=False
+            row['error_class']='ValidationError'
+            row['validation_errors']=[{'path':list(e['loc']), 'type':e['type']}
+                for e in exc.errors(include_input=False, include_url=False)]
         except Exception as exc:
             row['error_class']=type(exc).__name__;row['contract_valid']=False
         row['elapsed_ms']=round((time.perf_counter()-start)*1000)
@@ -86,7 +96,7 @@ def run(output, repetitions):
 
     with output.open('x') as stream:
         def save(row):
-            row.update(git_revision=revision,scope='synthetic_incremental_compression',fixture_version='updates-revocation-address-v1',
+            row.update(prompt_variant='explicit-json-schema-v1' if schema_candidate else 'baseline',git_revision=revision,scope='synthetic_incremental_compression',fixture_version='updates-revocation-address-v1',
                 limitation='Direct provider diagnostic; no domain admission or production compression adoption.')
             stream.write(json.dumps(row,ensure_ascii=False)+'\n');stream.flush()
             print(json.dumps({k:row.get(k) for k in ['repetition','variant','stage','contract_valid','facts_correct']}),flush=True)
@@ -113,6 +123,7 @@ def run(output, repetitions):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);p.add_argument('--repetitions',type=int,default=2)
+    p.add_argument('--schema-candidate',action='store_true')
     args=p.parse_args()
     if not 1<=args.repetitions<=10:p.error('repetitions must be 1..10')
-    run(args.output.resolve(),args.repetitions)
+    run(args.output.resolve(),args.repetitions,args.schema_candidate)
