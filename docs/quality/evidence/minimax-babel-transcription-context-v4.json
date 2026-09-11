@@ -1,0 +1,38 @@
+{
+  "scope": "SDK initial planning context equality after removing persona only; source content kept in memory, not this evidence",
+  "limitations": "Same prepared source and five-tool catalog. Page images differ by experimental injection; not production retrieval adoption or independent quality certification.",
+  "rows": [
+    {
+      "persona": "explorer",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-c2aca8e0845f43798e20d32067fba980",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-67011d8b2aab47a6aa15d25f91cba051",
+      "boundary_success": true
+    }
+  ]
+}

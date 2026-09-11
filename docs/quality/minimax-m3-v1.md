@@ -550,3 +550,11 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [源页对照复核](evidence/minimax-visual-transcription-review-v1.json)两份可用转写均保留原文对1930时期性的肯定，分别有626、624个汉字；但仍存在“确实→确凿”、漏字、“更加隐晦→更黝酶”等错误。不能宣称完整OCR准确，也不能因关闭思考更快就对所有工作流采用。转写和无思考正文仅留临时目录，未提交书页全文或reasoning；这还是直接provider诊断，不是Document/OCR Harness准入与生产采用。
 
 已将恢复后的原图转写明确标成“自动转写、可能有错字”，与原图一起注入两个人格的同源Planning，测试先识字再概括的效果。规划探针还开始只记录白名单约束错误码，帮助定位revise_study_units失败，不记录工具参数或教材正文。
+
+## 轮次 50：自动转写加原图的规划结果与恢复信息丢失
+
+[两次同源Planning](evidence/minimax-babel-transcription-planning-v4.jsonl)把上一轮经单层围栏恢复的转写标注为可能有错字，与原图一起提供；仍使用相同文档快照和五工具目录。[初始上下文核对](evidence/minimax-babel-transcription-context-v4.json)两个人格去除persona后相等，额外转写作为实验资料单独注入。
+
+[维护者复核](evidence/minimax-babel-transcription-planning-review-v4.json)2/2提交，均包含中文按语中的时期性核对，没有再次把1930时期性改成否定。探索人格安排词语比较与讨论，5+12+8+5分钟合计30；严谨人格侧重引文、语境、脚注核对，但未细分30分钟。仍有具体错误：探索例使用本页原句没有的lovelier代替lovely，并把英文原文与汉译称作“两种译法”；严谨例要求在左栏对白中定位仅在本页评论出现的biscuit box。两例不足以声称稳定改善，转写成本也未计入Planning请求总量，不采用默认模型OCR。
+
+探索例再次出现invalid_study_unit_revision，新增provider诊断仍拿不到detail。追查确认canonical错误结果拥有path/detail，但_provider_result_projection在所有工具失败时全部删除。实际工具回归复现两个同页Study Unit被拒绝，canonical给出study_unit_2_overlaps_previous，模型却只收到笼统错误。正在修复provider可见的字段路径与白名单机器错误码，保持trace/public脱敏并过滤任意异常正文；真实恢复压力对照另行记录。

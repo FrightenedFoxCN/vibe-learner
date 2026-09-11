@@ -1,0 +1,60 @@
+{
+  "scope": "Maintainer review of two real Planning operations with experimental same-page model transcription and native image",
+  "limitations": [
+    "One sample per persona; comparison to prior two image-only cells is exploratory.",
+    "Transcription required local single-fence removal and contains known character errors; not treated as authoritative source.",
+    "Direct transcription cost is separate from reported Planning provider totals.",
+    "Not production OCR or protected artifact replay adoption; no independent quality certification."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-c2aca8e0845f43798e20d32067fba980",
+      "cell": "explorer-text_image",
+      "boundary_success": true,
+      "tool_failures": 1,
+      "tool_constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": null
+        }
+      ],
+      "provider_requests": 5,
+      "prompt_tokens": 39455,
+      "image_parts_per_request": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "maintainer_commentary_tasks_present": true,
+      "maintainer_period_affirmation_not_reversed": true,
+      "allocated_minutes": 30,
+      "remaining_issues": [
+        "Uses lovelier as a source term where supplied dialogue says lovely.",
+        "Calls English original and Chinese translation two translation methods."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-67011d8b2aab47a6aa15d25f91cba051",
+      "cell": "rigorous-text_image",
+      "boundary_success": true,
+      "tool_failures": 0,
+      "tool_constraint_errors": [],
+      "provider_requests": 2,
+      "prompt_tokens": 13294,
+      "image_parts_per_request": [
+        1,
+        1
+      ],
+      "maintainer_commentary_tasks_present": true,
+      "maintainer_period_affirmation_not_reversed": true,
+      "allocated_minutes": null,
+      "remaining_issues": [
+        "Asks to locate biscuit box in left English dialogue although this page supplies it in commentary.",
+        "No explicit duration split within the announced 30 minutes."
+      ]
+    }
+  ]
+}
