@@ -32,7 +32,6 @@
       "maintainer_period_affirmation_not_reversed": true,
       "allocated_minutes": 30,
       "remaining_issues": [
-        "Uses lovelier as a source term where supplied dialogue says lovely.",
         "Calls English original and Chinese translation two translation methods."
       ]
     },
@@ -55,6 +54,12 @@
         "Asks to locate biscuit box in left English dialogue although this page supplies it in commentary.",
         "No explicit duration split within the announced 30 minutes."
       ]
+    }
+  ],
+  "review_corrections": [
+    {
+      "reason": "Full-page visual reinspection: the dialogue includes both looking very lovely and growing lovelier and lovelier. The plan asks about the term lovelier without misquoting the first clause; the earlier error label was a reviewer false positive.",
+      "withdrawn_finding": "Uses lovelier as a source term where supplied dialogue says lovely."
     }
   ]
 }

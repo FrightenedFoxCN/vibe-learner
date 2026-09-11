@@ -555,7 +555,7 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 
 [两次同源Planning](evidence/minimax-babel-transcription-planning-v4.jsonl)把上一轮经单层围栏恢复的转写标注为可能有错字，与原图一起提供；仍使用相同文档快照和五工具目录。[初始上下文核对](evidence/minimax-babel-transcription-context-v4.json)两个人格去除persona后相等，额外转写作为实验资料单独注入。
 
-[维护者复核](evidence/minimax-babel-transcription-planning-review-v4.json)2/2提交，均包含中文按语中的时期性核对，没有再次把1930时期性改成否定。探索人格安排词语比较与讨论，5+12+8+5分钟合计30；严谨人格侧重引文、语境、脚注核对，但未细分30分钟。仍有具体错误：探索例使用本页原句没有的lovelier代替lovely，并把英文原文与汉译称作“两种译法”；严谨例要求在左栏对白中定位仅在本页评论出现的biscuit box。两例不足以声称稳定改善，转写成本也未计入Planning请求总量，不采用默认模型OCR。
+[维护者复核](evidence/minimax-babel-transcription-planning-review-v4.json)2/2提交，均包含中文按语中的时期性核对，没有再次把1930时期性改成否定。探索人格安排词语比较与讨论，5+12+8+5分钟合计30；严谨人格侧重引文、语境、脚注核对，但未细分30分钟。仍有具体错误：探索例把英文原文与汉译称作“两种译法”（原先对lovelier的错误判定已在轮次52复核撤回）；严谨例要求在左栏对白中定位仅在本页评论出现的biscuit box。两例不足以声称稳定改善，转写成本也未计入Planning请求总量，不采用默认模型OCR。
 
 探索例再次出现invalid_study_unit_revision，新增provider诊断仍拿不到detail。追查确认canonical错误结果拥有path/detail，但_provider_result_projection在所有工具失败时全部删除。实际工具回归复现两个同页Study Unit被拒绝，canonical给出study_unit_2_overlaps_previous，模型却只收到笼统错误。正在修复provider可见的字段路径与白名单机器错误码，保持trace/public脱敏并过滤任意异常正文；真实恢复压力对照另行记录。
 
@@ -568,3 +568,13 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [四次真实恢复压力任务](evidence/minimax-planning-error-evidence-v1.jsonl)明确要求先尝试把同一物理第1页拆成两个Study Unit，若被拒绝则按实际约束纠正；各操作复用同一隔离文档。交错比较删除修复字段与保留机器码。[复核](evidence/minimax-planning-error-evidence-review-v1.json)隐藏组各2次非法修订，保留组3次、4次；四例都没有一次成功修订，虽然最终有效计划均提交。保留组还尝试了超出PDF页数的页2，被同样拦截。机器码在provider投影中存在，不代表模型能正确采取恢复行动，也不能宣称本批减少了失败或调用量。
 
 保留修复信息解决的是确定的数据丢失问题；真实恢复质量仍未通过。已另测含真实物理页总数、不可重叠规则以及“同页主题在schedule_chapters拆分”的明确反馈候选，未将它作为生产默认加入本次修复。
+
+## 轮次 52：明确恢复指引能停止重复拒绝，计划内容仍需核对
+
+[两次真实候选操作](evidence/minimax-planning-recovery-hint-v2.jsonl)在实际页范围错误后提供物理页总数、不可重叠约束和同页主题使用schedule_chapters的替代方案。各只出现一次初始预期非法修订，随后没有重复拒绝；provider请求分别为2次、6次。与轮次51机器码组3次/4次非法修订相比，这支持继续验证明确恢复指引，但样本少、顺序未随机，不能声称稳定收益。
+
+[最终计划复核](evidence/minimax-planning-recovery-hint-review-v2.json)两例都保留原来有效的一个Study Unit，分别生成2个、5个子章节，结构锚点均为物理第1页。没有一次成功revise_study_units调用，因此这里只证明使用替代编排完成计划，不把它称作成功提交修订单元。两例都有严谨人格的引文/语境核对活动，但未完整分配30分钟；第一例把10个发言回合写成9个、脚注“微粒”写成“颗粒”，第二例把“时期性”写成“周期性”。恢复行为改善不等于计划事实通过。
+
+本轮重新查看完整书页并复核轮次50生成结果，确认原文既有looking very lovely，也有growing lovelier and lovelier；探索计划只要求比较lovelier这一词，没有误引前一分句。此前“原页没有lovelier”的维护者判定是误报，已在原审查文件撤回并保留更正说明。“两种译法”与biscuit box定位问题仍成立。人工评审也需要回到源证据校准。
+
+本轮没有采用生产恢复提示。下一步将受限恢复指引通过应用拥有的typed metadata传递，验证实际runtime到provider路径和未知错误脱敏，再做生产路径复测；候选覆盖仍需扩展至其他页数与任务。

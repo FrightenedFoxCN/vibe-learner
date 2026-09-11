@@ -1,0 +1,67 @@
+{
+  "scope": "Maintainer review of experimental provider recovery guidance; not independent certification or production adoption",
+  "limitations": [
+    "Two sequential candidate samples versus four earlier controls; not randomized or a stable effect estimate.",
+    "Same prepared document and rigorous persona; not a persona comparison.",
+    "Guidance is an experimental provider projection override. Recorded git revision predates the probe changes committed in 39573b8.",
+    "No successful revise_study_units call; recovery means retaining the valid unit and splitting schedule_chapters.",
+    "Lifecycle success and fewer repeated errors do not establish factual or pedagogical quality."
+  ],
+  "rows": [
+    {
+      "sample": 0,
+      "operation_id": "harness-operation-ed7dfbac5fc94ca1978b4bd0c06d4228",
+      "boundary_success": true,
+      "readback_equal": true,
+      "provider_requests": 2,
+      "revision_attempts": 1,
+      "successful_revision_attempts": 0,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "final_study_units": 1,
+      "schedule_chapters": 2,
+      "all_chapter_anchors_physical_page_1": true,
+      "allocated_minutes": null,
+      "persona_method_present": "Quotation/context/footnote verification consistent with rigorous mentor.",
+      "remaining_issues": [
+        "No complete allocation of the requested 30 minutes.",
+        "States 9 dialogue turns; source has 10 speaker-labelled turns.",
+        "Footnote 1 quoted as 颗粒 although source footnote says 微粒.",
+        "Task uses printed p.20 without explicitly distinguishing it from PDF physical page 1."
+      ]
+    },
+    {
+      "sample": 1,
+      "operation_id": "harness-operation-634b7419669b470a97cdf07e49c4c455",
+      "boundary_success": true,
+      "readback_equal": true,
+      "provider_requests": 6,
+      "revision_attempts": 1,
+      "successful_revision_attempts": 0,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "final_study_units": 1,
+      "schedule_chapters": 5,
+      "all_chapter_anchors_physical_page_1": true,
+      "allocated_minutes": null,
+      "persona_method_present": "Quotation/context/footnote verification consistent with rigorous mentor.",
+      "remaining_issues": [
+        "No complete allocation of the requested 30 minutes.",
+        "Replaces 时期性 with 周期性, changing the central concept.",
+        "Attributes commentary to editor without evidence on the supplied page."
+      ]
+    }
+  ]
+}
