@@ -126,7 +126,8 @@ def stable_system_prefix_candidate(system):
 
 def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False, multimodal=False,
         format_contract_candidate=False, repeat_request_candidate=False, attachment_kind=None, coordinate_grid_candidate=False,
-        prepared_effect_candidate=False, question_tools_disabled_candidate=False, reasoning_mode=None):
+        prepared_effect_candidate=False, question_tools_disabled_candidate=False, reasoning_mode=None,
+        teaching_method=None, task_priority_candidate=False):
     if repeat_request_candidate and selected_case is None:
         raise ValueError("Repeat-request experiment requires one selected case")
     if attachment_kind not in {None, "pdf", "image"}:
@@ -299,9 +300,17 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
         sections["tool_followup"] += "\n以上工具已执行。继续遵守本轮学习者对最终输出的原始要求：\n" + CASES[selected_case]
     if prepared_effect_candidate:
         sections["tool_followup"] += PREPARED_EFFECT_CANDIDATE
+    if task_priority_candidate:
+        priority = ("\n本轮任务边界：人格决定用词、关系和讲解方法，不额外扩大用户要求的输出范围。"
+                    "用户明确规定的列表数量、禁止开场结尾或禁止出题，同样约束使用工具后的最终回复。"
+                    "在这些边界内体现人格；不要为了苏格拉底式教学、保持互动或提供下一步而附加用户禁止的追问、题目或段落。")
+        sections = {key: value + priority if key in {"system", "tool_followup", "recovery"} else value
+                    for key, value in sections.items()}
     with patch("app.services.provider_study._chat_prompt_sections", return_value=sections), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona = create_request("顾言").model_dump(mode="json")
         persona.update(summary="严谨、温和的数学老师，说话简洁，先核对证据再下结论。", relationship="数学老师与成年学习者", learner_address="小林")
+        if teaching_method:
+            persona["slots"][0]["content"] = {"socratic": "Socratic", "direct": "直接解释依据与结论，使用简短步骤。"}[teaching_method]
         created = client.post("/personas", json=persona)
         created.raise_for_status()
         persona_id = created.json()["id"]
@@ -382,6 +391,11 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     row["prompt_variant"] = "question-contract-experiment-v2" if question_contract_candidate else "production"
                     row["multimodal_enabled"] = multimodal
                     row["attachment_kind"] = attachment_kind
+                    if teaching_method or task_priority_candidate:
+                        row["teaching_method_variant"] = teaching_method or "socratic"
+                        row["task_priority_variant"] = "explicit-task-boundary-v1" if task_priority_candidate else "production"
+                        row["persona_test_input"] = persona
+                        row["trace_limitation"] = "Experimental persona slot and optional task-boundary instruction; not production adoption."
                     if reasoning_mode:
                         row["reasoning_variant"] = reasoning_mode
                         row["trace_limitation"] = "Experimental reasoning_split and request-local reasoning-field echo, not complete response replay. Only field names/counts retained; wire_requests observes serialized HTTPX requests, not provider processing."
@@ -572,7 +586,9 @@ if __name__ == "__main__":
     parser.add_argument("--prepared-effect-candidate", action="store_true")
     parser.add_argument("--question-tools-disabled-candidate", action="store_true")
     parser.add_argument("--reasoning-mode", choices=("split", "echo"))
+    parser.add_argument("--teaching-method", choices=("socratic", "direct"))
+    parser.add_argument("--task-priority-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate, args.question_tools_disabled_candidate, args.reasoning_mode)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate, args.question_tools_disabled_candidate, args.reasoning_mode, args.teaching_method, args.task_priority_candidate)
