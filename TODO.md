@@ -2,7 +2,7 @@
 
 本文件是产品、Harness 和桌面工作的统一待办入口；用户指定的专项计划独立维护明细并在此链接，不复制 checkbox。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-11：本文件保留 23 项产品/验收待办，其中 1 项质量复核暂缓。Planning CAS 已完成，修订操作已完成，UI 单独提交。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
+2026-09-11：本文件保留 22 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -79,13 +79,11 @@ Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` �
 
 ## Planning 迭代
 
-Planning 创建、Tool Manifest 和确定性评测已实现；后续修订实现正在接受独立验收。
+Planning 创建、Tool Manifest 和确定性评测已实现；后续修订实现已通过独立验收，详见[计划修订](docs/plan-revision.md)。
 
-`SCH-PLAN-CAS-001` 已完成，见[CAS 完成记录](docs/plans/planning-cas-completion-2026-09-11.md)。
+`SCH-PLAN-CAS-001`、`PLAN-PATCH-001`、`PLAN-REV-UX-001` 已完成并逐项留档。当前修订可编辑现有内容与排期顺序，保留完整 target 集合；不增删 Study Unit/章节/排期。回滚建立新 revision 并保留当前进度与 ID。
 
-`PLAN-PATCH-001` 已完成：strict proposal、durable admission、接受/拒绝、CAS 冲突、历史回滚和查询恢复。见[契约](docs/plan-revision.md)与[独立后端验收](docs/plans/planning-backend-independent-acceptance-2026-09-11.md)。
-
-- [ ] `PLAN-REV-UX-001` `[P2]` 增加修订 diff、接受/拒绝、冲突刷新、回滚和恢复 UX；依赖 `PLAN-PATCH-001`。
+证据：[CAS 记录](docs/plans/planning-cas-completion-2026-09-11.md)、[后端独立验收](docs/plans/planning-backend-independent-acceptance-2026-09-11.md)、[浏览器独立验收](docs/plans/planning-frontend-independent-acceptance-2026-09-11.md)。真实 provider 质量和原生平台边界仍按对应条目跟踪。
 
 ## 可靠性、部署与输入边界
 

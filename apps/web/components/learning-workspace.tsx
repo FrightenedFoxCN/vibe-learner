@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { DocumentSetup } from "./document-setup";
 import { PlanHistory } from "./plan-history";
 import { PlanOverview } from "./plan-overview";
+import { PlanRevisionPanel } from "./plan-revision-panel";
 import { ProviderTruth } from "./provider-truth";
 import { TopNav } from "./top-nav";
 import { useAppNavigator } from "../lib/app-navigation";
@@ -155,6 +156,7 @@ export function LearningWorkspace() {
             onStartStudyFromPlan={handleStartStudyFromPlan}
           />
 
+          {activePlan && <PlanRevisionPanel key={activePlan.id} plan={activePlan} onRefresh={refreshPlanSnapshot} />}
           <PlanHistory
             items={planHistoryItems}
             selectedPlanId={selectedPlanId}

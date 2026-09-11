@@ -1,0 +1,505 @@
+{
+  "build_id": "vf_-c0WZscfkYPSKNEqde",
+  "stats": {
+    "startTime": "2026-09-11T13:49:18.655Z",
+    "duration": 4385.2339999999995,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "independent revision: diff then reject leaves source plan unchanged",
+      "status": "passed",
+      "duration_ms": 473,
+      "evidence": []
+    },
+    {
+      "title": "independent revision: lost creation response only queries on refresh",
+      "status": "passed",
+      "duration_ms": 296,
+      "evidence": []
+    },
+    {
+      "title": "independent revision: lost accept response fences all decisions until GET recovery",
+      "status": "passed",
+      "duration_ms": 374,
+      "evidence": []
+    },
+    {
+      "title": "independent revision: concurrent plan revision disables stale acceptance after refresh",
+      "status": "passed",
+      "duration_ms": 296,
+      "evidence": []
+    },
+    {
+      "title": "independent revision: late preview after leaving owner recovers original request without repost",
+      "status": "passed",
+      "duration_ms": 886,
+      "evidence": []
+    },
+    {
+      "title": "independent revision: definite admission conflict unlocks only a new explicit preview",
+      "status": "passed",
+      "duration_ms": 237,
+      "evidence": []
+    },
+    {
+      "title": "independent revision: missing record requires explicit local abandonment without POST replay",
+      "status": "passed",
+      "duration_ms": 300,
+      "evidence": []
+    },
+    {
+      "title": "independent live revision: accept then rollback keeps newly committed progress",
+      "status": "passed",
+      "duration_ms": 647,
+      "evidence": [
+        {
+          "name": "live-revision-evidence.json",
+          "data": {
+            "requests": [
+              {
+                "method": "GET",
+                "path": "/scene-library"
+              },
+              {
+                "method": "GET",
+                "path": "/documents"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans"
+              },
+              {
+                "method": "GET",
+                "path": "/personas"
+              },
+              {
+                "method": "GET",
+                "path": "/runtime-settings"
+              },
+              {
+                "method": "GET",
+                "path": "/study-sessions"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans/plan-cas/revision-history"
+              },
+              {
+                "method": "POST",
+                "path": "/learning-plans/plan-cas/revisions"
+              },
+              {
+                "method": "POST",
+                "path": "/learning-plans/plan-cas/revisions/4090c51f-42de-4545-a018-921954697f59/decision"
+              },
+              {
+                "method": "GET",
+                "path": "/documents"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans/plan-cas/revision-history"
+              },
+              {
+                "method": "GET",
+                "path": "/documents"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans/plan-cas/revision-history"
+              },
+              {
+                "method": "POST",
+                "path": "/learning-plans/plan-cas/revisions"
+              },
+              {
+                "method": "POST",
+                "path": "/learning-plans/plan-cas/revisions/687780fb-5dca-4332-a40b-e9018ca64519/decision"
+              },
+              {
+                "method": "GET",
+                "path": "/documents"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans"
+              },
+              {
+                "method": "GET",
+                "path": "/learning-plans/plan-cas/revision-history"
+              }
+            ],
+            "original": {
+              "id": "plan-cas",
+              "document_id": "",
+              "persona_id": "mentor-aurora",
+              "creation_mode": "goal_only",
+              "course_title": "Loops",
+              "objective": "Learn loops",
+              "scene_profile_summary": "",
+              "scene_profile": null,
+              "overview": "Practice loops",
+              "today_tasks": [
+                "Read"
+              ],
+              "study_units": [
+                {
+                  "id": "goal-only:independent:study-unit:1",
+                  "document_id": "goal-only:independent",
+                  "title": "Loops",
+                  "page_start": 1,
+                  "page_end": 1,
+                  "unit_kind": "chapter",
+                  "include_in_plan": true,
+                  "source_section_ids": [],
+                  "summary": "Loops",
+                  "confidence": 1
+                }
+              ],
+              "schedule": [
+                {
+                  "id": "schedule-a",
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Read",
+                  "focus": "Read loops",
+                  "activity_type": "learn",
+                  "status": "planned",
+                  "schedule_chapters": [
+                    {
+                      "id": "goal-only:independent:study-unit:1:schedule-chapter:1",
+                      "title": "Loops",
+                      "anchor_page_start": 1,
+                      "anchor_page_end": 1,
+                      "source_section_ids": [],
+                      "content_slices": [
+                        {
+                          "page_start": 1,
+                          "page_end": 1,
+                          "source_section_ids": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "progress_summary": {
+                "total_schedule_count": 1,
+                "completed_schedule_count": 0,
+                "in_progress_schedule_count": 0,
+                "pending_schedule_count": 1,
+                "blocked_schedule_count": 0,
+                "completion_percent": 0
+              },
+              "study_unit_progress": [
+                {
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Loops",
+                  "objective_fragment": "Read loops",
+                  "schedule_ids": [
+                    "schedule-a"
+                  ],
+                  "total_schedule_count": 1,
+                  "completed_schedule_count": 0,
+                  "in_progress_schedule_count": 0,
+                  "pending_schedule_count": 1,
+                  "blocked_schedule_count": 0,
+                  "completion_percent": 0,
+                  "status": "planned"
+                }
+              ],
+              "progress_events": [],
+              "planning_questions": [],
+              "created_at": "2026-09-11T00:00:00Z",
+              "revision": 0
+            },
+            "accepted": {
+              "id": "plan-cas",
+              "document_id": "",
+              "persona_id": "mentor-aurora",
+              "creation_mode": "goal_only",
+              "course_title": "Loops",
+              "objective": "Learn loops",
+              "scene_profile_summary": "",
+              "scene_profile": null,
+              "overview": "Practice loops\n本次调整：Add an independent review pass",
+              "today_tasks": [
+                "Read"
+              ],
+              "study_units": [
+                {
+                  "id": "goal-only:independent:study-unit:1",
+                  "document_id": "goal-only:independent",
+                  "title": "Loops",
+                  "page_start": 1,
+                  "page_end": 1,
+                  "unit_kind": "chapter",
+                  "include_in_plan": true,
+                  "source_section_ids": [],
+                  "summary": "Loops",
+                  "confidence": 1
+                }
+              ],
+              "schedule": [
+                {
+                  "id": "schedule-a",
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Read",
+                  "focus": "Read loops",
+                  "activity_type": "learn",
+                  "status": "planned",
+                  "schedule_chapters": [
+                    {
+                      "id": "goal-only:independent:study-unit:1:schedule-chapter:1",
+                      "title": "Loops",
+                      "anchor_page_start": 1,
+                      "anchor_page_end": 1,
+                      "source_section_ids": [],
+                      "content_slices": [
+                        {
+                          "page_start": 1,
+                          "page_end": 1,
+                          "source_section_ids": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "progress_summary": {
+                "total_schedule_count": 1,
+                "completed_schedule_count": 0,
+                "in_progress_schedule_count": 0,
+                "pending_schedule_count": 1,
+                "blocked_schedule_count": 0,
+                "completion_percent": 0
+              },
+              "study_unit_progress": [
+                {
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Loops",
+                  "objective_fragment": "Read loops",
+                  "schedule_ids": [
+                    "schedule-a"
+                  ],
+                  "total_schedule_count": 1,
+                  "completed_schedule_count": 0,
+                  "in_progress_schedule_count": 0,
+                  "pending_schedule_count": 1,
+                  "blocked_schedule_count": 0,
+                  "completion_percent": 0,
+                  "status": "planned"
+                }
+              ],
+              "progress_events": [],
+              "planning_questions": [],
+              "created_at": "2026-09-11T00:00:00Z",
+              "revision": 1
+            },
+            "progressed": {
+              "id": "plan-cas",
+              "document_id": "",
+              "persona_id": "mentor-aurora",
+              "creation_mode": "goal_only",
+              "course_title": "Loops",
+              "objective": "Learn loops",
+              "scene_profile_summary": "",
+              "scene_profile": null,
+              "overview": "Practice loops\n本次调整：Add an independent review pass",
+              "today_tasks": [
+                "Read"
+              ],
+              "study_units": [
+                {
+                  "id": "goal-only:independent:study-unit:1",
+                  "document_id": "goal-only:independent",
+                  "title": "Loops",
+                  "page_start": 1,
+                  "page_end": 1,
+                  "unit_kind": "chapter",
+                  "include_in_plan": true,
+                  "source_section_ids": [],
+                  "summary": "Loops",
+                  "confidence": 1
+                }
+              ],
+              "schedule": [
+                {
+                  "id": "schedule-a",
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Read",
+                  "focus": "Read loops",
+                  "activity_type": "learn",
+                  "status": "completed",
+                  "schedule_chapters": [
+                    {
+                      "id": "goal-only:independent:study-unit:1:schedule-chapter:1",
+                      "title": "Loops",
+                      "anchor_page_start": 1,
+                      "anchor_page_end": 1,
+                      "source_section_ids": [],
+                      "content_slices": [
+                        {
+                          "page_start": 1,
+                          "page_end": 1,
+                          "source_section_ids": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "progress_summary": {
+                "total_schedule_count": 1,
+                "completed_schedule_count": 1,
+                "in_progress_schedule_count": 0,
+                "pending_schedule_count": 0,
+                "blocked_schedule_count": 0,
+                "completion_percent": 100
+              },
+              "study_unit_progress": [
+                {
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Loops",
+                  "objective_fragment": "Read loops",
+                  "schedule_ids": [
+                    "schedule-a"
+                  ],
+                  "total_schedule_count": 1,
+                  "completed_schedule_count": 1,
+                  "in_progress_schedule_count": 0,
+                  "pending_schedule_count": 0,
+                  "blocked_schedule_count": 0,
+                  "completion_percent": 100,
+                  "status": "completed"
+                }
+              ],
+              "progress_events": [
+                {
+                  "id": "progress-event-6bd0fb098616448bbc9948fe31cb1f42",
+                  "actor": "user",
+                  "source": "ui",
+                  "schedule_ids": [
+                    "schedule-a"
+                  ],
+                  "status": "completed",
+                  "note": "Independent persisted progress",
+                  "created_at": "2026-09-11T13:49:22.775680+00:00"
+                }
+              ],
+              "planning_questions": [],
+              "created_at": "2026-09-11T00:00:00Z",
+              "revision": 2
+            },
+            "rolledBack": {
+              "id": "plan-cas",
+              "document_id": "",
+              "persona_id": "mentor-aurora",
+              "creation_mode": "goal_only",
+              "course_title": "Loops",
+              "objective": "Learn loops",
+              "scene_profile_summary": "",
+              "scene_profile": null,
+              "overview": "Practice loops",
+              "today_tasks": [
+                "Read"
+              ],
+              "study_units": [
+                {
+                  "id": "goal-only:independent:study-unit:1",
+                  "document_id": "goal-only:independent",
+                  "title": "Loops",
+                  "page_start": 1,
+                  "page_end": 1,
+                  "unit_kind": "chapter",
+                  "include_in_plan": true,
+                  "source_section_ids": [],
+                  "summary": "Loops",
+                  "confidence": 1
+                }
+              ],
+              "schedule": [
+                {
+                  "id": "schedule-a",
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Read",
+                  "focus": "Read loops",
+                  "activity_type": "learn",
+                  "status": "completed",
+                  "schedule_chapters": [
+                    {
+                      "id": "goal-only:independent:study-unit:1:schedule-chapter:1",
+                      "title": "Loops",
+                      "anchor_page_start": 1,
+                      "anchor_page_end": 1,
+                      "source_section_ids": [],
+                      "content_slices": [
+                        {
+                          "page_start": 1,
+                          "page_end": 1,
+                          "source_section_ids": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "progress_summary": {
+                "total_schedule_count": 1,
+                "completed_schedule_count": 1,
+                "in_progress_schedule_count": 0,
+                "pending_schedule_count": 0,
+                "blocked_schedule_count": 0,
+                "completion_percent": 100
+              },
+              "study_unit_progress": [
+                {
+                  "unit_id": "goal-only:independent:study-unit:1",
+                  "title": "Loops",
+                  "objective_fragment": "Read loops",
+                  "schedule_ids": [
+                    "schedule-a"
+                  ],
+                  "total_schedule_count": 1,
+                  "completed_schedule_count": 1,
+                  "in_progress_schedule_count": 0,
+                  "pending_schedule_count": 0,
+                  "blocked_schedule_count": 0,
+                  "completion_percent": 100,
+                  "status": "completed"
+                }
+              ],
+              "progress_events": [
+                {
+                  "id": "progress-event-6bd0fb098616448bbc9948fe31cb1f42",
+                  "actor": "user",
+                  "source": "ui",
+                  "schedule_ids": [
+                    "schedule-a"
+                  ],
+                  "status": "completed",
+                  "note": "Independent persisted progress",
+                  "created_at": "2026-09-11T13:49:22.775680+00:00"
+                }
+              ],
+              "planning_questions": [],
+              "created_at": "2026-09-11T00:00:00Z",
+              "revision": 3
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

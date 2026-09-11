@@ -1,3 +1,4 @@
+import { decodePlanRevision } from "./plan-revision-decode";
 import { studyDiagnosticContext } from "./study-diagnostic-context";
 import { createDiagnosticId, diagnosticContext, diagnosticDecode, recordDecodeFailure, diagnosticFetch, type DiagnosticContext } from "./diagnostics";
 import type {
@@ -2000,4 +2001,37 @@ export async function getModelUsageStats(): Promise<TokenUsageStats> {
     totalCompletionTokens: Number(raw.total_completion_tokens ?? 0),
     totalTokens: Number(raw.total_tokens ?? 0),
   };
+}
+
+
+export async function createPlanRevision(planId: string, input: { clientRequestId: string; baseRevision: number; instruction?: string; rollbackRevision?: number }) {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/revisions`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ client_request_id: input.clientRequestId, base_revision: input.baseRevision,
+      instruction: input.instruction ?? "", rollback_revision: input.rollbackRevision ?? null }),
+  });
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodePlanRevision(raw, planId, input.clientRequestId, input));
+}
+export async function getPlanRevision(planId: string, requestId: string) {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/revisions/${requestId}`);
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodePlanRevision(raw, planId, requestId));
+}
+export async function decidePlanRevision(planId: string, requestId: string, decision: "accept" | "reject") {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/revisions/${requestId}/decision`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ decision }),
+  });
+  const raw = await readJson<unknown>(response);
+  return diagnosticDecode(response, () => decodePlanRevision(raw, planId, requestId));
+}
+export async function listPlanRevisions(planId: string): Promise<number[]> {
+  const response = await request(`${AI_BASE_URL()}/learning-plans/${planId}/revision-history`);
+  const raw = await readJson<unknown>(response);
+  if (!raw || typeof raw !== "object" || !("revisions" in raw) || !Array.isArray(raw.revisions)
+      || raw.revisions.some(value => !Number.isSafeInteger(value) || value < 0)
+      || raw.revisions.some((value, index, values) => index > 0 && value >= values[index - 1])) {
+    throw new PlanningDecodeError("plan_revision_history", "invalid_history");
+  }
+  return raw.revisions as number[];
 }
