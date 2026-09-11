@@ -42,6 +42,35 @@ class ToolProviderProjectionTests(unittest.TestCase):
         self.assertEqual(execution.provider_result['detail'], 'study_unit_2_overlaps_previous')
         self.assertNotIn('study_unit_2_overlaps_previous', json.dumps(execution.trace_result))
         self.assertEqual(runtime.current_study_units(), [original_unit])
+        self.assertEqual(execution.result['recovery']['document_page_count'], 1)
+        self.assertIn('本PDF共1个物理页', execution.provider_result['recovery_guidance'])
+        self.assertIn('schedule_chapters', execution.provider_result['recovery_guidance'])
+        self.assertNotIn('recovery', execution.trace_result)
+        self.assertNotIn('recovery_guidance', execution.trace_result)
+
+    def test_planning_recovery_metadata_is_typed_and_scoped(self):
+        entry = TOOL_MANIFEST_ENTRIES['planning:planning_tool_execution:revise_study_units']
+        base = {'ok': False, 'error': 'invalid_study_unit_revision',
+                'detail': 'study_unit_2_page_out_of_range',
+                'recovery': {'kind': 'non_overlapping_physical_pages', 'document_page_count': 17}}
+        result = adapt_tool_runtime_result(entry, base)
+        provider = project_validated_tool_result(entry, result, audience='provider')
+        self.assertIn('本PDF共17个物理页', provider['recovery_guidance'])
+        for audience in ('trace', 'public'):
+            safe = project_validated_tool_result(entry, result, audience=audience)
+            self.assertNotIn('recovery', safe)
+            self.assertNotIn('recovery_guidance', safe)
+        for recovery in ({'kind': 'arbitrary private instructions', 'document_page_count': 17},
+                         {'kind': 'non_overlapping_physical_pages', 'document_page_count': 0},
+                         {'kind': 'non_overlapping_physical_pages', 'document_page_count': '17'},
+                         {**base['recovery'], 'detail': '/private/source'}):
+            with self.subTest(recovery=recovery), self.assertRaises(ToolResultValidationError):
+                adapt_tool_runtime_result(entry, {**base, 'recovery': recovery})
+        for detail in ('study_unit_1_missing_title', '/private/source', ''):
+            result = adapt_tool_runtime_result(entry, {**base, 'detail': detail})
+            self.assertNotIn('recovery_guidance', project_validated_tool_result(entry, result, audience='provider'))
+        result = adapt_tool_runtime_result(entry, {k: v for k, v in base.items() if k != 'recovery'})
+        self.assertNotIn('recovery_guidance', project_validated_tool_result(entry, result, audience='provider'))
 
     def test_provider_error_retains_typed_path_and_validation_code(self):
         entry = TOOL_MANIFEST_ENTRIES['planning:planning_tool_execution:read_page_range_content']

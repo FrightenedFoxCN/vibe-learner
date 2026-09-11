@@ -528,6 +528,11 @@ def _execute_revise_study_units(
                 "ok": False,
                 "error": "invalid_study_unit_revision",
                 "detail": str(exc),
+                **({"recovery": {
+                    "kind": "non_overlapping_physical_pages",
+                    "document_page_count": debug_report.page_count,
+                }} if str(exc).endswith(("_overlaps_previous", "_page_out_of_range", "_invalid_page_range"))
+                    and debug_report.page_count > 0 else {}),
             },
             trace_summary=f"学习单元重编排无效：{exc}",
             follow_up_messages=[],

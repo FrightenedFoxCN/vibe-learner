@@ -110,6 +110,13 @@ class PlanningToolResultBaseV1(_StrictPlanningModel):
     ok: Literal[True] = True
 
 
+class PlanningPageRangeRecoveryV1(_StrictPlanningModel):
+    """Application-owned constraints from the admitted document, not model input."""
+
+    kind: Literal["non_overlapping_physical_pages"] = "non_overlapping_physical_pages"
+    document_page_count: int = Field(ge=1)
+
+
 class PlanningToolErrorResultV1(_StrictPlanningModel):
     schema_name: Literal["planning-tool-result"] = "planning-tool-result"
     schema_version: Literal["planning-tool-result-v1"] = PLANNING_TOOL_RESULT_CONTRACT_VERSION
@@ -119,6 +126,7 @@ class PlanningToolErrorResultV1(_StrictPlanningModel):
     path: list[TypedPathPart] = Field(default_factory=list, max_length=16)
     detail: str = Field(default="", max_length=1000)
     study_unit_id: str = Field(default="", max_length=128)
+    recovery: PlanningPageRangeRecoveryV1 | None = None
 
 
 class RelatedSectionResultV1(_StrictPlanningModel):

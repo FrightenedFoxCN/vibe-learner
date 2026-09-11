@@ -77,3 +77,5 @@ commit/failure tests. Existing manifest/golden fixtures and trace versions are
 unchanged by this relocation.
 
 Planning revisions use the separately admitted `learning_plan_revision` operation and `plan_revision` stage. Trace slots 0/1 represent preview/acceptance; the local acceptance transaction commits Plan CAS, history, receipt and terminal evidence together. See [Plan revision](plan-revision.md). The additional seven-case regression suite runs via `npm run eval:harness:plan-revision` and is included in PR gates.
+
+Planning page-range tool errors may carry optional application-owned `PlanningPageRangeRecoveryV1` metadata with the admitted document’s physical page count. The canonical adapter validates it strictly; provider projection renders fixed guidance only for recognized `revise_study_units` page-range failures. Trace/public projections omit the metadata and guidance. This does not extend model arguments, API DTOs or the allowed page ranges.

@@ -412,6 +412,12 @@ def adapt_tool_runtime_result(
             path=_path_parts(raw_result.get("path")),
             detail=str(raw_result.get("detail") or ""),
         )
+        if entry.workflow == HarnessWorkflow.PLANNING and raw_result.get("recovery") is not None:
+            # Validate application metadata through the canonical error contract;
+            # never copy arbitrary runtime fields into provider feedback.
+            return validate_tool_runtime_result(entry, {
+                **error_result.model_dump(mode="json"), "recovery": raw_result["recovery"],
+            })
         return validate_tool_runtime_result(entry, error_result)
     if entry.workflow == HarnessWorkflow.PLANNING:
         payload = {
@@ -741,6 +747,17 @@ def _provider_result_projection(
             canonical.get("error") == "invalid_study_unit_revision" and revision_code
         )):
             projected["detail"] = detail
+        recovery = canonical.get("recovery")
+        if (entry.workflow == HarnessWorkflow.PLANNING and name == "revise_study_units"
+                and canonical.get("error") == "invalid_study_unit_revision"
+                and revision_code and not detail.endswith("_missing_title")
+                and isinstance(recovery, Mapping)
+                and recovery.get("kind") == "non_overlapping_physical_pages"):
+            page_count = recovery["document_page_count"]
+            projected["recovery_guidance"] = (
+                f"本PDF共{page_count}个物理页。Study Unit页范围必须按顺序且互不重叠，不能为避免重叠而杜撰新页。"
+                "同页不同主题请合并为一个Study Unit，在最终计划的schedule_chapters中拆分。"
+            )
         return projected
     # Planning tools exist to return grounded planning context to the model.
     # Their provider projection may carry protected content under the manifest

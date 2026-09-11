@@ -1,0 +1,64 @@
+{
+  "scope": "Maintainer review of production runtime recovery guidance with experimental fixed source page-image input",
+  "limitations": [
+    "Two sequential operations share a cloned document; the second can observe the first successful Study Unit revision. Not independent fixed-context replicates.",
+    "Recorded git revision is the base commit; this run includes the production changes committed with this evidence.",
+    "Image injection and tool-catalog control remain experimental; recovery guidance itself uses production runtime and provider projection.",
+    "No stable call-count, latency or whole-plan quality improvement claim."
+  ],
+  "rows": [
+    {
+      "repetition": 0,
+      "operation_id": "harness-operation-31d7a14c81ea4e1ba76741e0d6d39b7a",
+      "boundary_success": true,
+      "readback_equal": true,
+      "provider_requests": 6,
+      "revision_attempts": 2,
+      "successful_revision_attempts": 1,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "final_unit_count": 1,
+      "chapter_count": 2,
+      "all_chapter_anchors_page_1": true,
+      "allocated_minutes": null,
+      "remaining_issues": [
+        "Opening dialogue translation is on lower left, not the right column specified in task.",
+        "Revised Study Unit uses 期待性 instead of 时期性.",
+        "Attributes commentary to editor without supplied evidence.",
+        "Only three minutes allocated to recap; other activities not timed."
+      ]
+    },
+    {
+      "repetition": 1,
+      "operation_id": "harness-operation-80ed9e736b9a4330a8cf718b5f237537",
+      "boundary_success": true,
+      "readback_equal": true,
+      "provider_requests": 7,
+      "revision_attempts": 2,
+      "successful_revision_attempts": 1,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "final_unit_count": 1,
+      "chapter_count": 11,
+      "all_chapter_anchors_page_1": true,
+      "allocated_minutes": null,
+      "remaining_issues": [
+        "Still propagates 期待性, despite also mentioning 时期性.",
+        "Misreads 丹朱 as 丹麦 and inserts margin numeral 17 into the moonlight gloss.",
+        "Eleven tasks and chapters with no complete 30-minute allocation."
+      ]
+    }
+  ]
+}
