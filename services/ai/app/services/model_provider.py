@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from threading import Lock
+
 from app.services.provider_transport import ProviderTransport, ModelRequestError, _coerce_int
 
 from app.services.provider_capabilities import ModelProvider, ModelReply, PlanModelReply, PlanScheduleItem
@@ -711,7 +713,23 @@ class OpenAIModelProvider(ModelProvider):
         self.chat_disabled_tools_provider = chat_disabled_tools_provider
         self.token_usage_service = token_usage_service
         self._local_exercises = LocalExerciseProvider()
-        self.sdk = sdk if sdk is not None else ProviderSDK.load()
+        self._sdk = sdk
+        self._sdk_lock = Lock()
+
+    @property
+    def sdk(self) -> ProviderSDK:
+        # Configuration/bootstrap and local capabilities must not import a remote
+        # SDK. First remote operation captures these callables through its adapter.
+        if self._sdk is None:
+            with self._sdk_lock:
+                if self._sdk is None:
+                    self._sdk = ProviderSDK.load()
+        return self._sdk
+
+    @sdk.setter
+    def sdk(self, value: ProviderSDK) -> None:
+        with self._sdk_lock:
+            self._sdk = value
 
     def generate_exercise(self, *, persona: PersonaProfile, section_id: str, topic: str) -> ModelReply:
         return self._local_exercises.generate_exercise(persona=persona, section_id=section_id, topic=topic)

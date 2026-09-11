@@ -2,7 +2,7 @@
 
 本文件是产品、Harness 和桌面工作的统一待办入口；用户指定的专项计划独立维护明细并在此链接，不复制 checkbox。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-11：本文件保留 20 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
+2026-09-11：本文件保留 19 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -21,9 +21,7 @@
 
 `TAV-UX-COPY-001` 已完成 `tavern-copy-v1` 表驱动文案契约；partial/failed/blocked、归档及恢复错误的[5项独立浏览器验收](docs/plans/tavern-copy-independent-acceptance-2026-09-11.md)通过。cancel/stale 文案由契约测试覆盖，不重复宣称全生命周期实测。
 
-- [ ] `PERF-002` `[P2]` 完成 LiteLLM lazy import，并守住现有 OCR lazy import。
-  - 验收：10 个全新 mock 进程 `/health` 均低于 2 秒；`litellm` / `onnxtr` 不在启动后的 `sys.modules`；启动期间没有 cost-map 网络请求。
-  - 使用固定临时数据库、明确计时边界和 machine-readable raw samples。
+`PERF-002` 已完成 SDK 延迟加载；[10个全新 mock 进程独立验收](docs/plans/perf-002-startup-independent-acceptance-2026-09-11.md)全部通过，启动至 `/health` 0.667–0.708s，未加载 LiteLLM/OnnxTR，也无启动外网尝试。
 
 - [ ] `PERF-TAV-ROOMS-001` `[P2]` 完成 Tavern Room 分页时间门。
   - 保留已完成的稳定 cursor、复合索引、每页最多 4 SQL、payload 和 100 个按钮结构门。

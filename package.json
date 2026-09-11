@@ -57,7 +57,8 @@
     "test:ai:harness:performance": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_harness_performance",
     "test:ai:limits": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_input_limits",
     "test:acceptance:process-crash": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m unittest tests.test_wave45_process_recovery",
-    "eval:harness:plan-revision": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.plan_revision_evals"
+    "eval:harness:plan-revision": "cd services/ai && LITELLM_LOCAL_MODEL_COST_MAP=True UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.plan_revision_evals",
+    "test:acceptance:startup": "cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python tests/acceptance/backend_startup_probe.py"
   },
   "dependencies": {
     "rehype-katex": "^7.0.1"

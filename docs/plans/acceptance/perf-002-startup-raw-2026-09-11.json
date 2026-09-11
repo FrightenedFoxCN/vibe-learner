@@ -1,0 +1,239 @@
+{
+  "schema_version": "backend-startup-acceptance-v1",
+  "gate_seconds": 2.0,
+  "required_samples": 10,
+  "database_mode": "fresh empty SQLite and empty storage per process",
+  "timing": "perf_counter immediately before Popen through first HTTP 200 /health JSON response fully read",
+  "instrumentation": "CPython socket audit hooks installed before uvicorn/app import; non-loopback attempts recorded and denied; any attempt fails gate",
+  "clock": "time.perf_counter",
+  "python": "3.12.13 (main, Mar 25 2026, 03:16:06) [Clang 22.1.1 ]",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "samples": [
+    {
+      "index": 1,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6665804579970427,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27091,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-01/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-01/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:09.599112+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 2,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6926298339967616,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27099,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-02/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-02/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:10.533834+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 3,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6996881670202129,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27102,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-03/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-03/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:11.442923+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 4,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6926379170035943,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27117,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-04/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-04/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:12.404721+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 5,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6973905829945579,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27125,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-05/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-05/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:13.362997+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 6,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6948970000375994,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27134,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-06/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-06/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:14.313442+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 7,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.7084979999926873,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27135,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-07/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-07/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:15.231675+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 8,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.6901362499920651,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27151,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-08/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-08/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:16.131459+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 9,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.7019814579980448,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27154,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-09/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-09/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:17.080959+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    },
+    {
+      "index": 10,
+      "empty_database_at_spawn": true,
+      "empty_storage_at_spawn": true,
+      "elapsed_seconds": 0.7051608749898151,
+      "health_response": {
+        "status": "ok"
+      },
+      "evidence": {
+        "pid": 27164,
+        "http_status": 200,
+        "forbidden_modules": [],
+        "non_loopback_attempts": [],
+        "local_cost_map_env_present": false,
+        "database_url": "sqlite:////var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-10/runtime.sqlite3",
+        "storage_root": "/var/folders/6r/rljg4n6523nb1t847tznzlm00000gn/T/vibe-startup-independent-w5y90ztf/sample-10/data",
+        "provider": "mock"
+      },
+      "passed": true,
+      "process_exit_code": -15,
+      "process_log": "{\"schema_version\": \"diagnostic-log-v1\", \"timestamp\": \"2026-09-11T14:30:18.040557+00:00\", \"severity\": \"INFO\", \"event\": \"bootstrap.model_provider\"}\n"
+    }
+  ],
+  "passed": true,
+  "summary": {
+    "min_seconds": 0.6665804579970427,
+    "max_seconds": 0.7084979999926873,
+    "mean_seconds": 0.694960054202238
+  }
+}

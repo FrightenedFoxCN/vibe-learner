@@ -152,3 +152,20 @@ These are local regression ceilings, not production latency promises.
 
 
 Planning tools remain serial: all six registrations are `parallel_safe=false`. Any future parallel candidate must preserve immutable snapshot input, stable result order and effect safety, with a reviewed rollback threshold.
+
+## `backend-startup-acceptance-v1`
+
+`PERF-002` uses ten fresh mock-provider processes, each with an empty temporary
+SQLite database and empty storage. Measure from immediately before process spawn
+through fully reading the first successful HTTP `/health` response. Every sample
+must be below 2 seconds; at that response boundary neither `litellm` nor `onnxtr`
+(including submodules) may be loaded. Audit hooks record and deny non-loopback DNS
+and connection attempts before application imports; any attempt fails the gate.
+Do not set `LITELLM_LOCAL_MODEL_COST_MAP` to hide a startup SDK import.
+
+Run `npm run test:acceptance:startup -- --output /tmp/backend-startup.json`.
+The raw artifact records each sample, environment, module/network evidence and
+process exit. This is a local process-start gate, not a cold-disk, OCR-first-use,
+model-first-call or deployment readiness latency guarantee. SDK injection remains
+supported; SDK-dependent operations load LiteLLM on first access, under an
+instance lock, and retain the existing operation configuration snapshot boundary.
