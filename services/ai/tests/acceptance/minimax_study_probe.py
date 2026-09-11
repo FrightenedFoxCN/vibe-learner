@@ -379,6 +379,22 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                     "pending_before": [item.model_dump(mode="json") for item in receipt.result.session.pending_follow_ups],
                                     "pending_after": final_session.json().get("pending_follow_ups") if final_session.status_code == 200 else None,
                                     "scope": "Backend schedule/cancel only; browser timer delivery is not exercised."}
+                                if cancelled.status_code == 200 and receipt.result.session.pending_follow_ups:
+                                    follow_up = receipt.result.session.pending_follow_ups[0]
+                                    calls_before_late = len(calls)
+                                    late = client.post(f"/study-sessions/{initial.id}/chat", json={
+                                        "client_request_id": f"late-follow-up-{repetition}",
+                                        "expected_session_revision": final_session.json()["revision"],
+                                        "message_kind": "scheduled_follow_up", "follow_up_id": follow_up.id,
+                                        "message": follow_up.hidden_message})
+                                    after_late = client.get(f"/study-sessions/{initial.id}")
+                                    row["late_cancelled_delivery"] = {"http_status": late.status_code,
+                                        "provider_calls": len(calls) - calls_before_late,
+                                        "session_unchanged": after_late.status_code == 200 and after_late.json() == final_session.json(),
+                                        "error": late.json() if late.status_code != 200 else None}
+                                    if late.status_code == 200:
+                                        row["late_cancelled_delivery"]["receipt"] = {key: late.json().get(key) for key in
+                                            ("operation_id", "status", "safe_to_retry", "error_code")}
                             if plan_before is not None and receipt.result:
                                 before_decision = client.get(f"/learning-plans/{plan_before['id']}")
                                 row["plan_unchanged_before_confirmation"] = before_decision.status_code == 200 and before_decision.json() == plan_before

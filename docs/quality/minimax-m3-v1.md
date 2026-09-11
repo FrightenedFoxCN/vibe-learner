@@ -412,3 +412,11 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 [三例续接安排与取消](evidence/minimax-study-follow-up-v1.jsonl)都仅生成一条60秒后的pending记录，实际取消API均成功且Session读回一致。测试没有启动浏览器定时器，不声称验证了到时投递。第一例hidden_message擅自换成教材没有的分式方程(3x−5)/2=(x+7)/4，其他例子也使用“刚才解出的x”“60秒前那道题”等未经当前会话支持的经历表述。后续应测试实际隐藏消息投递时是否延续这些错误，而不是只看记录是否成功创建。
 
 Study成功工具加领域提交覆盖增至29/31，仍缺retrieve_memory_context和generate_projected_image；真实Tavern领域流程、语义与人格质量、长上下文缓存/压缩仍持续迭代。本轮仅扩展探针与证据，无生产代码修改。
+
+## 轮次 35：真实Tavern领域链路与取消后迟到续接
+
+[六次真实Tavern Run](evidence/minimax-tavern-domain-v1.jsonl)包含三次直接对话与三次双角色轮次，共提交九条角色消息。不同于此前直接provider实验，这次经过Room/Run准入、每个actor的v3 trace、Message提交与HTTP transcript读回；六次同一请求重放均返回相同结果且没有额外provider调用。多人请求故意反向提交目标ID，服务器仍按cast顺序执行，后一位的reply anchor及addressed target都指向前一位。
+
+[逐条格式与链接检查](evidence/minimax-tavern-domain-review-v1.json)九条均恰好两个无序列表行。人格差异在本fixture中可见：顾言先核时间/预算，林岚侧重光线和街景；两人仍共享测试helper的Socratic slot与grounded system prompt，不把本结果当作人格泛化认证。事实/约束质量仍有问题：最后一轮顾言建议单程一小时、休息二十分钟、原路返回，合计至少140分钟，超出用户120分钟限制；林岚未指出超时，并在未知城市下给出“河道西段、四点侧光”等缺少场地依据的细节。因此格式与身份通过不等于行程可行。
+
+[三例取消后迟到投递](evidence/minimax-study-follow-up-late-v2.jsonl)先真实安排60秒续接、取消，再模拟客户端发送scheduled_follow_up。三例均没有provider调用、Session保持不变；HTTP200返回的是not_committed操作回执，持久化错误为study_chat_not_committed_follow_up_not_pending。回执通过重开服务后的只读查询再次确认，未重放失败操作。这里只验证后端取消保护，正常到期的客户端计时与续接内容尚需继续测试。

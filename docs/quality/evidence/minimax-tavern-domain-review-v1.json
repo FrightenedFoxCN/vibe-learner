@@ -1,0 +1,139 @@
+{
+  "scope": "real Tavern operation and fixture-specific format/order review",
+  "limitations": [
+    "Developer-authored review, not independent personality or factual-quality certification.",
+    "Personas differ in name and summary but share the test helper Socratic slot and grounded system prompt.",
+    "Nine actor messages are a small synthetic initial-conversation sample; no long-history or recovery-quality claim."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-bcd0b151151248d4b4a774e19fd52744",
+      "mode": "direct",
+      "repetition": 0,
+      "boundary_success": true,
+      "speaker_order_matches_cast": true,
+      "provider_requests": 1,
+      "replay_provider_requests": 0,
+      "messages": [
+        {
+          "persona_name": "顾言",
+          "text": "- 先核条件：两小时含往返，步行环线单程建议控制在 35 分钟以内，留出至少 40 分钟慢走与停留。\n- 50 元主要花在饮品或小食即可，不必安排门票或额外交通，选一处有座椅可歇脚的街区会更舒服。",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        }
+      ]
+    },
+    {
+      "operation_id": "harness-operation-687713215b804be08d33709d00776355",
+      "mode": "facilitated",
+      "repetition": 0,
+      "boundary_success": true,
+      "speaker_order_matches_cast": true,
+      "provider_requests": 2,
+      "replay_provider_requests": 0,
+      "messages": [
+        {
+          "persona_name": "顾言",
+          "text": "- 按2小时和步行节奏估算，舒适路线约5–7公里，建议沿河岸或城市公园环形步道走，免门票且节奏自由。\n- 预算50元留作途中补给即可——选一条老街区步行路线，路过街边小摊买杯茶或小吃，单次消费控制在10–15元，总开销不超预算。",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        },
+        {
+          "persona_name": "林岚",
+          "text": "- 挑一条有老建筑和行道树的街道走，下午三四点的侧光最容易出片，手机随手拍就有氛围感\n- 如果愿意多走两步，穿过一条有涂鸦墙或老市集的小巷，花半小时慢慢逛，50元够买杯咖啡坐着歇脚顺便取景",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        }
+      ]
+    },
+    {
+      "operation_id": "harness-operation-a480fb98668d437ea5f64ffa0091dba3",
+      "mode": "direct",
+      "repetition": 1,
+      "boundary_success": true,
+      "speaker_order_matches_cast": true,
+      "provider_requests": 1,
+      "replay_provider_requests": 0,
+      "messages": [
+        {
+          "persona_name": "林岚",
+          "text": "- 老城区的几条小巷串着走，光线打在老门框和晾衣绳上特别出片，全程不花门票，挑一家巷口小店买杯喝的就行\n- 江边绿道往返走一段，下午三四点的斜光把水面拍得很干净，沿途长椅多，走累随时能歇，五十块完全用不完",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        }
+      ]
+    },
+    {
+      "operation_id": "harness-operation-fcb11f580dd049c38847bab2aba7c054",
+      "mode": "facilitated",
+      "repetition": 1,
+      "boundary_success": true,
+      "speaker_order_matches_cast": true,
+      "provider_requests": 2,
+      "replay_provider_requests": 0,
+      "messages": [
+        {
+          "persona_name": "顾言",
+          "text": "- 小林，先确认下：两小时、50元以内，主打散步放松。建议选一条老城区的步行环线，沿途以街景和老建筑为主，地铁/公交单程即可覆盖。\n- 找个有小公园或老街巷的片区落脚，走走停停拍拍照，渴了买瓶水、饿了尝份本地小吃，节奏放慢就好。",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        },
+        {
+          "persona_name": "林岚",
+          "text": "- 你说的老城步行环线我很赞同，再补一条：挑下午三点到五点那段走，斜光打在老门牌和晾衣绳上最出片，渴了买瓶水就行\n- 走到累了就拐进小公园的长椅歇一会儿，光影在白墙上慢慢移动，正好适合发呆，两小时慢慢走刚好够",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        }
+      ]
+    },
+    {
+      "operation_id": "harness-operation-15fcb8748edb4a848b8daf4d57c4f387",
+      "mode": "direct",
+      "repetition": 2,
+      "boundary_success": true,
+      "speaker_order_matches_cast": true,
+      "provider_requests": 1,
+      "replay_provider_requests": 0,
+      "messages": [
+        {
+          "persona_name": "顾言",
+          "text": "- 两小时步行，按悠闲节奏大约覆盖 3–5 公里，建议先定一个中心点再向外延伸一条单程路线，避免折返赶时间\n- 50 元预算留出 15–20 元在中途买杯饮品或小食即可，不必安排需要门票的景点，剩下作交通或备用",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        }
+      ]
+    },
+    {
+      "operation_id": "harness-operation-4ed354667aba4c418d0fd1c21b3cdba8",
+      "mode": "facilitated",
+      "repetition": 2,
+      "boundary_success": true,
+      "speaker_order_matches_cast": true,
+      "provider_requests": 3,
+      "replay_provider_requests": 0,
+      "messages": [
+        {
+          "persona_name": "顾言",
+          "text": "- 先卡一下变量：两小时和五十元，扣掉交通和饮水，步行半径建议压在单程三公里以内，别跨区，时间省下来给坐着发呆。\n- 路线挑一段有树荫的河边或老巷，慢走加拍照单程一小时，原地歇二十分钟原路折返，水自带，这样不超预算也不赶。",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        },
+        {
+          "persona_name": "林岚",
+          "text": "- 顾言的河岸或老巷思路很稳，可以再具体一点：沿河的步道挑西段，下午四点出发正好赶上侧光，水面会有暖调反光，树荫也不会太密，拍照不用滤镜。\n- 五十元拆成十块饮水、二十块街角小馆一碗面或一份小吃当补给，剩下留着应急或买杯咖啡坐着收尾，两小时走拍加歇刚好闭环。",
+          "exact_two_bullet_lines": true,
+          "correct_reply_anchor": true,
+          "addresses_previous_actor": true
+        }
+      ]
+    }
+  ]
+}
