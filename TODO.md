@@ -2,7 +2,7 @@
 
 本文件是产品、Harness 和桌面工作的统一待办入口；用户指定的专项计划独立维护明细并在此链接，不复制 checkbox。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-10：本文件保留 27 项产品/验收待办；下方解耦与 Debug 专项实施均已完成，合计 27 项，其中 1 项质量复核暂缓。研究候选不计入任务数。
+2026-09-11：本文件保留 25 项产品/验收待办，其中 1 项质量复核暂缓。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -21,11 +21,6 @@
   - 补齐题组 busy 状态、单选/多选选择语义、填空显式 label、错误播报、焦点恢复和至少 44px 触控目标。
   - 验收：键盘、屏幕阅读语义和持久化 read-back 流程均通过独立验收。
 
-- [ ] `UX-A11Y-SCENE-DIALOG-001` `[P1]` 完成 Scene 删除层级 Dialog 的模态行为。
-  - 补齐初始焦点、focus trap、Escape、背景 inert，以及取消/确认后的焦点恢复。
-  - 验收：键盘无法逃逸到背景，取消后焦点回到发起控件；确认删除移除控件时回到 Scene 标题。
-  - 2026-09-10：独立 SceneDeleteDialog 使用原生 showModal 背景 inert，补齐初始焦点、Tab 循环、Escape 与焦点恢复。生产 Chromium 2 项完整键盘/删除测试通过；仍待独立复核后关闭。
-
 - [ ] `TAV-UX-COPY-001` `[P2]` 完成 Tavern 状态文案的关闭验收。
   - 增加表驱动 copy contract，覆盖 run/step、partial、failed、blocked、retry、stale、archived、cancel 与 raw-code 隔离。
   - `blocked` 不得显示为角色失败，raw code 只进入 Reliability Details / Debug Overlay。
@@ -38,11 +33,6 @@
 - [ ] `PERF-TAV-ROOMS-001` `[P2]` 完成 Tavern Room 分页时间门。
   - 保留已完成的稳定 cursor、复合索引、每页最多 4 SQL、payload 和 100 个按钮结构门。
   - 按 `docs/performance-budgets-v1.md` 记录首/中/末页 server samples、React Profiler commits 和原始样本；纯函数时间不得冒充 React 门。
-
-- [ ] `PERF-WEB-PROVIDER-001` `[P2]` 建立路由级 Provider ownership。
-  - 已实现：学习 Provider 限于 Plan/Study，Debug Overlay 独立；默认教师/空业务数据下，十个顶级页面及 focus 的 Chromium 网络清单通过。
-  - 已补充：历史 goal-only Plan/Session、未准备章节的 uncertain 刷新恢复、聊天 POST 在途离页后查询原身份；浏览器断言没有额外 POST。实现与最终架构阶段门禁已完成；待独立复核路由网络/恢复证据后关闭本项。
-  - 验收：为每个顶级路由冻结允许请求清单，并以浏览器网络记录和自动化测试验证。
 
 ## Next（已定义、待排期）
 
@@ -66,6 +56,7 @@ Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` �
 
 - [ ] `DOC-USER-001` `[P2]` 补齐并独立走查用户手册。
   - 2026-09-11：新增主页独立入口与 `/manual` 网页手册，简述首次使用、主要操作、恢复、数据及安装；正文统一在网页维护。独立新数据主流程与桌面安装走查仍待验收。
+  - 本轮主智能体使用全新临时数据库/真实 mock 后端，走通纯目标生成、自动创建会话、提问与刷新读回；不替代独立完整手册验收。仍需 Settings 首次配置、教材路线、其他领域及桌面安装走查，见[核对报告](docs/plans/acceptance-audit-2026-09-11.md)。
   - 覆盖 goal-only、mock/real 首次使用路线，Document/Plan/Study/Persona/Scene/Tavern 主任务、恢复语义、数据位置与留存，以及产品限制。
   - 覆盖 DMG/NSIS/AppImage 安装、unsigned 限制和 SHA-256 校验。
   - 使用全新临时数据目录走通一次 mock 主流程和一次桌面安装流程。
@@ -105,10 +96,12 @@ Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` �
   - 已有进程退出、事务回滚、HTTP 重启读回测试作为回归门；不得重复列为待实现。Study 文案由 `STUDY-OP-RECOVERY-UX-001` 负责。
 
 - [ ] `REL-POSTGRES-001` `[P2]` 在实际 PostgreSQL 上完成迁移、并发 CAS、事务回滚和重启恢复验收。
-  - 当前完整恢复矩阵在 SQLite 上通过；SQLite 结果不能替代 PostgreSQL 实测。
+  - 2026-09-11 独立 PostgreSQL 17 实测：原事务/引用 22 项、空库 Alembic 升级、Study Session 并发 CAS、异常回滚、数据库重启后新进程读回通过，见[独立报告](docs/plans/postgres-replay-independent-acceptance-2026-09-11.md)。
+  - 剩余：带数据旧版本迁移、Document/Planning/Study/Tavern 操作 admission/lease/commit 中断窗口及应用 HTTP 重启恢复。SQLite 完整恢复矩阵不能替代这些 PostgreSQL 实测。
 
 - [ ] `REL-REPLAY-001` `[P2]` 独立复核 Document、Planning、Persona/Scene 的受保护制品重放。
   - 覆盖授权、保留/删除、摘要损坏和版本兼容；复用现有运行时、解析器和测试，不新增一套 Harness 基础设施。
+  - 2026-09-11 四领域合成快照独立授权/版本拒绝/过期/损坏/删除/新连接解析矩阵通过，另 29 项相关回归通过。剩余真实历史制品的完整领域 adapter 重放、历史契约兼容及旧 grant 过期后重新授权；共享解析边界通过不等于完整重放认证，见[独立报告](docs/plans/postgres-replay-independent-acceptance-2026-09-11.md)。
 
 - [ ] `DOC-INPUT-BOUNDS-001` `[P2]` 定义文档上传字节/页数上限与可恢复的拒绝行为。
   - 当前上传没有硬性上限；256 页压力测试已通过。明确单个不可分割文本块的策略，不能把 chunk packing target 当作硬上限。

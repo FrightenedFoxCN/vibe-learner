@@ -1,0 +1,486 @@
+{
+  "source_commit": "5117bc3c64425e1777cb6ce795700f4db91a5e2f",
+  "build_id": "R4NvcnDWh8WLl9x6TOx9t",
+  "stats": {
+    "startTime": "2026-09-11T07:35:42.096Z",
+    "duration": 15124.726999999999,
+    "expected": 18,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "historical goal-only Plan and Session restore across routes without new generation",
+      "status": "passed",
+      "duration_ms": 1590,
+      "requests": []
+    },
+    {
+      "title": "refresh queries the original uncertain operation; manual read-back unlocks the committed reply",
+      "status": "passed",
+      "duration_ms": 400,
+      "requests": []
+    },
+    {
+      "title": "leaving with a chat POST in flight recovers by query on return without another POST",
+      "status": "passed",
+      "duration_ms": 1418,
+      "requests": []
+    },
+    {
+      "title": "independent: late learning snapshot after Manual navigation cannot reanimate owner",
+      "status": "passed",
+      "duration_ms": 903,
+      "requests": [
+        {
+          "name": "requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "independent: uncertain survives Plan and Manual navigation plus failed read-back without replay",
+      "status": "passed",
+      "duration_ms": 1170,
+      "requests": [
+        {
+          "name": "requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions/session-1/chat-operations/independent-pending"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions/session-1/chat-operations/independent-pending"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions/session-1/chat-operations/independent-pending"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions/session-1/chat-operations/independent-pending"
+            },
+            {
+              "method": "GET",
+              "path": "/study-sessions/session-1/chat-operations/independent-pending"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/ initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 613,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/manual initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 638,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/settings initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 621,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/model-usage initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 619,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/model-usage/stats"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/plan initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 644,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/study initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 650,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/persona-spectrum initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 648,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/persona-cards"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/scene-setup initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 641,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/reusable-scene-nodes"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/sensory-tools initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 620,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/model-tools/config"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/tavern initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 652,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/tavern/rooms"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/not-a-real-page initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 611,
+      "requests": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Plan and Study share their owner; leaving it stops learning focus refresh",
+      "status": "passed",
+      "duration_ms": 803,
+      "requests": [
+        {
+          "name": "navigation-api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Plan draft remains visible after navigating to Settings and back",
+      "status": "passed",
+      "duration_ms": 1088,
+      "requests": []
+    }
+  ]
+}
