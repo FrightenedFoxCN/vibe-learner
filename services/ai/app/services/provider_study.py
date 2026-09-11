@@ -1125,6 +1125,8 @@ def _extract_interactive_question_payload(
     tool_results: list[dict[str, Any]],
 ) -> StudyQuestionProposalV1 | None:
     payload = parsed.get("interactive_question")
+    if "interactive_question" in parsed and payload is None:
+        return None
     if isinstance(payload, dict):
         normalized = _normalize_interactive_question(payload)
         if normalized is None:
@@ -1320,6 +1322,10 @@ def _parse_chat_model_reply(
         proposal = _decode_study_chat_reply_proposal(content)
         if proposal is not None:
             parsed = proposal.model_dump(mode="json", exclude_none=True)
+            # An explicit null is the final proposal's choice to omit a question.
+            # Preserve it so a prior tool draft cannot override that choice.
+            if "interactive_question" in proposal.model_fields_set and proposal.interactive_question is None:
+                parsed["interactive_question"] = None
         else:
             finish_reason, reasoning_tokens, completion_tokens = _extract_choice_diagnostics(raw_payload)
             logger.info(

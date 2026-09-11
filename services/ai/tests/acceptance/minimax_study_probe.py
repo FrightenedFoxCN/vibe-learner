@@ -39,7 +39,10 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "scene_object_lifecycle": "请先读取当前场景，找到白板，把其描述改为‘写有方程 2x+3=11 的白板’。随后新增一个名为‘验算卡’、描述为‘用于代入检验的纸卡’的物品，再删除刚新增的验算卡，保留白板。最后读回核对，只用两条Markdown无序列表报告白板与验算卡的最终状态，不出题、不修改好感度。",
+    "scene_navigation": "请读取当前场景，在当前自习室下新增名为‘验算角’的子场景，摘要为‘专门核对方程解的安静角落’，然后明确移动到验算角，读取场景核对当前位置。最后只用一句话报告实际所在场景，不出题，不新增物品。",
     "fill_blank_attempt": "请调用 ask_fill_blank_question，围绕教材方程 2x+3=11 生成一道只填x数值的互动填空题。判分应接受正确数值的阿拉伯数字和中文数字两种等价写法。等我提交后再判分，现在不要展示答案或解析，不要改成选择题。",
+    "fill_blank_native_attempt": "请围绕教材方程 2x+3=11 生成一道只填x数值的互动填空题。判分应接受正确数值的阿拉伯数字和中文数字两种等价写法。等我提交后再判分，现在不要展示答案或解析，不要改成选择题。",
     "three_bullets": "请用恰好三条 Markdown 无序列表讲解 2x+3=11 的求解和检验，每条一句。不要开场白、标题、结尾或出题。",
     "code_and_math": "请用中文说明 2x+3=11 的解，含一条 LaTeX 行内公式，再给一个 python 代码块用 assert 验证答案。不要生成图或题目。",
     "unknown_source": "教材是否说过这个方法是陈老师于1987年发明的？请核对教材，找不到就明确说教材未提供，别编造作者和年份。",
@@ -114,7 +117,7 @@ def stable_system_prefix_candidate(system):
 
 def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False, multimodal=False,
         format_contract_candidate=False, repeat_request_candidate=False, attachment_kind=None, coordinate_grid_candidate=False,
-        prepared_effect_candidate=False):
+        prepared_effect_candidate=False, question_tools_disabled_candidate=False):
     if repeat_request_candidate and selected_case is None:
         raise ValueError("Repeat-request experiment requires one selected case")
     if attachment_kind not in {None, "pdf", "image"}:
@@ -131,6 +134,13 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
     original = ProviderRequestAdapter.request_chat_completion
 
     def observe(adapter, payload, *, request_kind, model):
+        if question_tools_disabled_candidate:
+            payload = {**payload, "tools": [tool for tool in payload.get("tools", [])
+                if tool.get("function", {}).get("name") not in {"ask_fill_blank_question", "ask_multiple_choice_question"}]}
+            if not payload["tools"]:
+                payload.pop("tools")
+                payload.pop("tool_choice", None)
+                payload.pop("parallel_tool_calls", None)
         if coordinate_grid_candidate:
             from PIL import Image, ImageDraw, ImageFont
             messages = []
@@ -248,8 +258,15 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     if selected_case is not None and case_id != selected_case:
                         continue
                     calls.clear()
-                    response = client.post("/study-sessions", json={"document_id": document_id,
-                        "persona_id": persona_id, "study_unit_id": document["study_units"][0]["id"]})
+                    session_payload = {"document_id": document_id,
+                        "persona_id": persona_id, "study_unit_id": document["study_units"][0]["id"]}
+                    if case_id.startswith("scene_"):
+                        session_payload["scene_profile"] = {"scene_name": "质量测试自习室", "scene_id": "quality-room",
+                            "title": "自习室", "summary": "安静的数学自习室", "selected_path": ["自习室"],
+                            "scene_tree": [{"id": "quality-room", "title": "自习室", "scope_label": "room",
+                                "summary": "安静的数学自习室", "atmosphere": "安静", "rules": "", "entrance": "门",
+                                "objects": [{"id": "quality-board", "name": "白板", "description": "空白白板", "interaction": "书写"}], "children": []}]}
+                    response = client.post("/study-sessions", json=session_payload)
                     response.raise_for_status()
                     initial = StudySessionResponse.model_validate(response.json())
                     request_id = f"quality-{case_id}-{repetition}"
@@ -260,6 +277,9 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     row["prompt_variant"] = "question-contract-experiment-v2" if question_contract_candidate else "production"
                     row["multimodal_enabled"] = multimodal
                     row["attachment_kind"] = attachment_kind
+                    if question_tools_disabled_candidate:
+                        row["question_tool_variant"] = "question-tools-not-offered-v1"
+                        row["trace_limitation"] = "Question tools omitted at provider boundary; same strict final proposal and production commit, not production tool-catalog adoption."
                     if prepared_effect_candidate:
                         row["effect_followup_variant"] = "prepared-is-not-failure-v1"
                         row["experimental_effect_suffix"] = PREPARED_EFFECT_CANDIDATE
@@ -317,7 +337,7 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 t["status"] in {"passed", "repaired"} and t["commit_evidence"]["status"] == "committed"
                                 for t in row["terminal_traces"]
                             ) and len(row["terminal_traces"]) == len(executions)
-                            if case_id == "fill_blank_attempt" and receipt.result and receipt.committed_turn_id:
+                            if case_id in {"fill_blank_attempt", "fill_blank_native_attempt"} and receipt.result and receipt.committed_turn_id:
                                 # Submit known fixture answers, never inspect the private grading spec.
                                 answer = ("4", "四", "5")[repetition % 3]
                                 attempt_payload = {"turn_id": receipt.committed_turn_id,
@@ -367,7 +387,8 @@ if __name__ == "__main__":
     parser.add_argument("--attachment-kind", choices=("pdf", "image"))
     parser.add_argument("--coordinate-grid-candidate", action="store_true")
     parser.add_argument("--prepared-effect-candidate", action="store_true")
+    parser.add_argument("--question-tools-disabled-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate, args.question_tools_disabled_candidate)

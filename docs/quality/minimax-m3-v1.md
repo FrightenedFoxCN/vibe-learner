@@ -378,3 +378,17 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 [六例交错对照](evidence/minimax-study-prepared-pairs-v1.jsonl)均完成PDF投射、高亮指定文字、清除，最终overlays为空。候选在工具后明确ok=true且prepared是待提交集合、committed=false不是失败、无需重复执行相同写入，同时提醒独立配额和总预算。[工具请求复核](evidence/minimax-study-prepared-review-v1.json)显示基线三例各清除一次，候选两例一次、一例两次；没有支持减少重复调用的收益，未采用生产提示修改。不把几秒到几十秒的单次时延波动解释为缓存或性能提升。
 
 当前成功工具加领域提交的覆盖为Planning 6/6、Study 19/31，新增填空题与focus_projected_pdf_page。填空题泄露和图像定位错误仍未解决，覆盖上升不是质量认证。下一轮继续检查工具结果的信息质量：当前填空题工具返回的是泛化模板与占位式答案，最终具体题目依靠主模型重写；其作用和可靠性需要单独对照，而非只增加提示词。继续补足场景、计划确认与实际Tavern领域准入测试。
+
+## 轮次 31：显式取消题目被工具模板覆盖
+
+[生产解析器确定性回放](evidence/minimax-question-placeholder-replay-v1.json)显示：调用填空工具后，模型明确给出interactive_question=null，应用仍回填通用题目“围绕2x+3=11，求x的深度理解表述是______”；该模板对正确数值4判为不匹配。这是注入provider响应以隔离解析语义的反例，不计为M3实测发生频率，也不记录内部判分值。
+
+原因是proposal序列化使用exclude_none丢失了显式null，提取函数随后回退到工具结果。修复保留模型明确填写的null，并让它优先于旧工具草稿；缺省字段的兼容回填仍需后续审查，不能把本修复称为完整出题质量解决方案。新回归在旧实现失败，修复后23项定向测试与完整后端800项通过。
+
+[六例交错工具可用性对照](evidence/minimax-study-question-tools-pairs-v1.jsonl)使用同一个不强制调用工具的请求和相同题目约束，只改变是否向provider提供两种出题工具。两组三例都直接输出题目，基线也没有使用出题工具，因此不能推断调用工具本身的收益或损失。六例实际提交4均判正确并通过幂等回查；[字面答案检查](evidence/minimax-study-question-tools-review-v1.json)中工具可用组0/3、去除组1/3泄露。去除组还有提前讲解操作步骤的问题，未采用工具禁用策略。
+
+## 轮次 32：场景工具缺少后续操作必需的身份
+
+[六例真实场景操作](evidence/minimax-study-scene-tools-v1.jsonl)全部提交Chat，但三个“修改白板→新增验算卡→删除验算卡”任务均未完成：白板描述都未改，两例卡片残留。三个导航任务最终选中验算角，一例却报告仍在自习室；大量重复新增、读取与移动请求继续存在。工具调用成功、Chat提交和用户目标完成必须分开。
+
+代码定位到工具契约信息损失：read_scene_overview的领域结果含完整scene_tree与selected_scene_id，provider适配仅保留标题、路径、object_names；新增物品返回的object_id和新增场景返回的added_scene_id也被丢弃。后续update_object_description/delete_object却要求object_id。这解释了模型无法从工具回执取得必要身份的机制，但现有公开trace已脱敏，不能据此断言每一次失败请求使用了哪个错误ID。下一步修复有界的场景/物品身份投影，维持公开trace脱敏，并记录provider实收身份与真实复测结果。

@@ -1,0 +1,95 @@
+{
+  "scope": "synthetic fill-blank post-hoc public-answer and submission review",
+  "limitations": [
+    "Literal answer scan is fixture-specific, not a general semantic leakage detector.",
+    "Absence of answer literals does not prove absence of premature hints or solutions.",
+    "Grading success is separate from generation, tool compliance and pre-submission privacy.",
+    "Developer-authored checks are not independent quality certification."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-485bb185bb2b402699f7951936f74441",
+      "source": "minimax-study-question-tools-pairs-v1.jsonl",
+      "repetition": 0,
+      "boundary_success": true,
+      "has_fill_blank": true,
+      "pre_submission_private_field_paths": [],
+      "fixture_answer_literal_in_public_content": false,
+      "submitted_answer": "4",
+      "submission_http_status": 200,
+      "grading_matches_fixture": true,
+      "duplicate_equal": true,
+      "revision_incremented_once": true
+    },
+    {
+      "operation_id": "harness-operation-dfe7cf01921b44fd87c3e1a0f413686c",
+      "source": "minimax-study-question-tools-pairs-v1.jsonl",
+      "repetition": 0,
+      "boundary_success": true,
+      "has_fill_blank": true,
+      "pre_submission_private_field_paths": [],
+      "fixture_answer_literal_in_public_content": true,
+      "submitted_answer": "4",
+      "submission_http_status": 200,
+      "grading_matches_fixture": true,
+      "duplicate_equal": true,
+      "revision_incremented_once": true
+    },
+    {
+      "operation_id": "harness-operation-aaf9a5b81f694fb48209f6b98d227dcc",
+      "source": "minimax-study-question-tools-pairs-v1.jsonl",
+      "repetition": 0,
+      "boundary_success": true,
+      "has_fill_blank": true,
+      "pre_submission_private_field_paths": [],
+      "fixture_answer_literal_in_public_content": false,
+      "submitted_answer": "4",
+      "submission_http_status": 200,
+      "grading_matches_fixture": true,
+      "duplicate_equal": true,
+      "revision_incremented_once": true
+    },
+    {
+      "operation_id": "harness-operation-8f422eef1ea8419d92c798e418d1eeca",
+      "source": "minimax-study-question-tools-pairs-v1.jsonl",
+      "repetition": 0,
+      "boundary_success": true,
+      "has_fill_blank": true,
+      "pre_submission_private_field_paths": [],
+      "fixture_answer_literal_in_public_content": false,
+      "submitted_answer": "4",
+      "submission_http_status": 200,
+      "grading_matches_fixture": true,
+      "duplicate_equal": true,
+      "revision_incremented_once": true
+    },
+    {
+      "operation_id": "harness-operation-4b1daebe79a244a8914dea3a7d8a2fe7",
+      "source": "minimax-study-question-tools-pairs-v1.jsonl",
+      "repetition": 0,
+      "boundary_success": true,
+      "has_fill_blank": true,
+      "pre_submission_private_field_paths": [],
+      "fixture_answer_literal_in_public_content": false,
+      "submitted_answer": "4",
+      "submission_http_status": 200,
+      "grading_matches_fixture": true,
+      "duplicate_equal": true,
+      "revision_incremented_once": true
+    },
+    {
+      "operation_id": "harness-operation-5f0ce0c7f88c45a88271c00556e455e5",
+      "source": "minimax-study-question-tools-pairs-v1.jsonl",
+      "repetition": 0,
+      "boundary_success": true,
+      "has_fill_blank": true,
+      "pre_submission_private_field_paths": [],
+      "fixture_answer_literal_in_public_content": false,
+      "submitted_answer": "4",
+      "submission_http_status": 200,
+      "grading_matches_fixture": true,
+      "duplicate_equal": true,
+      "revision_incremented_once": true
+    }
+  ]
+}

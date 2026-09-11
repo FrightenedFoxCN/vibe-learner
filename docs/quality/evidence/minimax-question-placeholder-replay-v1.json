@@ -1,0 +1,12 @@
+{
+  "scope": "deterministic production provider parser counterexample, no real model or domain admission",
+  "git_revision": "8941d33f18ff9db0dbacfeaf9862a763df3cfe88",
+  "final_model_question": null,
+  "application_returned_question": true,
+  "public_prompt": "请补全：围绕 2x+3=11，求x 的深度理解表述是 ______。",
+  "submitted_fixture_answer": "4",
+  "graded_correct": false,
+  "provider_calls": 2,
+  "private_grading_values_recorded": false,
+  "limitation": "Injected tool request and final reply isolate fallback semantics; not a measured frequency from M3."
+}

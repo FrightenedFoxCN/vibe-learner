@@ -25,7 +25,7 @@ def review(paths):
     for path in paths:
         for line in path.read_text().splitlines():
             row = json.loads(line)
-            if row.get("case_id") != "fill_blank_attempt":
+            if row.get("case_id") not in {"fill_blank_attempt", "fill_blank_native_attempt"}:
                 continue
             result = (row.get("receipt") or {}).get("result") or {}
             question = result.get("interactive_question") or {}

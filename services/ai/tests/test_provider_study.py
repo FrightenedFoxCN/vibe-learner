@@ -62,6 +62,18 @@ class StudyProviderTests(unittest.TestCase):
         for private_key in ('answer', 'answer_key', 'accepted_answers', 'grading_spec', 'correct_option_key', 'explanation'):
             self.assertNotIn(private_key, public_result)
 
+    def test_explicit_null_question_does_not_restore_tool_template(self) -> None:
+        tool_call = {'choices': [{'finish_reason': 'tool_calls', 'message': {'content': '', 'tool_calls': [
+            {'id': 'call-fill-cancelled', 'type': 'function', 'function': {
+                'name': 'ask_fill_blank_question', 'arguments': json.dumps({'topic': '2x+3=11', 'blank_count': 1})}}]}}]}
+        final_reply = json.dumps({'text': '本轮不出题。', 'mood': 'calm', 'action': '收起题卡',
+                                  'interactive_question': None})
+        request = Mock(side_effect=[(tool_call, []), (raw_chat_reply(final_reply), [])])
+        reply = self.provider(request=request).generate_chat(
+            persona=study_persona(), section_id='unit-1', message='先准备一道题，若无法完成就不要出题。')
+        self.assertEqual(len(reply.tool_calls), 1)
+        self.assertIsNone(reply.interactive_question)
+
     def test_noncompliant_tool_loop_has_finite_call_ceiling(self):
         payload = {"choices": [{"finish_reason": "tool_calls", "message": {
             "content": "", "tool_calls": [{"id": "call-invalid", "type": "function",
