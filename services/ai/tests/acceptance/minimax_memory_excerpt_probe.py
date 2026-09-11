@@ -18,10 +18,11 @@ from app.services import study_memory
 from app.services.provider_sdk import ProviderRequestAdapter
 
 
-def run(source, output, repetitions, role_split=False, production=False, temporal=False):
-    source_row = json.loads((source / 'report.jsonl').read_text().splitlines()[0])
+def run(source, output, repetitions, role_split=False, production=False, temporal=False, query_windows=False, source_index=0):
+    source_row = json.loads((source / 'report.jsonl').read_text().splitlines()[source_index])
     seed_ids = {s['receipt']['session_id'] for s in source_row['memory_seed_operations']}
-    source_session = source_row['receipt']['result']['session']
+    source_result = source_row['receipt'].get('result')
+    source_session = source_result['session'] if source_result else source_row['memory_seed_operations'][0]['receipt']['result']['session']
     output.mkdir(parents=True, exist_ok=False)
     original_embed = study_memory._embed
     original_build = study_memory._build_candidates
@@ -34,6 +35,8 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                 variants = ('production',)
             if temporal:
                 variants = ('without_time', 'production')
+            if query_windows:
+                variants = ('production', 'query_window')
             if repetition % 2:
                 variants = tuple(reversed(variants))
             for variant in variants:
@@ -72,6 +75,15 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                             candidate.snippet = '用户原话：' + capped(turn.learner_message, 800)
                             if variant == 'learner800_assistant160':
                                 candidate.snippet += '\n助手回复：' + capped(turn.assistant_reply, 160)
+                    if variant == 'query_window':
+                        from tests.acceptance.memory_query_window import query_window
+                        by_id = {s.id: s for s in sessions}
+                        for candidate in selected:
+                            turn = next(t for t in by_id[candidate.session_id].turns if t.created_at == candidate.created_at)
+                            label = '用户原话：' if turn.learner_message_kind == 'learner' else '自动输入（非用户发言）：'
+                            candidate.snippet = label + query_window(turn.learner_message, source_row['message'])
+                            if turn.assistant_reply.strip():
+                                candidate.snippet += '\n助手回复：' + study_memory._truncate(turn.assistant_reply, 160)
                     candidates[:] = [{'session_id': c.session_id, 'snippet': c.snippet, 'created_at': c.created_at} for c in selected]
                     return selected
 
@@ -115,7 +127,7 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                         'expected_session_revision': session['revision'], 'message': source_row['message']})
                     row = {'scope': 'live_study_operation_receipt_readback', 'model': 'MiniMax-M3', 'git_revision': revision,
                         'case_id': 'memory_excerpt_comparison', 'variant': variant, 'repetition': repetition,
-                        'source_seed_session_ids': sorted(seed_ids), 'calls': calls, 'candidate_excerpts': candidates,
+                        'source_report_index': source_index, 'source_seed_session_ids': sorted(seed_ids), 'calls': calls, 'candidate_excerpts': candidates,
                         'local_fallback_embeddings': local_embeddings,
                         'http_status': response.status_code, 'boundary_success': False,
                         'trace_limitation': ('Production excerpt with fixed seed-session selection' if production else 'Experimental excerpt construction and fixed seed-session selection') + '; production domain admission/commit. Embedding requests not instrumented.'}
@@ -143,7 +155,9 @@ if __name__ == '__main__':
     parser.add_argument('--role-split', action='store_true')
     parser.add_argument('--production', action='store_true')
     parser.add_argument('--temporal', action='store_true')
+    parser.add_argument('--query-windows', action='store_true')
+    parser.add_argument('--source-index', type=int, default=0)
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error('repetitions must be between 1 and 20')
-    run(args.source.resolve(), args.output.resolve(), args.repetitions, args.role_split, args.production, args.temporal)
+    run(args.source.resolve(), args.output.resolve(), args.repetitions, args.role_split, args.production, args.temporal, args.query_windows, args.source_index)

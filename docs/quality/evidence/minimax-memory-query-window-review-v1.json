@@ -1,0 +1,59 @@
+{
+  "scope": "Maintainer review: same committed seeds, assistant acknowledgment contains no update",
+  "limitations": [
+    "Two new operations per condition; source target was uncertain but seeds were committed. Fresh target sessions/operations are used, not retries.",
+    "Query window uses the original user request when constructing candidates; not yet a production query-dependent adapter.",
+    "Contiguous 800-character window may omit distant contradictory evidence.",
+    "All four replies include extra prose or nested lists; exact two flat Markdown items not achieved."
+  ],
+  "counterexample": {
+    "fixture": "Old location/code at beginning, 200 repeated maintenance sentences, then new location and revocation",
+    "window_chars": 797,
+    "old_location_retained": true,
+    "new_location_retained": false,
+    "revocation_retained": false,
+    "decision": "Do not adopt single-window selection as production default"
+  },
+  "rows": [
+    {
+      "repetition": 0,
+      "variant": "production",
+      "operation_id": "harness-operation-63efa42b4fb24f4ab15eb9095f7f67bf",
+      "boundary_success": true,
+      "new_location_available": false,
+      "maintainer_latest_state_correct": false,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，按你要求核对跨会话记忆后，事实如下，没有编造，也没有出题：\n\n- 可核实的唯一具体约定来自 session-f0d272afb3：复习地点 = 青石阅览室，暗号 = 晴鸟，状态 = 尚未去过。\n- session-f6feb8a6cf 中你提出\"更新约定\"，但助手仅回复\"收到\"，新约定的具体内容（地点、暗号、状态）未在任何记忆中落地，因此无法作为最新约定核实。\n\n- 旧约定撤销情况：由于新约定的具体内容未被记录，无法判断 session-f0d272afb3 的\"青石阅览室 / 晴鸟\"是否仍生效——既不能确认它仍然有效，也不能确认它已被撤销。\n- 跨会话记忆中没有任何\"已经去过青石阅览室\"的记录，按你的要求，我不会假设我们去过那里。"
+    },
+    {
+      "repetition": 0,
+      "variant": "query_window",
+      "operation_id": "harness-operation-3989f6d6218043cfb7e8f8819f84be45",
+      "boundary_success": true,
+      "new_location_available": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "根据跨会话记录核对结果如下，按时间顺序：先约定的青石阅览室与暗号\"晴鸟\"已在后续更新中撤销，最新状态以白桦阅览室为准。\n\n- **当前最新复习约定**：\n  - 复习地点：白桦阅览室\n  - 暗号：暂无（旧的\"晴鸟\"已撤销，未设置新暗号）\n  - 实际前往状态：尚未去过任何阅览室\n\n- **已撤销的旧约定**：\n  - 复习地点：青石阅览室（已被白桦阅览室替换）\n  - 暗号：\"晴鸟\"（已撤销，未指派替代暗号）\n\n以上仅为核对确认，按你的要求不出题。如果以后实际去了白桦阅览室，再来告诉我，我再帮你核对当时是否有新暗号需要确认。"
+    },
+    {
+      "repetition": 1,
+      "variant": "query_window",
+      "operation_id": "harness-operation-16037c391e0b4751855cb8b10b51297f",
+      "boundary_success": true,
+      "new_location_available": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "已核对跨会话记录，目前最新约定如下：\n\n- **复习地点**：白桦阅览室；**暗号**：已撤销，不设新暗号。\n- **已撤销的旧约定**：青石阅览室、暗号\"晴鸟\"均已撤销。\n\n按你此前确认的范围，我们**尚未去过任何阅览室**，本轮只做核对，不出题。"
+    },
+    {
+      "repetition": 1,
+      "variant": "production",
+      "operation_id": "harness-operation-5ea48f206c984f8da5c052d5b92e9c73",
+      "boundary_success": true,
+      "new_location_available": false,
+      "maintainer_latest_state_correct": false,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，已调用 `retrieve_memory_context` 核对跨会话记录，结果如下：\n\n- **当前生效的复习约定**（唯一且最新的一条）：\n  - 复习地点：青石阅览室\n  - 暗号：晴鸟\n  - 状态：仅记录在案，尚未实际前往核验\n\n- **旧约定与撤销情况**：\n  - 跨会话记忆中只检索到这一条复习约定，没有更早的版本需要追溯\n  - 第二条记录仅涉及整理等式性质、移项、系数、验算、常见错误和课后练习等材料，并未对地点或暗号作出任何修改或撤销\n  - 因此目前没有可撤销的旧约定，当前这条即为唯一生效版本"
+    }
+  ]
+}
