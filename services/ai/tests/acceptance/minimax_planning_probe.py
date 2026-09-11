@@ -47,7 +47,7 @@ PLANNING_BUDGET_CANDIDATE = (
 )
 
 
-def run(root, repetitions, budget_candidate=False):
+def run(root, repetitions, budget_candidate=False, selected_case=None):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
@@ -74,7 +74,9 @@ def run(root, repetitions, budget_candidate=False):
             call["requested_tools"] = [c.get("function", {}).get("name")
                 for c in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
             call["tool_envelope_shapes"] = [{"keys": sorted(c),
-                "function_keys": sorted(c.get("function", {}))}
+                "function_keys": sorted(c.get("function", {})),
+                "index_type": type(c.get("index")).__name__,
+                "index": c.get("index") if type(c.get("index")) is int else None}
                 for c in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
             return raw, elapsed
         except Exception as exc:
@@ -105,6 +107,8 @@ def run(root, repetitions, budget_candidate=False):
         with (root / "report.jsonl").open("x", encoding="utf-8") as stream:
             for repetition in range(repetitions):
                 for case_id, objective in CASES.items():
+                    if selected_case is not None and selected_case != case_id:
+                        continue
                     calls.clear()
                     request_id = f"quality-plan-{case_id}-{repetition}"
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
@@ -163,7 +167,8 @@ if __name__ == "__main__":
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=2)
     parser.add_argument("--budget-candidate", action="store_true")
+    parser.add_argument("--case", choices=CASES)
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.budget_candidate)
+    run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case)
