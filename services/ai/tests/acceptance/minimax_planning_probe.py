@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import time
@@ -50,12 +51,13 @@ PLANNING_BUDGET_CANDIDATE = (
 
 
 def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False,
-        pdf_path=None, objective_override=None, ocr_engine="disabled"):
+        pdf_path=None, objective_override=None, ocr_engine="disabled", multimodal=False, persona_variant="default"):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine=ocr_engine, openai_api_key=os.environ["K3_API_KEY"],
         openai_base_url="https://api.minimax.cn/v1", openai_plan_model="MiniMax-M3",
         openai_setting_model="MiniMax-M3", openai_chat_model="MiniMax-M3",
+        openai_plan_model_multimodal=multimodal,
         openai_setting_web_search_enabled=False, openai_timeout_seconds=90)
     calls = []
     original = ProviderRequestAdapter.request_chat_completion
@@ -85,6 +87,10 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                 if message.get("role") == "system" else message
                 for message in payload.get("messages", [])]}
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
+        call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
+        call["image_parts_sent"] = sum(part.get("type") == "image_url"
+            for message in payload.get("messages", []) if isinstance(message.get("content"), list)
+            for part in message["content"] if isinstance(part, dict))
         calls.append(call)
         start = time.perf_counter()
         try:
@@ -105,6 +111,11 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
             status = str(getattr(exc, "status_code", ""))
             if status.isdigit() and len(status) == 3:
                 call["upstream_http_status"] = int(status)
+            message = str(getattr(exc, "upstream_message", ""))
+            if message:
+                message = message.replace(os.environ["K3_API_KEY"], "[credential removed]")
+                message = re.sub(r"data:image/[^\s\"']+", "[image data removed]", message)
+                call["upstream_diagnostic"] = message[:1200]
             raise
         finally:
             call["elapsed_ms"] = round((time.perf_counter() - start) * 1000)
@@ -112,7 +123,17 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     app = create_app(settings=settings)
     with patch.object(ToolExecutionBudgetTracker, "admit", admit_candidate), patch("app.services.provider_transport._normalize_completed_tool_indexes", side_effect=observe_indexes), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
-        persona = client.post("/personas", json=create_request("顾言").model_dump(mode="json"))
+        persona_payload = create_request("顾言").model_dump(mode="json")
+        if persona_variant != "default":
+            rigorous = persona_variant == "rigorous"
+            persona_payload.update(name="顾言" if rigorous else "沈舟",
+                summary="严谨的数学导师，重视先修条件、证明和错因检查。" if rigorous else "富有好奇心的数学同行，重视直觉、例子和探索问题。",
+                relationship="数学导师与成年学习者" if rigorous else "平等的研究同行，不是师生",
+                learner_address="小林" if rigorous else "阿岚",
+                system_prompt="忠于教材事实。用清晰的检查点与证明任务安排学习，不捏造经验。" if rigorous else "忠于教材事实。用探索问题、直觉例子与讨论安排学习，不使用师生口吻，不捏造共同经历。",
+                default_speech_style="严谨、简洁" if rigorous else "自然、好奇、平等")
+            persona_payload["slots"][0]["content"] = "定义与先修检查→证明→错因自测" if rigorous else "问题与例子→形成直觉→讨论与迁移"
+        persona = client.post("/personas", json=persona_payload)
         persona.raise_for_status()
         persona_id = persona.json()["id"]
         if pdf_path is not None:
@@ -155,6 +176,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
                     row["source_document"] = source_report
+                    row["multimodal_enabled"] = multimodal
+                    row["persona_variant"] = persona_variant
+                    row["persona_test_input"] = {k: persona_payload[k] for k in ("name", "summary", "relationship", "learner_address", "slots")}
                     row["prompt_variant"] = "planning-budget-experiment-v1" if budget_candidate else "production"
                     if detail_parallel_candidate:
                         row["budget_variant"] = "planning-detail-round-three-experiment-v1"
@@ -215,8 +239,10 @@ if __name__ == "__main__":
     parser.add_argument("--pdf", type=Path)
     parser.add_argument("--objective")
     parser.add_argument("--ocr-engine", choices=("disabled", "onnxtr"), default="disabled")
+    parser.add_argument("--multimodal", action="store_true")
+    parser.add_argument("--persona-variant", choices=("default", "rigorous", "explorer"), default="default")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
-        args.pdf, args.objective, args.ocr_engine)
+        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant)

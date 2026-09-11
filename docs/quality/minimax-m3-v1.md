@@ -242,3 +242,22 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [Downloads 十本 PDF 元数据与抽样](evidence/minimax-download-pdf-inventory-v1.json)覆盖原生文字、扫描加文字层和纯扫描，中英法三种语言。已抽样渲染第21页核对原生英文排版、法文扫描与中文双页扫描，不以文字抽取替代版面核验。
 
 已启动 532 页 Additive Combinatorics 原生文字、736 页 Groupes Algebriques 法文文字层、297 页巴别塔之后中文纯扫描的真实 Document→Planning 流程。英文全书解析初始测量 3350ms、12 个 Study Unit；其他最终结果仍在采集中，不先判质量通过。原 PDF 和 OCR 全文留在用户文件与隔离运行目录中，不提交进仓库。
+
+
+## 轮次 18：真实书本、图片调用与研究驱动对照
+
+[532页英文书](evidence/minimax-book-english-native-v1.jsonl)成功提交12章计划，但仍有4次详情工具预算失败；计划生成耗时125462ms，不把提交成功当作工具质量通过。[736页法文书](evidence/minimax-book-french-layer-v1.jsonl)文字层解析得到44个Study Unit，记录的解析墙钟时间75097ms，随后Planning失败。多个本地压力进程重叠运行，不能将这些墙钟数值当作隔离性能基准。
+
+297页中文纯扫描实验已人工终止：已检查当前默认 onnxtr PARSeq 配置使用 VOCABS["french"]，不含中文字形。继续全书运行不能证明中文OCR质量。中断未及时结束工作线程后，核实进程身份并终止该实验及其子进程；没有生成或宣称成功计划。原文件未改动。下一步需要支持中文的OCR/原生页图路径，而不是把乱码当教材上下文。
+
+[202页英文书图片工具试验](evidence/minimax-book-image-tools-v1.jsonl)明确打开 openai_plan_model_multimodal：六个Planning工具实际提供给M3，模型调用 read_page_range_images，第二次provider请求实际发送2张页图并成功返回；第三次携带累计4张页图时返回HTTP400，操作uncertain。它证明实际图片传输，不证明图片改善最终计划，因为此例没有最终计划。未自动重放该uncertain操作。新增受限错误诊断用于后续定位400，密钥和data:image内容移除。
+
+用户要求评估图片证据收益与人格关联。已开始同书2×2对照：图片开/关、严谨导师/探索型同行；共同目标和书本保持一致，记录实际图片数、工具结果、计划章节覆盖、证据准确性，以及检查点/证明/探索例子等教学活动是否体现人格。事实结构必须忠于教材，不能以人格为由捏造章节或共同经历。
+
+公开研究（2026-09-12检索arXiv API，以下为摘要层面的线索，尚未复现实验）：
+
+- [Agentic Context Engineering: Evolving Contexts for Self-Improving Language Models](https://arxiv.org/abs/2510.04618v3)：强调结构化增量更新，避免反复整体改写导致细节流失。对应后续“约定更新/撤销＋增量事实记录”对照，不直接将其基准收益套到本项目。
+- [Resolving Evidence Sparsity: Agentic Context Engineering for Long-Document Understanding](https://arxiv.org/abs/2511.22850v1)：SLEUTH从长文档中筛选相关文字与视觉证据、减少冗余。对应“全文/目录页图/按需局部图像”的质量与成本对照，而不是简单增加全部图片。
+- [AgroTools](https://arxiv.org/abs/2605.22366v1)：将工具执行过程与最终任务成功分别评量。这里继续分别统计工具拒绝、证据获取与计划正确性，不用最终commit掩盖过程失败。
+
+尚未引入多智能体架构，也不根据论文摘要宣称独立质量认证。历史QG-002冻结基线保持不变。
