@@ -328,3 +328,13 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 排查发现一个确切检索缺陷：revise_study_units拆成小节后，多个单元保留同一父Section ID；详情工具先按父ID选全部chunks，再取最前六段，完全忽略当前单元页范围。[真实生成的12个单元重放](evidence/minimax-detail-page-scope-before-v1.json)中，72段预览有58段与对应单元页范围完全无交集；例如§1.5的85–102页单元返回12–14页的内容。该重放证明详情构造函数的输出错误，不声称每一段都已在此前实际provider请求中发送。
 
 修复先按当前Study Unit的页范围筛选重叠chunks，再在其中优先匹配来源Section；如果匹配元数据没有本地证据则使用页范围内的其他chunks，没有任何页证据则返回空。[同样12单元修复后重放](evidence/minimax-detail-page-scope-after-v1.json)62段预览全部有页范围交集，§1.5改为85–87页；跨页chunk仍保留真实起止页，不伪装为已按页裁剪文本。三项新回归在旧实现全部失败、修复后全部通过；9项定向、完整后端796项通过。另启动实际Planning流程，记录成功详情工具返回的单元页与预览页，继续评估内容改善。
+
+## 轮次 25：Planning正文实收与Study原生图片传递
+
+[两例真实Planning详情复测](evidence/minimax-detail-scope-live-v1.jsonl)均提交。第一例只完成明确要求的三处核查中的§1.5；第二例完成§1.5、§1.6、§2.3三处，四次成功详情返回的预览页均与当前单元范围有交集。两例§1.5计划能明确区分99%与1%逆问题；第二例§1.6列出原文的local polynomials、bracket polynomials、nilsequences，§2.3回到原文duality实例。第一例未核查的§1.6/§2.3仍有推测证明路线，不能判全书事实通过；正文获取和实际任务遵循继续分开统计。
+
+[Study六例工具扩展](evidence/minimax-study-tool-expansion-v1.jsonl)覆盖会话记忆写后读回、教材文字和教材页图，各两例。全部持久化，但记忆回复多出前后说明；一例文字任务在明确不要出题时生成互动题，并被题目文本清理压成一行；两例页图任务最终只有metadata，没有image_url消息部件，且都写了四条列表而非要求的两条。因此提交成功不是质量成功。
+
+代码确认Study的read_page_range_images与read_projected_pdf_images保存了application_result中的渲染图片，但provider投影仅保留图片数量和页码，循环没有添加原生图片。修复在多模态启用时把已完成图片工具的本地PNG加入request-local消息，并补齐metadata页码；一轮全部tool receipts完成后才附图，修复请求继续保留图片。公开trace仍只保留metadata，未把图像写入安全trace。单元回归覆盖两种PDF图片工具混合调用、消息顺序、严格回复修复保图、公开trace不含base64；20项定向、完整后端797项通过。
+
+[修复后两例真实Study页图调用](evidence/minimax-study-image-delivery-v2.jsonl)均实际发送一图并提交，两例恰好两条Markdown列表、无互动题。样本很小，仅确认图片链路与本次指令结果，不宣称跨任务稳定质量提升。已启动记忆/正文/页图三类任务的基线与格式澄清候选对照，区分JSON外壳约束与text字段的Markdown要求。

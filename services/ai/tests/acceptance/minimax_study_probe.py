@@ -40,6 +40,9 @@ CASES = {
     "code_and_math": "请用中文说明 2x+3=11 的解，含一条 LaTeX 行内公式，再给一个 python 代码块用 assert 验证答案。不要生成图或题目。",
     "unknown_source": "教材是否说过这个方法是陈老师于1987年发明的？请核对教材，找不到就明确说教材未提供，别编造作者和年份。",
     "interactive_question": "请围绕本节出一道含四个选项的单选互动题。等我作答，暂时不要公布正确选项、答案或解析。",
+    "memory_roundtrip": "请使用 write_session_memory 记录我的复习约定：先做代入检验，称呼我小林；然后使用 read_session_memory 读回核对。最后只用两条 Markdown 无序列表说明记住了什么，不编造以前的经历。",
+    "document_text_tool": "请先调用 read_page_range_content 核对教材 PDF 第1页，再用恰好两条 Markdown 无序列表说明 a=0 和 a非零时的差别。不要开场白和结尾，不要出题。",
+    "document_image_tool": "请先调用 read_page_range_images 查看教材 PDF 第1页，核对例题 2x+3=11，再用恰好两条 Markdown 无序列表说明求解和代入检验。不要开场白和结尾，不要出题。",
 }
 
 SAFE_QUESTION_ERRORS = frozenset({
@@ -71,6 +74,13 @@ QUESTION_CONTRACT_CANDIDATE = (
     "不要将答案或解析写入 text、rich_blocks、题干、选项说明或表演字段。"
 )
 
+FORMAT_CONTRACT_CANDIDATE = (
+    "\n格式边界澄清：仅禁止在JSON对象外输出Markdown或解释；text字段内部仍按学习者要求使用Markdown。"
+    "工具完成后也必须保持学习者指定的列表条数、每项单独换行、是否允许标题/开场/结尾等要求。"
+    "人格的动作与情绪使用独立字段，不给要求只输出列表的text额外添加寒暄。"
+    "学习者明确不要出题时，不调用出题工具，interactive_question必须为null。"
+)
+
 
 def stable_system_prefix_candidate(system):
     dynamic = "{{PERSONA_RUNTIME_PROMPT}}\n{{SESSION_RUNTIME_CONTEXT}}"
@@ -79,24 +89,32 @@ def stable_system_prefix_candidate(system):
     return system[len(dynamic) + 2:] + "\n\n" + dynamic
 
 
-def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False):
+def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False, multimodal=False,
+        format_contract_candidate=False):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
         openai_base_url="https://api.minimax.cn/v1", openai_plan_model="MiniMax-M3",
         openai_setting_model="MiniMax-M3", openai_chat_model="MiniMax-M3",
-        openai_setting_web_search_enabled=False, openai_chat_max_tokens=4096, openai_timeout_seconds=90)
+        openai_setting_web_search_enabled=False, openai_chat_max_tokens=4096, openai_timeout_seconds=90,
+        openai_chat_model_multimodal=multimodal)
     calls = []
     original = ProviderRequestAdapter.request_chat_completion
 
     def observe(adapter, payload, *, request_kind, model):
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
+        call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
+        call["image_parts_sent"] = sum(part.get("type") == "image_url"
+            for message in payload.get("messages", []) if isinstance(message.get("content"), list)
+            for part in message["content"] if isinstance(part, dict))
         calls.append(call)
         started = time.perf_counter()
         try:
             raw, elapsed = original(adapter, payload, request_kind=request_kind, model=model)
             choices = raw.get("choices", [])
             call.update(usage=raw.get("usage"), finish_reason=choices[0].get("finish_reason") if choices else None)
+            call["requested_tools"] = [tool.get("function", {}).get("name")
+                for tool in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
             if choices and choices[0].get("finish_reason") != "tool_calls":
                 content = choices[0].get("message", {}).get("content", "")
                 try:
@@ -135,6 +153,9 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
     if question_contract_candidate:
         sections = {key: value + QUESTION_CONTRACT_CANDIDATE if key in {"system", "recovery"} else value
             for key, value in sections.items()}
+    if format_contract_candidate:
+        sections = {key: value + FORMAT_CONTRACT_CANDIDATE if key in {"system", "tool_followup", "recovery"} else value
+            for key, value in sections.items()}
     with patch("app.services.provider_study._chat_prompt_sections", return_value=sections), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona = create_request("顾言").model_dump(mode="json")
         persona.update(summary="严谨、温和的数学老师，说话简洁，先核对证据再下结论。", relationship="数学老师与成年学习者", learner_address="小林")
@@ -170,6 +191,11 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "message": message, "calls": calls}
                     row["prompt_variant"] = "question-contract-experiment-v1" if question_contract_candidate else "production"
+                    row["multimodal_enabled"] = multimodal
+                    if format_contract_candidate:
+                        row["format_variant"] = "json-envelope-versus-markdown-content-v1"
+                        row["experimental_format_suffix"] = FORMAT_CONTRACT_CANDIDATE
+                        row["trace_limitation"] = "Experimental prompt addition; traces prove lifecycle only, not production prompt adoption."
                     if stable_prefix_candidate:
                         row["cache_variant"] = "study-static-system-prefix-experiment-v1"
                         row["cache_transform"] = "Move unchanged leading persona/session placeholders to end of system; keep all static instructions, tools, and message order unchanged."
@@ -220,7 +246,9 @@ if __name__ == "__main__":
     parser.add_argument("--case", choices=CASES)
     parser.add_argument("--question-contract-candidate", action="store_true")
     parser.add_argument("--stable-prefix-candidate", action="store_true")
+    parser.add_argument("--multimodal", action="store_true")
+    parser.add_argument("--format-contract-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate)
