@@ -809,3 +809,13 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 检查本仓库ProviderRequestAdapter可见tool_choice会随payload转交LiteLLM，但本批没有序列化HTTP请求观测，不能直接认定M3无视参数。下一批需核对wire字段，并探索首轮仅提供读图工具能否确保取证；不把工具选择当作已完成动作。
 
 另补充实验探针的无内容JSON形状观测：只保存类型、长度、空白/围栏标记、JSON错误偏移和现有provider解析器结果，不保存模型正文或思考。3项测量回归区分严格对象、可恢复围栏、空内容、截断与数组，并验证敏感样例内容未进入观测。新观测不回填此前未知失败，也不改变生产解析策略。
+
+## 轮次 76：wire核验与首轮单工具目录
+
+[四个真实Planning操作](evidence/minimax-macbeth-image-tool-choice-v1.jsonl)按完整目录—首轮仅读图—首轮仅读图—完整目录交错运行，各组首轮都指定read_page_range_images。HTTPX序列化观测确认四次请求确实包含该tool_choice；单工具候选首轮仅有读图定义、后续恢复六工具。仅保存工具字段与图片数量，没有记录HTTP头、原文或图片字节。
+
+[复核](evidence/minimax-macbeth-image-tool-choice-review-v1.json)四例实际都收到图片，故本批不能证明单工具组取图成功率更高。完整目录两例均在首轮同时返回content/images/detail，单工具两例只返回images，说明不能把指定名称当作严格“只调用该工具”的保障。完整目录首例最终合法JSON却引用未知schedule.1.unit_id，修复后仍未提交；其余三例提交且阶段合计30分钟。单工具第二例正确描述中央链甲持剑者，但又把OCR碎片列为可见项、把两侧人形称作兜帽人物；格式/提交与事实质量仍分开计量。
+
+[官方Chat API](https://platform.minimaxi.com/docs/api-reference/text-chat-openai)参数表及[OpenAI兼容说明](https://platform.minimaxi.com/docs/api-reference/text-openai-api)未列tool_choice支持语义；兼容说明提示部分OpenAI参数会忽略，但未明确点名tool_choice。因此只报告实际行为，不从文档缺项断言完全不支持，也不把此前未取图完全归因到某一层。
+
+首轮隔离目录改变提示前缀和后续工具链，本批5/7/5/2次SDK调用、总输入37887/50647/32354/11909，不能宣称更少工具定义一定更省或更快。探针通过编译，未采用生产路由变化。官方还区分图像detail low/default/high与最长边像素；接下来将该视觉预算参数与DPI分开验证，避免混淆模型内部视觉处理与本地渲染。

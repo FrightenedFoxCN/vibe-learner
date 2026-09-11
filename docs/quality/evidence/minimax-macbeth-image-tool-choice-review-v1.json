@@ -1,0 +1,144 @@
+{
+  "scope": "Maintainer wire-observed first-tool catalog comparison",
+  "limitations": [
+    "Two samples per condition; all four got images, so no image-acquisition success advantage established in this batch.",
+    "Wire capture proves serialized HTTPX fields, not server interpretation.",
+    "Catalog isolation changes initial context/cache prefix and subsequent tool trajectories.",
+    "No production tool routing adoption or independent certification."
+  ],
+  "official_sources": [
+    "https://platform.minimaxi.com/docs/api-reference/text-chat-openai",
+    "https://platform.minimaxi.com/docs/api-reference/text-openai-api"
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "isolated_first_catalog": false,
+      "nonpersona_initial_context_equal": true,
+      "boundary_success": false,
+      "wire_first_tool_choice": {
+        "type": "function",
+        "function": {
+          "name": "read_page_range_images"
+        }
+      },
+      "wire_first_offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content",
+        "read_page_range_images"
+      ],
+      "first_returned_tools": [
+        "read_page_range_content",
+        "read_page_range_images",
+        "get_study_unit_detail"
+      ],
+      "wire_has_images": true,
+      "sdk_chat_calls": 5,
+      "prompt_tokens": 37887,
+      "terminal_error_codes": [
+        "plan_proposal_schema_invalid:schedule.1.unit_id:unknown_ref"
+      ],
+      "timing": null,
+      "issues": [
+        "Final JSON is valid but references unknown schedule.1.unit_id after repair; no committed plan to grade."
+      ]
+    },
+    {
+      "cell": 1,
+      "isolated_first_catalog": true,
+      "nonpersona_initial_context_equal": true,
+      "boundary_success": true,
+      "wire_first_tool_choice": {
+        "type": "function",
+        "function": {
+          "name": "read_page_range_images"
+        }
+      },
+      "wire_first_offered_tools": [
+        "read_page_range_images"
+      ],
+      "first_returned_tools": [
+        "read_page_range_images"
+      ],
+      "wire_has_images": true,
+      "sdk_chat_calls": 7,
+      "prompt_tokens": 50647,
+      "terminal_error_codes": [
+        ""
+      ],
+      "timing": "0–5/5–10/10–18/18–25/25–30 = 30",
+      "issues": [
+        "Task says identity/motivation/relationship always inference; read with later schedule scope restricting illustrated figures, otherwise overbroad."
+      ]
+    },
+    {
+      "cell": 2,
+      "isolated_first_catalog": true,
+      "nonpersona_initial_context_equal": true,
+      "boundary_success": true,
+      "wire_first_tool_choice": {
+        "type": "function",
+        "function": {
+          "name": "read_page_range_images"
+        }
+      },
+      "wire_first_offered_tools": [
+        "read_page_range_images"
+      ],
+      "first_returned_tools": [
+        "read_page_range_images"
+      ],
+      "wire_has_images": true,
+      "sdk_chat_calls": 5,
+      "prompt_tokens": 32354,
+      "terminal_error_codes": [
+        ""
+      ],
+      "timing": "Three 10-minute phases = 30",
+      "issues": [
+        "Correct central chainmail swordsman but sides called hooded figures despite helmet-like shapes.",
+        "OCR AAV fragments remain declared visual elements.",
+        "Age quote omits I think."
+      ]
+    },
+    {
+      "cell": 3,
+      "isolated_first_catalog": false,
+      "nonpersona_initial_context_equal": true,
+      "boundary_success": true,
+      "wire_first_tool_choice": {
+        "type": "function",
+        "function": {
+          "name": "read_page_range_images"
+        }
+      },
+      "wire_first_offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content",
+        "read_page_range_images"
+      ],
+      "first_returned_tools": [
+        "read_page_range_content",
+        "read_page_range_images",
+        "get_study_unit_detail"
+      ],
+      "wire_has_images": true,
+      "sdk_chat_calls": 2,
+      "prompt_tokens": 11909,
+      "terminal_error_codes": [
+        ""
+      ],
+      "timing": "5+8+7+7+3 = 30",
+      "issues": [
+        "Labels narrator among names despite withheld narrator name.",
+        "Age quote omits I think."
+      ]
+    }
+  ]
+}
