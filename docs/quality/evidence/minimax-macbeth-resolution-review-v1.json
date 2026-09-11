@@ -1,0 +1,107 @@
+{
+  "scope": "Maintainer 100/180 DPI fixed-persona Planning review",
+  "limitations": [
+    "Two operations per DPI; no independent certification or stable resolution effect.",
+    "Concurrent local backend tests ran during part of experiment; latency is descriptive, not a controlled performance result.",
+    "Production tool uses 144 DPI; these are experimental injected images.",
+    "Provider internal image resizing unknown.",
+    "Different tool trajectories dominate total tokens; no monetary savings claim."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "dpi": 100,
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_chat_calls": 7,
+      "prompt_tokens": 45365,
+      "initial_prompt_tokens": 4485,
+      "sdk_elapsed_ms": 76850,
+      "cache_tokens_per_call": [
+        0,
+        4352,
+        5632,
+        5888,
+        6016,
+        6656,
+        7424
+      ],
+      "review": {
+        "timing": "schedule 8+6+1+5+6+3=29 despite requested 30",
+        "visual": "Generic observable features; does not repeat prior staff assertion, but no explicit sword recognition.",
+        "noise": "Treats AAV as noise in focus but still repeats as illustration text in title.",
+        "age": "fifteen years old without uncertainty qualifier in title."
+      }
+    },
+    {
+      "cell": 1,
+      "dpi": 180,
+      "boundary_success": false,
+      "nonpersona_initial_context_equal": true,
+      "sdk_chat_calls": 7,
+      "prompt_tokens": 60232,
+      "initial_prompt_tokens": 5889,
+      "sdk_elapsed_ms": 104368,
+      "cache_tokens_per_call": [
+        128,
+        5889,
+        7321,
+        7975,
+        8831,
+        9245,
+        128
+      ],
+      "review": {
+        "boundary": "not_committed; plan_proposal_schema_invalid:$:plan_model_invalid_json after two stop responses; no final plan to grade.",
+        "failure_content": "Only terminal error and SDK envelope metrics retained. Copied planning_trace JSON belongs to preparation plan and is not this failed operation."
+      }
+    },
+    {
+      "cell": 2,
+      "dpi": 180,
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_chat_calls": 3,
+      "prompt_tokens": 20544,
+      "initial_prompt_tokens": 5892,
+      "sdk_elapsed_ms": 70901,
+      "cache_tokens_per_call": [
+        128,
+        5888,
+        7168
+      ],
+      "review": {
+        "timing": "5+10+10+5=30, schedule groups last 15 together.",
+        "visual": "Axes, shields, flags, foreground rocks match visible elements; no pictured character identity asserted.",
+        "noise": "Still treats AAV snippets as text of unknown meaning, rather than reliably discarding OCR artifacts.",
+        "age": "Explicit I think preserved.",
+        "additional": "Calls the supplied two full sentences three sentences."
+      }
+    },
+    {
+      "cell": 3,
+      "dpi": 100,
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_chat_calls": 7,
+      "prompt_tokens": 48988,
+      "initial_prompt_tokens": 4483,
+      "sdk_elapsed_ms": 58183,
+      "cache_tokens_per_call": [
+        0,
+        4352,
+        5760,
+        6784,
+        7424,
+        7680,
+        8320
+      ],
+      "review": {
+        "timing": "schedule 12+8+8+2=30 but today_tasks says 5-minute recap, inconsistent.",
+        "visual": "Generic central figure avoids staff claim; several horses is not securely established by inspected image.",
+        "noise": "Explicitly labels snippets parsing noise.",
+        "age": "Title states fifteen-year-old witness without uncertainty qualifier."
+      }
+    }
+  ]
+}
