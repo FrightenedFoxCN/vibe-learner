@@ -462,3 +462,13 @@ Study成功工具加领域提交覆盖增至29/31，仍缺retrieve_memory_contex
 [官方能力核查](evidence/minimax-official-capability-review-v1.json)：[图片生成指南](https://platform.minimaxi.com/docs/guides/image-generation.md)使用独立image-01模型和/v1/image_generation接口；[模型概览](https://platform.minimaxi.com/docs/guides/models-intro.md)也把image-01/image-01-live与M3分别列出。仓库当前RemoteImageProvider则使用Responses的image_generation工具与模型名单，不能仅因M3支持图片理解就把它加入名单。尚未调用image-01，生成图片的质量、保护工件与效果提交仍待独立适配验证。
 
 另外，[M3工具使用指南](https://platform.minimaxi.com/docs/guides/text-m3-function-call.md)要求多轮工具调用回传完整response_message，尤其thinking/reasoning_details，并说明reasoning_split。此前只比较了单轮Tavern的split格式；Study当前工具循环重建assistant消息时只保留content/tool_calls。因此下一步做受控回传对照，记录字段是否存在及是否传回，不把思考正文写入公开trace或实验证据。官方建议本身不作为质量改善结论。
+
+## 轮次 41：多轮 reasoning 字段回传对照与实际发送核验
+
+[首批八例](evidence/minimax-reasoning-echo-v1.jsonl)在记忆写入读回、PDF图片读取两种任务中交错比较reasoning_split与split加请求内reasoning字段回传，第二轮反转顺序。[补充四例](evidence/minimax-reasoning-echo-v2.jsonl)在HTTPX发送边界只记录字段名称和图片数量，确认echo后续请求实际包含reasoning_content、reasoning_details；split组assistant历史没有这些字段。图片任务工具返回后两组均观察到原生image_url部分。没有记录请求体、凭据或思考正文，也不把发送证据解释为服务端如何处理这些字段。
+
+[维护者复核](evidence/minimax-reasoning-echo-review-v2.json)中两组各6/6提交；明确要求的工具完成为split 5/6、echo 6/6，split一例未调用图片工具。严格仅两行列表为1/6与2/6；允许嵌套列表、只要求两条顶层列表且无外部说明时为2/6与3/6。原请求未规定必须扁平列表，因此分别报告这两个指标，不把所有嵌套列表直接判错。echo一例额外生成互动题；记忆请求并未明确禁止出题，此项单独报告而不冒充违反明确禁令。图片回复中的求解和代入计算均正确，但该合成文本图不构成图片相对纯文本的收益证据。
+
+split总计13次请求、79806输入token、7886输出token；echo共15次请求、92154输入token、5674输出token。缓存计数原样保留，存在缺失且没有控制冷暖缓存。样本小、实际调用路径和provider报告输入量不同，不能据此宣称稳定缓存或延迟收益。补测echo记忆回复仍出现开场白和四条列表，未复现首批两例的格式表现。
+
+本轮仅提交实验探针与证据，不更改生产默认行为。候选回传的是reasoning字段加原有content/tool_calls，不等同官方推荐的完整response_message回传。当前结果没有证明其能稳定修复格式遵循；后续需在更长工具链、不同人格和复杂约束上复核，并保持思考内容只存在于请求内存中。

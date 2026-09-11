@@ -12,6 +12,7 @@ import time
 from unittest.mock import patch
 
 import fitz
+import httpx
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from app.app_factory import create_app
@@ -125,7 +126,7 @@ def stable_system_prefix_candidate(system):
 
 def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False, multimodal=False,
         format_contract_candidate=False, repeat_request_candidate=False, attachment_kind=None, coordinate_grid_candidate=False,
-        prepared_effect_candidate=False, question_tools_disabled_candidate=False):
+        prepared_effect_candidate=False, question_tools_disabled_candidate=False, reasoning_mode=None):
     if repeat_request_candidate and selected_case is None:
         raise ValueError("Repeat-request experiment requires one selected case")
     if attachment_kind not in {None, "pdf", "image"}:
@@ -138,10 +139,23 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
         openai_setting_web_search_enabled=False, openai_chat_max_tokens=4096, openai_timeout_seconds=90,
         openai_chat_model_multimodal=multimodal)
     calls = []
+    reasoning_messages = {}
     grid_cache = {}
     original = ProviderRequestAdapter.request_chat_completion
 
     def observe(adapter, payload, *, request_kind, model):
+        echoed = 0
+        if reasoning_mode:
+            payload = {**payload, "reasoning_split": True}
+            if reasoning_mode == "echo":
+                messages = []
+                for message in payload.get("messages", []):
+                    key = tuple(t.get("id") for t in message.get("tool_calls", []))
+                    if message.get("role") == "assistant" and key and key in reasoning_messages:
+                        message = {**message, **reasoning_messages[key]}
+                        echoed += 1
+                    messages.append(message)
+                payload["messages"] = messages
         if question_tools_disabled_candidate:
             payload = {**payload, "tools": [tool for tool in payload.get("tools", [])
                 if tool.get("function", {}).get("name") not in {"ask_fill_blank_question", "ask_multiple_choice_question"}]}
@@ -180,6 +194,8 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                 messages.append({**m, "content": parts})
             payload = {**payload, "messages": messages}
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
+        if reasoning_mode:
+            call["reasoning_echo_message_count"] = echoed
         call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
         if selected_case and selected_case.startswith("scene_"):
             # This probe creates a synthetic scene; record only addressable
@@ -197,8 +213,41 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
         calls.append(call)
         started = time.perf_counter()
         try:
-            raw, elapsed = original(adapter, payload, request_kind=request_kind, model=model)
+            original_send = httpx.Client.send
+
+            def observe_wire(client, request, *args, **kwargs):
+                if request.url.host == "api.minimax.cn":
+                    body = json.loads(request.content)
+                    messages = body.get("messages", [])
+                    call.setdefault("wire_requests", []).append({
+                        "reasoning_split": body.get("reasoning_split"),
+                        "assistant_reasoning_field_names": [
+                            sorted(k for k in ("reasoning_details", "reasoning_content") if m.get(k))
+                            for m in messages if m.get("role") == "assistant"
+                        ],
+                        "image_parts": sum(p.get("type") == "image_url"
+                            for m in messages if isinstance(m.get("content"), list)
+                            for p in m["content"] if isinstance(p, dict)),
+                    })
+                return original_send(client, request, *args, **kwargs)
+
+            if reasoning_mode:
+                with patch.object(httpx.Client, "send", observe_wire):
+                    raw, elapsed = original(adapter, payload, request_kind=request_kind, model=model)
+            else:
+                raw, elapsed = original(adapter, payload, request_kind=request_kind, model=model)
             choices = raw.get("choices", [])
+            if reasoning_mode and choices:
+                returned = choices[0].get("message") or {}
+                reasoning_fields = {k: returned[k] for k in ("reasoning_details", "reasoning_content") if returned.get(k)}
+                specific = returned.get("provider_specific_fields") or {}
+                for k in ("reasoning_details", "reasoning_content"):
+                    if specific.get(k) and k not in reasoning_fields:
+                        reasoning_fields[k] = specific[k]
+                call["reasoning_response_field_names"] = sorted(reasoning_fields)
+                key = tuple(t.get("id") for t in returned.get("tool_calls") or [])
+                if key and reasoning_fields:
+                    reasoning_messages[key] = reasoning_fields
             call.update(usage=raw.get("usage"), finish_reason=choices[0].get("finish_reason") if choices else None)
             call["requested_tools"] = [tool.get("function", {}).get("name")
                 for tool in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
@@ -276,6 +325,7 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     if selected_case is not None and case_id != selected_case:
                         continue
                     calls.clear()
+                    reasoning_messages.clear()
                     session_payload = {"document_id": document_id,
                         "persona_id": persona_id, "study_unit_id": document["study_units"][0]["id"]}
                     memory_seeds = []
@@ -332,6 +382,9 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     row["prompt_variant"] = "question-contract-experiment-v2" if question_contract_candidate else "production"
                     row["multimodal_enabled"] = multimodal
                     row["attachment_kind"] = attachment_kind
+                    if reasoning_mode:
+                        row["reasoning_variant"] = reasoning_mode
+                        row["trace_limitation"] = "Experimental reasoning_split and request-local reasoning-field echo, not complete response replay. Only field names/counts retained; wire_requests observes serialized HTTPX requests, not provider processing."
                     if memory_seeds:
                         row["memory_seed_operations"] = memory_seeds
                     if plan_before is not None:
@@ -518,7 +571,8 @@ if __name__ == "__main__":
     parser.add_argument("--coordinate-grid-candidate", action="store_true")
     parser.add_argument("--prepared-effect-candidate", action="store_true")
     parser.add_argument("--question-tools-disabled-candidate", action="store_true")
+    parser.add_argument("--reasoning-mode", choices=("split", "echo"))
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate, args.question_tools_disabled_candidate)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate, args.question_tools_disabled_candidate, args.reasoning_mode)
