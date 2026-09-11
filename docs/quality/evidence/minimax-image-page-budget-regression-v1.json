@@ -1,0 +1,31 @@
+{
+  "scope": "Deterministic bounded page-image regression, discovered during live image quality investigation",
+  "previous_revision": "5c674951f41f0733986fb80ef1893f73b26f844a",
+  "accepted_model_arguments": {
+    "page_start": 1,
+    "page_end": 1000000000000000000000000000000,
+    "max_images": 4
+  },
+  "before": {
+    "targeted_tests": 3,
+    "errors": 2,
+    "failure": "OverflowError: Python int too large to convert to C ssize_t",
+    "location": "read_page_range_images eagerly constructed list(range(...)) before slicing"
+  },
+  "after": {
+    "targeted_related_tests": 38,
+    "passed": true,
+    "full_backend_tests": 828,
+    "full_backend_passed": true,
+    "full_backend_seconds": 66.649,
+    "strict_argument_model_rerun": {
+      "tests": 3,
+      "passed": true
+    }
+  },
+  "change": "Slice the lazy range before iteration; keep existing page order/count ceiling and 144 DPI rendering.",
+  "limitations": [
+    "Synthetic integer boundary, not a claim that M3 emitted this value in a live run.",
+    "Does not bound PDF page pixel dimensions or improve image recognition."
+  ]
+}

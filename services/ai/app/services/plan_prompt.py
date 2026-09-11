@@ -300,7 +300,9 @@ def read_page_range_images(
             "image_count": 0,
             "images": [],
         }
-    requested_pages = list(range(max(1, page_start), max(page_start, page_end) + 1))[: max(1, min(max_images, 4))]
+    # Bound the lazy range before iterating; model page_end must not allocate
+    # an arbitrarily large list merely to render at most four pages.
+    requested_pages = range(max(1, page_start), max(page_start, page_end) + 1)[: max(1, min(max_images, 4))]
     images: list[dict[str, object]] = []
     try:
         with fitz.open(document_path) as document:
