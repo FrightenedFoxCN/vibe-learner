@@ -1,0 +1,51 @@
+{
+  "scope": "Maintainer matched evidence-contrast review",
+  "limitations": [
+    "Two targets per condition with the same two committed seed sessions; selected adversarial case, not a natural-task success rate.",
+    "Preflight checks include the actual assistant acknowledgment, preventing its paraphrase from carrying the missing update.",
+    "Multi-window limit and long-sentence behavior remain unvalidated for broader production adoption.",
+    "Source query is fixed to the target user request during candidate building."
+  ],
+  "rows": [
+    {
+      "repetition": 0,
+      "variant": "query_window",
+      "operation_id": "harness-operation-9ef59afb1259479f8acb645b3a2d79aa",
+      "boundary_success": true,
+      "new_location_in_excerpts": false,
+      "maintainer_latest_state_correct": false,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，我已经对照过跨会话记录，给你核对一下复习约定的情况：\n\n- **当前最新约定**：复习地点仍是 **青石阅览室**，暗号仍是 **晴鸟**；两条记录里都明确写着\"尚未去过那里\"，并没有任何新地点或新暗号覆盖原约定。\n- **旧约定撤销情况**：检索范围内**没有出现任何撤销或修改**\"青石阅览室 / 晴鸟\"的记录，原约定继续有效，无需替换。\n\n所以这次只是核对，没有要复习的内容，也没有需要出题的地方，等你准备好喊出暗号，我们再正式开始 Chapter 1 的复习。"
+    },
+    {
+      "repetition": 0,
+      "variant": "query_windows",
+      "operation_id": "harness-operation-41c20de01a7b4594805d1e945db35983",
+      "boundary_success": true,
+      "new_location_in_excerpts": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，已核对跨会话记录，最新约定如下。\n\n- **当前有效约定**\n  - 复习地点：白桦阅览室\n  - 暗号：已撤销（目前没有启用任何暗号）\n- **已撤销的旧约定**\n  - 旧地点：青石阅览室（已撤销）\n  - 旧暗号：晴鸟（已撤销）\n\n我们尚未实际去过白桦阅览室。"
+    },
+    {
+      "repetition": 1,
+      "variant": "query_windows",
+      "operation_id": "harness-operation-f85b33996d024aee8d8eb19308720540",
+      "boundary_success": true,
+      "new_location_in_excerpts": true,
+      "maintainer_latest_state_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "根据跨会话记录核对，最新约定如下：\n\n- 复习地点：**白桦阅览室**\n- 暗号：已撤销，无须使用\n\n已撤销的旧约定：\n\n- 旧地点「青石阅览室」已撤销\n- 旧暗号「晴鸟」已撤销\n\n提醒一下：以上只是约定层面的记录，目前我们还没有一起去过白桦阅览室。等你准备好再告诉我，我们就正式开始 Chapter 1 的复习。"
+    },
+    {
+      "repetition": 1,
+      "variant": "query_window",
+      "operation_id": "harness-operation-90d43062af3e490fb86eb2e41fdd4ecc",
+      "boundary_success": true,
+      "new_location_in_excerpts": false,
+      "maintainer_latest_state_correct": false,
+      "markdown_exact_two_flat_items": true,
+      "reply": "- 复习地点：**青石阅览室**\n- 暗号：**晴鸟**"
+    }
+  ]
+}

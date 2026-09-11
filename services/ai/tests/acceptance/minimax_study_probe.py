@@ -49,6 +49,7 @@ CASES = {
     "cross_session_memory_long": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_middle": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_distant": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
+    "cross_session_memory_window_counterexample": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "follow_up_deliver": "请使用工具安排10秒后续接一次对话，提醒我核对教材里的2x+3=11。届时先问我是否已经求出x，不要假设我做过题，也不要另换方程。现在只用一句话说明安排状态，不出题、不重复安排。",
     "follow_up_cancel": "请使用工具安排60秒后续接一次当前学习对话，届时提醒我用代入法核对方程答案。不要现在出题，也不要重复安排。最后用一句话说明安排状态，不要承诺关闭页面后仍一定能触发。",
     "plan_title_confirmation": "请先读取当前学习计划，把课程标题改为‘方程求解与代入检验’，通过工具提出待确认提案，等我确认后再生效。最后用一句话明确说明现在仍待确认，不改学习进度，不出题。",
@@ -369,6 +370,12 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                             if case_id == "cross_session_memory_distant" and seed_index == 1:
                                 seed_message = ("复习地点原来是青石阅览室，暗号原来是晴鸟。" + "整理等式材料。" * 200
                                     + "补充更正：复习地点改为白桦阅览室，先前青石约定撤销，暗号晴鸟也撤销，不设新暗号。尚未去过那里。只回复收到，不复述细节。")
+                            if case_id == "cross_session_memory_window_counterexample" and seed_index == 1:
+                                seed_message = ("复习地点是青石阅览室，暗号是晴鸟。" + "整理等式材料。" * 200
+                                    + "补充更正：地点改为白桦阅览室，先前约定撤销，暗号也撤销。只回复收到，不复述细节，不出题。")
+                                from tests.acceptance.memory_query_window import query_window, query_windows
+                                assert "白桦阅览室" not in query_window(seed_message, CASES[case_id])
+                                assert "白桦阅览室" in query_windows(seed_message, CASES[case_id])
                             seed_session = client.post("/study-sessions", json=session_payload)
                             seed_session.raise_for_status()
                             seed = seed_session.json()

@@ -691,3 +691,12 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [逐条复核](evidence/minimax-memory-multi-window-review-v2.json)发现本次单窗口也取中了更正句；真实fixture措辞和完整查询与此前本地反例不同，不能把4/4通过说成多窗口优于单窗口。四例仍有嵌套列表或额外段落，Markdown未通过。实验下一步应让真实种子和查询精确复现遗漏条件，再引入多次更新、法文和归档引用；本轮尚不采用生产默认窗口。
 
 探针通过Python编译、窗口位置/长度及本地反例检查。最多三个窗口、长无断句和多处冲突仍是显式限制；没有注册生产压缩或新增可持久化模型事实状态。
+
+
+## 轮次 64：精确复现证据遗漏后，多窗口恢复了更正
+
+新用例在写入前用同一完整查询验证：单窗口不含白桦及撤销，多窗口同时包含。[真实种子](evidence/minimax-study-memory-window-counterexample-seed-v1.jsonl)写入后助手仅回复收到，[包含实际助手回复的预检查](evidence/minimax-memory-window-contrast-proof-v3.json)再次确认差异仍成立，避免上一批因措辞变化或助手复述使两组都收到更新。
+
+[四个新Study操作](evidence/minimax-memory-window-counterexample-v3.jsonl)均提交。[结果审查](evidence/minimax-memory-window-counterexample-review-v3.json)单窗口0/2正确，两例均继续使用青石阅览室和晴鸟；多窗口2/2正确，均识别白桦替换及旧地点/暗号撤销。此为选定反例上的恢复证据，不是自然任务成功率或稳定泛化证明。
+
+格式与事实分开：单窗口第二例恰好两条列表，却事实错误；多窗口两例事实正确，但有开场、嵌套或额外撤销清单，不满足格式约束。下一步可考虑将多窗口作为有界原文检索候选进入更广泛回归：包括中部更新、法文、否定、归档和多于三个相关位置。尚未改动生产默认，先明确其可能遗漏的范围。

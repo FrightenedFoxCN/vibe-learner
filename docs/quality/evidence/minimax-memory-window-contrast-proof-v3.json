@@ -1,0 +1,18 @@
+{
+  "seed_status": "committed",
+  "assistant_reply": "收到。",
+  "variants": [
+    {
+      "name": "query_window",
+      "new_location": false,
+      "revoked": false,
+      "chars": 806
+    },
+    {
+      "name": "query_windows",
+      "new_location": true,
+      "revoked": true,
+      "chars": 132
+    }
+  ]
+}
