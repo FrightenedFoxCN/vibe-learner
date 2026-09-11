@@ -1,0 +1,107 @@
+{
+  "scope": "maintainer review of six saved paired synthetic memory outputs",
+  "limitations": [
+    "Manual labels for these exact outputs, not a general automated semantic grader or independent review.",
+    "Same two saved seed sessions; variants reverse order on repetition two, without claiming statistical power.",
+    "Embedding requests are outside this request instrumentation.",
+    "1600-character variant remains a prefix cap, not a guarantee for arbitrary long updates."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-e29d071c3ac94c9b9d1147a903f47eda",
+      "variant": "head180",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": false,
+      "reason": "Uses old location and passphrase and denies any superseding/revoked agreement.",
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        180,
+        180
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 11339,
+      "cached_tokens": 5512
+    },
+    {
+      "operation_id": "harness-operation-d05046d1d8eb447baee8a248aad51d70",
+      "variant": "head_tail180",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": false,
+      "reason": "Uses old location and passphrase and denies any superseding/revoked agreement.",
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        180,
+        180
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 17752,
+      "cached_tokens": 11136
+    },
+    {
+      "operation_id": "harness-operation-9cb56e3ee4e74e6abe560ad0970402ac",
+      "variant": "complete1600",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "reason": "Correctly names Birch as latest and revokes old location/passphrase.",
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        241,
+        1600
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 14621,
+      "cached_tokens": 6612
+    },
+    {
+      "operation_id": "harness-operation-85b377c9d0514c37b21943385cc1b193",
+      "variant": "complete1600",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "reason": "Correctly names Birch as latest and revokes old location/passphrase.",
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        241,
+        1600
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 14621,
+      "cached_tokens": 12986
+    },
+    {
+      "operation_id": "harness-operation-f53b1fd0bd46410b96795729b799ef81",
+      "variant": "head_tail180",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": false,
+      "reason": "Uses old location and passphrase and denies any superseding/revoked agreement.",
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        180,
+        180
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 11307,
+      "cached_tokens": 10624
+    },
+    {
+      "operation_id": "harness-operation-d0a51576c9a440c192d3749622e73a3c",
+      "variant": "head180",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": false,
+      "reason": "Uses old location and passphrase and denies any superseding/revoked agreement.",
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        180,
+        180
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 11339,
+      "cached_tokens": 11337
+    }
+  ]
+}
