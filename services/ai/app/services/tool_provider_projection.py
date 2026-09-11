@@ -639,6 +639,8 @@ def _adapt_study_runtime_success(
             "scene_title": raw.get("selected_scene_title") or raw.get("scene_name", ""),
             "selected_path": raw.get("selected_scene_path", []),
             "object_names": _scene_object_names(raw.get("scene_tree")),
+            "selected_scene_id": raw.get("selected_scene_id", ""),
+            **_scene_tool_members(raw.get("scene_tree")),
         }
     if name in {
         "add_scene",
@@ -651,6 +653,9 @@ def _adapt_study_runtime_success(
             **base,
             **_prepared_effect_fields(raw),
             "scene_instance_id": raw.get("scene_instance_id"),
+            "selected_scene_id": raw.get("selected_scene_id") or _mapping(raw.get("scene_profile")).get("scene_id", ""),
+            "added_scene_id": raw.get("added_scene_id", ""),
+            "object_id": raw.get("object_id", ""),
         }
     raise ToolResultValidationError("tool_runtime_result_adapter_missing")
 
@@ -774,6 +779,9 @@ def _provider_result_projection(
             "page_number",
             "match_count",
             "scene_instance_id",
+            "selected_scene_id",
+            "added_scene_id",
+            "object_id",
         }
     return {key: value for key, value in canonical.items() if key in allowed}
 
@@ -819,6 +827,35 @@ def _path_parts(value: Any) -> list[str | int]:
     if not isinstance(value, list):
         return []
     return [item for item in value if isinstance(item, (str, int)) and not isinstance(item, bool)][:16]
+
+
+def _scene_tool_members(value: Any) -> dict[str, Any]:
+    scenes: list[dict[str, Any]] = []
+    objects: list[dict[str, Any]] = []
+    truncated = False
+
+    def visit(nodes: Any, parent_id: str = "") -> None:
+        nonlocal truncated
+        if not isinstance(nodes, list):
+            return
+        for node in nodes:
+            if not isinstance(node, Mapping):
+                continue
+            if len(scenes) >= 128:
+                truncated = True
+                return
+            scene_id = node.get("id")
+            scenes.append({"scene_id": scene_id, "parent_scene_id": parent_id, "title": node.get("title")})
+            for obj in node.get("objects") or []:
+                if len(objects) >= 128:
+                    truncated = True
+                    break
+                objects.append({"object_id": obj.get("id"), "scene_id": scene_id,
+                    "name": obj.get("name"), "description": obj.get("description", "")})
+            visit(node.get("children"), scene_id)
+
+    visit(value)
+    return {"scenes": scenes, "objects": objects, "truncated": truncated}
 
 
 def _scene_object_names(value: Any) -> list[str]:

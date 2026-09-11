@@ -1,6 +1,6 @@
 {
   "scope": "admitted-operation tool coverage lower bound",
-  "git_revision": "0b875eae8060fa9331bbc0485a934b80145ad70a",
+  "git_revision": "f7fccff44793e4a94d96e61a7611bf2464bc2dba",
   "limitations": [
     "Deduplicated by Harness operation ID, including duplicated evidence exports.",
     "Missing tool result diagnostics are unknown, not failure.",
@@ -57,7 +57,10 @@
     "minimax-study-question-guards-v1.jsonl",
     "minimax-study-question-markdown-v2.jsonl",
     "minimax-study-question-reasons-v1.jsonl",
+    "minimax-study-question-tools-pairs-v1.jsonl",
     "minimax-study-request-placement-v2.jsonl",
+    "minimax-study-scene-tools-v1.jsonl",
+    "minimax-study-scene-tools-v2.jsonl",
     "minimax-study-state-tools-v1.jsonl",
     "minimax-study-tool-expansion-v1.jsonl",
     "minimax-tavern-baseline-v1.jsonl",
@@ -112,16 +115,16 @@
     {
       "workflow": "study_chat",
       "tool": "add_object",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 6,
+      "successful_tool_operations": 5,
+      "successful_tool_and_boundary_operations": 5
     },
     {
       "workflow": "study_chat",
       "tool": "add_scene",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 6,
+      "successful_tool_operations": 6,
+      "successful_tool_and_boundary_operations": 6
     },
     {
       "workflow": "study_chat",
@@ -168,9 +171,9 @@
     {
       "workflow": "study_chat",
       "tool": "delete_object",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 5,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
@@ -196,9 +199,9 @@
     {
       "workflow": "study_chat",
       "tool": "move_to_scene",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 4,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
@@ -259,9 +262,9 @@
     {
       "workflow": "study_chat",
       "tool": "read_scene_overview",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 12,
+      "successful_tool_operations": 12,
+      "successful_tool_and_boundary_operations": 12
     },
     {
       "workflow": "study_chat",
@@ -315,16 +318,16 @@
     {
       "workflow": "study_chat",
       "tool": "update_object_description",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 6,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
       "tool": "write_session_memory",
-      "requested_operations": 13,
-      "successful_tool_operations": 13,
-      "successful_tool_and_boundary_operations": 13
+      "requested_operations": 14,
+      "successful_tool_operations": 14,
+      "successful_tool_and_boundary_operations": 14
     }
   ]
 }

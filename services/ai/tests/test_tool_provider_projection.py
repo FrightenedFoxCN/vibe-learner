@@ -27,6 +27,43 @@ from app.services.tool_provider_projection import (
 
 
 class ToolProviderProjectionTests(unittest.TestCase):
+    def test_scene_provider_keeps_addressable_members_but_public_trace_does_not(self):
+        entry = TOOL_MANIFEST_ENTRIES['study_chat:study_chat_reply:read_scene_overview']
+        result = adapt_tool_runtime_result(entry, {
+            'ok': True, 'scene_instance_id': 'instance-1', 'selected_scene_id': 'room-2',
+            'selected_scene_title': 'Corner', 'selected_scene_path': ['Room', 'Corner'],
+            'scene_tree': [{'id': 'room-1', 'title': 'Room', 'objects': [], 'children': [
+                {'id': 'room-2', 'title': 'Corner', 'objects': [{'id': 'board-1', 'name': 'Board', 'description': 'Equation'}]}]}]})
+        provider = project_validated_tool_result(entry, result, audience='provider')
+        self.assertEqual(provider['selected_scene_id'], 'room-2')
+        self.assertEqual(provider['scenes'][1]['parent_scene_id'], 'room-1')
+        self.assertEqual(provider['objects'], [{'object_id': 'board-1', 'scene_id': 'room-2', 'name': 'Board', 'description': 'Equation'}])
+        for audience in ('trace', 'public'):
+            projection = json.dumps(project_validated_tool_result(entry, result, audience=audience))
+            for protected in ('room-1', 'room-2', 'board-1', 'Equation'):
+                self.assertNotIn(protected, projection)
+
+    def test_prepared_scene_provider_returns_followup_target_ids(self):
+        for tool, field, target in [('add_scene', 'added_scene_id', 'new-room'), ('add_object', 'object_id', 'new-card'),
+                                    ('update_object_description', 'object_id', 'board'), ('delete_object', 'object_id', 'card')]:
+            entry = TOOL_MANIFEST_ENTRIES[f'study_chat:study_chat_reply:{tool}']
+            result = adapt_tool_runtime_result(entry, {'ok': True, 'scene_instance_id': 'instance-1',
+                'effect_state': 'prepared', 'committed': False, 'prepared_effect_id': 'effect-1',
+                'scene_profile': {'scene_id': 'room-1'}, field: target})
+            provider = project_validated_tool_result(entry, result, audience='provider')
+            self.assertEqual(provider[field], target)
+            self.assertEqual(provider['selected_scene_id'], 'room-1')
+            self.assertFalse(provider['committed'])
+            self.assertNotIn(target, json.dumps(project_validated_tool_result(entry, result, audience='public')))
+
+    def test_scene_identity_inventory_reports_truncation(self):
+        entry = TOOL_MANIFEST_ENTRIES['study_chat:study_chat_reply:read_scene_overview']
+        result = adapt_tool_runtime_result(entry, {'ok': True, 'scene_instance_id': 'instance-1',
+            'scene_tree': [{'id': f'room-{i}', 'title': 'Room', 'objects': []} for i in range(129)]})
+        provider = project_validated_tool_result(entry, result, audience='provider')
+        self.assertEqual(len(provider['scenes']), 128)
+        self.assertTrue(provider['truncated'])
+
     def test_all_available_context_projects_six_planning_and_thirty_one_study_tools(self) -> None:
         dependencies = set(ToolDependency)
         capabilities = set(ToolProviderCapability)

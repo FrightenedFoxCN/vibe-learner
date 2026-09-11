@@ -392,3 +392,13 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 [六例真实场景操作](evidence/minimax-study-scene-tools-v1.jsonl)全部提交Chat，但三个“修改白板→新增验算卡→删除验算卡”任务均未完成：白板描述都未改，两例卡片残留。三个导航任务最终选中验算角，一例却报告仍在自习室；大量重复新增、读取与移动请求继续存在。工具调用成功、Chat提交和用户目标完成必须分开。
 
 代码定位到工具契约信息损失：read_scene_overview的领域结果含完整scene_tree与selected_scene_id，provider适配仅保留标题、路径、object_names；新增物品返回的object_id和新增场景返回的added_scene_id也被丢弃。后续update_object_description/delete_object却要求object_id。这解释了模型无法从工具回执取得必要身份的机制，但现有公开trace已脱敏，不能据此断言每一次失败请求使用了哪个错误ID。下一步修复有界的场景/物品身份投影，维持公开trace脱敏，并记录provider实收身份与真实复测结果。
+
+## 轮次 33：恢复场景工具的可操作身份
+
+场景工具的V1结果DTO新增带默认值的可选身份字段：当前场景ID、最多128个场景的ID/父ID/标题、最多128个物品的ID/所属场景/名称/描述。列表截断明确标记truncated；既有provider字节预算继续执行，超预算不伪装成功。写工具补齐selected_scene_id、added_scene_id、object_id，供后续调用引用。身份来自应用领域结果，不由模型分配，公开与trace投影仍脱敏；既有manifest及参数golden检查通过。
+
+[旧投影函数隔离回放](evidence/minimax-scene-projection-before-v1.json)在三项新断言中均未通过；这不是完整旧checkout测试。修复后42项契约/投影/效果定向回归及完整后端803项通过，包含父子身份、物品描述、新增操作目标、公开脱敏和有界列表截断。
+
+[六例真实复测](evidence/minimax-study-scene-tools-v2.jsonl)在实际provider边界额外记录合成场景身份，确认模型收到了后续操作所需字段。[状态与工具复核](evidence/minimax-study-scene-review-v2.json)显示，白板修改/验算卡新增后删除从0/3达到3/3；导航三例均显式成功调用move_to_scene并正确报告最终位置。六例都没有工具错误。它们是相同fixture的先后批次，尚不构成跨任务独立认证。
+
+指令遵循仍单独记分：物品任务一例仅在操作前读取场景，漏了要求的最终读回；另一例回复多出开场白。最终状态正确不能替代这些要求。当前Study成功工具加领域提交的覆盖增至25/31；待继续覆盖计划读取/修改/确认、长期记忆、定时续接、图像生成，并补充真实Tavern领域流程与长上下文测试。

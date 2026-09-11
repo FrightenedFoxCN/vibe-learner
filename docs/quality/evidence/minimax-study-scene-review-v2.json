@@ -1,0 +1,263 @@
+{
+  "scope": "synthetic scene fixture state/tool review",
+  "limitations": [
+    "Developer-authored fixture checks, not independent review.",
+    "Final state and successful tool receipts do not prove every ordering or all dialogue claims.",
+    "Provider identity diagnostics exist only for instrumented runs, never inferred from redacted public traces."
+  ],
+  "rows": [
+    {
+      "source": "minimax-study-scene-tools-v1.jsonl",
+      "operation_id": "harness-operation-d37b0d2d309446f2bc31fff4df972cb9",
+      "case_id": "scene_navigation",
+      "repetition": 0,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": false,
+      "readback_after_last_mutation": false,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "add_scene": 1
+      },
+      "tool_errors": {
+        "scene_parent_not_found": 1
+      },
+      "provider_requests": 5,
+      "elapsed_ms": 11234,
+      "reply": "目前实际所在场景仍是「自习室」。",
+      "final_scene_title": "验算角"
+    },
+    {
+      "source": "minimax-study-scene-tools-v1.jsonl",
+      "operation_id": "harness-operation-f232955293ec461d88711bb8bebbd04d",
+      "case_id": "scene_navigation",
+      "repetition": 1,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": false,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 4,
+        "add_scene": 1
+      },
+      "tool_errors": {
+        "scene_parent_not_found": 1,
+        "scene_not_found_in_session": 2
+      },
+      "provider_requests": 9,
+      "elapsed_ms": 40392,
+      "reply": "实际所在场景是「验算角」（路径：自习室 / 验算角）。",
+      "final_scene_title": "验算角"
+    },
+    {
+      "source": "minimax-study-scene-tools-v1.jsonl",
+      "operation_id": "harness-operation-8e7960357e4d460c84f13ba8d8d3ffb1",
+      "case_id": "scene_navigation",
+      "repetition": 2,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": false,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "add_scene": 1,
+        "write_session_memory": 1
+      },
+      "tool_errors": {
+        "scene_parent_not_found": 2
+      },
+      "provider_requests": 7,
+      "elapsed_ms": 8852,
+      "reply": "实际所在场景是「验算角」（路径：自习室 / 验算角）。",
+      "final_scene_title": "验算角"
+    },
+    {
+      "source": "minimax-study-scene-tools-v1.jsonl",
+      "operation_id": "harness-operation-5b057b421b0642208ff846a285a6e3c4",
+      "case_id": "scene_object_lifecycle",
+      "repetition": 0,
+      "boundary_success": true,
+      "final_state_matches_task": false,
+      "required_tools_succeeded": false,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 3,
+        "add_object": 1
+      },
+      "tool_errors": {
+        "scene_object_not_found": 8,
+        "tool_operation_budget_exceeded": 3
+      },
+      "provider_requests": 11,
+      "elapsed_ms": 20049,
+      "reply": "小林，白板的描述修改和验算卡的删除操作都因工具调用受限未能执行成功，以下是读回核对后的实际状态：\n\n- **白板**：原描述未被修改（`update_object_description` 反复返回 `scene_object_not_found`），仍为初始状态。\n- **验算卡**：已被 `add_object` 添加到场景中，但删除操作因工具调用预算耗尽未能完成，当前仍存在于场景物体列表中。",
+      "final_scene_title": "自习室"
+    },
+    {
+      "source": "minimax-study-scene-tools-v1.jsonl",
+      "operation_id": "harness-operation-ec14d9373853447cacac987cbb5c6288",
+      "case_id": "scene_object_lifecycle",
+      "repetition": 1,
+      "boundary_success": true,
+      "final_state_matches_task": false,
+      "required_tools_succeeded": false,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 4,
+        "add_object": 1
+      },
+      "tool_errors": {
+        "scene_object_not_found": 5,
+        "tool_operation_budget_exceeded": 1
+      },
+      "provider_requests": 11,
+      "elapsed_ms": 64662,
+      "reply": "小林，核对结果如下：\n- 白板：描述修改因工具受限未能生效，仍保持原有描述。\n- 验算卡：新增已提交但场景中物体 ID 无法被 delete_object 识别，所以暂未被删除，当前场景列表中仍能看到“验算卡”。",
+      "final_scene_title": "自习室"
+    },
+    {
+      "source": "minimax-study-scene-tools-v1.jsonl",
+      "operation_id": "harness-operation-bc3fd2da476e455d93d1bf578fd3f712",
+      "case_id": "scene_object_lifecycle",
+      "repetition": 2,
+      "boundary_success": true,
+      "final_state_matches_task": false,
+      "required_tools_succeeded": false,
+      "readback_after_last_mutation": false,
+      "successful_tools": {
+        "read_scene_overview": 2
+      },
+      "tool_errors": {
+        "scene_object_not_found": 1,
+        "scene_not_found_in_session": 1
+      },
+      "provider_requests": 5,
+      "elapsed_ms": 18124,
+      "reply": "工具调用均受限，无法对白板描述做修改，也无法新增/删除验算卡。读回核对结果如下：\n\n- 白板：描述修改因工具受限未能生效，仍保持原有描述（未改为\"写有方程 2x+3=11 的白板\"）。\n- 验算卡：新增因工具受限未能成功，因此删除步骤也无对象可删，场景中目前仍只有\"白板\"一项物品。",
+      "final_scene_title": "自习室"
+    },
+    {
+      "source": "minimax-study-scene-tools-v2.jsonl",
+      "operation_id": "harness-operation-f1e4ee0d970a4e44acaba849faee3cdc",
+      "case_id": "scene_navigation",
+      "repetition": 0,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": true,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "add_scene": 1,
+        "move_to_scene": 1
+      },
+      "tool_errors": {},
+      "provider_requests": 5,
+      "elapsed_ms": 15216,
+      "reply": "当前所在场景是「自习室 / 验算角」。",
+      "final_scene_title": "验算角"
+    },
+    {
+      "source": "minimax-study-scene-tools-v2.jsonl",
+      "operation_id": "harness-operation-3dbe6c6f85344ebab256e021ec3ad3a3",
+      "case_id": "scene_navigation",
+      "repetition": 1,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": true,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "add_scene": 1,
+        "move_to_scene": 1
+      },
+      "tool_errors": {},
+      "provider_requests": 5,
+      "elapsed_ms": 10136,
+      "reply": "当前所在场景是「自习室 / 验算角」。",
+      "final_scene_title": "验算角"
+    },
+    {
+      "source": "minimax-study-scene-tools-v2.jsonl",
+      "operation_id": "harness-operation-334fbbabd4314782a814ef6af03ff421",
+      "case_id": "scene_navigation",
+      "repetition": 2,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": true,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "add_scene": 1,
+        "move_to_scene": 1
+      },
+      "tool_errors": {},
+      "provider_requests": 5,
+      "elapsed_ms": 11762,
+      "reply": "当前所在场景是「自习室 / 验算角」。",
+      "final_scene_title": "验算角"
+    },
+    {
+      "source": "minimax-study-scene-tools-v2.jsonl",
+      "operation_id": "harness-operation-c52b89197fd0415c9a6a97009f1808dc",
+      "case_id": "scene_object_lifecycle",
+      "repetition": 0,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": true,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "update_object_description": 1,
+        "add_object": 1,
+        "delete_object": 1
+      },
+      "tool_errors": {},
+      "provider_requests": 5,
+      "elapsed_ms": 24370,
+      "reply": "已按你的步骤核对完毕：\n\n- 白板：描述已更新为「写有方程 2x+3=11 的白板」，仍保留在自习室中。\n- 验算卡：已从场景中移除，当前物体列表中不再存在。",
+      "final_scene_title": "自习室"
+    },
+    {
+      "source": "minimax-study-scene-tools-v2.jsonl",
+      "operation_id": "harness-operation-6ec8eeafb0e1428bbca9f30097252e6c",
+      "case_id": "scene_object_lifecycle",
+      "repetition": 1,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": true,
+      "readback_after_last_mutation": false,
+      "successful_tools": {
+        "read_scene_overview": 1,
+        "update_object_description": 1,
+        "add_object": 1,
+        "delete_object": 1
+      },
+      "tool_errors": {},
+      "provider_requests": 4,
+      "elapsed_ms": 43827,
+      "reply": "- 白板：描述已更新为「写有方程 2x+3=11 的白板」\n- 验算卡：已删除，不存在",
+      "final_scene_title": "自习室"
+    },
+    {
+      "source": "minimax-study-scene-tools-v2.jsonl",
+      "operation_id": "harness-operation-279582313a0240eb89f85cef4ea67e1c",
+      "case_id": "scene_object_lifecycle",
+      "repetition": 2,
+      "boundary_success": true,
+      "final_state_matches_task": true,
+      "required_tools_succeeded": true,
+      "readback_after_last_mutation": true,
+      "successful_tools": {
+        "read_scene_overview": 2,
+        "update_object_description": 1,
+        "add_object": 1,
+        "delete_object": 1
+      },
+      "tool_errors": {},
+      "provider_requests": 5,
+      "elapsed_ms": 6978,
+      "reply": "- 白板：描述已更新为「写有方程 2x+3=11 的白板」\n- 验算卡：已删除，不存在",
+      "final_scene_title": "自习室"
+    }
+  ]
+}

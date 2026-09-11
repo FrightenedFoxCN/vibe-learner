@@ -1,0 +1,13 @@
+{
+  "scope": "prior projection functions replayed against new assertions and additive DTOs",
+  "prior_revision": "f7fccff44793e4a94d96e61a7611bf2464bc2dba",
+  "tests_run": 3,
+  "failures": [
+    "test_scene_provider_keeps_addressable_members_but_public_trace_does_not (tests.test_tool_provider_projection.ToolProviderProjectionTests.test_scene_provider_keeps_addressable_members_but_public_trace_does_not)",
+    "test_scene_identity_inventory_reports_truncation (tests.test_tool_provider_projection.ToolProviderProjectionTests.test_scene_identity_inventory_reports_truncation)"
+  ],
+  "errors": [
+    "test_prepared_scene_provider_returns_followup_target_ids (tests.test_tool_provider_projection.ToolProviderProjectionTests.test_prepared_scene_provider_returns_followup_target_ids)"
+  ],
+  "limitation": "Projection isolation, not a full old-checkout test run or real model call."
+}

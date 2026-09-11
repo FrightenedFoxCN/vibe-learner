@@ -443,6 +443,19 @@ class ClearProjectedImageOverlaysResultV1(ProjectionPreparedResultV1):
     tool_name: Literal["clear_projected_image_overlays"] = "clear_projected_image_overlays"
 
 
+class SceneToolNodeV1(StudyChatToolContractModel):
+    scene_id: Annotated[str, Field(min_length=1, max_length=160)]
+    parent_scene_id: Annotated[str, Field(max_length=160)] = ""
+    title: ShortText
+
+
+class SceneToolObjectV1(StudyChatToolContractModel):
+    object_id: Annotated[str, Field(min_length=1, max_length=160)]
+    scene_id: Annotated[str, Field(min_length=1, max_length=160)]
+    name: ShortText
+    description: Annotated[str, Field(max_length=4000)] = ""
+
+
 class ReadSceneOverviewResultV1(StudyChatToolResultBaseV1):
     tool_name: Literal["read_scene_overview"] = "read_scene_overview"
     scene_instance_id: Annotated[str, Field(min_length=1, max_length=160)]
@@ -453,10 +466,17 @@ class ReadSceneOverviewResultV1(StudyChatToolResultBaseV1):
     object_names: list[Annotated[str, Field(min_length=1, max_length=500)]] = Field(
         max_length=128
     )
+    selected_scene_id: Annotated[str, Field(max_length=160)] = ""
+    scenes: list[SceneToolNodeV1] = Field(default_factory=list, max_length=128)
+    objects: list[SceneToolObjectV1] = Field(default_factory=list, max_length=128)
+    truncated: bool = False
 
 
 class ScenePreparedResultV1(PreparedEffectResultV1):
     scene_instance_id: Annotated[str, Field(min_length=1, max_length=160)]
+    selected_scene_id: Annotated[str, Field(max_length=160)] = ""
+    added_scene_id: Annotated[str, Field(max_length=160)] = ""
+    object_id: Annotated[str, Field(max_length=160)] = ""
 
 
 class AddSceneResultV1(ScenePreparedResultV1):

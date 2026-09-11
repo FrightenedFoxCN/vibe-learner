@@ -173,6 +173,16 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
             payload = {**payload, "messages": messages}
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
         call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
+        if selected_case and selected_case.startswith("scene_"):
+            # This probe creates a synthetic scene; record only addressable
+            # identities at the real provider boundary, separate from safe traces.
+            call["synthetic_scene_tool_context"] = []
+            for item in payload.get("messages", []):
+                if item.get("role") == "tool" and item.get("name") in {
+                    "read_scene_overview", "add_scene", "move_to_scene", "add_object", "update_object_description", "delete_object"}:
+                    result = json.loads(item["content"])
+                    call["synthetic_scene_tool_context"].append({key: result[key] for key in
+                        ("tool_name", "ok", "error", "selected_scene_id", "added_scene_id", "object_id", "scenes", "objects", "truncated") if key in result})
         call["image_parts_sent"] = sum(part.get("type") == "image_url"
             for message in payload.get("messages", []) if isinstance(message.get("content"), list)
             for part in message["content"] if isinstance(part, dict))
