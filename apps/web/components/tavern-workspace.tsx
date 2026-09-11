@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Profiler,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -1075,6 +1076,20 @@ export function TavernWorkspace() {
   );
   usePageDebugSnapshot(debugSnapshot);
 
+  const sessionPanel = (
+    <TavernSessionPanel
+      rooms={roomButtons}
+      activeRoomId={activeRoom?.id ?? ""}
+      busy={busyAction !== null}
+      hasMore={nextRoomCursor !== null}
+      loadingMore={loadingMoreRooms}
+      historyTruncated={roomHistoryTruncated}
+      pageError={roomPageError}
+      onOpen={(roomId) => void openRoom(roomId)}
+      onLoadMore={() => void loadMoreRooms()}
+    />
+  );
+
   return (
     <main className="with-app-nav tavern-page">
       <TopNav currentPath="/tavern" />
@@ -1100,17 +1115,25 @@ export function TavernWorkspace() {
 
       <div className={`tavern-workspace-grid ${activeRoom ? "has-room" : "empty-room"}`}>
         <div className="tavern-left-rail">
-          <TavernSessionPanel
-            rooms={roomButtons}
-            activeRoomId={activeRoom?.id ?? ""}
-            busy={busyAction !== null}
-            hasMore={nextRoomCursor !== null}
-            loadingMore={loadingMoreRooms}
-            historyTruncated={roomHistoryTruncated}
-            pageError={roomPageError}
-            onOpen={(roomId) => void openRoom(roomId)}
-            onLoadMore={() => void loadMoreRooms()}
-          />
+          {process.env.NEXT_PUBLIC_TAVERN_ROOM_PROFILING === "1" ? (
+            <Profiler
+              id="TavernSessionPanel"
+              onRender={(id, phase, actualDuration, baseDuration, startTime, commitTime) => {
+                const target = window as Window & {
+                  __tavernRoomProfileSamples?: unknown[];
+                };
+                const samples = target.__tavernRoomProfileSamples ??= [];
+                samples.push({
+                  id, phase, actualDuration, baseDuration, startTime, commitTime,
+                  roomIds: roomButtons.map((room) => room.id),
+                  loadingMore: loadingMoreRooms,
+                });
+                if (samples.length > 2000) samples.splice(0, samples.length - 2000);
+              }}
+            >
+              {sessionPanel}
+            </Profiler>
+          ) : sessionPanel}
           {showSetup ? (
             <TavernSetupPanel
               personas={personas}

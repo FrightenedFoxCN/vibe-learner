@@ -1,0 +1,18 @@
+{
+  "stats": {
+    "startTime": "2026-09-11T15:07:05.467Z",
+    "duration": 1344.328,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "build_id": "ZfnwP5lK6iKQz54x_yQKS",
+  "evidence": [
+    {
+      "count": 100,
+      "load_more_absent": true,
+      "selected_id": "room-0000000000000000994"
+    }
+  ]
+}

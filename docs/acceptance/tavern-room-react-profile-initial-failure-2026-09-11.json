@@ -1,0 +1,14 @@
+{
+  "classification": "benchmark_environment_failure",
+  "reason": "Fixture backend CORS allowed port3000 only; start-page summary route-forwarded, direct room detail and structural cap requests blocked. Entire timing run invalid; no candidate timing selected from this run. Added fixture-only port3417 origin and active-room-ready precondition before full rerun.",
+  "stats": {
+    "startTime": "2026-09-11T14:55:11.124Z",
+    "duration": 92421.437,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  },
+  "error": "structural cap expected31 Room buttons received0; timing output was not yet persisted. Added per-region checkpoints.",
+  "second_preflight_failure": "After CORS fix, new ready locator mistakenly required exact text excluding existing revision suffix. Failed before first warmup/sample; corrected locator to visible ready+revision text."
+}
