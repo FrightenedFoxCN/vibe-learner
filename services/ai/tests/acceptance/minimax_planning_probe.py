@@ -1,6 +1,7 @@
 """Real MiniMax planning with synthetic material and admitted commit evidence."""
 import argparse
 import base64
+from dataclasses import replace
 import json
 import os
 import re
@@ -65,7 +66,10 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         pdf_path=None, objective_override=None, ocr_engine="disabled", multimodal=False, persona_variant="default",
         initial_evidence_tool=None, page_evidence=None, grounding_candidate=False,
         page_evidence_page=8, persona_domain="math", controlled_page_evidence=False,
-        prepared_source_root=None, transcription_file=None):
+        prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
+        tool_recovery_hint_candidate=False):
+    if redact_tool_error_evidence and tool_recovery_hint_candidate:
+        raise ValueError("Error redaction and recovery hint are separate experiments")
     if initial_evidence_tool not in {None, "read_page_range_content", "read_page_range_images"}:
         raise ValueError("Unsupported initial evidence tool")
     if initial_evidence_tool == "read_page_range_images" and not multimodal:
@@ -124,12 +128,22 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
 
     def observe_tool(runtime, tool_call):
         execution = original_execute_tool(runtime, tool_call)
-        detail = execution.provider_result.get("detail")
+        detail = execution.result.get("detail") if execution.result.get("ok") is False else execution.provider_result.get("detail")
         if execution.provider_result.get("ok") is False:
             safe_detail = detail if isinstance(detail, str) and re.fullmatch(
                 r"study_unit_\d+_(?:overlaps_previous|page_out_of_range|invalid_page_range|missing_title)", detail) else None
             tool_constraint_errors.append({"tool_name": execution.tool_name,
-                "error": execution.provider_result.get("error"), "detail_code": safe_detail})
+                "error": execution.provider_result.get("error"), "detail_code": safe_detail,
+                "provider_detail_sent": not redact_tool_error_evidence and "detail" in execution.provider_result})
+            if redact_tool_error_evidence:
+                execution = replace(execution, provider_result={k: v for k, v in execution.provider_result.items()
+                    if k not in {"path", "detail"}})
+            elif tool_recovery_hint_candidate and safe_detail:
+                page_count = runtime.context.debug_report.page_count
+                hint = (f"本PDF共{page_count}个物理页。Study Unit页范围必须按顺序且互不重叠，不能为避免重叠而杜撰新页。"
+                        "同页不同主题请合并为一个Study Unit，在最终计划的schedule_chapters中拆分。")
+                execution = replace(execution, provider_result={**execution.provider_result,
+                    "detail": safe_detail + "。" + hint})
         if execution.tool_name == "get_study_unit_detail" and isinstance(detail, dict):
             start, end = detail["page_start"], detail["page_end"]
             pages = [[c["page_start"], c["page_end"]] for c in detail.get("chunk_excerpts", [])]
@@ -293,6 +307,10 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row["source_document"] = source_report
                     row["detail_evidence_reads"] = detail_reads
                     row["tool_constraint_errors"] = tool_constraint_errors
+                    if redact_tool_error_evidence:
+                        row["tool_error_variant"] = "provider-repair-evidence-removed-v1"
+                    elif tool_recovery_hint_candidate:
+                        row["tool_error_variant"] = "page-range-recovery-hint-candidate-v1"
                     row["admitted_study_unit_count"] = admitted_unit_count
                     row["multimodal_enabled"] = multimodal
                     row["persona_variant"] = persona_variant
@@ -385,8 +403,10 @@ if __name__ == "__main__":
     parser.add_argument("--controlled-page-evidence", action="store_true")
     parser.add_argument("--prepared-source-root", type=Path)
     parser.add_argument("--transcription-file", type=Path)
+    parser.add_argument("--redact-tool-error-evidence", action="store_true")
+    parser.add_argument("--tool-recovery-hint-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
-        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate, args.page_evidence_page, args.persona_domain, args.controlled_page_evidence, args.prepared_source_root, args.transcription_file)
+        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate, args.page_evidence_page, args.persona_domain, args.controlled_page_evidence, args.prepared_source_root, args.transcription_file, args.redact_tool_error_evidence, args.tool_recovery_hint_candidate)

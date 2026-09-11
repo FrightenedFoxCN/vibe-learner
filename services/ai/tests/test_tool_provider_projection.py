@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from types import SimpleNamespace
 
 from app.models.harness import HarnessStage, HarnessWorkflow
 from app.models.tool_manifest import (
@@ -24,9 +25,44 @@ from app.services.tool_provider_projection import (
     provider_function_for_entry,
     validate_tool_runtime_result,
 )
+from app.services.plan_tool_runtime import build_plan_tool_runtime
 
 
 class ToolProviderProjectionTests(unittest.TestCase):
+    def test_planning_overlap_repair_reason_reaches_provider_only(self):
+        original_unit = SimpleNamespace(id='unit', title='Original', page_start=1, page_end=1)
+        runtime = build_plan_tool_runtime(study_units=[original_unit], debug_report=SimpleNamespace(
+            document_id='doc', page_count=1, sections=[]))
+        execution = runtime.execute_tool_call({'id': 'call-overlap', 'type': 'function', 'function': {
+            'name': 'revise_study_units', 'arguments': json.dumps({'study_units': [
+                {'title': 'First', 'page_start': 1, 'page_end': 1},
+                {'title': 'Second', 'page_start': 1, 'page_end': 1}]})}})
+        self.assertFalse(execution.result['ok'])
+        self.assertEqual(execution.result['detail'], 'study_unit_2_overlaps_previous')
+        self.assertEqual(execution.provider_result['detail'], 'study_unit_2_overlaps_previous')
+        self.assertNotIn('study_unit_2_overlaps_previous', json.dumps(execution.trace_result))
+        self.assertEqual(runtime.current_study_units(), [original_unit])
+
+    def test_provider_error_retains_typed_path_and_validation_code(self):
+        entry = TOOL_MANIFEST_ENTRIES['planning:planning_tool_execution:read_page_range_content']
+        result = adapt_tool_runtime_result(entry, {'ok': False, 'error': 'tool_argument_schema_invalid',
+            'path': ['page_start'], 'detail': 'int_type'})
+        projected = project_validated_tool_result(entry, result, audience='provider')
+        self.assertEqual(projected['path'], ['page_start'])
+        self.assertEqual(projected['detail'], 'int_type')
+        for audience in ('trace', 'public'):
+            safe = project_validated_tool_result(entry, result, audience=audience)
+            self.assertNotIn('detail', safe)
+            self.assertNotIn('path', safe)
+
+    def test_provider_error_does_not_forward_arbitrary_exception_text(self):
+        entry = TOOL_MANIFEST_ENTRIES['planning:planning_tool_execution:revise_study_units']
+        result = adapt_tool_runtime_result(entry, {'ok': False, 'error': 'invalid_study_unit_revision',
+            'detail': '/private/source/path sensitive-content'})
+        projected = project_validated_tool_result(entry, result, audience='provider')
+        self.assertNotIn('detail', projected)
+        self.assertNotIn('sensitive-content', json.dumps(projected))
+
     def test_memory_provider_retains_record_time_without_exposing_public_trace(self):
         entry = TOOL_MANIFEST_ENTRIES['study_chat:study_chat_reply:retrieve_memory_context']
         timestamp = '2026-09-12T01:02:03+00:00'

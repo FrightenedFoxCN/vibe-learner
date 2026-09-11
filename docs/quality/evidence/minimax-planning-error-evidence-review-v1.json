@@ -1,0 +1,125 @@
+{
+  "scope": "Maintainer recovery-stress review: explicit first request asks for two overlapping units on one physical page",
+  "limitations": [
+    "This deliberately invalid initial request is a recovery stress case, not a natural-task success rate.",
+    "Two operations per condition, interleaved order; no stable latency or quality effect claim.",
+    "Provider-detail markers observe application projection, not HTTP wire contents.",
+    "Valid final Plan commit is distinct from successful requested Study Unit revision."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-9e2c73b1681b4ffda8102312b42fc820",
+      "sample": "m3-plan-repair-evidence-v1-0-1",
+      "variant": "provider-repair-evidence-removed-v1",
+      "boundary_success": true,
+      "revision_attempts": 2,
+      "successful_revision_attempts": 0,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": false
+        }
+      ],
+      "provider_requests": 6,
+      "prompt_tokens": 45151
+    },
+    {
+      "operation_id": "harness-operation-40282c5c4f2b4ef6ad1aadc6cfacbf5c",
+      "sample": "m3-plan-repair-evidence-v1-1-0",
+      "variant": "production_safe_error_evidence",
+      "boundary_success": true,
+      "revision_attempts": 3,
+      "successful_revision_attempts": 0,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_page_out_of_range",
+          "provider_detail_sent": true
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "provider_requests": 5,
+      "prompt_tokens": 32308
+    },
+    {
+      "operation_id": "harness-operation-ef4edc43840c45e5a7bdc562887f0f87",
+      "sample": "m3-plan-repair-evidence-v1-2-0",
+      "variant": "production_safe_error_evidence",
+      "boundary_success": true,
+      "revision_attempts": 4,
+      "successful_revision_attempts": 0,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_page_out_of_range",
+          "provider_detail_sent": true
+        }
+      ],
+      "provider_requests": 6,
+      "prompt_tokens": 38585
+    },
+    {
+      "operation_id": "harness-operation-b4691e4b0b2b4f57a0c01eb58eac95b3",
+      "sample": "m3-plan-repair-evidence-v1-3-1",
+      "variant": "provider-repair-evidence-removed-v1",
+      "boundary_success": true,
+      "revision_attempts": 2,
+      "successful_revision_attempts": 0,
+      "constraint_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": false
+        }
+      ],
+      "provider_requests": 4,
+      "prompt_tokens": 25135
+    }
+  ]
+}

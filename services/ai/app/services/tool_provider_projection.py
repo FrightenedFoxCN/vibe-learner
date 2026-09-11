@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Sequence
 
@@ -715,12 +716,32 @@ def _provider_result_projection(
 ) -> dict[str, Any]:
     name = entry.canonical_name
     if canonical.get("ok") is False:
-        return {
+        projected = {
             "schema_version": canonical.get("schema_version"),
             "ok": False,
             "tool_name": name,
             "error": canonical.get("error"),
         }
+        if canonical.get("path"):
+            projected["path"] = canonical["path"]
+        detail = canonical.get("detail")
+        # Carry reviewed machine-readable recovery evidence, not arbitrary
+        # exception text that may contain local paths or protected values.
+        validation_codes = {
+            "missing", "extra_forbidden", "int_type", "int_parsing", "float_type",
+            "float_parsing", "bool_type", "bool_parsing", "string_type", "list_type",
+            "dict_type", "literal_error", "enum", "greater_than", "greater_than_equal",
+            "less_than", "less_than_equal", "string_too_long", "string_too_short",
+            "too_long", "too_short", "finite_number", "json_invalid", "value_error",
+            "byte_budget_exceeded",
+        }
+        revision_code = isinstance(detail, str) and re.fullmatch(
+            r"study_unit_\d+_(?:overlaps_previous|page_out_of_range|invalid_page_range|missing_title)", detail)
+        if isinstance(detail, str) and (detail in validation_codes or (
+            canonical.get("error") == "invalid_study_unit_revision" and revision_code
+        )):
+            projected["detail"] = detail
+        return projected
     # Planning tools exist to return grounded planning context to the model.
     # Their provider projection may carry protected content under the manifest
     # budget, while trace/public projections remain independently content-free.
