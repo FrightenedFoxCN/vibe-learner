@@ -142,4 +142,13 @@ PersonaGenerationHarnessPolicy 升为 persona-generation-harness-v2，Python 模
 
 缓存后续线索：Study 的 system 开头包含 persona/session context，历史消息在本轮教材材料前。人物/单元变化与历史构造可能缩短缓存公共前缀；需要在相同语义与工具权限下实测，不能仅凭排列猜测命中率提升。当前未调整生产 prompt 顺序。
 
-本轮归档检查：更新后的 npm run check 通过，两个新增前端冻结实测回归通过，脚本编译和凭据排除检查通过。互动题的下一批三个全新会话正在 `/tmp/minimax-study-question-diagnostics-v1/` 记录字段路径/类型，不保存未提交的私有答案。
+本轮归档检查：更新后的 npm run check 通过，两个新增前端冻结实测回归通过，脚本编译和凭据排除检查通过。互动题后续诊断结果见轮次 8。
+
+
+## 轮次 8：互动题失败复现与诊断归因
+
+[3 个新会话](evidence/minimax-study-question-diagnostics-v1.jsonl)全部提交成功，共 4 次调用。其中一次初始回复记录 raw_json_object_valid=false 后重试成功；没有 proposal_schema_errors 不代表 schema 通过。空文本假说也未获得证据，严格 proposal 已先执行 strip 和 min_length=1 检查。
+
+[6 个进一步观测会话](evidence/minimax-study-question-guards-v1.jsonl)仅 2/6 最终成功，共 15 次调用（包含工具轮次，不能全部算重试）。失败包括 JSON 解析失败、一次 length 截断、interactive_question 层 value_error。成功通过 schema 的回复均 text 非空且没有公开 grading-key 标志。保留四个失败操作的 uncertain/not_committed 证据，未重放这些操作。
+
+诊断器后续增加生产 decoder 的接受/拒绝标志，区分合法 fenced JSON 与裸 JSON 解析；对互动题 value_error 仅保存已审阅的固定错误码白名单，不保存候选值、任意异常文本或私有判分答案。新增回归验证缺 answer_key 可定位而候选题干不泄露。当前没有放松生产校验，也没有据此宣称互动题质量通过。

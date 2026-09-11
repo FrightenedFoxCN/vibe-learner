@@ -17,6 +17,11 @@ from app.models.api import StudyChatOperationReceiptResponse, StudySessionRespon
 from app.models.study_chat_reply import StudyChatReplyProposalV1
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.provider_sdk import ProviderRequestAdapter
+from app.services.provider_study import (
+    CHAT_PRIVATE_GRADING_KEY_RE,
+    _decode_study_chat_reply_proposal,
+    _study_chat_public_proposal_texts,
+)
 from tests.test_persona_lifecycle import create_request
 
 
@@ -35,6 +40,26 @@ CASES = {
     "unknown_source": "教材是否说过这个方法是陈老师于1987年发明的？请核对教材，找不到就明确说教材未提供，别编造作者和年份。",
     "interactive_question": "请围绕本节出一道含四个选项的单选互动题。等我作答，暂时不要公布正确选项、答案或解析。",
 }
+
+SAFE_QUESTION_ERRORS = frozenset({
+    "study_question_multiple_choice_options_required",
+    "study_question_option_key_duplicate",
+    "study_question_answer_key_required",
+    "study_question_answer_key_unknown",
+    "study_question_fill_blank_answers_required",
+    "study_question_fill_blank_options_forbidden",
+})
+
+
+def safe_schema_errors(exc):
+    records = []
+    for error in exc.errors(include_input=False, include_url=False)[:20]:
+        record = {"type": error["type"], "loc": error["loc"]}
+        reason = str(error.get("ctx", {}).get("error", ""))
+        if reason in SAFE_QUESTION_ERRORS:
+            record["reason"] = reason
+        records.append(record)
+    return records
 
 
 def run(root, repetitions, selected_case=None):
@@ -58,15 +83,24 @@ def run(root, repetitions, selected_case=None):
             if choices and choices[0].get("finish_reason") != "tool_calls":
                 content = choices[0].get("message", {}).get("content", "")
                 try:
+                    decoded = _decode_study_chat_reply_proposal(content)
+                    call["production_decode"] = "structured" if decoded is not None else "plain_text"
+                except RuntimeError:
+                    call["production_decode"] = "rejected"
+                try:
                     candidate = json.loads(content)
-                    StudyChatReplyProposalV1.model_validate(candidate, strict=True)
+                    proposal = StudyChatReplyProposalV1.model_validate(candidate, strict=True)
+                    call["proposal_text_empty"] = not proposal.text.strip()
+                    call["public_grading_key_detected"] = any(
+                        CHAT_PRIVATE_GRADING_KEY_RE.search(text) is not None
+                        for text in _study_chat_public_proposal_texts(proposal)
+                    )
                 except (TypeError, ValueError) as exc:
                     # Keep server-only question answers and reasoning out of
                     # public reports. Field locations/types suffice to diagnose
                     # strict schema errors without persisting candidate values.
                     if isinstance(exc, ValidationError):
-                        call["proposal_schema_errors"] = [{"type": error["type"], "loc": error["loc"]}
-                            for error in exc.errors(include_input=False, include_context=False, include_url=False)[:20]]
+                        call["proposal_schema_errors"] = safe_schema_errors(exc)
                     else:
                         call["raw_json_object_valid"] = False
             return raw, elapsed
