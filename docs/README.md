@@ -24,15 +24,14 @@
 | [后端测试边界](backend-test-boundaries.md) | 领域契约、生命周期、事务与进程中断门 |
 | [场景编辑器](scene-setup.md) | 层级场景和保存结构 |
 
-修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。除用户指定的下列专项计划外，不另建 roadmap 或复制待办列表；新评测数据放在版本化 fixture 或运行产物中，避免重新积累日期命名的过程文档。
+修改前先阅读对应领域文档及 [AGENTS](../AGENTS.md)。未完成任务只维护在 TODO；已完成的阶段计划、逐日进展和重复审查记录通过 Git 历史查询，不在当前目录重复维护。
 
-## 版本与专项计划
+## 发布与验收
 
-- [代码解耦重构](plans/architecture-refactor.md)：分步重构顺序及验收边界。
-- [统一 Logging 与 Debug 归档](plans/unified-debug-completion.md)：四阶段完成、最终验收、提交与限制；[实施计划](plans/unified-debug.md)保留过程记录。
+- [0.3.3 发布记录](releases/0.3.3.md)：完成事项、证据入口与保留限制。
+- [启动性能协议](performance/backend-startup-v1.md)、[房间分页 HTTP](performance/tavern-room-http-v1.md)、[React 渲染](performance/tavern-room-react-v1.md)：可重放测量与原始样本。
+- [尚未完成的 PostgreSQL / 制品重放验收](plans/postgres-replay-independent-acceptance-2026-09-11.md)。
+- [用户手册验收进度](plans/acceptance-audit-2026-09-11.md)。
+- [诊断测量基线](performance/diagnostic-local-baseline-v1.md)：诊断存储与导出协议。
 
-0.3.1（2026-09-10）登记七项代码解耦重构：事务作用域、应用生命周期、Study 应用服务、Harness 契约、Provider 能力、前端职责和模块化测试边界。包含 Persona/Scene 编辑反馈与 Study 恢复相关改进。最终验收通过 635 项后端测试、13 个 eval suite、共享/Web 检查与生产构建、193 项恢复测试、23 项生产浏览器测试，以及事务阶段 22 项本机 PostgreSQL 17 测试。桌面安装包以远端发布流水线结果为准；独立 UX 复核仍在 TODO 跟踪。
-
-0.3.2（2026-09-11）登记统一 Logging 与 Debug：跨流程诊断关联、全局 Debug 时间线、Harness 索引、审计统计、诊断导出与桌面原生计数检查点。实施已完成并归档，验收范围和限制见[最终归档](plans/unified-debug-completion.md)。产品及其他验收任务继续维护在根 TODO。
-
-- [Diagnostic local measurement baseline](performance/diagnostic-local-baseline-v1.md): reproducible middleware/storage/export timings and pinned-reader WAL observations.
+原始结果保留在 `acceptance/`、`performance/` 和 `plans/acceptance/`；保留证据不等于扩大其模型、平台或独立性范围。

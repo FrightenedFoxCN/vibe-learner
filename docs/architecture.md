@@ -324,7 +324,7 @@ Runtime settings in the configured database are authoritative. A legacy JSON mir
 
 ## Planned changes
 
-Version 0.3.1 includes the seven completed tasks in [Architecture refactor](plans/architecture-refactor.md), including modular test boundaries and local PostgreSQL transaction acceptance. Version 0.3.2 includes the completed [Unified diagnostics](plans/unified-debug-completion.md) implementation; the completion archive records its acceptance scope and remaining limitations.
+Version 0.3.1 includes the seven completed tasks in [Architecture refactor](releases/0.3.3.md), including modular test boundaries and local PostgreSQL transaction acceptance. Version 0.3.2 includes the completed [Unified diagnostics](releases/0.3.3.md) implementation; the completion archive records its acceptance scope and remaining limitations.
 
 
 ### Debug snapshot ownership

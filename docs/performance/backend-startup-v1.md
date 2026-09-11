@@ -30,7 +30,7 @@
 | 9 | 0.701981 | 通过 | 0 | 0 |
 | 10 | 0.705161 | 通过 | 0 | 0 |
 
-完整精度、PID、健康响应、模块列表、数据库和 storage 路径、退出状态及进程日志保存在 [machine-readable raw samples](acceptance/perf-002-startup-raw-2026-09-11.json)。
+完整精度、PID、健康响应、模块列表、数据库和 storage 路径、退出状态及进程日志保存在 [machine-readable raw samples](../plans/acceptance/perf-002-startup-raw-2026-09-11.json)。
 
 ## 复跑
 

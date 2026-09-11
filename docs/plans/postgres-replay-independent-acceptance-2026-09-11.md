@@ -4,7 +4,7 @@
 
 ## 账目核对
 
-`docs/plans/architecture-refactor.md` 的 PostgreSQL 22 项准确对应 `test_transaction_validation`（16）和 `test_tavern_reference_scope`（6）。范围是写集合追踪、引用约束和事务提交/回滚路径，使用 `create_schema()` 建库；既不运行完整 Alembic 升级，也不覆盖领域 CAS 或服务/数据库重启。因此它与仍开放的 `REL-POSTGRES-001` 不冲突，不能以归档 22 项直接关闭该待办。
+原代码解耦归档（Git `e13fd02:docs/plans/architecture-refactor.md`）的 PostgreSQL 22 项准确对应 `test_transaction_validation`（16）和 `test_tavern_reference_scope`（6）。范围是写集合追踪、引用约束和事务提交/回滚路径，使用 `create_schema()` 建库；既不运行完整 Alembic 升级，也不覆盖领域 CAS 或服务/数据库重启。因此它与仍开放的 `REL-POSTGRES-001` 不冲突，不能以归档 22 项直接关闭该待办。
 
 ## 本轮 PostgreSQL 实测
 

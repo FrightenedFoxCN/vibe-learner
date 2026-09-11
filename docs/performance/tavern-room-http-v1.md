@@ -46,7 +46,7 @@ HTTP elapsed 从发出请求前到完整读取未压缩 JSON body，使用 `perf
 
 ## Before / after 的含义
 
-既有产品分页实现未修改：本任务补齐验收证据，不声称获得性能优化。首次使用已有空 Persona snapshot 测得 300 样本通过，随后为了真实前端详情读取而补合法 snapshot，并完整重测 300 样本。首次记录仍保留为 [minimal-snapshot baseline](acceptance/tavern-room-http-minimal-snapshot-baseline-2026-09-11.json)，最终 gate 以 [完整共享夹具 raw samples](acceptance/tavern-room-http-raw-2026-09-11.json) 为准。两轮50-item首组P95分别为3.913ms和5.207ms；未控制其他运行噪声，不能将差值归因于snapshot变化。两组都通过，未选择性丢弃较慢最终结果。
+既有产品分页实现未修改：本任务补齐验收证据，不声称获得性能优化。首次使用已有空 Persona snapshot 测得 300 样本通过，随后为了真实前端详情读取而补合法 snapshot，并完整重测 300 样本。首次记录仍保留为 [minimal-snapshot baseline](../plans/acceptance/tavern-room-http-minimal-snapshot-baseline-2026-09-11.json)，最终 gate 以 [完整共享夹具 raw samples](../plans/acceptance/tavern-room-http-raw-2026-09-11.json) 为准。两轮50-item首组P95分别为3.913ms和5.207ms；未控制其他运行噪声，不能将差值归因于snapshot变化。两组都通过，未选择性丢弃较慢最终结果。
 
 ## 重放与前端交接
 

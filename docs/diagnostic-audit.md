@@ -3,8 +3,8 @@
 `services/ai/app/services/diagnostic_audit.py` aggregates already validated,
 bounded diagnostic inputs. `models/diagnostic_audit.py` owns the closed
 `diagnostic-audit-v1` report. The aggregation core and stored snapshot export are implemented;
-performance-overhead measurements and full acceptance remain in
-[the unified Debug plan](plans/unified-debug.md).
+local performance and implementation acceptance are recorded in
+[the release evidence index](releases/0.3.3.md). Independent model quality remains deferred in TODO.
 
 The report retains metric observations and their event/operation/trace/span
 references, then groups by observation kind, workflow/stage/phase, provider,

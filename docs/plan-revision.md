@@ -32,7 +32,7 @@ The diff shows the base/current revisions, content and order. Conflicts require 
 
 - `npm run eval:harness:plan-revision`: seven developer-authored cases through the shared HarnessEvalRunner, with real revision-operation admission, deterministic grading and full system/source identity. Measures strict proposal and patch behavior, not model quality or full transactional rollback.
 - `tests.test_plan_revision` and `tests.test_plan_revision_evals`: lifecycle, provider ambiguity and gate regression checks.
-- [Independent SQLite/PostgreSQL acceptance](plans/planning-backend-independent-acceptance-2026-09-11.md): concurrency, migration, acceptance, rollback, receipt binding and transaction-failure injection.
-- [Independent browser acceptance](plans/planning-frontend-independent-acceptance-2026-09-11.md): eight checks using fault-injected API fixtures and an isolated real backend with the mock model provider. OS-level crash/desktop and representative live-provider quality gates remain in the unified TODO.
+- [Independent SQLite/PostgreSQL acceptance](releases/0.3.3.md): concurrency, migration, acceptance, rollback, receipt binding and transaction-failure injection.
+- [Independent browser acceptance](releases/0.3.3.md): eight checks using fault-injected API fixtures and an isolated real backend with the mock model provider. OS-level crash/desktop and representative live-provider quality gates remain in the unified TODO.
 
 Legacy revision admission computes the same pure progress projection as normal Plan reads without rewriting the original row or creation receipt. Accept/reorder/focus changes recompute schedule-derived Study Unit progress before committing; the frontend verifies the same derived projection.

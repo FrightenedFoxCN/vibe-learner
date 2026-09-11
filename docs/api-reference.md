@@ -1252,7 +1252,7 @@ Server events use an isolated append SQLite database under
 and event retention of 10,000 rows, seven days from database ingestion, or
 64 MiB of UTF-8 event payload, whichever limit is reached first. Aggregate disk
 retention (including indexes/WAL/spool), other diagnostic tables and audit export
-remain subsequent steps in `docs/plans/unified-debug.md`.
+are implemented; see `docs/diagnostic-storage-policy.md` for budgets, recovery exceptions and retention limits.
 
 Persona generate/save/reload accepts diagnostic correlation through the common
 `X-Debug-Client-Instance-Id`, `X-Debug-Page-View-Id`, `X-Debug-Flow-Id`, and

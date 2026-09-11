@@ -1,8 +1,8 @@
 # TODO
 
-本文件是产品、Harness 和桌面工作的统一待办入口；用户指定的专项计划独立维护明细并在此链接，不复制 checkbox。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
+本文件是产品、Harness 和桌面工作的统一待办入口；仅保留未完成任务；完成事项见[0.3.3 发布记录](docs/releases/0.3.3.md)。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-12：本文件保留 16 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
+2026-09-12：保留16项未完成任务，其中1项质量复核按用户要求暂缓。已完成事项及其验收范围见[0.3.3发布记录](docs/releases/0.3.3.md)，研究候选不计入任务数。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -10,30 +10,7 @@
 - `P2`：明确且有收益的产品、性能或可靠性工作。
 - `P3`：文档、账务和候选验证。
 
-## Now（下一批可领取）
-
-专项计划独立维护；七项架构重构已登记为 0.3.1，相关独立 UX 复核仍按原条目跟踪：
-
-- [代码解耦重构](docs/plans/architecture-refactor.md)：7 项已完成，分别提交并通过 release/recovery 与 23 项生产浏览器验收；保留事务/恢复语义，相关独立 UX 复核继续按原条目跟踪。
-- [统一 Logging 与 Debug 归档](docs/plans/unified-debug-completion.md)：4 项实施完成，分步提交；最终 release、16 项浏览器及原生验收通过。独立质量复核仍按原条目暂缓。
-
-`UX-A11Y-STUDY-QUESTION-001` 已完成当前单选/填空契约的语义、键盘、持久读回反馈、焦点和44px门；[5项独立浏览器验收](docs/plans/study-question-a11y-independent-acceptance-2026-09-11.md)通过。`multiple_choice` 为单选；未新增多选评分契约，也未把浏览器语义验证冒充实际屏幕阅读器播报认证。
-
-`TAV-UX-COPY-001` 已完成 `tavern-copy-v1` 表驱动文案契约；partial/failed/blocked、归档及恢复错误的[5项独立浏览器验收](docs/plans/tavern-copy-independent-acceptance-2026-09-11.md)通过。cancel/stale 文案由契约测试覆盖，不重复宣称全生命周期实测。
-
-`PERF-002` 已完成 SDK 延迟加载；[10个全新 mock 进程独立验收](docs/plans/perf-002-startup-independent-acceptance-2026-09-11.md)全部通过，启动至 `/health` 0.667–0.708s，未加载 LiteLLM/OnnxTR，也无启动外网尝试。
-
-`PERF-TAV-ROOMS-001` 已通过 v1 分页门：[300 个独立 HTTP 样本](docs/plans/tavern-room-http-independent-acceptance-2026-09-11.md)的 P95 为 2.095–5.207ms、SQL≤4；[90 个真实 React Profiler 样本](docs/plans/tavern-room-react-independent-acceptance-2026-09-11.md)的首/中/末段 P95 为 2.3/2.2/2.3ms。独立浏览器验证最多 100 个房间按钮且保留当前选择；中、末段使用真实 cursor 注入起始窗口，未声称界面原生遍历全部 1,000 房间。
-
-## Next（已定义、待排期）
-
-### UX 与文档
-
-Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` 同步实施；以下 checkbox 仍以各自完整验收范围为准。
-
-`UX-NAV-001` 已完成学习、角色与世界、系统三组及全部 10 个页面入口；移动端以完整文字菜单替代隐藏横向滚动。[独立验收](docs/plans/navigation-independent-acceptance-2026-09-11.md)通过 10 项导航与 13 项路由浏览器检查，涵盖 390/760/1440 宽度、正反向键盘遍历、当前组/页语义、Vault 限制和断点返焦；[源码复核](docs/plans/navigation-source-review-2026-09-11.md)发现的焦点时序遗漏已修复并独立重验。
-
-`UX-A11Y-ASYNC-TOUCH-001` 已补齐 Persona、Scene、Sensory、Tavern 的异步状态/错误、触控尺寸和名称；[24项独立浏览器验收](docs/plans/async-touch-independent-acceptance-2026-09-12.md)在390×844通过，包括深层控件实际量测、错误定位、主动移焦保护及后台告警不抢焦点。Scene移动布局遮挡和Persona/Sensory禁用后返焦问题已修复重验；不将浏览器语义认证扩大为原生读屏/真实设备认证。
+## UX 与文档
 
 - [ ] `UX-DENSITY-SENSORY-001` `[P2]` 为 Sensory Tools 增加搜索、筛选和渐进披露；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
 - [ ] `UX-DENSITY-PERSONA-001` `[P2]` 收口 Persona 的默认折叠、搜索/筛选和主次动作；保存/错误定位不得丢失滚动或焦点，批量/删除动作与普通编辑分层。
@@ -63,14 +40,6 @@ Persona/Scene 编辑、异步反馈和 Scene 删除 Dialog 与 `ARCH-WEB-001` �
 ### Study operation hardening
 
 - [ ] `STUDY-OP-RECOVERY-UX-001` `[P2]` 覆盖超长轮询、终态刷新、断网和页面恢复文案，不放宽 same-key mismatch 或 `uncertain` 禁止重放。
-
-## Planning 迭代
-
-Planning 创建、Tool Manifest 和确定性评测已实现；后续修订实现已通过独立验收，详见[计划修订](docs/plan-revision.md)。
-
-`SCH-PLAN-CAS-001`、`PLAN-PATCH-001`、`PLAN-REV-UX-001` 已完成并逐项留档。当前修订可编辑现有内容与排期顺序，保留完整 target 集合；不增删 Study Unit/章节/排期。回滚建立新 revision 并保留当前进度与 ID。
-
-证据：[CAS 记录](docs/plans/planning-cas-completion-2026-09-11.md)、[后端独立验收](docs/plans/planning-backend-independent-acceptance-2026-09-11.md)、[浏览器独立验收](docs/plans/planning-frontend-independent-acceptance-2026-09-11.md)。真实 provider 质量和原生平台边界仍按对应条目跟踪。
 
 ## 可靠性、部署与输入边界
 
@@ -120,7 +89,7 @@ Planning 创建、Tool Manifest 和确定性评测已实现；后续修订实现
 
 ## 持续规则
 
-- 本文件是统一待办索引，专项明细见上述链接；已实现的 Harness 基础设施、13 个阶段评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
+- 本文件是统一待办索引；已实现的 Harness 基础设施、13 个阶段评测套件、SQLite 恢复和已定义输入上限测试不再列为待办。
 - 架构见 `docs/harness-architecture.md`，工程约束见 `AGENTS.md`。`QG-002` / `web-strict-decode-adversarial-v1` 保持不可变，扩展使用新版本。
 - Debug 是全局 Overlay，不恢复已删除的 `/debug` 页面。
 - 性能任务必须记录 fixture、环境、raw samples 和 before/after；不得通过放宽既有预算关闭回归。
