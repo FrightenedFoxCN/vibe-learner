@@ -766,6 +766,10 @@ def _tool_argument_error_execution(
         else provider_result
     )
     rendered_path = ".".join(str(item) for item in path) or "$"
+    rejection_label = {
+        "tool_round_budget_exceeded": "超过同轮调用次数限制",
+        "tool_operation_budget_exceeded": "超过本次计划调用次数限制",
+    }.get(error, "参数拒绝")
     return PlanToolExecution(
         tool_call_id=tool_call_id,
         tool_name=entry.canonical_name if entry is not None else (tool_name or "unknown_tool"),
@@ -775,7 +779,7 @@ def _tool_argument_error_execution(
         result=canonical,
         provider_result=provider_result,
         trace_result=trace_result,
-        trace_summary=f"{tool_name or 'tool'}: 参数拒绝（{rendered_path}）",
+        trace_summary=f"{tool_name or 'tool'}: {rejection_label}（{rendered_path}）",
         follow_up_messages=[],
         argument_contract_version=(
             entry.input_contract.version

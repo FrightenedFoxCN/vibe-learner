@@ -171,3 +171,10 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [6 个候选会话](evidence/minimax-study-question-contract-candidate-v1.jsonl)共 13 次调用，5/6 提交成功。一例两次 production_decode=rejected 后仍失败，另有三例需要恢复；其中两例初始内容被生产 decoder 判断为 plain_text，仍在后续 parse 阶段触发恢复。没有再次观测到 answer_key_required，但仍有非结构化/JSON 失败。候选仅在实验脚本中向 system/recovery 追加字段条件和服务器私有判分说明，完整 suffix 与配置限制逐行记录；真实 trace 仅证明领域生命周期，不能视作已审阅生产 prompt 的质量认证。
 
 这批样本非交错随机对照，成功率也不稳定，因此暂不推广生产。下一轮需要配对比较，并检查“等待作答”的语义与公开投影，不能只看缺字段减少。生产严格校验保持不变。
+
+
+## 轮次 11：Planning 逐操作失败与调试摘要修正
+
+[3 个逐操作观测](evidence/minimax-planning-tools-observed-v1.jsonl)全部最终提交，工具失败分别为两次 invalid_study_unit_revision、三次 provider_tool_call_shape_invalid、两次 tool_round_budget_exceeded。真实工具错误揭示最终成功之外的成本，当前继续诊断前两类原因。
+
+修复调试 trace_summary 把同轮/整次调用次数超限显示为对应预算限制，不再笼统显示“参数拒绝”。错误码、工具准入、预算与 provider 返回内容均保持原有契约；这是依据四次已归档预算失败做的诊断展示修正，不是模型成功率优化。另启动预算说明候选与生产对照，结果未齐前不推广提示。

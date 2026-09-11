@@ -40,7 +40,14 @@ def planning_outcomes(readback_equal, operation_status, traces, execution_count)
     }
 
 
-def run(root, repetitions):
+PLANNING_BUDGET_CANDIDATE = (
+    "\n工具调用预算：同名工具在同一轮最多调用一次、整个计划生成过程最多调用四次。"
+    "多个独立单元需要同名详情工具时，分轮核查；同轮可以调用不同名称的工具。"
+    "预算拒绝后不要原样重复请求。只在证据仍有缺口时继续工具调用，证据充分时输出计划。"
+)
+
+
+def run(root, repetitions, budget_candidate=False):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
@@ -51,6 +58,11 @@ def run(root, repetitions):
     original = ProviderRequestAdapter.request_chat_completion
 
     def observe(adapter, payload, *, request_kind, model):
+        if budget_candidate:
+            payload = {**payload, "messages": [{**message,
+                "content": message["content"] + PLANNING_BUDGET_CANDIDATE}
+                if message.get("role") == "system" else message
+                for message in payload.get("messages", [])]}
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
         calls.append(call)
         start = time.perf_counter()
@@ -60,6 +72,9 @@ def run(root, repetitions):
             call["usage"] = raw.get("usage")
             call["finish_reason"] = choices[0].get("finish_reason") if choices else None
             call["requested_tools"] = [c.get("function", {}).get("name")
+                for c in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
+            call["tool_envelope_shapes"] = [{"keys": sorted(c),
+                "function_keys": sorted(c.get("function", {}))}
                 for c in (choices[0].get("message", {}).get("tool_calls") or [])] if choices else []
             return raw, elapsed
         except Exception as exc:
@@ -95,6 +110,10 @@ def run(root, repetitions):
                     row = {"scope": "live_planning_admission_commit_readback", "fixture_version": "planning-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
+                    row["prompt_variant"] = "planning-budget-experiment-v1" if budget_candidate else "production"
+                    if budget_candidate:
+                        row["experimental_prompt_suffix"] = PLANNING_BUDGET_CANDIDATE
+                        row["trace_limitation"] = "Experimental prompt override; traces prove lifecycle only, not production prompt adoption."
                     start = time.perf_counter()
                     try:
                         response = client.post("/learning-plans", json=payload)
@@ -140,7 +159,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=2)
+    parser.add_argument("--budget-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions)
+    run(args.root.resolve(), args.repetitions, args.budget_candidate)
