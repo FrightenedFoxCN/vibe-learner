@@ -1,0 +1,108 @@
+{
+  "scope": "Maintainer synthetic incremental compression review",
+  "limitations": [
+    "Two chains per variant; no domain admission or production adoption.",
+    "Exact relation-string equality is lexical, not sufficient semantic grading. The first prose reply is semantically correct about relationship but wrong about revocation.",
+    "Failed structured reply not retained; schema failure cause unknown in this first batch.",
+    "Provider cache usage retained as reported, no cold/warm cache control or stable cost claim."
+  ],
+  "findings": [
+    "First prose chain loses explicit revoked wording at third compression; final status unknown despite earlier explicit cancellation.",
+    "Second prose and second structured chain retain final location, revoked status, new address and peer relationship.",
+    "Structured repetition 0 fails contract at first summary, so no later stages are executed.",
+    "Structured repetition 1 keeps meeting/code source u2 and changed preference source u3.",
+    "All five final answers require compatible JSON extraction; none are strict JSON."
+  ],
+  "rows": [
+    {
+      "repetition": 0,
+      "variant": "prose",
+      "calls": 4,
+      "strict_json_count": 3,
+      "contract_valid_count": 4,
+      "prompt_tokens_including_compression": 14203,
+      "elapsed_ms_including_compression": 20188,
+      "answer": {
+        "meeting": "北门第9号长椅",
+        "code": "未知",
+        "code_status": "unknown",
+        "address": "林舟",
+        "relationship": "平等同行，非师生"
+      }
+    },
+    {
+      "repetition": 0,
+      "variant": "state",
+      "calls": 1,
+      "strict_json_count": 1,
+      "contract_valid_count": 0,
+      "prompt_tokens_including_compression": 4635,
+      "elapsed_ms_including_compression": 16692,
+      "answer": null
+    },
+    {
+      "repetition": 0,
+      "variant": "full_history",
+      "calls": 1,
+      "strict_json_count": 0,
+      "contract_valid_count": 1,
+      "prompt_tokens_including_compression": 13393,
+      "elapsed_ms_including_compression": 3346,
+      "answer": {
+        "meeting": "北门第9号长椅",
+        "code": "未知",
+        "code_status": "revoked",
+        "address": "林舟",
+        "relationship": "平等同行"
+      }
+    },
+    {
+      "repetition": 1,
+      "variant": "prose",
+      "calls": 4,
+      "strict_json_count": 3,
+      "contract_valid_count": 4,
+      "prompt_tokens_including_compression": 14247,
+      "elapsed_ms_including_compression": 15208,
+      "answer": {
+        "meeting": "北门第10号长椅",
+        "code": "未知",
+        "code_status": "revoked",
+        "address": "林舟",
+        "relationship": "平等同行"
+      }
+    },
+    {
+      "repetition": 1,
+      "variant": "state",
+      "calls": 4,
+      "strict_json_count": 3,
+      "contract_valid_count": 4,
+      "prompt_tokens_including_compression": 14437,
+      "elapsed_ms_including_compression": 10559,
+      "answer": {
+        "meeting": "北门第10号长椅",
+        "code": "未知",
+        "code_status": "revoked",
+        "address": "林舟",
+        "relationship": "平等同行"
+      }
+    },
+    {
+      "repetition": 1,
+      "variant": "full_history",
+      "calls": 1,
+      "strict_json_count": 0,
+      "contract_valid_count": 1,
+      "prompt_tokens_including_compression": 13393,
+      "elapsed_ms_including_compression": 4502,
+      "answer": {
+        "meeting": "北门第10号长椅",
+        "code": "未知",
+        "code_status": "revoked",
+        "address": "林舟",
+        "relationship": "平等同行"
+      }
+    }
+  ]
+}

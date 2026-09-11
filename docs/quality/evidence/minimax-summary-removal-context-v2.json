@@ -1,0 +1,119 @@
+{
+  "scope": "Experimental summary field removal",
+  "candidate_suffix": null,
+  "remove_summaries": true,
+  "limitations": [
+    "One sample per persona/condition; not independent quality certification.",
+    "Image injection and prompt suffix are experimental, not production artifact replay."
+  ],
+  "rows": [
+    {
+      "persona": "rigorous",
+      "candidate": false,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "request_marker_roles": [
+        [
+          "user"
+        ],
+        [
+          "user"
+        ],
+        [
+          "user"
+        ],
+        [
+          "user",
+          "tool"
+        ],
+        [
+          "user",
+          "tool",
+          "assistant"
+        ]
+      ],
+      "operation_id": "harness-operation-606943f0fe994ac88c8aa99f48526ee2",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "candidate": true,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "request_marker_roles": [
+        [],
+        []
+      ],
+      "operation_id": "harness-operation-795aa6d8d72f4b95b8fad2bbcf4e9dd0",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "candidate": true,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "request_marker_roles": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "operation_id": "harness-operation-432186cd99ae483facdc9965cfe7f2f1",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "candidate": false,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "request_marker_roles": [
+        [
+          "user"
+        ],
+        [
+          "user",
+          "tool"
+        ]
+      ],
+      "operation_id": "harness-operation-6cf41b88cdc94b89bb9199bc607bcea2",
+      "boundary_success": true
+    }
+  ]
+}

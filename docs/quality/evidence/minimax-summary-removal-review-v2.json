@@ -1,0 +1,93 @@
+{
+  "scope": "Maintainer review; single sample per persona/condition",
+  "rows": [
+    {
+      "persona": "rigorous",
+      "removed": false,
+      "operation_id": "harness-operation-606943f0fe994ac88c8aa99f48526ee2",
+      "boundary_success": true,
+      "wrong_term_in_plan": true,
+      "requests": 5,
+      "marker_roles": [
+        [
+          "user"
+        ],
+        [
+          "user"
+        ],
+        [
+          "user"
+        ],
+        [
+          "user",
+          "tool"
+        ],
+        [
+          "user",
+          "tool",
+          "assistant"
+        ]
+      ],
+      "allocated_minutes": null,
+      "findings": [
+        "Known wrong term persists; no whole-plan factual pass."
+      ]
+    },
+    {
+      "persona": "explorer",
+      "removed": true,
+      "operation_id": "harness-operation-795aa6d8d72f4b95b8fad2bbcf4e9dd0",
+      "boundary_success": true,
+      "wrong_term_in_plan": false,
+      "requests": 2,
+      "marker_roles": [
+        [],
+        []
+      ],
+      "allocated_minutes": null,
+      "findings": [
+        "Invents 非认真暧昧性 as quoted central concept."
+      ]
+    },
+    {
+      "persona": "rigorous",
+      "removed": true,
+      "operation_id": "harness-operation-432186cd99ae483facdc9965cfe7f2f1",
+      "boundary_success": true,
+      "wrong_term_in_plan": false,
+      "requests": 5,
+      "marker_roles": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "allocated_minutes": null,
+      "findings": [
+        "Invents 1992 translation-edition framing; explicit times total only 18 minutes plus optional 30 seconds."
+      ]
+    },
+    {
+      "persona": "explorer",
+      "removed": false,
+      "operation_id": "harness-operation-6cf41b88cdc94b89bb9199bc607bcea2",
+      "boundary_success": true,
+      "wrong_term_in_plan": true,
+      "requests": 2,
+      "marker_roles": [
+        [
+          "user"
+        ],
+        [
+          "user",
+          "tool"
+        ]
+      ],
+      "allocated_minutes": null,
+      "findings": [
+        "Known wrong term persists; no whole-plan factual pass."
+      ]
+    }
+  ]
+}
