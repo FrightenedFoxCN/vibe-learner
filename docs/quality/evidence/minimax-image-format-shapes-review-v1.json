@@ -1,0 +1,146 @@
+{
+  "scope": "Maintainer synthetic image-tool shape transfer review",
+  "sdk_chat_calls": 18,
+  "limitations": [
+    "Two samples per count/condition; no independent quality certification.",
+    "Both image and initial textual study context provide equation facts; not an image-utility ablation.",
+    "Identical synthetic source content but independent app identities.",
+    "Case-specific shape instruction is experimental; no production parsing of user requests."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "condition": "baseline",
+      "required_lines": 2,
+      "boundary_success": true,
+      "exact_requested_lines": false,
+      "image_tool_requested": true,
+      "sdk_image_parts": 1,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 0,
+      "extra_tools": [
+        "read_page_range_content"
+      ],
+      "affinity_delta": 0,
+      "review_note": null,
+      "reply": "教材第 1 页例题为 $2x + 3 = 11$，经核对与页内文字一致：$2x = 8$，$x = 4$，并由代入 $2 \\cdot 4 + 3 = 11$ 验证。\n\n求解：\n\n- 方程 $2x + 3 = 11$ 两边同减 $3$：$2x + 3 - 3 = 11 - 3$，得到 $2x = 8$\n- 两边同除以 $a = 2 \\neq 0$：$\\dfrac{2x}{2} = \\dfrac{8}{2}$，得到 $x = 4$\n\n代入检验：\n\n- 把 $x = 4$ 代回原方程左边：$2 \\cdot 4 + 3 = 8 + 3 = 11$\n- 原方程右边为 $11$，故 $11 = 11$ 成立\n- 等式两边相等，确认 $x = 4$ 是 $2x + 3 = 11$ 的解"
+    },
+    {
+      "cell": 1,
+      "condition": "shape_only",
+      "required_lines": 2,
+      "boundary_success": true,
+      "exact_requested_lines": true,
+      "image_tool_requested": true,
+      "sdk_image_parts": 1,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 2,
+      "extra_tools": [],
+      "affinity_delta": 0,
+      "review_note": "Repeated learner address in every bullet feels mechanical.",
+      "reply": "- 小林，对照第1页 $ax+b=c$ 形如 $2x+3=11$（$a=2,b=3,c=11$），先两边同减 $b=3$ 得 $2x=8$，再两边同除以非零的 $a=2$ 得 $x=4$，符合「同数相减、同非零数乘除均保等」。\n- 小林，代入检验 $x=4$：$2\\times4+3=8+3=11$，恰与右端 $c=11$ 相等，故 $x=4$ 为唯一解，且 $a\\neq0$ 保证除法合法。"
+    },
+    {
+      "cell": 2,
+      "condition": "shape_only",
+      "required_lines": 3,
+      "boundary_success": true,
+      "exact_requested_lines": true,
+      "image_tool_requested": true,
+      "sdk_image_parts": 2,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 1,
+      "extra_tools": [
+        "update_affinity_state"
+      ],
+      "affinity_delta": 1,
+      "review_note": "Adds a relationship-state update for the learner requesting evidence checking; within currently offered tool capability, not evidence of unauthorized mutation.",
+      "reply": "- 小林，按教材第1页例题 $2x+3=11$，两边同减 3 得 $2x=8$，再两边同除以 $a=2$（因 $a\\neq 0$）得 $x=4$；依据是等式两边同减或同乘非零数仍保持等式成立。\n- 除以系数前必须先确认 $a\\neq 0$；本题 $a=2\\neq 0$ 才允许此步；若 $a=0$，教材提示改去单独判断 $b=c$ 是否成立。\n- 代入检验 $x=4$：左端 $2\\cdot4+3=8+3=11$，与右端 $11$ 相等，故解 $x=4$ 正确。"
+    },
+    {
+      "cell": 3,
+      "condition": "baseline",
+      "required_lines": 3,
+      "boundary_success": true,
+      "exact_requested_lines": true,
+      "image_tool_requested": true,
+      "sdk_image_parts": 1,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 0,
+      "extra_tools": [],
+      "affinity_delta": 0,
+      "review_note": null,
+      "reply": "- 求解：从 $2x+3=11$ 出发，先在两边同减 $3$ 得 $2x=8$，再在两边同除以 $2$（因 $a=2\\neq 0$），得 $x=4$。\n- 代入检验：把 $x=4$ 代回原方程左边，$2\\times 4+3=8+3=11$，恰好等于右边 $c=11$，解成立。\n- 关键原则：教材明确指出 $a$ 必须非零才能做除法；两边同减同一个数，或两边同乘同一个**非零**数，等式均保持成立，这两步就是本题所用等价变换的依据。"
+    },
+    {
+      "cell": 4,
+      "condition": "baseline",
+      "required_lines": 3,
+      "boundary_success": true,
+      "exact_requested_lines": true,
+      "image_tool_requested": true,
+      "sdk_image_parts": 1,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 0,
+      "extra_tools": [],
+      "affinity_delta": 0,
+      "review_note": null,
+      "reply": "- **化简方程**：从 $2x + 3 = 11$ 出发，依据\"两边同时减去同一个数等式仍成立\"，两边减 3 得 $2x = 8$；再依据\"两边同时除以同一个非零数等式仍成立\"，两边除以 2 得 $x = 4$。\n- **代入检验**：把 $x = 4$ 代回原式左边，计算 $2 \\times 4 + 3 = 8 + 3 = 11$，与右边常数 11 相等，因此 $x = 4$ 是原方程的解。\n- **检验依据**：代入后等式成立，正是利用了同一条等式性质逆着走一遍——把解还原为已知项，看两边是否仍相等，从而判断求解过程有没有算错。"
+    },
+    {
+      "cell": 5,
+      "condition": "shape_only",
+      "required_lines": 3,
+      "boundary_success": true,
+      "exact_requested_lines": true,
+      "image_tool_requested": true,
+      "sdk_image_parts": 2,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 3,
+      "extra_tools": [
+        "read_page_range_content"
+      ],
+      "affinity_delta": 0,
+      "review_note": "Repeated learner address in every bullet feels mechanical.",
+      "reply": "- 小林看课本例题 $2x+3=11$，依据\"两边同减 $b$\"得 $2x=8$，再依据\"两边同除以非零 $a$\"得 $x=4$，求解过程完整对应教材两步规则。\n- 小林核验 $a=2\\neq 0$ 满足分母非零前提；若误用 $0x+3=11$ 形式，则需另判 $b=c$ 而不能直接除以零。\n- 小林把 $x=4$ 回代原式得 $2\\cdot 4+3=8+3=11$，与右边相等，代入检验通过，答案 $x=4$ 成立。"
+    },
+    {
+      "cell": 6,
+      "condition": "shape_only",
+      "required_lines": 2,
+      "boundary_success": true,
+      "exact_requested_lines": true,
+      "image_tool_requested": true,
+      "sdk_image_parts": 1,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 1,
+      "extra_tools": [],
+      "affinity_delta": 0,
+      "review_note": null,
+      "reply": "- 小林，教材第1页例题 $2x+3=11$ 的解法是：两边同减3得 $2x=8$，再两边同除以2（这里 $a=2\\neq0$），得 $x=4$，分别对应\"同减保等\"和\"同乘/除非零保等\"两条性质。\n- 代入检验把 $x=4$ 回代原式左侧 $2\\times4+3=8+3=11$，与右侧 $11$ 相等，所以 $x=4$ 是原方程的合法解；若 $a=0$ 则需单独比较 $b$ 与 $c$，除以零不被允许。"
+    },
+    {
+      "cell": 7,
+      "condition": "baseline",
+      "required_lines": 2,
+      "boundary_success": true,
+      "exact_requested_lines": false,
+      "image_tool_requested": true,
+      "sdk_image_parts": 1,
+      "solution_and_substitution_correct": true,
+      "interactive_question": false,
+      "learner_address_count": 0,
+      "extra_tools": [],
+      "affinity_delta": 0,
+      "review_note": null,
+      "reply": "**求解 $2x + 3 = 11$**\n\n- 两边同时减去 3：$2x + 3 - 3 = 11 - 3$，化简得 $2x = 8$\n- 两边同时除以 $a = 2$（$a \\neq 0$ 合法）：$\\dfrac{2x}{2} = \\dfrac{8}{2}$，得 $x = 4$\n\n**代入检验 $x = 4$**\n\n- 把 $x = 4$ 代回原方程左边：$2 \\times 4 + 3 = 8 + 3 = 11$\n- 左边等于 11，与右边 $11$ 相同，等式成立，因此 $x = 4$ 是正确解"
+    }
+  ]
+}
