@@ -1,0 +1,50 @@
+{
+  "scope": "Maintainer real Study long-message middle-update review",
+  "limitations": [
+    "Two target operations; second is uncertain and has no committed reply to grade.",
+    "Seed operations are separately admitted and committed; embedding requests are not instrumented.",
+    "Developer-authored synthetic data and review, not independent certification."
+  ],
+  "rows": [
+    {
+      "repetition": 0,
+      "harness_operation_id": "harness-operation-51a1de7403d14d6c87d7f783954e75d2",
+      "status": "committed",
+      "boundary_success": true,
+      "error_code": "",
+      "seed_statuses": [
+        "committed",
+        "committed"
+      ],
+      "update_message_chars": 3705,
+      "update_char_offset": 1825,
+      "production_excerpt_chars": 906,
+      "new_location_in_excerpt": true,
+      "cancellation_in_excerpt": true,
+      "assistant_seed_reply": "收到。\n\n已确认更新：复习地点改为白桦阅览室，青石阅览室的约定已撤销；暗号晴鸟已撤销，暂不设置新暗号。当前仍未去过任何阅览室。材料清单（等式性质、移项、系数、验算、常见错误、课后练习）已记下。",
+      "target_reply": "小林，我对照了跨会话记忆库里能检索到的记录，结果如下：\n\n**当前仍生效的约定**\n- 复习地点：青石阅览室\n- 暗号：晴鸟\n- 状态标注：尚未去过那里\n\n**旧约定 / 已撤销情况**\n- 检索范围内只查到这一条复习约定相关的记录，没有看到任何旧版地点或旧暗号的历史条目，因此目前没有可确认的\"已撤销\"旧约定；若之前曾口头提过其他地点或暗号，且未写入记忆库，我这边无法替你核验，请以本轮这条为准。\n\n补充说明：若之后你正式前往青石阅览室，我们再现场核对一次暗号即可，我不会在这条记录上擅自追加\"已去过\"的状态。",
+      "semantic_result": "Returns obsolete location and code as active; no known cancellation.",
+      "markdown_two_items": false
+    },
+    {
+      "repetition": 1,
+      "harness_operation_id": "harness-operation-70bffbb1011e4ff89067d215444db9fe",
+      "status": "uncertain",
+      "boundary_success": false,
+      "error_code": "study_chat_uncertain_chat_model_invalid_payload",
+      "seed_statuses": [
+        "committed",
+        "committed"
+      ],
+      "update_message_chars": 3705,
+      "update_char_offset": 1825,
+      "production_excerpt_chars": 814,
+      "new_location_in_excerpt": false,
+      "cancellation_in_excerpt": false,
+      "assistant_seed_reply": "收到。",
+      "target_reply": null,
+      "semantic_result": "not_evaluated_no_committed_reply",
+      "markdown_two_items": null
+    }
+  ]
+}

@@ -47,6 +47,7 @@ CASES = {
     "image_generation_unavailable": "请用 generate_projected_image 生成并投射一张展示天平两边同时减去3的教学示意图。如果当前工具不可用，请明确说未生成图片，不要用文字冒充图片或声称已投射，也不要出题。最后只用一句话报告实际状态。",
     "cross_session_memory": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_long": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
+    "cross_session_memory_middle": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "follow_up_deliver": "请使用工具安排10秒后续接一次对话，提醒我核对教材里的2x+3=11。届时先问我是否已经求出x，不要假设我做过题，也不要另换方程。现在只用一句话说明安排状态，不出题、不重复安排。",
     "follow_up_cancel": "请使用工具安排60秒后续接一次当前学习对话，届时提醒我用代入法核对方程答案。不要现在出题，也不要重复安排。最后用一句话说明安排状态，不要承诺关闭页面后仍一定能触发。",
     "plan_title_confirmation": "请先读取当前学习计划，把课程标题改为‘方程求解与代入检验’，通过工具提出待确认提案，等我确认后再生效。最后用一句话明确说明现在仍待确认，不改学习进度，不出题。",
@@ -360,6 +361,10 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 )[seed_index]
                             if case_id == "cross_session_memory_long" and seed_index == 1:
                                 seed_message = "这条消息先整理学习材料，最后更新复习约定。" + "材料包括等式性质、移项、系数、验算、常见错误和课后练习。" * 16 + seed_message
+                            if case_id == "cross_session_memory_middle" and seed_index == 1:
+                                filler = "材料包括等式性质、移项、系数、验算、常见错误和课后练习。" * 64
+                                seed_message = ("先整理材料，再更新约定，随后继续整理；请仅回复收到，不复述细节。" + filler
+                                    + "\n" + seed_message + "\n" + filler + "\n以上整理完成。只回复收到，不出题。")
                             seed_session = client.post("/study-sessions", json=session_payload)
                             seed_session.raise_for_status()
                             seed = seed_session.json()
