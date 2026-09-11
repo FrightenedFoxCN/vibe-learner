@@ -1,0 +1,144 @@
+{
+  "scope": "Maintainer six-cell review with image tool omitted in both groups",
+  "limitations": [
+    "Each cell reparsed document; Study Unit cleanup can vary, so these are not fixed initial-context causal estimates.",
+    "One sample per cell; later fixed-source batch ran partly concurrently, so no latency benchmark claim.",
+    "Crops are same-DPI left/right halves plus original, increasing input image count from one to three.",
+    "Image injection is experimental, not production protected artifact replay adoption."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-403638dadb0f40269aac5ae9f9b5c59b",
+      "cell": "explorer-text",
+      "boundary_success": true,
+      "http_status": 200,
+      "image_parts_per_request": [
+        0,
+        0,
+        0
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 14668,
+      "completion_tokens": 7549,
+      "terminal_error_codes": [],
+      "main_commentary_covered": false,
+      "limitations": [
+        "Explicitly abstains on unreadable Chinese, but plan covers only English rhetoric.",
+        "Only opening three minutes allocated."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-37e4f9ea713e4df28bf5b6a056118adc",
+      "cell": "explorer-text_image",
+      "boundary_success": true,
+      "http_status": 200,
+      "image_parts_per_request": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "provider_requests": 4,
+      "prompt_tokens": 26362,
+      "completion_tokens": 5018,
+      "terminal_error_codes": [
+        "stage_evidence_failed"
+      ],
+      "main_commentary_covered": true,
+      "limitations": [
+        "Addresses period-specific meaning and correct footnotes, but 30-minute allocation remains incomplete."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-a17e297fd9f640ad8f60bf6fc0292078",
+      "cell": "explorer-text_image_crops",
+      "boundary_success": true,
+      "http_status": 200,
+      "image_parts_per_request": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "provider_requests": 7,
+      "prompt_tokens": 66602,
+      "completion_tokens": 7627,
+      "terminal_error_codes": [],
+      "main_commentary_covered": true,
+      "limitations": [
+        "Calls main commentary translator commentary without clear source support.",
+        "Overview reverses chapter phrase understanding is translation into translation is understanding."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-b86ba901e6d449539a43f1e87bcac3b2",
+      "cell": "rigorous-text",
+      "boundary_success": true,
+      "http_status": 200,
+      "image_parts_per_request": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "provider_requests": 5,
+      "prompt_tokens": 24169,
+      "completion_tokens": 12386,
+      "terminal_error_codes": [
+        "stage_evidence_failed"
+      ],
+      "main_commentary_covered": false,
+      "limitations": [
+        "Focuses on literal reunion dialogue; Chinese historical semantics missing.",
+        "Reading stages have no complete 30-minute allocation."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-7af22268bde649119c976fc5786de995",
+      "cell": "rigorous-text_image",
+      "boundary_success": false,
+      "http_status": 502,
+      "image_parts_per_request": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "provider_requests": 4,
+      "prompt_tokens": 26486,
+      "completion_tokens": 6870,
+      "terminal_error_codes": [
+        "plan_proposal_schema_invalid:$:plan_model_invalid_json"
+      ],
+      "main_commentary_covered": null,
+      "limitations": [
+        "No committed plan: strict JSON/proposal decoding failed."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-d724063af8284619affe5ea27d43f569",
+      "cell": "rigorous-text_image_crops",
+      "boundary_success": true,
+      "http_status": 200,
+      "image_parts_per_request": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "provider_requests": 4,
+      "prompt_tokens": 32509,
+      "completion_tokens": 4748,
+      "terminal_error_codes": [],
+      "main_commentary_covered": false,
+      "limitations": [
+        "Reverses source claim: source affirms 1930 period character, plan says such dialogue cannot have it.",
+        "Allocated 8+10+7+5 minutes, plus an untimed closing item."
+      ]
+    }
+  ]
+}
