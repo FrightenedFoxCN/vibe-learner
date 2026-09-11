@@ -1,0 +1,16 @@
+{
+  "contrast": [
+    {
+      "reserve_last": false,
+      "final_location_present": false,
+      "chars": 160
+    },
+    {
+      "reserve_last": true,
+      "final_location_present": true,
+      "chars": 667
+    }
+  ],
+  "archive_qualifier_preserved": true,
+  "archive_chars": 441
+}

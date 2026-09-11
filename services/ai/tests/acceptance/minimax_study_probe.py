@@ -48,6 +48,7 @@ CASES = {
     "cross_session_memory": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_long": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_middle": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
+    "cross_session_memory_four_updates": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_distant": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_window_counterexample": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "follow_up_deliver": "请使用工具安排10秒后续接一次对话，提醒我核对教材里的2x+3=11。届时先问我是否已经求出x，不要假设我做过题，也不要另换方程。现在只用一句话说明安排状态，不出题、不重复安排。",
@@ -376,6 +377,15 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 from tests.acceptance.memory_query_window import query_window, query_windows
                                 assert "白桦阅览室" not in query_window(seed_message, CASES[case_id])
                                 assert "白桦阅览室" in query_windows(seed_message, CASES[case_id])
+                            if case_id == "cross_session_memory_four_updates" and seed_index == 1:
+                                filler = "整理材料。" * 150
+                                seed_message = (filler + "复习地点是青石阅览室，暗号是晴鸟。" + filler
+                                    + "复习地点改为红杉阅览室，暗号改为晨星。" + filler
+                                    + "复习地点改为白桦阅览室，暗号改为春风。" + filler
+                                    + "补充：最终去南门阅览室，所有暗号均撤销。只回复收到。")
+                                from tests.acceptance.memory_query_window import query_windows
+                                assert "南门阅览室" not in query_windows(seed_message, CASES[case_id])
+                                assert "南门阅览室" in query_windows(seed_message, CASES[case_id], reserve_last=True)
                             seed_session = client.post("/study-sessions", json=session_payload)
                             seed_session.raise_for_status()
                             seed = seed_session.json()

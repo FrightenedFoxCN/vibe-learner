@@ -36,7 +36,7 @@ def query_window(text: str, query: str, limit: int = 800) -> str:
     return ('...' if start else '') + compact[start:end] + ('...' if end < len(compact) else '')
 
 
-def query_windows(text: str, query: str, limit: int = 800) -> str:
+def query_windows(text: str, query: str, limit: int = 800, reserve_last: bool = False) -> str:
     """Up to three disjoint sentence neighborhoods with normalized-text offsets."""
     compact = ' '.join(text.strip().split())
     if len(compact) <= limit:
@@ -51,8 +51,12 @@ def query_windows(text: str, query: str, limit: int = 800) -> str:
             ranked.append((overlap / math.sqrt(max(1, len(words))), i))
     selected = []
     seen = set()
-    for _, i in sorted(ranked, key=lambda item: (-item[0], item[1])):
-        if spans[i].group() in seen or any(a <= i <= b for a, b in selected):
+    ordered = sorted(ranked, key=lambda item: (-item[0], item[1]))
+    if reserve_last and ranked:
+        last = max(ranked, key=lambda item: item[1])
+        ordered = [last] + [item for item in ordered if item[1] != last[1]]
+    for _, i in ordered:
+        if (spans[i].group().strip() if reserve_last else spans[i].group()) in seen or any(a <= i <= b for a, b in selected):
             continue
         if spans[i].end() - spans[i].start() > 200:
             continue
@@ -61,9 +65,20 @@ def query_windows(text: str, query: str, limit: int = 800) -> str:
             a -= 1
         if b+1 < len(spans) and spans[b+1].end() - spans[a].start() <= 200:
             b += 1
+        if reserve_last:
+            while True:
+                changed = False
+                if a and spans[b].end() - spans[a-1].start() <= 200:
+                    a -= 1; changed = True
+                if b+1 < len(spans) and spans[b+1].end() - spans[a].start() <= 200:
+                    b += 1; changed = True
+                if not changed:
+                    break
         if any(not (b < left or a > right) for left, right in selected):
             a = b = i
         selected.append((a, b)); seen.add(spans[i].group())
+        if reserve_last:
+            seen.update(spans[j].group().strip() for j in range(a, b + 1))
         if len(selected) == 3:
             break
     if not selected:
