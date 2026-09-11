@@ -1,0 +1,67 @@
+{
+  "reason": "Original scorer incorrectly required every tool trace to be committed. Generation commit/readback and failed tool attempts must be reported separately. All captured executions were terminal in this run.",
+  "rows": [
+    {
+      "case_id": "document",
+      "repetition": 0,
+      "boundary_success": true,
+      "tool_attempts": 5,
+      "tool_failures": 2,
+      "tool_error_codes": [
+        "stage_evidence_failed",
+        "stage_evidence_failed"
+      ]
+    },
+    {
+      "case_id": "source_boundary",
+      "repetition": 0,
+      "boundary_success": true,
+      "tool_attempts": 3,
+      "tool_failures": 0,
+      "tool_error_codes": []
+    },
+    {
+      "case_id": "goal_only",
+      "repetition": 0,
+      "boundary_success": true,
+      "tool_attempts": 4,
+      "tool_failures": 2,
+      "tool_error_codes": [
+        "stage_evidence_failed",
+        "stage_evidence_failed"
+      ]
+    },
+    {
+      "case_id": "document",
+      "repetition": 1,
+      "boundary_success": true,
+      "tool_attempts": 8,
+      "tool_failures": 4,
+      "tool_error_codes": [
+        "stage_evidence_failed",
+        "stage_evidence_failed",
+        "stage_evidence_failed",
+        "stage_evidence_failed"
+      ]
+    },
+    {
+      "case_id": "source_boundary",
+      "repetition": 1,
+      "boundary_success": true,
+      "tool_attempts": 3,
+      "tool_failures": 0,
+      "tool_error_codes": []
+    },
+    {
+      "case_id": "goal_only",
+      "repetition": 1,
+      "boundary_success": true,
+      "tool_attempts": 4,
+      "tool_failures": 2,
+      "tool_error_codes": [
+        "stage_evidence_failed",
+        "stage_evidence_failed"
+      ]
+    }
+  ]
+}

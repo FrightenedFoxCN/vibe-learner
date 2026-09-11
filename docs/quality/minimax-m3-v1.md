@@ -152,3 +152,12 @@ PersonaGenerationHarnessPolicy 升为 persona-generation-harness-v2，Python 模
 [6 个进一步观测会话](evidence/minimax-study-question-guards-v1.jsonl)仅 2/6 最终成功，共 15 次调用（包含工具轮次，不能全部算重试）。失败包括 JSON 解析失败、一次 length 截断、interactive_question 层 value_error。成功通过 schema 的回复均 text 非空且没有公开 grading-key 标志。保留四个失败操作的 uncertain/not_committed 证据，未重放这些操作。
 
 诊断器后续增加生产 decoder 的接受/拒绝标志，区分合法 fenced JSON 与裸 JSON 解析；对互动题 value_error 仅保存已审阅的固定错误码白名单，不保存候选值、任意异常文本或私有判分答案。新增回归验证缺 answer_key 可定位而候选题干不泄露。当前没有放松生产校验，也没有据此宣称互动题质量通过。
+
+
+## 轮次 9：Planning 领域与工具失败分别计量
+
+[6 个真实 Planning 操作](evidence/minimax-planning-baseline-v1.jsonl)覆盖教材计划、教材来源边界、无教材 Python 目标，各两次。6/6 Plan 均 committed、API 严格模型解码并等值读回，生成 stage 均有 committed 终态。初版评分器错误要求工具 stage 也必须 committed，导致 boundary_success 全部 false；原始记录不改写，另存[重判说明](evidence/minimax-planning-baseline-v1-regrade.json)。新增评分回归确保成功提交不掩盖工具失败、缺终态或读回失败。
+
+27 次工具 stage 中 10 次 failed，最终计划仍可提交。调用覆盖 get_study_unit_detail、read_page_range_content、revise_study_units、estimate_plan_completion 四项，尚未覆盖全部六工具。两个无教材目标的本地 trace 均显示两次 get_study_unit_detail 参数拒绝；不能用最后 Plan 成功掩盖这些浪费调用。教材计划第一轮还有多次 revise_study_units 尝试，下一轮需捕获每个操作的工具结果错误，避免 document-scoped 最新 trace 被后续计划覆盖。当前没有根据通用 stage_evidence_failed 错误码猜测精确根因。
+
+[4 个互动题错误码样本](evidence/minimax-study-question-reasons-v1.jsonl)中 2/4 成功；两个失败操作的首次与恢复共四次响应均明确 study_question_answer_key_required。当前 CHAT_JSON_SCHEMA 将 answer_key 标为可选，提示没有解释其 server-only 属性。正在实验性验证“选择题必须填写 answer_key，但公开展示不包含答案”的补充说明；未修改生产 prompt 或校验器。

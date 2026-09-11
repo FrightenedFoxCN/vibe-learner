@@ -4,10 +4,21 @@ from pydantic import ValidationError
 
 from tests.acceptance.minimax_domain_probe import generation_boundary_success
 from tests.acceptance.minimax_study_probe import safe_schema_errors
+from tests.acceptance.minimax_planning_probe import planning_outcomes
 from app.models.study_chat_reply import StudyChatReplyProposalV1
 
 
 class GenerationProbeBoundaryTests(unittest.TestCase):
+    def test_planning_commit_does_not_hide_failed_tool_attempts(self):
+        traces = [{"stage": "plan_generation", "status": "passed", "commit_evidence": {"status": "committed"}},
+            {"stage": "planning_tool_execution", "status": "failed", "error_code": "stage_evidence_failed",
+                "commit_evidence": {"status": "not_committed"}}]
+        outcomes = planning_outcomes(True, "committed", traces, 2)
+        self.assertTrue(outcomes["boundary_success"])
+        self.assertEqual(outcomes["tool_failures"], 1)
+        self.assertFalse(planning_outcomes(True, "committed", traces, 3)["boundary_success"])
+        self.assertFalse(planning_outcomes(False, "committed", traces, 2)["boundary_success"])
+
     def test_question_diagnostics_keep_reason_without_candidate_values(self):
         payload = {"text": "请选择", "mood": "calm", "action": "point",
             "interactive_question": {"question_type": "multiple_choice", "prompt": "private sentinel",

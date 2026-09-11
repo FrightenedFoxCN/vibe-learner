@@ -21,6 +21,7 @@ from app.services.provider_study import (
     CHAT_PRIVATE_GRADING_KEY_RE,
     _decode_study_chat_reply_proposal,
     _study_chat_public_proposal_texts,
+    _chat_prompt_sections,
 )
 from tests.test_persona_lifecycle import create_request
 
@@ -62,7 +63,16 @@ def safe_schema_errors(exc):
     return records
 
 
-def run(root, repetitions, selected_case=None):
+QUESTION_CONTRACT_CANDIDATE = (
+    "\n互动题字段契约：multiple_choice 必须提供至少两个不同 key 的 options，"
+    "并在 interactive_question.answer_key 中填写其中一个正确选项 key；"
+    "fill_blank 必须提供非空 accepted_answers。answer_key、accepted_answers、explanation "
+    "仅供服务器判分，会在向学习者展示前被移除。学习者要求暂不公布答案时，仍须完整填写这些私有字段；"
+    "不要将答案或解析写入 text、rich_blocks、题干、选项说明或表演字段。"
+)
+
+
+def run(root, repetitions, selected_case=None, question_contract_candidate=False):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
@@ -112,7 +122,11 @@ def run(root, repetitions, selected_case=None):
 
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     app = create_app(settings=settings)
-    with patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
+    sections = _chat_prompt_sections()
+    if question_contract_candidate:
+        sections = {key: value + QUESTION_CONTRACT_CANDIDATE if key in {"system", "recovery"} else value
+            for key, value in sections.items()}
+    with patch("app.services.provider_study._chat_prompt_sections", return_value=sections), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona = create_request("顾言").model_dump(mode="json")
         persona.update(summary="严谨、温和的数学老师，说话简洁，先核对证据再下结论。", relationship="数学老师与成年学习者", learner_address="小林")
         created = client.post("/personas", json=persona)
@@ -146,6 +160,10 @@ def run(root, repetitions, selected_case=None):
                     row = {"scope": "live_study_operation_receipt_readback", "fixture_version": "study-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "message": message, "calls": calls}
+                    row["prompt_variant"] = "question-contract-experiment-v1" if question_contract_candidate else "production"
+                    if question_contract_candidate:
+                        row["experimental_prompt_suffix"] = QUESTION_CONTRACT_CANDIDATE
+                        row["trace_limitation"] = "Experimental prompt override; traces prove domain lifecycle only, not reviewed production prompt adoption."
                     try:
                         response = client.post(f"/study-sessions/{initial.id}/chat", json={
                             "client_request_id": request_id, "expected_session_revision": initial.revision, "message": message})
@@ -187,7 +205,8 @@ if __name__ == "__main__":
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--case", choices=CASES)
+    parser.add_argument("--question-contract-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate)
