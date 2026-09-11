@@ -77,7 +77,7 @@ def build_memory_context(hits: list[MemoryTraceHitRecord]) -> str:
     lines = [
         (
             f"- score={hit.score:.4f} | session={hit.session_id} | study_unit={hit.study_unit_id} "
-            f"| scene={hit.scene_title} | snippet={hit.snippet}"
+            f"| scene={hit.scene_title} | created_at={hit.created_at} | snippet={hit.snippet}"
         )
         for hit in hits
     ]

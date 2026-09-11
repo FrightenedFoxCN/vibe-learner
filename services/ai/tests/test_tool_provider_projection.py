@@ -27,6 +27,23 @@ from app.services.tool_provider_projection import (
 
 
 class ToolProviderProjectionTests(unittest.TestCase):
+    def test_memory_provider_retains_record_time_without_exposing_public_trace(self):
+        entry = TOOL_MANIFEST_ENTRIES['study_chat:study_chat_reply:retrieve_memory_context']
+        timestamp = '2026-09-12T01:02:03+00:00'
+        result = adapt_tool_runtime_result(entry, {'ok': True, 'hits': [
+            {'session_id': 'past-session', 'snippet': '用户原话：地点是白桦阅览室。',
+             'source': 'retriever', 'created_at': timestamp}]})
+        provider = project_validated_tool_result(entry, result, audience='provider')
+        self.assertEqual(provider['hits'][0]['created_at'], timestamp)
+        for audience in ('trace', 'public'):
+            self.assertNotIn(timestamp, json.dumps(project_validated_tool_result(entry, result, audience=audience)))
+
+    def test_memory_without_record_time_does_not_invent_one(self):
+        entry = TOOL_MANIFEST_ENTRIES['study_chat:study_chat_reply:retrieve_memory_context']
+        result = adapt_tool_runtime_result(entry, {'ok': True, 'hits': [{'snippet': '旧记录'}]})
+        provider = project_validated_tool_result(entry, result, audience='provider')
+        self.assertEqual(provider['hits'][0]['created_at'], '')
+
     def test_scene_provider_keeps_addressable_members_but_public_trace_does_not(self):
         entry = TOOL_MANIFEST_ENTRIES['study_chat:study_chat_reply:read_scene_overview']
         result = adapt_tool_runtime_result(entry, {

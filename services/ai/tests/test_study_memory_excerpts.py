@@ -1,10 +1,16 @@
 import unittest
 from types import SimpleNamespace
 
-from app.services.study_memory import _build_candidates
+from app.services.study_memory import _build_candidates, build_memory_context
 
 
 class StudyMemoryExcerptTests(unittest.TestCase):
+    def test_initial_memory_context_retains_record_time(self):
+        hit = SimpleNamespace(score=0.8, session_id='past', study_unit_id='unit',
+                              scene_title='room', snippet='地点是白桦阅览室。',
+                              created_at='2026-09-12T01:02:03+00:00')
+        self.assertIn('created_at=2026-09-12T01:02:03+00:00', build_memory_context([hit]))
+
     def candidates(self, learner, assistant, kind='learner'):
         turn = SimpleNamespace(learner_message=learner, learner_message_kind=kind, assistant_reply=assistant, created_at='2026-09-12T00:00:00Z')
         session = SimpleNamespace(id='past', study_unit_id='unit', scene_profile=None, turns=[turn])

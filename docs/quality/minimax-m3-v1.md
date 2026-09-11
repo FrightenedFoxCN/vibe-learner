@@ -482,3 +482,13 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 本轮补查[Mem0论文v1](https://arxiv.org/html/2504.19413v1)：作者在LoCoMo上使用GPT-4o-mini，报告相对其OpenAI memory基线的LLM-as-a-Judge指标提升26%，相对full-context降低91%的p95延迟和超过90%的token成本。这些是作者在特定数据与设置下的结果，不是M3实测、独立复现或本仓库预期收益；不同对比基线不能合并解释。可借鉴的是把事实提取、更新与检索分开，并覆盖单跳、跨记录和时间关系问题。
 
 [Anthropic上下文工程实践](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)建议压缩先保证关键信息召回，再去掉冗余，并讨论持久笔记与旧工具结果清理。这里将其作为实验设计建议，而非通用性能定律：后续应特别测试撤销事实、中段更新、时间顺序及必要图片证据是否被清理，不直接全量删除旧工具结果或新增模型摘要持久写入。
+
+## 轮次 43：保留跨会话记忆的来源记录时间
+
+[两次旧实现实测](evidence/minimax-memory-record-time-baseline-v1.jsonl)先在独立真实Study会话分别记录青石、白桦两个地点，再明确要求仅根据记录时间判断最新约定。领域memory_trace有时间，初始模型记忆上下文和retrieve_memory_context的canonical投影却均未传递created_at。第一例靠助手先前“覆盖”的措辞猜对地点，未遵守仅按时间判断；第二例如实表示缺少时间戳、无法判断。第二轮检索还包含此前测试回复，因此不能将两轮直接视为同源对照。
+
+修复保留已有记录时间：MemoryHitResultV1添加有长度上限、默认空字符串的created_at，canonical工具适配传递该字段，初始build_memory_context也包含时间。没有为旧记录造时间、没有修改历史记录或模型输出schema，公开/安全trace仍保持原有脱敏。created_at表示来源记录创建时间，不宣称是事件发生或约定生效时间。
+
+[四次同源消融](evidence/minimax-memory-record-time-pairs-v2.jsonl)复用首轮两个真实保存的准备会话，固定检索来源；移除组只在SDK发送前删除初始context与工具结果里的记录时间，保留组运行新生产投影。第二轮反转顺序。[维护者复核](evidence/minimax-memory-record-time-review-v2.json)保留组2/2根据21:02:03晚于21:01:48判断白桦阅览室，移除组2/2明确无法严格按时间判断；四次均完成真实准入、提交和读回。这证明当前fixture中被丢弃的时间信息可恢复任务能力，不证明所有时间推理可靠，亦不把谨慎弃答判为内容幻觉。
+
+三个新增回归在旧实现失败，覆盖初始context与canonical投影保留来源时间、无时间时不凭空填值、公开trace不暴露新增字段。35项定向和完整后端811项测试通过。后续需要区分“晚录入的旧事件”和“较早录入的未来生效约定”，不能简单把所有问题都按created_at排序。

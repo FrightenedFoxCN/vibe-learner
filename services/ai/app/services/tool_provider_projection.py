@@ -468,6 +468,7 @@ def _adapt_study_runtime_success(
                 "memory_id": item.get("id") or item.get("session_id") or "",
                 "content": item.get("content") or item.get("snippet"),
                 "source": item.get("source") or "",
+                "created_at": item.get("created_at") or "",
             }
             for item in hits
             if isinstance(item, Mapping)

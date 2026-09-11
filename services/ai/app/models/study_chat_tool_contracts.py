@@ -275,6 +275,8 @@ class MemoryHitResultV1(StudyChatToolContractModel):
     memory_id: Annotated[str, Field(max_length=160)] = ""
     content: Annotated[str, Field(min_length=1, max_length=8_000)]
     source: Annotated[str, Field(max_length=64)] = ""
+    # Time of the source record, not an inferred event/effective date.
+    created_at: Annotated[str, Field(max_length=64)] = ""
 
 
 class RetrieveMemoryContextResultV1(StudyChatToolResultBaseV1):

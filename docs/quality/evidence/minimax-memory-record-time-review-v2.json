@@ -1,0 +1,72 @@
+{
+  "scope": "Maintainer review of fixed real seed conversations; field removal ablation and production time projection",
+  "limitations": [
+    "created_at is source record creation time, not event/effective time.",
+    "Only two saved seed sessions participate in paired retrieval; raw baseline second repetition also retrieves earlier probe replies.",
+    "Assistant seed wording mentions correction; without-time group must not infer chronology from that wording under explicit request.",
+    "Two operations per group, not independent certification or a general temporal reasoning benchmark.",
+    "SDK time field counts are not HTTP wire evidence."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-8c7826f0e4a442f08fc7003fa938d00b",
+      "variant": "without_time",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_correct_with_time": false,
+      "maintainer_abstains_without_record_time": true,
+      "one_sentence_no_extra_paragraphs": true,
+      "sdk_time_mentions": [
+        0,
+        0
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 11845
+    },
+    {
+      "operation_id": "harness-operation-b4fb5c3bccf54bc0be82616c6df3275d",
+      "variant": "production",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_correct_with_time": true,
+      "maintainer_abstains_without_record_time": false,
+      "one_sentence_no_extra_paragraphs": true,
+      "sdk_time_mentions": [
+        2,
+        4
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 12117
+    },
+    {
+      "operation_id": "harness-operation-ded0dd6805d04414a312b8f16362ab53",
+      "variant": "production",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_correct_with_time": true,
+      "maintainer_abstains_without_record_time": false,
+      "one_sentence_no_extra_paragraphs": true,
+      "sdk_time_mentions": [
+        2,
+        4
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 12117
+    },
+    {
+      "operation_id": "harness-operation-a77a03b6956248afbae97b4c4308d460",
+      "variant": "without_time",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_correct_with_time": false,
+      "maintainer_abstains_without_record_time": true,
+      "one_sentence_no_extra_paragraphs": true,
+      "sdk_time_mentions": [
+        0,
+        0
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 11845
+    }
+  ]
+}

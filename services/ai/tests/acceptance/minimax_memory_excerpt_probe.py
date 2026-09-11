@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -17,7 +18,7 @@ from app.services import study_memory
 from app.services.provider_sdk import ProviderRequestAdapter
 
 
-def run(source, output, repetitions, role_split=False, production=False):
+def run(source, output, repetitions, role_split=False, production=False, temporal=False):
     source_row = json.loads((source / 'report.jsonl').read_text().splitlines()[0])
     seed_ids = {s['receipt']['session_id'] for s in source_row['memory_seed_operations']}
     source_session = source_row['receipt']['result']['session']
@@ -30,6 +31,8 @@ def run(source, output, repetitions, role_split=False, production=False):
             variants = ('complete1600', 'learner800_assistant160', 'learner800') if role_split else ('head180', 'head_tail180', 'complete1600')
             if production:
                 variants = ('production',)
+            if temporal:
+                variants = ('without_time', 'production')
             if repetition % 2:
                 variants = tuple(reversed(variants))
             for variant in variants:
@@ -68,12 +71,31 @@ def run(source, output, repetitions, role_split=False, production=False):
                     return selected
 
                 def observe(adapter, payload, *, request_kind, model):
+                    if variant == 'without_time':
+                        messages = []
+                        for message in payload.get('messages', []):
+                            content = message.get('content')
+                            if isinstance(content, str):
+                                content = re.sub(r' \| created_at=[^|]* \| snippet=', ' | snippet=', content)
+                                if message.get('role') == 'tool':
+                                    try:
+                                        result = json.loads(content)
+                                        if isinstance(result, dict) and result.get('tool_name') == 'retrieve_memory_context':
+                                            for hit in result.get('hits', []):
+                                                hit.pop('created_at', None)
+                                            content = json.dumps(result, ensure_ascii=False)
+                                    except (ValueError, TypeError):
+                                        pass
+                                message = {**message, 'content': content}
+                            messages.append(message)
+                        payload = {**payload, 'messages': messages}
                     started = time.perf_counter()
                     raw, elapsed = original_request(adapter, payload, request_kind=request_kind, model=model)
                     message = (raw.get('choices') or [{}])[0].get('message') or {}
                     calls.append({'kind': request_kind, 'model': model, 'usage': raw.get('usage'),
                         'requested_tools': [c['function']['name'] for c in message.get('tool_calls') or []],
-                        'elapsed_ms': round((time.perf_counter()-started)*1000)})
+                        'elapsed_ms': round((time.perf_counter()-started)*1000),
+                        'memory_time_mentions_sdk': sum(str(m.get('content', '')).count('created_at') for m in payload.get('messages', []))})
                     return raw, elapsed
 
                 settings = Settings(storage_root=str(root/'data'), database_url=f"sqlite:///{root/'domain.db'}",
@@ -91,6 +113,9 @@ def run(source, output, repetitions, role_split=False, production=False):
                         'source_seed_session_ids': sorted(seed_ids), 'calls': calls, 'candidate_excerpts': candidates,
                         'http_status': response.status_code, 'boundary_success': False,
                         'trace_limitation': ('Production excerpt with fixed seed-session selection' if production else 'Experimental excerpt construction and fixed seed-session selection') + '; production domain admission/commit. Embedding requests not instrumented.'}
+                    if temporal:
+                        row['case_id'] = 'memory_record_time_comparison'
+                        row['trace_limitation'] = 'Same saved seed conversations and production excerpts with fixed seed selection; without_time removes record time only from SDK initial context/tool messages. SDK observation is not wire evidence.'
                     if response.status_code == 200:
                         receipt = StudyChatOperationReceiptResponse.model_validate(response.json())
                         row['receipt'] = receipt.model_dump(mode='json')
@@ -111,7 +136,8 @@ if __name__ == '__main__':
     parser.add_argument('--repetitions', type=int, default=2)
     parser.add_argument('--role-split', action='store_true')
     parser.add_argument('--production', action='store_true')
+    parser.add_argument('--temporal', action='store_true')
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error('repetitions must be between 1 and 20')
-    run(args.source.resolve(), args.output.resolve(), args.repetitions, args.role_split, args.production)
+    run(args.source.resolve(), args.output.resolve(), args.repetitions, args.role_split, args.production, args.temporal)
