@@ -19,7 +19,38 @@ SUMMARY_VERIFICATION = (
 )
 
 
-def compare(source: Path, pdf: Path, output: Path):
+def omit_generated_summaries(payload):
+    """Remove summary fields only from known planning context/tool JSON bodies."""
+    def strip(value):
+        if isinstance(value, dict):
+            return {k: strip(v) for k, v in value.items() if k != 'summary'}
+        if isinstance(value, list):
+            return [strip(v) for v in value]
+        return value
+
+    messages = []
+    for message in payload.get('messages', []):
+        content = message.get('content')
+        if message.get('role') not in ('user', 'tool') or not isinstance(content, str):
+            messages.append(message)
+            continue
+        try:
+            parsed = json.loads(content)
+        except ValueError:
+            messages.append(message)
+            continue
+        if isinstance(parsed, dict) and 'learning_goal' in parsed and 'study_units' in parsed:
+            parsed = {**parsed, 'study_units': strip(parsed['study_units'])}
+        elif message.get('role') == 'tool' and isinstance(parsed, dict) and parsed.get('schema_version') == 'planning-tool-result-v1':
+            parsed = strip(parsed)
+        else:
+            messages.append(message)
+            continue
+        messages.append({**message, 'content': json.dumps(parsed, ensure_ascii=False)})
+    return {**payload, 'messages': messages}
+
+
+def compare(source: Path, pdf: Path, output: Path, remove_summaries=False):
     output.mkdir(parents=True, exist_ok=False)
     original = ProviderRequestAdapter.request_chat_completion
     baseline = None
@@ -47,10 +78,15 @@ def compare(source: Path, pdf: Path, output: Path):
             current['known_error_marker_present'] = context is not None and '期待性' in json.dumps(context, ensure_ascii=False)
             current['measurement_error'] = None if context is not None else 'initial_context_not_found'
             current['offered_tools'] = [t.get('function', {}).get('name') for t in payload.get('tools', [])]
-        if current['candidate']:
+        if remove_summaries and current['candidate']:
+            payload = omit_generated_summaries(payload)
+        elif current['candidate']:
             payload = {**payload, 'messages': [
                 {**m, 'content': m['content'] + SUMMARY_VERIFICATION} if m.get('role') == 'system' else m
                 for m in payload.get('messages', [])]}
+        current.setdefault('request_marker_roles', []).append([
+            m.get('role') for m in payload.get('messages', [])
+            if isinstance(m.get('content'), str) and '期待性' in m['content']])
         return original(adapter, payload, request_kind=request_kind, model=model)
 
     with patch.object(ProviderRequestAdapter, 'request_chat_completion', observe):
@@ -62,14 +98,15 @@ def compare(source: Path, pdf: Path, output: Path):
                 page_evidence_page=1, persona_domain='text', controlled_page_evidence=True,
                 prepared_source_root=source)
             row = json.loads((cell / 'report.jsonl').read_text())
-            row['summary_verification_variant'] = 'source-verification-suffix-v1' if candidate else 'production'
-            row['experimental_summary_suffix'] = SUMMARY_VERIFICATION if candidate else None
+            row['summary_verification_variant'] = ('omit-generated-summary-fields-v1' if remove_summaries else 'source-verification-suffix-v1') if candidate else 'production'
+            row['experimental_summary_suffix'] = SUMMARY_VERIFICATION if candidate and not remove_summaries else None
             (cell / 'report.jsonl').write_text(json.dumps(row, ensure_ascii=False) + '\n')
             current.update(operation_id=row.get('harness_operation_id'), boundary_success=row['boundary_success'])
             observations.append(dict(current))
             (output / 'comparison.json').write_text(json.dumps({
-                'scope': 'Experimental summary verification suffix with fixed source and page image',
-                'candidate_suffix': SUMMARY_VERIFICATION,
+                'scope': 'Experimental summary field removal' if remove_summaries else 'Experimental summary verification suffix with fixed source and page image',
+                'candidate_suffix': None if remove_summaries else SUMMARY_VERIFICATION,
+                'remove_summaries': remove_summaries,
                 'limitations': ['One sample per persona/condition; not independent quality certification.',
                     'Image injection and prompt suffix are experimental, not production artifact replay.'],
                 'rows': observations}, ensure_ascii=False, indent=2) + '\n')
@@ -79,5 +116,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('source', 'pdf', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--remove-summaries', action='store_true')
     args = parser.parse_args()
-    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve())
+    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve(), args.remove_summaries)
