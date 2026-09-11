@@ -15,6 +15,8 @@ from app.core.settings import Settings
 from app.models.api import LearningPlanCreateResponse, LearningPlanResponse
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.provider_sdk import ProviderRequestAdapter
+from app.services.provider_transport import _normalize_completed_tool_indexes
+from app.services.tool_provider_projection import ToolExecutionBudgetTracker
 from tests.acceptance.minimax_study_probe import SOURCE
 from tests.test_persona_lifecycle import create_request
 
@@ -47,7 +49,7 @@ PLANNING_BUDGET_CANDIDATE = (
 )
 
 
-def run(root, repetitions, budget_candidate=False, selected_case=None):
+def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
@@ -56,6 +58,24 @@ def run(root, repetitions, budget_candidate=False, selected_case=None):
         openai_setting_web_search_enabled=False, openai_timeout_seconds=90)
     calls = []
     original = ProviderRequestAdapter.request_chat_completion
+    original_admit = ToolExecutionBudgetTracker.admit
+
+    def admit_candidate(tracker, entry):
+        if detail_parallel_candidate and entry.canonical_name == "get_study_unit_detail":
+            entry = entry.model_copy(update={"budget": entry.budget.model_copy(update={"max_calls_per_round": 3})})
+        return original_admit(tracker, entry)
+
+    def observe_indexes(payload):
+        indexes = []
+        for choice in payload.get("choices", []):
+            for position, call in enumerate(choice.get("message", {}).get("tool_calls") or []):
+                if "index" in call:
+                    indexes.append({"position": position, "index_type": type(call["index"]).__name__,
+                        "index": call["index"] if type(call["index"]) is int else None})
+        normalized = _normalize_completed_tool_indexes(payload)
+        if calls and indexes:
+            calls[-1]["sdk_tool_indexes"] = indexes
+        return normalized
 
     def observe(adapter, payload, *, request_kind, model):
         if budget_candidate:
@@ -90,7 +110,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None):
 
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     app = create_app(settings=settings)
-    with patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
+    with patch.object(ToolExecutionBudgetTracker, "admit", admit_candidate), patch("app.services.provider_transport._normalize_completed_tool_indexes", side_effect=observe_indexes), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona = client.post("/personas", json=create_request("顾言").model_dump(mode="json"))
         persona.raise_for_status()
         persona_id = persona.json()["id"]
@@ -118,6 +138,11 @@ def run(root, repetitions, budget_candidate=False, selected_case=None):
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
                     row["prompt_variant"] = "planning-budget-experiment-v1" if budget_candidate else "production"
+                    if detail_parallel_candidate:
+                        row["budget_variant"] = "planning-detail-round-three-experiment-v1"
+                        row["budget_override"] = {"tool": "get_study_unit_detail", "max_calls_per_round": 3,
+                            "max_calls_per_operation": 4}
+                        row["trace_limitation"] = "Experimental budget override; traces prove lifecycle only, not production budget adoption."
                     if budget_candidate:
                         row["experimental_prompt_suffix"] = PLANNING_BUDGET_CANDIDATE
                         row["trace_limitation"] = "Experimental prompt override; traces prove lifecycle only, not production prompt adoption."
@@ -168,7 +193,8 @@ if __name__ == "__main__":
     parser.add_argument("--repetitions", type=int, default=2)
     parser.add_argument("--budget-candidate", action="store_true")
     parser.add_argument("--case", choices=CASES)
+    parser.add_argument("--detail-parallel-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case)
+    run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate)

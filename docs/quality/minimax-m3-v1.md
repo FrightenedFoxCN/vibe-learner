@@ -190,3 +190,16 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [3 个信封观测操作](evidence/minimax-planning-shape-observed-v1.jsonl)中 2/3 提交成功；教材计划在 provider 请求阶段失败。无教材操作的一轮四个工具信封全部带额外 index 字段，function 内仍只有 name/arguments，四个工具均被 provider_tool_call_shape_invalid 拒绝。生产 decoder 只接受 id/type/function，已定位到这一结构差异，尚未改变严格边界。
 
 下一批仅记录 index 的整数值和类型，核对它是否为按数组顺序排列的传输元数据，再评估在 SDK 适配层消除该兼容差异；不允许借此接受操作身份或未知字段。上一批未记录 index 值，不能据字段名推定其安全性或声称兼容修复完成。
+
+
+## 轮次 13：完整工具调用的传输序号兼容
+
+[2 个序号观测基线](evidence/minimax-planning-index-observed-v1.jsonl)均提交成功，这两个样本没有 index，不能用来证明兼容修复。
+
+[4 个初版兼容样本](evidence/minimax-planning-index-normalized-v1.jsonl)在 position-matching 实验中进一步记录到：同一轮三个完整调用的 index 都为整数 0。初版仅删除 index 等于数组位置的字段，导致后两项仍被严格 decoder 拒绝，说明“index 代表数组位置”的推断不成立。该初版没有作为生产提交。
+
+修正后的传输适配仅对完整 id/type/function 信封移除有界非负整数 index；保留原始 id、数组顺序、参数与所有未知字段。bool、字符串、负数、超界值、不完整调用和额外应用身份字段不会被修补，仍由下游严格 decoder 拒绝。该适配不组装流式碎片，不从 index 分配应用身份，不更改工具输入/结果或 Harness 领域契约。
+
+32 项传输/工具投影/Planning/manifest 回归通过；完整后端 787 项通过于初版适配，随后针对重复零序号的修正重新通过 18 项传输与严格工具投影回归。新增测试覆盖 SDK 原对象不被修改、重复零序号的完整调用通过生产 decoder、非法索引和伪造身份继续保留供严格拒绝。当前新实测正在统一修正版本上验证。
+
+用户进一步明确运行时限制也应优化。新增只读 get_study_unit_detail 同轮上限 1→3 的实验，整个操作上限仍为 4，其他工具不变；实验 trace 仅证明生命周期，不代表新预算已注册采纳。最终对照使用统一传输实现、交错顺序，比较 provider 轮次、时延和预算失败，而非只比较提示词。

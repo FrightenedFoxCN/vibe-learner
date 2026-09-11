@@ -5,7 +5,7 @@ import sys
 import unittest
 from unittest.mock import Mock
 
-from app.services.provider_transport import ModelRequestError, ProviderTransport
+from app.services.provider_transport import ModelRequestError, ProviderTransport, _normalize_completed_tool_indexes
 
 
 class UpstreamFailure(Exception):
@@ -16,6 +16,33 @@ class UpstreamFailure(Exception):
 
 
 class ProviderTransportTests(unittest.TestCase):
+    def test_complete_tool_indexes_are_metadata_without_mutating_sdk_payload(self):
+        calls = [{"id": f"call-{i}", "index": 0, "type": "function",
+            "function": {"name": "get_study_unit_detail", "arguments": '{"study_unit_id":"unit-1"}'}} for i in range(2)]
+        payload = {"choices": [{"message": {"tool_calls": calls}}], "usage": {"total_tokens": 10}}
+        result, _ = ProviderTransport(timeout_seconds=3).execute(request_kind="plan", model="test", invoke=lambda: payload)
+        projected = result["choices"][0]["message"]["tool_calls"]
+        self.assertEqual([c["id"] for c in projected], ["call-0", "call-1"])
+        self.assertTrue(all("index" not in c for c in projected))
+        self.assertEqual([c["index"] for c in calls], [0, 0])
+        self.assertEqual(result["usage"], payload["usage"])
+        from app.models.harness import HarnessStage, HarnessWorkflow
+        from app.services.tool_provider_projection import decode_provider_tool_call
+        decoded = decode_provider_tool_call(projected[0], workflow=HarnessWorkflow.PLANNING,
+            offered_in_stage=HarnessStage.PLAN_GENERATION)
+        self.assertEqual(decoded.transport_correlation_id, "call-0")
+
+    def test_invalid_indexes_unknown_fields_and_partial_calls_are_not_repaired(self):
+        base = {"id": "call-0", "index": 0, "type": "function",
+            "function": {"name": "get_study_unit_detail", "arguments": "{}"}}
+        variants = [{**base, "index": value} for value in (True, "0", None, -1, 2_147_483_648)]
+        variants.extend([{**base, "operation_id": "forged"}, {**base, "id": ""},
+            {**base, "function": {"arguments": "{}"}}])
+        for call in variants:
+            with self.subTest(call=call):
+                payload = {"choices": [{"message": {"tool_calls": [call]}}]}
+                self.assertEqual(_normalize_completed_tool_indexes(payload), payload)
+
     def test_success_after_transient_failures_has_two_retries_and_one_recovery(self):
         invoke = Mock(side_effect=[UpstreamFailure(503), UpstreamFailure(503), {"ok": True}])
         sleep, recovery = Mock(), Mock()

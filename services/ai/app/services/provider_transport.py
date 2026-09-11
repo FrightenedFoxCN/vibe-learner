@@ -57,7 +57,7 @@ class ProviderTransport:
             observation.begin_attempt(attempt)
             try:
                 raw_result = invoke()
-                raw_payload = _normalize_litellm_payload(raw_result)
+                raw_payload = _normalize_completed_tool_indexes(_normalize_litellm_payload(raw_result))
                 observation.end_attempt(raw_payload)
                 elapsed_ms = int((self.clock() - started_at) * 1000)
                 if attempt > 1:
@@ -177,6 +177,44 @@ def _coerce_int(value: Any, *, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _normalize_completed_tool_indexes(payload: dict[str, Any]) -> dict[str, Any]:
+    """Remove redundant SDK array indexes from complete function calls only.
+
+    Some compatible endpoints attach index=0 to every completed call. Indexes
+    are transport metadata, never identity or ordering evidence. A malformed
+    index remains visible to the strict decoder, as do all other extra fields.
+    Do not reconstruct incomplete streamed calls here.
+    """
+    choices = payload.get("choices")
+    if not isinstance(choices, list):
+        return payload
+    normalized = []
+    for choice in choices:
+        if not isinstance(choice, dict) or not isinstance(choice.get("message"), dict):
+            normalized.append(choice)
+            continue
+        message = choice["message"]
+        calls = message.get("tool_calls")
+        if not isinstance(calls, list):
+            normalized.append(choice)
+            continue
+        projected = []
+        for call in calls:
+            if (isinstance(call, dict) and type(call.get("index")) is int
+                and 0 <= call["index"] <= 2_147_483_647
+                and set(call) == {"id", "type", "function", "index"}
+                and isinstance(call["id"], str) and bool(call["id"])
+                and call["type"] == "function"
+                and isinstance(call["function"], dict)
+                and set(call["function"]) == {"name", "arguments"}
+                and all(isinstance(call["function"][key], str) for key in ("name", "arguments"))):
+                projected.append({key: value for key, value in call.items() if key != "index"})
+            else:
+                projected.append(call)
+        normalized.append({**choice, "message": {**message, "tool_calls": projected}})
+    return {**payload, "choices": normalized}
 
 
 def _normalize_litellm_payload(result: Any) -> dict[str, Any]:
