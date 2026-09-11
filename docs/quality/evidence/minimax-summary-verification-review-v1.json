@@ -1,0 +1,78 @@
+{
+  "scope": "Maintainer source-grounding and persona review; not independent certification",
+  "limitations": [
+    "One sample per persona/condition; not independent quality certification.",
+    "Image injection and prompt suffix are experimental, not production artifact replay.",
+    "All inputs contain the same previously generated erroneous summary; no summary-removal condition, so propagation is not causally separated from independent visual misreading.",
+    "Historical source_operation_id identifies the first source report; cloned database reflects the later completed source operation.",
+    "Reports were annotated after execution because the running probe had loaded before annotation code was added."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-63685b2e189543c5b084589457230cab",
+      "persona": "rigorous",
+      "candidate": false,
+      "boundary_success": true,
+      "provider_requests": 6,
+      "readback_equal": true,
+      "known_wrong_term_in_generated_plan": true,
+      "allocated_minutes": null,
+      "persona_activity": "Quotation, context and evidence verification",
+      "remaining_issues": [
+        "Uses 期待性 as central source concept.",
+        "Footnote 1 incorrectly includes biscuit box.",
+        "Calls comparable scenes dissimilar; source states similarity.",
+        "No complete 30-minute allocation."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-369e1648c02d4810b770a08c085970b6",
+      "persona": "explorer",
+      "candidate": true,
+      "boundary_success": true,
+      "provider_requests": 7,
+      "readback_equal": true,
+      "known_wrong_term_in_generated_plan": true,
+      "allocated_minutes": 30,
+      "persona_activity": "Comparison, curiosity and own interpretation",
+      "remaining_issues": [
+        "Uses 期待性 repeatedly despite verification suffix.",
+        "Treats Chinese translation as confined to right column.",
+        "Attributes commentary to editor/translator without supplied evidence."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-2caa39860f4b4c32ab4ff738986813f7",
+      "persona": "rigorous",
+      "candidate": true,
+      "boundary_success": true,
+      "provider_requests": 7,
+      "readback_equal": true,
+      "known_wrong_term_in_generated_plan": true,
+      "allocated_minutes": null,
+      "persona_activity": "Quotation, context and evidence verification",
+      "remaining_issues": [
+        "Includes both 期待性 and 时期性 instead of correcting the former.",
+        "Adds Private Lives/Coward and domestication/foreignization absent from supplied page.",
+        "Footnote 1 says 微粒, not quoted 颗粒.",
+        "No complete 30-minute allocation."
+      ]
+    },
+    {
+      "operation_id": "harness-operation-7b225c3fd62d4a5087fd017d71233df6",
+      "persona": "explorer",
+      "candidate": false,
+      "boundary_success": true,
+      "provider_requests": 4,
+      "readback_equal": true,
+      "known_wrong_term_in_generated_plan": true,
+      "allocated_minutes": 30,
+      "persona_activity": "Comparison, curiosity and own interpretation",
+      "remaining_issues": [
+        "Uses 期待性 as source concept.",
+        "Treats Chinese translation as confined to right column.",
+        "Attributes commentary to editor/translator without supplied evidence."
+      ]
+    }
+  ]
+}

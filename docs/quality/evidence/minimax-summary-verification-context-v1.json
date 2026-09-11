@@ -1,0 +1,78 @@
+{
+  "scope": "Experimental summary verification suffix with fixed source and page image",
+  "candidate_suffix": "\nStudy Unit标题和摘要是先前模型生成的导航材料，可能含识字或解释错误，不能当作原文。涉及原文概念、引文或左右栏位置时，先与本次提供的页图或可用正文核对；冲突时以清晰的原页为准。无法辨认的词不要猜写成结论，可安排学习者回页核对。人格决定活动方式，不改变原文事实。",
+  "limitations": [
+    "One sample per persona/condition; not independent quality certification.",
+    "Image injection and prompt suffix are experimental, not production artifact replay."
+  ],
+  "rows": [
+    {
+      "persona": "rigorous",
+      "candidate": false,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-63685b2e189543c5b084589457230cab",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "candidate": true,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-369e1648c02d4810b770a08c085970b6",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "candidate": true,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-2caa39860f4b4c32ab4ff738986813f7",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "candidate": false,
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "known_error_marker_present": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-7b225c3fd62d4a5087fd017d71233df6",
+      "boundary_success": true
+    }
+  ]
+}
