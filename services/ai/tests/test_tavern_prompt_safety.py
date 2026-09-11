@@ -169,6 +169,20 @@ class CountingMockProvider(MockModelProvider):
 
 
 class TavernPromptBudgetTests(unittest.TestCase):
+    def test_large_history_search_bounds_render_work(self) -> None:
+        from app.services import tavern_prompt as prompt
+
+        participants = [_participant(_persona("quality", "沈舟"), display_order=0)]
+        messages = [_message(i + 1, "这是一段合成的雨天旅途闲谈，人物约定始终保持一致。" * 40)
+                    for i in range(256)]
+        with patch.object(prompt, "_render_messages", wraps=prompt._render_messages) as render:
+            actual = _preflight(participants, recent_messages=messages)
+        self.assertEqual(actual.recent_messages, messages[-21:])
+        self.assertEqual(actual.report.removed_message_count, 235)
+        # Initial evidence render + full-history fast path + logarithmic search.
+        # A call-count bound is stable across machines, unlike a timing assertion.
+        self.assertLessEqual(render.call_count, 12)
+
     def test_trim_matches_exhaustive_suffix_oracle(self) -> None:
         from app.services import tavern_prompt as prompt
 

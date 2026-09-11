@@ -1,0 +1,1090 @@
+{
+  "fixture_version": "tavern-preflight-comparison-v1",
+  "reference_revision": "991876b",
+  "python": "3.12.13",
+  "platform": "Darwin",
+  "machine": "arm64",
+  "warmup_pairs_per_size": 1,
+  "samples": [
+    {
+      "messages": 32,
+      "repetition": 0,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 72.823,
+      "current_ms": 31.138,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 1,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 71.28,
+      "current_ms": 30.738,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 2,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 69.494,
+      "current_ms": 30.767,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 3,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 71.357,
+      "current_ms": 30.815,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 4,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 71.73,
+      "current_ms": 34.079,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 5,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 72.088,
+      "current_ms": 32.297,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 6,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 73.913,
+      "current_ms": 32.507,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 7,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 71.091,
+      "current_ms": 31.346,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 8,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 70.653,
+      "current_ms": 30.939,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 9,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 70.067,
+      "current_ms": 30.603,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 10,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 70.263,
+      "current_ms": 30.862,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 11,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 70.377,
+      "current_ms": 30.819,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 12,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 70.27,
+      "current_ms": 30.633,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 13,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 70.153,
+      "current_ms": 29.806,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 14,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 69.818,
+      "current_ms": 30.118,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 15,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 70.618,
+      "current_ms": 30.33,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 16,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 71.214,
+      "current_ms": 30.646,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 17,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 72.935,
+      "current_ms": 30.554,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 18,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 72.438,
+      "current_ms": 30.895,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 19,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 72.931,
+      "current_ms": 30.698,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 20,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 70.38,
+      "current_ms": 30.746,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 21,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 70.734,
+      "current_ms": 30.14,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 22,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 70.976,
+      "current_ms": 30.533,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 23,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 70.145,
+      "current_ms": 30.831,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 24,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 70.404,
+      "current_ms": 30.816,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 25,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 71.057,
+      "current_ms": 32.317,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 26,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 71.18,
+      "current_ms": 31.033,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 27,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 76.132,
+      "current_ms": 30.843,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 28,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 75.67,
+      "current_ms": 33.889,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 32,
+      "repetition": 29,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 77.007,
+      "current_ms": 33.648,
+      "removed": 11,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 0,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 267.7,
+      "current_ms": 35.615,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 1,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 263.458,
+      "current_ms": 35.886,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 2,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 268.283,
+      "current_ms": 35.947,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 3,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 267.573,
+      "current_ms": 35.915,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 4,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 266.131,
+      "current_ms": 35.402,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 5,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 264.572,
+      "current_ms": 35.185,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 6,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 264.942,
+      "current_ms": 35.442,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 7,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 263.657,
+      "current_ms": 35.72,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 8,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 264.544,
+      "current_ms": 34.575,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 9,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 262.651,
+      "current_ms": 36.119,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 10,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 281.135,
+      "current_ms": 38.22,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 11,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 306.168,
+      "current_ms": 38.493,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 12,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 267.774,
+      "current_ms": 34.909,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 13,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 263.279,
+      "current_ms": 35.644,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 14,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 266.96,
+      "current_ms": 35.652,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 15,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 265.278,
+      "current_ms": 36.819,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 16,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 264.007,
+      "current_ms": 35.574,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 17,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 277.703,
+      "current_ms": 35.695,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 18,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 267.115,
+      "current_ms": 34.903,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 19,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 265.55,
+      "current_ms": 35.104,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 20,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 262.938,
+      "current_ms": 35.762,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 21,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 280.064,
+      "current_ms": 35.547,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 22,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 265.808,
+      "current_ms": 35.098,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 23,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 265.019,
+      "current_ms": 35.572,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 24,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 263.344,
+      "current_ms": 34.905,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 25,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 263.655,
+      "current_ms": 36.852,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 26,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 264.816,
+      "current_ms": 35.236,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 27,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 273.542,
+      "current_ms": 36.141,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 28,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 266.602,
+      "current_ms": 37.451,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 128,
+      "repetition": 29,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 277.69,
+      "current_ms": 34.861,
+      "removed": 107,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 0,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 631.627,
+      "current_ms": 43.077,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 1,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 637.15,
+      "current_ms": 41.737,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 2,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 636.106,
+      "current_ms": 43.042,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 3,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 628.621,
+      "current_ms": 43.254,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 4,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 636.071,
+      "current_ms": 42.447,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 5,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 638.538,
+      "current_ms": 43.433,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 6,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 642.175,
+      "current_ms": 42.544,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 7,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 633.255,
+      "current_ms": 43.536,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 8,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 633.087,
+      "current_ms": 41.872,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 9,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 627.13,
+      "current_ms": 42.591,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 10,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 631.345,
+      "current_ms": 41.53,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 11,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 627.126,
+      "current_ms": 41.416,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 12,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 625.445,
+      "current_ms": 41.502,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 13,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 631.293,
+      "current_ms": 41.841,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 14,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 635.832,
+      "current_ms": 41.075,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 15,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 655.466,
+      "current_ms": 41.632,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 16,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 632.728,
+      "current_ms": 41.106,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 17,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 626.773,
+      "current_ms": 42.36,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 18,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 624.672,
+      "current_ms": 40.951,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 19,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 630.804,
+      "current_ms": 41.483,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 20,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 633.537,
+      "current_ms": 42.617,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 21,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 632.986,
+      "current_ms": 41.821,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 22,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 629.903,
+      "current_ms": 42.246,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 23,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 631.052,
+      "current_ms": 42.602,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 24,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 628.66,
+      "current_ms": 42.01,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 25,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 628.597,
+      "current_ms": 41.971,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 26,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 628.29,
+      "current_ms": 41.717,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 27,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 630.809,
+      "current_ms": 41.559,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 28,
+      "order": [
+        "reference",
+        "current"
+      ],
+      "reference_ms": 633.524,
+      "current_ms": 41.362,
+      "removed": 235,
+      "exact_equal": true
+    },
+    {
+      "messages": 256,
+      "repetition": 29,
+      "order": [
+        "current",
+        "reference"
+      ],
+      "reference_ms": 656.198,
+      "current_ms": 40.988,
+      "removed": 235,
+      "exact_equal": true
+    }
+  ]
+}

@@ -198,6 +198,12 @@ def preflight_tavern_actor_prompt(
         ),
     )
     removed_message_count = 0
+    all_messages = retained_messages
+    # Removing an oldest prefix monotonically reduces every budget dimension.
+    # Search the smallest removed prefix instead of re-rendering every suffix.
+    # Keep the initial full-history fast path and the empty-history error order.
+    search_lower = 0
+    search_upper = len(all_messages)
 
     while True:
         messages = _render_messages(
@@ -230,8 +236,9 @@ def preflight_tavern_actor_prompt(
             transcript_bytes > TAVERN_PROMPT_MAX_TRANSCRIPT_BYTES
             or prompt_bytes > TAVERN_PROMPT_MAX_CANONICAL_BYTES
         ):
-            retained_messages = retained_messages[1:]
-            removed_message_count += 1
+            search_lower = removed_message_count + 1
+            removed_message_count = (search_lower + search_upper) // 2
+            retained_messages = all_messages[removed_message_count:]
             continue
         # The estimator is additive per message, so recovery always dominates.
         token_estimate = estimate_tavern_prompt_input_tokens(recovery_messages)
@@ -240,10 +247,16 @@ def preflight_tavern_actor_prompt(
             and prompt_bytes <= TAVERN_PROMPT_MAX_CANONICAL_BYTES
             and token_estimate <= TAVERN_PROMPT_MAX_INPUT_TOKEN_ESTIMATE
         ):
-            break
+            if removed_message_count == search_lower:
+                break
+            search_upper = removed_message_count
+            removed_message_count = (search_lower + search_upper) // 2
+            retained_messages = all_messages[removed_message_count:]
+            continue
         if retained_messages:
-            retained_messages = retained_messages[1:]
-            removed_message_count += 1
+            search_lower = removed_message_count + 1
+            removed_message_count = (search_lower + search_upper) // 2
+            retained_messages = all_messages[removed_message_count:]
             continue
         if prompt_bytes > TAVERN_PROMPT_MAX_CANONICAL_BYTES:
             raise TavernPromptBudgetError(
