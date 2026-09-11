@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, Dispatch, SetStateAction } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type {
   CharacterStateEvent,
   Citation,
@@ -227,7 +227,7 @@ export function StudyConsole({
                         <CharacterEventInline events={turn.characterEvents} />
                       {turn.interactiveQuestion ? (
                         <div style={styles.questionWrap}>
-                            {renderInteractiveQuestion({
+                            <InteractiveQuestionCard {...{
                               question: turn.interactiveQuestion,
                               turnKey: turn.id,
                               selectedChoices,
@@ -249,7 +249,7 @@ export function StudyConsole({
                               onAsk,
                               onSubmitQuestionAttempt,
                               disabled: Boolean(disabled || isPending)
-                            })}
+                            }} />
                           </div>
                         ) : null}
                         {turn.citations.length ? (
@@ -1330,7 +1330,7 @@ function formatTurnTime(value: string) {
   });
 }
 
-function renderInteractiveQuestion(input: {
+function InteractiveQuestionCard(input: {
   question: InteractiveQuestion;
   turnKey: string;
   selectedChoices: Record<string, string>;
@@ -1365,19 +1365,37 @@ function renderInteractiveQuestion(input: {
     onSubmitQuestionAttempt,
     disabled
   } = input;
-  const explanationVisible = Boolean(expandedExplanation[turnKey]);
-  const persistedFeedback = question.result
-    ? { ok: question.result.isCorrect, text: question.result.feedbackText }
-    : undefined;
+  const id = useId();
+  const root = useRef<HTMLDivElement>(null);
+  const feedback = useRef<HTMLParagraphElement>(null);
+  const restoreFocus = useRef(false);
   const isLocked = question.result !== null;
   const isSubmitting = attemptState === "submitting";
+  const isChoice = question.questionType === "multiple_choice";
+  const value = isChoice ? selectedChoices[turnKey] ?? question.result?.submittedAnswer ?? ""
+    : blankAnswers[turnKey] ?? question.result?.submittedAnswer ?? "";
+  const explanationVisible = isLocked && Boolean(expandedExplanation[turnKey]);
+  const feedbackText = question.result ? `${question.result.feedbackText} · 已记录`
+    : attemptState === "failed" ? "答案未记录，请检查后重新提交。"
+    : isSubmitting ? "正在保存到学习记录…" : "";
 
-  const submitAttempt = async (input: Parameters<typeof onSubmitQuestionAttempt>[0]) => {
-    if (isLocked || attemptInFlight.has(turnKey)) return;
+  useEffect(() => {
+    if (!restoreFocus.current || (!isLocked && attemptState !== "failed")) return;
+    restoreFocus.current = false;
+    // Only return focus for this submission while the learner remains here.
+    // A late result from another page or after moving to another control cannot steal it.
+    if (root.current && (root.current.contains(document.activeElement) || document.activeElement === document.body)) {
+      feedback.current?.focus({ preventScroll: true });
+    }
+  }, [isLocked, attemptState]);
+
+  const submitAttempt = async () => {
+    if (disabled || isLocked || !value.trim() || attemptInFlight.has(turnKey)) return;
+    restoreFocus.current = true;
     attemptInFlight.add(turnKey);
     onAttemptStateChange("submitting");
     try {
-      const committed = await onSubmitQuestionAttempt(input);
+      const committed = await onSubmitQuestionAttempt({ turnId: turnKey, submittedAnswer: value });
       onAttemptStateChange(committed ? undefined : "failed");
     } catch {
       onAttemptStateChange("failed");
@@ -1386,154 +1404,64 @@ function renderInteractiveQuestion(input: {
     }
   };
 
-  if (question.questionType === "multiple_choice") {
-    const selected = selectedChoices[turnKey] ?? question.result?.submittedAnswer ?? "";
-    return (
-      <>
-        <p style={styles.questionTitle}>选择题</p>
-        <span style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-        <RichTextMessage content={question.prompt} style={styles.aiMessage} />
-        <div style={styles.choiceList}>
-          {question.options.map((option) => (
-            <button
-              key={`${turnKey}:${option.key}`}
-              type="button"
-              style={{
-                ...styles.choiceButton,
-                ...(selected === option.key ? styles.choiceButtonActive : {}),
-                ...(isLocked ? styles.choiceButtonLocked : {})
-              }}
-              disabled={isLocked || isSubmitting}
-              onClick={() => setSelectedChoices((current) => ({ ...current, [turnKey]: option.key }))}
-            >
-              <RichTextMessage
-                content={`${option.key}. ${option.text}`}
-                inline
-                style={styles.choiceButtonText}
-              />
-            </button>
-          ))}
-        </div>
+  return (
+    <div ref={root} style={{ display: "grid", gap: 10 }}>
+      <fieldset aria-busy={isSubmitting} aria-describedby={`${id}-prompt ${id}-meta`}
+        style={{ border: 0, margin: 0, padding: 0, minWidth: 0, display: "grid", gap: 10 }}>
+        <legend style={styles.questionTitle}>{isChoice ? "选择题（单选）" : "填空题"}</legend>
+        <span id={`${id}-meta`} style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
+        <div id={`${id}-prompt`}><RichTextMessage content={question.prompt} style={styles.aiMessage} /></div>
+        {isChoice ? (
+          <div style={styles.choiceList} role="radiogroup" aria-label="选择一个答案" aria-describedby={`${id}-prompt`}>
+            {question.options.map(option => (
+              <label key={option.key} style={{ ...styles.choiceButton, minHeight: 44, boxSizing: "border-box",
+                display: "flex", alignItems: "center", gap: 10,
+                ...(value === option.key ? styles.choiceButtonActive : {}),
+                ...(isLocked ? styles.choiceButtonLocked : {}) }}>
+                <input type="radio" name={`${id}-choice`} value={option.key} checked={value === option.key}
+                  disabled={disabled || isLocked || isSubmitting}
+                  onChange={() => setSelectedChoices(current => ({ ...current, [turnKey]: option.key }))} />
+                <RichTextMessage content={`${option.key}. ${option.text}`} inline style={styles.choiceButtonText} />
+              </label>
+            ))}
+          </div>
+        ) : (
+          <label htmlFor={`${id}-answer`}>你的答案
+            <input id={`${id}-answer`} type="text" value={value}
+              style={{ ...styles.blankInput, height: 44, boxSizing: "border-box", ...(isLocked ? styles.blankInputLocked : {}) }}
+              aria-describedby={`${id}-prompt${attemptState === "failed" ? ` ${id}-feedback` : ""}`}
+              onChange={event => setBlankAnswers(current => ({ ...current, [turnKey]: event.target.value }))}
+              onKeyDown={event => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); void submitAttempt(); } }}
+              readOnly={disabled || isLocked || isSubmitting} placeholder="输入你的答案" />
+          </label>
+        )}
         <div style={styles.questionActions}>
-          <button
-            type="button"
-            style={styles.checkButton}
-            disabled={!selected || disabled || isLocked || isSubmitting}
-            onClick={() => {
-              void submitAttempt({
-                turnId: turnKey,
-                submittedAnswer: selected,
-              });
-            }}
-          >
+          <button type="button" style={{ ...styles.checkButton, minHeight: 44, height: "auto" }}
+            disabled={!value.trim() || disabled || isLocked || isSubmitting} onClick={() => void submitAttempt()}>
             {isSubmitting ? "正在记录答案…" : attemptState === "failed" ? "重新提交答案" : "提交答案"}
           </button>
-          {isLocked ? (
-            <button
-              type="button"
-              style={styles.inlineGhostBtn}
-              onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
-            >
-              {explanationVisible ? "收起解析" : "查看解析"}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            style={styles.inlineGhostBtn}
-            disabled={disabled || isSubmitting}
-            onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度选择题。`, []); }}
-          >
-            再来一题
-          </button>
-          {persistedFeedback ? (
-            <span style={persistedFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{persistedFeedback.text} · 已记录</span>
-          ) : attemptState === "failed" ? (
-            <span style={styles.feedbackBad}>答案未记录，请检查后重新提交。</span>
-          ) : isSubmitting ? (
-            <span style={styles.questionPending}>正在保存到学习记录…</span>
-          ) : null}
-        </div>
-        {selected ? (
-          <p style={styles.answerInline}>
-            你的选择：{selected}
-          </p>
-        ) : null}
-        {explanationVisible ? (
-          <div style={styles.explanationBox}>
-            <RichTextMessage content={question.result?.explanation || "暂无解析"} />
-          </div>
-        ) : null}
-      </>
-    );
-  }
-
-  const value = blankAnswers[turnKey] ?? question.result?.submittedAnswer ?? "";
-  return (
-    <>
-      <p style={styles.questionTitle}>填空题</p>
-      <span style={styles.questionMeta}>{question.topic || "章节练习"} · {question.difficulty}</span>
-      <RichTextMessage content={question.prompt} style={styles.aiMessage} />
-      <input
-        type="text"
-        value={value}
-        style={{ ...styles.blankInput, ...(isLocked ? styles.blankInputLocked : {}) }}
-        onChange={(event) => {
-          const next = event.target.value;
-          setBlankAnswers((current) => ({ ...current, [turnKey]: next }));
-        }}
-        readOnly={isLocked || isSubmitting}
-        placeholder="输入你的答案"
-      />
-      <div style={styles.questionActions}>
-        <button
-          type="button"
-          style={styles.checkButton}
-          disabled={!value.trim() || disabled || isLocked || isSubmitting}
-          onClick={() => {
-            void submitAttempt({
-              turnId: turnKey,
-              submittedAnswer: value,
-            });
-          }}
-        >
-          {isSubmitting ? "正在记录答案…" : attemptState === "failed" ? "重新提交答案" : "提交答案"}
-        </button>
-        {isLocked ? (
-          <button
-            type="button"
-            style={styles.inlineGhostBtn}
-            onClick={() => setExpandedExplanation((current) => ({ ...current, [turnKey]: !current[turnKey] }))}
-          >
+          {isLocked && <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+            aria-expanded={explanationVisible} aria-controls={`${id}-explanation`}
+            onClick={() => setExpandedExplanation(current => ({ ...current, [turnKey]: !current[turnKey] }))}>
             {explanationVisible ? "收起解析" : "查看解析"}
-          </button>
-        ) : null}
-        <button
-          type="button"
-          style={styles.inlineGhostBtn}
-          disabled={disabled || isSubmitting}
-          onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度填空题。`, []); }}
-          >
+          </button>}
+          <button type="button" style={{ ...styles.inlineGhostBtn, minHeight: 44, height: "auto" }}
+            disabled={disabled || isSubmitting}
+            onClick={() => { void onAsk(`请围绕${question.topic || "本章节核心概念"}再出一道同难度${isChoice ? "选择题" : "填空题"}。`, []); }}>
             再来一题
           </button>
-        {persistedFeedback ? (
-          <span style={persistedFeedback.ok ? styles.feedbackOk : styles.feedbackBad}>{persistedFeedback.text} · 已记录</span>
-        ) : attemptState === "failed" ? (
-          <span style={styles.feedbackBad}>答案未记录，请检查后重新提交。</span>
-        ) : isSubmitting ? (
-          <span style={styles.questionPending}>正在保存到学习记录…</span>
-        ) : null}
-      </div>
-      {value.trim() ? (
-        <p style={styles.answerInline}>
-          你的答案：{value.trim()}
-        </p>
-      ) : null}
-      {explanationVisible ? (
-        <div style={styles.explanationBox}>
-          <RichTextMessage content={question.result?.explanation || "暂无解析"} />
         </div>
-      ) : null}
-    </>
+      </fieldset>
+      <p id={`${id}-feedback`} ref={feedback} tabIndex={-1}
+        role={attemptState === "failed" && !question.result ? "alert" : "status"} aria-atomic="true"
+        style={{ margin: 0, ...(question.result?.isCorrect ? styles.feedbackOk : attemptState === "failed" || question.result ? styles.feedbackBad : styles.questionPending) }}>
+        {feedbackText}
+      </p>
+      {value.trim() && <p style={styles.answerInline}>{isChoice ? "你的选择" : "你的答案"}：{value.trim()}</p>}
+      {explanationVisible && <div id={`${id}-explanation`} style={styles.explanationBox}>
+        <RichTextMessage content={question.result?.explanation || "暂无解析"} />
+      </div>}
+    </div>
   );
 }
 

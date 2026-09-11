@@ -534,8 +534,8 @@ test("interactive question CAS conflict and retry use persisted read-back while 
   expect(questionTurn.interactive_question.result).toBeNull();
   const publicQuestion = JSON.stringify(questionTurn.interactive_question);
   for (const secret of ["grading_spec", "answer_key", "correct_option_key", "PRIVATE_DIAGNOSTIC_GRADING_EXPLANATION"]) expect(publicQuestion).not.toContain(secret);
-  await expect(page.getByRole("button", { name: "A. Diagnostic first choice", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "A. Diagnostic first choice", exact: true }).click();
+  await expect(page.getByRole("radio", { name: "A. Diagnostic first choice", exact: true })).toBeEnabled();
+  await page.getByRole("radio", { name: "A. Diagnostic first choice", exact: true }).click();
   let firstAttempt = true;
   await page.route(`**/study-sessions/${sessionId}/attempt`, async route => {
     if (!firstAttempt) { await route.continue(); return; }
@@ -614,8 +614,8 @@ test("committed automatic question callback recovers after reload with the answe
   await expect(page.getByRole("button", { name: "发送", exact: true })).toBeEnabled();
   await page.getByPlaceholder("输入本节学习问题…").fill("PRIVATE_DIAGNOSTIC_QUESTION_TRIGGER");
   await page.getByRole("button", { name: "发送", exact: true }).click();
-  await expect(page.getByRole("button", { name: "A. Diagnostic first choice", exact: true }).last()).toBeEnabled();
-  await page.getByRole("button", { name: "A. Diagnostic first choice", exact: true }).last().click();
+  await expect(page.getByRole("radio", { name: "A. Diagnostic first choice", exact: true }).last()).toBeEnabled();
+  await page.getByRole("radio", { name: "A. Diagnostic first choice", exact: true }).last().click();
   const saving = page.waitForResponse(item => item.url().endsWith("/attempt"));
   await page.getByRole("button", { name: "提交答案", exact: true }).last().click();
   const saved = await saving; expect(saved.status()).toBe(200);

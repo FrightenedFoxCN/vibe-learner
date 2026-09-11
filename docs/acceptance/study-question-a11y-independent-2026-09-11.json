@@ -1,0 +1,69 @@
+{
+  "build_id": "lOa0l7HmPxReUDGEkx1dQ",
+  "stats": {
+    "startTime": "2026-09-11T14:03:10.562Z",
+    "duration": 4694.811000000001,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "independent question: native single choice keyboard semantics and 44px touch targets",
+      "status": "passed",
+      "duration_ms": 234,
+      "evidence": [
+        {
+          "name": "touch-targets.json",
+          "data": [
+            {
+              "text": "A. Stable value",
+              "width": 328,
+              "height": 44
+            },
+            {
+              "text": "B. Changing value",
+              "width": 328,
+              "height": 44
+            },
+            {
+              "text": "提交答案",
+              "width": 72,
+              "height": 44
+            },
+            {
+              "text": "再来一题",
+              "width": 70,
+              "height": 44
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "independent question: busy waits for persisted Session before feedback and explanation",
+      "status": "passed",
+      "duration_ms": 670,
+      "evidence": []
+    },
+    {
+      "title": "independent question: labelled blank Enter submits once and failed attempt announces and restores focus",
+      "status": "passed",
+      "duration_ms": 505,
+      "evidence": []
+    },
+    {
+      "title": "independent question: delayed persisted read-back does not steal focus after navigation",
+      "status": "passed",
+      "duration_ms": 1950,
+      "evidence": []
+    },
+    {
+      "title": "independent question: focus moved to another control stays there after same-page save",
+      "status": "passed",
+      "duration_ms": 631,
+      "evidence": []
+    }
+  ]
+}

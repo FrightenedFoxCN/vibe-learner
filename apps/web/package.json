@@ -54,7 +54,8 @@
     "test:diagnostics:decode": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-api-decode.test.jsx",
     "test:diagnostics:query": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-query.test.jsx",
     "test:diagnostics:timeline": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-timeline.test.jsx",
-    "test:diagnostics:imports": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-import.test.jsx"
+    "test:diagnostics:imports": "TSX_TSCONFIG_PATH=tests/tsconfig.json node --import tsx --test tests/diagnostic-import.test.jsx",
+    "test:study:question:browser": "playwright test tests/browser/study-question-a11y-independent.spec.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

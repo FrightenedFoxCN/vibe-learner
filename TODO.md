@@ -2,7 +2,7 @@
 
 本文件是产品、Harness 和桌面工作的统一待办入口；用户指定的专项计划独立维护明细并在此链接，不复制 checkbox。运行约束见 `AGENTS.md`，架构见 `docs/`，已完成过程记录通过 Git 历史查询。
 
-2026-09-11：本文件保留 22 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
+2026-09-11：本文件保留 21 项产品/验收待办，其中 1 项质量复核暂缓。Planning 三项已完成，记录见[计划修订](docs/plan-revision.md)。独立验收关闭 Scene 删除 Dialog 和路由 Provider ownership 两项；PostgreSQL、制品重放及手册仅更新已通过范围。研究候选不计入任务数。详见[本轮核对与独立验收](docs/plans/acceptance-audit-2026-09-11.md)。
 
 优先级表示下一阶段排程，不追溯为 v0.2.1 发布缺陷：
 
@@ -17,9 +17,7 @@
 - [代码解耦重构](docs/plans/architecture-refactor.md)：7 项已完成，分别提交并通过 release/recovery 与 23 项生产浏览器验收；保留事务/恢复语义，相关独立 UX 复核继续按原条目跟踪。
 - [统一 Logging 与 Debug 归档](docs/plans/unified-debug-completion.md)：4 项实施完成，分步提交；最终 release、16 项浏览器及原生验收通过。独立质量复核仍按原条目暂缓。
 
-- [ ] `UX-A11Y-STUDY-QUESTION-001` `[P1]` 完成 Interactive Question 无障碍语义。
-  - 补齐题组 busy 状态、单选/多选选择语义、填空显式 label、错误播报、焦点恢复和至少 44px 触控目标。
-  - 验收：键盘、屏幕阅读语义和持久化 read-back 流程均通过独立验收。
+`UX-A11Y-STUDY-QUESTION-001` 已完成当前单选/填空契约的语义、键盘、持久读回反馈、焦点和44px门；[5项独立浏览器验收](docs/plans/study-question-a11y-independent-acceptance-2026-09-11.md)通过。`multiple_choice` 为单选；未新增多选评分契约，也未把浏览器语义验证冒充实际屏幕阅读器播报认证。
 
 - [ ] `TAV-UX-COPY-001` `[P2]` 完成 Tavern 状态文案的关闭验收。
   - 增加表驱动 copy contract，覆盖 run/step、partial、failed、blocked、retry、stale、archived、cancel 与 raw-code 隔离。
