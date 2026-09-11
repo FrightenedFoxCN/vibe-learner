@@ -611,6 +611,11 @@ class LearningPlanRecord(BaseModel):
 
 
 
+class VersionedLearningPlanRecord(LearningPlanRecord):
+    """Current mutable aggregate; legacy Harness snapshots retain their v1 shape."""
+    revision: int = Field(default=0, ge=0, strict=True)
+
+
 class PlanToolCallTraceRecord(BaseModel):
     tool_call_id: str
     tool_name: str

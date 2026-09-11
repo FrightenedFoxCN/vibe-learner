@@ -1427,39 +1427,10 @@ def resolve_study_session_plan_confirmation(
     decision = payload.decision.strip().lower()
     if decision not in {"approve", "reject"}:
         raise HTTPException(status_code=422, detail="invalid_confirmation_decision")
-    session, confirmation = container.study_session_service.resolve_plan_confirmation(
-        session_id=session_id,
-        confirmation_id=confirmation_id,
-        decision=decision,
-        note=payload.note,
+    refreshed_session, updated_plan = container.plan_service.resolve_confirmation(
+        session_id=session_id, confirmation_id=confirmation_id,
+        decision=decision, note=payload.note,
     )
-    updated_plan = None
-    if decision == "approve":
-        action_type = confirmation.action_type.strip()
-        if action_type == "update_plan_progress":
-            updated_plan = container.plan_service.update_progress(
-                plan_id=confirmation.plan_id,
-                schedule_ids=[
-                    str(item).strip()
-                    for item in (confirmation.payload.get("schedule_ids") or [])
-                    if str(item).strip()
-                ],
-                status=str(confirmation.payload.get("status") or ""),
-                note=str(confirmation.payload.get("note") or payload.note or ""),
-                actor="user",
-                source="chat_confirmation",
-            )
-        elif action_type == "update_plan":
-            updated_plan = container.plan_service.update_plan(
-                plan_id=confirmation.plan_id,
-                course_title=(
-                    str(confirmation.payload.get("course_title") or "").strip()
-                    or None
-                ),
-            )
-        else:
-            raise HTTPException(status_code=400, detail="unsupported_confirmation_action")
-    refreshed_session = container.study_session_service.require_session(session_id)
     return StudySessionPlanConfirmationDecisionResponse(
         session=_into_response(StudySessionResponse, refreshed_session),
         plan=_into_response(LearningPlanResponse, updated_plan) if updated_plan is not None else None,
@@ -2054,6 +2025,8 @@ def cancel_stream_run(stream_id: str, *, container: Container = Depends(get_cont
     }
 
 
+
+
 @router.get("/learning-plans/{plan_id}", response_model=LearningPlanResponse)
 def get_learning_plan(plan_id: str, *, container: Container = Depends(get_container)) -> LearningPlanResponse:
     plan = container.plan_service.require_plan(plan_id)
@@ -2069,6 +2042,7 @@ def update_learning_plan(
 ) -> LearningPlanResponse:
     plan = container.plan_service.update_plan(
         plan_id=plan_id,
+        expected_revision=payload.expected_revision,
         course_title=payload.course_title,
     )
     return _into_response(LearningPlanResponse, plan)
@@ -2083,6 +2057,7 @@ def update_learning_plan_progress(
 ) -> LearningPlanResponse:
     plan = container.plan_service.update_progress(
         plan_id=plan_id,
+        expected_revision=payload.expected_revision,
         schedule_ids=payload.schedule_ids,
         status=payload.status,
         note=payload.note,
@@ -2102,6 +2077,7 @@ def answer_learning_plan_question(
 ) -> LearningPlanResponse:
     plan = container.plan_service.answer_planning_question(
         plan_id=plan_id,
+        expected_revision=payload.expected_revision,
         question_id=question_id,
         answer=payload.answer,
     )
@@ -2109,8 +2085,8 @@ def answer_learning_plan_question(
 
 
 @router.delete("/learning-plans/{plan_id}")
-def delete_learning_plan(plan_id: str, *, container: Container = Depends(get_container)) -> dict[str, str]:
-    container.plan_service.delete_plan(plan_id)
+def delete_learning_plan(plan_id: str, expected_revision: int | None = None, *, container: Container = Depends(get_container)) -> dict[str, str]:
+    container.plan_service.delete_plan(plan_id, expected_revision=expected_revision)
     return {"deleted_plan_id": plan_id}
 
 

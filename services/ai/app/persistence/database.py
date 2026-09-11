@@ -75,6 +75,14 @@ class Database:
                 )
             }
 
+            if "learning_plans" in table_names:
+                plan_columns = self._sqlite_column_names(connection, "learning_plans")
+                for column in ("revision", "deleted"):
+                    if column not in plan_columns:
+                        connection.exec_driver_sql(
+                            f"ALTER TABLE learning_plans ADD COLUMN {column} INTEGER NOT NULL DEFAULT 0"
+                        )
+
             if "tavern_rooms" in table_names:
                 tavern_columns = self._sqlite_column_names(connection, "tavern_rooms")
                 if "creation_key" not in tavern_columns:

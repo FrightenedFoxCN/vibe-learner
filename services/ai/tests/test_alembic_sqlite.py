@@ -15,7 +15,7 @@ from sqlalchemy.engine import Engine
 from app.persistence.database import Database
 
 
-ALEMBIC_HEAD = "20260909_0019"
+ALEMBIC_HEAD = "20260911_0020"
 
 
 def _normalize_sql(expression: object) -> str:

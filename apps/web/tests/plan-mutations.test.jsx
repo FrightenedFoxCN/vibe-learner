@@ -18,6 +18,7 @@ function fixture() {
     "updateLearningPlanProgress", "answerLearningPlanQuestion",
   ].map(name => [name, (...args) => { const pending = deferred(); calls.push({ name, args, ...pending }); return pending.promise; }]));
   const options = {
+    plans: [{ id: "p", revision: 7 }],
     onPlan: plan => events.push(["plan", plan]), onDeleted: id => events.push(["delete", id]),
     onDocumentAndPlans: payload => events.push(["document", payload]), onNotice: notice => events.push(["notice", notice]),
   };
@@ -35,7 +36,7 @@ test("invalid edits never write and a plan write blocks conflicting writes until
   let edit;
   act(() => { edit = h.result.current.renamePlanTitle("p", "  Edited  "); });
   await act(async () => { assert.equal(await h.result.current.removePlan("p"), false); });
-  assert.deepEqual(h.calls[0].args, ["p", "Edited"]);
+  assert.deepEqual(h.calls[0].args, ["p", "Edited", 7]);
   assert.equal(h.calls.length, 1);
   await act(async () => { h.calls[0].resolve({ id: "p", courseTitle: "Edited" }); assert.equal(await edit, true); });
   assert.equal(h.result.current.isMutating, false);
@@ -81,7 +82,7 @@ test("unit updates apply document and plans together; progress and answers use a
     ["answerPlanQuestion", { planId: "p", questionId: "q", answer: "answer" }],
   ]) {
     act(() => { pending = h.result.current[name](input); });
-    assert.deepEqual(h.calls.at(-1).args, [input]);
+    assert.deepEqual(h.calls.at(-1).args, [{ ...input, expectedRevision: 7 }]);
     await act(async () => { h.calls.at(-1).resolve({ id: "p", overview: name }); await pending; });
     assert.deepEqual(h.events.at(-2), ["plan", { id: "p", overview: name }]);
   }

@@ -46,6 +46,7 @@ export const mockPersonas: PersonaProfile[] = [
 ];
 
 export const mockPlan: LearningPlan = {
+  revision: 0,
   id: "plan-1",
   documentId: "doc-1",
   personaId: "mentor-aurora",

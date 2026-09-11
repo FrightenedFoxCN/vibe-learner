@@ -309,8 +309,6 @@ class LocalJsonStore:
     ) -> None:
         """Best-effort legacy mirrors after the authoritative Planning commit."""
         try:
-            plan_model = type(plan)
-            self._legacy.save_list("plans", self.load_list("plans", plan_model))
             if document is not None:
                 document_model = type(document)
                 self._legacy.save_list(
@@ -341,6 +339,15 @@ class LocalJsonStore:
             pass
 
     def load_list(self, name: str, model: type[T]) -> list[T]:
+        if name == "plans":
+            from app.persistence.learning_plan_repository import LearningPlanRepository
+            repository = LearningPlanRepository(self._db)
+            # A deletion tombstone prevents legacy JSON from resurrecting plans.
+            with self._db.session() as session:
+                initialized = session.scalar(select(LearningPlanRow.id).limit(1)) is not None
+            if not initialized:
+                repository.import_legacy(self._legacy.load_list(name, model))
+            return repository.list()
         if name == "sessions":
             from app.persistence.study_session_repository import StudySessionRepository
 
@@ -363,6 +370,13 @@ class LocalJsonStore:
         return legacy_items
 
     def save_list(self, name: str, items: list[BaseModel]) -> None:
+        if name == "plans":
+            from app.models.domain import LearningPlanRecord
+            from app.persistence.learning_plan_repository import LearningPlanRepository
+            LearningPlanRepository(self._db).import_legacy([
+                LearningPlanRecord.model_validate(item.model_dump(mode="json")) for item in items
+            ])
+            return
         spec = LIST_SPECS[name]
         serialized = [item.model_dump(mode="json") for item in items]
         if name == "sessions":

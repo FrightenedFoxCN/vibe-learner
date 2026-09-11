@@ -1586,7 +1586,8 @@ export async function updateDocumentStudyUnitTitle(
 
 export async function updateLearningPlanTitle(
   planId: string,
-  courseTitle: string
+  courseTitle: string,
+  expectedRevision?: number
 ): Promise<LearningPlan> {
   const diagnosticResponse = await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
       method: "PATCH",
@@ -1594,6 +1595,7 @@ export async function updateLearningPlanTitle(
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        expected_revision: expectedRevision,
         course_title: courseTitle
       })
     });
@@ -1604,6 +1606,7 @@ export async function updateLearningPlanTitle(
 export async function updateLearningPlanProgress(input: {
   planId: string;
   scheduleIds: string[];
+  expectedRevision?: number;
   status: string;
   note?: string;
 }): Promise<LearningPlan> {
@@ -1613,6 +1616,7 @@ export async function updateLearningPlanProgress(input: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        expected_revision: input.expectedRevision,
         schedule_ids: input.scheduleIds,
         status: input.status,
         note: input.note ?? ""
@@ -1625,6 +1629,7 @@ export async function updateLearningPlanProgress(input: {
 export async function answerLearningPlanQuestion(input: {
   planId: string;
   questionId: string;
+  expectedRevision?: number;
   answer: string;
 }): Promise<LearningPlan> {
   const diagnosticResponse = await request(
@@ -1635,6 +1640,7 @@ export async function answerLearningPlanQuestion(input: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          expected_revision: input.expectedRevision,
           answer: input.answer
         })
       }
@@ -1643,9 +1649,9 @@ export async function answerLearningPlanQuestion(input: {
   return diagnosticDecode(diagnosticResponse, () => normalizePlan(payload, { expectedPlanId: input.planId }));
 }
 
-export async function deleteLearningPlan(planId: string): Promise<void> {
+export async function deleteLearningPlan(planId: string, expectedRevision?: number): Promise<void> {
   await readJson<{ deleted_plan_id: string }>(
-    await request(`${AI_BASE_URL()}/learning-plans/${planId}`, {
+    await request(`${AI_BASE_URL()}/learning-plans/${planId}${expectedRevision === undefined ? "" : `?expected_revision=${expectedRevision}`}`, {
       method: "DELETE"
     })
   );

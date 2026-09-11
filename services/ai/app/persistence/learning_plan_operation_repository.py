@@ -56,6 +56,7 @@ from app.persistence.models import (
     DocumentRow,
     LearningPlanOperationRow,
     LearningPlanRow,
+    LearningPlanRevisionRow,
     PlanningTraceRow,
 )
 
@@ -730,7 +731,10 @@ def _validate_current_projection(session, record: LearningPlanOperationRecord) -
     plan_row = session.get(LearningPlanRow, projection.plan_id)
     if plan_row is None:
         raise LearningPlanReadBackError(record.operation_id, "plan_missing")
-    if planning_projection_digest(plan_row.payload or {}) != projection.plan_digest:
+    # Creation proof refers to the admitted original projection, not later edits.
+    original = session.get(LearningPlanRevisionRow, (projection.plan_id, 0)) if plan_row.revision > 0 else None
+    creation_payload = original.payload if original is not None else plan_row.payload
+    if planning_projection_digest(creation_payload or {}) != projection.plan_digest:
         raise LearningPlanReadBackError(record.operation_id, "plan_digest_mismatch")
     if projection.document is not None:
         document_row = session.get(DocumentRow, projection.document_id)
@@ -788,6 +792,8 @@ def _apply_trace_row(
 
 def _apply_plan_row(row: LearningPlanRow, plan: LearningPlanRecord) -> None:
     row.id = plan.id
+    row.revision = getattr(plan, "revision", 0)
+    row.deleted = 0
     row.document_id = plan.document_id
     row.persona_id = plan.persona_id
     row.creation_mode = plan.creation_mode

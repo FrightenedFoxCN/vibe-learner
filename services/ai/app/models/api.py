@@ -544,16 +544,19 @@ class LearningPlanCreateRequest(LearningGoalInput):
 
 
 class LearningPlanUpdateRequest(BaseModel):
+    expected_revision: int | None = Field(default=None, ge=0, strict=True)
     course_title: str | None = Field(default=None, min_length=1)
 
 
 class LearningPlanProgressUpdateRequest(BaseModel):
+    expected_revision: int | None = Field(default=None, ge=0, strict=True)
     schedule_ids: list[str] = Field(default_factory=list)
     status: str = Field(min_length=1)
     note: str = ""
 
 
 class PlanningQuestionAnswerRequest(BaseModel):
+    expected_revision: int | None = Field(default=None, ge=0, strict=True)
     answer: str = Field(min_length=1)
 
 
@@ -562,7 +565,10 @@ class DocumentStudyUnitUpdateResponse(BaseModel):
     plans: list["LearningPlanResponse"]
 
 
-class LearningPlanResponse(LearningPlanRecord):
+from app.models.domain import VersionedLearningPlanRecord
+
+
+class LearningPlanResponse(VersionedLearningPlanRecord):
     pass
 
 

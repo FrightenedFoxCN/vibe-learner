@@ -175,6 +175,7 @@ export interface SceneTreeNode {
 
 export interface LearningPlan {
   id: string;
+  revision: number;
   documentId: string;
   personaId: string;
   creationMode: "document" | "goal_only";

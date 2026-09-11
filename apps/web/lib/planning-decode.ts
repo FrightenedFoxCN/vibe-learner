@@ -1132,6 +1132,7 @@ export function decodeLearningPlan(
   );
   return {
     id,
+    revision: value.revision === undefined ? 0 : decoder.integer(value.revision, `${path}.revision`, 0),
     documentId,
     personaId: decoder.string(
       decoder.field(value, "persona_id", path),

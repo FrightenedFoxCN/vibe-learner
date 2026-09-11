@@ -649,12 +649,22 @@ class LearningPlanRow(Base):
     __tablename__ = "learning_plans"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    deleted: Mapped[int] = mapped_column(Integer, default=0)
     document_id: Mapped[str] = mapped_column(String(64), index=True, default="")
     persona_id: Mapped[str] = mapped_column(String(64), index=True, default="")
     creation_mode: Mapped[str] = mapped_column(String(32), default="document")
     course_title: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[str] = mapped_column(String(64), default="")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD, default=dict)
+
+
+class LearningPlanRevisionRow(Base):
+    __tablename__ = "learning_plan_revisions"
+
+    plan_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    revision: Mapped[int] = mapped_column(Integer, primary_key=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON_PAYLOAD)
 
 
 class StudySessionRow(Base):

@@ -21,6 +21,7 @@ const defaultPort: PlanMutationPort = {
   updateLearningPlanProgress, answerLearningPlanQuestion,
 };
 interface PlanMutationOptions {
+  plans?: LearningPlan[];
   onPlan: (plan: LearningPlan) => void;
   onDeleted: (id: string) => void;
   onDocumentAndPlans: (payload: { document: DocumentRecord; plans: LearningPlan[] }) => void;
@@ -66,10 +67,10 @@ export function usePlanMutations(options: PlanMutationOptions, port: PlanMutatio
   return {
     isMutating: pendingCount > 0,
     renamePlanTitle: (id: string, title: string) => !id || !title.trim() ? Promise.resolve(false) :
-      mutate(`plan:${id}`, () => port.updateLearningPlanTitle(id, title.trim()),
+      mutate(`plan:${id}`, () => port.updateLearningPlanTitle(id, title.trim(), current.current.plans?.find(plan => plan.id === id)?.revision),
         plan => current.current.onPlan(plan), "题目已更新。", "更新题目失败", "workflow:plan_title_update:error"),
     removePlan: (id: string) => !id ? Promise.resolve(false) :
-      mutate(`plan:${id}`, () => port.deleteLearningPlan(id), () => current.current.onDeleted(id),
+      mutate(`plan:${id}`, () => port.deleteLearningPlan(id, current.current.plans?.find(plan => plan.id === id)?.revision), () => current.current.onDeleted(id),
         "计划已删除。", "删除计划失败", "workflow:plan_delete:error"),
     renameStudyUnitTitle: (documentId: string, studyUnitId: string, title: string) =>
       !documentId || !studyUnitId || !title.trim() ? Promise.resolve(false) :
@@ -77,11 +78,11 @@ export function usePlanMutations(options: PlanMutationOptions, port: PlanMutatio
           payload => current.current.onDocumentAndPlans(payload), "学习单元已更新。", "更新学习单元失败", "workflow:study_unit_title_update:error"),
     updatePlanProgress: (input: Parameters<PlanMutationPort["updateLearningPlanProgress"]>[0]) =>
       !input.planId || !input.scheduleIds.length || !input.status.trim() ? Promise.resolve(false) :
-        mutate(`plan:${input.planId}`, () => port.updateLearningPlanProgress(input),
+        mutate(`plan:${input.planId}`, () => port.updateLearningPlanProgress({ ...input, expectedRevision: current.current.plans?.find(plan => plan.id === input.planId)?.revision }),
           plan => current.current.onPlan(plan), "完成度已更新。", "更新完成度失败", "workflow:plan_progress_update:error"),
     answerPlanQuestion: (input: Parameters<PlanMutationPort["answerLearningPlanQuestion"]>[0]) =>
       !input.planId || !input.questionId || !input.answer.trim() ? Promise.resolve(false) :
-        mutate(`plan:${input.planId}`, () => port.answerLearningPlanQuestion(input),
-          plan => current.current.onPlan(plan), "回答已保存，计划已更新。", "保存回答失败", "workflow:plan_question_answer:error"),
+        mutate(`plan:${input.planId}`, () => port.answerLearningPlanQuestion({ ...input, expectedRevision: current.current.plans?.find(plan => plan.id === input.planId)?.revision }),
+          plan => current.current.onPlan(plan), "回答已保存；可生成修订预览后再决定是否应用。", "保存回答失败", "workflow:plan_question_answer:error"),
   };
 }

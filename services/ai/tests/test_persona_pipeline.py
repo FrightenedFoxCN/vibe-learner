@@ -4358,9 +4358,13 @@ class PersonaPipelineTests(ContainerTestCase):
             self.assertEqual(migrated.schedule[0].schedule_chapters[0].title, "方程入门")
 
             legacy_payload = json.loads((root / "plans.json").read_text(encoding="utf-8"))
-            self.assertIn("study_unit_progress", legacy_payload[0])
-            self.assertNotIn("chapter_progress", legacy_payload[0])
-            self.assertIn("schedule_chapters", legacy_payload[0]["schedule"][0])
+            # The JSON remains import-only; normalized authoritative data is in SQLite.
+            self.assertIn("chapter_progress", legacy_payload[0])
+            with store.database.session() as db_session:
+                from app.persistence.models import LearningPlanRow
+                persisted = db_session.get(LearningPlanRow, migrated.id).payload
+                self.assertIn("study_unit_progress", persisted)
+                self.assertIn("schedule_chapters", persisted["schedule"][0])
         finally:
             store.close()
 
@@ -4411,7 +4415,7 @@ class PersonaPipelineTests(ContainerTestCase):
             reloaded_service = LearningPlanService(store, StudyArrangementService(), MockModelProvider())
             self.assertEqual(reloaded_service.list_plans(), [])
             legacy_payload = json.loads((root / "plans.json").read_text(encoding="utf-8"))
-            self.assertEqual(legacy_payload, [])
+            self.assertEqual(len(legacy_payload), 1)  # unchanged import, fenced by DB tombstone
         finally:
             store.close()
 

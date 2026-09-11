@@ -399,7 +399,10 @@ class LearningPlanOperationTests(unittest.TestCase):
             )
         operation = service.require_operation(client_request_id=goal.client_request_id)
         tampered = plan.model_copy(update={"course_title": "Tampered title"})
-        self.store.save_list("plans", [tampered])
+        # Legacy import is insert-only; corruption injection bypasses the normal writer.
+        from app.persistence.models import LearningPlanRow
+        with self.store.database.session() as session:
+            session.get(LearningPlanRow, plan.id).payload = tampered.model_dump(mode="json")
 
         with self.assertRaises(LearningPlanReadBackError):
             repository.require(
