@@ -11,6 +11,19 @@ from app.services.ocr_engine import OcrPageResult
 
 
 class DocumentStageMetricsTests(TestCase):
+    def test_ocr_language_comes_from_engine_evidence(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'input.pdf'
+            with fitz.open() as pdf:
+                pdf.new_page()
+                pdf.save(path)
+            parser = DocumentParser(ocr_engine_name='disabled')
+            for language in (None, 'fr'):
+                with self.subTest(language=language), patch.object(parser, '_run_ocr', return_value=OcrPageResult(
+                    text='Observed evidence. ' * 100, status='completed', language_hint=language)):
+                    report = parser.parse(document_id='test', title='Observation', stored_path=str(path), force_ocr=True)
+                self.assertEqual(report.ocr_language, language)
+
     def test_real_pdf_measures_each_producer_and_isolates_requests(self):
         with TemporaryDirectory() as directory:
             path = Path(directory) / "input.pdf"

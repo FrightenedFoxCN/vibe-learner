@@ -1,0 +1,18 @@
+{
+  "scope": "One real scanned page and default recognizer vocabulary audit, not model quality certification",
+  "filename": "巴别塔之后 语言及翻译面面观 (乔治·斯坦纳) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+  "physical_page": 21,
+  "source_text_chars": 0,
+  "vocabulary_characters": 126,
+  "vocabulary_han_characters": 0,
+  "status": "completed",
+  "engine": "onnxtr",
+  "model_id": "db_mobilenet_v3_large+parseq",
+  "language_hint": null,
+  "output_characters": 2024,
+  "output_han_characters": 0,
+  "warning": "onnxtr_cpu_fallback",
+  "elapsed_ms": 11388,
+  "limitation": "Content omitted. Nonempty OCR result is not evidence of correct Chinese recognition. Language metadata fix does not add Chinese capability.",
+  "maintainer_visual_review": "Physical page 21 is a two-page scanned spread with both English dialogue and substantial Chinese translation/commentary. Native text layer is empty."
+}

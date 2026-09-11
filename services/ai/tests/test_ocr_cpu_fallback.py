@@ -5,6 +5,11 @@ from app.services.ocr_engine import OnnxtrOcrEngine
 
 
 class OcrCpuFallbackTests(TestCase):
+    def test_unavailable_engine_does_not_claim_a_detected_language(self):
+        engine = OnnxtrOcrEngine()
+        with patch.object(engine, '_ensure_predictor', return_value=None):
+            self.assertIsNone(engine.extract_page_text(None).language_hint)
+
     def test_accelerator_failure_retries_once_and_caches_cpu_predictor(self):
         predictor = object()
         with patch("onnxtr.models.ocr_predictor", side_effect=[RuntimeError("unsupported graph"), predictor]) as build, patch("onnxruntime.get_available_providers", return_value=["CoreMLExecutionProvider", "CPUExecutionProvider"]):

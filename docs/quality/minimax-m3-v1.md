@@ -500,3 +500,11 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [逐条复核](evidence/minimax-memory-effective-date-review-v1.json)4/4选择白桦阅览室或salle Bouleau，没有因为后写入的历史事实改选青石或Pierre-Verte。四例均说明生效日期，但法文首例用“覆盖历史补记”的措辞不够精确，历史事实并没有被取消；法文第二例直接在回复暴露两个内部session ID，虽然未违反本次明示格式，属于不必要的实现细节。未因地点正确就判整段表达质量完美。
 
 本批用户明确提示区分记录时间与生效时间，不能据此断言模型会自行处理所有隐含时间关系；亦非无时间戳对照。没有追加生产提示补丁，继续保留这些具体边界和措辞问题作为后续回归材料。
+
+## 轮次 45：中文扫描页的 OCR 能力与语言诊断修复
+
+[默认识别器及实际第21页检查](evidence/minimax-ocr-language-capability-v1.json)确认PARSeq默认126字符字表不含汉字。人工查看《巴别塔之后》该扫描跨页，包含英文对白、大量中文译文与评论，原生文字层为空。真实ONNXTR调用经CPU回退后输出2024字符、0汉字，却返回completed；这个状态只代表有非空识别结果，不代表完整识别了中文部分。约11.4秒为本次观测，不作隔离性能基准；书页正文未提交。
+
+此前OnnxtrOcrEngine在成功、失败、不可用时都标language_hint=multilingual，DocumentParser又无视engine结果固定写ocr_language=multilingual。修复不再凭空声明语言：ONNXTR无语言检测时保持null，Parser仅汇总引擎明确提供的语言提示；多个不同提示才写multilingual。API字段保持原有nullable string，未改变识别模型或宣称新增中文OCR能力。
+
+两项新增测试在旧实现失败，覆盖不可用引擎不声明语言、Parser保留未知或明确fr提示。定向5项、完整后端813项通过。中文字符仍未识别，这是尚未解决的实质能力缺口；下一步用该实际扫描页比较OCR文字与OCR文字加原生图片对规划内容的影响，并审查人格关联，而不是把诊断修复当作OCR质量通过。

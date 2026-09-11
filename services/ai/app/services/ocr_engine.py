@@ -48,7 +48,6 @@ class OnnxtrOcrEngine:
                 engine_name=self.engine_name,
                 model_id=self._model_id,
                 warning=self._load_error or "onnxtr_ocr_unavailable",
-                language_hint="multilingual",
             )
 
         image_path: Path | None = None
@@ -84,7 +83,6 @@ class OnnxtrOcrEngine:
                 engine_name=self.engine_name,
                 model_id=self._model_id,
                 warning=self._initialization_warning if text.strip() else "onnxtr_empty_result",
-                language_hint="multilingual",
             )
         except Exception as exc:
             logger.warning("ocr.onnxtr_page_failed error=%s", exc)
@@ -93,7 +91,6 @@ class OnnxtrOcrEngine:
                 engine_name=self.engine_name,
                 model_id=self._model_id,
                 warning=f"onnxtr_ocr_failed:{exc}",
-                language_hint="multilingual",
             )
         finally:
             try:

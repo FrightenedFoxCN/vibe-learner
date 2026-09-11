@@ -47,7 +47,6 @@ OCR_HEADER_PATTERNS = [
 ]
 
 TEXT_DENSITY_THRESHOLD = 40
-OCR_LANGUAGE_HINT = "multilingual"
 TOC_MAX_LEVEL = 2
 MIN_GOOD_TOC_ENTRIES = 6
 CHUNK_TARGET_CHARS = 1100
@@ -259,6 +258,11 @@ class DocumentParser:
 
         ocr_applied = ocr_applied_page_count > 0
         ocr_results = [page.ocr_result for page in parsed_pages if page.ocr_result is not None]
+        # Recognition vocabulary is not language detection. Preserve explicit
+        # engine evidence only; missing evidence must remain unknown.
+        ocr_languages = _unique_preserving_order(
+            result.language_hint for result in ocr_results if result.language_hint
+        )
         ocr_warnings = _unique_preserving_order(
             result.warning
             for result in ocr_results
@@ -311,7 +315,7 @@ class DocumentParser:
             extraction_method=extraction_method,
             ocr_status=ocr_status,
             ocr_applied=ocr_applied,
-            ocr_language=OCR_LANGUAGE_HINT if ocr_results else None,
+            ocr_language=(ocr_languages[0] if len(ocr_languages) == 1 else "multilingual" if ocr_languages else None),
             ocr_engine=ocr_engine,
             ocr_model_id=ocr_model_id,
             ocr_applied_page_count=ocr_applied_page_count,
@@ -841,7 +845,6 @@ class DocumentParser:
             engine_name=self.ocr_engine.engine_name if self.ocr_engine is not None else self.ocr_engine_name,
             model_id=self.ocr_engine.model_id if self.ocr_engine is not None else None,
             warning="" if text.strip() else "ocr_empty_result",
-            language_hint=OCR_LANGUAGE_HINT,
         )
 
     def _ocr_page(self, page: fitz.Page) -> OcrPageResult | str:
@@ -850,7 +853,6 @@ class DocumentParser:
                 status="unavailable",
                 engine_name=self.ocr_engine_name,
                 warning=f"unsupported_ocr_engine:{self.ocr_engine_name}",
-                language_hint=OCR_LANGUAGE_HINT,
             )
         return self.ocr_engine.extract_page_text(page)
 
