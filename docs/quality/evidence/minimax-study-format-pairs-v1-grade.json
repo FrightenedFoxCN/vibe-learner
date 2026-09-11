@@ -1,0 +1,101 @@
+{
+  "scope": "fixture-specific line-shape review, not general Markdown parser or independent review",
+  "rows": [
+    {
+      "case_id": "document_image_tool",
+      "repetition": 0,
+      "format_variant": "baseline",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_image_tool",
+      "repetition": 1,
+      "format_variant": "baseline",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_image_tool",
+      "repetition": 0,
+      "format_variant": "json-envelope-versus-markdown-content-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_image_tool",
+      "repetition": 1,
+      "format_variant": "json-envelope-versus-markdown-content-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 0,
+      "format_variant": "baseline",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 1,
+      "format_variant": "baseline",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 0,
+      "format_variant": "json-envelope-versus-markdown-content-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 1,
+      "format_variant": "json-envelope-versus-markdown-content-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 0,
+      "format_variant": "baseline",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 1,
+      "format_variant": "baseline",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 0,
+      "format_variant": "json-envelope-versus-markdown-content-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 1,
+      "format_variant": "json-envelope-versus-markdown-content-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    }
+  ]
+}

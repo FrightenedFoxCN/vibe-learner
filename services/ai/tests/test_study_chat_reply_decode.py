@@ -19,6 +19,18 @@ def _parse(content: str):
 
 
 class StudyChatReplyDecodeTests(unittest.TestCase):
+    def test_question_reply_preserves_markdown_line_boundaries(self):
+        payload = question_reply()
+        payload["text"] = "- 先读清条件。\n- 再作出判断。"
+        reply = _parse(json.dumps(payload, ensure_ascii=False))
+        self.assertEqual(reply.text, payload["text"])
+
+    def test_question_reply_preserves_code_block_indentation(self):
+        payload = question_reply()
+        payload["text"] = "先观察代码：\n\n```python\nif ready:\n    check()\n```"
+        reply = _parse(json.dumps(payload, ensure_ascii=False))
+        self.assertEqual(reply.text, payload["text"])
+
     def test_malformed_builtin_question_arguments_fail_closed(self) -> None:
         raw_arguments = '{"topic":"vector basis"'
 

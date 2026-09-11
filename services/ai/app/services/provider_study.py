@@ -1111,7 +1111,8 @@ def _sanitize_reply_text_for_question(
         option_text = option.text
         if option_text and option_text in cleaned:
             cleaned = cleaned.replace(option_text, "")
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    # Newlines and indentation are Markdown/code semantics, not redundant spaces.
+    cleaned = cleaned.strip()
     if not cleaned:
         return "请先完成题目，再告诉我你的解题思路，我会继续追问关键细节。"
     return cleaned

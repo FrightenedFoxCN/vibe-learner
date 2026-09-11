@@ -338,3 +338,11 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 代码确认Study的read_page_range_images与read_projected_pdf_images保存了application_result中的渲染图片，但provider投影仅保留图片数量和页码，循环没有添加原生图片。修复在多模态启用时把已完成图片工具的本地PNG加入request-local消息，并补齐metadata页码；一轮全部tool receipts完成后才附图，修复请求继续保留图片。公开trace仍只保留metadata，未把图像写入安全trace。单元回归覆盖两种PDF图片工具混合调用、消息顺序、严格回复修复保图、公开trace不含base64；20项定向、完整后端797项通过。
 
 [修复后两例真实Study页图调用](evidence/minimax-study-image-delivery-v2.jsonl)均实际发送一图并提交，两例恰好两条Markdown列表、无互动题。样本很小，仅确认图片链路与本次指令结果，不宣称跨任务稳定质量提升。已启动记忆/正文/页图三类任务的基线与格式澄清候选对照，区分JSON外壳约束与text字段的Markdown要求。
+
+## 轮次 26：格式候选对照与互动题Markdown清理修复
+
+[三类Study任务各两次基线/候选，共12次操作](evidence/minimax-study-format-pairs-v1.jsonl)全部提交。候选澄清JSON外不输出Markdown、text内部仍遵守学习者的条数与换行要求、角色动作使用独立字段、明确不要出题时不出题。[针对本fixture的逐行复核](evidence/minimax-study-format-pairs-v1-grade.json)中，基线1/6、候选4/6为恰好两个非空无序列表行且没有额外段落。候选对记忆任务的寒暄有效，但仍出现文字任务六条、图片任务四条；不当作完整指令遵循解决方案，也不把该简单逐行检查称为通用Markdown解析器或独立评审。
+
+另有确定的应用层破坏：_sanitize_reply_text_for_question在存在互动题时把所有空白合并为空格，使两行列表变成“- 第一条。 - 第二条。”，Python围栏与缩进也被压平。修复只去除首尾空白，保留内部换行与缩进；既有题干/选项重复内容清理逻辑未扩展。两项新回归在旧实现都失败，修复后通过；22项定向、完整后端799项通过。
+
+[真实互动题＋Markdown两例](evidence/minimax-study-question-markdown-v2.jsonl)使用明确的私有判分契约与格式候选，均提交；两次原始proposal文本都为一处换行、两条列表，最终Session回复也保持两条列表，互动题仍存在且私有答案不进入证据文件。它证明应用层保留格式；由于使用了明确记录的候选提示，不宣称默认提示词的稳定生成率。已启动格式澄清与“工具后重申本轮原始要求”的交错对照，继续测试上下文位置是否改善剩余条数错误。

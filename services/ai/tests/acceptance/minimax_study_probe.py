@@ -43,6 +43,7 @@ CASES = {
     "memory_roundtrip": "请使用 write_session_memory 记录我的复习约定：先做代入检验，称呼我小林；然后使用 read_session_memory 读回核对。最后只用两条 Markdown 无序列表说明记住了什么，不编造以前的经历。",
     "document_text_tool": "请先调用 read_page_range_content 核对教材 PDF 第1页，再用恰好两条 Markdown 无序列表说明 a=0 和 a非零时的差别。不要开场白和结尾，不要出题。",
     "document_image_tool": "请先调用 read_page_range_images 查看教材 PDF 第1页，核对例题 2x+3=11，再用恰好两条 Markdown 无序列表说明求解和代入检验。不要开场白和结尾，不要出题。",
+    "question_with_markdown": "请围绕 2x+3=11 出一道四选项单选互动题，等我作答，不公布答案或解析。同时仅用两条 Markdown 无序列表提供答题提醒：先读题，再检查运算。提醒中不重复题干或选项，不要开场白和结尾。",
 }
 
 SAFE_QUESTION_ERRORS = frozenset({
@@ -90,7 +91,9 @@ def stable_system_prefix_candidate(system):
 
 
 def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False, multimodal=False,
-        format_contract_candidate=False):
+        format_contract_candidate=False, repeat_request_candidate=False):
+    if repeat_request_candidate and selected_case is None:
+        raise ValueError("Repeat-request experiment requires one selected case")
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
@@ -120,6 +123,9 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                 try:
                     decoded = _decode_study_chat_reply_proposal(content)
                     call["production_decode"] = "structured" if decoded is not None else "plain_text"
+                    if decoded is not None:
+                        call["decoded_text_newlines"] = decoded.text.count("\n")
+                        call["decoded_bullet_lines"] = len(re.findall(r"(?m)^[-*+] ", decoded.text))
                 except RuntimeError:
                     call["production_decode"] = "rejected"
                 try:
@@ -156,6 +162,8 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
     if format_contract_candidate:
         sections = {key: value + FORMAT_CONTRACT_CANDIDATE if key in {"system", "tool_followup", "recovery"} else value
             for key, value in sections.items()}
+    if repeat_request_candidate:
+        sections["tool_followup"] += "\n以上工具已执行。继续遵守本轮学习者对最终输出的原始要求：\n" + CASES[selected_case]
     with patch("app.services.provider_study._chat_prompt_sections", return_value=sections), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona = create_request("顾言").model_dump(mode="json")
         persona.update(summary="严谨、温和的数学老师，说话简洁，先核对证据再下结论。", relationship="数学老师与成年学习者", learner_address="小林")
@@ -196,6 +204,9 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                         row["format_variant"] = "json-envelope-versus-markdown-content-v1"
                         row["experimental_format_suffix"] = FORMAT_CONTRACT_CANDIDATE
                         row["trace_limitation"] = "Experimental prompt addition; traces prove lifecycle only, not production prompt adoption."
+                    if repeat_request_candidate:
+                        row["request_placement_variant"] = "repeat-current-request-after-tools-v1"
+                        row["trace_limitation"] = "Experimental repetition of current learner request after tools; traces prove lifecycle only, not production prompt adoption."
                     if stable_prefix_candidate:
                         row["cache_variant"] = "study-static-system-prefix-experiment-v1"
                         row["cache_transform"] = "Move unchanged leading persona/session placeholders to end of system; keep all static instructions, tools, and message order unchanged."
@@ -248,7 +259,8 @@ if __name__ == "__main__":
     parser.add_argument("--stable-prefix-candidate", action="store_true")
     parser.add_argument("--multimodal", action="store_true")
     parser.add_argument("--format-contract-candidate", action="store_true")
+    parser.add_argument("--repeat-request-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate)
