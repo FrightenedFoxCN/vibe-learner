@@ -1,6 +1,8 @@
 """Shared, injectable provider transport policy; no model/SDK import required."""
 from __future__ import annotations
 
+from app.core.execution_budget import check_execution_budget
+
 import json
 import time
 from dataclasses import dataclass
@@ -53,6 +55,13 @@ class ProviderTransport:
         started_at = self.clock()
         attempt = 0
         while True:
+            # Check before issuing every SDK call, including transport retries.
+            # Budget failures are local runtime failures, not upstream errors.
+            try:
+                check_execution_budget()
+            except Exception:
+                observation.finish(failed=True)
+                raise
             attempt += 1
             observation.begin_attempt(attempt)
             try:

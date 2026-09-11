@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.core.diagnostics import reference_harness, diagnostic_runtime_scope, set_diagnostic_execution
+from app.core.execution_budget import execution_budget_scope
 
 from app.models.harness_runtime_commit import HarnessRuntimePreparedOutput, HarnessRuntimeFinalizeResult
 
@@ -795,7 +796,9 @@ class HarnessOperationRuntime:
                 "checks": [c.model_dump(mode="json") for c in current.checks],
             }), performance_budget.RUNTIME_MAX_EVIDENCE_BYTES,
         )
-        with _HarnessLeaseHeartbeat(self.repository, claim, lease_seconds) as heartbeat:
+        with _HarnessLeaseHeartbeat(self.repository, claim, lease_seconds) as heartbeat, execution_budget_scope(
+            (lambda: self._ensure_within_budget(deadline)) if deadline is not None else None
+        ):
             result = callback()
         heartbeat.raise_if_failed()
         if deadline is not None:
