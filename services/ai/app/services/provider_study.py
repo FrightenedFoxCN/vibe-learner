@@ -1340,7 +1340,9 @@ def _parse_chat_model_reply(
         parsed=parsed,
         tool_results=tool_results,
     )
-    memory_trace = _extract_memory_trace_payload(tool_results, fallback_memory_trace)
+    memory_trace = _extract_memory_trace_payload(
+        application_tool_results or tool_results, fallback_memory_trace
+    )
     scene_profile = extract_scene_profile_from_tool_results(
         application_tool_results or tool_results
     )

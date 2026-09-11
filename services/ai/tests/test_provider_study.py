@@ -8,6 +8,18 @@ from tests.support.study_chat_samples import study_persona, raw_chat_reply
 
 
 class StudyProviderTests(unittest.TestCase):
+    def test_memory_tool_preserves_domain_provenance_in_reply(self):
+        hit = {'session_id': 'session-old', 'study_unit_id': 'unit-1', 'scene_title': 'Library',
+            'score': 0.75, 'snippet': 'The new meeting place is Birch Library.',
+            'created_at': '2026-09-12T00:00:00+00:00', 'source': 'retriever'}
+        tool_call = {'choices': [{'finish_reason': 'tool_calls', 'message': {'content': '', 'tool_calls': [
+            {'id': 'memory-call', 'type': 'function', 'function': {'name': 'retrieve_memory_context', 'arguments': '{"top_k":1}'}}]}}]}
+        final = raw_chat_reply(json.dumps({'text': 'The updated location is Birch Library.', 'mood': 'calm', 'action': 'nod'}))
+        request = Mock(side_effect=[(tool_call, []), (final, [])])
+        reply = self.provider(request=request).generate_chat(persona=study_persona(), section_id='unit-1',
+            message='Recall the latest location.', memory_trace_hits=[hit])
+        self.assertEqual(reply.memory_trace, [{**hit, 'source': 'tool_call'}])
+
     def provider(self, **overrides):
         config = dict(chat_model="gpt-test", chat_temperature=0.35, chat_max_tokens=800,
                       chat_history_messages=8, chat_tool_max_rounds=4, chat_tools_enabled=True,

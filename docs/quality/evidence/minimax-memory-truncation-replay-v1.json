@@ -1,0 +1,19 @@
+{
+  "scope": "candidate builder replay on real synthetic seed sessions",
+  "candidates": [
+    {
+      "session_id": "session-414ecf2ca6",
+      "source_has_updated_location": false,
+      "snippet_has_updated_location": false,
+      "snippet_has_revocation": false,
+      "snippet_characters": 180
+    },
+    {
+      "session_id": "session-dcecc9212b",
+      "source_has_updated_location": true,
+      "snippet_has_updated_location": false,
+      "snippet_has_revocation": false,
+      "snippet_characters": 180
+    }
+  ]
+}

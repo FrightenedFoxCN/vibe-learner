@@ -426,3 +426,13 @@ Study成功工具加领域提交覆盖增至29/31，仍缺retrieve_memory_contex
 [三组安排→到期投递](evidence/minimax-study-follow-up-delivery-v1.jsonl)共包含六次真实Study操作：先让M3安排10秒续接，实际等待记录的due_at，再原样投递生成的hidden_message。安排与投递分别记录操作身份、provider调用和v3 trace；投递调用没有混入安排操作的调用计数。[读回检查](evidence/minimax-study-follow-up-delivery-review-v1.json)三例均提交，恰好一条续接由pending转为completed，无新续接或互动题；同一投递请求重放均返回相同回执，没有再次调用模型。
 
 这次用户请求明确指定教材方程2x+3=11，要求先询问是否求出x、不假设已经做题。三例最终回复都先询问该方程的求解状态，没有另换方程、提前给答案或声称用户已经完成。它说明本批明确约束被传递到了实际回复，不证明默认模糊续接请求的幻觉已修复；生产提示未修改，也没有将本批与之前不同请求直接解释为因果对照。测试通过真实时间等待后调用后端API，尚未覆盖浏览器计时器或关闭页面行为。
+
+## 轮次 37：跨会话记忆来源修复与截断反例
+
+[三例短消息跨会话检索](evidence/minimax-study-cross-memory-v1.jsonl)每例先真实写入旧约定，再在独立会话更新地点并撤销暗号，最后在第三个会话调用retrieve_memory_context。三例均回答新地点白桦阅览室、旧地点与晴鸟暗号已撤销，但均未满足仅两条列表的格式约束。领域回复的memory_trace出现空session_id、snippet、created_at及零分数，虽然模型仍读到了检索正文。
+
+问题来自工具canonical结果使用memory_id/content，而回复记忆DTO需要session_id/snippet等领域字段。修复从request-local application_tool_results提取记忆证据，保留原领域来源，而不是把provider投影当作领域记录。新回归在旧实现失败，修复后18项定向及完整后端804项通过。[两例真实复测](evidence/minimax-study-memory-provenance-v2.jsonl)均保留来源ID、非空片段、时间与分数，最新约定判断正确；冗长说明仍存在。此修复没有把敏感正文加入安全Harness trace。
+
+[长消息反例](evidence/minimax-study-cross-memory-long-v1.jsonl)把最新地点与撤销信息放在约500字消息末尾，实际保存成功，但新会话只回答旧地点青石阅览室及旧暗号晴鸟，并声称没有撤销记录。[候选构造函数回放](evidence/minimax-memory-truncation-replay-v1.json)确认原消息包含白桦阅览室，180字snippet却没有新地点或撤销信息。这个检索压缩损失尚未修复，下一步比较保留完整短更新、首尾摘要或按查询选择片段的策略，不能靠增加模型轮次恢复未提供的信息。
+
+另一长消息样本在准备更新会话时失败并终止后续批次；[只读回执](evidence/minimax-memory-long-seed-failure-v1.json)为uncertain、safe_to_retry=false，错误为study_chat_uncertain_chat_model_invalid_payload。没有重放该操作，也不把未发生的检索当作失败样本。探针现在逐次保存准备会话回执，避免类似失败只留下进程日志。Study工具成功加领域提交覆盖达到30/31，图像生成工具及更广泛语义质量仍待验证。

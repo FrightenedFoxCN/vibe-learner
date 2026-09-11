@@ -1,0 +1,17 @@
+{
+  "scope": "read-only recovery after prerequisite failure; no retrieval operation completed",
+  "receipts": [
+    {
+      "operation_id": "study-chat-op-d06b82b409ac4c1c",
+      "status": "committed",
+      "safe_to_retry": false,
+      "error_code": ""
+    },
+    {
+      "operation_id": "study-chat-op-0bb2b7b45c464d8e",
+      "status": "uncertain",
+      "safe_to_retry": false,
+      "error_code": "study_chat_uncertain_chat_model_invalid_payload"
+    }
+  ]
+}

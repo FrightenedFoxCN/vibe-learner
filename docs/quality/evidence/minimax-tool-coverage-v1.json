@@ -1,6 +1,6 @@
 {
   "scope": "admitted-operation tool coverage lower bound",
-  "git_revision": "f0ffb47b1306bdc7b9ac1fae0e7963b396989dbe",
+  "git_revision": "9e3e23fe037e3a14957fb288e24e589ce45943b6",
   "limitations": [
     "Deduplicated by Harness operation ID, including duplicated evidence exports.",
     "Missing tool result diagnostics are unknown, not failure.",
@@ -45,12 +45,17 @@
     "minimax-study-attachment-tools-v1.jsonl",
     "minimax-study-baseline-v1.jsonl",
     "minimax-study-cache-pairs-v1.jsonl",
+    "minimax-study-cross-memory-long-v1.jsonl",
+    "minimax-study-cross-memory-v1.jsonl",
     "minimax-study-fill-blank-contract-v2.jsonl",
     "minimax-study-fill-blank-default-v1.jsonl",
+    "minimax-study-follow-up-delivery-v1.jsonl",
+    "minimax-study-follow-up-late-v2.jsonl",
     "minimax-study-follow-up-v1.jsonl",
     "minimax-study-format-pairs-v1.jsonl",
     "minimax-study-grid-pairs-v1.jsonl",
     "minimax-study-image-delivery-v2.jsonl",
+    "minimax-study-memory-provenance-v2.jsonl",
     "minimax-study-observed-v1.jsonl",
     "minimax-study-plan-confirmation-v1.jsonl",
     "minimax-study-prepared-pairs-v1.jsonl",
@@ -66,6 +71,7 @@
     "minimax-study-state-tools-v1.jsonl",
     "minimax-study-tool-expansion-v1.jsonl",
     "minimax-tavern-baseline-v1.jsonl",
+    "minimax-tavern-domain-v1.jsonl",
     "minimax-tavern-empty-history-v1.jsonl",
     "minimax-tavern-grounding-candidate-v1.jsonl",
     "minimax-tavern-sdk-baseline-v1.jsonl",
@@ -285,16 +291,16 @@
     {
       "workflow": "study_chat",
       "tool": "retrieve_memory_context",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 6,
+      "successful_tool_operations": 6,
+      "successful_tool_and_boundary_operations": 6
     },
     {
       "workflow": "study_chat",
       "tool": "schedule_session_follow_up",
-      "requested_operations": 3,
-      "successful_tool_operations": 3,
-      "successful_tool_and_boundary_operations": 3
+      "requested_operations": 9,
+      "successful_tool_operations": 9,
+      "successful_tool_and_boundary_operations": 9
     },
     {
       "workflow": "study_chat",

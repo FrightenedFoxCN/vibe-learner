@@ -40,6 +40,8 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "cross_session_memory": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
+    "cross_session_memory_long": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "follow_up_deliver": "请使用工具安排10秒后续接一次对话，提醒我核对教材里的2x+3=11。届时先问我是否已经求出x，不要假设我做过题，也不要另换方程。现在只用一句话说明安排状态，不出题、不重复安排。",
     "follow_up_cancel": "请使用工具安排60秒后续接一次当前学习对话，届时提醒我用代入法核对方程答案。不要现在出题，也不要重复安排。最后用一句话说明安排状态，不要承诺关闭页面后仍一定能触发。",
     "plan_title_confirmation": "请先读取当前学习计划，把课程标题改为‘方程求解与代入检验’，通过工具提出待确认提案，等我确认后再生效。最后用一句话明确说明现在仍待确认，不改学习进度，不出题。",
@@ -275,6 +277,26 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     calls.clear()
                     session_payload = {"document_id": document_id,
                         "persona_id": persona_id, "study_unit_id": document["study_units"][0]["id"]}
+                    memory_seeds = []
+                    if case_id in {"cross_session_memory", "cross_session_memory_long"}:
+                        for seed_index, seed_message in enumerate((
+                            "记住复习约定：复习地点是青石阅览室，暗号是晴鸟。尚未去过那里。只确认收到，不出题。",
+                            "更新复习约定：复习地点改为白桦阅览室，青石阅览室的约定已撤销；暗号晴鸟也已撤销，不设置新暗号。我们尚未去过任何阅览室。只确认更新，不出题。")):
+                            if case_id == "cross_session_memory_long" and seed_index == 1:
+                                seed_message = "这条消息先整理学习材料，最后更新复习约定。" + "材料包括等式性质、移项、系数、验算、常见错误和课后练习。" * 16 + seed_message
+                            seed_session = client.post("/study-sessions", json=session_payload)
+                            seed_session.raise_for_status()
+                            seed = seed_session.json()
+                            seed_response = client.post(f"/study-sessions/{seed['id']}/chat", json={
+                                "client_request_id": f"memory-seed-{repetition}-{seed_index}",
+                                "expected_session_revision": seed["revision"], "message": seed_message})
+                            seed_response.raise_for_status()
+                            seed_receipt = StudyChatOperationReceiptResponse.model_validate(seed_response.json())
+                            memory_seeds.append({"message": seed_message, "receipt": seed_receipt.model_dump(mode="json"), "calls": list(calls)})
+                            (root / f"memory-seeds-{repetition}.json").write_text(json.dumps(memory_seeds, ensure_ascii=False, indent=2) + "\n")
+                            calls.clear()
+                            if seed_receipt.status != "committed":
+                                raise RuntimeError("memory_seed_not_committed")
                     plan_before = None
                     if case_id.startswith("plan_"):
                         plan_id = f"quality-plan-{case_id}-{repetition}"
@@ -309,6 +331,8 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     row["prompt_variant"] = "question-contract-experiment-v2" if question_contract_candidate else "production"
                     row["multimodal_enabled"] = multimodal
                     row["attachment_kind"] = attachment_kind
+                    if memory_seeds:
+                        row["memory_seed_operations"] = memory_seeds
                     if plan_before is not None:
                         row["plan_fixture_source"] = "synthetic repository import; not model-generated Planning evidence"
                         row["plan_before"] = plan_before
