@@ -39,6 +39,7 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "fill_blank_attempt": "请调用 ask_fill_blank_question，围绕教材方程 2x+3=11 生成一道只填x数值的互动填空题。判分应接受正确数值的阿拉伯数字和中文数字两种等价写法。等我提交后再判分，现在不要展示答案或解析，不要改成选择题。",
     "three_bullets": "请用恰好三条 Markdown 无序列表讲解 2x+3=11 的求解和检验，每条一句。不要开场白、标题、结尾或出题。",
     "code_and_math": "请用中文说明 2x+3=11 的解，含一条 LaTeX 行内公式，再给一个 python 代码块用 assert 验证答案。不要生成图或题目。",
     "unknown_source": "教材是否说过这个方法是陈老师于1987年发明的？请核对教材，找不到就明确说教材未提供，别编造作者和年份。",
@@ -82,6 +83,10 @@ QUESTION_CONTRACT_CANDIDATE = (
     "fill_blank 必须提供非空 accepted_answers。answer_key、accepted_answers、explanation "
     "仅供服务器判分，会在向学习者展示前被移除。学习者要求暂不公布答案时，仍须完整填写这些私有字段；"
     "不要将答案或解析写入 text、rich_blocks、题干、选项说明或表演字段。"
+    "填空题的格式说明只描述类型、顺序和分隔符，不使用本题正确答案作为示例；"
+    "例如只说‘填写一个数值，支持阿拉伯数字或中文数字’，不要给具体数值。"
+    "答题前不演示本题求解过程，不在topic或其他公开字段中提供结论；"
+    "工具结果含教材解答不代表学习者已作答。"
 )
 
 FORMAT_CONTRACT_CANDIDATE = (
@@ -89,6 +94,14 @@ FORMAT_CONTRACT_CANDIDATE = (
     "工具完成后也必须保持学习者指定的列表条数、每项单独换行、是否允许标题/开场/结尾等要求。"
     "人格的动作与情绪使用独立字段，不给要求只输出列表的text额外添加寒暄。"
     "学习者明确不要出题时，不调用出题工具，interactive_question必须为null。"
+)
+
+PREPARED_EFFECT_CANDIDATE = (
+    "\n工具状态说明：ok=true且effect_state=prepared表示操作已进入本轮待提交集合，"
+    "committed=false不是失败，不需要为了变成true而再次执行相同写入。"
+    "完成学习者要求的操作后输出最终回复，由服务器验证后提交；提交前不要声称已持久化。"
+    "只有目标或状态发生变化且任务确实需要时才再次写入，同样内容不要重复清除、投射或更新。"
+    "允许继续调用仍受每个工具的独立次数配额和总时间预算限制。"
 )
 
 
@@ -100,7 +113,8 @@ def stable_system_prefix_candidate(system):
 
 
 def run(root, repetitions, selected_case=None, question_contract_candidate=False, stable_prefix_candidate=False, multimodal=False,
-        format_contract_candidate=False, repeat_request_candidate=False, attachment_kind=None, coordinate_grid_candidate=False):
+        format_contract_candidate=False, repeat_request_candidate=False, attachment_kind=None, coordinate_grid_candidate=False,
+        prepared_effect_candidate=False):
     if repeat_request_candidate and selected_case is None:
         raise ValueError("Repeat-request experiment requires one selected case")
     if attachment_kind not in {None, "pdf", "image"}:
@@ -206,6 +220,8 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
             for key, value in sections.items()}
     if repeat_request_candidate:
         sections["tool_followup"] += "\n以上工具已执行。继续遵守本轮学习者对最终输出的原始要求：\n" + CASES[selected_case]
+    if prepared_effect_candidate:
+        sections["tool_followup"] += PREPARED_EFFECT_CANDIDATE
     with patch("app.services.provider_study._chat_prompt_sections", return_value=sections), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona = create_request("顾言").model_dump(mode="json")
         persona.update(summary="严谨、温和的数学老师，说话简洁，先核对证据再下结论。", relationship="数学老师与成年学习者", learner_address="小林")
@@ -241,9 +257,13 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     row = {"scope": "live_study_operation_receipt_readback", "fixture_version": "study-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "message": message, "calls": calls}
-                    row["prompt_variant"] = "question-contract-experiment-v1" if question_contract_candidate else "production"
+                    row["prompt_variant"] = "question-contract-experiment-v2" if question_contract_candidate else "production"
                     row["multimodal_enabled"] = multimodal
                     row["attachment_kind"] = attachment_kind
+                    if prepared_effect_candidate:
+                        row["effect_followup_variant"] = "prepared-is-not-failure-v1"
+                        row["experimental_effect_suffix"] = PREPARED_EFFECT_CANDIDATE
+                        row["trace_limitation"] = "Experimental tool followup suffix; not production prompt adoption."
                     if coordinate_grid_candidate:
                         row["visual_context_variant"] = "original-plus-decimal-coordinate-grid-v1"
                         row["trace_limitation"] = "Experimental extra image at provider boundary, no ground-truth boxes supplied; not production image-context or SoM adoption."
@@ -297,8 +317,34 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 t["status"] in {"passed", "repaired"} and t["commit_evidence"]["status"] == "committed"
                                 for t in row["terminal_traces"]
                             ) and len(row["terminal_traces"]) == len(executions)
+                            if case_id == "fill_blank_attempt" and receipt.result and receipt.committed_turn_id:
+                                # Submit known fixture answers, never inspect the private grading spec.
+                                answer = ("4", "四", "5")[repetition % 3]
+                                attempt_payload = {"turn_id": receipt.committed_turn_id,
+                                    "expected_session_revision": receipt.result.session.revision,
+                                    "client_attempt_id": f"quality-answer-{repetition}", "submitted_answer": answer}
+                                attempted = client.post(f"/study-sessions/{initial.id}/attempt", json=attempt_payload)
+                                duplicate = client.post(f"/study-sessions/{initial.id}/attempt", json=attempt_payload)
+                                after = client.get(f"/study-sessions/{initial.id}")
+                                row["answer_submission"] = {"submitted_answer": answer,
+                                    "expected_correct": answer != "5", "http_status": attempted.status_code,
+                                    "duplicate_equal": duplicate.status_code == attempted.status_code and duplicate.json() == attempted.json(),
+                                    "revision_incremented_once": after.status_code == 200 and after.json()["revision"] == receipt.result.session.revision + 1}
+                                if attempted.status_code == 200:
+                                    row["answer_submission"]["result"] = attempted.json()
+                                    row["answer_submission"]["grading_matches_fixture"] = attempted.json()["is_correct"] == (answer != "5")
                         else:
                             row["boundary_success"] = False
+                            recovery = client.get(f"/study-sessions/{initial.id}/chat-operations/{request_id}")
+                            row["failure_readback_http_status"] = recovery.status_code
+                            if recovery.status_code == 200:
+                                recovered = StudyChatOperationReceiptResponse.model_validate(recovery.json())
+                                row["failure_receipt"] = {key: getattr(recovered, key) for key in
+                                    ("operation_id", "status", "safe_to_retry", "error_code")}
+                                binding = app.state.container.study_chat_operation_repository.require_harness_operation(recovered.operation_id)
+                                row["harness_operation_id"] = binding.harness_operation_id
+                                executions = runtime.list_operation_traces(binding.harness_operation_id)
+                                row["terminal_traces"] = [t.terminal_trace.model_dump(mode="json") for t in executions if t.terminal_trace]
                     except Exception as exc:
                         row.update(boundary_success=False, error_class=type(exc).__name__)
                     row["elapsed_ms"] = round((time.perf_counter()-started)*1000)
@@ -320,7 +366,8 @@ if __name__ == "__main__":
     parser.add_argument("--repeat-request-candidate", action="store_true")
     parser.add_argument("--attachment-kind", choices=("pdf", "image"))
     parser.add_argument("--coordinate-grid-candidate", action="store_true")
+    parser.add_argument("--prepared-effect-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate)
+    run(args.root.resolve(), args.repetitions, args.case, args.question_contract_candidate, args.stable_prefix_candidate, args.multimodal, args.format_contract_candidate, args.repeat_request_candidate, args.attachment_kind, args.coordinate_grid_candidate, args.prepared_effect_candidate)

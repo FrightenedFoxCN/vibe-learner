@@ -364,3 +364,11 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 研究线索：[Set-of-Mark Prompting](https://arxiv.org/abs/2310.11441v2)摘要介绍给分割区域加视觉标记以辅助定位。这里没有复现其分割器或GPT-4V结果，只据此探索原图加均匀坐标网格：不提供目标框、不使用正确答案，仍由模型选择归一化坐标。[四次交错对照](evidence/minimax-study-grid-pairs-v1.jsonl)与[原始几何指标](evidence/minimax-study-grid-review-v1.json)显示，原图两例IoU为0.0713/0，网格两例为0/0.0476，四例均未达到“已提交、恰好一个框、IoU≥0.5”标准，网格未采用。评审只针对同一合成PDF栅格化得到的图片，原PDF坐标仅用于事后评分，不作为模型输入；不是通用视觉定位或独立评审认证。
 
 下一步继续补足尚无成功执行证据的Study工具，并区分文字锚点定位、无文字层图片定位、prepared状态下重复写工具的行为。没有因本轮无有效视觉候选而放宽坐标正确性标准。
+
+## 轮次 29：填空题真实提交与答题前泄露
+
+[默认提示六例](evidence/minimax-study-fill-blank-default-v1.jsonl)全部调用填空题工具并提交互动题，随后向真实attempt接口分别提交4、四、5，各两次。六次判分均符合合成方程2x+3=11的答案，同一请求重复提交返回相同结果且Session revision只增加一次。但公开题干/回复五例直接给出4或四，另一例提前讲出两边减3、再除2的解法。结构上移除私有判分字段没有解决自然语言泄露。
+
+[私有字段与格式示例约束候选六例](evidence/minimax-study-fill-blank-contract-v2.jsonl)明确禁止把正确答案当格式例子、答题前展示解法，仍有三例公开给出答案。其中一例连互动题都没有，却称题目已准备好；其真实提交返回404，不计为判分通过。其余五例判分与重复提交均正确。[事后检查](evidence/minimax-study-fill-blank-review-v1.json)只对本合成fixture扫描答案字面值，不冒充通用语义泄露检测；维护者复核默认组无字面答案的那例仍提前给出解法。候选尚未采用为生产修复，两个连续批次也不被解释为因果或稳定泛化结论。
+
+探针新增失败后的只读operation receipt与terminal trace回查，不自动重放失败或不确定操作。答题流程只提交已知合成答案，不读取私有grading spec；证据保留公开题目、回复及提交之后的判分结果。覆盖统计将成功的ask_fill_blank_question纳入领域准入工具覆盖，但不把工具成功或Chat提交等同于有效互动题和保密质量。另已启动六例交错对照，检查明确prepared表示待提交、不是失败，是否减少重复清除工具。

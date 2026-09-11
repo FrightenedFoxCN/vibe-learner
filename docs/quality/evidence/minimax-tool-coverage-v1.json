@@ -1,6 +1,6 @@
 {
   "scope": "admitted-operation tool coverage lower bound",
-  "git_revision": "8118e792fb77ca53a1f50089d211fd2c974af6e9",
+  "git_revision": "ad9d6eb4a34779518fa72175b25a8d502bcaa2d7",
   "limitations": [
     "Deduplicated by Harness operation ID, including duplicated evidence exports.",
     "Missing tool result diagnostics are unknown, not failure.",
@@ -45,6 +45,8 @@
     "minimax-study-attachment-tools-v1.jsonl",
     "minimax-study-baseline-v1.jsonl",
     "minimax-study-cache-pairs-v1.jsonl",
+    "minimax-study-fill-blank-contract-v2.jsonl",
+    "minimax-study-fill-blank-default-v1.jsonl",
     "minimax-study-format-pairs-v1.jsonl",
     "minimax-study-grid-pairs-v1.jsonl",
     "minimax-study-image-delivery-v2.jsonl",
@@ -137,9 +139,9 @@
     {
       "workflow": "study_chat",
       "tool": "ask_fill_blank_question",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 11,
+      "successful_tool_operations": 11,
+      "successful_tool_and_boundary_operations": 11
     },
     {
       "workflow": "study_chat",
@@ -228,9 +230,9 @@
     {
       "workflow": "study_chat",
       "tool": "read_page_range_content",
-      "requested_operations": 11,
-      "successful_tool_operations": 11,
-      "successful_tool_and_boundary_operations": 11
+      "requested_operations": 12,
+      "successful_tool_operations": 12,
+      "successful_tool_and_boundary_operations": 12
     },
     {
       "workflow": "study_chat",
@@ -319,9 +321,9 @@
     {
       "workflow": "study_chat",
       "tool": "write_session_memory",
-      "requested_operations": 12,
-      "successful_tool_operations": 12,
-      "successful_tool_and_boundary_operations": 12
+      "requested_operations": 13,
+      "successful_tool_operations": 13,
+      "successful_tool_and_boundary_operations": 13
     }
   ]
 }
