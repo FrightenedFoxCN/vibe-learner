@@ -15,7 +15,7 @@ OBJECTIVE = (
 )
 
 
-def compare(source, pdf, output):
+def compare(source, pdf, output, transcription=None, modes=None):
     output.mkdir(parents=True, exist_ok=False)
     original = ProviderRequestAdapter.request_chat_completion
     baseline = None
@@ -46,6 +46,8 @@ def compare(source, pdf, output):
 
     cells = [("rigorous", "text"), ("explorer", "text_image"), ("explorer", "text"),
              ("rigorous", "text_image"), ("rigorous", "text_image_crops"), ("explorer", "text_image_crops")]
+    if modes:
+        cells = [(persona, mode) for persona, mode in cells if mode in modes]
     with patch.object(ProviderRequestAdapter, "request_chat_completion", observe):
         for persona, mode in cells:
             current = {"persona": persona, "mode": mode}
@@ -53,7 +55,7 @@ def compare(source, pdf, output):
             run(root, 1, selected_case="document", pdf_path=pdf, objective_override=OBJECTIVE,
                 ocr_engine="onnxtr", multimodal=True, persona_variant=persona,
                 page_evidence=mode, page_evidence_page=1, persona_domain="text",
-                controlled_page_evidence=True, prepared_source_root=source)
+                controlled_page_evidence=True, prepared_source_root=source, transcription_file=transcription)
             row = json.loads((root / "report.jsonl").read_text().splitlines()[0])
             current["operation_id"] = row.get("harness_operation_id")
             current["boundary_success"] = row.get("boundary_success")
@@ -70,5 +72,7 @@ if __name__ == "__main__":
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--pdf", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--transcription", type=Path)
+    parser.add_argument("--modes", nargs="+", choices=("text", "text_image", "text_image_crops"))
     args = parser.parse_args()
-    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve())
+    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve(), args.transcription, args.modes)

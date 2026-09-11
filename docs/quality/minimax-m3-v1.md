@@ -538,3 +538,15 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 无图两例都围绕英文对白，缺少中文评论核心。探索原图组提及历史语义，却把“时期性”改写为timelessness和1930/1992二选一；严谨原图组仍主要安排人物爱意确认。探索裁剪组正确识别译文左下至右上的续接与评论结构，但把“时期性”读为“时朝性”，并加入原页没有的“耽溺、恭顺、勉为其难”作为译文例子。两例明确分配合计30分钟，其余成功样本分配不完整；人格活动差异持续可见，但不足以抵消来源错误。
 
 这批同源证据支持“图片可补回部分OCR遗漏内容”，不支持“图片或裁剪稳定改善完整计划质量”。暂不增加生产默认图片数。下一步把逐字视觉转写与规划概括分开检测，区分识字、证据组织和语义推断问题；转写实验不计为已采用的Document/OCR Harness。
+
+## 轮次 49：分离视觉转写、思考预算与 JSON 包装问题
+
+[十二次直接provider诊断](evidence/minimax-visual-transcription-diagnostics-v1.jsonl)要求M3按阅读顺序逐字转写同一书页，保持语言，不生成计划；比较原图和原图加裁剪。默认adaptive、6400输出额度的首批4例均未通过严格解码，其中3例reasoning用满额度；启用reasoning_split的补充2例也都用满6400额度、正文为空。split只分离字段，不减少思考，本批尚不能评价这些失败样本的识字正确率。
+
+[官方Chat API](https://platform.minimaxi.com/docs/api-reference/text-chat-openai.md)确认M3支持thinking.type=disabled，默认adaptive；reasoning_split不负责关闭思考。使用extra_body传入disabled后，HTTPX发送边界确认该字段、split与6400额度实际发送。四次约5–6秒返回，reasoning_tokens为0，但仍严格JSON失败；该批未保存正文，不能追认全是代码围栏原因。
+
+另两次补充诊断只在明确disabled且返回零reasoning token、无think标签时把最终正文留在临时目录：原图例是合法JSON外包单层json围栏，裁剪例直接合法，原始严格通过为1/2。对原图仅去掉外层围栏后，严格Transcription schema也通过；这次局部兼容恢复没有被改记成原始格式通过。
+
+[源页对照复核](evidence/minimax-visual-transcription-review-v1.json)两份可用转写均保留原文对1930时期性的肯定，分别有626、624个汉字；但仍存在“确实→确凿”、漏字、“更加隐晦→更黝酶”等错误。不能宣称完整OCR准确，也不能因关闭思考更快就对所有工作流采用。转写和无思考正文仅留临时目录，未提交书页全文或reasoning；这还是直接provider诊断，不是Document/OCR Harness准入与生产采用。
+
+已将恢复后的原图转写明确标成“自动转写、可能有错字”，与原图一起注入两个人格的同源Planning，测试先识字再概括的效果。规划探针还开始只记录白名单约束错误码，帮助定位revise_study_units失败，不记录工具参数或教材正文。

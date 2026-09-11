@@ -1,0 +1,45 @@
+{
+  "scope": "Maintainer review of direct M3 transcription diagnostics; no Document/OCR Harness adoption",
+  "official_reference": {
+    "url": "https://platform.minimaxi.com/docs/api-reference/text-chat-openai.md",
+    "claims": [
+      "M3 defaults to adaptive thinking; thinking.type=disabled skips it.",
+      "reasoning_split separates output fields without disabling thinking.",
+      "max_tokens is deprecated in favor of max_completion_tokens; present experiment used observed accepted legacy cap."
+    ]
+  },
+  "limitations": [
+    "Raw thinking never saved. Source transcription and final non-thinking response remain only under temporary probe directories.",
+    "Initial unsplit stop response had insufficient diagnostics to attribute its decode failure; do not retrospectively claim all failures were fences.",
+    "Character checks cover specific source passages, not complete OCR accuracy or CER.",
+    "Timing comes from a small run, not an isolated performance benchmark."
+  ],
+  "usable_transcriptions": [
+    {
+      "batch": "format-v4",
+      "mode": "original",
+      "repetition": 0,
+      "raw_strict_decode_success": false,
+      "recovery": "single outer json fence removed locally",
+      "recovered_schema_valid": true,
+      "source_period_affirmation_preserved": true,
+      "han_characters": 626,
+      "surface_text_exact": false,
+      "observed_error": "确实 transcribed as 确凿"
+    },
+    {
+      "batch": "format-v4",
+      "mode": "original_crops",
+      "repetition": 0,
+      "raw_strict_decode_success": true,
+      "recovery": null,
+      "source_period_affirmation_preserved": true,
+      "han_characters": 624,
+      "surface_text_exact": false,
+      "observed_errors": [
+        "确实 loses 实",
+        "更加隐晦 becomes 更黝酶"
+      ]
+    }
+  ]
+}
