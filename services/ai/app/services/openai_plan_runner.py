@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -20,6 +20,8 @@ from app.services.prompt_loader import load_prompt_template
 class OpenAIPlanRunnerResult:
     content: str
     trace: PlanGenerationTraceRecord
+    # Request-local evidence only: never persist images or raw tool content in trace.
+    tool_messages: list[dict[str, Any]] = field(default_factory=list, repr=False)
 
 
 class OpenAIPlanRunner:
@@ -44,6 +46,7 @@ class OpenAIPlanRunner:
         interrupt_check: Callable[[], None] | None = None,
     ) -> OpenAIPlanRunnerResult:
         current_messages: list[dict[str, Any]] = [*messages]
+        tool_messages: list[dict[str, Any]] = []
         prompt_template = load_prompt_template("openai_plan_runner_prompt.txt")
         trace = PlanGenerationTraceRecord(
             document_id=document_id,
@@ -109,6 +112,7 @@ class OpenAIPlanRunner:
                     tool_calls=[],
                     recoveries=round_recoveries,
                 )
+                batch_start = len(current_messages)
                 current_messages.append(
                     {
                         "role": "assistant",
@@ -153,6 +157,7 @@ class OpenAIPlanRunner:
                 # Every tool result must precede user-role image attachments
                 # when one assistant message requested several tools.
                 current_messages.extend(follow_up_messages)
+                tool_messages.extend(current_messages[batch_start:])
                 trace.rounds.append(trace_round)
                 _emit_progress(
                     progress_callback,
@@ -228,6 +233,7 @@ class OpenAIPlanRunner:
                 return OpenAIPlanRunnerResult(
                     content=content,
                     trace=trace,
+                    tool_messages=tool_messages,
                 )
             if finish_reason == "content_filter":
                 _emit_progress(

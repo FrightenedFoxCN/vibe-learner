@@ -192,6 +192,7 @@ class RemotePlanningProvider(PlanningModelCapability):
                     planning_questions=active_tool_runtime.current_planning_questions(),
                     existing_plan=existing_plan,
                 ),
+                *run_result.tool_messages,
                 {"role": "assistant", "content": run_result.content},
                 {
                     "role": "user",
@@ -404,4 +405,3 @@ def _study_units_changed(
         ):
             return True
     return False
-

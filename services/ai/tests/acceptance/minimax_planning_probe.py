@@ -51,7 +51,12 @@ PLANNING_BUDGET_CANDIDATE = (
 
 
 def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False,
-        pdf_path=None, objective_override=None, ocr_engine="disabled", multimodal=False, persona_variant="default"):
+        pdf_path=None, objective_override=None, ocr_engine="disabled", multimodal=False, persona_variant="default",
+        initial_evidence_tool=None):
+    if initial_evidence_tool not in {None, "read_page_range_content", "read_page_range_images"}:
+        raise ValueError("Unsupported initial evidence tool")
+    if initial_evidence_tool == "read_page_range_images" and not multimodal:
+        raise ValueError("Image evidence requires multimodal capability")
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider="litellm", ocr_engine=ocr_engine, openai_api_key=os.environ["K3_API_KEY"],
@@ -81,12 +86,15 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         return normalized
 
     def observe(adapter, payload, *, request_kind, model):
+        if initial_evidence_tool and not calls:
+            payload = {**payload, "tool_choice": {"type": "function", "function": {"name": initial_evidence_tool}}}
         if budget_candidate:
             payload = {**payload, "messages": [{**message,
                 "content": message["content"] + PLANNING_BUDGET_CANDIDATE}
                 if message.get("role") == "system" else message
                 for message in payload.get("messages", [])]}
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
+        call["tool_choice"] = payload.get("tool_choice")
         call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
         call["image_parts_sent"] = sum(part.get("type") == "image_url"
             for message in payload.get("messages", []) if isinstance(message.get("content"), list)
@@ -172,7 +180,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
                     admitted_unit_count = None
                     if case_id != "goal_only":
-                        current_document = client.get(f"/documents/{document_id}")
+                        current_document = client.get(f"/documents/{document_id}/status")
                         current_document.raise_for_status()
                         current_document = current_document.json()
                         admitted_unit_count = len(current_document.get("study_units", []))
@@ -186,6 +194,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row["persona_variant"] = persona_variant
                     row["persona_test_input"] = {k: persona_payload[k] for k in ("name", "summary", "relationship", "learner_address", "slots")}
                     row["prompt_variant"] = "planning-budget-experiment-v1" if budget_candidate else "production"
+                    if initial_evidence_tool:
+                        row["initial_evidence_tool"] = initial_evidence_tool
+                        row["trace_limitation"] = "Experimental first-call tool_choice intervention; traces prove lifecycle, not production evidence-selection behavior."
                     if detail_parallel_candidate:
                         row["budget_variant"] = "planning-detail-round-three-experiment-v1"
                         row["budget_override"] = {"tool": "get_study_unit_detail", "max_calls_per_round": 3,
@@ -247,8 +258,9 @@ if __name__ == "__main__":
     parser.add_argument("--ocr-engine", choices=("disabled", "onnxtr"), default="disabled")
     parser.add_argument("--multimodal", action="store_true")
     parser.add_argument("--persona-variant", choices=("default", "rigorous", "explorer"), default="default")
+    parser.add_argument("--initial-evidence-tool", choices=("read_page_range_content", "read_page_range_images"))
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
-        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant)
+        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool)

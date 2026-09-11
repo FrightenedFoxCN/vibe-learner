@@ -276,3 +276,19 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [正确目录页与顺序修复后的首次操作](evidence/minimax-book-image-order-repair-v1.jsonl)实际发送两张图像后最终提交（7次provider调用）。这验证了合法图文路径，但尚未取得原HTTP400的详细原因，不能宣称所有400均由顺序导致。第二个样本HTTP409且零provider调用：前次生成修改了Study Unit，采样器仍拿初始Document.updated_at准入。它是采样器的过期版本问题，不是M3失败。脚本现于准入前获取当前文档版本，并记录当时Study Unit数量；新复测使用独立新文档。
 
 15项相关回归、完整后端790项通过。当前未完成图片收益的因果判断，后续保持目标、人格与源文档一致，并按实际图像接收分组审查计划内容。
+
+## 轮次 20：修复阶段的证据丢失与中段约定撤销
+
+上一轮采样器的版本读取修复用了不存在的 GET /documents/{id}，独立新文档复测在模型调用前404退出；改为仓库已有的 GET /documents/{id}/status。保留这次采样器缺陷，不记为候选模型失败。
+
+[正确读取版本后的首个提交](evidence/minimax-image-repair-evidence-loss-v1.jsonl)耗时75330ms，五次请求图像数为[0,2,2,2,0]。最后一次严格schema修复重建上下文，只保留初始/修订单元与未通过的计划，丢失已取得的页图及工具正文。修复为在进程内保留完整assistant工具调用、全部tool结果、图片附件，重建当前Study Unit上下文后将证据加入修复请求。修复仍无工具执行、无fallback，最多一次；不把图像或原始工具正文加入Harness安全trace。这是证据连续性修复，尚不能宣称事实准确率提高。
+
+该计划仍有实质内容问题：§1.5摘要把有限域逆猜想概括为norm与nilsequence的对应；教材PDF第85页将有限域Gowers范数联系到polynomial phases，第103页才说明整数/循环群情形需要扩展到local polynomials、bracket polynomials或nilsequences。§1.1与§2.1还把章起始页当作节起始页：目录给出的书内页分别为2和130，对应PDF第13与141页，而计划为12与140。故本例不能判事实质量通过，图片接收与persona风格符合都不足以抵消这些错误。
+
+法文736页失败已进一步定位为 harness_runtime_wall_time_budget_exceeded：八次provider调用，最后finish_reason=stop、completion_tokens=6567，并非输出长度截断。当前记录显示整个模型工具循环返回之后才由外层检查总预算，后续需要评估循环内预算保护和证据选择效率；不能简单归因于44个Study Unit过多。
+
+[新增104条长历史实验](evidence/minimax-history-updates-v1.jsonl)在中段更改地点、撤销暗号，并在后段引用已作废旧记录但不恢复。十次真实调用中，完整历史3/3保留最新地点和撤销状态；摘要生成只有1/3兼容解码成功，该摘要后回答两项正确，另外两次summary_tail未执行，不能从单个成功样本声称稳定压缩。最近八条全部不知道地点；暗号恰好也回答“未知”，不算记住撤销的独立证明。所有统计保留裸JSON与兼容解码区别，摘要生成成本单列。
+
+研究补充：[Lost in the Middle](https://arxiv.org/abs/2307.03172v3)摘要指出相关证据位置会影响长上下文检索表现。这里据此扩展中段更新与撤销用例，未复现论文基准，也不把旧模型的退化结论直接套用到M3。
+
+证据连续性与当前单元约束的6项定向测试、完整后端790项通过。另启动相同源文档/目标/人格/六工具集的首轮tool_choice文字或图片对照，记录实验配置，结果未收齐前不作收益结论。

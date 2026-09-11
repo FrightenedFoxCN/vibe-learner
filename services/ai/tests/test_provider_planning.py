@@ -47,6 +47,11 @@ class PlanningProviderTests(unittest.TestCase):
             page_start=1, page_end=5, source_section_ids=["section-1"])
         revised = unit.model_copy(update={"id": "unit-revised"})
         calls = []
+        evidence = [
+            {"role": "assistant", "content": "", "tool_calls": [{"id": "image-1", "type": "function", "function": {"name": "read_page_range_images", "arguments": "{}"}}]},
+            {"role": "tool", "tool_call_id": "image-1", "content": '{"ok":true}'},
+            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": "data:image/png;base64,fixture"}}]},
+        ]
 
         def run(**kwargs):
             calls.append(kwargs)
@@ -57,8 +62,9 @@ class PlanningProviderTests(unittest.TestCase):
                 context = json.loads(kwargs["messages"][1]["content"])
                 self.assertEqual(context["study_units"][0]["unit_id"], revised.id)
                 self.assertFalse(kwargs["tool_runtime"].has_tools())
+                self.assertEqual(kwargs["messages"][2:5], evidence)
                 payload["schedule"][0]["unit_id"] = revised.id
-            return SimpleNamespace(content=json.dumps(payload), trace=PlanGenerationTraceRecord(
+            return SimpleNamespace(content=json.dumps(payload), tool_messages=evidence, trace=PlanGenerationTraceRecord(
                 document_id="doc-1", model="test", created_at="2026-09-09T00:00:00+00:00"))
 
         provider = self.provider(runner_factory=lambda **_: SimpleNamespace(run=run))

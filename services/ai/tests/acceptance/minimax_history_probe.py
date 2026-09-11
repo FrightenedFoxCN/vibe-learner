@@ -11,7 +11,7 @@ from app.services.provider_transport import ProviderTransport
 from app.services.provider_payload import _extract_choice_content, _extract_json_payload
 
 
-def run(output, repetitions):
+def run(output, repetitions, updated_facts=False):
     sdk = ProviderSDK.load()
     endpoint = "https://api.minimax.cn/v1"
     key = os.environ["K3_API_KEY"]
@@ -58,6 +58,17 @@ def run(output, repetitions):
             history = [{"role": "user", "content": f"请记住，我们下次在{facts['meeting']}碰头，暗号是{facts['code']}。{facts['preference']}。"},
                 {"role": "assistant", "content": "记下了，阿岚。"}]
             for turn in range(48):
+                if updated_facts and turn in {15, 29, 37}:
+                    if turn == 15:
+                        update = f"更正会面地点：改为北门第{repetition + 9}号长椅，桥南摊位的旧约定作废。暗号暂时不变。"
+                        facts["meeting"] = f"北门第{repetition + 9}号长椅"
+                    elif turn == 29:
+                        update = "撤销之前的暗号，不再使用，也没有约定新暗号。以后问暗号时请写未知。"
+                        facts["code"] = "未知"
+                    else:
+                        update = f"整理一份已作废的旧记录，原文是‘桥南第{repetition + 4}号摊位，青纸船{repetition + 27}’。这只是归档引用，不恢复旧约定。最新地点仍有效，暗号仍已撤销。"
+                    history.extend([{"role": "user", "content": update},
+                        {"role": "assistant", "content": "明白，按最新有效约定处理。"}])
                 note = (f"第{turn+1}次修伞记录：检查伞骨铰链，先观察磨损，再收拢伞面，逐一比对松动位置。"
                     "记录只讨论工具维护，没有新的会面约定。保留零件编号和检查顺序便于核对。")
                 history.extend([{"role": "user", "content": note * 5},
@@ -66,7 +77,8 @@ def run(output, repetitions):
             summary_request = [{"role": "system", "content": "请压缩这段对话，保留用户明确给出的约定、数字、称呼与语言偏好。不要添加推断；省略重复维修记录。只返回JSON，键为memory，值为不超过300字的中文摘要。"},
                 {"role": "user", "content": json.dumps(history[:-8], ensure_ascii=False)}]
             summary = call(summary_request)
-            summary.update(scope="synthetic_model_history_summary", repetition=repetition, git_revision=revision)
+            summary.update(scope="synthetic_model_history_summary", repetition=repetition, git_revision=revision,
+                fixture_version="history-updates-revocation-v1" if updated_facts else "history-initial-facts-v1")
             stream.write(json.dumps(summary, ensure_ascii=False) + "\n"); stream.flush()
             memory = (summary.get("reply") or {}).get("memory") if isinstance(summary.get("reply"), dict) else None
             if not isinstance(memory, str) or not memory.strip() or len(memory) > 300:
@@ -74,6 +86,7 @@ def run(output, repetitions):
             variants = ["full", "tail", "summary_tail"] if repetition % 2 == 0 else ["summary_tail", "tail", "full"]
             for variant in variants:
                 row = {"scope": "synthetic_provider_context_retention", "git_revision": revision,
+                    "fixture_version": "history-updates-revocation-v1" if updated_facts else "history-initial-facts-v1",
                     "repetition": repetition, "variant": variant, "expected": facts,
                     "history_messages": len(history), "trace_limitation": "No domain admission or production compression adoption; model summary cost recorded separately."}
                 if variant == "summary_tail" and not isinstance(memory, str):
@@ -94,7 +107,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--updated-facts", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 10:
         parser.error("repetitions must be between 1 and 10")
-    run(args.output.resolve(), args.repetitions)
+    run(args.output.resolve(), args.repetitions, args.updated_facts)
