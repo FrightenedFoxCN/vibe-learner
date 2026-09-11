@@ -119,3 +119,27 @@ PersonaGenerationHarnessPolicy 升为 persona-generation-harness-v2，Python 模
 - [4 个生产领域样本](evidence/minimax-persona-policy-v2.jsonl)：4/4 generation→save→read-back 成功；2 个 passed、2 个 repaired，均有真实准入和 policy v2 终态 trace，commit_evidence 仍正确为 proposal 的 not_applicable。
 - 24 项 provider/persona/scene/manifest/lifecycle 测试通过，包含 Chat 和 Responses 的漏字段修复、复合 JSON→schema 失败不超过两次、重复伪造 ID 拒绝、失败不记录恢复成功。npm run check 通过。
 - 完整 backend 回归 783 项通过（67.4 秒）；git diff --check 与凭据排除检查通过。
+
+## 轮次 6：人格关系与场景精简对照（未采用）
+
+[Persona 24 个配对样本](evidence/minimax-persona-comparison-v1.jsonl)覆盖合作研究、旅伴、平级同事与成年姐弟/姐妹关系，每类三组交错对照。旧提示 9/12 解码成功，关系约束候选 11/12；这批执行于 schema 修复前，缺字段影响了可比较样本数，不能当成语义胜率。候选多数保留称呼和人际关系，但有“妹妹”这样的性别推断，基线也出现“兄长兼师傅”等关系扩展。当前先修复已定位的结构问题，关系候选尚未进入生产。
+
+[4 个带逐调用观测的领域样本](evidence/minimax-domain-observed-v1.jsonl)确认 Scene 两例初次回复都是 finish_reason=length 且 completion_tokens=4096，随后使用现有 6144 token 额度重试成功。
+
+[Scene 18 个配对样本](evidence/minimax-scene-comparison-v1.jsonl)覆盖茶馆、阴天天文台、停电修伞作坊，每类三组。两边均 9/9 最终成功且各发生 12 次调用；初次截断从 3/9 变为 2/9，但候选仍有一次其他修复，P50 总调用延迟从 29415ms 变为 33982ms。精简指令没有稳定减少物体数或重复说明，不能宣称性能提升，因此不采用。全部原始输出保留以便后续按细节保留、空间约束和成本重新对照。
+
+## 轮次 7：实际 PDF → Study Chat → 前端严格解码
+
+[首批 12 个 Study 操作](evidence/minimax-study-baseline-v1.jsonl)使用实际生成并解析的英文线性方程 PDF，四种用户请求各三次：三条 Markdown 列表、数学与 Python 校验、不存在的教材作者/年份、等待作答的互动选择题。全部 12 个操作 committed，receipt 查询与 Session 读回相等。
+
+- 3/3 列表请求恰好三项，3/3 作者/年份请求没有确认不存在的教材事实（主智能体审阅）；部分使用实际 read_page_range_content 工具核对。
+- 3/3 Python 示例在 code rich block 中，包含实际换行和 assert，不在 reply 字段的围栏中。三段代码经过限制 AST 节点和可调用对象后执行，均验证 x=4。单看 reply 是否含 python 围栏会产生误判。
+- 3/3 互动题具有持久化的公开题目投影，未将 server-only 的 grading spec 放进公开字段。仍需更广泛判分语义与真实 UI 验收。
+- 采样器最初把 domain operation ID 直接用作 Harness ID，导致 terminal_traces 为空；不是产品缺失 trace。通过数据库中的真实不可变 binding 只读解析后，12/12 均有 committed v3 终态，完整证据另存为 [bindings 与 traces](evidence/minimax-study-bindings-v1.json)。脚本已改为正确解析 binding、检查全部 execution 都有终态。
+- 前端两个新冻结实测用例通过：生产 Study receipt/exchange 严格解码器接受全部 12 个样本，三段代码保持 multiline rich block；加入现有 Web reliability 测试。旧 QG-002 对抗基线不变。这里没有宣称浏览器视觉验收完成。
+
+[修正采样器后新增 4 个操作](evidence/minimax-study-observed-v1.jsonl)中，列表、代码、来源核对三例成功并带完整 v3 证据；互动题在两次实际 provider 调用后失败，receipt 正确为 uncertain，error_code=study_chat_uncertain_chat_model_invalid_payload，终态 not_committed。未对 uncertain 请求自动重放。该失败进入下一轮诊断，不能被首批 12 个成功样本覆盖。
+
+缓存后续线索：Study 的 system 开头包含 persona/session context，历史消息在本轮教材材料前。人物/单元变化与历史构造可能缩短缓存公共前缀；需要在相同语义与工具权限下实测，不能仅凭排列猜测命中率提升。当前未调整生产 prompt 顺序。
+
+本轮归档检查：更新后的 npm run check 通过，两个新增前端冻结实测回归通过，脚本编译和凭据排除检查通过。互动题的下一批三个全新会话正在 `/tmp/minimax-study-question-diagnostics-v1/` 记录字段路径/类型，不保存未提交的私有答案。

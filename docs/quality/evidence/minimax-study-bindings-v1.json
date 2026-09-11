@@ -1,0 +1,2298 @@
+{
+  "source": "minimax-study-baseline-v1.jsonl",
+  "scope": "read_only_binding_resolution_and_terminal_verification",
+  "rows": [
+    {
+      "case_id": "three_bullets",
+      "repetition": 0,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-0cfe4a96e0ff4ceabc0100ac740d3d4d",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-401c64bf84624a1f",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:26:01.045000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-a9352318601dbe5aed8cd8e362b42c4e",
+          "operation_id": "harness-operation-0cfe4a96e0ff4ceabc0100ac740d3d4d",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-0cfe4a96e0ff4ceabc0100ac740d3d4d",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-fafa0bb655",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-0e23327f5679bdb6dd2d8121ac823e98",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "59774a84ebe627aa4a8c03821d0d4eba8dbc0c37e98b60e3021f30aa8bb2cb15"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "3e027724428e888fbbe4e87d321bf63d62eb5478b4d01f973b8bdf952ae8fc7a",
+            "context_digest": "1916ad8de6bc206c81f5be3f26d49f770bd30b0f7f97f43ec3be4aad575b78ff",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "ca531203958becab87f346f4e74f7dd4b61b87103d0191d4383419507658bdcb",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-acb23f2c93d1d4cb897e540421da6de1",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "ca531203958becab87f346f4e74f7dd4b61b87103d0191d4383419507658bdcb",
+              "error_code": "",
+              "duration_ms": 4385
+            },
+            {
+              "attempt_id": "harness-attempt-1ae4a0498b7cebfb2070c5b93ad0fd58",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "ca531203958becab87f346f4e74f7dd4b61b87103d0191d4383419507658bdcb",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-c2fc523439c4508bd9412004a6e36169",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "ca531203958becab87f346f4e74f7dd4b61b87103d0191d4383419507658bdcb",
+              "error_code": "",
+              "duration_ms": 4
+            },
+            {
+              "attempt_id": "harness-attempt-b241aa83acde3716a1126a04c57bd287",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "3a497cb6fdde97c6ece0c8726e2395201c0ea70ff364bd28d8dc27e1fd9049de",
+              "error_code": "",
+              "duration_ms": 5
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 4401,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-b61d5d646254402b",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-fafa0bb655",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-fafa0bb655",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "3a497cb6fdde97c6ece0c8726e2395201c0ea70ff364bd28d8dc27e1fd9049de"
+              }
+            ],
+            "payload_digest": "3a497cb6fdde97c6ece0c8726e2395201c0ea70ff364bd28d8dc27e1fd9049de",
+            "committed_at": "2026-09-11T17:26:05.468679Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:26:01.068358Z",
+          "completed_at": "2026-09-11T17:26:05.469668Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "code_and_math",
+      "repetition": 0,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-226d7ae0ea2c4bd28772ff02e33c1af8",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-c0a5a460def14908",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:26:05.484000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-99226349107513bd1d2105b439b40eff",
+          "operation_id": "harness-operation-226d7ae0ea2c4bd28772ff02e33c1af8",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-226d7ae0ea2c4bd28772ff02e33c1af8",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-eca86bf514",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-95ce0565876b4681b7175097be4b0750",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "ecf7a786b5cdb7162df7232264763c28e20d4e2c3dfd0d05fdf963548e924999"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "494bb22a867c9973fc9958973fad0197e5f9cb16a8e7d6858aaac26f6e43f409",
+            "context_digest": "1d6f38f223f40106dc8ff03ae3d019aee86452be568dd8d7ad66d122268f788d",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "4c267af4878bbe7cf97152457face7e8a8f4da5076ad9a310869d12301a5a439",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-244b3638f252059d7212a43105fddf13",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "4c267af4878bbe7cf97152457face7e8a8f4da5076ad9a310869d12301a5a439",
+              "error_code": "",
+              "duration_ms": 40428
+            },
+            {
+              "attempt_id": "harness-attempt-f1580f17b462c539b47d35461ab6a84e",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "4c267af4878bbe7cf97152457face7e8a8f4da5076ad9a310869d12301a5a439",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-0697a93017608aa1c170684a059313dd",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "4c267af4878bbe7cf97152457face7e8a8f4da5076ad9a310869d12301a5a439",
+              "error_code": "",
+              "duration_ms": 8
+            },
+            {
+              "attempt_id": "harness-attempt-22880ddb277514f6c2a363108a17f454",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "d6496a76bc58b2dcdf686c5e26ec934b10097623bb1826bb83e416163884ae4f",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 40453,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-d7a10ae4732641e2",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-eca86bf514",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-eca86bf514",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "d6496a76bc58b2dcdf686c5e26ec934b10097623bb1826bb83e416163884ae4f"
+              }
+            ],
+            "payload_digest": "d6496a76bc58b2dcdf686c5e26ec934b10097623bb1826bb83e416163884ae4f",
+            "committed_at": "2026-09-11T17:26:45.958480Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:26:05.506082Z",
+          "completed_at": "2026-09-11T17:26:45.959940Z"
+        }
+      ],
+      "code_rich_blocks": 1,
+      "boundary_success": true
+    },
+    {
+      "case_id": "unknown_source",
+      "repetition": 0,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-d36d6c77237c4dff8566a46d9b7f6dff",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-799c7704c8674cc2",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:26:45.978000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-62ddf766c6338edc3ace9872156838be",
+          "operation_id": "harness-operation-d36d6c77237c4dff8566a46d9b7f6dff",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-d36d6c77237c4dff8566a46d9b7f6dff",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-564e8bb816",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-4bce0f300833457af523077a16e5f59c",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "2f3f046a564e2c0491cbea504580faaa4709e6fb1a3311974072f6d07ab0fc6e"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "c2ebed46e76ab08c96b1c00d93de828345215435fa1c93b69213d5517730a932",
+            "context_digest": "0e6df74455e9d88b20a8f1930543e78ebb8192b67c6d0429a181fe6388437065",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "a135f55d0230f8b77d18861a7070a323b76d2219e58919b76058d4e4f5fa7e6e",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "2"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-8a50be63c730e40af581b25fb6fea350",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "a135f55d0230f8b77d18861a7070a323b76d2219e58919b76058d4e4f5fa7e6e",
+              "error_code": "",
+              "duration_ms": 15764
+            },
+            {
+              "attempt_id": "harness-attempt-da81ddb4be8b1d5ae8dd3017397db2dc",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "a135f55d0230f8b77d18861a7070a323b76d2219e58919b76058d4e4f5fa7e6e",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-70594d28a4e8976ad542735401701a01",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "a135f55d0230f8b77d18861a7070a323b76d2219e58919b76058d4e4f5fa7e6e",
+              "error_code": "",
+              "duration_ms": 8
+            },
+            {
+              "attempt_id": "harness-attempt-e11734dd449e2203351823a4c090b69b",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "d662d69711503e615cd222e4360373837fd8fd20dd5472f4441a51901865b47b",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 15788,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-b1915662ed784f02",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-564e8bb816",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-564e8bb816",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "d662d69711503e615cd222e4360373837fd8fd20dd5472f4441a51901865b47b"
+              }
+            ],
+            "payload_digest": "d662d69711503e615cd222e4360373837fd8fd20dd5472f4441a51901865b47b",
+            "committed_at": "2026-09-11T17:27:01.788211Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:26:46.000831Z",
+          "completed_at": "2026-09-11T17:27:01.789671Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "interactive_question",
+      "repetition": 0,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-c657245e95104238baf7b38192c3b59b",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-1a0dbbfe465b4092",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:27:01.813000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-b086c51060fc5df705f699ee876069bd",
+          "operation_id": "harness-operation-c657245e95104238baf7b38192c3b59b",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-c657245e95104238baf7b38192c3b59b",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-4e3edd28b6",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-ad43842a431f2bac94e1cec3011ea4c9",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "ccea53a2d393cb102f070d2631c92b91f9ba2453add004147894ed7d17ecb5d9"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "5ac6ac8d0fde96a2ba2b4508243c985c6b66beff00ee3a7da82d952ec3b52545",
+            "context_digest": "c74196b6033907b73a491d58b7f7d1ef69b7474df2db0bad043b4a065ddaf510",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "6d98065694c724c98f1a4d037b1235c32306f18a450d876ae44880ae97b2c140",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-ff2d62ca50abf524110ed88d60761d8f",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "6d98065694c724c98f1a4d037b1235c32306f18a450d876ae44880ae97b2c140",
+              "error_code": "",
+              "duration_ms": 19813
+            },
+            {
+              "attempt_id": "harness-attempt-5ee53bbe31d1e81c54061309db4c46b5",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "6d98065694c724c98f1a4d037b1235c32306f18a450d876ae44880ae97b2c140",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-fbd9daee42c68f67506886bb59b6770d",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "6d98065694c724c98f1a4d037b1235c32306f18a450d876ae44880ae97b2c140",
+              "error_code": "",
+              "duration_ms": 10
+            },
+            {
+              "attempt_id": "harness-attempt-641f62ac7b022bcaf82e247b6fdb11dd",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "e6f5a1bc156359a7003557bf2243f5d6c2f333ae205fedadc4288a0debfde307",
+              "error_code": "",
+              "duration_ms": 3
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 19838,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-93eb57f2dd43441d",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-4e3edd28b6",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-4e3edd28b6",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "e6f5a1bc156359a7003557bf2243f5d6c2f333ae205fedadc4288a0debfde307"
+              }
+            ],
+            "payload_digest": "e6f5a1bc156359a7003557bf2243f5d6c2f333ae205fedadc4288a0debfde307",
+            "committed_at": "2026-09-11T17:27:21.678623Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:27:01.840847Z",
+          "completed_at": "2026-09-11T17:27:21.679781Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "three_bullets",
+      "repetition": 1,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-4b40935ca5984dd3a8f3a708efadf788",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-217d18795eec4484",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:27:21.697000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-90db900483b0a37091ecdfd94b80b11c",
+          "operation_id": "harness-operation-4b40935ca5984dd3a8f3a708efadf788",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-4b40935ca5984dd3a8f3a708efadf788",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-f91d379a19",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-16785f009fa6a28b4c533fb623ef11a7",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "656abadf57515b448c7204d6d5340ffa7bbc00d23218a7a70f9b48abdbcf484a"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "9318400c928a25fe7d910e9651ed4ce15e08f995d67bb7019fa72de3a67844c9",
+            "context_digest": "0406983724a014b8adfda71f0e9a21a326778fbd39a1fc2e292e215b9d1e1f34",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "434335d6e0420866cf2622cbf7fb379b130f411ea93786f41dd55c921269313b",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-ae5e0290fe7b6e6d5023caba1ca565d1",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "434335d6e0420866cf2622cbf7fb379b130f411ea93786f41dd55c921269313b",
+              "error_code": "",
+              "duration_ms": 5024
+            },
+            {
+              "attempt_id": "harness-attempt-ef4726f2fdd4be56d77115ae4a9360fc",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "434335d6e0420866cf2622cbf7fb379b130f411ea93786f41dd55c921269313b",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-00bbf2b61587d7b1ae106580320aded8",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "434335d6e0420866cf2622cbf7fb379b130f411ea93786f41dd55c921269313b",
+              "error_code": "",
+              "duration_ms": 9
+            },
+            {
+              "attempt_id": "harness-attempt-5dca06b120d71b3e0c2618c8f8837563",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "49ea0330c3f4e3e69de3318fe6b3104bb89cc99dc365c24916f2231c358056e6",
+              "error_code": "",
+              "duration_ms": 3
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 5047,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-6b4cc4d7b7034fde",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-f91d379a19",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-f91d379a19",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "49ea0330c3f4e3e69de3318fe6b3104bb89cc99dc365c24916f2231c358056e6"
+              }
+            ],
+            "payload_digest": "49ea0330c3f4e3e69de3318fe6b3104bb89cc99dc365c24916f2231c358056e6",
+            "committed_at": "2026-09-11T17:27:26.766806Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:27:21.720594Z",
+          "completed_at": "2026-09-11T17:27:26.768303Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "code_and_math",
+      "repetition": 1,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-d2c494e16e48463ebaee63816b4f1e9b",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-27c220ccc1ec41d2",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:27:26.785000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-77689ca4681a033f3c6ee2672cc0c782",
+          "operation_id": "harness-operation-d2c494e16e48463ebaee63816b4f1e9b",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-d2c494e16e48463ebaee63816b4f1e9b",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-a796ac7d76",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-ca77299a5aa7b89e414e2fcabd41f6c6",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "28e3973d3ea1e6a94c875c32ba8e90eee6ec2e3122e1a568f08829c94e547cdc"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "19bed487dc6df1f67a84ee51aec44ab05feb16e8785ba516bdd48ddfe0a5cbcd",
+            "context_digest": "6bfdc09b407cf0b3a5c2e1007308b9dd83d9b5d2192f9a527eb11997ebf74c30",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "df7f41c50d9477f12f829f8f03057847dbd41349bb37894c368a9f057aa317fd",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-13ab07e6d1715ba6ec881504a0f9117f",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "df7f41c50d9477f12f829f8f03057847dbd41349bb37894c368a9f057aa317fd",
+              "error_code": "",
+              "duration_ms": 25393
+            },
+            {
+              "attempt_id": "harness-attempt-3a2a99bb3feaea3a66856b4fce7a8240",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "df7f41c50d9477f12f829f8f03057847dbd41349bb37894c368a9f057aa317fd",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-13159f0e1cf60a1369795a7faba674e0",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "df7f41c50d9477f12f829f8f03057847dbd41349bb37894c368a9f057aa317fd",
+              "error_code": "",
+              "duration_ms": 8
+            },
+            {
+              "attempt_id": "harness-attempt-900e2da1a43d1717e3b484c7135b0e19",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "209776203ca9cc043f357f94362a3f0b0e2d2484231749768d3bb4a6dfd55ca3",
+              "error_code": "",
+              "duration_ms": 3
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 25417,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-ee393009ae4540f7",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-a796ac7d76",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-a796ac7d76",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "209776203ca9cc043f357f94362a3f0b0e2d2484231749768d3bb4a6dfd55ca3"
+              }
+            ],
+            "payload_digest": "209776203ca9cc043f357f94362a3f0b0e2d2484231749768d3bb4a6dfd55ca3",
+            "committed_at": "2026-09-11T17:27:52.225037Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:27:26.808968Z",
+          "completed_at": "2026-09-11T17:27:52.226149Z"
+        }
+      ],
+      "code_rich_blocks": 1,
+      "boundary_success": true
+    },
+    {
+      "case_id": "unknown_source",
+      "repetition": 1,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-94a36722dbf7496aa83306924404bdd6",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-db3de23a91ad4285",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:27:52.244000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-4ab7067838316edb6cb357c873495d47",
+          "operation_id": "harness-operation-94a36722dbf7496aa83306924404bdd6",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-94a36722dbf7496aa83306924404bdd6",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-f993267d9f",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-86b0d529b877637a18b53f1c82d5b498",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "ce1e91cdb6178e874277cd606c2eb8e94eb7a680a0df35992eea282317adc926"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "919650eb47e596106de18e3bfb3f650b7c17011d465d200f84d1e462bec59d6a",
+            "context_digest": "e69a070b8c383543331759bdcf6bc07a4a35051a4f69ab95f49eef54ad4f41ba",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "b425710b8669b677ebd32ef4f5e28f01e27dc1bafddf68958e6da91d057fe29c",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-5e1d677bb3426ee99cbd64ed774b7c17",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "b425710b8669b677ebd32ef4f5e28f01e27dc1bafddf68958e6da91d057fe29c",
+              "error_code": "",
+              "duration_ms": 3501
+            },
+            {
+              "attempt_id": "harness-attempt-b77246b63e6dcd4091f6f6dbcf3da304",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "b425710b8669b677ebd32ef4f5e28f01e27dc1bafddf68958e6da91d057fe29c",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-039aa58ad80aeae71f6b5f0bac446633",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "b425710b8669b677ebd32ef4f5e28f01e27dc1bafddf68958e6da91d057fe29c",
+              "error_code": "",
+              "duration_ms": 9
+            },
+            {
+              "attempt_id": "harness-attempt-c94eb82a07215c4f31ae894e252f7c51",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "df11ab2962affd200f548da31e20dbe673ab3640962eef803e9ab23c0ebf3a8a",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 3526,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-7bc9b31dd5584478",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-f993267d9f",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-f993267d9f",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "df11ab2962affd200f548da31e20dbe673ab3640962eef803e9ab23c0ebf3a8a"
+              }
+            ],
+            "payload_digest": "df11ab2962affd200f548da31e20dbe673ab3640962eef803e9ab23c0ebf3a8a",
+            "committed_at": "2026-09-11T17:27:55.792182Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:27:52.266422Z",
+          "completed_at": "2026-09-11T17:27:55.793379Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "interactive_question",
+      "repetition": 1,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-559b39ba63b342708e1bd6844ce7ff3d",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-c4df39209c6a41d2",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:27:55.811000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-839141debdff8d408db030848d765b55",
+          "operation_id": "harness-operation-559b39ba63b342708e1bd6844ce7ff3d",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-559b39ba63b342708e1bd6844ce7ff3d",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-45f77ebc39",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-256a76897af9a2a793698ca70737e365",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "4447441043a8c883dc41f0ae88fcf84585443f774db4377a1bf6b7f8e385c560"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "de9ab67a187e4ac3f311e5b38525d225492149b50c4b46a17a31938b512a6a1b",
+            "context_digest": "0d93f54254e009df57d5c1c40d2cae573578a5ac9ec17d03f644d730b2f37d59",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "c065991e0cd6ec860b38dd69391ffb4dc0272c357cc0c37667902a98a0dc3dad",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-1025f46ccdeaf7803ff71f9cecba8100",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "c065991e0cd6ec860b38dd69391ffb4dc0272c357cc0c37667902a98a0dc3dad",
+              "error_code": "",
+              "duration_ms": 13820
+            },
+            {
+              "attempt_id": "harness-attempt-64904f238821962bb2a58e4c060920d1",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "c065991e0cd6ec860b38dd69391ffb4dc0272c357cc0c37667902a98a0dc3dad",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-52964b60bb1244dd3c11226691020cfa",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "c065991e0cd6ec860b38dd69391ffb4dc0272c357cc0c37667902a98a0dc3dad",
+              "error_code": "",
+              "duration_ms": 9
+            },
+            {
+              "attempt_id": "harness-attempt-4a4436a293f6f3bf2cf7c99425a9c71f",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "dac8db278e9a83ffa946c8c6c79bf83d3308ab234d77e474f03f7a933e31b618",
+              "error_code": "",
+              "duration_ms": 3
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 13844,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-4b37676c4ad542cc",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-45f77ebc39",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-45f77ebc39",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "dac8db278e9a83ffa946c8c6c79bf83d3308ab234d77e474f03f7a933e31b618"
+              }
+            ],
+            "payload_digest": "dac8db278e9a83ffa946c8c6c79bf83d3308ab234d77e474f03f7a933e31b618",
+            "committed_at": "2026-09-11T17:28:09.677468Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:27:55.833689Z",
+          "completed_at": "2026-09-11T17:28:09.678604Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "three_bullets",
+      "repetition": 2,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-3b492eb2d6fb4de3bd9454b343549f56",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-463e229196f54cd5",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:28:09.697000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-45fee68cfc55e6fadd1ef1fad12fa0dc",
+          "operation_id": "harness-operation-3b492eb2d6fb4de3bd9454b343549f56",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-3b492eb2d6fb4de3bd9454b343549f56",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-5b7c18d05b",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-584a1e409688453f067b75938397471c",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "cf21660ea090fba4a9fa7d0b7d88268d9445cbcf3be890240e6f105fb05a7c38"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "6431461605a8d4b5e40a146f961fc067b479b0bb8ba4cf9298c8c688da138d4a",
+            "context_digest": "caff2d0cc35895516f53b1b83e38c83c062fc9a4be8b7ff47559f6a5c4691b4b",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "a083a2e39fead8f502f01c93c32d5568105e5a52d91796cc862b19baf328e1c0",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-eea607070a6806df8b288c520c364a0c",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "a083a2e39fead8f502f01c93c32d5568105e5a52d91796cc862b19baf328e1c0",
+              "error_code": "",
+              "duration_ms": 4628
+            },
+            {
+              "attempt_id": "harness-attempt-6db008387cc4d7632b0b841c847f4883",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "a083a2e39fead8f502f01c93c32d5568105e5a52d91796cc862b19baf328e1c0",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-a8e1ec3f42cde0fa8927e24ecc6cffd2",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "a083a2e39fead8f502f01c93c32d5568105e5a52d91796cc862b19baf328e1c0",
+              "error_code": "",
+              "duration_ms": 8
+            },
+            {
+              "attempt_id": "harness-attempt-df1c28ca097b4ff5b5dae5366d6db81d",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "e5d9a95d58a111d7b53f3b9b8dcc7f3a0bb1669c199876848fe6e18cb497bacf",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 4654,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-e721c1ec7f244908",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-5b7c18d05b",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-5b7c18d05b",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "e5d9a95d58a111d7b53f3b9b8dcc7f3a0bb1669c199876848fe6e18cb497bacf"
+              }
+            ],
+            "payload_digest": "e5d9a95d58a111d7b53f3b9b8dcc7f3a0bb1669c199876848fe6e18cb497bacf",
+            "committed_at": "2026-09-11T17:28:14.373306Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:28:09.720222Z",
+          "completed_at": "2026-09-11T17:28:14.374771Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "code_and_math",
+      "repetition": 2,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-0112575f5d2e4eff94088d69f9d4cc24",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-4137563fe77247ae",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:28:14.392000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-acf77aebb2315cca0b06673a51eb08c9",
+          "operation_id": "harness-operation-0112575f5d2e4eff94088d69f9d4cc24",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-0112575f5d2e4eff94088d69f9d4cc24",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-7af9581a73",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-59f1b7ced03ffc5106e51c6518241c1e",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "274bbfa99c2cc3af630d3c5deaa4343e0833a9615f6901cf0d9c54112368ce74"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "f6a39efb965196dd2b008762ba65ae3c0442627377ff083b931e9d68539a0077",
+            "context_digest": "a464e563beb47186562fc3ec02ccbad139eb12599a1e30fa961e0aad2f523576",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "fbdba8bd8bcc756ae63b83c4f1ab9bdf55c821dd5e2ca2edc5b9f19cd66fc20a",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-7cc4ae7bb43dc32cbef96323294f9a4e",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "fbdba8bd8bcc756ae63b83c4f1ab9bdf55c821dd5e2ca2edc5b9f19cd66fc20a",
+              "error_code": "",
+              "duration_ms": 13297
+            },
+            {
+              "attempt_id": "harness-attempt-07e5275fa7f94c4a81a98989ab0dc14c",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "fbdba8bd8bcc756ae63b83c4f1ab9bdf55c821dd5e2ca2edc5b9f19cd66fc20a",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-f3e073dfd3d9a22da4f39aaf29096f3e",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "fbdba8bd8bcc756ae63b83c4f1ab9bdf55c821dd5e2ca2edc5b9f19cd66fc20a",
+              "error_code": "",
+              "duration_ms": 8
+            },
+            {
+              "attempt_id": "harness-attempt-631e12ec4287cc383333ceb488af018c",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "2cb736a01356d6e702429b7c0bc9f6cf85925ce202c48cece31839b7516ab07c",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 13319,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-227039ddc4a8421c",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-7af9581a73",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-7af9581a73",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "2cb736a01356d6e702429b7c0bc9f6cf85925ce202c48cece31839b7516ab07c"
+              }
+            ],
+            "payload_digest": "2cb736a01356d6e702429b7c0bc9f6cf85925ce202c48cece31839b7516ab07c",
+            "committed_at": "2026-09-11T17:28:27.734780Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:28:14.416680Z",
+          "completed_at": "2026-09-11T17:28:27.736042Z"
+        }
+      ],
+      "code_rich_blocks": 1,
+      "boundary_success": true
+    },
+    {
+      "case_id": "unknown_source",
+      "repetition": 2,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-009484df476f46df8fa3a4f778e19a01",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-ab71312201804188",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:28:27.753000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-2db6a7b1da199d272dd3cc581206af5c",
+          "operation_id": "harness-operation-009484df476f46df8fa3a4f778e19a01",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-009484df476f46df8fa3a4f778e19a01",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-28c54d2e17",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-8cc9f6d2baf180f8ad35c2f75136422d",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "276b1e5ab6a5ec911809e996b6e643efad341c5a357d3f1d07c92e29bb19d898"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "eaf4269ba8dbc3fe87e7f0382f0ac8f9954bca9b40bf2c44580cb4788e14fe61",
+            "context_digest": "16c5020d214971772d7a3aa8f6b2893919f6fde5bdf61414e0fd286e6bbd88a3",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "759b2fd3c9f217656f41af4e4f9cb1e15cfdf483a4f931d278a008e2b5294cb7",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-72747da954f22bc6017f43fa7f146741",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "759b2fd3c9f217656f41af4e4f9cb1e15cfdf483a4f931d278a008e2b5294cb7",
+              "error_code": "",
+              "duration_ms": 4591
+            },
+            {
+              "attempt_id": "harness-attempt-3537f0b939f61112842c6f6d15db262b",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "759b2fd3c9f217656f41af4e4f9cb1e15cfdf483a4f931d278a008e2b5294cb7",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-8142d2aac1f2ead94f6ebd0ea439626c",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "759b2fd3c9f217656f41af4e4f9cb1e15cfdf483a4f931d278a008e2b5294cb7",
+              "error_code": "",
+              "duration_ms": 9
+            },
+            {
+              "attempt_id": "harness-attempt-5effd532d83c410e8aebfc82ba25ce62",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "2a1ba3c81f5b24a0ab3d0eef4377430353c915588f49bbd870cdc49f5261894c",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 4616,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-f235e363efea4c9a",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-28c54d2e17",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-28c54d2e17",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "2a1ba3c81f5b24a0ab3d0eef4377430353c915588f49bbd870cdc49f5261894c"
+              }
+            ],
+            "payload_digest": "2a1ba3c81f5b24a0ab3d0eef4377430353c915588f49bbd870cdc49f5261894c",
+            "committed_at": "2026-09-11T17:28:32.391866Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:28:27.776988Z",
+          "completed_at": "2026-09-11T17:28:32.393073Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    },
+    {
+      "case_id": "interactive_question",
+      "repetition": 2,
+      "harness_operation_binding": {
+        "schema_name": "HarnessOperationBindingV1",
+        "schema_version": "harness-operation-binding-v1",
+        "harness_operation_id": "harness-operation-5d9e35a3fe094abd9e2505d228ec96f0",
+        "domain_operation_kind": "study_chat",
+        "domain_operation_id": "study-chat-op-a7cd22f7e5754b34",
+        "workflow": "study_chat",
+        "entry_stage": "study_chat_reply",
+        "parent_harness_operation_id": null,
+        "admitted_at": "2026-09-11T17:28:32.411000Z"
+      },
+      "terminal_traces": [
+        {
+          "trace_schema_version": "harness-trace-v3",
+          "trace_id": "harness-trace-b54e974603fad0bf3d207749999c895c",
+          "operation_id": "harness-operation-5d9e35a3fe094abd9e2505d228ec96f0",
+          "parent_trace_id": null,
+          "workflow": "study_chat",
+          "stage": "study_chat_reply",
+          "status": "passed",
+          "contract": {
+            "name": "StudyChatReply",
+            "version": "study-chat-reply-trace-v1"
+          },
+          "context": {
+            "context_contract": {
+              "name": "HarnessContextEnvelopeV3",
+              "version": "harness-context-v3"
+            },
+            "workflow": "study_chat",
+            "stage": "study_chat_reply",
+            "operation_id": "harness-operation-5d9e35a3fe094abd9e2505d228ec96f0",
+            "input_contract": {
+              "name": "StudyChatInputManifest",
+              "version": "study-chat-input-manifest-v1"
+            },
+            "subject_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-4ea3d048ca",
+                "revision": 0
+              }
+            ],
+            "component_versions": [
+              {
+                "name": "study_chat_prompt",
+                "version": "study-chat-prompt-v1"
+              },
+              {
+                "name": "study_chat_toolset",
+                "version": "study-chat-toolset-v1"
+              }
+            ],
+            "snapshot_refs": [
+              {
+                "artifact_type": "study_session_snapshot",
+                "artifact_id": "harness-artifact-69afd2486de4c4dbf36576390232896a",
+                "contract": {
+                  "name": "StudyChatProtectedSnapshot",
+                  "version": "study-chat-protected-snapshot-v1"
+                },
+                "digest_algorithm": "sha256",
+                "payload_digest": "ea773ec35e48d61dbe69aebb8e155e7b3da2d2ef98178e80bffd7c515123f304"
+              }
+            ],
+            "digest_algorithm": "sha256",
+            "digest_contract": {
+              "name": "HarnessContextManifestDigest",
+              "version": "harness-context-manifest-digest-v1"
+            },
+            "input_digest": "e429cc24705b6c9517c721252dcfe239aa88f5b7dae197f09bb1dfa51d8fdaf4",
+            "context_digest": "7fea0e420a497cbeb6c4b072dda7d5a1277aa95a936c94b2cbb321026cea3096",
+            "policy_contract": {
+              "name": "StudyChatHarnessPolicy",
+              "version": "study-chat-harness-v1"
+            },
+            "prompt_contract": {
+              "name": "StudyChatPrompt",
+              "version": "study-chat-prompt-v1"
+            }
+          },
+          "output_digest": "bb038849a62cec7187a1fd5247df2f13a22764c32d6ef3122694eed3b3690957",
+          "checks": [
+            {
+              "name": "study_chat_reply_schema",
+              "status": "passed",
+              "code": "",
+              "message": ""
+            },
+            {
+              "name": "study_chat_citation_sources",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_character_events",
+              "status": "passed",
+              "code": "",
+              "message": "1"
+            },
+            {
+              "name": "study_chat_nested_tools",
+              "status": "passed",
+              "code": "",
+              "message": "0"
+            }
+          ],
+          "attempt_records": [
+            {
+              "attempt_id": "harness-attempt-5ebcf3fbeefcb129ed8ecb81de78e23f",
+              "attempt_index": 1,
+              "phase": "generate",
+              "status": "passed",
+              "output_digest": "bb038849a62cec7187a1fd5247df2f13a22764c32d6ef3122694eed3b3690957",
+              "error_code": "",
+              "duration_ms": 23955
+            },
+            {
+              "attempt_id": "harness-attempt-023baf5b94806867367c59ca153075fd",
+              "attempt_index": 2,
+              "phase": "decode",
+              "status": "passed",
+              "output_digest": "bb038849a62cec7187a1fd5247df2f13a22764c32d6ef3122694eed3b3690957",
+              "error_code": "",
+              "duration_ms": 0
+            },
+            {
+              "attempt_id": "harness-attempt-539d35ec76be9f22bff66467e1fafb72",
+              "attempt_index": 3,
+              "phase": "validate",
+              "status": "passed",
+              "output_digest": "bb038849a62cec7187a1fd5247df2f13a22764c32d6ef3122694eed3b3690957",
+              "error_code": "",
+              "duration_ms": 10
+            },
+            {
+              "attempt_id": "harness-attempt-44f5255e410b9927f78dad54349537eb",
+              "attempt_index": 4,
+              "phase": "commit",
+              "status": "passed",
+              "output_digest": "8a0b30474ff92b29d712495ba71620e98b2ff712e962abd64a9a2e9e05847570",
+              "error_code": "",
+              "duration_ms": 4
+            }
+          ],
+          "recovery_strategy": "none",
+          "error_code": "",
+          "duration_ms": 23981,
+          "commit_evidence": {
+            "status": "committed",
+            "effect_batch_id": "study-turn-turn-c128b63bdac44e32",
+            "payload_contract": {
+              "name": "StudySessionTurnCommittedProjection",
+              "version": "study-chat-turn-committed-projection-v1"
+            },
+            "digest_algorithm": "sha256",
+            "digest_scope": "committed_projection",
+            "attempted_resource_refs": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-4ea3d048ca",
+                "revision": 0
+              }
+            ],
+            "committed_resources": [
+              {
+                "resource_type": "study_session",
+                "resource_id": "session-4ea3d048ca",
+                "expected_revision": 0,
+                "committed_revision": 1,
+                "first_sequence": null,
+                "last_sequence": null,
+                "payload_digest": "8a0b30474ff92b29d712495ba71620e98b2ff712e962abd64a9a2e9e05847570"
+              }
+            ],
+            "payload_digest": "8a0b30474ff92b29d712495ba71620e98b2ff712e962abd64a9a2e9e05847570",
+            "committed_at": "2026-09-11T17:28:56.414672Z",
+            "rollback_reason_code": "",
+            "rolled_back_at": null
+          },
+          "started_at": "2026-09-11T17:28:32.434660Z",
+          "completed_at": "2026-09-11T17:28:56.415851Z"
+        }
+      ],
+      "code_rich_blocks": 0,
+      "boundary_success": true
+    }
+  ]
+}
