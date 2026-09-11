@@ -631,3 +631,12 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [逐字段复核](evidence/minimax-incremental-memory-schema-review-v3.json)候选六个最终回答中4个语义正确；第一轮文字/结构化压缩后的回答均把撤销状态判为unknown，尽管最终摘要明确保留“已撤销”或status=revoked。这次错误位于答案解释，不能归为压缩丢字。第二轮两种压缩回答只是“平等同行关系”“平等同行，非师生”的措辞差异，不能因为整字典不完全相同就判事实失败；原始exact指标保留，另附语义分项。
 
 来源字段也需拆清：候选结构化第二轮保留旧暗号值、revoked状态，source_id却为u1；它可能指值的来源，而撤销来自u2。单一source_id未明确区分值来源和状态来源，本批不把它武断判成来源错误，后续分别建模再检验。未采用生产压缩器或更改业务契约。
+
+
+## 轮次 58：状态语义与来源拆分候选通过撤销和重新启用用例
+
+实验契约将value_source_id与status_source_id分开：旧暗号值由u1给出，u2撤销；归档或再次确认不覆盖事件来源。同时为状态枚举补充语义：revoked为明确撤销且无新有效约定，unknown仅为无足够记录，code写未知不强制status=unknown。这是实验DTO与提示改进，不向生产写入新的记忆状态。
+
+[保持撤销18次调用](evidence/minimax-memory-status-v4.jsonl)和[第四轮启用新暗号22次调用](evidence/minimax-memory-renewal-v5.jsonl)全部严格JSON与schema通过。[字段及成本审查](evidence/minimax-memory-state-semantics-review-v5.json)12个最终回答的地点、暗号值、状态、新称呼与平等同行关系均正确；“平等同行（非师生）”按等价语义计入。结构化链保留值来源u1、撤销来源u2，启用新暗号后两者都改为u4，没有固守旧撤销状态。
+
+本批每条件仅两条合成链，且同时修改状态说明与来源结构，不能独立归因或宣称泛化。preference仍把语言、称呼、关系合并成一个值，单个来源对无法完整表达每个子事实的不同出处；后续需要原子事实粒度。摘要创建输入量与延迟均计入成本，缓存按provider原报告保留，不声称稳定缓存收益。探针通过Python编译和schema/四阶段fixture检查；无生产Harness采用声明。

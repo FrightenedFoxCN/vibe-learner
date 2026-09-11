@@ -1,0 +1,343 @@
+{
+  "scope": "Maintainer review of explicit status semantics and split value/status provenance",
+  "limitations": [
+    "Two synthetic chains per condition; no independent quality certification or production adoption.",
+    "Changes include both schema descriptions and source-field split; no attribution of effect to either alone.",
+    "Composite preference combines language, address and relationship; one pair of source ids is not atomic provenance for each subfact.",
+    "Summary creation is included in reported total prompt tokens and latency; no cold/warm cache control."
+  ],
+  "rows": [
+    {
+      "batch": "status-v4",
+      "repetition": 0,
+      "variant": "prose",
+      "requests": 4,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 4,
+      "prompt_tokens_including_compression": 14859,
+      "elapsed_ms_including_compression": 15386,
+      "code_source_checks": []
+    },
+    {
+      "batch": "status-v4",
+      "repetition": 0,
+      "variant": "state",
+      "requests": 4,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 4,
+      "prompt_tokens_including_compression": 15807,
+      "elapsed_ms_including_compression": 11714,
+      "code_source_checks": [
+        {
+          "stage": 0,
+          "status": "active",
+          "value_source": "u1",
+          "status_source": "u1",
+          "expected_value_source": "u1",
+          "expected_status_source": "u1"
+        },
+        {
+          "stage": 1,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        },
+        {
+          "stage": 2,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        }
+      ]
+    },
+    {
+      "batch": "status-v4",
+      "repetition": 0,
+      "variant": "full_history",
+      "requests": 1,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 1,
+      "prompt_tokens_including_compression": 13589,
+      "elapsed_ms_including_compression": 6653,
+      "code_source_checks": []
+    },
+    {
+      "batch": "status-v4",
+      "repetition": 1,
+      "variant": "prose",
+      "requests": 4,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 4,
+      "prompt_tokens_including_compression": 14805,
+      "elapsed_ms_including_compression": 12327,
+      "code_source_checks": []
+    },
+    {
+      "batch": "status-v4",
+      "repetition": 1,
+      "variant": "state",
+      "requests": 4,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 4,
+      "prompt_tokens_including_compression": 15816,
+      "elapsed_ms_including_compression": 15623,
+      "code_source_checks": [
+        {
+          "stage": 0,
+          "status": "active",
+          "value_source": "u1",
+          "status_source": "u1",
+          "expected_value_source": "u1",
+          "expected_status_source": "u1"
+        },
+        {
+          "stage": 1,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        },
+        {
+          "stage": 2,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        }
+      ]
+    },
+    {
+      "batch": "status-v4",
+      "repetition": 1,
+      "variant": "full_history",
+      "requests": 1,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 1,
+      "prompt_tokens_including_compression": 13589,
+      "elapsed_ms_including_compression": 4405,
+      "code_source_checks": []
+    },
+    {
+      "batch": "renewal-v5",
+      "repetition": 0,
+      "variant": "prose",
+      "requests": 5,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 5,
+      "prompt_tokens_including_compression": 19596,
+      "elapsed_ms_including_compression": 21408,
+      "code_source_checks": []
+    },
+    {
+      "batch": "renewal-v5",
+      "repetition": 0,
+      "variant": "state",
+      "requests": 5,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 5,
+      "prompt_tokens_including_compression": 20941,
+      "elapsed_ms_including_compression": 22159,
+      "code_source_checks": [
+        {
+          "stage": 0,
+          "status": "active",
+          "value_source": "u1",
+          "status_source": "u1",
+          "expected_value_source": "u1",
+          "expected_status_source": "u1"
+        },
+        {
+          "stage": 1,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        },
+        {
+          "stage": 2,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        },
+        {
+          "stage": 3,
+          "status": "active",
+          "value_source": "u4",
+          "status_source": "u4",
+          "expected_value_source": "u4",
+          "expected_status_source": "u4"
+        }
+      ]
+    },
+    {
+      "batch": "renewal-v5",
+      "repetition": 0,
+      "variant": "full_history",
+      "requests": 1,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 1,
+      "prompt_tokens_including_compression": 17973,
+      "elapsed_ms_including_compression": 3543,
+      "code_source_checks": []
+    },
+    {
+      "batch": "renewal-v5",
+      "repetition": 1,
+      "variant": "prose",
+      "requests": 5,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 5,
+      "prompt_tokens_including_compression": 19596,
+      "elapsed_ms_including_compression": 16662,
+      "code_source_checks": []
+    },
+    {
+      "batch": "renewal-v5",
+      "repetition": 1,
+      "variant": "state",
+      "requests": 5,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 5,
+      "prompt_tokens_including_compression": 20965,
+      "elapsed_ms_including_compression": 52563,
+      "code_source_checks": [
+        {
+          "stage": 0,
+          "status": "active",
+          "value_source": "u1",
+          "status_source": "u1",
+          "expected_value_source": "u1",
+          "expected_status_source": "u1"
+        },
+        {
+          "stage": 1,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        },
+        {
+          "stage": 2,
+          "status": "revoked",
+          "value_source": "u1",
+          "status_source": "u2",
+          "expected_value_source": "u1",
+          "expected_status_source": "u2"
+        },
+        {
+          "stage": 3,
+          "status": "active",
+          "value_source": "u4",
+          "status_source": "u4",
+          "expected_value_source": "u4",
+          "expected_status_source": "u4"
+        }
+      ]
+    },
+    {
+      "batch": "renewal-v5",
+      "repetition": 1,
+      "variant": "full_history",
+      "requests": 1,
+      "field_checks": {
+        "meeting": true,
+        "code": true,
+        "code_status": true,
+        "address": true,
+        "relationship": true
+      },
+      "semantic_answer_pass": true,
+      "strict_json_count": 1,
+      "prompt_tokens_including_compression": 17973,
+      "elapsed_ms_including_compression": 3814,
+      "code_source_checks": []
+    }
+  ]
+}
