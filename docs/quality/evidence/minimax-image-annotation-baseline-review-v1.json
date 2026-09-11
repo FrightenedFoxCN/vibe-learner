@@ -1,0 +1,59 @@
+{
+  "scope": "synthetic PDF-to-image geometry review; not general image grounding certification",
+  "oracle": "Exact source PDF text bounds; attachment is the same fixture rasterized at 144 DPI. Oracle never supplied to candidate.",
+  "criterion": "Committed response, exactly one rectangle, IoU >= 0.5. Also retain target coverage and raw rectangles.",
+  "rows": [
+    {
+      "case_id": "attachment_image_annotation",
+      "repetition": 0,
+      "operation_id": "harness-operation-2d703c62351c41a8b6725b7afe00ece0",
+      "boundary_success": true,
+      "visual_variant": "original",
+      "target_normalized_xyxy": [
+        0.21572434882155989,
+        0.12847243465323913,
+        0.3166453129103204,
+        0.1480543811644058
+      ],
+      "boxes": [
+        {
+          "rect": {
+            "x": 0.105,
+            "y": 0.175,
+            "width": 0.165,
+            "height": 0.028
+          },
+          "target_coverage": 0.0,
+          "iou": 0.0
+        }
+      ],
+      "single_box_iou_at_least_half": false
+    },
+    {
+      "case_id": "attachment_image_annotation",
+      "repetition": 1,
+      "operation_id": "harness-operation-7d5b930785a942f6badf07279f305e6c",
+      "boundary_success": true,
+      "visual_variant": "original",
+      "target_normalized_xyxy": [
+        0.21572434882155989,
+        0.12847243465323913,
+        0.3166453129103204,
+        0.1480543811644058
+      ],
+      "boxes": [
+        {
+          "rect": {
+            "x": 0.155,
+            "y": 0.168,
+            "width": 0.14,
+            "height": 0.026
+          },
+          "target_coverage": 0.0,
+          "iou": 0.0
+        }
+      ],
+      "single_box_iou_at_least_half": false
+    }
+  ]
+}

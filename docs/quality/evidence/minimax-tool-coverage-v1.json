@@ -1,0 +1,327 @@
+{
+  "scope": "admitted-operation tool coverage lower bound",
+  "git_revision": "8118e792fb77ca53a1f50089d211fd2c974af6e9",
+  "limitations": [
+    "Deduplicated by Harness operation ID, including duplicated evidence exports.",
+    "Missing tool result diagnostics are unknown, not failure.",
+    "Tool ok and domain commit do not prove answer quality, native image receipt, or independent review.",
+    "Direct provider experiments without admission are excluded."
+  ],
+  "source_files": [
+    "minimax-book-english-native-v1.jsonl",
+    "minimax-book-french-layer-v1.jsonl",
+    "minimax-book-image-order-repair-v1.jsonl",
+    "minimax-book-image-tools-v1.jsonl",
+    "minimax-book-persona-image-pairs-v1.jsonl",
+    "minimax-detail-scope-live-v1.jsonl",
+    "minimax-domain-baseline-v1.jsonl",
+    "minimax-domain-observed-v1.jsonl",
+    "minimax-evidence-choice-pairs-v1.jsonl",
+    "minimax-french-budget-guard-v2.jsonl",
+    "minimax-grounding-pairs-v1.jsonl",
+    "minimax-history-json-candidate-v1.jsonl",
+    "minimax-history-retention-envelope-v2.jsonl",
+    "minimax-history-retention-v1.jsonl",
+    "minimax-history-updates-diagnostics-v2.jsonl",
+    "minimax-history-updates-v1.jsonl",
+    "minimax-image-confirm-v3.jsonl",
+    "minimax-image-repair-evidence-loss-v1.jsonl",
+    "minimax-injected-page-pairs-v1.jsonl",
+    "minimax-persona-comparison-v1.jsonl",
+    "minimax-persona-policy-v2.jsonl",
+    "minimax-persona-schema-observed-v1.jsonl",
+    "minimax-persona-schema-repair-v2.jsonl",
+    "minimax-planning-baseline-v1.jsonl",
+    "minimax-planning-budget-candidate-v1.jsonl",
+    "minimax-planning-detail-budget-production-v2.jsonl",
+    "minimax-planning-detail-parallel-v1.jsonl",
+    "minimax-planning-index-normalized-v1.jsonl",
+    "minimax-planning-index-observed-v1.jsonl",
+    "minimax-planning-round-pairs-v1.jsonl",
+    "minimax-planning-shape-observed-v1.jsonl",
+    "minimax-planning-tools-observed-v1.jsonl",
+    "minimax-retained-image-repair-v1.jsonl",
+    "minimax-scene-comparison-v1.jsonl",
+    "minimax-study-attachment-tools-v1.jsonl",
+    "minimax-study-baseline-v1.jsonl",
+    "minimax-study-cache-pairs-v1.jsonl",
+    "minimax-study-format-pairs-v1.jsonl",
+    "minimax-study-grid-pairs-v1.jsonl",
+    "minimax-study-image-delivery-v2.jsonl",
+    "minimax-study-observed-v1.jsonl",
+    "minimax-study-question-contract-candidate-v1.jsonl",
+    "minimax-study-question-diagnostics-v1.jsonl",
+    "minimax-study-question-guards-v1.jsonl",
+    "minimax-study-question-markdown-v2.jsonl",
+    "minimax-study-question-reasons-v1.jsonl",
+    "minimax-study-request-placement-v2.jsonl",
+    "minimax-study-state-tools-v1.jsonl",
+    "minimax-study-tool-expansion-v1.jsonl",
+    "minimax-tavern-baseline-v1.jsonl",
+    "minimax-tavern-empty-history-v1.jsonl",
+    "minimax-tavern-grounding-candidate-v1.jsonl",
+    "minimax-tavern-sdk-baseline-v1.jsonl",
+    "minimax-tavern-split-v1.jsonl"
+  ],
+  "tools": [
+    {
+      "workflow": "planning",
+      "tool": "ask_planning_question",
+      "requested_operations": 6,
+      "successful_tool_operations": 2,
+      "successful_tool_and_boundary_operations": 2
+    },
+    {
+      "workflow": "planning",
+      "tool": "estimate_plan_completion",
+      "requested_operations": 55,
+      "successful_tool_operations": 39,
+      "successful_tool_and_boundary_operations": 39
+    },
+    {
+      "workflow": "planning",
+      "tool": "get_study_unit_detail",
+      "requested_operations": 57,
+      "successful_tool_operations": 40,
+      "successful_tool_and_boundary_operations": 40
+    },
+    {
+      "workflow": "planning",
+      "tool": "read_page_range_content",
+      "requested_operations": 35,
+      "successful_tool_operations": 19,
+      "successful_tool_and_boundary_operations": 19
+    },
+    {
+      "workflow": "planning",
+      "tool": "read_page_range_images",
+      "requested_operations": 5,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
+    },
+    {
+      "workflow": "planning",
+      "tool": "revise_study_units",
+      "requested_operations": 33,
+      "successful_tool_operations": 16,
+      "successful_tool_and_boundary_operations": 16
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "add_object",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "add_scene",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "annotate_projected_image_region",
+      "requested_operations": 6,
+      "successful_tool_operations": 6,
+      "successful_tool_and_boundary_operations": 6
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "annotate_projected_pdf_region",
+      "requested_operations": 1,
+      "successful_tool_operations": 1,
+      "successful_tool_and_boundary_operations": 1
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "ask_fill_blank_question",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "ask_multiple_choice_question",
+      "requested_operations": 2,
+      "successful_tool_operations": 2,
+      "successful_tool_and_boundary_operations": 2
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "clear_projected_image_overlays",
+      "requested_operations": 1,
+      "successful_tool_operations": 1,
+      "successful_tool_and_boundary_operations": 1
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "clear_projected_pdf_overlays",
+      "requested_operations": 2,
+      "successful_tool_operations": 2,
+      "successful_tool_and_boundary_operations": 2
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "delete_object",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "focus_projected_pdf_page",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "generate_projected_image",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "highlight_projected_pdf_text",
+      "requested_operations": 2,
+      "successful_tool_operations": 2,
+      "successful_tool_and_boundary_operations": 2
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "move_to_scene",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "project_uploaded_image",
+      "requested_operations": 6,
+      "successful_tool_operations": 6,
+      "successful_tool_and_boundary_operations": 6
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "project_uploaded_pdf",
+      "requested_operations": 4,
+      "successful_tool_operations": 4,
+      "successful_tool_and_boundary_operations": 4
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_affinity_state",
+      "requested_operations": 4,
+      "successful_tool_operations": 4,
+      "successful_tool_and_boundary_operations": 4
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_learning_plan_progress",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_page_range_content",
+      "requested_operations": 11,
+      "successful_tool_operations": 11,
+      "successful_tool_and_boundary_operations": 11
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_page_range_images",
+      "requested_operations": 12,
+      "successful_tool_operations": 12,
+      "successful_tool_and_boundary_operations": 12
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_projected_pdf_content",
+      "requested_operations": 2,
+      "successful_tool_operations": 2,
+      "successful_tool_and_boundary_operations": 2
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_projected_pdf_images",
+      "requested_operations": 2,
+      "successful_tool_operations": 2,
+      "successful_tool_and_boundary_operations": 2
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_scene_overview",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_session_memory",
+      "requested_operations": 11,
+      "successful_tool_operations": 11,
+      "successful_tool_and_boundary_operations": 11
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "read_system_time",
+      "requested_operations": 4,
+      "successful_tool_operations": 4,
+      "successful_tool_and_boundary_operations": 4
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "retrieve_memory_context",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "schedule_session_follow_up",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "update_affinity_state",
+      "requested_operations": 5,
+      "successful_tool_operations": 5,
+      "successful_tool_and_boundary_operations": 5
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "update_learning_plan",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "update_learning_plan_progress",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "update_object_description",
+      "requested_operations": 0,
+      "successful_tool_operations": 0,
+      "successful_tool_and_boundary_operations": 0
+    },
+    {
+      "workflow": "study_chat",
+      "tool": "write_session_memory",
+      "requested_operations": 12,
+      "successful_tool_operations": 12,
+      "successful_tool_and_boundary_operations": 12
+    }
+  ]
+}

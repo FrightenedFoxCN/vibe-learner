@@ -350,3 +350,17 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 ## 轮次 27：重申用户要求没有增加本批格式通过数
 
 [三类任务十二次操作](evidence/minimax-study-request-placement-v2.jsonl)全部提交。[逐行格式复核及输入量](evidence/minimax-study-request-placement-v2-grade.json)显示，仅格式澄清和工具后再附本轮原始要求均为4/6符合恰好两条列表且无额外段落；重申组的文字任务两例通过，但图片任务两例都未通过。没有净通过数收益，不把这个额外重复策略加入生产，也不据此声称“最新位置”策略对其他任务无效。输入token与请求数保留在分组记录中，未用交错小样本推断稳定时延或缓存收益。
+
+## 轮次 28：工具覆盖、状态操作与附件视觉定位
+
+新增可重跑的覆盖汇总：按已准入Harness operation ID去重，避免同一实验在多个证据文件重复导出而膨胀样本数；没有工具结果时记为未知，直接provider实验不计入领域准入覆盖。[当前覆盖表](evidence/minimax-tool-coverage-v1.json)显示Planning为6/6，Study由本轮前7/31增至17/31。该指标只要求工具ok与领域boundary_success，不代表语义、图像实收或独立质量验收。
+
+[九次状态工具操作](evidence/minimax-study-state-tools-v1.jsonl)全部提交：三次read→update(+5)→read均从0到5；三次要求单次+100且不可拆分都保持0，没有执行越界写入；三次日期输出与采样窗口的本地日期及CST一致。超限回复虽执行正确，却冗长并反复建议用户已排除的分拆方案，保留为对话质量问题。
+
+[六次附件操作](evidence/minimax-study-attachment-tools-v1.jsonl)全部提交。两次PDF投射后读取文字和图像均实际发送图像；两次高亮再清理都以空overlays读回。其中一例重复清除三次，且PDF阅读任务两例都没有遵守两条列表要求。图片框选两例工具ok、状态提交，但[几何复核](evidence/minimax-image-annotation-baseline-review-v1.json)与真实方程区域的交集都为0；一例PDF阅读中自主增加的框选也落在正文下方。不能把成功调用当作视觉定位成功。
+
+![绿色为原始PDF文字边界，红色为模型框选](evidence/minimax-annotation-review-v1.png)
+
+研究线索：[Set-of-Mark Prompting](https://arxiv.org/abs/2310.11441v2)摘要介绍给分割区域加视觉标记以辅助定位。这里没有复现其分割器或GPT-4V结果，只据此探索原图加均匀坐标网格：不提供目标框、不使用正确答案，仍由模型选择归一化坐标。[四次交错对照](evidence/minimax-study-grid-pairs-v1.jsonl)与[原始几何指标](evidence/minimax-study-grid-review-v1.json)显示，原图两例IoU为0.0713/0，网格两例为0/0.0476，四例均未达到“已提交、恰好一个框、IoU≥0.5”标准，网格未采用。评审只针对同一合成PDF栅格化得到的图片，原PDF坐标仅用于事后评分，不作为模型输入；不是通用视觉定位或独立评审认证。
+
+下一步继续补足尚无成功执行证据的Study工具，并区分文字锚点定位、无文字层图片定位、prepared状态下重复写工具的行为。没有因本轮无有效视觉候选而放宽坐标正确性标准。

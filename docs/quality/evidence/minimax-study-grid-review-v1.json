@@ -1,0 +1,111 @@
+{
+  "scope": "synthetic PDF-to-image geometry review; not general image grounding certification",
+  "oracle": "Exact source PDF text bounds; attachment is the same fixture rasterized at 144 DPI. Oracle never supplied to candidate.",
+  "criterion": "Committed response, exactly one rectangle, IoU >= 0.5. Also retain target coverage and raw rectangles.",
+  "rows": [
+    {
+      "case_id": "attachment_image_annotation",
+      "repetition": 0,
+      "operation_id": "harness-operation-e488a0971aaa41e6aee76728332a960e",
+      "boundary_success": true,
+      "visual_variant": "original",
+      "target_normalized_xyxy": [
+        0.21572434882155989,
+        0.12847243465323913,
+        0.3166453129103204,
+        0.1480543811644058
+      ],
+      "boxes": [
+        {
+          "rect": {
+            "x": 0.123,
+            "y": 0.116,
+            "width": 0.115,
+            "height": 0.028
+          },
+          "target_coverage": 0.17502356014992912,
+          "iou": 0.07131179616195332
+        }
+      ],
+      "single_box_iou_at_least_half": false
+    },
+    {
+      "case_id": "attachment_image_annotation",
+      "repetition": 0,
+      "operation_id": "harness-operation-8a82e4ae7f284c8fa812390613781de1",
+      "boundary_success": true,
+      "visual_variant": "original-plus-decimal-coordinate-grid-v1",
+      "target_normalized_xyxy": [
+        0.21572434882155989,
+        0.12847243465323913,
+        0.3166453129103204,
+        0.1480543811644058
+      ],
+      "boxes": [
+        {
+          "rect": {
+            "x": 0.225,
+            "y": 0.155,
+            "width": 0.17,
+            "height": 0.025
+          },
+          "target_coverage": 0.0,
+          "iou": 0.0
+        }
+      ],
+      "single_box_iou_at_least_half": false
+    },
+    {
+      "case_id": "attachment_image_annotation",
+      "repetition": 0,
+      "operation_id": "harness-operation-6ddbfd98e7164cb98c49691f2d1e5cfa",
+      "boundary_success": true,
+      "visual_variant": "original-plus-decimal-coordinate-grid-v1",
+      "target_normalized_xyxy": [
+        0.21572434882155989,
+        0.12847243465323913,
+        0.3166453129103204,
+        0.1480543811644058
+      ],
+      "boxes": [
+        {
+          "rect": {
+            "x": 0.27,
+            "y": 0.14,
+            "width": 0.21,
+            "height": 0.03
+          },
+          "target_coverage": 0.19010898649330904,
+          "iou": 0.0475536293280651
+        }
+      ],
+      "single_box_iou_at_least_half": false
+    },
+    {
+      "case_id": "attachment_image_annotation",
+      "repetition": 0,
+      "operation_id": "harness-operation-b93872ee6bbf49c9b34560faae97529f",
+      "boundary_success": true,
+      "visual_variant": "original",
+      "target_normalized_xyxy": [
+        0.21572434882155989,
+        0.12847243465323913,
+        0.3166453129103204,
+        0.1480543811644058
+      ],
+      "boxes": [
+        {
+          "rect": {
+            "x": 0.11,
+            "y": 0.193,
+            "width": 0.18,
+            "height": 0.028
+          },
+          "target_coverage": 0.0,
+          "iou": 0.0
+        }
+      ],
+      "single_box_iou_at_least_half": false
+    }
+  ]
+}
