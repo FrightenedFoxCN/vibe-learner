@@ -1,6 +1,6 @@
 {
   "scope": "admitted-operation tool coverage lower bound",
-  "git_revision": "f7fccff44793e4a94d96e61a7611bf2464bc2dba",
+  "git_revision": "f0ffb47b1306bdc7b9ac1fae0e7963b396989dbe",
   "limitations": [
     "Deduplicated by Harness operation ID, including duplicated evidence exports.",
     "Missing tool result diagnostics are unknown, not failure.",
@@ -47,10 +47,12 @@
     "minimax-study-cache-pairs-v1.jsonl",
     "minimax-study-fill-blank-contract-v2.jsonl",
     "minimax-study-fill-blank-default-v1.jsonl",
+    "minimax-study-follow-up-v1.jsonl",
     "minimax-study-format-pairs-v1.jsonl",
     "minimax-study-grid-pairs-v1.jsonl",
     "minimax-study-image-delivery-v2.jsonl",
     "minimax-study-observed-v1.jsonl",
+    "minimax-study-plan-confirmation-v1.jsonl",
     "minimax-study-prepared-pairs-v1.jsonl",
     "minimax-study-question-contract-candidate-v1.jsonl",
     "minimax-study-question-diagnostics-v1.jsonl",
@@ -227,9 +229,9 @@
     {
       "workflow": "study_chat",
       "tool": "read_learning_plan_progress",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 6,
+      "successful_tool_operations": 6,
+      "successful_tool_and_boundary_operations": 6
     },
     {
       "workflow": "study_chat",
@@ -290,9 +292,9 @@
     {
       "workflow": "study_chat",
       "tool": "schedule_session_follow_up",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 3,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
@@ -304,16 +306,16 @@
     {
       "workflow": "study_chat",
       "tool": "update_learning_plan",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 3,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
       "tool": "update_learning_plan_progress",
-      "requested_operations": 0,
-      "successful_tool_operations": 0,
-      "successful_tool_and_boundary_operations": 0
+      "requested_operations": 3,
+      "successful_tool_operations": 3,
+      "successful_tool_and_boundary_operations": 3
     },
     {
       "workflow": "study_chat",
@@ -325,9 +327,9 @@
     {
       "workflow": "study_chat",
       "tool": "write_session_memory",
-      "requested_operations": 14,
-      "successful_tool_operations": 14,
-      "successful_tool_and_boundary_operations": 14
+      "requested_operations": 15,
+      "successful_tool_operations": 15,
+      "successful_tool_and_boundary_operations": 15
     }
   ]
 }

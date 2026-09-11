@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from app.app_factory import create_app
 from app.core.settings import Settings
 from app.models.api import StudyChatOperationReceiptResponse, StudySessionResponse
+from app.models.domain import LearningPlanRecord
 from app.models.study_chat_reply import StudyChatReplyProposalV1
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.provider_sdk import ProviderRequestAdapter
@@ -39,6 +40,9 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "follow_up_cancel": "请使用工具安排60秒后续接一次当前学习对话，届时提醒我用代入法核对方程答案。不要现在出题，也不要重复安排。最后用一句话说明安排状态，不要承诺关闭页面后仍一定能触发。",
+    "plan_title_confirmation": "请先读取当前学习计划，把课程标题改为‘方程求解与代入检验’，通过工具提出待确认提案，等我确认后再生效。最后用一句话明确说明现在仍待确认，不改学习进度，不出题。",
+    "plan_progress_confirmation": "请先读取当前学习计划进度，只把第一项‘等式变形练习’提出为已完成，第二项‘代入检验练习’保持未开始。通过工具提出待确认提案，等我确认后再生效；最后用两条Markdown无序列表分别说明两项当前状态，不出题。",
     "scene_object_lifecycle": "请先读取当前场景，找到白板，把其描述改为‘写有方程 2x+3=11 的白板’。随后新增一个名为‘验算卡’、描述为‘用于代入检验的纸卡’的物品，再删除刚新增的验算卡，保留白板。最后读回核对，只用两条Markdown无序列表报告白板与验算卡的最终状态，不出题、不修改好感度。",
     "scene_navigation": "请读取当前场景，在当前自习室下新增名为‘验算角’的子场景，摘要为‘专门核对方程解的安静角落’，然后明确移动到验算角，读取场景核对当前位置。最后只用一句话报告实际所在场景，不出题，不新增物品。",
     "fill_blank_attempt": "请调用 ask_fill_blank_question，围绕教材方程 2x+3=11 生成一道只填x数值的互动填空题。判分应接受正确数值的阿拉伯数字和中文数字两种等价写法。等我提交后再判分，现在不要展示答案或解析，不要改成选择题。",
@@ -270,6 +274,23 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     calls.clear()
                     session_payload = {"document_id": document_id,
                         "persona_id": persona_id, "study_unit_id": document["study_units"][0]["id"]}
+                    plan_before = None
+                    if case_id.startswith("plan_"):
+                        plan_id = f"quality-plan-{case_id}-{repetition}"
+                        unit_id = document["study_units"][0]["id"]
+                        fixture = LearningPlanRecord(id=plan_id, document_id=document_id, persona_id=persona_id,
+                            course_title="线性方程基础", objective="学习等式变形和代入检验", overview="先求解再检验。",
+                            today_tasks=[], study_units=document["study_units"], created_at=datetime.now().astimezone().isoformat(),
+                            schedule=[{"id": f"{plan_id}-{i}", "unit_id": unit_id, "title": title,
+                                "focus": title, "activity_type": "study", "status": "planned"}
+                                for i, title in enumerate(("等式变形练习", "代入检验练习"))])
+                        # Deterministic prerequisite only; real Study operation and
+                        # confirmation APIs below are the measured workflows.
+                        app.state.container.plan_service.repository.import_legacy([fixture])
+                        session_payload["plan_id"] = plan_id
+                        baseline = client.get(f"/learning-plans/{plan_id}")
+                        baseline.raise_for_status()
+                        plan_before = baseline.json()
                     if case_id.startswith("scene_"):
                         session_payload["scene_profile"] = {"scene_name": "质量测试自习室", "scene_id": "quality-room",
                             "title": "自习室", "summary": "安静的数学自习室", "selected_path": ["自习室"],
@@ -287,6 +308,9 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     row["prompt_variant"] = "question-contract-experiment-v2" if question_contract_candidate else "production"
                     row["multimodal_enabled"] = multimodal
                     row["attachment_kind"] = attachment_kind
+                    if plan_before is not None:
+                        row["plan_fixture_source"] = "synthetic repository import; not model-generated Planning evidence"
+                        row["plan_before"] = plan_before
                     if question_tools_disabled_candidate:
                         row["question_tool_variant"] = "question-tools-not-offered-v1"
                         row["trace_limitation"] = "Question tools omitted at provider boundary; same strict final proposal and production commit, not production tool-catalog adoption."
@@ -347,6 +371,30 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 t["status"] in {"passed", "repaired"} and t["commit_evidence"]["status"] == "committed"
                                 for t in row["terminal_traces"]
                             ) and len(row["terminal_traces"]) == len(executions)
+                            if case_id == "follow_up_cancel" and receipt.result:
+                                cancelled = client.post(f"/study-sessions/{initial.id}/follow-ups/cancel")
+                                final_session = client.get(f"/study-sessions/{initial.id}")
+                                row["follow_up_cancellation"] = {"http_status": cancelled.status_code,
+                                    "readback_equal": cancelled.status_code == 200 and final_session.status_code == 200 and cancelled.json() == final_session.json(),
+                                    "pending_before": [item.model_dump(mode="json") for item in receipt.result.session.pending_follow_ups],
+                                    "pending_after": final_session.json().get("pending_follow_ups") if final_session.status_code == 200 else None,
+                                    "scope": "Backend schedule/cancel only; browser timer delivery is not exercised."}
+                            if plan_before is not None and receipt.result:
+                                before_decision = client.get(f"/learning-plans/{plan_before['id']}")
+                                row["plan_unchanged_before_confirmation"] = before_decision.status_code == 200 and before_decision.json() == plan_before
+                                confirmations = receipt.result.session.plan_confirmations
+                                row["confirmation_count"] = len(confirmations)
+                                row["confirmation_decisions"] = []
+                                for confirmation in confirmations:
+                                    decision = "reject" if repetition == 1 else "approve"
+                                    url = f"/study-sessions/{initial.id}/plan-confirmations/{confirmation.id}"
+                                    resolved = client.post(url, json={"decision": decision})
+                                    duplicate = client.post(url, json={"decision": decision})
+                                    row["confirmation_decisions"].append({"decision": decision, "http_status": resolved.status_code,
+                                        "duplicate_equal": duplicate.status_code == resolved.status_code and duplicate.json() == resolved.json(),
+                                        "result": resolved.json() if resolved.status_code == 200 else None})
+                                final_plan = client.get(f"/learning-plans/{plan_before['id']}")
+                                row["plan_after_decisions"] = final_plan.json() if final_plan.status_code == 200 else None
                             if case_id in {"fill_blank_attempt", "fill_blank_native_attempt"} and receipt.result and receipt.committed_turn_id:
                                 # Submit known fixture answers, never inspect the private grading spec.
                                 answer = ("4", "四", "5")[repetition % 3]

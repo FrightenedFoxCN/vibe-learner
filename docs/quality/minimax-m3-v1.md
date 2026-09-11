@@ -402,3 +402,13 @@ Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统
 [六例真实复测](evidence/minimax-study-scene-tools-v2.jsonl)在实际provider边界额外记录合成场景身份，确认模型收到了后续操作所需字段。[状态与工具复核](evidence/minimax-study-scene-review-v2.json)显示，白板修改/验算卡新增后删除从0/3达到3/3；导航三例均显式成功调用move_to_scene并正确报告最终位置。六例都没有工具错误。它们是相同fixture的先后批次，尚不构成跨任务独立认证。
 
 指令遵循仍单独记分：物品任务一例仅在操作前读取场景，漏了要求的最终读回；另一例回复多出开场白。最终状态正确不能替代这些要求。当前Study成功工具加领域提交的覆盖增至25/31；待继续覆盖计划读取/修改/确认、长期记忆、定时续接、图像生成，并补充真实Tavern领域流程与长上下文测试。
+
+## 轮次 34：计划确认边界与续接内容偏移
+
+[六例真实Study计划提案](evidence/minimax-study-plan-confirmation-v1.jsonl)使用显式标记的合成计划前置数据，分别测试标题修改与仅完成第一项排期；每类批准两例、拒绝一例，并重复提交同一决定。[状态检查](evidence/minimax-study-plan-confirmation-review-v1.json)中六例均恰好一份提案，确认前计划完整读回不变，批准仅应用对应修改并增加一次revision，拒绝保持计划原样，重复决定返回相同结果。前置计划不是本轮模型生成证据，Chat的Harness trace也不自动证明确认接口拥有独立Harness准入身份。
+
+六例回复都说明待确认，没有提前宣称修改生效；格式仍不通过：三例标题请求均超出一句话，三例进度请求均在两条列表之外增加说明段落。没有因为状态正确而放宽格式要求。
+
+[三例续接安排与取消](evidence/minimax-study-follow-up-v1.jsonl)都仅生成一条60秒后的pending记录，实际取消API均成功且Session读回一致。测试没有启动浏览器定时器，不声称验证了到时投递。第一例hidden_message擅自换成教材没有的分式方程(3x−5)/2=(x+7)/4，其他例子也使用“刚才解出的x”“60秒前那道题”等未经当前会话支持的经历表述。后续应测试实际隐藏消息投递时是否延续这些错误，而不是只看记录是否成功创建。
+
+Study成功工具加领域提交覆盖增至29/31，仍缺retrieve_memory_context和generate_projected_image；真实Tavern领域流程、语义与人格质量、长上下文缓存/压缩仍持续迭代。本轮仅扩展探针与证据，无生产代码修改。
