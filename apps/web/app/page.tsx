@@ -61,6 +61,13 @@ const PAGES = [
     title: "用量审计",
     desc: "查看模型调用与 Token 用量。",
   },
+  {
+    num: "09",
+    href: "/manual" as const,
+    icon: "menu_book" as MaterialIconName,
+    title: "用户手册",
+    desc: "快速上手，查阅操作与常见问题。",
+  },
 ];
 
 export default function HomePage() {

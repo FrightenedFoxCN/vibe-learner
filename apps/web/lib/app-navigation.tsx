@@ -9,6 +9,7 @@ import { getDesktopRuntimeConfig } from "./runtime-config";
 
 export type AppRoutePath =
   | "/"
+  | "/manual"
   | "/plan"
   | "/study"
   | "/tavern"

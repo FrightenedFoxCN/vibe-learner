@@ -334,7 +334,7 @@ VIBE_LEARNER_ONNXTR_MODEL_SOURCE=/absolute/path/to/onnxtr-models npm run build:d
 ## 文档导航
 
 - `docs/README.md`：文档索引
-- `docs/user_manual.md`：完整功能使用手册（逐页逐部件）
+- `docs/user_manual.md`：应用内用户手册入口与维护位置
 - `docs/architecture.md`：架构说明
 - `docs/api-reference.md`：API 参考
 - `docs/harness-architecture.md`：Harness 架构图与代码边界
