@@ -208,7 +208,7 @@ class PlanningPilotCase(_FixtureModel):
     tool_name: str
     arguments_json: str
     disabled_tools: list[str]
-    repeat_count: int = Field(ge=1, le=3)
+    repeat_count: int = Field(ge=1, le=4)
     expected_ok: bool
     expected_error: str
 
@@ -1089,6 +1089,18 @@ def _registration(
     )
 
 
+def _current_planning_cases(fixture: HarnessPilotEvalCasesV1) -> list[PlanningPilotCase]:
+    # Keep the independently reviewed historical book immutable. Only this
+    # developer-authored budget regression changes with the reviewed quota.
+    replacement = PlanningPilotCase.model_validate_json(
+        FIXTURE_PATH.with_name("planning-detail-budget-regression-v2.json").read_text(encoding="utf-8")
+    )
+    if replacement.split != "regression":
+        raise ValueError("planning_budget_replacement_must_be_regression")
+    return [replacement if item.case_id == "planning-tool-duplicate-call-001" else item
+        for item in fixture.planning_cases]
+
+
 def build_harness_pilot_runner() -> HarnessEvalRunner:
     fixture = _load_fixtures()
     study_fixture = _load_study_fixtures()
@@ -1118,7 +1130,7 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
             review_contract=fixture.review_contract,
             review_attestation_digest=fixture.review_attestation_digest,
         )
-        for item in fixture.planning_cases
+        for item in _current_planning_cases(fixture)
     ), key=lambda item: (item.case_id, item.case_version)))
     study_cases = tuple(
         sorted(
@@ -1200,7 +1212,7 @@ def build_harness_pilot_runner() -> HarnessEvalRunner:
         item.case_id: item.model_dump(mode="json")
         for item in (
             *fixture.tavern_cases,
-            *fixture.planning_cases,
+            *_current_planning_cases(fixture),
             *study_fixture.study_cases,
         )
     }
@@ -1321,7 +1333,7 @@ def execute_harness_pilot_bundle(
         ]
         if refresh_baselines:
             baseline = build_harness_eval_baseline(
-                baseline_version=f"{suite.version}-baseline-v1",
+                baseline_version=f"{suite.version}-baseline-v2" if suite == PLANNING_TOOL_EVAL_SUITE else f"{suite.version}-baseline-v1",
                 run=runs[key],
                 report=execution.report,
                 minimum_sample_count=len(cases[key]),
@@ -1330,11 +1342,16 @@ def execute_harness_pilot_bundle(
                     key=lambda item: (item.metric.name, item.metric.version),
                 ),
                 review_contract=(
+                    HarnessContractRef(name="PlanningDetailBudgetMaintainerReview", version="planning-detail-budget-review-v2")
+                    if suite == PLANNING_TOOL_EVAL_SUITE else
                     study_fixture.review_contract
                     if suite == STUDY_CHAT_EVAL_SUITE
                     else fixture.review_contract
                 ),
                 review_attestation_digest=(
+                    canonical_harness_digest({"case_id": "planning-tool-detail-round-limit-002",
+                        "same_round_limit": 3, "operation_limit": 4, "review_kind": "developer_reviewed"})
+                    if suite == PLANNING_TOOL_EVAL_SUITE else
                     study_fixture.review_attestation_digest
                     if suite == STUDY_CHAT_EVAL_SUITE
                     else fixture.review_attestation_digest
@@ -1342,7 +1359,7 @@ def execute_harness_pilot_bundle(
             )
         else:
             baseline = HarnessEvalBaselineV1.model_validate_json(
-                (BASELINE_ROOT / suite.name / "baseline.json").read_text(
+                (BASELINE_ROOT / _baseline_directory_name(suite.name) / "baseline.json").read_text(
                     encoding="utf-8"
                 )
             )
@@ -1361,6 +1378,10 @@ def execute_harness_pilot_bundle(
     )
 
 
+def _baseline_directory_name(suite_name: str) -> str:
+    return "planning_tool_eval_detail_budget_v2" if suite_name == PLANNING_TOOL_EVAL_SUITE.name else suite_name
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run Wave 2 deterministic Harness pilot gates.")
     parser.add_argument("--profile", choices=("pr",), default="pr")
@@ -1375,7 +1396,7 @@ def main(argv: list[str] | None = None) -> int:
         output.mkdir(parents=True, exist_ok=True)
         for key in sorted(bundle.executions):
             name = key[0]
-            suite_dir = output / name
+            suite_dir = output / (_baseline_directory_name(name) if args.refresh_baselines else name)
             suite_dir.mkdir(parents=True, exist_ok=True)
             (suite_dir / "raw-samples.json").write_text(
                 json.dumps(bundle.executions[key].raw_samples_json(), sort_keys=True, separators=(",", ":")) + "\n",

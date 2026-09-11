@@ -2,10 +2,20 @@ from __future__ import annotations
 
 import unittest
 
-from app.services.harness_eval_pilots import execute_harness_pilot_bundle
+from app.services.harness_eval_pilots import execute_harness_pilot_bundle, _load_fixtures, _current_planning_cases
 
 
 class HarnessEvalPilotTests(unittest.TestCase):
+    def test_budget_revision_preserves_reviewed_book_and_held_out_cases(self):
+        historical = _load_fixtures()
+        original = next(case for case in historical.planning_cases if case.case_id == "planning-tool-duplicate-call-001")
+        self.assertEqual(original.repeat_count, 2)
+        current = _current_planning_cases(historical)
+        replacement = next(case for case in current if case.case_id == "planning-tool-detail-round-limit-002")
+        self.assertEqual((replacement.split, replacement.repeat_count), ("regression", 4))
+        self.assertEqual([case for case in current if case.split == "held_out"],
+            [case for case in historical.planning_cases if case.split == "held_out"])
+
     def test_checked_in_pilots_pass_against_checked_in_baselines(self) -> None:
         bundle = execute_harness_pilot_bundle(refresh_baselines=False)
         self.assertEqual(

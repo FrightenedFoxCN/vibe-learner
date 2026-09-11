@@ -1,0 +1,11 @@
+{
+  "case_id": "planning-tool-detail-round-limit-002",
+  "split": "regression",
+  "tags": ["budget", "duplicate_call"],
+  "tool_name": "get_study_unit_detail",
+  "arguments_json": "{\"study_unit_id\":\"unit-1\"}",
+  "disabled_tools": [],
+  "repeat_count": 4,
+  "expected_ok": false,
+  "expected_error": "tool_round_budget_exceeded"
+}

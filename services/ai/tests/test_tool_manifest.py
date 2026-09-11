@@ -29,6 +29,26 @@ GOLDEN_PATH = REPO_ROOT / "packages/shared/fixtures/harness/tool-manifest-v1.jso
 
 
 class ToolManifestTests(unittest.TestCase):
+    def test_detail_batch_budget_preserves_total_ceiling_and_other_tool_limits(self):
+        from app.services.tool_provider_projection import ToolExecutionBudgetTracker, ToolContractViolation
+        detail = next(entry for entry in TOOL_MANIFEST_ENTRIES.values()
+            if entry.workflow == HarnessWorkflow.PLANNING and entry.canonical_name == "get_study_unit_detail")
+        self.assertEqual(detail.budget.max_calls_per_round, 3)
+        self.assertEqual(detail.budget.max_calls_per_operation, 4)
+        self.assertEqual(detail.parallel.runtime_mode, "serial")
+        tracker = ToolExecutionBudgetTracker()
+        for _ in range(3):
+            tracker.admit(detail)
+        with self.assertRaisesRegex(ToolContractViolation, "tool_round_budget_exceeded"):
+            tracker.admit(detail)
+        tracker.begin_round()
+        tracker.admit(detail)
+        with self.assertRaisesRegex(ToolContractViolation, "tool_operation_budget_exceeded"):
+            tracker.admit(detail)
+        for entry in TOOL_MANIFEST_ENTRIES.values():
+            if entry.key != detail.key:
+                self.assertEqual(entry.budget.max_calls_per_round, 1)
+
     def test_production_chat_projection_assembles_all_registered_tools(self) -> None:
         from app.services.model_provider import _chat_tools
         from app.services.model_tool_config import TOOL_CATALOG, CHAT_STAGE

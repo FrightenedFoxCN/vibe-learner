@@ -607,7 +607,8 @@ def _study_entry(
 
 
 _PLANNING_ENTRIES = (
-    _planning_entry("get_study_unit_detail", dependencies=_sorted_dependencies(ToolDependency.PLANNING_DETAIL_MAP)),
+    _planning_entry("get_study_unit_detail", dependencies=_sorted_dependencies(ToolDependency.PLANNING_DETAIL_MAP),
+        budget=DEFAULT_BUDGET.model_copy(update={"max_calls_per_round": 3})),
     _planning_entry("ask_planning_question", effects=PLANNING_PARENT_EFFECT, dependencies=_sorted_dependencies(ToolDependency.PLANNING_CONTEXT)),
     _planning_entry("estimate_plan_completion", dependencies=_sorted_dependencies(ToolDependency.PLANNING_CONTEXT)),
     _planning_entry("revise_study_units", effects=PLANNING_PARENT_EFFECT, sensitivity=PROTECTED_SENSITIVITY, dependencies=_sorted_dependencies(ToolDependency.DOCUMENT_DEBUG, ToolDependency.PLANNING_CONTEXT)),

@@ -203,3 +203,18 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 32 项传输/工具投影/Planning/manifest 回归通过；完整后端 787 项通过于初版适配，随后针对重复零序号的修正重新通过 18 项传输与严格工具投影回归。新增测试覆盖 SDK 原对象不被修改、重复零序号的完整调用通过生产 decoder、非法索引和伪造身份继续保留供严格拒绝。当前新实测正在统一修正版本上验证。
 
 用户进一步明确运行时限制也应优化。新增只读 get_study_unit_detail 同轮上限 1→3 的实验，整个操作上限仍为 4，其他工具不变；实验 trace 仅证明生命周期，不代表新预算已注册采纳。最终对照使用统一传输实现、交错顺序，比较 provider 轮次、时延和预算失败，而非只比较提示词。
+
+
+## 轮次 14：提高只读详情工具同轮容量
+
+[3 组交错对照](evidence/minimax-planning-round-pairs-v1.jsonl)保持同一提示、修正后的 index 适配和合成目标，只改变 get_study_unit_detail 的同轮上限 1→3。六个操作均提交并等值读回；基线每例两次预算拒绝，共 6 次，候选 0 次。两边 provider 请求总数都为 8，不宣称减少模型轮次。端到端中位时延 36,276ms→26,560ms，但三组中一组候选更慢，小样本不能证明稳定时延收益。主智能体检查两边计划均遵守先列表后字典、不预设循环基础；这不是独立质量认证。
+
+[先行四例](evidence/minimax-planning-detail-parallel-v1.jsonl)同样全数提交且工具失败为 0，但执行时使用较早的 position-matching 传输适配，保留作补充证据，不混入三组主对照。
+
+采用范围仅为 Planning get_study_unit_detail 每轮最多三次；整次操作仍最多四次，其他 36 个工具仍每轮一次，执行顺序仍串行、按 provider_call_order，不增加执行线程。Python manifest、共享 TypeScript 与 golden fixture 原子修改；结构差异检查确认仅该条目的预算字段变化。没有改变输入/结果 schema 或默认全局预算。
+
+旧 pilot 把第二次详情调用拒绝写入开发者回归用例，导致初次 check 失败。历史 pilot-eval-cases-v1、其评审摘要和旧 baseline 保持原样；新 planning-detail-budget-regression-v2.json 验证第四次拒绝，并以 developer_authored 回归取代旧预算用例参与当前执行。原 held-out 内容和评审摘要不变。新 baseline 单独保存于 planning_tool_eval_detail_budget_v2，明确使用 PlanningDetailBudgetMaintainerReview，不伪称新回归经过独立评审；通过率阈值仍为 1.0。新测试还验证前三次允许、第四次拒绝、下轮仅余一次总额度及其他工具上限不变。
+
+[正式预算的两个新操作](evidence/minimax-planning-detail-budget-production-v2.jsonl)没有实验覆盖，2/2 提交并等值读回，工具失败为 0。后续仍需覆盖更大教材与长期成本，当前没有关闭 QG-MODEL-QUALITY-001。
+
+验证：npm run check 通过（包含当前 pilot、stage 和 Plan revision gates）；完整后端 789 项通过。上述正式预算样本在提交前运行，git_revision 表示基线 bfab1ca，实际测试版本包含本轮 manifest 与回归迁移修改；不是单独 checkout 基线的结果。
