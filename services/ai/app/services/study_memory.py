@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import math
+import unicodedata
 import re
 from dataclasses import dataclass
 from typing import Callable
@@ -136,7 +138,7 @@ def _embed(text: str) -> list[float]:
     if not tokens:
         return vec
     for token in tokens:
-        idx = hash(token) % _VECTOR_SIZE
+        idx = int.from_bytes(hashlib.blake2b(token.encode("utf-8"), digest_size=8).digest(), "big") % _VECTOR_SIZE
         vec[idx] += 1.0
     norm = math.sqrt(sum(value * value for value in vec))
     if norm <= 0:
@@ -173,7 +175,15 @@ def _cosine(a: list[float], b: list[float]) -> float:
 
 
 def _tokenize(text: str) -> list[str]:
-    return [token for token in re.findall(r"[a-zA-Z0-9\u4e00-\u9fff]{2,}", text.lower())]
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    # Chinese has no word separators: whole runs almost never match a query.
+    # Overlapping bigrams preserve lexical overlap without a tokenizer model.
+    def split_han(match: re.Match[str]) -> str:
+        run = match.group(0)
+        return " " + " ".join(run[i:i + 2] for i in range(max(1, len(run) - 1))) + " "
+
+    normalized = re.sub(r"[\u4e00-\u9fff]+", split_han, normalized)
+    return re.findall(r"[^\W_]+", normalized)
 
 
 def _truncate(text: str, limit: int) -> str:

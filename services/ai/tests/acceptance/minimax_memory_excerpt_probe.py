@@ -23,6 +23,7 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
     seed_ids = {s['receipt']['session_id'] for s in source_row['memory_seed_operations']}
     source_session = source_row['receipt']['result']['session']
     output.mkdir(parents=True, exist_ok=False)
+    original_embed = study_memory._embed
     original_build = study_memory._build_candidates
     original_request = ProviderRequestAdapter.request_chat_completion
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
@@ -38,7 +39,11 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
             for variant in variants:
                 root = output / f'{repetition}-{variant}'
                 shutil.copytree(source, root)
-                calls, candidates = [], []
+                calls, candidates, local_embeddings = [], [], []
+
+                def observe_local_embed(text):
+                    local_embeddings.append({"input_chars": len(text)})
+                    return original_embed(text)
 
                 def excerpt(text, limit):
                     compact = ' '.join(text.strip().split())
@@ -103,7 +108,7 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                     openai_base_url='https://api.minimax.cn/v1', openai_chat_model='MiniMax-M3',
                     openai_plan_model='MiniMax-M3', openai_setting_model='MiniMax-M3', openai_timeout_seconds=90)
                 app = create_app(settings=settings)
-                with patch.object(study_memory, '_build_candidates', build), patch.object(ProviderRequestAdapter, 'request_chat_completion', observe), TestClient(app) as client:
+                with patch.object(study_memory, '_embed', observe_local_embed), patch.object(study_memory, '_build_candidates', build), patch.object(ProviderRequestAdapter, 'request_chat_completion', observe), TestClient(app) as client:
                     session = client.post('/study-sessions', json={key: source_session[key] for key in ('document_id', 'persona_id', 'study_unit_id')})
                     session.raise_for_status(); session = session.json()
                     response = client.post(f"/study-sessions/{session['id']}/chat", json={'client_request_id': f'excerpt-{variant}-{repetition}',
@@ -111,6 +116,7 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                     row = {'scope': 'live_study_operation_receipt_readback', 'model': 'MiniMax-M3', 'git_revision': revision,
                         'case_id': 'memory_excerpt_comparison', 'variant': variant, 'repetition': repetition,
                         'source_seed_session_ids': sorted(seed_ids), 'calls': calls, 'candidate_excerpts': candidates,
+                        'local_fallback_embeddings': local_embeddings,
                         'http_status': response.status_code, 'boundary_success': False,
                         'trace_limitation': ('Production excerpt with fixed seed-session selection' if production else 'Experimental excerpt construction and fixed seed-session selection') + '; production domain admission/commit. Embedding requests not instrumented.'}
                     if temporal:

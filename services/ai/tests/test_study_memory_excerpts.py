@@ -1,10 +1,30 @@
 import unittest
+import json
+import os
+import subprocess
+import sys
 from types import SimpleNamespace
 
-from app.services.study_memory import _build_candidates, build_memory_context
+from app.services.study_memory import _build_candidates, build_memory_context, _tokenize, _embed, _cosine
 
 
 class StudyMemoryExcerptTests(unittest.TestCase):
+    def test_chinese_query_overlaps_paraphrased_memory(self):
+        query = set(_tokenize('复习地点和暗号的最新约定'))
+        update = set(_tokenize('更新复习约定：地点改为白桦阅览室，暗号已撤销。'))
+        self.assertTrue({'复习', '地点', '暗号', '约定'} <= query & update)
+        self.assertGreater(_cosine(_embed('复习地点暗号'), _embed('复习地点更新，暗号撤销')), 0)
+
+    def test_french_accents_and_unicode_normalization_are_preserved(self):
+        self.assertEqual(_tokenize('ÉCOLE Cafe\u0301'), ['école', 'café'])
+        self.assertEqual(_tokenize('ＡＢＣ１２'), ['abc12'])
+
+    def test_fallback_vector_is_stable_across_process_hash_seeds(self):
+        code = "import json; from app.services.study_memory import _embed; print(json.dumps(_embed('复习地点 salle café')))"
+        outputs = [subprocess.check_output([sys.executable, '-c', code],
+            env={**os.environ, 'PYTHONHASHSEED': seed}, text=True) for seed in ('1', '2')]
+        self.assertEqual(json.loads(outputs[0]), json.loads(outputs[1]))
+
     def test_initial_memory_context_retains_record_time(self):
         hit = SimpleNamespace(score=0.8, session_id='past', study_unit_id='unit',
                               scene_title='room', snippet='地点是白桦阅览室。',

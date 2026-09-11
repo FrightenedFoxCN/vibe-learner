@@ -1,0 +1,33 @@
+{
+  "scope": "Maintainer review of deterministic multilingual lexical fallback, fixed seed selection",
+  "limitations": [
+    "Two new Study operations from the same completed seed snapshot; fixed seed-session filtering is experimental.",
+    "Local fallback calls are observed directly; remote embedding errors and billing are not instrumented.",
+    "The selected update survives in the assistant excerpt; this does not solve user facts beyond 800 characters when the assistant only acknowledges.",
+    "Lexical hashing remains approximate and can collide; not a semantic embedding replacement or independent quality certification."
+  ],
+  "rows": [
+    {
+      "repetition": 0,
+      "operation_id": "harness-operation-f75f0f71be7348799f818b1bfb7df8d0",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "memory_hit_count": 2,
+      "new_location_in_returned_evidence": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "已核对跨会话记录，以下是复习约定最新状态：\n\n- **最新约定**\n  - 复习地点：白桦阅览室\n  - 暗号：暂无（已撤销，未设置新暗号）\n  - 实际前往状态：尚未去过任何阅览室\n\n- **已撤销的旧约定**\n  - 旧地点「青石阅览室」已撤销\n  - 旧暗号「晴鸟」已撤销"
+    },
+    {
+      "repetition": 1,
+      "operation_id": "harness-operation-9d563f50478748e59f3db6c414857f12",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "memory_hit_count": 2,
+      "new_location_in_returned_evidence": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，根据跨会话记录核对如下。\n\n- 复习地点：白桦阅览室\n- 暗号：暂未设置新暗号\n- 当前状态：尚未去过任何阅览室\n\n- 旧约定「青石阅览室」已撤销\n- 旧约定「暗号：晴鸟」已撤销"
+    }
+  ]
+}
