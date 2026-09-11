@@ -103,7 +103,7 @@ def _build_candidates(
                     session_id=session.id,
                     study_unit_id=session.study_unit_id,
                     scene_title=scene_title,
-                    snippet=_truncate(merged, 180),
+                    snippet=_memory_excerpt(turn),
                     created_at=turn.created_at,
                     vector=[],
                 )
@@ -116,6 +116,18 @@ def _merge_turn(turn: DialogueTurnRecord) -> str:
     assistant = turn.assistant_reply.strip()
     merged = f"{learner}\n{assistant}".strip()
     return merged
+
+
+def _memory_excerpt(turn: DialogueTurnRecord) -> str:
+    # Preserve more learner context without letting a verbose model response
+    # consume the entire excerpt. Labels retain the source of each assertion.
+    parts = []
+    if turn.learner_message.strip():
+        label = "用户原话：" if turn.learner_message_kind == "learner" else "自动输入（非用户发言）："
+        parts.append(label + _truncate(turn.learner_message, 800))
+    if turn.assistant_reply.strip():
+        parts.append("助手回复：" + _truncate(turn.assistant_reply, 160))
+    return "\n".join(parts)
 
 
 def _embed(text: str) -> list[float]:

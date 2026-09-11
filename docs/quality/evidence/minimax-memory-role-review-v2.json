@@ -1,0 +1,101 @@
+{
+  "scope": "maintainer review of six fixed-history role excerpt samples",
+  "limitations": [
+    "Labels apply to these saved outputs, not a general semantic grader.",
+    "All variants use fixed seed filtering; source messages fit the learner candidate limit.",
+    "Longer than 800-character learner updates and assistant facts past 160 characters remain lossy.",
+    "Input and cache counters exclude embeddings; no statistical performance claim."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-3679332fa0754dbd91aa7596ea5d7a14",
+      "variant": "complete1600",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        241,
+        1600
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 23236,
+      "cached_tokens": 14749
+    },
+    {
+      "operation_id": "harness-operation-0c31f8a83f4c4886a0cdbd3e3b2f69bc",
+      "variant": "learner800_assistant160",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        212,
+        709
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 20626,
+      "cached_tokens": 17536
+    },
+    {
+      "operation_id": "harness-operation-04e64a591ba1434cb992460375e19614",
+      "variant": "learner800",
+      "repetition": 0,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        46,
+        543
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 19424,
+      "cached_tokens": 14592
+    },
+    {
+      "operation_id": "harness-operation-eba9abc65ae74094967ccdc430fa1b82",
+      "variant": "learner800",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        46,
+        543
+      ],
+      "provider_requests": 3,
+      "prompt_tokens": 19476,
+      "cached_tokens": 18432
+    },
+    {
+      "operation_id": "harness-operation-bef11e1143d34dc9b271eea77b39d3d9",
+      "variant": "learner800_assistant160",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        212,
+        709
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 12908,
+      "cached_tokens": 11776
+    },
+    {
+      "operation_id": "harness-operation-75fbd0b0b3d74a97bbc828ba13cf4b3e",
+      "variant": "complete1600",
+      "repetition": 1,
+      "boundary_success": true,
+      "maintainer_latest_location_and_revocation_correct": true,
+      "exact_two_bullet_lines_without_extra_prose": false,
+      "candidate_characters": [
+        241,
+        1600
+      ],
+      "provider_requests": 2,
+      "prompt_tokens": 14621,
+      "cached_tokens": 14619
+    }
+  ]
+}
