@@ -79,6 +79,9 @@ def run(root, repetitions, budget_candidate=False):
             return raw, elapsed
         except Exception as exc:
             call["error_class"] = type(exc).__name__
+            status = str(getattr(exc, "status_code", ""))
+            if status.isdigit() and len(status) == 3:
+                call["upstream_http_status"] = int(status)
             raise
         finally:
             call["elapsed_ms"] = round((time.perf_counter() - start) * 1000)

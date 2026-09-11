@@ -178,3 +178,8 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [3 个逐操作观测](evidence/minimax-planning-tools-observed-v1.jsonl)全部最终提交，工具失败分别为两次 invalid_study_unit_revision、三次 provider_tool_call_shape_invalid、两次 tool_round_budget_exceeded。真实工具错误揭示最终成功之外的成本，当前继续诊断前两类原因。
 
 修复调试 trace_summary 把同轮/整次调用次数超限显示为对应预算限制，不再笼统显示“参数拒绝”。错误码、工具准入、预算与 provider 返回内容均保持原有契约；这是依据四次已归档预算失败做的诊断展示修正，不是模型成功率优化。另启动预算说明候选与生产对照，结果未齐前不推广提示。
+
+
+预算摘要修正验证：19 项 provider/planning/manifest/采样评分回归通过；另用真实错误投影函数检查同轮与整次两类摘要，固定 error code 不变。
+
+[6 个预算提示候选](evidence/minimax-planning-budget-candidate-v1.jsonl)中 4/6 提交成功，两个教材计划均在 provider 请求抛出 ModelRequestError 后终止，未将其重新播放。其余四个成功操作未出现预算超限；两个无教材目标将三次详情查询拆至不同轮，均未再触发同轮拒绝，但这可能增加总延迟，并不自动等于成本优化。三次 invalid_study_unit_revision 仍然存在。样本不能证明总体收益，当前不推广生产提示；下一批采样记录纯数字上游 HTTP status，以进一步区分 provider 错误，不保存任意错误消息。
