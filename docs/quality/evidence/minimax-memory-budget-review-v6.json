@@ -1,0 +1,83 @@
+{
+  "scope": "Maintainer bounded original-text selection review",
+  "limitations": [
+    "Fixed synthetic seed sessions; no independent quality certification.",
+    "Bounded lexical selection can still miss unmatched languages, long sentences or more relevant evidence than fits 800 characters.",
+    "Original normalized-text offsets preserve slice location, not complete evidence coverage.",
+    "All replies fail the exact two-flat-item Markdown requirement."
+  ],
+  "rows": [
+    {
+      "batch": "candidate-v5",
+      "variant": "query_windows_tail",
+      "repetition": 0,
+      "operation_id": "harness-operation-14d131a81efe458eb7902fc18fbbf5bf",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "final_state_correct": true,
+      "all_three_old_agreements_reported": false,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，我已对照跨会话记录，确认约定已被多次更新。最新一次明确写明「最终去南门阅览室，所有暗号均撤销」，因此旧的两组约定都已被覆盖。\n\n**当前最新约定**\n\n- 复习地点：南门阅览室\n- 暗号：全部撤销（不再使用任何暗号）\n\n**已撤销的旧约定**\n\n- 青石阅览室 + 暗号「晴鸟」：已被后续更新覆盖\n- 红杉阅览室 + 暗号「晨星」：已被最终约定覆盖"
+    },
+    {
+      "batch": "candidate-v5",
+      "variant": "query_windows_budget",
+      "repetition": 0,
+      "operation_id": "harness-operation-1793cb5e2731467f8cc923e6478d62fe",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "final_state_correct": true,
+      "all_three_old_agreements_reported": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "收到，小林。我对照跨会话记录，把复习约定核对如下：\n\n**最新有效约定**\n\n- 复习地点：南门阅览室\n- 暗号：已全部撤销，无任何暗号\n- 状态：我们尚未去过那里\n\n**已撤销的旧约定**\n\n- 青石阅览室 + 暗号「晴鸟」——已撤销\n- 红杉阅览室 + 暗号「晨星」——已撤销\n- 白桦阅览室 + 暗号「春风」——已撤销"
+    },
+    {
+      "batch": "candidate-v5",
+      "variant": "query_windows_budget",
+      "repetition": 1,
+      "operation_id": "harness-operation-8cc4df1e2c604e6a9ccad9e5b63ec90d",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "final_state_correct": true,
+      "all_three_old_agreements_reported": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，根据跨会话记忆核对，最新约定以最后一次确认为准，旧约定按时间顺序已被覆盖：\n\n- **当前最新约定**\n  - 复习地点：南门阅览室\n  - 暗号：均已撤销，不再使用任何暗号\n  - 状态：尚未去过\n\n- **已撤销的旧约定（按出现顺序）**\n  - 青石阅览室 / 暗号：晴鸟\n  - 红杉阅览室 / 暗号：晨星\n  - 白桦阅览室 / 暗号：春风"
+    },
+    {
+      "batch": "candidate-v5",
+      "variant": "query_windows_tail",
+      "repetition": 1,
+      "operation_id": "harness-operation-d12644790b754c69b01a1e63aa9445ba",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "final_state_correct": true,
+      "all_three_old_agreements_reported": false,
+      "markdown_exact_two_flat_items": false,
+      "reply": "跨会话记忆已核对完毕，最新约定如下：\n\n- **当前唯一有效的约定**：复习地点为南门阅览室；所有暗号均已撤销，不再使用任何口令。\n- **已被撤销的旧约定**：\n  - 青石阅览室 + 暗号「晴鸟」—— 已被后续指令覆盖，不再生效。\n  - 红杉阅览室 + 暗号「晨星」—— 属于中间过渡版本，也已被最终指令撤销。\n\n补充说明：以上三处地点都属于我们尚未实际前往过的待定场所，过去也没有确认到访记录，因此不存在需要修正的实地经历。"
+    },
+    {
+      "batch": "production-v6",
+      "variant": "production",
+      "repetition": 0,
+      "operation_id": "harness-operation-a9ef90ad40b7432ab1401da048d6a811",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "final_state_correct": true,
+      "all_three_old_agreements_reported": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "小林，我已核对跨会话记录，把复习约定按时间顺序整理如下。\n\n**当前生效的最新约定**\n\n- 复习地点：南门阅览室\n- 暗号：所有暗号均撤销（不再使用任何暗号）\n- 是否去过：尚未去过\n\n**已被撤销的旧约定**\n\n- 青石阅览室 + 暗号「晴鸟」——已被后续约定覆盖，撤销\n- 红杉阅览室 + 暗号「晨星」——已被后续约定覆盖，撤销\n- 白桦阅览室 + 暗号「春风」——已被最终约定覆盖，撤销"
+    },
+    {
+      "batch": "production-v6",
+      "variant": "production",
+      "repetition": 1,
+      "operation_id": "harness-operation-0581f439d91c4dabaf5761291667b8bf",
+      "boundary_success": true,
+      "local_fallback_calls": 3,
+      "final_state_correct": true,
+      "all_three_old_agreements_reported": true,
+      "markdown_exact_two_flat_items": false,
+      "reply": "经核对跨会话记录，小林，我们目前的复习约定如下：\n\n- **复习地点**：南门阅览室\n- **暗号**：已全部撤销（无需暗号）\n- **状态**：尚未去过\n\n以下旧约定均已被明确撤销，不再生效：\n\n- 青石阅览室 + 暗号「晴鸟」（首版约定）\n- 红杉阅览室 + 暗号「晨星」（第二次修订）\n- 白桦阅览室 + 暗号「春风」（第三次修订）"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from app.models.domain import DialogueTurnRecord, MemoryTraceHitRecord, StudySessionRecord
+from app.services.memory_excerpt import select_memory_excerpt
 
 _VECTOR_SIZE = 384
 
@@ -32,7 +33,7 @@ def retrieve_memory_hits(
     top_k: int = 5,
     embed_texts: Callable[[list[str]], list[list[float]]] | None = None,
 ) -> list[MemoryTraceHitRecord]:
-    candidates = _build_candidates(sessions=sessions, current_session_id=current_session_id)
+    candidates = _build_candidates(sessions=sessions, current_session_id=current_session_id, query=query)
     if not candidates:
         return []
 
@@ -90,6 +91,7 @@ def _build_candidates(
     *,
     sessions: list[StudySessionRecord],
     current_session_id: str,
+    query: str = "",
 ) -> list[_MemoryCandidate]:
     candidates: list[_MemoryCandidate] = []
     for session in sessions:
@@ -105,7 +107,7 @@ def _build_candidates(
                     session_id=session.id,
                     study_unit_id=session.study_unit_id,
                     scene_title=scene_title,
-                    snippet=_memory_excerpt(turn),
+                    snippet=_memory_excerpt(turn, query=query),
                     created_at=turn.created_at,
                     vector=[],
                 )
@@ -120,13 +122,14 @@ def _merge_turn(turn: DialogueTurnRecord) -> str:
     return merged
 
 
-def _memory_excerpt(turn: DialogueTurnRecord) -> str:
+def _memory_excerpt(turn: DialogueTurnRecord, *, query: str = "") -> str:
     # Preserve more learner context without letting a verbose model response
     # consume the entire excerpt. Labels retain the source of each assertion.
     parts = []
     if turn.learner_message.strip():
         label = "用户原话：" if turn.learner_message_kind == "learner" else "自动输入（非用户发言）："
-        parts.append(label + _truncate(turn.learner_message, 800))
+        parts.append(label + (select_memory_excerpt(turn.learner_message, query, tokenize=_tokenize)
+                              if query.strip() else _truncate(turn.learner_message, 800)))
     if turn.assistant_reply.strip():
         parts.append("助手回复：" + _truncate(turn.assistant_reply, 160))
     return "\n".join(parts)

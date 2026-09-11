@@ -91,3 +91,9 @@ def query_windows(text: str, query: str, limit: int = 800, reserve_last: bool = 
             break
         result += part
     return result
+
+
+
+def budgeted_query_windows(text: str, query: str, limit: int = 800) -> str:
+    from app.services.memory_excerpt import select_memory_excerpt
+    return select_memory_excerpt(text, query, tokenize=_tokenize, limit=limit)

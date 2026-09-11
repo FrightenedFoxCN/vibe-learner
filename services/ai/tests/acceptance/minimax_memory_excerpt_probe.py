@@ -18,7 +18,7 @@ from app.services import study_memory
 from app.services.provider_sdk import ProviderRequestAdapter
 
 
-def run(source, output, repetitions, role_split=False, production=False, temporal=False, query_windows=False, source_index=0, multi_windows=False, tail_window=False):
+def run(source, output, repetitions, role_split=False, production=False, temporal=False, query_windows=False, source_index=0, multi_windows=False, tail_window=False, budget_windows=False):
     source_row = json.loads((source / 'report.jsonl').read_text().splitlines()[source_index])
     seed_ids = {s['receipt']['session_id'] for s in source_row['memory_seed_operations']}
     source_result = source_row['receipt'].get('result')
@@ -41,6 +41,8 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                 variants = ('query_window', 'query_windows')
             if tail_window:
                 variants = ('query_windows', 'query_windows_tail')
+            if budget_windows:
+                variants = ('query_windows_tail', 'query_windows_budget')
             if repetition % 2:
                 variants = tuple(reversed(variants))
             for variant in variants:
@@ -62,8 +64,8 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                         return compact[:(limit - 3)//2] + '...' + compact[-(limit - 3 - (limit - 3)//2):]
                     return compact[:limit-3] + '...'
 
-                def build(*, sessions, current_session_id):
-                    selected = original_build(sessions=[s for s in sessions if s.id in seed_ids], current_session_id=current_session_id)
+                def build(*, sessions, current_session_id, query=""):
+                    selected = original_build(sessions=[s for s in sessions if s.id in seed_ids], current_session_id=current_session_id, query=query)
                     if variant in {'head180', 'head_tail180', 'complete1600'}:
                         by_id = {s.id: s for s in sessions}
                         for candidate in selected:
@@ -79,13 +81,15 @@ def run(source, output, repetitions, role_split=False, production=False, tempora
                             candidate.snippet = '用户原话：' + capped(turn.learner_message, 800)
                             if variant == 'learner800_assistant160':
                                 candidate.snippet += '\n助手回复：' + capped(turn.assistant_reply, 160)
-                    if variant in {'query_window', 'query_windows', 'query_windows_tail'}:
-                        from tests.acceptance.memory_query_window import query_window, query_windows as multi_window_excerpt
+                    if variant in {'query_window', 'query_windows', 'query_windows_tail', 'query_windows_budget'}:
+                        from tests.acceptance.memory_query_window import query_window, query_windows as multi_window_excerpt, budgeted_query_windows
                         by_id = {s.id: s for s in sessions}
                         for candidate in selected:
                             turn = next(t for t in by_id[candidate.session_id].turns if t.created_at == candidate.created_at)
                             label = '用户原话：' if turn.learner_message_kind == 'learner' else '自动输入（非用户发言）：'
                             candidate.snippet = label + (multi_window_excerpt(turn.learner_message, source_row['message'], reserve_last=variant=='query_windows_tail') if variant != 'query_window' else query_window(turn.learner_message, source_row['message']))
+                            if variant == 'query_windows_budget':
+                                candidate.snippet = label + budgeted_query_windows(turn.learner_message, source_row['message'])
                             if turn.assistant_reply.strip():
                                 candidate.snippet += '\n助手回复：' + study_memory._truncate(turn.assistant_reply, 160)
                     candidates[:] = [{'session_id': c.session_id, 'snippet': c.snippet, 'created_at': c.created_at} for c in selected]
@@ -163,7 +167,8 @@ if __name__ == '__main__':
     parser.add_argument('--source-index', type=int, default=0)
     parser.add_argument('--multi-windows', action='store_true')
     parser.add_argument('--tail-window', action='store_true')
+    parser.add_argument('--budget-windows', action='store_true')
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error('repetitions must be between 1 and 20')
-    run(args.source.resolve(), args.output.resolve(), args.repetitions, args.role_split, args.production, args.temporal, args.query_windows, args.source_index, args.multi_windows, args.tail_window)
+    run(args.source.resolve(), args.output.resolve(), args.repetitions, args.role_split, args.production, args.temporal, args.query_windows, args.source_index, args.multi_windows, args.tail_window, args.budget_windows)

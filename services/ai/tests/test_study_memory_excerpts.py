@@ -5,10 +5,28 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
-from app.services.study_memory import _build_candidates, build_memory_context, _tokenize, _embed, _cosine
+from app.services.study_memory import _build_candidates, build_memory_context, _tokenize, _embed, _cosine, retrieve_memory_hits
 
 
 class StudyMemoryExcerptTests(unittest.TestCase):
+    def test_retrieval_embeds_and_returns_query_selected_user_evidence(self):
+        text = '复习地点青石，暗号晴鸟。' + '整理材料。' * 200 + '最终地点南门，全部暗号撤销。'
+        turn = SimpleNamespace(learner_message=text, learner_message_kind='learner',
+            assistant_reply='收到。', created_at='2026-09-12T00:00:00Z')
+        session = SimpleNamespace(id='past', study_unit_id='unit', scene_profile=None, turns=[turn])
+        observed = []
+        def embed(texts):
+            observed.extend(texts)
+            return [[1.0] for _ in texts]
+        hits = retrieve_memory_hits(sessions=[session], current_session_id='current',
+            active_study_unit_id='unit', query='复习地点和暗号', active_scene_summary='', embed_texts=embed)
+        self.assertEqual(len(hits), 1)
+        self.assertIn('最终地点南门，全部暗号撤销。', hits[0].snippet)
+        self.assertEqual(observed[1], hits[0].snippet)
+        self.assertTrue(hits[0].snippet.startswith('用户原话：'))
+        self.assertIn('助手回复：收到。', hits[0].snippet)
+        self.assertLessEqual(len(hits[0].snippet.split('\n助手回复：')[0].removeprefix('用户原话：')), 800)
+
     def test_chinese_query_overlaps_paraphrased_memory(self):
         query = set(_tokenize('复习地点和暗号的最新约定'))
         update = set(_tokenize('更新复习约定：地点改为白桦阅览室，暗号已撤销。'))
