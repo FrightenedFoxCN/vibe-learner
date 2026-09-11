@@ -137,7 +137,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                 "provider_detail_sent": not redact_tool_error_evidence and "detail" in execution.provider_result})
             if redact_tool_error_evidence:
                 execution = replace(execution, provider_result={k: v for k, v in execution.provider_result.items()
-                    if k not in {"path", "detail"}})
+                    if k not in {"path", "detail", "recovery_guidance"}})
             elif tool_recovery_hint_candidate and safe_detail:
                 page_count = runtime.context.debug_report.page_count
                 hint = (f"本PDF共{page_count}个物理页。Study Unit页范围必须按顺序且互不重叠，不能为避免重叠而杜撰新页。"
