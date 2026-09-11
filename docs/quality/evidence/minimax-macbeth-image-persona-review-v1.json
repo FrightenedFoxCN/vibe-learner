@@ -1,0 +1,92 @@
+{
+  "scope": "Maintainer image/persona Planning review against predeclared two-page rubric",
+  "sdk_chat_calls": 14,
+  "limitations": [
+    "One new operation per persona/mode, no stable effect estimate or independent certification.",
+    "Prepared source contains an earlier model summary contaminated with OCR AAV; same state used in all cells.",
+    "Figures reviewed in local page and enlarged crops; source images not checked in.",
+    "Image injected at SDK boundary with same five-tool catalog; not production image retrieval adoption."
+  ],
+  "rows": [
+    {
+      "persona": "rigorous",
+      "mode": "text",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_image_parts": 0,
+      "physical_anchors_valid": true,
+      "minutes_total": 30,
+      "timing_basis": "today_tasks 8+10+8+4",
+      "ocr_noise_assigned_as_activity": true,
+      "ocr_noise_in_generated_schedule": false,
+      "ocr_noise_in_inherited_study_unit": true,
+      "approximate_age_explicitly_preserved": false,
+      "illustrated_person_identity_asserted": false,
+      "persona_review": "Quotation copying and evidence verification fit rigorous tutor.",
+      "issues": [
+        "OCR fragments treated as observable illustration text.",
+        "Age quotation omits I think."
+      ]
+    },
+    {
+      "persona": "explorer",
+      "mode": "text_image",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_image_parts": 3,
+      "physical_anchors_valid": true,
+      "minutes_total": 30,
+      "timing_basis": "schedule focus intervals 0–5/5–12/12–20/20–28/28–30",
+      "ocr_noise_assigned_as_activity": false,
+      "ocr_noise_in_generated_schedule": true,
+      "ocr_noise_in_inherited_study_unit": true,
+      "approximate_age_explicitly_preserved": true,
+      "illustrated_person_identity_asserted": false,
+      "persona_review": "Named peer collaboration, competing interpretations and comparison fit explorer.",
+      "issues": [
+        "AAV retained in generated chapter title despite useful concrete visual activities."
+      ]
+    },
+    {
+      "persona": "explorer",
+      "mode": "text",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_image_parts": 0,
+      "physical_anchors_valid": true,
+      "minutes_total": null,
+      "timing_basis": "Only total 30 stated; stage durations absent",
+      "ocr_noise_assigned_as_activity": true,
+      "ocr_noise_in_generated_schedule": true,
+      "ocr_noise_in_inherited_study_unit": true,
+      "approximate_age_explicitly_preserved": false,
+      "illustrated_person_identity_asserted": false,
+      "persona_review": "Open questions and evidence-strength comparisons fit explorer, with less concrete scheduling.",
+      "issues": [
+        "No per-stage time allocation.",
+        "OCR fragments and unseen fog contours treated as image observations.",
+        "Age certainty qualifier omitted."
+      ]
+    },
+    {
+      "persona": "rigorous",
+      "mode": "text_image",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "sdk_image_parts": 2,
+      "physical_anchors_valid": true,
+      "minutes_total": 30,
+      "timing_basis": "today_tasks 2+5+8+8+5+2",
+      "ocr_noise_assigned_as_activity": false,
+      "ocr_noise_in_generated_schedule": false,
+      "ocr_noise_in_inherited_study_unit": true,
+      "approximate_age_explicitly_preserved": false,
+      "illustrated_person_identity_asserted": false,
+      "persona_review": "Quotation copying, category checking and textual ownership verification fit rigorous tutor.",
+      "issues": [
+        "Visible sword is called a staff; hood description is not a secure observation.",
+        "Age certainty qualifier omitted."
+      ]
+    }
+  ]
+}

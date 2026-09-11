@@ -1,0 +1,70 @@
+{
+  "scope": "SDK initial planning context equality after removing persona only; source content kept in memory, not this evidence",
+  "limitations": "Same prepared source and five-tool catalog. Page images differ by experimental injection; not production retrieval adoption or independent quality certification.",
+  "rows": [
+    {
+      "persona": "rigorous",
+      "mode": "text",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-4a482d45cdaa4e858d10a090e13ee764",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-9d3ecf51846f41bb9108651e89c88fe9",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "mode": "text",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-52f21627602d4086819f4b795f59432c",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "operation_id": "harness-operation-78f2b863cad94bdbacae3d0b82be7afe",
+      "boundary_success": true
+    }
+  ]
+}

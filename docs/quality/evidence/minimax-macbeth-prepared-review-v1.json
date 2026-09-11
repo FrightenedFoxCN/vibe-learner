@@ -1,0 +1,14 @@
+{
+  "scope": "Preparation operation review; not one of the four image/persona comparison cells",
+  "boundary_success": true,
+  "duration_minutes_today_tasks": 30,
+  "timing_note": "Overview 8+7+7+8 and task list 2+3+4+3+5+5+3+5 each total 30, but stages differ.",
+  "factual_issue": "Allocates 5 minutes to AAV and other OCR noise from an illustration; treats them as material to study.",
+  "additional_issue": "Uses implementation wording chunk and exposes OCR noise in activity titles.",
+  "text_identity_boundary": "Does not assert the illustrated combatant is Macbeth.",
+  "source_state_warning": "Prepared document includes model-written summary naming AAV; all subsequent comparison cells clone this same state.",
+  "limitations": [
+    "Preparation run is a source-setup operation, not an independent control replication.",
+    "Original PDF and extracted text retained only in temporary storage."
+  ]
+}

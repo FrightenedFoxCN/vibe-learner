@@ -1,0 +1,29 @@
+{
+  "scope": "Maintainer predeclared review rubric for two-page Macbeth Planning ablation",
+  "source": "User Downloads Macbeth adaptation; original physical pages 9–10, print pages 7–8; temporary two-page PDF physical pages 1–2.",
+  "source_retention": "Original text and page images remain outside repository.",
+  "text_facts": [
+    "First-person narrator gives approximate age, not exact certainty.",
+    "Narrator describes persecution and escape; observes Weird Sisters and seeks their knowledge.",
+    "Narrator learns the name Macbeth from the sisters, not from a direct meeting in these pages.",
+    "Narrator views a scene through the sisters’ glass; the text qualifies its scope by what they wish to see."
+  ],
+  "image_observations": [
+    "A rounded viewing surface contains armed figures and a battle scene.",
+    "A prominent armored figure and other combatants are visible.",
+    "Identity of individual pictured figures is not established by these two pages."
+  ],
+  "review_dimensions": [
+    "Exactly 30 minutes across sequential activities, without double-counting alternative activities.",
+    "Physical page anchors within 1–2 and distinction from printed 7–8.",
+    "Concrete activities grounded in text; image condition may use observable visual evidence.",
+    "Separate observation from inference and avoid asserting pictured figure identity.",
+    "Rigorous persona favors quotation/context verification; explorer persona favors peer comparison and open interpretation.",
+    "Model commit success separate from factual, timing and persona quality."
+  ],
+  "limitations": [
+    "Two selected pages, not full-book stress acceptance.",
+    "Maintainer source inspection, no independent certification.",
+    "Initial textual context contains OCR-layer content; text group retains that same text but no injected page image."
+  ]
+}

@@ -15,7 +15,7 @@ OBJECTIVE = (
 )
 
 
-def compare(source, pdf, output, transcription=None, modes=None):
+def compare(source, pdf, output, transcription=None, modes=None, objective=None, evidence_page=1):
     output.mkdir(parents=True, exist_ok=False)
     original = ProviderRequestAdapter.request_chat_completion
     baseline = None
@@ -52,9 +52,9 @@ def compare(source, pdf, output, transcription=None, modes=None):
         for persona, mode in cells:
             current = {"persona": persona, "mode": mode}
             root = output / f"{persona}-{mode}"
-            run(root, 1, selected_case="document", pdf_path=pdf, objective_override=OBJECTIVE,
+            run(root, 1, selected_case="document", pdf_path=pdf, objective_override=objective or OBJECTIVE,
                 ocr_engine="onnxtr", multimodal=True, persona_variant=persona,
-                page_evidence=mode, page_evidence_page=1, persona_domain="text",
+                page_evidence=mode, page_evidence_page=evidence_page, persona_domain="text",
                 controlled_page_evidence=True, prepared_source_root=source, transcription_file=transcription)
             row = json.loads((root / "report.jsonl").read_text().splitlines()[0])
             current["operation_id"] = row.get("harness_operation_id")
@@ -74,5 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--transcription", type=Path)
     parser.add_argument("--modes", nargs="+", choices=("text", "text_image", "text_image_crops"))
+    parser.add_argument("--objective")
+    parser.add_argument("--evidence-page", type=int, default=1)
     args = parser.parse_args()
-    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve(), args.transcription, args.modes)
+    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve(), args.transcription, args.modes, args.objective, args.evidence_page)
