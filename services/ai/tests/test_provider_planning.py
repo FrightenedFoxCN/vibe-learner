@@ -22,6 +22,23 @@ class PlanningProviderTests(unittest.TestCase):
             study_units=[StudyUnitRecord(id="unit-1", document_id="doc-1", title="Basics",
                 page_start=1, page_end=5, source_section_ids=["section-1"])], **kwargs)
 
+    def test_revision_uses_one_strict_response_without_tool_or_fallback(self):
+        from app.models.plan_revision import proposal_from_plan, PlanRevisionDecodeError
+        from tests.test_plan_revision import fixture_plan
+        plan = fixture_plan()
+        request = Mock(return_value=({"choices": [{"message": {"content": proposal_from_plan(plan, "Edit").model_dump_json()}}]}, 1))
+        provider = self.provider(request=request)
+        result = provider.generate_plan_revision(plan=plan, instruction="Edit")
+        self.assertEqual(result.course_title, plan.course_title)
+        self.assertEqual(request.call_count, 1)
+        self.assertNotIn("tools", request.call_args.args[0])
+        for content in ('{"revision": 99}', 'not json'):
+            request.reset_mock()
+            request.return_value = ({"choices": [{"message": {"content": content}}]}, 1)
+            with self.assertRaises(PlanRevisionDecodeError):
+                provider.generate_plan_revision(plan=plan, instruction="Edit")
+            self.assertEqual(request.call_count, 1)
+
     def test_repair_uses_post_tool_units_and_cannot_mutate_them_again(self) -> None:
         from types import SimpleNamespace
         from app.models.domain import PlanGenerationTraceRecord

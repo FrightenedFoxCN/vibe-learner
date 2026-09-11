@@ -297,7 +297,7 @@ class Database:
                 ddl = connection.exec_driver_sql(
                     "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
                 ).scalar_one_or_none()
-                if ddl and "frontend_decode" not in str(ddl):
+                if ddl and ("frontend_decode" not in str(ddl) or (table == "harness_operation_bindings" and "learning_plan_revision" not in str(ddl))):
                     rebuild.append(table)
             if not rebuild:
                 return
@@ -560,6 +560,7 @@ class Database:
     @staticmethod
     def _ensure_sqlite_harness_operation_guards(connection) -> None:
         domain_tables = (
+            ("plan_revision_operations", "uq_plan_revision_harness_operation", "learning_plan_revision", "operation_id"),
             (
                 "document_process_operations",
                 "uq_document_process_operation_harness_operation",

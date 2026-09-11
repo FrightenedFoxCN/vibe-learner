@@ -23,7 +23,7 @@ const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"));
 
 assert.deepEqual(harnessWorkflowManifestSnapshot(), fixture);
 assert.deepEqual(HARNESS_WORKFLOW_MANIFEST, fixture);
-assert.equal(HARNESS_WORKFLOW_MANIFEST.stages.length, 13);
+assert.equal(HARNESS_WORKFLOW_MANIFEST.stages.length, 14);
 assert.equal(Object.isFrozen(HARNESS_WORKFLOW_MANIFEST), true);
 assert.equal(Object.isFrozen(HARNESS_WORKFLOW_MANIFEST.stages), true);
 assert.equal(Object.isFrozen(HARNESS_WORKFLOW_MANIFEST.stages[0]), true);

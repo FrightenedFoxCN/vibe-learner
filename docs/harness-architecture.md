@@ -58,7 +58,7 @@ digests provide integrity, not authorization or replay availability.
 | Eval execution | `services/ai/app/services/harness_eval_runner.py`, `harness_stage_evals.py` |
 | Performance limits | [Performance budgets](performance-budgets-v1.md) and `services/ai/app/models/harness_performance.py` |
 
-Run `npm run eval:harness:pr` for all 13 suites, `npm run eval:harness:stages --
+Run `npm run eval:harness:pr` for all 14 suites, `npm run eval:harness:stages --
 --output-dir /tmp/harness-stage-eval` for stage reports, and
 `npm run test:acceptance:recovery-limits` for crash/size regression coverage.
 `npm run check:release` is the full release gate. Deterministic regression
@@ -75,3 +75,5 @@ baselines and persistence import boundary without a database or provider;
 `npm run test:ai:harness:commit` separately runs operation binding and atomic
 commit/failure tests. Existing manifest/golden fixtures and trace versions are
 unchanged by this relocation.
+
+Planning revisions use the separately admitted `learning_plan_revision` operation and `plan_revision` stage. Trace slots 0/1 represent preview/acceptance; the local acceptance transaction commits Plan CAS, history, receipt and terminal evidence together. See [Plan revision](plan-revision.md). The additional seven-case regression suite runs via `npm run eval:harness:plan-revision` and is included in PR gates.

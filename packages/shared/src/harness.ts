@@ -39,6 +39,7 @@ export type HarnessStage =
   | "chunk_building"
   | "ocr_page"
   | "study_unit_cleanup"
+  | "plan_revision"
   | "plan_generation"
   | "planning_tool_execution"
   | "persona_generation"
@@ -54,6 +55,7 @@ export type HarnessComponentName =
   | "document_chunk_builder"
   | "ocr_engine"
   | "study_unit_cleaner"
+  | "plan_revision_patch"
   | "planning_prompt"
   | "planning_toolset"
   | "planning_tool_runtime"
@@ -94,6 +96,7 @@ export type HarnessOperationStageKey =
   | "document_parse:chunk_building"
   | "ocr:ocr_page"
   | "study_unit_cleanup:study_unit_cleanup"
+  | "planning:plan_revision"
   | "planning:plan_generation"
   | "planning:planning_tool_execution"
   | "persona:persona_generation"
@@ -109,6 +112,7 @@ export const HARNESS_STAGE_WORKFLOWS = deepFreeze({
   chunk_building: "document_parse",
   ocr_page: "ocr",
   study_unit_cleanup: "study_unit_cleanup",
+  plan_revision: "planning",
   plan_generation: "planning",
   planning_tool_execution: "planning",
   persona_generation: "persona",
@@ -119,6 +123,7 @@ export const HARNESS_STAGE_WORKFLOWS = deepFreeze({
 } as const satisfies Record<HarnessStage, HarnessWorkflow>);
 
 export const HARNESS_COMPONENT_REGISTRATIONS = deepFreeze({
+  plan_revision_patch: { ownerModule: "app.models.plan_revision", contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" } },
   document_parser: { ownerModule: "app.services.document_parser", contract: { name: "document_parser", version: "document-parser-v1" } },
   document_page_extractor: {
     ownerModule: "app.services.document_parser",
@@ -196,6 +201,7 @@ export const HARNESS_OPERATION_STAGE_REGISTRATIONS = deepFreeze({
     componentNames: ["study_unit_cleaner"],
     evalRoute: "document.study_unit_cleanup",
   },
+  "planning:plan_revision": { ownerModule: "app.services.plan_revision", componentNames: ["plan_revision_patch"], evalRoute: "planning.plan_revision" },
   "planning:plan_generation": {
     ownerModule: "app.services.model_provider",
     componentNames: ["planning_prompt", "planning_toolset"],
@@ -308,6 +314,7 @@ export type HarnessResourceType =
   | "document_page"
   | "document_debug"
   | "study_unit"
+  | "plan_revision"
   | "learning_plan"
   | "planning_trace"
   | "persona"
@@ -348,6 +355,7 @@ export interface HarnessResourceEvidencePolicy {
 }
 
 export const HARNESS_RESOURCE_EVIDENCE_POLICIES = {
+  plan_revision: { semantics: "immutable", contextEvidence: "protected_snapshot", commitEvidence: "digest", rollbackEvidence: "unsupported" },
   document: {
     semantics: "unversioned_mutable",
     contextEvidence: "unsupported",
@@ -481,6 +489,17 @@ export interface HarnessOperationCommitPolicy {
 }
 
 export const HARNESS_OPERATION_COMMIT_POLICIES = deepFreeze({
+  "planning:plan_revision:PlanRevisionProposal:plan-revision-proposal-v1:PlanRevisionCommittedProjection:plan-revision-committed-projection-v1": {
+    workflow: "planning", stage: "plan_revision",
+    traceContract: { name: "PlanRevisionProposal", version: "plan-revision-proposal-v1" },
+    payloadContract: { name: "PlanRevisionCommittedProjection", version: "plan-revision-committed-projection-v1" },
+    projectionContract: { name: "PlanRevisionCommittedProjection", version: "plan-revision-committed-projection-v1" },
+    bindingContract: { name: "PlanRevisionOperationBinding", version: "plan-revision-operation-binding-v1" },
+    digestScope: "committed_projection", evidenceScope: "complete_transaction",
+    subjectResourceType: "frontend_request", subjectResourceCount: 1,
+    statusRules: [{ traceStatus: "failed", commitStatus: "not_committed" }, { traceStatus: "passed", commitStatus: "committed" }],
+    resourceRules: [{ resourceType: "plan_revision", committedAttemptedCount: 1, committedResourceCount: 1, notCommittedAttemptedMin: 1, notCommittedAttemptedMax: 1 }],
+  },
   "document_parse:document_parse:DocumentProcessRuntimeOutput:document-process-runtime-output-v1:DocumentProcessCommittedProjection:document-process-committed-projection-v1": {
     workflow: "document_parse",
     stage: "document_parse",

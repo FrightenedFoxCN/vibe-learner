@@ -541,6 +541,7 @@ class HarnessProposalRuntimeService:
         protected_input: dict[str, object],
         generate: Callable[[dict[str, object]], BaseModel],
         output_type: type[BaseModel],
+        trace_slot: int = 0,
     ) -> tuple[HarnessRuntimePreparedOutput, HarnessOperationRuntime]:
         snapshot, grant_id = self._register_snapshot(
             binding=operation_binding,
@@ -622,7 +623,7 @@ class HarnessProposalRuntimeService:
             request=HarnessRuntimeRequest(
                 operation_binding=operation_binding,
                 stage=stage,
-                trace_slot=0,
+                trace_slot=trace_slot,
                 context=context,
             ),
             adapter=HarnessRuntimeStageAdapter(

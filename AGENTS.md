@@ -19,6 +19,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Backend container bootstrap: `services/ai/app/core/bootstrap.py`
 - Document parsing pipeline: `services/ai/app/services/document_parser.py`
 - Study-unit cleanup and plan heuristics: `services/ai/app/services/study_arrangement.py`
+- Plan revision/CAS: `services/ai/app/persistence/learning_plan_repository.py`, `services/ai/app/services/plan_revision.py`, and `docs/plan-revision.md`.
 - Plan prompting and tool context: `services/ai/app/services/plan_prompt.py`
 - Model/tool-call planner: `services/ai/app/services/model_provider.py`
 - Shared contracts: `packages/shared/src/`
@@ -29,7 +30,7 @@ This repository was last materially updated on 2026-09-10. The codebase is a mon
 - Harness protected artifacts and effects: `services/ai/app/persistence/harness_artifact_repository.py`, `services/ai/app/persistence/harness_effect_repository.py`, `services/ai/app/models/harness_effect.py`, and `packages/shared/src/harness-effect.ts`.
 - Tool Manifest: `services/ai/app/models/tool_manifest.py`, `services/ai/app/services/tool_provider_projection.py`, `packages/shared/src/tool-manifest.ts`, and `packages/shared/fixtures/harness/tool-manifest-v1.json`.
 - Harness eval contracts: `services/ai/app/models/harness_eval.py`, `packages/shared/src/harness-eval.ts`, and the eval contract/taxonomy fixtures under `packages/shared/fixtures/harness/`.
-- Harness eval execution: `services/ai/app/services/harness_eval_runner.py`; use `npm run eval:harness` with an explicit registry and selected suite, or its `:pr`, `:manual`, and `:nightly` profile aliases. `eval:harness:pr` runs all 13 suites; `eval:harness:stages` runs the ten stage regressions. `npm run test:acceptance:recovery-limits` covers process-crash, size and frontend recovery regressions.
+- Harness eval execution: `services/ai/app/services/harness_eval_runner.py`; use `npm run eval:harness` with an explicit registry and selected suite, or its `:pr`, `:manual`, and `:nightly` profile aliases. `eval:harness:pr` runs all 14 suites; `eval:harness:stages` runs the ten stage regressions. `npm run test:acceptance:recovery-limits` covers process-crash, size and frontend recovery regressions.
 - Operation commit contracts: `services/ai/app/models/tavern_commit.py` and `packages/shared/fixtures/harness/operation-commit-policies-v1.json`.
 - Harness architecture and source ownership map: `docs/harness-architecture.md`
 - Unified active backlog: `TODO.md`
@@ -176,7 +177,7 @@ TAVERN_TEST_API_URL=http://127.0.0.1:8000 npm run test:web:tavern
 - Wave 3 production adoption is complete for Tavern actor generation and Study Chat. Both resolve authorized protected snapshots before provider execution, emit v3 attempts/checks and terminal traces, and run deterministic held-out eval suites. Historical v1/v2 evidence remains read-only compatibility data.
 - V3 commit claims must match a registered full operation key and versioned committed projection. Generic resource evidence is insufficient; the Tavern actor Message policy is `primary_output_only`, not proof of all Room/Run/Step effects in its transaction.
 - Tavern persona Messages persist server-only operation/effect receipt metadata atomically. Keep it out of API/OpenAPI, and use `get_actor_commit_read_back` so Message/Run/Step/Participant/reply-anchor evidence comes from one database snapshot.
-- Treat Harness as a repository-wide lifecycle, not a Tavern feature. Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern have production v3 boundaries; frontend decoders and all 13 stage eval registrations are implemented. Remaining quality, independent replay, native UI and platform acceptance is listed only in `TODO.md`.
+- Treat Harness as a repository-wide lifecycle, not a Tavern feature. Document/OCR/Study Unit, Planning, Persona/Scene, Study and Tavern have production v3 boundaries; frontend decoders and all 14 stage eval registrations are implemented. Remaining quality, independent replay, native UI and platform acceptance is listed only in `TODO.md`.
 - Fix the unsafe write/schema boundary before claiming workflow adoption: Study follows concurrent-safe append → operation admission/receipt → typed effect schema → effect commit/staging → v3 trace/eval; Document and Planning have durable admission, atomic committed projections and v3 lifecycle evidence; Scene keeps model proposal, user-authored save, committed projection and API DTO separate.
 - Study Session revision and turn sequence are application-owned committed state. Keep them out of Study Chat/model proposal schemas; Session CAS is concurrency infrastructure, not durable request admission or successful Harness commit evidence.
 - Interactive Question grading material must remain server-only before submission. Keep model proposal, grading spec, public prompt, committed result, and Turn-bound attempt input separate; the browser must render only persisted Session read-back.

@@ -130,7 +130,13 @@ This reference covers **79 business HTTP operations across 60 unique paths**: 68
 | `PATCH` | `/learning-plans/{plan_id}` | Update editable plan fields. |
 | `PATCH` | `/learning-plans/{plan_id}/progress` | Update Study Unit progress. |
 | `PATCH` | `/learning-plans/{plan_id}/planning-questions/{question_id}` | Answer/update a planning question. |
-| `DELETE` | `/learning-plans/{plan_id}` | Delete one plan. |
+| `DELETE` | `/learning-plans/{plan_id}` | Tombstone one plan; optional `expected_revision` query. |
+| `POST` | `/learning-plans/{plan_id}/revisions` | Admit a preview: `client_request_id`, `base_revision`, `instruction` or `rollback_revision`. |
+| `GET` | `/learning-plans/{plan_id}/revisions/{request_id}` | Query-only revision recovery; request ID is the client ID. |
+| `POST` | `/learning-plans/{plan_id}/revisions/{request_id}/decision` | `decision`: `accept` or `reject`; acceptance uses the admitted base revision. |
+| `GET` | `/learning-plans/{plan_id}/revision-history` | Available revision numbers, newest first. |
+
+Current Plan DTOs include `revision`. Title/progress/question PATCH requests accept optional `expected_revision` and return 409 on stale writes. Question answers are saved without implicit model rewriting. Revision responses include status, base Plan, strict proposal and accepted result. Preview/rollback preserve the existing schedule IDs and current progress; [full contract and recovery semantics](plan-revision.md).
 | `POST` | `/stream-runs/{stream_id}/cancel` | Mark a processing/planning stream as canceled. |
 | `POST` | `/exercises/generate` | Generate a structured exercise. |
 | `POST` | `/submissions/grade` | Grade one structured submission. |

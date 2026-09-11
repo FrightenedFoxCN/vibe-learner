@@ -1,0 +1,79 @@
+{
+  "schema_version": "stage-regression-cases-v1",
+  "provenance": "developer_authored",
+  "cases": [
+    {
+      "case_id": "plan-revision-reorder",
+      "stage": "plan_revision",
+      "scenario": "reorder",
+      "input": null,
+      "expected": {
+        "accepted": true,
+        "identity_preserved": true,
+        "progress_preserved": true,
+        "revision_preserved": true,
+        "reordered": true,
+        "historical_restored": true
+      }
+    },
+    {
+      "case_id": "plan-revision-foreign-target",
+      "stage": "plan_revision",
+      "scenario": "foreign_target",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "plan-revision-duplicate-target",
+      "stage": "plan_revision",
+      "scenario": "duplicate_target",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "plan-revision-missing-target",
+      "stage": "plan_revision",
+      "scenario": "missing_target",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "plan-revision-owned-field",
+      "stage": "plan_revision",
+      "scenario": "owned_field",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "plan-revision-blank-task",
+      "stage": "plan_revision",
+      "scenario": "blank_task",
+      "input": null,
+      "expected": {
+        "accepted": false
+      }
+    },
+    {
+      "case_id": "plan-revision-rollback",
+      "stage": "plan_revision",
+      "scenario": "rollback",
+      "input": null,
+      "expected": {
+        "accepted": true,
+        "identity_preserved": true,
+        "progress_preserved": true,
+        "revision_preserved": true,
+        "reordered": false,
+        "historical_restored": true
+      }
+    }
+  ]
+}

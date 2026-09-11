@@ -59,6 +59,14 @@
       }
     },
     {
+      "component_name": "plan_revision_patch",
+      "owner_module": "app.models.plan_revision",
+      "contract": {
+        "name": "plan_revision_patch",
+        "version": "plan-revision-patch-v1"
+      }
+    },
+    {
       "component_name": "planning_prompt",
       "owner_module": "app.services.plan_prompt",
       "contract": {
@@ -212,6 +220,15 @@
         "planning_toolset"
       ],
       "eval_route": "planning.plan_generation"
+    },
+    {
+      "workflow": "planning",
+      "stage": "plan_revision",
+      "owner_module": "app.services.plan_revision",
+      "component_names": [
+        "plan_revision_patch"
+      ],
+      "eval_route": "planning.plan_revision"
     },
     {
       "workflow": "planning",

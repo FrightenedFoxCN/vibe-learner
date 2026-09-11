@@ -290,6 +290,12 @@ class MockModelProvider(LocalExerciseProvider, ModelProvider):
         )
 
 
+    def generate_plan_revision(self, *, plan, instruction: str):
+        from app.models.plan_revision import proposal_from_plan
+        proposal = proposal_from_plan(plan, "本地模拟修订；保留已有排期身份和学习进度。")
+        proposal.overview = f"{plan.overview}\n本次调整：{instruction}"[:8000]
+        return proposal
+
     def generate_learning_plan(
         self,
         *,
@@ -968,6 +974,17 @@ class OpenAIModelProvider(ModelProvider):
             layer_count=layer_count,
         )
 
+
+    @operation_snapshot
+    def generate_plan_revision(self, *, plan, instruction: str):
+        return RemotePlanningProvider(
+            plan_model=self.plan_model, plan_tools_enabled=self.plan_tools_enabled,
+            fallback_plan_model=self.fallback_plan_model,
+            fallback_disable_tools=self.fallback_disable_tools,
+            multimodal_enabled=self.multimodal_enabled, timeout_seconds=self.timeout_seconds,
+            disabled_tools=frozenset(self.plan_disabled_tools_provider() if self.plan_disabled_tools_provider else ()),
+            request=self._request_openai_chat_completion,
+        ).generate_plan_revision(plan=plan, instruction=instruction)
 
     @operation_snapshot
     def generate_learning_plan(

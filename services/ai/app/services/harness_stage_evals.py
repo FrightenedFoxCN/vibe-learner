@@ -236,8 +236,9 @@ def _source_identity():
     return revision, "dirty" if dirty else "clean", digest
 
 
-def build_harness_stage_runner() -> HarnessEvalRunner:
-    catalog = json.loads(FIXTURE_PATH.read_text())
+def build_harness_stage_runner(*, catalog_path=FIXTURE_PATH, suites=STAGE_EVAL_SUITES,
+                               authority_factory=StageAuthority, execute_case=None) -> HarnessEvalRunner:
+    catalog = json.loads(catalog_path.read_text())
     if (
         set(catalog) != {"schema_version", "provenance", "cases"}
         or catalog["schema_version"] != "stage-regression-cases-v1"
@@ -247,11 +248,11 @@ def build_harness_stage_runner() -> HarnessEvalRunner:
     payloads = [StageCase.model_validate(p) for p in catalog["cases"]]
     if len({p.case_id for p in payloads}) != len(payloads):
         raise ValueError("stage_eval_case_duplicate")
-    if {p.stage for p in payloads} != {key.split(":")[1] for key in STAGE_EVAL_SUITES}:
+    if {p.stage for p in payloads} != {key.split(":")[1] for key in suites}:
         raise ValueError("stage_eval_coverage_mismatch")
     temporary = TemporaryDirectory(prefix="harness-stage-eval-")
     store = LocalJsonStore(Path(temporary.name))
-    authority = StageAuthority(store)
+    authority = authority_factory(store)
     registry = HarnessEvalSuiteRegistry(REGISTRY)
     graders = HarnessEvalGraderRegistry(GRADERS)
     graders.register(StageGrader())
@@ -281,7 +282,7 @@ def build_harness_stage_runner() -> HarnessEvalRunner:
         success = False
         try:
             StageCase.model_validate(payload)
-            observed = Observation(values=execute_stage(case.stage, payload))
+            observed = Observation(values=(execute_case or execute_stage)(case.stage, payload))
             success = True
             # Schema metrics refer to the versioned observation DTO (including
             # typed rejection), not to validity of deliberately bad input.
@@ -300,7 +301,7 @@ def build_harness_stage_runner() -> HarnessEvalRunner:
         finally:
             authority.finish(operation_binding, success)
 
-    for key, suite in STAGE_EVAL_SUITES.items():
+    for key, suite in suites.items():
         entry = HARNESS_WORKFLOW_MANIFEST_ENTRIES[key]
         cases = []
         for p in sorted(

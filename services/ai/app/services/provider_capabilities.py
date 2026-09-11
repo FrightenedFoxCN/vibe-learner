@@ -58,6 +58,9 @@ class PlanModelReply:
 
 
 class PlanningModelCapability:
+    def generate_plan_revision(self, *, plan, instruction: str):
+        raise NotImplementedError
+
     def generate_learning_plan(
         self,
         *,

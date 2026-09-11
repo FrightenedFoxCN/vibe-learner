@@ -140,6 +140,7 @@ class HarnessStage(StrEnum):
     CHUNK_BUILDING = "chunk_building"
     OCR_PAGE = "ocr_page"
     STUDY_UNIT_CLEANUP = "study_unit_cleanup"
+    PLAN_REVISION = "plan_revision"
     PLAN_GENERATION = "plan_generation"
     PLANNING_TOOL_EXECUTION = "planning_tool_execution"
     PERSONA_GENERATION = "persona_generation"
@@ -156,6 +157,7 @@ class HarnessComponentName(StrEnum):
     DOCUMENT_CHUNK_BUILDER = "document_chunk_builder"
     OCR_ENGINE = "ocr_engine"
     STUDY_UNIT_CLEANER = "study_unit_cleaner"
+    PLAN_REVISION_PATCH = "plan_revision_patch"
     PLANNING_PROMPT = "planning_prompt"
     PLANNING_TOOLSET = "planning_toolset"
     PLANNING_TOOL_RUNTIME = "planning_tool_runtime"
@@ -219,6 +221,7 @@ class HarnessResourceType(StrEnum):
     DOCUMENT_PAGE = "document_page"
     DOCUMENT_DEBUG = "document_debug"
     STUDY_UNIT = "study_unit"
+    PLAN_REVISION = "plan_revision"
     LEARNING_PLAN = "learning_plan"
     PLANNING_TRACE = "planning_trace"
     PERSONA = "persona"
@@ -395,6 +398,11 @@ HARNESS_COMPONENT_REGISTRATIONS = MappingProxyType(
                 version=STUDY_UNIT_CLEANER_CONTRACT_VERSION,
             ),
         ),
+        HarnessComponentName.PLAN_REVISION_PATCH: HarnessComponentRegistration(
+            HarnessComponentName.PLAN_REVISION_PATCH,
+            "app.models.plan_revision",
+            HarnessRegisteredContract(name="plan_revision_patch", version="plan-revision-patch-v1"),
+        ),
         HarnessComponentName.PLANNING_PROMPT: HarnessComponentRegistration(
             HarnessComponentName.PLANNING_PROMPT,
             "app.services.plan_prompt",
@@ -492,6 +500,7 @@ HARNESS_COMPONENT_OWNERS = MappingProxyType(
         HarnessComponentName.DOCUMENT_CHUNK_BUILDER: "app.services.document_parser",
         HarnessComponentName.OCR_ENGINE: "app.services.ocr_engine",
         HarnessComponentName.STUDY_UNIT_CLEANER: "app.services.study_arrangement",
+        HarnessComponentName.PLAN_REVISION_PATCH: "app.models.plan_revision",
         HarnessComponentName.PLANNING_PROMPT: "app.services.plan_prompt",
         HarnessComponentName.PLANNING_TOOLSET: "app.services.plan_tool_runtime",
         HarnessComponentName.PLANNING_TOOL_RUNTIME: "app.services.plan_tool_runtime",
@@ -550,6 +559,11 @@ HARNESS_OPERATION_STAGE_REGISTRATIONS = MappingProxyType(
             "app.services.study_arrangement",
             (HarnessComponentName.STUDY_UNIT_CLEANER,),
             "document.study_unit_cleanup",
+        ),
+        (HarnessWorkflow.PLANNING, HarnessStage.PLAN_REVISION): HarnessOperationStageRegistration(
+            HarnessWorkflow.PLANNING, HarnessStage.PLAN_REVISION,
+            "app.services.plan_revision", (HarnessComponentName.PLAN_REVISION_PATCH,),
+            "planning.plan_revision",
         ),
         (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION): HarnessOperationStageRegistration(
             HarnessWorkflow.PLANNING,
@@ -624,6 +638,7 @@ HARNESS_OPERATION_STAGE_OWNERS = MappingProxyType(
         (HarnessWorkflow.DOCUMENT_PARSE, HarnessStage.CHUNK_BUILDING): "app.services.document_parser",
         (HarnessWorkflow.OCR, HarnessStage.OCR_PAGE): "app.services.ocr_engine",
         (HarnessWorkflow.STUDY_UNIT_CLEANUP, HarnessStage.STUDY_UNIT_CLEANUP): "app.services.study_arrangement",
+        (HarnessWorkflow.PLANNING, HarnessStage.PLAN_REVISION): "app.services.plan_revision",
         (HarnessWorkflow.PLANNING, HarnessStage.PLAN_GENERATION): "app.services.model_provider",
         (HarnessWorkflow.PLANNING, HarnessStage.PLANNING_TOOL_EXECUTION): "app.services.plan_tool_runtime",
         (HarnessWorkflow.PERSONA, HarnessStage.PERSONA_GENERATION): "app.services.persona_cards",
@@ -642,6 +657,7 @@ HARNESS_STAGE_WORKFLOWS = MappingProxyType(
         HarnessStage.CHUNK_BUILDING: HarnessWorkflow.DOCUMENT_PARSE,
         HarnessStage.OCR_PAGE: HarnessWorkflow.OCR,
         HarnessStage.STUDY_UNIT_CLEANUP: HarnessWorkflow.STUDY_UNIT_CLEANUP,
+        HarnessStage.PLAN_REVISION: HarnessWorkflow.PLANNING,
         HarnessStage.PLAN_GENERATION: HarnessWorkflow.PLANNING,
         HarnessStage.PLANNING_TOOL_EXECUTION: HarnessWorkflow.PLANNING,
         HarnessStage.PERSONA_GENERATION: HarnessWorkflow.PERSONA,
@@ -896,6 +912,12 @@ HARNESS_RESOURCE_EVIDENCE_POLICIES = MappingProxyType(
             commit_evidence=HarnessCommitEvidencePolicy.UNSUPPORTED,
             rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
         ),
+        HarnessResourceType.PLAN_REVISION: HarnessResourceEvidencePolicy(
+            semantics=HarnessResourceSemantics.IMMUTABLE,
+            context_evidence=HarnessContextEvidencePolicy.PROTECTED_SNAPSHOT,
+            commit_evidence=HarnessCommitEvidencePolicy.DIGEST,
+            rollback_evidence=HarnessRollbackEvidencePolicy.UNSUPPORTED,
+        ),
         HarnessResourceType.LEARNING_PLAN: HarnessResourceEvidencePolicy(
             semantics=HarnessResourceSemantics.UNVERSIONED_MUTABLE,
             context_evidence=HarnessContextEvidencePolicy.UNSUPPORTED,
@@ -976,6 +998,8 @@ def validate_harness_resource_evidence_policy_registry(
             policy.rollback_evidence,
         )
         allowed_shapes = {
+            (HarnessResourceSemantics.IMMUTABLE, HarnessContextEvidencePolicy.PROTECTED_SNAPSHOT,
+             HarnessCommitEvidencePolicy.DIGEST, HarnessRollbackEvidencePolicy.UNSUPPORTED),
             (
                 HarnessResourceSemantics.REVISIONED_CONTROL_AGGREGATE,
                 HarnessContextEvidencePolicy.AUTHORITATIVE_REVISION,
@@ -1172,8 +1196,30 @@ _LEARNING_PLAN_COMMIT_POLICY = HarnessOperationCommitPolicy(
 )
 
 
+_PLAN_REVISION_COMMIT_POLICY_KEY = HarnessOperationCommitPolicyKey(
+    workflow=HarnessWorkflow.PLANNING, stage=HarnessStage.PLAN_REVISION,
+    trace_contract_name="PlanRevisionProposal", trace_contract_version="plan-revision-proposal-v1",
+    payload_contract_name="PlanRevisionCommittedProjection", payload_contract_version="plan-revision-committed-projection-v1",
+)
+_PLAN_REVISION_COMMIT_POLICY = HarnessOperationCommitPolicy(
+    key=_PLAN_REVISION_COMMIT_POLICY_KEY,
+    projection_contract=HarnessRegisteredContract("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1"),
+    binding_contract=HarnessRegisteredContract("PlanRevisionOperationBinding", "plan-revision-operation-binding-v1"),
+    digest_scope=HarnessDigestScope.COMMITTED_PROJECTION,
+    evidence_scope=HarnessOperationEvidenceScope.COMPLETE_TRANSACTION,
+    subject_resource_type=HarnessResourceType.FRONTEND_REQUEST, subject_resource_count=1,
+    status_rules=(
+        HarnessOperationCommitStatusRule(HarnessStatus.FAILED, HarnessCommitStatus.NOT_COMMITTED),
+        HarnessOperationCommitStatusRule(HarnessStatus.PASSED, HarnessCommitStatus.COMMITTED),
+    ),
+    resource_rules=(
+        HarnessOperationCommitResourceRule(HarnessResourceType.PLAN_REVISION, 1, 1, 1, 1),
+    ),
+)
+
 HARNESS_OPERATION_COMMIT_POLICIES = MappingProxyType(
     {
+        _PLAN_REVISION_COMMIT_POLICY_KEY: _PLAN_REVISION_COMMIT_POLICY,
         _DOCUMENT_PROCESS_COMMIT_POLICY_KEY: _DOCUMENT_PROCESS_COMMIT_POLICY,
         _LEARNING_PLAN_COMMIT_POLICY_KEY: _LEARNING_PLAN_COMMIT_POLICY,
         _TAVERN_ACTOR_MESSAGE_COMMIT_POLICY_KEY: (

@@ -730,6 +730,26 @@ _ENTRIES = (
         policy=("DocumentStageHarnessPolicy", "document-stage-harness-v1"),
     ),
     _executable_entry(
+        HarnessWorkflow.PLANNING, HarnessStage.PLAN_REVISION,
+        registration=("PlanRevisionManifest", "plan-revision-manifest-v1"),
+        adapter=("PlanRevisionAdapter", "plan-revision-adapter-v1"),
+        input_contract=("PlanRevisionInputManifest", "plan-revision-input-v1"),
+        proposal_contract=("PlanRevisionProposal", "plan-revision-proposal-v1"),
+        output_contract=("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1"),
+        artifact_types=(HarnessArtifactType.PLANNING_CONTEXT,),
+        decoder_route="app.services.plan_revision.PlanRevisionService",
+        prompt=("PlanRevisionPrompt", "plan-revision-prompt-v1"),
+        policy=("PlanRevisionPolicy", "plan-revision-policy-v1"),
+        eval_suites=(HarnessContractRef(name="plan_revision_regression", version="plan-revision-regression-v1"),),
+        commit_policy=HarnessManifestRegisteredCommitPolicySlotV1(
+            key=HarnessManifestCommitPolicyKeyV1(
+                workflow=HarnessWorkflow.PLANNING, stage=HarnessStage.PLAN_REVISION,
+                trace_contract=_contract("PlanRevisionProposal", "plan-revision-proposal-v1"),
+                payload_contract=_contract("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1"),
+            )
+        ),
+    ),
+    _executable_entry(
         HarnessWorkflow.PLANNING,
         HarnessStage.PLAN_GENERATION,
         registration=("LearningPlanWorkflowManifestEntry", "learning-plan-workflow-manifest-v1"),

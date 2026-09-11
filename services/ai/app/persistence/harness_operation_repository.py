@@ -21,6 +21,7 @@ from app.persistence.models import (
     HarnessOperationBindingRow,
     HarnessWorkflowOperationRow,
     LearningPlanOperationRow,
+    PlanRevisionOperationRow,
     StudyChatOperationRow,
     TavernRunRow,
 )
@@ -32,6 +33,7 @@ _DOMAIN_ROW_TYPES = {
     HarnessDomainOperationKind.DOCUMENT_OCR: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.STUDY_UNIT_CLEANUP: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.LEARNING_PLAN_GENERATION: LearningPlanOperationRow,
+    HarnessDomainOperationKind.LEARNING_PLAN_REVISION: PlanRevisionOperationRow,
     HarnessDomainOperationKind.PERSONA_GENERATION: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.SCENE_GENERATION: HarnessWorkflowOperationRow,
     HarnessDomainOperationKind.STUDY_CHAT: StudyChatOperationRow,

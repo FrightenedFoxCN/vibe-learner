@@ -173,6 +173,7 @@ type StageVocabulary = {
 };
 
 const STAGE_VOCABULARY: StageVocabulary[] = [
+  { workflow: "planning", stage: "plan_revision", ownerModule: "app.services.plan_revision", components: [{ name: "plan_revision_patch", contract: { name: "plan_revision_patch", version: "plan-revision-patch-v1" } }], evalRoute: "planning.plan_revision" },
   {
     workflow: "document_parse",
     stage: "document_parse",
@@ -587,6 +588,18 @@ const executableEntry = (
 });
 
 const entries: HarnessWorkflowManifestEntryV1[] = [
+  executableEntry("planning", "plan_revision", {
+    registration: contract("PlanRevisionManifest", "plan-revision-manifest-v1"),
+    adapter: contract("PlanRevisionAdapter", "plan-revision-adapter-v1"),
+    input: contract("PlanRevisionInputManifest", "plan-revision-input-v1"),
+    proposal: contract("PlanRevisionProposal", "plan-revision-proposal-v1"),
+    output: contract("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1"),
+    artifacts: ["planning_context"], decoder: "app.services.plan_revision.PlanRevisionService",
+    prompt: contract("PlanRevisionPrompt", "plan-revision-prompt-v1"),
+    policy: contract("PlanRevisionPolicy", "plan-revision-policy-v1"),
+    evalSuites: [contract("plan_revision_regression", "plan-revision-regression-v1")],
+    commit: { status: "registered", key: { workflow: "planning", stage: "plan_revision", trace_contract: contract("PlanRevisionProposal", "plan-revision-proposal-v1"), payload_contract: contract("PlanRevisionCommittedProjection", "plan-revision-committed-projection-v1") } },
+  }),
   executableEntry("document_parse", "document_parse", {
     registration: contract("DocumentProcessWorkflowManifestEntry", "document-process-workflow-manifest-v1"),
     adapter: contract("DocumentProcessWorkflowAdapter", "document-process-workflow-adapter-v1"),

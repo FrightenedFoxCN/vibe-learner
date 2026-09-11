@@ -97,6 +97,49 @@
       ]
     },
     {
+      "workflow": "planning",
+      "stage": "plan_revision",
+      "trace_contract": {
+        "name": "PlanRevisionProposal",
+        "version": "plan-revision-proposal-v1"
+      },
+      "payload_contract": {
+        "name": "PlanRevisionCommittedProjection",
+        "version": "plan-revision-committed-projection-v1"
+      },
+      "projection_contract": {
+        "name": "PlanRevisionCommittedProjection",
+        "version": "plan-revision-committed-projection-v1"
+      },
+      "binding_contract": {
+        "name": "PlanRevisionOperationBinding",
+        "version": "plan-revision-operation-binding-v1"
+      },
+      "digest_scope": "committed_projection",
+      "evidence_scope": "complete_transaction",
+      "subject_resource_type": "frontend_request",
+      "subject_resource_count": 1,
+      "status_rules": [
+        {
+          "trace_status": "failed",
+          "commit_status": "not_committed"
+        },
+        {
+          "trace_status": "passed",
+          "commit_status": "committed"
+        }
+      ],
+      "resource_rules": [
+        {
+          "resource_type": "plan_revision",
+          "committed_attempted_count": 1,
+          "committed_resource_count": 1,
+          "not_committed_attempted_min": 1,
+          "not_committed_attempted_max": 1
+        }
+      ]
+    },
+    {
       "workflow": "study_chat",
       "stage": "study_chat_reply",
       "trace_contract": {

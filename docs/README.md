@@ -16,6 +16,7 @@
 | [性能预算](performance-budgets-v1.md) | Room 分页、Harness 字节/调用/时延门 |
 | [解析与规划数据流](parsing-and-planning-data-flow.md) | Document → Study Unit → Learning Plan |
 | [章节与日程](study-chapter-and-schedule.md) | 领域术语和 Session 范围 |
+| [计划修订](plan-revision.md) | Plan CAS、修订预览、接受/拒绝、历史回滚与恢复 |
 | [计划文本契约](plan-text-contract.md) | 面向学习者的文本字段语义 |
 | [规划 Prompt 契约](learning-plan-prompt-contract.md) | Prompt 结构和模型输入 |
 | [学习工作区](frontend-learning-workspace.md) | Plan/Study 前端职责 |

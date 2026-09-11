@@ -45,6 +45,13 @@
       "rollback_evidence": "unsupported"
     },
     {
+      "resource_type": "plan_revision",
+      "semantics": "immutable",
+      "context_evidence": "protected_snapshot",
+      "commit_evidence": "digest",
+      "rollback_evidence": "unsupported"
+    },
+    {
       "resource_type": "planning_trace",
       "semantics": "unversioned_mutable",
       "context_evidence": "unsupported",

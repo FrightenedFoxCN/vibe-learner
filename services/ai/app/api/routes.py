@@ -1,3 +1,6 @@
+from app.models.plan_revision import PlanRevisionRequestV1, PlanRevisionDecisionV1, PlanRevisionResponseV1
+from app.persistence.plan_revision_repository import PlanRevisionRepository
+from app.services.plan_revision import PlanRevisionService
 from app.services.study_chat_context import _resolve_session_document
 from app.services.study_chat_errors import StudyChatApplicationError, map_chat_generation_error
 import json
@@ -2025,6 +2028,30 @@ def cancel_stream_run(stream_id: str, *, container: Container = Depends(get_cont
     }
 
 
+
+
+def _plan_revision_service(container):
+    return PlanRevisionService(PlanRevisionRepository(container.database), container.harness_proposal_runtime, container.model_provider)
+
+
+@router.post("/learning-plans/{plan_id}/revisions", response_model=PlanRevisionResponseV1)
+def create_plan_revision(plan_id: str, payload: PlanRevisionRequestV1, *, container: Container = Depends(get_container)):
+    return _plan_revision_service(container).create(plan_id, payload)
+
+
+@router.get("/learning-plans/{plan_id}/revision-history")
+def plan_revision_history(plan_id: str, *, container: Container = Depends(get_container)) -> dict[str, list[int]]:
+    return {"revisions": PlanRevisionRepository(container.database).history(plan_id)}
+
+
+@router.get("/learning-plans/{plan_id}/revisions/{request_id}", response_model=PlanRevisionResponseV1)
+def get_plan_revision(plan_id: str, request_id: str, *, container: Container = Depends(get_container)):
+    return PlanRevisionRepository(container.database).get(plan_id, request_id)
+
+
+@router.post("/learning-plans/{plan_id}/revisions/{request_id}/decision", response_model=PlanRevisionResponseV1)
+def decide_plan_revision(plan_id: str, request_id: str, payload: PlanRevisionDecisionV1, *, container: Container = Depends(get_container)):
+    return _plan_revision_service(container).decide(plan_id, request_id, payload.decision)
 
 
 @router.get("/learning-plans/{plan_id}", response_model=LearningPlanResponse)

@@ -939,6 +939,131 @@
       }
     },
     {
+      "key": "planning:plan_revision",
+      "workflow": "planning",
+      "stage": "plan_revision",
+      "registration": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionManifest",
+          "version": "plan-revision-manifest-v1"
+        }
+      },
+      "owner_module": "app.services.plan_revision",
+      "owner_adapter": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionAdapter",
+          "version": "plan-revision-adapter-v1"
+        }
+      },
+      "input_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionInputManifest",
+          "version": "plan-revision-input-v1"
+        }
+      },
+      "proposal_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionProposal",
+          "version": "plan-revision-proposal-v1"
+        }
+      },
+      "output_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionCommittedProjection",
+          "version": "plan-revision-committed-projection-v1"
+        }
+      },
+      "component_contracts": [
+        {
+          "component_name": "plan_revision_patch",
+          "contract": {
+            "status": "registered",
+            "contract": {
+              "name": "plan_revision_patch",
+              "version": "plan-revision-patch-v1"
+            }
+          }
+        }
+      ],
+      "prompt_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionPrompt",
+          "version": "plan-revision-prompt-v1"
+        }
+      },
+      "policy_contract": {
+        "status": "registered",
+        "contract": {
+          "name": "PlanRevisionPolicy",
+          "version": "plan-revision-policy-v1"
+        }
+      },
+      "toolset_contract": {
+        "status": "not_applicable",
+        "reason": "no_tools"
+      },
+      "attempt_ceiling": {
+        "max_attempts": 3,
+        "max_repair_attempts": 2
+      },
+      "execution_budget": {
+        "max_provider_calls": 3,
+        "max_tool_calls": 16,
+        "max_input_tokens": 64000,
+        "max_output_tokens": 8000,
+        "max_wall_time_ms": 180000,
+        "per_call_timeout_ms": 120000
+      },
+      "allowed_artifact_types": {
+        "status": "registered",
+        "artifact_types": [
+          "planning_context"
+        ]
+      },
+      "allowed_effect_adapters": {
+        "status": "not_applicable",
+        "reason": "no_effects"
+      },
+      "commit_policy": {
+        "status": "registered",
+        "key": {
+          "workflow": "planning",
+          "stage": "plan_revision",
+          "trace_contract": {
+            "name": "PlanRevisionProposal",
+            "version": "plan-revision-proposal-v1"
+          },
+          "payload_contract": {
+            "name": "PlanRevisionCommittedProjection",
+            "version": "plan-revision-committed-projection-v1"
+          }
+        }
+      },
+      "decoder_route": {
+        "status": "registered",
+        "value": "app.services.plan_revision.PlanRevisionService"
+      },
+      "eval_route": {
+        "status": "registered",
+        "value": "planning.plan_revision"
+      },
+      "eval_suites": {
+        "status": "registered",
+        "contracts": [
+          {
+            "name": "plan_revision_regression",
+            "version": "plan-revision-regression-v1"
+          }
+        ]
+      }
+    },
+    {
       "key": "planning:planning_tool_execution",
       "workflow": "planning",
       "stage": "planning_tool_execution",
