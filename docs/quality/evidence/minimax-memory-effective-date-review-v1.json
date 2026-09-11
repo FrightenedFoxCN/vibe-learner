@@ -1,0 +1,46 @@
+{
+  "scope": "Maintainer review of four real retrieval operations, each with two distinct admitted seed conversations",
+  "limitations": [
+    "All event dates are explicit and the query explicitly distinguishes recording and effective times.",
+    "Not a no-timestamp control or independent model quality certification.",
+    "Preparatory seed calls are nested and excluded from primary retrieval call counts."
+  ],
+  "rows": [
+    {
+      "operation_id": "harness-operation-6b189f760c9d47478a8cdd43824e02c6",
+      "sample": "m3-memory-effective-v1-0-cross_session_memory_effective",
+      "boundary_success": true,
+      "maintainer_future_location_correct": true,
+      "maintainer_distinguishes_effective_date": true,
+      "exposes_internal_session_ids": false,
+      "wording_caveat": null
+    },
+    {
+      "operation_id": "harness-operation-c6252d268c9d4466af05930c6c56b68a",
+      "sample": "m3-memory-effective-v1-0-cross_session_memory_effective_fr",
+      "boundary_success": true,
+      "maintainer_future_location_correct": true,
+      "maintainer_distinguishes_effective_date": true,
+      "exposes_internal_session_ids": false,
+      "wording_caveat": "Says future agreement covers historical note; these are different effective intervals, not replacement of history."
+    },
+    {
+      "operation_id": "harness-operation-43f6ac0e8e5e4769a5744660fe29d1b4",
+      "sample": "m3-memory-effective-v1-1-cross_session_memory_effective",
+      "boundary_success": true,
+      "maintainer_future_location_correct": true,
+      "maintainer_distinguishes_effective_date": true,
+      "exposes_internal_session_ids": false,
+      "wording_caveat": null
+    },
+    {
+      "operation_id": "harness-operation-4a503df7edbd4a1287432b471c176f7a",
+      "sample": "m3-memory-effective-v1-1-cross_session_memory_effective_fr",
+      "boundary_success": true,
+      "maintainer_future_location_correct": true,
+      "maintainer_distinguishes_effective_date": true,
+      "exposes_internal_session_ids": true,
+      "wording_caveat": null
+    }
+  ]
+}

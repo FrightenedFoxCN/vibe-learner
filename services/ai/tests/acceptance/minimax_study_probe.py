@@ -41,6 +41,8 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "cross_session_memory_effective": "请调用 retrieve_memory_context 核对约定：2026年10月2日应该去哪个复习地点？区分记录写入时间和约定生效时间，不因后写入的历史补记覆盖未来安排。只用一句话说明地点与日期依据，不出题。",
+    "cross_session_memory_effective_fr": "请调用 retrieve_memory_context 核对法文约定：2026年10月2日应该去哪个复习地点？用中文回答并保留地点法文名称，区分记录写入时间和约定生效时间，不因后写入的历史补记覆盖未来安排。只用一句话说明地点与日期依据，不出题。",
     "cross_session_memory_temporal": "请调用 retrieve_memory_context 查找我之前的复习地点约定。仅根据记录时间判断最新地点，若没有足够时间依据就明确说不能确定，不要根据检索排名猜测。只用一句话回答，不出题。",
     "image_generation_unavailable": "请用 generate_projected_image 生成并投射一张展示天平两边同时减去3的教学示意图。如果当前工具不可用，请明确说未生成图片，不要用文字冒充图片或声称已投射，也不要出题。最后只用一句话报告实际状态。",
     "cross_session_memory": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
@@ -339,13 +341,23 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                     session_payload = {"document_id": document_id,
                         "persona_id": persona_id, "study_unit_id": document["study_units"][0]["id"]}
                     memory_seeds = []
-                    if case_id in {"cross_session_memory", "cross_session_memory_long", "cross_session_memory_temporal"}:
+                    if case_id.startswith("cross_session_memory"):
                         for seed_index, seed_message in enumerate((
                             "记住复习约定：复习地点是青石阅览室，暗号是晴鸟。尚未去过那里。只确认收到，不出题。",
                             "更新复习约定：复习地点改为白桦阅览室，青石阅览室的约定已撤销；暗号晴鸟也已撤销，不设置新暗号。我们尚未去过任何阅览室。只确认更新，不出题。")):
                             if case_id == "cross_session_memory_temporal":
                                 location = ("青石阅览室", "白桦阅览室")[seed_index]
                                 seed_message = f"记住复习约定：复习地点是{location}。尚未去过那里。只确认收到，不出题。"
+                            if case_id == "cross_session_memory_effective":
+                                seed_message = (
+                                    "记住复习约定：从2026年10月1日起，复习地点是白桦阅览室。只确认收到，不出题。",
+                                    "补记历史事实：2026年9月1日的复习地点是青石阅览室。只确认收到，不出题。",
+                                )[seed_index]
+                            if case_id == "cross_session_memory_effective_fr":
+                                seed_message = (
+                                    "Note cet accord de révision : à partir du 1er octobre 2026, le lieu est la salle Bouleau. Confirme seulement la réception, sans exercice.",
+                                    "Note rétrospective : le 1er septembre 2026, le lieu de révision était la salle Pierre-Verte. Confirme seulement la réception, sans exercice.",
+                                )[seed_index]
                             if case_id == "cross_session_memory_long" and seed_index == 1:
                                 seed_message = "这条消息先整理学习材料，最后更新复习约定。" + "材料包括等式性质、移项、系数、验算、常见错误和课后练习。" * 16 + seed_message
                             seed_session = client.post("/study-sessions", json=session_payload)
