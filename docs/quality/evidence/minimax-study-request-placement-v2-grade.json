@@ -1,0 +1,117 @@
+{
+  "scope": "fixture-specific line-shape review; no independent certification",
+  "groups": {
+    "format_clarification_only": {
+      "operations": 6,
+      "requests": 13,
+      "format_pass": 4,
+      "prompt_tokens": 81369,
+      "unknown_usage_requests": 0
+    },
+    "repeat-current-request-after-tools-v1": {
+      "operations": 6,
+      "requests": 15,
+      "format_pass": 4,
+      "prompt_tokens": 94059,
+      "unknown_usage_requests": 0
+    }
+  },
+  "rows": [
+    {
+      "case_id": "document_image_tool",
+      "repetition": 0,
+      "variant": "format_clarification_only",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_image_tool",
+      "repetition": 1,
+      "variant": "format_clarification_only",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_image_tool",
+      "repetition": 0,
+      "variant": "repeat-current-request-after-tools-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_image_tool",
+      "repetition": 1,
+      "variant": "repeat-current-request-after-tools-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 0,
+      "variant": "format_clarification_only",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": false,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 1,
+      "variant": "format_clarification_only",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 0,
+      "variant": "repeat-current-request-after-tools-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "document_text_tool",
+      "repetition": 1,
+      "variant": "repeat-current-request-after-tools-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 0,
+      "variant": "format_clarification_only",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 1,
+      "variant": "format_clarification_only",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 0,
+      "variant": "repeat-current-request-after-tools-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    },
+    {
+      "case_id": "memory_roundtrip",
+      "repetition": 1,
+      "variant": "repeat-current-request-after-tools-v1",
+      "boundary_success": true,
+      "exact_two_nonempty_bullet_lines": true,
+      "interactive_question": false
+    }
+  ]
+}
