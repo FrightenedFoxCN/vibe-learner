@@ -1,0 +1,2816 @@
+{
+  "build_id": "7y_0OnsRd6SntazJHBzcM",
+  "source_head": "547c1dc70190df355c98443bbee047b986feeeda",
+  "includes_uncommitted_navigation_changes": true,
+  "stats": {
+    "startTime": "2026-09-11T15:33:27.999Z",
+    "duration": 32000.824,
+    "expected": 23,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "title": "independent navigation: all ten entries and current semantics at 390px",
+      "status": "passed",
+      "duration_ms": 6823,
+      "evidence": [
+        {
+          "name": "navigation-layout.json",
+          "data": {
+            "width": 390,
+            "evidence": [
+              {
+                "path": "/",
+                "group": "学习",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/plan",
+                "group": "学习",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/study",
+                "group": "学习",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/tavern",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/persona-spectrum",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/scene-setup",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/sensory-tools",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/settings",
+                "group": "系统",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/model-usage",
+                "group": "系统",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/manual",
+                "group": "系统",
+                "layout": {
+                  "width": 390,
+                  "scrollWidth": 390,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 366,
+                      "height": 44,
+                      "left": 12,
+                      "right": 378
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "independent navigation: all ten entries and current semantics at 760px",
+      "status": "passed",
+      "duration_ms": 6660,
+      "evidence": [
+        {
+          "name": "navigation-layout.json",
+          "data": {
+            "width": 760,
+            "evidence": [
+              {
+                "path": "/",
+                "group": "学习",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/plan",
+                "group": "学习",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/study",
+                "group": "学习",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/tavern",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/persona-spectrum",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/scene-setup",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/sensory-tools",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/settings",
+                "group": "系统",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/model-usage",
+                "group": "系统",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/manual",
+                "group": "系统",
+                "layout": {
+                  "width": 760,
+                  "scrollWidth": 760,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 736,
+                      "height": 44,
+                      "left": 12,
+                      "right": 748
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "independent navigation: all ten entries and current semantics at 1440px",
+      "status": "passed",
+      "duration_ms": 6261,
+      "evidence": [
+        {
+          "name": "navigation-layout.json",
+          "data": {
+            "width": 1440,
+            "evidence": [
+              {
+                "path": "/",
+                "group": "学习",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/plan",
+                "group": "学习",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/study",
+                "group": "学习",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/tavern",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/persona-spectrum",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/scene-setup",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/sensory-tools",
+                "group": "角色与世界",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/settings",
+                "group": "系统",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/model-usage",
+                "group": "系统",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "/manual",
+                "group": "系统",
+                "layout": {
+                  "width": 199,
+                  "scrollWidth": 199,
+                  "links": [
+                    {
+                      "text": "导航首页",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "计划生成",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "章节对话",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "角色酒馆",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "人格色谱",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "场景搭建",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "感官工具",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "统一设置",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "用量审计",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    },
+                    {
+                      "text": "使用手册",
+                      "width": 199,
+                      "height": 44,
+                      "left": 0,
+                      "right": 199
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "independent navigation: mobile Enter Escape and Tab-away preserve predictable focus",
+      "status": "passed",
+      "duration_ms": 158,
+      "evidence": []
+    },
+    {
+      "title": "independent navigation: collapsed desktop survives mobile boundary without hiding labels or losing focus",
+      "status": "passed",
+      "duration_ms": 251,
+      "evidence": []
+    },
+    {
+      "title": "independent navigation: browser history updates page and group while mobile menu closes",
+      "status": "passed",
+      "duration_ms": 279,
+      "evidence": []
+    },
+    {
+      "title": "independent navigation: unconfigured Vault exposes only Settings as actionable navigation",
+      "status": "passed",
+      "duration_ms": 180,
+      "evidence": []
+    },
+    {
+      "title": "independent navigation: resize rescues focus from desktop collapse control",
+      "status": "passed",
+      "duration_ms": 659,
+      "evidence": []
+    },
+    {
+      "title": "independent navigation: external view toggle closes mobile menu without hidden focus",
+      "status": "passed",
+      "duration_ms": 182,
+      "evidence": []
+    },
+    {
+      "title": "independent navigation: resizing after intentional focus departure does not steal focus",
+      "status": "passed",
+      "duration_ms": 640,
+      "evidence": []
+    },
+    {
+      "title": "/ initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 606,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/manual initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 609,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/settings initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 606,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/model-usage initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 603,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/model-usage/stats"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/plan initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 627,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/study initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 635,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/persona-spectrum initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 626,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/persona-cards"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/scene-setup initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 622,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/reusable-scene-nodes"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/sensory-tools initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 620,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/model-tools/config"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/tavern initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 625,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/tavern/rooms"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/not-a-real-page initializes only its owned resources",
+      "status": "passed",
+      "duration_ms": 602,
+      "evidence": [
+        {
+          "name": "api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Plan and Study share their owner; leaving it stops learning focus refresh",
+      "status": "passed",
+      "duration_ms": 776,
+      "evidence": [
+        {
+          "name": "navigation-api-requests.json",
+          "data": [
+            {
+              "method": "GET",
+              "path": "/scene-library"
+            },
+            {
+              "method": "GET",
+              "path": "/documents"
+            },
+            {
+              "method": "GET",
+              "path": "/learning-plans"
+            },
+            {
+              "method": "GET",
+              "path": "/personas"
+            },
+            {
+              "method": "GET",
+              "path": "/runtime-settings"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Plan draft remains visible after navigating to Settings and back",
+      "status": "passed",
+      "duration_ms": 1522,
+      "evidence": []
+    }
+  ]
+}

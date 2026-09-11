@@ -2,10 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const topNavSource = readFileSync(
-  new URL("../components/top-nav.tsx", import.meta.url),
-  "utf8",
-);
 const studyConsoleSource = readFileSync(
   new URL("../components/study-console.tsx", import.meta.url),
   "utf8",
@@ -32,14 +28,7 @@ const settingsStylesSource = readFileSync(
 );
 
 
-test("mobile primary navigation keeps labelled 44px touch targets", () => {
-  assert.match(topNavSource, /aria-label=\{item\.label\}/);
-  assert.match(topNavSource, /className="app-nav-label"/);
-  assert.match(
-    globalStyles,
-    /@media \(max-width: 760px\)[\s\S]*?\.app-nav-link,[\s\S]*?flex: 0 0 44px;[\s\S]*?min-width: 44px;[\s\S]*?justify-content: center;/,
-  );
-});
+// Primary navigation semantics, targets and keyboard flow are measured by the independent browser suite.
 
 test("Study question composer exposes an accessible name", () => {
   assert.match(
