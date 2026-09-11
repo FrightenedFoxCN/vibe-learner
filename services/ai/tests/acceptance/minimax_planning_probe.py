@@ -17,6 +17,7 @@ from app.core.settings import Settings
 from app.models.api import LearningPlanCreateResponse, LearningPlanResponse
 from app.persistence.harness_runtime_repository import HarnessRuntimeRepository
 from app.services.provider_sdk import ProviderRequestAdapter
+from app.services.plan_tool_runtime import PlanToolRuntime
 from app.services.provider_transport import _normalize_completed_tool_indexes
 from app.services.tool_provider_projection import ToolExecutionBudgetTracker
 from tests.acceptance.minimax_study_probe import SOURCE
@@ -87,8 +88,20 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         openai_plan_model_multimodal=multimodal,
         openai_setting_web_search_enabled=False, openai_timeout_seconds=90)
     calls = []
+    detail_reads = []
     original = ProviderRequestAdapter.request_chat_completion
     original_admit = ToolExecutionBudgetTracker.admit
+    original_execute_tool = PlanToolRuntime.execute_tool_call
+
+    def observe_tool(runtime, tool_call):
+        execution = original_execute_tool(runtime, tool_call)
+        detail = execution.provider_result.get("detail")
+        if execution.tool_name == "get_study_unit_detail" and isinstance(detail, dict):
+            start, end = detail["page_start"], detail["page_end"]
+            pages = [[c["page_start"], c["page_end"]] for c in detail.get("chunk_excerpts", [])]
+            detail_reads.append({"unit_id": detail["unit_id"], "unit_pages": [start, end],
+                "excerpt_pages": pages, "outside_unit": sum(b < start or a > end for a, b in pages)})
+        return execution
 
     def admit_candidate(tracker, entry):
         if detail_parallel_candidate and entry.canonical_name == "get_study_unit_detail":
@@ -159,7 +172,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
 
     revision = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
     app = create_app(settings=settings)
-    with patch.object(ToolExecutionBudgetTracker, "admit", admit_candidate), patch("app.services.provider_transport._normalize_completed_tool_indexes", side_effect=observe_indexes), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
+    with patch.object(PlanToolRuntime, "execute_tool_call", observe_tool), patch.object(ToolExecutionBudgetTracker, "admit", admit_candidate), patch("app.services.provider_transport._normalize_completed_tool_indexes", side_effect=observe_indexes), patch.object(ProviderRequestAdapter, "request_chat_completion", observe), TestClient(app) as client:
         persona_payload = create_request("顾言").model_dump(mode="json")
         if persona_variant != "default":
             rigorous = persona_variant == "rigorous"
@@ -205,6 +218,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                         continue
                     objective = objective_override or objective
                     calls.clear()
+                    detail_reads.clear()
                     request_id = f"quality-plan-{case_id}-{repetition}"
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
                     admitted_unit_count = None
@@ -218,6 +232,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
                     row["source_document"] = source_report
+                    row["detail_evidence_reads"] = detail_reads
                     row["admitted_study_unit_count"] = admitted_unit_count
                     row["multimodal_enabled"] = multimodal
                     row["persona_variant"] = persona_variant

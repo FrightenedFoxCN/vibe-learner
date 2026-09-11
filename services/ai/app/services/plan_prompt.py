@@ -454,11 +454,9 @@ def _related_chunks_for_unit(
 ):
     if not chunks:
         return []
-    if related_section_ids:
-        matched = [chunk for chunk in chunks if chunk.section_id in related_section_ids]
-        if matched:
-            return matched
-    return [
+    # Revised subchapters may all reference the same broad source Section.
+    # Bound evidence by the current unit before preferring matching metadata.
+    overlapping = [
         chunk
         for chunk in chunks
         if _ranges_overlap(
@@ -468,6 +466,11 @@ def _related_chunks_for_unit(
             end_b=chunk.page_end,
         )
     ]
+    if related_section_ids:
+        matched = [chunk for chunk in overlapping if chunk.section_id in related_section_ids]
+        if matched:
+            return matched
+    return overlapping
 
 
 def _ranges_overlap(*, start_a: int, end_a: int, start_b: int, end_b: int) -> bool:

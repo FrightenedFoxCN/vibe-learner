@@ -318,3 +318,13 @@ Planning 根因补充：[四个内容脱敏工具错误](evidence/minimax-planni
 [本机HTTP 503故障注入](evidence/minimax-sdk-retry-observed-v1.json)通过实际安装的LiteLLM/OpenAI兼容路径验证：仓库记录3次传输attempt，默认SDK实际发出9次HTTP请求；显式num_retries=0、max_retries=0后，实际请求降为3。这里没有调用外部模型，也没有使用真实密钥，不把本地延迟差当作M3性能收益。
 
 Chat Completion适配现在明确关闭SDK内部重试，由ProviderTransport统一重试和执行Harness预算检查。[生产路径与恢复场景复测](evidence/minimax-sdk-retry-production-v2.json)确认持续503仍为3次HTTP请求且错误分类不变；503一次后恢复的两种配置都用了2次HTTP请求并返回相同内容，但生产路径将两次尝试都纳入传输记录。Responses与Embedding不在这次验证范围，未宣称消除其SDK内部重试。28项定向回归、完整后端793项通过。
+
+## 轮次 24：详情工具页范围错误与候选提示词审查
+
+[显式目录图文×人格四例](evidence/minimax-injected-page-pairs-v1.jsonl)全部结束：严谨文字、严谨图文、探索图文提交；探索文字在221488ms触发外层时间预算失败。图片组均实际收到图片，但已提交结果仍有页码混用和无依据人名，不能得出图片改善内容质量的稳定结论。风格差异可见，但事实准确性单独判定。
+
+[证据粒度候选四例](evidence/minimax-grounding-pairs-v1.jsonl)两例候选提交、两例基线超时。候选的10个小节起始页均按PDF13/37/56/70/85/103/120/141/160/173排列，然而正文仍不可靠：第一例将§1.5写为“低Gowers norm”与结构的对应；第二例把一般大范数的逆结论写为“接近”多项式相位。教材PDF第86页区分接近满范数的99%问题（接近相位）与一般正下界的1%问题（相关性），不能混用。因此暂不采用整段候选为生产提示词，也不以提交率2/2替代事实审查。以上为维护者基于原书的审查，不是独立数学专家认证。
+
+排查发现一个确切检索缺陷：revise_study_units拆成小节后，多个单元保留同一父Section ID；详情工具先按父ID选全部chunks，再取最前六段，完全忽略当前单元页范围。[真实生成的12个单元重放](evidence/minimax-detail-page-scope-before-v1.json)中，72段预览有58段与对应单元页范围完全无交集；例如§1.5的85–102页单元返回12–14页的内容。该重放证明详情构造函数的输出错误，不声称每一段都已在此前实际provider请求中发送。
+
+修复先按当前Study Unit的页范围筛选重叠chunks，再在其中优先匹配来源Section；如果匹配元数据没有本地证据则使用页范围内的其他chunks，没有任何页证据则返回空。[同样12单元修复后重放](evidence/minimax-detail-page-scope-after-v1.json)62段预览全部有页范围交集，§1.5改为85–87页；跨页chunk仍保留真实起止页，不伪装为已按页裁剪文本。三项新回归在旧实现全部失败、修复后全部通过；9项定向、完整后端796项通过。另启动实际Planning流程，记录成功详情工具返回的单元页与预览页，继续评估内容改善。
