@@ -198,7 +198,8 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             try:
                 parsed = self._request_setting_json_response(
                     payload,
-                    retry_instruction="上一次输出没有形成完整 JSON。请保持结果简洁、中性、严格，只输出一个符合 schema 的 JSON 对象。",
+                    retry_instruction=PERSONA_CARD_RETRY_INSTRUCTION,
+                    validate_payload=_validate_persona_card_batch_payload,
                 )
                 used_web_search = True
             except RuntimeError as exc:
@@ -268,7 +269,8 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         }
         parsed = self._request_setting_json_chat(
             payload,
-            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 summary、relationship、learner_address、cards 字段完整。",
+            retry_instruction=PERSONA_CARD_RETRY_INSTRUCTION,
+            validate_payload=_validate_persona_card_batch_payload,
         )
         batch = _decode_persona_card_batch(parsed)
         cards = batch.pop("cards")
@@ -375,7 +377,8 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         }
         return self._request_setting_json_chat(
             payload,
-            retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 summary、relationship、learner_address、cards 字段完整。",
+            retry_instruction=PERSONA_CARD_RETRY_INSTRUCTION,
+            validate_payload=_validate_persona_card_batch_payload,
         )
 
 
@@ -507,6 +510,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         payload: dict[str, Any],
         *,
         retry_instruction: str,
+        validate_payload: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         raw_payload, _ = self.request_response(
             payload,
@@ -517,11 +521,14 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
             content = _extract_response_output_text(raw_payload).strip()
             if not content:
                 raise RuntimeError("setting_model_empty_response")
-            return _extract_json_payload(
+            parsed = _extract_json_payload(
                 content,
                 invalid_json_code="setting_model_invalid_json",
                 invalid_payload_code="setting_model_invalid_payload",
             )
+            if validate_payload is not None:
+                validate_payload(parsed)
+            return parsed
         except RuntimeError as exc:
             recovery_reason = str(exc)
             if recovery_reason not in {
@@ -557,6 +564,8 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 invalid_json_code="setting_model_invalid_json",
                 invalid_payload_code="setting_model_invalid_payload",
             )
+            if validate_payload is not None:
+                validate_payload(parsed)
             record_model_recovery(
                 category="semantic_retry",
                 reason=recovery_reason,
@@ -635,6 +644,14 @@ PERSONA_CARD_GENERATION_SCHEMA = (
     '"learner_address": string, '
     '"cards": [{"title": string, "kind": string, "label": string, "content": string, "tags"?: [string], "source_note"?: string}]'
     '}'
+)
+
+PERSONA_CARD_RETRY_INSTRUCTION = (
+    "上一次输出未通过人格卡片严格校验。请只输出一个符合 schema 的 JSON 对象；"
+    "包含 summary、relationship、learner_address、cards；"
+    "cards 中每张卡片都必须包含 title、kind、label、content 四个字符串字段。"
+    "kind 是插槽类型，例如 thinking_style；不能省略，也不能用 label 替代。"
+    "不得新增 schema 外字段；如包含 tags，它必须是无重复非空字符串的数组。"
 )
 
 
@@ -769,6 +786,10 @@ def _decode_persona_card_batch(parsed: dict[str, object]) -> dict[str, Any]:
     return batch
 
 
+def _validate_persona_card_batch_payload(payload: dict[str, Any]) -> None:
+    _decode_persona_card_batch(payload)
+
+
 
 def _enforce_exact_persona_card_count(
     cards: list[dict[str, object]],
@@ -831,4 +852,3 @@ def _should_fallback_setting_web_search(exc: RuntimeError) -> bool:
         or detail.startswith("openai_setting_request_failed:422:")
         or detail.startswith("openai_setting_request_failed:500:")
     )
-

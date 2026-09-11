@@ -42,7 +42,7 @@ def generation_boundary_success(readback_equal: bool, traces: list[dict]) -> boo
     )
 
 
-def run(root: Path, repetitions: int) -> None:
+def run(root: Path, repetitions: int, selected_domain: str | None = None) -> None:
     root.mkdir(parents=True, exist_ok=False)
     key = os.environ["K3_API_KEY"]
     endpoint = "https://api.minimax.cn/v1"
@@ -86,6 +86,8 @@ def run(root: Path, repetitions: int) -> None:
         runtime = HarnessRuntimeRepository(app.state.container.database)
         for repetition in range(repetitions):
             for domain, cases in CASES.items():
+                if selected_domain is not None and domain != selected_domain:
+                    continue
                 for index, payload in enumerate(cases):
                     active_calls.clear()
                     before = set(runtime.list_trace_ids(limit=100))
@@ -149,7 +151,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--domain", choices=CASES)
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 30:
         parser.error("repetitions must be between 1 and 30")
-    run(args.root.resolve(), args.repetitions)
+    run(args.root.resolve(), args.repetitions, args.domain)

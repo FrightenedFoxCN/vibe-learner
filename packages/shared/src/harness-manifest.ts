@@ -695,7 +695,7 @@ const entries: HarnessWorkflowManifestEntryV1[] = [
     artifacts: ["persona_snapshot"],
     decoder: "app.services.harness_broad_adoption.PersonaGenerationWorkflowAdapter",
     prompt: contract("PersonaGenerationPrompt", "persona-generation-prompt-v1"),
-    policy: contract("PersonaGenerationHarnessPolicy", "persona-generation-harness-v1"),
+    policy: contract("PersonaGenerationHarnessPolicy", "persona-generation-harness-v2"),
   }),
   executableEntry("scene", "scene_generation", {
     registration: contract("SceneGenerationWorkflowManifestEntry", "scene-generation-workflow-manifest-v1"),

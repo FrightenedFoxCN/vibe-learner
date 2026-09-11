@@ -745,7 +745,7 @@
         "status": "registered",
         "contract": {
           "name": "PersonaGenerationHarnessPolicy",
-          "version": "persona-generation-harness-v1"
+          "version": "persona-generation-harness-v2"
         }
       },
       "toolset_contract": {

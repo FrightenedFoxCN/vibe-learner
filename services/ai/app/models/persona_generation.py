@@ -32,7 +32,7 @@ PERSONA_PROMPT_CONTRACT = HarnessContractRef(
 
 
 PERSONA_POLICY_CONTRACT = HarnessContractRef(
-    name="PersonaGenerationHarnessPolicy", version="persona-generation-harness-v1"
+    name="PersonaGenerationHarnessPolicy", version="persona-generation-harness-v2"
 )
 
 

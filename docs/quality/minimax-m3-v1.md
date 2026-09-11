@@ -106,3 +106,16 @@ PYTHONPATH=. uv run python tests/acceptance/tavern_preflight_comparison.py --sam
 - Persona 文本第一个样本的 relationship 保留了平等研究关系，但前两张卡片分别出现“学生”，与输入“不是学生”冲突。现有 prompt 反复要求“教师人格/教材导学”，需要验证增加教学能力与人际关系分离的约束。
 - Scene 成功样本存在较高修复时延（最长约 106.9 秒）。新增逐调用 usage、finish_reason 和合成候选 JSON 观测，下一批确认截断与结构错误的归因；不根据单个错误码推定原因。
 - 本轮领域脚本未启用 OCR、web search，没有覆盖 Document/Planning/Study 或完整工具目录；不得据此关闭全 Harness 质量任务。隔离原始数据库保留在 `/tmp/minimax-domain-baseline-v1b/`，不提交数据库、诊断日志或凭据。
+
+## 轮次 5：Persona 嵌套结构校验纳入有界修复
+
+[8 个逐调用观测样本](evidence/minimax-persona-schema-observed-v1.jsonl)中，4 个回复在 finish_reason=stop 时漏掉全部卡片的 kind 字段，失败码为 setting_model_invalid_payload。它们没有触发重试：原实现只在 JSON 解析阶段使用恢复逻辑，PersonaCardBatchContentProposalV1 的嵌套严格校验发生在恢复逻辑之外。
+
+修复把同一个严格批量 schema 校验器传入现有 Chat/Responses 恢复流程。每个传输仍最多两次调用，JSON 失败和嵌套校验失败共享这个额度；不会给失败结果补造 kind，也不接受模型生成的应用 ID。修复指令明确每张卡片的 title/kind/label/content 和 tags 类型。只有第二次完整校验成功才记录恢复成功，重复无效输出仍失败。卡片数量规则保持独立且严格。
+
+PersonaGenerationHarnessPolicy 升为 persona-generation-harness-v2，Python 模型、工作流 manifest、TypeScript 与 golden fixture 原子更新。历史 DTO 迁移基线仍保留 v1；测试只对这项经复核的 policy 版本声明差异，模型 schema 摘要不变。
+
+- [8 个修复后新样本](evidence/minimax-persona-schema-repair-v2.jsonl)：8/8 最终成功，7 次首次成功、1 次漏 kind 后由 M3 实际重新生成并成功。不同轮次样本有随机性，不把 4/8 → 8/8 当成已经证明的总体成功率。
+- [4 个生产领域样本](evidence/minimax-persona-policy-v2.jsonl)：4/4 generation→save→read-back 成功；2 个 passed、2 个 repaired，均有真实准入和 policy v2 终态 trace，commit_evidence 仍正确为 proposal 的 not_applicable。
+- 24 项 provider/persona/scene/manifest/lifecycle 测试通过，包含 Chat 和 Responses 的漏字段修复、复合 JSON→schema 失败不超过两次、重复伪造 ID 拒绝、失败不记录恢复成功。npm run check 通过。
+- 完整 backend 回归 783 项通过（67.4 秒）；git diff --check 与凭据排除检查通过。

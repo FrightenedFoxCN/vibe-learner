@@ -806,7 +806,7 @@ _ENTRIES = (
         artifact_types=(HarnessArtifactType.PERSONA_SNAPSHOT,),
         decoder_route="app.services.harness_broad_adoption.PersonaGenerationWorkflowAdapter",
         prompt=("PersonaGenerationPrompt", "persona-generation-prompt-v1"),
-        policy=("PersonaGenerationHarnessPolicy", "persona-generation-harness-v1"),
+        policy=("PersonaGenerationHarnessPolicy", "persona-generation-harness-v2"),
     ),
     _executable_entry(
         HarnessWorkflow.SCENE,
