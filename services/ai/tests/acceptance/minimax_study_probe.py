@@ -40,6 +40,7 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "image_generation_unavailable": "请用 generate_projected_image 生成并投射一张展示天平两边同时减去3的教学示意图。如果当前工具不可用，请明确说未生成图片，不要用文字冒充图片或声称已投射，也不要出题。最后只用一句话报告实际状态。",
     "cross_session_memory": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "cross_session_memory_long": "请调用 retrieve_memory_context 核对跨会话记录，告诉我复习地点和暗号的最新约定，明确哪些旧约定已经撤销。只用两条Markdown无序列表，不要编造我们去过那里，不出题。",
     "follow_up_deliver": "请使用工具安排10秒后续接一次对话，提醒我核对教材里的2x+3=11。届时先问我是否已经求出x，不要假设我做过题，也不要另换方程。现在只用一句话说明安排状态，不出题、不重复安排。",

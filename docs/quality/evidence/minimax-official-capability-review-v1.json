@@ -1,0 +1,22 @@
+{
+  "scope": "official documentation and configured capability inspection",
+  "sources": [
+    {
+      "url": "https://platform.minimaxi.com/docs/guides/image-generation.md",
+      "observation": "Guide uses image-01 with POST https://api.minimax.cn/v1/image_generation and base64 response."
+    },
+    {
+      "url": "https://platform.minimaxi.com/docs/guides/models-intro.md",
+      "observation": "Lists M3 as native multimodal language/coding model; image-01 and image-01-live separately under image generation."
+    },
+    {
+      "url": "https://platform.minimaxi.com/docs/guides/text-m3-function-call.md",
+      "observation": "Recommends returning complete assistant response including thinking/reasoning_details for interleaved tool use; reasoning_split separates it from content."
+    }
+  ],
+  "local_observation": "RemoteImageProvider uses a Responses image_generation tool with a model-name allowlist that excludes MiniMax-M3.",
+  "limitations": [
+    "No image-01 request made; no generated-image semantic or artifact-commit claim.",
+    "Official tool-use advice is a hypothesis for a controlled experiment, not demonstrated quality improvement."
+  ]
+}

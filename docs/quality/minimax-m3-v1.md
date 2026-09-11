@@ -454,3 +454,11 @@ Study成功工具加领域提交覆盖增至29/31，仍缺retrieve_memory_contex
 [两次生产实现实测](evidence/minimax-memory-role-production-v3.jsonl)均提交并正确保留新地点/撤销暗号；使用相同来源筛选，不注入候选摘录。三个最初新增回归在旧实现均未通过；测试覆盖较长用户更新、助手建议来源和各自长度上限。另补充自动续接/session prelude来源检查：这些内容虽存放在learner_message字段中，却明确标成“自动输入（非用户发言）”，不冒充用户原话。
 
 四项摘录定向回归与完整后端808项测试通过。这仍是有界摘录改进，超过800字的用户更新、助手160字之后的事实及更复杂跨消息撤销关系仍可能丢失，不以当前fixture通过宣称完整记忆可靠性。后续继续测试查询相关片段、更新位置迁移及更多语言。
+
+## 轮次 40：图像生成能力边界与交错思考文档核查
+
+[三例工具不可用实测](evidence/minimax-image-capability-unavailable-v1.jsonl)启用M3多模态输入并要求生成投射教学图，三次provider均未收到generate_projected_image工具，三次回复都明确说未生成，最终投射状态均为空。它验证当前配置下的诚实反馈，不计为第31个工具生成成功，也没有放宽模型能力门控。
+
+[官方能力核查](evidence/minimax-official-capability-review-v1.json)：[图片生成指南](https://platform.minimaxi.com/docs/guides/image-generation.md)使用独立image-01模型和/v1/image_generation接口；[模型概览](https://platform.minimaxi.com/docs/guides/models-intro.md)也把image-01/image-01-live与M3分别列出。仓库当前RemoteImageProvider则使用Responses的image_generation工具与模型名单，不能仅因M3支持图片理解就把它加入名单。尚未调用image-01，生成图片的质量、保护工件与效果提交仍待独立适配验证。
+
+另外，[M3工具使用指南](https://platform.minimaxi.com/docs/guides/text-m3-function-call.md)要求多轮工具调用回传完整response_message，尤其thinking/reasoning_details，并说明reasoning_split。此前只比较了单轮Tavern的split格式；Study当前工具循环重建assistant消息时只保留content/tool_calls。因此下一步做受控回传对照，记录字段是否存在及是否传回，不把思考正文写入公开trace或实验证据。官方建议本身不作为质量改善结论。
