@@ -50,10 +50,18 @@ PLANNING_BUDGET_CANDIDATE = (
     "预算拒绝后不要原样重复请求。只在证据仍有缺口时继续工具调用，证据充分时输出计划。"
 )
 
+PLANNING_GROUNDING_CANDIDATE = (
+    "\n教材证据粒度约束：目录或标题只支持章节名称、顺序及书内起始页，不能证明具体定理、证明路线、方法之间的关系。"
+    "未读到相应正文时，focus使用阅读定义、核对假设、完成本节例题、复述和自测等任务，不把常识联想写成教材结论。"
+    "若要安排具体定理或证明方法，先读取对应正文确认，不凭标题扩写。人格可以改变活动顺序、反馈方式和措辞，不改变教材事实。"
+    "所有page_start、page_end、anchor_page_start、anchor_page_end和content_slices页码均指从1计数的PDF物理页，"
+    "不能直接使用目录上的印刷页码；先对照实际章节页确认偏移，章起始页也不能替代小节起始页。"
+)
+
 
 def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False,
         pdf_path=None, objective_override=None, ocr_engine="disabled", multimodal=False, persona_variant="default",
-        initial_evidence_tool=None, page_evidence=None):
+        initial_evidence_tool=None, page_evidence=None, grounding_candidate=False):
     if initial_evidence_tool not in {None, "read_page_range_content", "read_page_range_images"}:
         raise ValueError("Unsupported initial evidence tool")
     if initial_evidence_tool == "read_page_range_images" and not multimodal:
@@ -100,6 +108,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         return normalized
 
     def observe(adapter, payload, *, request_kind, model):
+        if grounding_candidate:
+            payload = {**payload, "messages": [{**m, "content": m["content"] + PLANNING_GROUNDING_CANDIDATE}
+                if m.get("role") == "system" else m for m in payload.get("messages", [])]}
         if evidence_message:
             # The same intervention is present on every request, including repair.
             messages = payload.get("messages", [])
@@ -218,6 +229,10 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     if page_evidence:
                         row["page_evidence"] = {"mode": page_evidence, "pdf_page": 8, "image_dpi": 100 if page_evidence == "text_image" else None}
                         row["trace_limitation"] = "Experimental provider-input page evidence injection; traces prove lifecycle only, not authorized artifact replay or production tool retrieval of this injected evidence."
+                    if grounding_candidate:
+                        row["grounding_variant"] = "evidence-granularity-and-physical-pages-v1"
+                        row["experimental_grounding_suffix"] = PLANNING_GROUNDING_CANDIDATE
+                        row["trace_limitation"] = "Experimental prompt and optional page evidence interventions; traces prove lifecycle only, not production prompt or artifact replay adoption."
                     if detail_parallel_candidate:
                         row["budget_variant"] = "planning-detail-round-three-experiment-v1"
                         row["budget_override"] = {"tool": "get_study_unit_detail", "max_calls_per_round": 3,
@@ -281,8 +296,9 @@ if __name__ == "__main__":
     parser.add_argument("--persona-variant", choices=("default", "rigorous", "explorer"), default="default")
     parser.add_argument("--initial-evidence-tool", choices=("read_page_range_content", "read_page_range_images"))
     parser.add_argument("--page-evidence", choices=("text", "text_image"))
+    parser.add_argument("--grounding-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
     run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
-        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence)
+        args.pdf, args.objective, args.ocr_engine, args.multimodal, args.persona_variant, args.initial_evidence_tool, args.page_evidence, args.grounding_candidate)

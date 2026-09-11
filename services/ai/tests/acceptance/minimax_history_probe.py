@@ -11,7 +11,7 @@ from app.services.provider_transport import ProviderTransport
 from app.services.provider_payload import _extract_choice_content, _extract_json_payload
 
 
-def run(output, repetitions, updated_facts=False):
+def run(output, repetitions, updated_facts=False, summary_json_candidate=False):
     sdk = ProviderSDK.load()
     endpoint = "https://api.minimax.cn/v1"
     key = os.environ["K3_API_KEY"]
@@ -45,8 +45,13 @@ def run(output, repetitions, updated_facts=False):
                 try:
                     row["reply"] = _extract_json_payload(content)
                     row["compatible_decode"] = True
-                except RuntimeError:
+                except RuntimeError as exc:
                     row["compatible_decode"] = False
+                    # This probe contains only synthetic dialogue. Preserve the
+                    # final response for diagnosing envelope failures, not reasoning.
+                    row["failed_response_excerpt"] = content[:4000]
+                    row["failed_response_truncated"] = len(content) > 4000
+                    row["decode_error"] = str(exc)
         except Exception as exc:
             row["error_class"] = type(exc).__name__
         row["elapsed_ms"] = round((time.perf_counter() - start) * 1000)
@@ -76,8 +81,14 @@ def run(output, repetitions, updated_facts=False):
             question = {"role": "user", "content": '我们约好在哪里碰头、暗号是什么、我对语言和称呼有什么要求？只返回JSON，键为meeting、code、preference；未知的字段写"未知"。'}
             summary_request = [{"role": "system", "content": "请压缩这段对话，保留用户明确给出的约定、数字、称呼与语言偏好。不要添加推断；省略重复维修记录。只返回JSON，键为memory，值为不超过300字的中文摘要。"},
                 {"role": "user", "content": json.dumps(history[:-8], ensure_ascii=False)}]
+            if summary_json_candidate:
+                summary_request[0]["content"] += (
+                    "直接输出JSON对象，不加Markdown围栏。memory是一个JSON字符串，内部引用请用中文引号「」；"
+                    "若使用英文双引号必须按JSON语法转义。保留最新约定及明确撤销状态，旧记录的归档引用不恢复旧约定。"
+                )
             summary = call(summary_request)
             summary.update(scope="synthetic_model_history_summary", repetition=repetition, git_revision=revision,
+                prompt_variant="summary-json-string-contract-v1" if summary_json_candidate else "baseline",
                 fixture_version="history-updates-revocation-v1" if updated_facts else "history-initial-facts-v1")
             stream.write(json.dumps(summary, ensure_ascii=False) + "\n"); stream.flush()
             memory = (summary.get("reply") or {}).get("memory") if isinstance(summary.get("reply"), dict) else None
@@ -87,6 +98,7 @@ def run(output, repetitions, updated_facts=False):
             for variant in variants:
                 row = {"scope": "synthetic_provider_context_retention", "git_revision": revision,
                     "fixture_version": "history-updates-revocation-v1" if updated_facts else "history-initial-facts-v1",
+                    "summary_prompt_variant": "summary-json-string-contract-v1" if summary_json_candidate else "baseline",
                     "repetition": repetition, "variant": variant, "expected": facts,
                     "history_messages": len(history), "trace_limitation": "No domain admission or production compression adoption; model summary cost recorded separately."}
                 if variant == "summary_tail" and not isinstance(memory, str):
@@ -108,7 +120,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--updated-facts", action="store_true")
+    parser.add_argument("--summary-json-candidate", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 10:
         parser.error("repetitions must be between 1 and 10")
-    run(args.output.resolve(), args.repetitions, args.updated_facts)
+    run(args.output.resolve(), args.repetitions, args.updated_facts, args.summary_json_candidate)
