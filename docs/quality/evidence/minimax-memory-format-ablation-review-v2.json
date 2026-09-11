@@ -1,0 +1,107 @@
+{
+  "scope": "Maintainer review of four-condition live Study ablation",
+  "limitations": [
+    "Two operations per condition on selected synthetic source, no independent certification.",
+    "One combined condition uncertain; no reply to grade and not retried.",
+    "Baseline cell 0 qualifies its non-visit statement by available records; not graded as explicit never-visited claim.",
+    "Shape-only template applies only to this explicit two-line request."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "condition": "baseline",
+      "operation_id": "harness-operation-c2ff2b0d5aee49baa7d3b79e0764ff68",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": false,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": false,
+      "additional_issue": null,
+      "reply": "根据跨会话记忆核对结果，按时间顺序整理如下：\n\n**最新约定**\n\n- 复习地点：南门阅览室\n- 暗号：均已撤销（无）\n\n**已被撤销的旧约定**\n\n- 青石阅览室 + 暗号「晴鸟」—— 已被后续更新取代\n- 红杉阅览室 + 暗号「晨星」—— 已被后续更新取代\n- 白桦阅览室 + 暗号「春风」—— 已被最终更新取代\n\n补充一句：小林，截至目前没有任何一条记录显示我们实际去过以上任一地点，所以不存在「已经去过某处」的事实需要更正。"
+    },
+    {
+      "cell": 1,
+      "condition": "outer_only",
+      "operation_id": "harness-operation-d567be101d434a3099972657f0a790c0",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": false,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": true,
+      "additional_issue": null,
+      "reply": "好的，小林。已经核对完跨会话记录，下面是最新的约定，以及已经撤销的旧约定：\n\n- **最新约定**：复习地点为南门阅览室；所有暗号均已撤销。\n- **已撤销的旧约定**：\n  - 青石阅览室 / 晴鸟（已撤销）\n  - 红杉阅览室 / 晨星（已撤销）\n  - 白桦阅览室 / 春风（已撤销）\n\n当前也尚未去过南门阅览室，只是确认收到这条最终约定。"
+    },
+    {
+      "cell": 2,
+      "condition": "shape_only",
+      "operation_id": "harness-operation-90e4ea9b4b8b4f01b8a72410c4299a42",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": true,
+      "additional_issue": "Invents unasked trigger and absence of prior questions",
+      "reply": "- 最新约定：复习地点为南门阅览室，先前约定的青石、红杉、白桦阅览室均已撤销；所有暗号（晴鸟、晨星、春风）也已全部撤销，当前无暗号\n- 状态：向南门阅览室的复习实际尚未发生，相关题目也未曾出过，小林可随时以\"去南门阅览室\"唤起复习节奏"
+    },
+    {
+      "cell": 3,
+      "condition": "combined",
+      "operation_id": "harness-operation-e0192decf0c445cd839fa1bf771d0767",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": true,
+      "additional_issue": null,
+      "reply": "- 小林，最新约定是：复习地点为南门阅览室，所有暗号均已撤销（不再设任何触发词）。\n- 已被撤销的旧约定依次为：青石阅览室＋暗号晴鸟、红杉阅览室＋暗号晨星、白桦阅览室＋暗号春风，以上三组全部作废，且我们尚未真正去过那里。"
+    },
+    {
+      "cell": 4,
+      "condition": "combined",
+      "operation_id": "harness-operation-b345211e57c14dc092f034f89cfccf23",
+      "boundary_success": false,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": false,
+      "all_agreement_names_present": null,
+      "unsupported_visit_assertion": null,
+      "additional_issue": null,
+      "reply": null
+    },
+    {
+      "cell": 5,
+      "condition": "shape_only",
+      "operation_id": "harness-operation-e09698cb49274a4e815b15a74ef5f288",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": true,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": true,
+      "additional_issue": null,
+      "reply": "- 小林，最新复习约定：地点是南门阅览室；所有暗号均已撤销，之前的三套——青石阅览室/晴鸟、红杉阅览室/晨星、白桦阅览室/春风——全部作废，不再生效。\n- 状态仍是尚未去过那里；若需重新约定地点或暗号，告诉我即可，我再更新记录。"
+    },
+    {
+      "cell": 6,
+      "condition": "outer_only",
+      "operation_id": "harness-operation-6a73131ac549424aa14323f536593337",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": false,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": true,
+      "additional_issue": null,
+      "reply": "已核对跨会话记录，整理如下：\n\n- **已撤销的旧约定**\n  - 青石阅览室 / 暗号：晴鸟（首次记录）\n  - 红杉阅览室 / 暗号：晨星（第一次修改）\n  - 白桦阅览室 / 暗号：春风（第二次修改）\n- **最新生效的约定**\n  - 复习地点：南门阅览室\n  - 暗号：已全部撤销\n  - 状态：我们从未去过那里"
+    },
+    {
+      "cell": 7,
+      "condition": "baseline",
+      "operation_id": "harness-operation-3415503aedc24a008921462a26052124",
+      "boundary_success": true,
+      "fixed_seed_excerpts_equal": true,
+      "exact_two_flat_lines": false,
+      "all_agreement_names_present": true,
+      "unsupported_visit_assertion": true,
+      "additional_issue": null,
+      "reply": "小林，我核对了跨会话记录，结果如下：\n\n**最新生效的复习约定**\n\n- 复习地点：南门阅览室\n- 暗号：已全部撤销，目前没有暗号\n\n**已被撤销的旧约定**\n\n- 青石阅览室 / 暗号「晴鸟」（最早的版本，已被后续修订覆盖）\n- 红杉阅览室 / 暗号「晨星」（中间过渡版，已被后续修订覆盖）\n- 白桦阅览室 / 暗号「春风」（又一轮过渡版，已被最终修订覆盖）\n\n也就是说，目前唯一仍算数的就是「南门阅览室」，所有暗号都已作废，去那里时不再需要对暗号。我们目前还没有去过那里。"
+    }
+  ]
+}
