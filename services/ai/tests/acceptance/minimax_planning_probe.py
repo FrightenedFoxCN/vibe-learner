@@ -170,12 +170,18 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     calls.clear()
                     request_id = f"quality-plan-{case_id}-{repetition}"
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
+                    admitted_unit_count = None
                     if case_id != "goal_only":
-                        payload.update(document_id=document_id, expected_document_updated_at=document["updated_at"])
+                        current_document = client.get(f"/documents/{document_id}")
+                        current_document.raise_for_status()
+                        current_document = current_document.json()
+                        admitted_unit_count = len(current_document.get("study_units", []))
+                        payload.update(document_id=document_id, expected_document_updated_at=current_document["updated_at"])
                     row = {"scope": "live_planning_admission_commit_readback", "fixture_version": "planning-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
                     row["source_document"] = source_report
+                    row["admitted_study_unit_count"] = admitted_unit_count
                     row["multimodal_enabled"] = multimodal
                     row["persona_variant"] = persona_variant
                     row["persona_test_input"] = {k: persona_payload[k] for k in ("name", "summary", "relationship", "learner_address", "slots")}

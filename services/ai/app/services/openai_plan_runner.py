@@ -116,6 +116,7 @@ class OpenAIPlanRunner:
                         "tool_calls": tool_calls,
                     }
                 )
+                follow_up_messages: list[dict[str, Any]] = []
                 for tool_call in tool_calls:
                     _call_interrupt(interrupt_check)
                     execution = tool_runtime.execute_tool_call(tool_call)
@@ -148,7 +149,10 @@ class OpenAIPlanRunner:
                         }
                     )
                     if execution.follow_up_messages:
-                        current_messages.extend(execution.follow_up_messages)
+                        follow_up_messages.extend(execution.follow_up_messages)
+                # Every tool result must precede user-role image attachments
+                # when one assistant message requested several tools.
+                current_messages.extend(follow_up_messages)
                 trace.rounds.append(trace_round)
                 _emit_progress(
                     progress_callback,
