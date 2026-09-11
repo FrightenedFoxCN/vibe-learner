@@ -1,0 +1,492 @@
+[
+  {
+    "filename": "Additive Combinatorics (Terence Tao, Van H. Vu) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 532,
+    "size_mb": 2.1,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 1048,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 1754,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 134,
+        "text_chars": 2456,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 267,
+        "text_chars": 2467,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 400,
+        "text_chars": 1482,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 532,
+        "text_chars": 2349,
+        "images": 0,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "Fourier Analysis on Groups (Walter Rudin) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 298,
+    "size_mb": 10.1,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 497,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 1485,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 75,
+        "text_chars": 1456,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 150,
+        "text_chars": 1448,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 224,
+        "text_chars": 1512,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 298,
+        "text_chars": 92,
+        "images": 1,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "Groupes Algebriques Tome 1 Geometrie Algebrique- Generalites- Groupes Commutatifs (M.Demazure- P. Gabriel) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 736,
+    "size_mb": 35.0,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 148,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 0,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 2885,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 185,
+        "text_chars": 1937,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 369,
+        "text_chars": 1918,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 553,
+        "text_chars": 2308,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 736,
+        "text_chars": 15,
+        "images": 2,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "Higher Order Fourier Analysis (Terence Tao) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 202,
+    "size_mb": 2.2,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 246,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 281,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 2085,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 51,
+        "text_chars": 1676,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 102,
+        "text_chars": 2221,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 152,
+        "text_chars": 2394,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 202,
+        "text_chars": 1590,
+        "images": 1,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "Oxford Handbook of Medieval Latin Literature (Oxford Handbooks) (Ralph Hexter, David Townsend) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 681,
+    "size_mb": 4.2,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 1657,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 2615,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 3635,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 171,
+        "text_chars": 3362,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 341,
+        "text_chars": 3648,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 511,
+        "text_chars": 3726,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 681,
+        "text_chars": 2417,
+        "images": 0,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "Oxford Reading Tree Stage 16B TreeTops Classics Macbeth (Oxford Reading Tree) (William Shakespeare) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 92,
+    "size_mb": 4.8,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 43,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 44,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 1228,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 24,
+        "text_chars": 147,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 47,
+        "text_chars": 563,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 70,
+        "text_chars": 590,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 92,
+        "text_chars": 840,
+        "images": 2,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "Schémas en groupes (Demazure, Michel, Grothendieck etc.) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 537,
+    "size_mb": 12.2,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 237,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 1350,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 1214,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 135,
+        "text_chars": 1112,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 269,
+        "text_chars": 1340,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 403,
+        "text_chars": 1367,
+        "images": 2,
+        "han_chars": 0
+      },
+      {
+        "page": 537,
+        "text_chars": 456,
+        "images": 2,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "The Elements of Real Analysis, Second Edition (Robert G. Bartle) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 496,
+    "size_mb": 5.0,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 62,
+        "images": 0,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 125,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 249,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 373,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 496,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      }
+    ]
+  },
+  {
+    "filename": "[拉康派行知丛书]临床拉康 ([法]若埃尔·多尔) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 141,
+    "size_mb": 25.5,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 644,
+        "images": 2,
+        "han_chars": 67
+      },
+      {
+        "page": 6,
+        "text_chars": 433,
+        "images": 3,
+        "han_chars": 328
+      },
+      {
+        "page": 21,
+        "text_chars": 607,
+        "images": 2,
+        "han_chars": 527
+      },
+      {
+        "page": 36,
+        "text_chars": 651,
+        "images": 8,
+        "han_chars": 503
+      },
+      {
+        "page": 71,
+        "text_chars": 567,
+        "images": 2,
+        "han_chars": 475
+      },
+      {
+        "page": 106,
+        "text_chars": 475,
+        "images": 2,
+        "han_chars": 320
+      },
+      {
+        "page": 141,
+        "text_chars": 676,
+        "images": 2,
+        "han_chars": 400
+      }
+    ]
+  },
+  {
+    "filename": "巴别塔之后 语言及翻译面面观 (乔治·斯坦纳) (z-library.sk, 1lib.sk, z-lib.sk).pdf",
+    "pages": 297,
+    "size_mb": 22.5,
+    "samples": [
+      {
+        "page": 1,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 6,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 21,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 75,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 149,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 223,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      },
+      {
+        "page": 297,
+        "text_chars": 0,
+        "images": 1,
+        "han_chars": 0
+      }
+    ]
+  }
+]

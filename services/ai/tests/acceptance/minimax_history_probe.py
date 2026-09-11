@@ -8,6 +8,7 @@ import time
 
 from app.services.provider_sdk import ProviderSDK, ProviderRequestAdapter
 from app.services.provider_transport import ProviderTransport
+from app.services.provider_payload import _extract_choice_content, _extract_json_payload
 
 
 def run(output, repetitions):
@@ -33,11 +34,19 @@ def run(output, repetitions):
                 request_kind="chat", model="MiniMax-M3")
             choice = raw["choices"][0]
             row.update(usage=raw.get("usage"), finish_reason=choice.get("finish_reason"))
-            content = choice.get("message", {}).get("content", "")
+            content = _extract_choice_content(raw)
             try:
                 row["reply"] = json.loads(content)
+                row["strict_json_valid"] = True
             except (TypeError, ValueError):
-                row["json_valid"] = False
+                row["strict_json_valid"] = False
+                row["json_fence"] = content.strip().startswith("```json")
+                row["thinking_tag_present"] = "<think>" in content
+                try:
+                    row["reply"] = _extract_json_payload(content)
+                    row["compatible_decode"] = True
+                except RuntimeError:
+                    row["compatible_decode"] = False
         except Exception as exc:
             row["error_class"] = type(exc).__name__
         row["elapsed_ms"] = round((time.perf_counter() - start) * 1000)
@@ -60,6 +69,8 @@ def run(output, repetitions):
             summary.update(scope="synthetic_model_history_summary", repetition=repetition, git_revision=revision)
             stream.write(json.dumps(summary, ensure_ascii=False) + "\n"); stream.flush()
             memory = (summary.get("reply") or {}).get("memory") if isinstance(summary.get("reply"), dict) else None
+            if not isinstance(memory, str) or not memory.strip() or len(memory) > 300:
+                memory = None
             variants = ["full", "tail", "summary_tail"] if repetition % 2 == 0 else ["summary_tail", "tail", "full"]
             for variant in variants:
                 row = {"scope": "synthetic_provider_context_retention", "git_revision": revision,

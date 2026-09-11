@@ -49,10 +49,11 @@ PLANNING_BUDGET_CANDIDATE = (
 )
 
 
-def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False):
+def run(root, repetitions, budget_candidate=False, selected_case=None, detail_parallel_candidate=False,
+        pdf_path=None, objective_override=None, ocr_engine="disabled"):
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / "data"), database_url=f"sqlite:///{root / 'domain.db'}",
-        plan_provider="litellm", ocr_engine="disabled", openai_api_key=os.environ["K3_API_KEY"],
+        plan_provider="litellm", ocr_engine=ocr_engine, openai_api_key=os.environ["K3_API_KEY"],
         openai_base_url="https://api.minimax.cn/v1", openai_plan_model="MiniMax-M3",
         openai_setting_model="MiniMax-M3", openai_chat_model="MiniMax-M3",
         openai_setting_web_search_enabled=False, openai_timeout_seconds=90)
@@ -114,21 +115,37 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         persona = client.post("/personas", json=create_request("顾言").model_dump(mode="json"))
         persona.raise_for_status()
         persona_id = persona.json()["id"]
-        with fitz.open() as pdf:
-            page = pdf.new_page()
-            assert page.insert_textbox((55, 55, 540, 750), SOURCE, fontsize=12) >= 0
-            uploaded = client.post("/documents", files={"file": ("planning.pdf", pdf.tobytes(), "application/pdf")})
+        if pdf_path is not None:
+            pdf_bytes = pdf_path.read_bytes()
+            filename = pdf_path.name
+        else:
+            with fitz.open() as pdf:
+                page = pdf.new_page()
+                assert page.insert_textbox((55, 55, 540, 750), SOURCE, fontsize=12) >= 0
+                pdf_bytes = pdf.tobytes()
+            filename = "planning.pdf"
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as pdf:
+            source_pages = len(pdf)
+        uploaded = client.post("/documents", files={"file": (filename, pdf_bytes, "application/pdf")})
         uploaded.raise_for_status()
         document_id = uploaded.json()["id"]
+        print(json.dumps({"event": "document_process_started", "filename": filename, "pages": source_pages,
+            "ocr_engine": ocr_engine}, ensure_ascii=False), flush=True)
+        parse_start = time.perf_counter()
         processed = client.post(f"/documents/{document_id}/process", json={"force_ocr": False})
         processed.raise_for_status()
         document = processed.json()
+        source_report = {"filename": filename, "pages": source_pages, "ocr_engine": ocr_engine,
+            "process_ms": round((time.perf_counter()-parse_start)*1000), "study_units": len(document.get("study_units", []))}
+        (root / "source-report.json").write_text(json.dumps(source_report, ensure_ascii=False, indent=2)+"\n")
+        print(json.dumps({"event": "document_process_completed", **source_report}, ensure_ascii=False), flush=True)
         runtime = HarnessRuntimeRepository(app.state.container.database)
         with (root / "report.jsonl").open("x", encoding="utf-8") as stream:
             for repetition in range(repetitions):
                 for case_id, objective in CASES.items():
                     if selected_case is not None and selected_case != case_id:
                         continue
+                    objective = objective_override or objective
                     calls.clear()
                     request_id = f"quality-plan-{case_id}-{repetition}"
                     payload = {"client_request_id": request_id, "persona_id": persona_id, "objective": objective}
@@ -137,6 +154,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row = {"scope": "live_planning_admission_commit_readback", "fixture_version": "planning-quality-v1",
                         "git_revision": revision, "case_id": case_id, "repetition": repetition,
                         "model": "MiniMax-M3", "objective": objective, "calls": calls, "boundary_success": False}
+                    row["source_document"] = source_report
                     row["prompt_variant"] = "planning-budget-experiment-v1" if budget_candidate else "production"
                     if detail_parallel_candidate:
                         row["budget_variant"] = "planning-detail-round-three-experiment-v1"
@@ -194,7 +212,11 @@ if __name__ == "__main__":
     parser.add_argument("--budget-candidate", action="store_true")
     parser.add_argument("--case", choices=CASES)
     parser.add_argument("--detail-parallel-candidate", action="store_true")
+    parser.add_argument("--pdf", type=Path)
+    parser.add_argument("--objective")
+    parser.add_argument("--ocr-engine", choices=("disabled", "onnxtr"), default="disabled")
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error("repetitions must be between 1 and 20")
-    run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate)
+    run(args.root.resolve(), args.repetitions, args.budget_candidate, args.case, args.detail_parallel_candidate,
+        args.pdf, args.objective, args.ocr_engine)
