@@ -63,6 +63,7 @@ jobs:
     name: Check Release Gate
     runs-on: ubuntu-22.04
     needs: validate-version
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
@@ -80,13 +81,46 @@ jobs:
           python-version: "3.12"
 
       - name: Install uv
+        timeout-minutes: 5
         run: python -m pip install uv
 
       - name: Install npm dependencies
+        timeout-minutes: 15
         run: npm install
 
-      - name: Run release gate
-        run: npm run check:release
+      - name: Validate shared contracts
+        timeout-minutes: 10
+        run: npm run test:contracts
+
+      - name: Check Web types
+        timeout-minutes: 10
+        run: npm run check:web
+
+      - name: Run Web reliability tests
+        timeout-minutes: 10
+        run: npm run test:web:reliability
+
+      - name: Run Harness pilot evaluations
+        timeout-minutes: 10
+        run: cd services/ai && UV_CACHE_DIR=/tmp/vibe-learner-uv-cache uv run python -m app.services.harness_eval_pilots --profile pr
+
+      - name: Run Harness stage evaluations
+        timeout-minutes: 10
+        run: npm run eval:harness:stages
+
+      - name: Run plan revision evaluations
+        timeout-minutes: 10
+        run: npm run eval:harness:plan-revision
+
+      - name: Run backend tests
+        timeout-minutes: 25
+        env:
+          PYTHONFAULTHANDLER: "1"
+        run: npm run test:ai
+
+      - name: Build Web production bundle
+        timeout-minutes: 15
+        run: npm run build:web
 
   build-release:
     name: ${{ matrix.name }}
