@@ -435,10 +435,9 @@ def _execute_estimate_plan_completion(
     detail_coverage_ratio = units_with_subsections / max(1, len(plannable_units))
     richness_ratio = min(1.0, total_subsections / max(1, len(plannable_units) * 2))
     span_penalty = 0.0
+    # Few units can be a complete short source; only page span implies breadth.
     if any((unit.page_end - unit.page_start + 1) >= 80 for unit in plannable_units):
         span_penalty = 0.18
-    if len(plannable_units) <= 2:
-        span_penalty += 0.08
     score = int(
         max(
             25,

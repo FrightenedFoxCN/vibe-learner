@@ -1,0 +1,252 @@
+{
+  "scope": "False coarse-segmentation recommendation fix",
+  "deterministic_before": {
+    "one_two_page_unit_with_two_subsections": {
+      "score": 84,
+      "missing_items": [
+        "coarse_segmentation"
+      ]
+    },
+    "one_eighty_page_unit_with_two_subsections": {
+      "score": 66,
+      "missing_items": [
+        "coarse_segmentation"
+      ]
+    }
+  },
+  "deterministic_after": {
+    "one_two_page_unit_with_two_subsections": {
+      "ok": true,
+      "tool_name": "estimate_plan_completion",
+      "completion_score": 92,
+      "completion_label": "可以收束成稿",
+      "focus": "",
+      "signals": {
+        "plannable_unit_count": 1,
+        "units_with_subsections": 1,
+        "total_subsections": 2,
+        "detail_coverage_ratio": 1.0,
+        "richness_ratio": 1.0
+      },
+      "missing_items": [],
+      "recommendations": [
+        "目录细度和行动性已经足够，可以开始生成最终计划。"
+      ]
+    },
+    "one_eighty_page_unit_with_two_subsections": {
+      "ok": true,
+      "tool_name": "estimate_plan_completion",
+      "completion_score": 74,
+      "completion_label": "还需要一轮打磨",
+      "focus": "",
+      "signals": {
+        "plannable_unit_count": 1,
+        "units_with_subsections": 1,
+        "total_subsections": 2,
+        "detail_coverage_ratio": 1.0,
+        "richness_ratio": 1.0
+      },
+      "missing_items": [
+        "coarse_segmentation"
+      ],
+      "recommendations": [
+        "把过宽的学习单元拆细，再重新估分。"
+      ]
+    },
+    "short_source_missing_subsections": {
+      "ok": true,
+      "tool_name": "estimate_plan_completion",
+      "completion_score": 42,
+      "completion_label": "建议继续细化",
+      "focus": "",
+      "signals": {
+        "plannable_unit_count": 1,
+        "units_with_subsections": 0,
+        "total_subsections": 0,
+        "detail_coverage_ratio": 0.0,
+        "richness_ratio": 0.0
+      },
+      "missing_items": [
+        "subsection_detail",
+        "page_range_evidence"
+      ],
+      "recommendations": [
+        "再读取代表性学习单元详情，补足子章节边界。",
+        "再读取一段页范围文本，核对目录与正文是否一致。"
+      ]
+    }
+  },
+  "change": "Remove 0.08 span penalty solely for <=2 plannable units. Keep >=80-page span penalty, detail-density scoring, score bands, contract and tool ceilings.",
+  "validation": {
+    "new_tests": 4,
+    "before_failures_including_subtests": 4,
+    "targeted_tests_passed": 21,
+    "full_backend_tests_passed": 839,
+    "full_backend_seconds": 66.481
+  },
+  "live_observations": [
+    {
+      "operation": 0,
+      "estimates": [
+        {
+          "unit_ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "completion_score": 42,
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "recommendations": [
+            "当前重点：检查两页文本是否已可在 schedule_chapters 内拆为子章节级，是否仍需 revise_study_units。",
+            "再读取代表性学习单元详情，补足子章节边界。",
+            "再读取一段页范围文本，核对目录与正文是否一致。"
+          ],
+          "signals": {
+            "plannable_unit_count": 1,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          }
+        },
+        {
+          "unit_ranges": [
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              2
+            ]
+          ],
+          "completion_score": 42,
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "recommendations": [
+            "当前重点：检查两个单元是否能在 schedule_chapters 内拆为子章节级并支撑 30 分钟中文阅读。",
+            "再读取代表性学习单元详情，补足子章节边界。",
+            "再读取一段页范围文本，核对目录与正文是否一致。"
+          ],
+          "signals": {
+            "plannable_unit_count": 2,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          }
+        },
+        {
+          "unit_ranges": [
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              2
+            ]
+          ],
+          "completion_score": 42,
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "recommendations": [
+            "当前重点：最终核验 5 子章节、目标覆盖与 30 分钟可执行性。",
+            "再读取代表性学习单元详情，补足子章节边界。",
+            "再读取一段页范围文本，核对目录与正文是否一致。"
+          ],
+          "signals": {
+            "plannable_unit_count": 2,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          }
+        },
+        {
+          "unit_ranges": [
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              2
+            ]
+          ],
+          "completion_score": 42,
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "recommendations": [
+            "当前重点：最终核验 schedule_chapters 子节数、目标覆盖、OCR 排除与 30 分钟可执行性。",
+            "再读取代表性学习单元详情，补足子章节边界。",
+            "再读取一段页范围文本，核对目录与正文是否一致。"
+          ],
+          "signals": {
+            "plannable_unit_count": 2,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "operation": 1,
+      "estimates": [
+        {
+          "unit_ranges": [
+            [
+              1,
+              2
+            ]
+          ],
+          "completion_score": 42,
+          "missing_items": [
+            "subsection_detail",
+            "page_range_evidence"
+          ],
+          "recommendations": [
+            "当前重点：检查目录细度、目标覆盖（30分钟、只依据两页）、OCR碎片处理、schedule_chapters粒度。",
+            "再读取代表性学习单元详情，补足子章节边界。",
+            "再读取一段页范围文本，核对目录与正文是否一致。"
+          ],
+          "signals": {
+            "plannable_unit_count": 1,
+            "units_with_subsections": 0,
+            "total_subsections": 0,
+            "detail_coverage_ratio": 0.0,
+            "richness_ratio": 0.0
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "domain_operations": 2,
+    "committed": 2,
+    "provider_calls": 17,
+    "estimate_calls": 5,
+    "false_coarse_segmentation_after": 0
+  },
+  "limitations": [
+    "Live samples confirm truthful scope recommendation, not reduced provider calls: operations used14 and3 calls.",
+    "Subsection metadata absent in these snapshots; all five live scores remain42 with detail/read-page recommendations. This can still induce repeated checking even after source reads.",
+    "First operation hits revision argument/overlap/operation-budget refusals; that inefficiency is not fixed.",
+    "Both final plans allocate30 minutes:18+12 and8+14+8; first retains parser labels/technical activity wording and imprecise quotation context, so not full quality pass.",
+    "No scoring claim about actual proposal, factual fidelity or persona correctness: current estimator only inspects source-detail metadata.",
+    "No API/schema changes; unrelated desktop icon preserved"
+  ],
+  "next_step": "Review whether source-detail heuristic guidance can terminate honestly when a short document lacks subsections; evaluate repeated estimate requests separately from caching."
+}
