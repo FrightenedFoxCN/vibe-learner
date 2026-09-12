@@ -1,0 +1,113 @@
+{
+  "scope": "Maintainer fixed-144-DPI detail default/high ablation",
+  "official_reference": "https://platform.minimaxi.com/docs/api-reference/text-chat-openai",
+  "limitations": [
+    "Two samples per detail; no independent certification or stable improvement.",
+    "Same image dimensions and nonpersona source context, wire detail observed; internal vision processing unknown.",
+    "Initial usage varies within the same mode and tool trajectories differ; do not infer visual token accounting or savings from mode name.",
+    "Production geometry fix was developed after experiment process started; this batch exercised previously loaded pre-fix validation."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "detail": "default",
+      "boundary_success": false,
+      "nonpersona_initial_context_equal": true,
+      "dimensions": [
+        800,
+        1222
+      ],
+      "wire_detail_equal": true,
+      "calls": 4,
+      "initial_prompt_tokens": 5036,
+      "total_prompt_tokens": 24885,
+      "cache_tokens_per_call": [
+        1280,
+        4864,
+        6144,
+        768
+      ],
+      "timing": null,
+      "review": [
+        "Final JSON passed envelope decoding but domain rejected schedule_chapters.4.anchor_page_start:not_ordered.",
+        "No committed plan to grade."
+      ]
+    },
+    {
+      "cell": 1,
+      "detail": "high",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "dimensions": [
+        800,
+        1222
+      ],
+      "wire_detail_equal": true,
+      "calls": 3,
+      "initial_prompt_tokens": 4483,
+      "total_prompt_tokens": 16347,
+      "cache_tokens_per_call": [
+        0,
+        4352,
+        5632
+      ],
+      "timing": "0–5/5–13/13–20/20–27/27–30 = 30",
+      "review": [
+        "Sword/shield/armor observations are supported, no identity claim.",
+        "Incorrect body paragraph numbering: narrator self-account is second body paragraph; Sisters discussion spans third/fourth, not second.",
+        "Age qualifier I think retained."
+      ]
+    },
+    {
+      "cell": 2,
+      "detail": "high",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "dimensions": [
+        800,
+        1222
+      ],
+      "wire_detail_equal": true,
+      "calls": 2,
+      "initial_prompt_tokens": 5187,
+      "total_prompt_tokens": 11768,
+      "cache_tokens_per_call": [
+        1536,
+        5120
+      ],
+      "timing": "2+5+6+5+7+3+2 = 30",
+      "review": [
+        "Sword/armor/flags observations supported; glass scope qualifier quoted.",
+        "Inventing two explicitly marked uncertain Macbeth hypotheses is requested as learner activity, not claimed source fact."
+      ]
+    },
+    {
+      "cell": 3,
+      "detail": "default",
+      "boundary_success": true,
+      "nonpersona_initial_context_equal": true,
+      "dimensions": [
+        800,
+        1222
+      ],
+      "wire_detail_equal": true,
+      "calls": 6,
+      "initial_prompt_tokens": 4482,
+      "total_prompt_tokens": 37452,
+      "cache_tokens_per_call": [
+        0,
+        4352,
+        5632,
+        6272,
+        6656,
+        6912
+      ],
+      "timing": "0–5/5–17/17–25/25–30 = 30",
+      "review": [
+        "Sword/flags observations supported.",
+        "Explicitly excludes OCR AA V snippets as parsing noise.",
+        "Age qualifier I think retained."
+      ]
+    }
+  ]
+}

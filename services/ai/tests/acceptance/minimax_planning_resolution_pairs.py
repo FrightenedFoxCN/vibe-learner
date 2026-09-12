@@ -10,7 +10,9 @@ from app.services.provider_sdk import ProviderRequestAdapter
 from tests.acceptance.minimax_planning_probe import run
 
 
-def compare(source: Path, pdf: Path, output: Path, page: int, native_tool: bool = False, isolate_first_tool: bool = False):
+def compare(source: Path, pdf: Path, output: Path, page: int, native_tool: bool = False, isolate_first_tool: bool = False, detail_pairs: bool = False):
+    if detail_pairs and (native_tool or isolate_first_tool):
+        raise ValueError("Detail comparison uses fixed injected evidence only")
     if isolate_first_tool and not native_tool:
         raise ValueError("First-tool isolation requires native tool mode")
     output.mkdir(parents=True, exist_ok=False)
@@ -20,7 +22,10 @@ def compare(source: Path, pdf: Path, output: Path, page: int, native_tool: bool 
     rows = []
     cells = ([(None, False), (None, True), (None, True), (None, False)] if isolate_first_tool else
              [(dpi, False) for dpi in ([None, None] if native_tool else [100, 180, 180, 100])])
+    if detail_pairs:
+        cells = [(144, False)] * 4
     for i, (dpi, isolate) in enumerate(cells):
+        detail = ("high" if i in (1, 2) else "default") if detail_pairs else None
         observed = {}
         sent_dimensions = []
         wire_requests = []
@@ -45,6 +50,12 @@ def compare(source: Path, pdf: Path, output: Path, page: int, native_tool: bool 
             if isolate and not sent_dimensions:
                 payload = {**payload, "tools": [t for t in payload.get("tools", [])
                     if t.get("function", {}).get("name") == "read_page_range_images"]}
+            if detail is not None:
+                payload = {**payload, 'messages': [
+                    {**m, 'content': [
+                        {**part, 'image_url': {**part['image_url'], 'detail': detail}}
+                        if part.get('type') == 'image_url' else part for part in m['content']]}
+                    if isinstance(m.get('content'), list) else m for m in payload.get('messages', [])]}
             dimensions = []
             for message in payload.get('messages', []):
                 content = message.get('content')
@@ -64,6 +75,9 @@ def compare(source: Path, pdf: Path, output: Path, page: int, native_tool: bool 
                         'sdk_request_index': len(sent_dimensions)-1,
                         'tool_choice': body.get('tool_choice'),
                         'offered_tools': [t.get('function', {}).get('name') for t in body.get('tools', [])],
+                        'image_details': [part.get('image_url', {}).get('detail')
+                            for m in body.get('messages', []) if isinstance(m.get('content'), list)
+                            for part in m['content'] if part.get('type') == 'image_url'],
                         'image_parts': sum(part.get('type') == 'image_url'
                             for m in body.get('messages', []) if isinstance(m.get('content'), list)
                             for part in m['content'] if isinstance(part, dict)),
@@ -84,7 +98,7 @@ def compare(source: Path, pdf: Path, output: Path, page: int, native_tool: bool 
             observed['local_image_dimensions'] = [pix.width, pix.height]
         row['resolution_comparison'] = {**observed, 'cell': i, 'dpi': dpi, 'native_tool_path': native_tool,
             'sdk_image_dimensions_per_request': sent_dimensions,
-            'first_tool_catalog_isolated': isolate, 'wire_requests': wire_requests,
+            'first_tool_catalog_isolated': isolate, 'wire_requests': wire_requests, 'image_detail': detail,
             'limitation': 'Same rigorous persona definition; provider may resize images; local dimensions do not prove internal visual resolution.'}
         rows.append(row)
         (output / 'report.jsonl').write_text(''.join(json.dumps(r, ensure_ascii=False)+'\n' for r in rows))
@@ -99,4 +113,5 @@ if __name__ == '__main__':
     p.add_argument('--page', type=int, required=True)
     p.add_argument('--native-tool', action='store_true')
     p.add_argument('--isolate-first-tool', action='store_true')
-    a=p.parse_args();compare(a.source.resolve(), a.pdf.resolve(), a.output.resolve(), a.page, a.native_tool, a.isolate_first_tool)
+    p.add_argument('--detail-pairs', action='store_true')
+    a=p.parse_args();compare(a.source.resolve(), a.pdf.resolve(), a.output.resolve(), a.page, a.native_tool, a.isolate_first_tool, a.detail_pairs)

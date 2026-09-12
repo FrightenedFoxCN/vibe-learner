@@ -819,3 +819,13 @@ split总计13次请求、79806输入token、7886输出token；echo共15次请求
 [官方Chat API](https://platform.minimaxi.com/docs/api-reference/text-chat-openai)参数表及[OpenAI兼容说明](https://platform.minimaxi.com/docs/api-reference/text-openai-api)未列tool_choice支持语义；兼容说明提示部分OpenAI参数会忽略，但未明确点名tool_choice。因此只报告实际行为，不从文档缺项断言完全不支持，也不把此前未取图完全归因到某一层。
 
 首轮隔离目录改变提示前缀和后续工具链，本批5/7/5/2次SDK调用、总输入37887/50647/32354/11909，不能宣称更少工具定义一定更省或更快。探针通过编译，未采用生产路由变化。官方还区分图像detail low/default/high与最长边像素；接下来将该视觉预算参数与DPI分开验证，避免混淆模型内部视觉处理与本地渲染。
+
+## 轮次 77：固定144 DPI的detail预算对照
+
+根据官方图像参数说明，将本地DPI固定144（800×1222），只改变image_url.detail为default/high，按default—high—high—default运行。[四个真实操作](evidence/minimax-macbeth-image-detail-v1.jsonl)初始非人格上下文一致，序列化HTTP的detail字段逐请求核对一致，使用相同五工具目录与同源第2页图。
+
+[审查](evidence/minimax-macbeth-image-detail-review-v1.json)：三例提交，三份计划阶段都合计30分钟，均有正确的持剑/盔甲/旗帜等观察且不指认图中人物身份。high首例仍把正文第二段自述写成第一段、第三/第四段姐妹描写写成第二段；default成功例同样能认剑，且明确排除OCR碎片。每组两例不足以证明high稳定优于default。
+
+default首例最终JSON合法，但保存前因schedule_chapters.4.anchor_page_start:not_ordered失败，揭示provider修复前与domain提交前的几何约束不齐。该实验进程在后续修复开发前启动、已加载旧校验，结果不当作新修复后的回归。
+
+首轮输入依次5036/4483/5187/4482 token，总输入24885/16347/11768/37452，调用4/3/2/6次；同一detail内部的usage也不同，不推断内部图像分块或记费规则，更不将“high”直接视为已测更贵/更好。官网估算只是范围，响应usage和任务质量需分别观察。此轮只扩展实验探针，未改变生产图像默认值；后续优先修复已经确认的几何校验与有界恢复缺口。
