@@ -40,7 +40,13 @@ Dividing by zero is not allowed. If a is zero, examine b = c separately.
 Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
+MEMORY_SOURCE_FACTS = ('[consigné 2026-06-04 18:15] Camille rapporte la décision prise avec Léa le 2026-06-03 à 10:15 : '
+    'annulation du rendez-vous du 2026-06-08 à 14:30 et remplacement par le 2026-06-10 à 16:00, porte nord. '
+    'Le lieu du rendez-vous initial n’est pas précisé. La date et l’heure de l’annulation du rendez-vous de Léa avec Noé sont inconnues.')
+
 CASES = {
+    "memory_source_summary": '请用 write_session_memory 将下方第三方法文记录保存为忠实摘要，key为rdv_reference；再用 read_session_memory 核对。不要把当事人当成我。最终恰好两条Markdown无序列表，第一条报告写入与读取状态，第二条说明记录中仍未知的事项；不要开场结尾或出题。记录如下：\n' + MEMORY_SOURCE_FACTS,
+    "memory_source_verbatim": '请用 write_session_memory 将下方第三方法文记录原样保存，content只包含记录原文，保留语言、标点与日期，不翻译或概括，key为rdv_reference；再用 read_session_memory 核对。不要把当事人当成我。最终恰好两条Markdown无序列表，第一条报告写入与读取状态，第二条说明记录中仍未知的事项；不要开场结尾或出题。记录如下：\n' + MEMORY_SOURCE_FACTS,
     "cross_session_memory_event_time": "请调用 retrieve_memory_context 核对林舟与阿岚的约定。恰好用三条Markdown无序列表：第一条说明旧约取消发生时间与记录该取消的消息时间，第二条说明归档时间以及它和取消是否同一事件，第三条说明新见面时间及阿岚与小夏的取消时间。缺失时间明确写未知；不出题，不编造见面经历，不加开场、结尾或嵌套列表。",
     "cross_session_memory_event_time_fr": "请调用 retrieve_memory_context 核对法文记录中Camille与Léa的约定，用中文保留法文人名。恰好用三条Markdown无序列表：第一条说明旧约取消发生时间与记录该取消的消息时间，第二条说明归档时间以及它和取消是否同一事件，第三条说明新见面时间及Léa与Noé的取消时间。缺失时间明确写未知；不出题，不编造见面经历，不加开场、结尾或嵌套列表。",
     "cross_session_memory_effective": "请调用 retrieve_memory_context 核对约定：2026年10月2日应该去哪个复习地点？区分记录写入时间和约定生效时间，不因后写入的历史补记覆盖未来安排。只用一句话说明地点与日期依据，不出题。",

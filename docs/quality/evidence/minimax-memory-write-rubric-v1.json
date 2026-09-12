@@ -1,0 +1,24 @@
+{
+  "scope": "Pre-review criteria for faithful summary versus verbatim Study memory writes",
+  "source": "Synthetic French third-party meeting record",
+  "operation_checks": [
+    "Committed Study operation and equal persisted read-back",
+    "write_session_memory and read_session_memory both actually executed",
+    "Exactly one persisted rdv_reference memory"
+  ],
+  "content_checks": [
+    "Decision/cancellation occurred 2026-06-03 10:15",
+    "Record was written 2026-06-04 18:15; this is not an effective-from time",
+    "Original meeting was 2026-06-08 14:30 and replacement is 2026-06-10 16:00",
+    "Replacement location is porte nord; original location is explicitly unspecified",
+    "Lea and Noe cancellation date/time are unknown",
+    "Camille, Lea and Noe remain third parties, not the learner",
+    "Verbatim mode preserves the entire source exactly, including punctuation and accents; summary mode is judged semantically"
+  ],
+  "reply_checks": [
+    "Exactly two top-level Markdown unordered list items with no opening, closing or nested items",
+    "No exercise or invitation to an unrelated lesson",
+    "Write/read claims agree with tool and persisted state evidence"
+  ],
+  "limitations": "One short source; no long-context retrieval or independent certification claim. Correct final text cannot substitute for correct persisted content."
+}
