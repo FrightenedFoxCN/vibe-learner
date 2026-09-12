@@ -269,13 +269,16 @@ def read_page_range_content(
         text = (chunk.content or chunk.text_preview).strip()
         if not text:
             continue
-        if parts and total + len(text) > max_chars:
-            remaining = max_chars - total
-            if remaining > 120:
+        separator_chars = 2 if parts else 0
+        remaining = max_chars - total - separator_chars
+        if remaining <= 0:
+            break
+        if len(text) > remaining:
+            if not parts or remaining > 120:
                 parts.append(text[:remaining])
             break
         parts.append(text)
-        total += len(text)
+        total += separator_chars + len(text)
         if total >= max_chars:
             break
     return {

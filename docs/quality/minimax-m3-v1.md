@@ -979,3 +979,11 @@ default首例最终JSON合法，但保存前因schedule_chapters.4.anchor_page_s
 [来源审查](evidence/minimax-french-estimate-description-review-v1.json)唯一提交计划将实际PDF31（印刷1）开始的正文放在PDF14–22附近，把Le spectre premier误成L’esprit premier，并将局部赋环空间定义误写成Z-fonctor表示/拼接。其比较例子和解释边界活动符合人格方法，但内容不合格；估分88没有评审这些错误。
 
 本批配置虽开启multimodal/native_tools，实际SDK只提供五工具、没有图片工具，图像输入为0。因此不能将此实验称为图片可用条件下的自主取证，也不能判定图片无益；需追查实际能力投影。原书页码由目录与正文页图核对，原文及图片仅保留临时目录。所有进程在字符预算生产修复前加载代码，不用于证明该修复效果。探针编译与diff检查通过，评审为维护者审查。
+
+## 轮次 93：读取文本严格遵守字符预算
+
+修复Planning与Study共用的read_page_range_content：旧实现首块无条件加入，且没有计算换行分隔符。法文实际PDF11解析快照在max_chars为500/800/1500时返回886/886/1502字符；修复后为500/800/1500。保留源顺序、页码和短尾片段策略，chunk_count仍表示匹配源块数。[依据与回归](evidence/minimax-text-budget-review-v1.json)包含旧实现4项测试中2项失败、修复后20项定向与完整843项后端测试通过。
+
+[真实M3核验](evidence/minimax-text-budget-live-v2.jsonl)6次调用后提交，无工具拒绝；模型实际两次请求max_chars=500，PDF1返回500字符、PDF2返回264字符。首次观测脚本因错误访问page_start发生KeyError，属于观测基础设施失败，未计为候选失败或成功；修正后重跑。
+
+结果focus按10+10+10分配30分钟且使用人格的比较/解释/边界方法，但仍省略年龄I think限定并安排抄录OCR噪声；today_tasks未单独明确全部时长，不能认定整个计划质量合格。此次只采用确定性字符上限修复，不声称截断无损、语义压缩改善或调用量下降。Study使用相同函数，本轮没有新增独立Study实测。
