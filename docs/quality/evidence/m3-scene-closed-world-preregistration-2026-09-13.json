@@ -1,0 +1,71 @@
+{
+  "version": "m3-scene-closed-world-preregistration-v1",
+  "date": "2026-09-13",
+  "status": "frozen_before_any_live_scene_wire",
+  "research_scope": "Six new synthetic Scene families; production-shaped baseline proposal followed by at most one research-only repair proposal when the deterministic policy reports an issue.",
+  "fixture": {
+    "path": "tools/model-quality/fixtures/persona-scene/scene-closed-world-v1.json",
+    "sha256": "3eb06390ff87b93a59d388489b6aca51a64aee7ecfd3f544fc90a0fa9b558cb1",
+    "case_count": 6,
+    "independent_family_count": 6,
+    "implementation_commit": "8237a1de6891d08b9e1e03f4d83dd48f55d0596c"
+  },
+  "deterministic_calibration_gate": {
+    "required_valid_controls": 6,
+    "allowed_valid_control_issues": 0,
+    "required_single_pointer_mutations": 36,
+    "required_target_code_hits": 36,
+    "live_wire_forbidden_if_gate_fails": true,
+    "scope_limit": "The structured entrance check only covers registered SceneLayer.entrance values; it does not classify free-text path claims or certify semantic quality."
+  },
+  "baseline": {
+    "split": "held-out-scene-closed-world-v1",
+    "transport": "minimax",
+    "thinking": "adaptive",
+    "production_shaped_scene_proposal": true,
+    "max_provider_wires_per_case": 2,
+    "reason_for_two_wire_ceiling": "The production Scene provider owns one bounded strict JSON/schema repair.",
+    "fallback_counts_as_scene_success": false,
+    "freeze_before_repair": true
+  },
+  "conditional_repair": {
+    "trigger": "A strict frozen baseline SceneTreeProposalV1 has at least one typed SceneClosedWorldIssueV1.",
+    "max_repair_wires_per_triggered_case": 1,
+    "adaptive_retry": false,
+    "failed_or_missing_strict_candidate_grade": "not_evaluable",
+    "may_overwrite_baseline_or_domain_state": false
+  },
+  "blind_manual_review": {
+    "reviewer_count": 2,
+    "reviewers_isolated_from_key_reports_code_and_each_other": true,
+    "axes": [
+      "topology_fidelity",
+      "object_fidelity",
+      "supported_detail_deletion",
+      "relationship_and_permission_invention",
+      "epistemic_and_temporal_invention"
+    ],
+    "grades": ["pass", "minor", "major", "not_evaluable"],
+    "worst_of_two_required_for_promotion": true
+  },
+  "promotion_gate": {
+    "minimum_strict_repaired_candidates_over_all_six": 5,
+    "minimum_pair_axis_major_reductions_confirmed_by_both_reviewers": 3,
+    "maximum_new_major_regressions_reported_by_either_reviewer": 0,
+    "repair_failures_count_as_improvements": false,
+    "deterministic_issue_removal_alone_counts_as_semantic_success": false
+  },
+  "early_stop": [
+    "Stop before live calls if any valid control is flagged or any registered mutation misses its target code.",
+    "Stop promotion if fewer than five strict repaired candidates are available.",
+    "Stop promotion on the first candidate-specific major regression from either reviewer.",
+    "Do not add samples or another repair wire after the frozen six-case block."
+  ],
+  "harness_boundaries": {
+    "research_only": true,
+    "production_registry_change": false,
+    "persona_scene_commit_evidence": "not_applicable",
+    "tavern_message_or_trace_write": false,
+    "critic_or_manual_grade_is_commit_evidence": false
+  }
+}
