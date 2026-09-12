@@ -1,0 +1,53 @@
+{
+  "schema_version": "m3-postrelease-reflection-ablation-v1",
+  "campaign": "m3-book-postrelease-reflection-ablation-20260913-v1",
+  "scope": "two development pages; frozen DocLayout-refined R0 versus one same-model reflection call; no gold in prompt; not held-out certification",
+  "samples": [
+    {
+      "case": "graph-node-24-1",
+      "r0": {
+        "iou": 0.40052949875078075,
+        "coverage": 0.40052949875078075,
+        "task_pass": false
+      },
+      "r1": {
+        "schema_valid": true,
+        "iou": 0.40052949875078075,
+        "coverage": 0.40052949875078075,
+        "task_pass": false,
+        "changed": false
+      },
+      "finish_reason": "stop",
+      "reported_tokens": 5872
+    },
+    {
+      "case": "cartesian-1-6-upper",
+      "r0": {
+        "iou": 0.5200990486896527,
+        "coverage": 0.5982732574908629,
+        "task_pass": false
+      },
+      "r1": {
+        "schema_valid": false,
+        "iou": null,
+        "coverage": null,
+        "task_pass": false,
+        "changed": true
+      },
+      "finish_reason": "length",
+      "reported_tokens": 4118
+    }
+  ],
+  "aggregate": {
+    "sample_count": 2,
+    "r0_strict_passes": 0,
+    "r1_strict_passes": 0,
+    "improved_to_pass": 0,
+    "unchanged_valid": 1,
+    "invalid_output": 1,
+    "wire_count": 2,
+    "reported_tokens": 9990,
+    "unknown_usage_requests": 0
+  },
+  "conclusion": "One reflection call did not improve either failed subfigure selection. The graph-node box was repeated exactly; the Cartesian response exhausted max output tokens and failed decode."
+}

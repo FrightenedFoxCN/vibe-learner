@@ -85,6 +85,17 @@ Direct 的四个 Hatcher 图形显示成对的纵向特征漂移：Algebraic Top
 
 这证明 `Picture` 层可以作为母图召回层，并能通过 crop 放大后选取内部子图。推荐的下一候选架构为：页级 YOLO → 对每个母框递归一次并与一级候选合并/NMS → M3 优先离散选择已有子候选 → 无紧框时才返回母框内 `local_box`。当前 6/8 来自一次开发批，尚未与“递归候选优先＋自由框回退”做同配置配对，也不是 page-disjoint held-out 结果。
 
+### 0.3.5 后单轮 Reflection 消融
+
+在 `v0.3.5` 标签创建后，另取上述两个 DocLayout 母框内细化失败样本做一次小型 R0→R1 配对消融。R1 接收完整页面、同一份 OCR、目标请求和已冻结的 DocLayout-refined R0 页面框；prompt 不含 gold，每个样本只允许一条新 wire。
+
+- `graph-node-24-1` 的 R1 完全重复 R0，IoU 与 coverage 均保持 `.401`，仍只包住节点内部文字附近，未扩展到完整矩形节点。
+- `cartesian-1-6-upper` 的 R0 为 IoU `.520`、coverage `.598`；R1 在 `max_tokens=2048` 处以 `finish_reason=length` 结束，未形成可解码 JSON，因此不能计作改善。
+
+汇总为 R0 `0/2`、R1 `0/2`，改善到严格通过 `0/2`；2 wires、9,990 reported tokens、0 unknown usage。脱敏结果见[发布后单轮 Reflection 消融](evidence/m3-book-grounding-errors-20260912/postrelease-reflection-ablation.json)。含私有 Bartle 书页 crop 的 R0/R1/gold 对照图只保存在本地 ignored runs，不进入公开证据。
+
+该小样本不支持为子图细化默认增加通用 reflection。若继续实验，应单独比较关闭 thinking 或更短的 verifier schema，以避免结构化答案被 reasoning/输出长度耗尽；同时保留历史最佳合法框，不能让无效 R1 覆盖 R0。
+
 ## DINOv2 与文档模型调研
 
 截至 2026-09-12，在本次 arXiv、GitHub repository index 和 Hugging Face model index 的公开检索范围内，没有找到同时满足以下条件的现成模型：真正使用 DINOv2 backbone；在 DocLayNet、PubLayNet、RVL-CDIP、PubTables-1M、arXiv scientific figures 或学术书页上做定位微调；公开权重和可复现训练代码；许可说明完整。这个结论只描述本次检索范围，不等于此类模型绝对不存在。
