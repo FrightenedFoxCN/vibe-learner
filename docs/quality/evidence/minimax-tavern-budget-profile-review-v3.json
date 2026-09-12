@@ -1,0 +1,268 @@
+{
+  "scope": "Maintainer review, not independent quality certification",
+  "profiles": [
+    {
+      "profile": "adaptive4096",
+      "rows": [
+        {
+          "mode": "direct",
+          "repetition": 0,
+          "boundary_success": true,
+          "sdk_calls": 1,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "顾言",
+              "reply": "- 总时间：单程 60 + 原路返回 60 + 休息 20 = 140 分钟，超 120 分钟上限 20 分钟\n- 总费用：去程交通 20 + 回程交通 20 + 饮料 20 = 60 元，超 50 元预算 10 元\n- 时间与费用均超限，原方案不可执行\n\n- 单程出行压缩至 50 分钟，往返共 100 分钟 + 休息 20 分钟 = 120 分钟，刚好填满时间上限\n- 去、回程交通费各调至 15 元，合计 30 元 + 饮料 20 元 = 50 元，恰好用满预算，两项限制同时满足",
+              "flat_bullets": 5,
+              "exact_two_flat_bullets": false,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        },
+        {
+          "mode": "facilitated",
+          "repetition": 0,
+          "boundary_success": true,
+          "sdk_calls": 2,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "顾言",
+              "reply": "- 总时间 = 单程 60 + 回程 60 + 休息 20 = **140 分钟**，超出 120 分钟上限 20 分钟。\n- 总费用 = 交通 20 + 20 + 饮料 20 = **60 元**，超出 50 元预算 10 元；安排不可行。\n\n- 时间调整：把单程出行压到 45 分钟，往返共 90 分钟，加上休息 20 分钟，总计 **110 分钟**，符合 120 分钟限制。\n- 费用调整：把单程交通费各降到 15 元，往返 30 元，饮料仍按 20 元算，总计 **50 元**，正好压在预算内；往返与休息均保留。",
+              "flat_bullets": 4,
+              "exact_two_flat_bullets": false,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            },
+            {
+              "persona": "林岚",
+              "reply": "- 按给出的数字重新算：单程 60 + 回程 60 + 休息 20 = **140 分钟**，超过 120 分钟上限 20 分钟；交通 20 + 20 + 饮料 20 = **60 元**，超过 50 元预算 10 元——时间和费用都超，安排不可行。\n\n- 我的调整方案：单程出行压到 **50 分钟**（含步行和乘车），往返共 100 分钟，加休息 20 分钟，总计 **120 分钟**，刚好卡在时间上限内；交通费各降到 **15 元**，加上饮料 20 元，总计 **50 元**，正好用完预算，往返和休息都保留。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        },
+        {
+          "mode": "direct",
+          "repetition": 1,
+          "boundary_success": true,
+          "sdk_calls": 1,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "林岚",
+              "reply": "- 不可行：单程60+返程60+休息20=**140分钟**，饮料20+去程交通20+回程交通20=**60元**，时间和费用双双超标（时间多20分钟，费用多10元）。\n- 调整后两项都过关：单程50分钟、返程50分钟、休息10分钟=**110分钟**；交通各15元+饮料15元=**45元**，往返和休息都保留在限额内。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        },
+        {
+          "mode": "facilitated",
+          "repetition": 1,
+          "boundary_success": true,
+          "sdk_calls": 2,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "顾言",
+              "reply": "- 总时间：单程 60 + 返程 60 + 休息 20 = **140 分钟**，比 120 分钟上限多 20 分钟\n- 总费用：交通 20×2 + 饮料 20 = **60 元**，比 50 元上限多 10 元\n\n- 时间调整（保留往返和休息）：把单程出行压到 ≤50 分钟，往返 100 分钟 + 休息 20 分钟 = 120 分钟，刚好压线\n- 费用调整：把单程交通压到 ≤15 元，往返 30 元 + 饮料 20 元 = 50 元，刚好压线",
+              "flat_bullets": 4,
+              "exact_two_flat_bullets": false,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            },
+            {
+              "persona": "林岚",
+              "reply": "- 总时间 = 单程 60 + 返程 60 + 休息 20 = **140 分钟**，比 120 分钟上限多 20 分钟\n- 总费用 = 饮料 20 + 去程交通 20 + 返程交通 20 = **60 元**，比 50 元上限多 10 元\n- 结论：两项都超，这份安排不可行\n\n- 时间侧：保留往返和休息 20 分钟，把单程出行压到 ≤ 50 分钟，往返 100 + 休息 20 = 120 分钟，刚好压线\n- 费用侧：保留饮料 20 元，把单程交通压到 ≤ 15 元，往返 30 + 饮料 20 = 50 元，刚好压线",
+              "flat_bullets": 5,
+              "exact_two_flat_bullets": false,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        }
+      ],
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_two_bullet_replies": 2
+    },
+    {
+      "profile": "adaptive800",
+      "rows": [
+        {
+          "mode": "direct",
+          "repetition": 0,
+          "boundary_success": false,
+          "sdk_calls": 2,
+          "length_finishes": 2,
+          "actors": []
+        },
+        {
+          "mode": "facilitated",
+          "repetition": 0,
+          "boundary_success": false,
+          "sdk_calls": 2,
+          "length_finishes": 2,
+          "actors": []
+        },
+        {
+          "mode": "direct",
+          "repetition": 1,
+          "boundary_success": false,
+          "sdk_calls": 2,
+          "length_finishes": 2,
+          "actors": []
+        },
+        {
+          "mode": "facilitated",
+          "repetition": 1,
+          "boundary_success": false,
+          "sdk_calls": 2,
+          "length_finishes": 2,
+          "actors": []
+        }
+      ],
+      "completed_runs": 0,
+      "actors": 0,
+      "exact_two_bullet_replies": 0
+    },
+    {
+      "profile": "disabled800",
+      "rows": [
+        {
+          "mode": "direct",
+          "repetition": 0,
+          "boundary_success": true,
+          "sdk_calls": 1,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "顾言",
+              "reply": "- **可行性判断**：总时间 = 60 + 60 + 20 = 140 分钟，**超出 120 分钟**；总费用 = 20 + 20 + 20 = 60 元，**超出 50 元**，两项限制均不满足。\n- **调整建议**：保留往返和 20 分钟休息两项不动的条件下，把单程出行压缩到 **40 分钟**（去 40 + 回 40 + 休息 20 = 100 分钟），费用改为饮料 15 元 + 交通 15 + 15 = **45 元**，这样 100 分钟与 45 元都落在限额以内。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        },
+        {
+          "mode": "facilitated",
+          "repetition": 0,
+          "boundary_success": true,
+          "sdk_calls": 2,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "顾言",
+              "reply": "- 先把这份方案折算成两项合计：单程60分钟，往返120分钟，再加休息20分钟，总时间140分钟，已经超过120分钟的上限；费用方面，饮料20元加往返交通40元，总计60元，也超出了50元的预算。所以这份安排目前不可行。\n- 要同时满足120分钟和50元两项限制，可以在保留往返和休息的前提下这样调整：把单程压缩到45分钟，往返90分钟，加休息20分钟，共110分钟；交通费降到去程15元、回程15元，合计30元，饮料20元，总费用50元，刚好压在限额内。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            },
+            {
+              "persona": "林岚",
+              "reply": "- 我自己再算一遍：单程60分钟，往返就是120分钟，再加休息20分钟，总时间140分钟，比120分钟的上限多了20分钟；费用上，饮料20元加往返交通40元，总共60元，也比50元的预算多出10元。所以这份安排时间和预算都没卡住，目前不可行。\n- 想要同时压进120分钟和50元，可以试试把单程缩到45分钟，往返90分钟，加上20分钟休息一共110分钟；交通费改成去程10元、回程15元，合计25元，饮料20元，总费用45元，两项都留了一点余量，往返和休息也都还在。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        },
+        {
+          "mode": "direct",
+          "repetition": 1,
+          "boundary_success": true,
+          "sdk_calls": 1,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "林岚",
+              "reply": "- 算一下：单程60分钟，往返就是120分钟，再加上休息20分钟，总共 **140分钟**，已经超过你120分钟的总限额了；总费用 20（饮料） + 20（去程） + 20（回程）= **60元**，也超过50元的预算。两项都超。\n- 给一个能同时卡进120分钟和50元的调整：保留往返加休息，把单程压缩到 **45分钟**，往返90分钟 + 休息20分钟 = **110分钟**；费用只保留饮料20元 + 往返交通共 **30元**（比如去15、回15），合计 **50元**，刚好压线。时间有余量，预算不超。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        },
+        {
+          "mode": "facilitated",
+          "repetition": 1,
+          "boundary_success": true,
+          "sdk_calls": 2,
+          "length_finishes": 0,
+          "actors": [
+            {
+              "persona": "顾言",
+              "reply": "- 这份安排**不可行**。总时间 = 60（去）+ 60（回）+ 20（休息）= **140 分钟**，已超出 120 分钟；总费用 = 20（饮料）+ 20（去程）+ 20（回程）= **60 元**，也超出 50 元，两项均超限。\n- 在**保留往返与 20 分钟休息**的前提下，要同时满足 t ≤ 120 且 c ≤ 50，可取：单程出行 **40 分钟**（去 40 + 回 40 + 休息 20 = 100 分钟），交通费各 **10 元**（饮料 20 + 交通 20 = **40 元**），两项均留出余量；只要去程总成本（时间+费用）合计压到 50 / 20 以内即可，分配方式可再细调。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            },
+            {
+              "persona": "林岚",
+              "reply": "- 这份安排**不可行**：总时间 = 60 + 60 + 20 = **140 分钟**，已超出 120 分钟；总费用 = 20 + 20 + 20 = **60 元**，也超出 50 元，两项都超。\n- 我自己再算一次：若保留往返与 20 分钟休息，只调单程，可取去程 **30 分钟**、回程 **30 分钟**，加上休息正好 **80 分钟**；交通费按比例压到 **各 10 元**，加饮料 20 元共 **40 元**，时间和预算都留出余量；具体怎么分配，等定下城市再看实际线路会更靠谱。",
+              "flat_bullets": 2,
+              "exact_two_flat_bullets": true,
+              "original_totals_correct": true,
+              "adjusted_numeric_totals_within_limits": true,
+              "retains_return_and_rest": true,
+              "real_route_and_fare_feasibility_verified": false
+            }
+          ]
+        }
+      ],
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_two_bullet_replies": 6
+    }
+  ],
+  "findings": [
+    "Both successful profiles calculate original 140 minutes / 60 yuan and retain return/rest within numeric limits.",
+    "Adaptive4096 has only 2/6 exact-two-bullet replies; disabled800 has 6/6.",
+    "Most replies simply reduce fares/durations without a concrete route change or verification condition. These are proposed allocations, not independently confirmed vendor prices.",
+    "Disabled800 facilitated repetition1 Gu Yan adds dimensionally confused wording about combining time and cost (50 / 20); correct preceding example does not make that condition sound.",
+    "Disabled800 facilitated repetition1 Lin Lan assumes proportional fare reduction; it later qualifies actual routes as city-dependent.",
+    "Photographer and teacher mostly converge on arithmetic templates; stage actions alone do not establish substantive persona fidelity.",
+    "Facilitated actors restate correct original totals; no deliberately erroneous predecessor was injected, so this does not prove resistance to social error propagation."
+  ],
+  "limitations": [
+    "Profiles sequential, only two repetitions per mode, no randomized latency/caching comparison.",
+    "No production max-token or thinking-default change adopted.",
+    "Request wire confirms explicit thinking type and max_tokens; retries retain existing 900-token minimum.",
+    "Adaptive800 has no committed content to grade; downstream unscheduled actors must not count as wrong arithmetic."
+  ]
+}

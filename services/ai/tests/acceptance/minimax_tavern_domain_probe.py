@@ -7,6 +7,7 @@ import subprocess
 import time
 from unittest.mock import patch
 
+import httpx
 from fastapi.testclient import TestClient
 from app.app_factory import create_app
 from app.core.settings import Settings
@@ -36,12 +37,22 @@ def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_m
     def observe(adapter, payload, *, request_kind, model):
         started = time.perf_counter()
         if thinking_mode:
-            payload = {**payload, 'thinking': {'type': thinking_mode}}
+            payload = {**payload, 'extra_body': {**payload.get('extra_body', {}), 'thinking': {'type': thinking_mode}}}
         call = {'kind': request_kind, 'model': model, 'max_tokens': payload.get('max_tokens'),
                 'thinking_mode': thinking_mode or 'provider_default'}
         calls.append(call)
         try:
-            raw, elapsed = original(adapter, payload, request_kind=request_kind, model=model)
+            original_send = httpx.Client.send
+            def observe_wire(client, request, *args, **kwargs):
+                if request.url.host == 'api.minimax.cn' and request.url.path.endswith('/chat/completions'):
+                    body = json.loads(request.content)
+                    call.setdefault('wire_requests', []).append({
+                        'thinking_type': (body.get('thinking') or {}).get('type'),
+                        'max_tokens':body.get('max_tokens'),
+                        'max_completion_tokens':body.get('max_completion_tokens')})
+                return original_send(client, request, *args, **kwargs)
+            with patch.object(httpx.Client, 'send', observe_wire):
+                raw, elapsed = original(adapter, payload, request_kind=request_kind, model=model)
             call['usage'] = raw.get('usage')
             choice = (raw.get('choices') or [{}])[0]
             call['finish_reason'] = choice.get('finish_reason')
@@ -58,6 +69,10 @@ def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_m
             return raw, elapsed
         except Exception as exc:
             call['error_class'] = type(exc).__name__
+            call['upstream_status'] = getattr(exc, 'status_code', None)
+            message = str(getattr(exc, 'upstream_message', ''))
+            call['error_mentions_thinking'] = 'thinking' in message
+            call['error_mentions_unsupported_params'] = 'UnsupportedParamsError' in message
             raise
         finally:
             call['elapsed_ms'] = round((time.perf_counter() - started) * 1000)

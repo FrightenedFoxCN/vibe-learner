@@ -1,0 +1,295 @@
+{
+  "classification": "probe_configuration_failure",
+  "rows": [
+    {
+      "profile": "adaptive4096",
+      "mode": "direct",
+      "repetition": 0,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "adaptive4096",
+      "mode": "facilitated",
+      "repetition": 0,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "adaptive4096",
+      "mode": "direct",
+      "repetition": 1,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "adaptive4096",
+      "mode": "facilitated",
+      "repetition": 1,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 4096,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "adaptive800",
+      "mode": "direct",
+      "repetition": 0,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 8
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 5
+        }
+      ]
+    },
+    {
+      "profile": "adaptive800",
+      "mode": "facilitated",
+      "repetition": 0,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "adaptive800",
+      "mode": "direct",
+      "repetition": 1,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "adaptive800",
+      "mode": "facilitated",
+      "repetition": 1,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "adaptive",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "disabled800",
+      "mode": "direct",
+      "repetition": 0,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "disabled800",
+      "mode": "facilitated",
+      "repetition": 0,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "disabled800",
+      "mode": "direct",
+      "repetition": 1,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    },
+    {
+      "profile": "disabled800",
+      "mode": "facilitated",
+      "repetition": 1,
+      "boundary_success": false,
+      "calls": [
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 3
+        },
+        {
+          "kind": "chat",
+          "model": "MiniMax-M3",
+          "max_tokens": 800,
+          "thinking_mode": "disabled",
+          "error_class": "ModelRequestError",
+          "elapsed_ms": 4
+        }
+      ]
+    }
+  ],
+  "diagnosis": "Top-level thinking passed to LiteLLM instead of extra_body; all attempts failed locally in milliseconds with no usage/content. Exact underlying adapter error was not captured in this batch; corrected extra_body rerun has wire-confirmed upstream requests.",
+  "counting": "Adapter attempts are not verified upstream model completions or candidate arithmetic failures."
+}
