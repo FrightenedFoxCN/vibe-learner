@@ -15,7 +15,7 @@ OBJECTIVE = (
 )
 
 
-def compare(source, pdf, output, transcription=None, modes=None, objective=None, evidence_page=1):
+def compare(source, pdf, output, transcription=None, modes=None, objective=None, evidence_page=1, method_only=False):
     output.mkdir(parents=True, exist_ok=False)
     original = ProviderRequestAdapter.request_chat_completion
     baseline = None
@@ -53,10 +53,12 @@ def compare(source, pdf, output, transcription=None, modes=None, objective=None,
             current = {"persona": persona, "mode": mode}
             root = output / f"{persona}-{mode}"
             run(root, 1, selected_case="document", pdf_path=pdf, objective_override=objective or OBJECTIVE,
-                ocr_engine="onnxtr", multimodal=True, persona_variant=persona,
+                ocr_engine="onnxtr", multimodal=True, persona_variant="default" if method_only else persona,
                 page_evidence=mode, page_evidence_page=evidence_page, persona_domain="text",
-                controlled_page_evidence=True, prepared_source_root=source, transcription_file=transcription)
+                controlled_page_evidence=True, prepared_source_root=source, transcription_file=transcription,
+                persona_method=persona if method_only else None)
             row = json.loads((root / "report.jsonl").read_text().splitlines()[0])
+            current["persona_method_only"] = method_only
             current["operation_id"] = row.get("harness_operation_id")
             current["boundary_success"] = row.get("boundary_success")
             comparisons.append(dict(current))
@@ -76,5 +78,6 @@ if __name__ == "__main__":
     parser.add_argument("--modes", nargs="+", choices=("text", "text_image", "text_image_crops"))
     parser.add_argument("--objective")
     parser.add_argument("--evidence-page", type=int, default=1)
+    parser.add_argument("--method-only", action="store_true")
     args = parser.parse_args()
-    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve(), args.transcription, args.modes, args.objective, args.evidence_page)
+    compare(args.source.resolve(), args.pdf.resolve(), args.output.resolve(), args.transcription, args.modes, args.objective, args.evidence_page, args.method_only)

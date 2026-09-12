@@ -1,0 +1,74 @@
+{
+  "scope": "SDK initial planning context equality after removing persona only; source content kept in memory, not this evidence",
+  "limitations": "Same prepared source and five-tool catalog. Page images differ by experimental injection; not production retrieval adoption or independent quality certification.",
+  "rows": [
+    {
+      "persona": "rigorous",
+      "mode": "text",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "persona_method_only": true,
+      "operation_id": "harness-operation-a7a0f28d65db447c95deeb0eab4e1df8",
+      "boundary_success": true
+    },
+    {
+      "persona": "explorer",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "persona_method_only": true,
+      "operation_id": "harness-operation-9783766200f44ff1add8df10a893e704",
+      "boundary_success": false
+    },
+    {
+      "persona": "explorer",
+      "mode": "text",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "persona_method_only": true,
+      "operation_id": "harness-operation-644ded306061450ba8bb6f29b6b3b461",
+      "boundary_success": true
+    },
+    {
+      "persona": "rigorous",
+      "mode": "text_image",
+      "observed": true,
+      "nonpersona_initial_context_equal": true,
+      "measurement_error": null,
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "persona_method_only": true,
+      "operation_id": "harness-operation-6685885ba18b417ab14f8ff793a332bd",
+      "boundary_success": true
+    }
+  ]
+}

@@ -68,7 +68,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         initial_evidence_tool=None, page_evidence=None, grounding_candidate=False,
         page_evidence_page=8, persona_domain="math", controlled_page_evidence=False,
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
-        tool_recovery_hint_candidate=False, page_evidence_dpi=100):
+        tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None):
     if not 72 <= page_evidence_dpi <= 240:
         raise ValueError("Evidence DPI must be between 72 and 240")
     if redact_tool_error_evidence and tool_recovery_hint_candidate:
@@ -248,6 +248,16 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     relationship="阅读导师与成年学习者" if rigorous else "平等的阅读同行，不是师生",
                     system_prompt="忠于材料。用引文核对、概念辨析与解释依据安排学习，不捏造材料结论。" if rigorous else "忠于材料。用例子比较、开放讨论和解释探索安排学习，不使用师生口吻，不捏造共同经历。")
                 persona_payload["slots"][0]["content"] = "核对引文→辨析语境→检查解释依据" if rigorous else "比较例子→提出不同解释→讨论适用边界"
+        if persona_method:
+            if persona_method not in {"rigorous", "explorer"}:
+                raise ValueError("unknown persona method")
+            persona_payload.update(name="林澈", summary="陪伴成年学习者阅读文本的伙伴。",
+                relationship="平等的阅读伙伴", learner_address="小林",
+                system_prompt="忠于材料，按所选阅读方法组织活动，不捏造材料结论或共同经历。",
+                default_speech_style="清晰、自然")
+            persona_payload["slots"][0]["content"] = (
+                "核对引文→辨析语境→检查解释依据" if persona_method == "rigorous"
+                else "比较例子→提出不同解释→讨论适用边界")
         persona = client.post("/personas", json=persona_payload)
         persona.raise_for_status()
         persona_id = persona.json()["id"]
@@ -320,6 +330,7 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row["multimodal_enabled"] = multimodal
                     row["persona_variant"] = persona_variant
                     row["persona_domain"] = persona_domain
+                    row["persona_method_only"] = persona_method
                     if transcription is not None:
                         row["transcription_evidence"] = {"source": "experimental_model_transcription",
                             "local_file_name": transcription_file.name, "characters": len(transcription),

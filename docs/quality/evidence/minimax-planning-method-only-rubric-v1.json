@@ -1,0 +1,30 @@
+{
+  "scope": "Planning method-slot x page-image exploratory rubric",
+  "conditions": [
+    "rigorous/text",
+    "explorer/text_image",
+    "explorer/text",
+    "rigorous/text_image"
+  ],
+  "controls": [
+    "Same completed two-page document snapshot",
+    "Only persona method-slot content differs; verify all other authored persona fields equality",
+    "Same five-tool catalog excludes image retrieval; images only in image cells",
+    "Same30-minute Chinese task; same100DPI page2 render in image cells"
+  ],
+  "review_axes": {
+    "boundary": "domain admission, strict proposal handling, commit/readback recorded separately from semantics",
+    "method": "Activities operationalize quote/context/evidence checks or comparison/alternative interpretations/boundaries; wording alone insufficient",
+    "time": "Explicit stage allocations total30 with no competing inconsistent sub-allocation",
+    "source": "Preserve narrator age qualification I think, limited glass visibility, correct page/paragraph references; no extrapolation from two pages to whole work",
+    "ocr": "No tasks to learn spurious illustration OCR; distinguish inherited summary/title noise from newly generated tasks",
+    "image": "If describing illustration, compare visible armored sword-holder/combatants/shields/flags against page; do not identify characters without evidence",
+    "format": "JSON envelope validity and readable Markdown content independently assessed"
+  },
+  "limitations": [
+    "One operation per cell is exploratory, not causal certification",
+    "Prepared summary contains inherited OCR noise; source is not pristine",
+    "Native image input experimental injection is not production image-tool adoption",
+    "Image is physical page2 of extracted PDF, originally physical10/printed8"
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "scope": "Maintainer review of single-method-slot Planning x page evidence",
+  "controls": {
+    "authored_persona_equal_except_slot_content": true,
+    "nonpersona_initial_context_equal": true,
+    "image_dpi": 100,
+    "shared_persona": "Same Lin Che name, relationship, summary, system instruction, style, slot metadata; only slot content differs"
+  },
+  "rows": [
+    {
+      "cell": "rigorous-text",
+      "committed": true,
+      "calls": 8,
+      "minutes": [
+        8,
+        10,
+        7,
+        5
+      ],
+      "method_evidence": "Quote transcription, contextual imagery comparison, answer-evidence checks",
+      "defects": [
+        "conjurer storms is not the source phrase conjure up storms",
+        "What a foul day that was is incorrectly presented as the first Macbeth-name quote; preceding sentence actually introduces the name",
+        "Glass quote drops or at least all things the sisters wished to see; age fragment omits I think",
+        "One revise_study_units overlap rejected before eventual successful revision; no failed tool counted as successful execution"
+      ],
+      "ocr": "Explicitly excludes illustration OCR from story evidence"
+    },
+    {
+      "cell": "explorer-text_image",
+      "committed": false,
+      "calls": 4,
+      "minutes": null,
+      "method_evidence": null,
+      "defects": [
+        "Initial and one-repair final envelopes are valid JSON, but persisted failure reports schedule.0.schedule_chapters.4.anchor_page_start:not_ordered",
+        "No committed plan to grade; ordering cause not proven from recorded diagnostics"
+      ],
+      "ocr": null
+    },
+    {
+      "cell": "explorer-text",
+      "committed": true,
+      "calls": 5,
+      "minutes": [
+        2,
+        18,
+        8,
+        2
+      ],
+      "method_evidence": "Compares sisters abilities and proposes contrasting interpretations of glass scope, retaining discussion boundaries",
+      "defects": [
+        "Labels glass a glass ball despite source not establishing spherical shape",
+        "Treats fog disappearance and approach as causal chain instead of clearly distinguishing sequence from causal inference"
+      ],
+      "source_strengths": [
+        "Preserves I am I think fifteen years old",
+        "Explicitly compares all things on earth with things sisters wished to see"
+      ],
+      "ocr": "Marks noise to skip; not a standalone reading topic"
+    },
+    {
+      "cell": "rigorous-text_image",
+      "committed": true,
+      "calls": 2,
+      "minutes": [
+        2,
+        8,
+        6,
+        4,
+        5,
+        3,
+        2
+      ],
+      "method_evidence": "Source checks plus five-minute illustration observation; avoids identifying illustrated combatants as named characters",
+      "defects": [
+        "Spends three minutes writing OCR fragments into a do-not-process list: not treating them as meaningful text, but consumes learning time on noise"
+      ],
+      "ocr": "Explicit three-minute noise exclusion activity",
+      "visual_review": "Circular frame and armed crowd visible; does not claim unsupported sword/staff specifics"
+    }
+  ],
+  "limitations": [
+    "Only one operation per cell; no stable causal or generalized quality conclusion",
+    "All three committed timings total30 but timing correctness does not establish reading fidelity",
+    "Prepared document originally contains OCR-contaminated summary; tools may revise units differently after identical initial context",
+    "Native page injection is experimental; production image retrieval not tested here",
+    "No extra repair or rule relaxation; failed geometry is retained as measured failure",
+    "Activity-order versus source-order confusion is a hypothesis for followup, not an established model rationale",
+    "Compiled probes and diff check passed; no production code changed"
+  ]
+}
