@@ -1,0 +1,108 @@
+{
+  "scope": "Production coarse-source classification fix in initial prompt hints and runner refinement",
+  "before": "Single included unit was classified coarse regardless of page span; initial prompt recommended revision even when a single page had two subsection titles.",
+  "change": "Require existing wide-span threshold (80pages) for coarse classification even with one unit; retain sparse subsection signals, tool ceilings and time budgets.",
+  "tests": {
+    "before": "3 new tests failed",
+    "targeted": "18 passed",
+    "full": "846 passed in66.749seconds"
+  },
+  "live": {
+    "committed": true,
+    "sdk_calls": 5,
+    "tool_refusals": 0,
+    "observations": [
+      {
+        "request_kind": "plan",
+        "hints": {
+          "is_coarse_grained": false,
+          "plannable_unit_count": 1,
+          "max_unit_page_span": 1,
+          "units_with_subsections": 0,
+          "sparse_subsection_unit_count": 1,
+          "total_subsection_count": 0,
+          "recommend_min_tool_rounds": 3,
+          "recommend_detail_tool_call": true,
+          "recommend_revise_study_units": true,
+          "recommend_continue_tool_calls": true,
+          "reason": "subsections_too_sparse, subsection_coverage_thin"
+        }
+      },
+      {
+        "request_kind": "plan",
+        "hints": {
+          "is_coarse_grained": false,
+          "plannable_unit_count": 1,
+          "max_unit_page_span": 1,
+          "units_with_subsections": 0,
+          "sparse_subsection_unit_count": 1,
+          "total_subsection_count": 0,
+          "recommend_min_tool_rounds": 3,
+          "recommend_detail_tool_call": true,
+          "recommend_revise_study_units": true,
+          "recommend_continue_tool_calls": true,
+          "reason": "subsections_too_sparse, subsection_coverage_thin"
+        }
+      },
+      {
+        "request_kind": "plan",
+        "hints": {
+          "is_coarse_grained": false,
+          "plannable_unit_count": 1,
+          "max_unit_page_span": 1,
+          "units_with_subsections": 0,
+          "sparse_subsection_unit_count": 1,
+          "total_subsection_count": 0,
+          "recommend_min_tool_rounds": 3,
+          "recommend_detail_tool_call": true,
+          "recommend_revise_study_units": true,
+          "recommend_continue_tool_calls": true,
+          "reason": "subsections_too_sparse, subsection_coverage_thin"
+        }
+      },
+      {
+        "request_kind": "plan",
+        "hints": {
+          "is_coarse_grained": false,
+          "plannable_unit_count": 1,
+          "max_unit_page_span": 1,
+          "units_with_subsections": 0,
+          "sparse_subsection_unit_count": 1,
+          "total_subsection_count": 0,
+          "recommend_min_tool_rounds": 3,
+          "recommend_detail_tool_call": true,
+          "recommend_revise_study_units": true,
+          "recommend_continue_tool_calls": true,
+          "reason": "subsections_too_sparse, subsection_coverage_thin"
+        }
+      },
+      {
+        "request_kind": "plan",
+        "hints": {
+          "is_coarse_grained": false,
+          "plannable_unit_count": 1,
+          "max_unit_page_span": 1,
+          "units_with_subsections": 0,
+          "sparse_subsection_unit_count": 1,
+          "total_subsection_count": 0,
+          "recommend_min_tool_rounds": 3,
+          "recommend_detail_tool_call": true,
+          "recommend_revise_study_units": true,
+          "recommend_continue_tool_calls": true,
+          "reason": "subsections_too_sparse, subsection_coverage_thin"
+        }
+      }
+    ],
+    "quality_limits": [
+      "Commentary and translator footnotes still conflated.",
+      "Internal field names appear in learner-facing prose.",
+      "Chapter phase totals27 plus3review make30, but separate2minute introductory task is not clearly included."
+    ]
+  },
+  "limits": [
+    "Single live verification does not establish call-count or semantic-quality improvement.",
+    "Existing80-page threshold and at-most-two-unit scope heuristic are retained, not newly validated universal thresholds.",
+    "Sparse short source still requests details/revision; this fix does not eliminate all redundant refinement.",
+    "Real probe used experimental native OCR supplement and image, with unchanged domain validation."
+  ]
+}

@@ -418,8 +418,6 @@ def _looks_coarse_grained(study_units: list[Any]) -> bool:
         for unit in study_units
         if bool(getattr(unit, "include_in_plan", True))
     ] or study_units
-    if len(plannable) <= 1:
-        return True
     max_span = max(
         (
             int(getattr(unit, "page_end", 0))

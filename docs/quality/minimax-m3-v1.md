@@ -1079,3 +1079,13 @@ none输入token为213，auto为446；这说明改变tool_choice后服务端输�
 另做[直接解析诊断](evidence/minimax-babel-native-parse-diagnostic-v1.json)：用已实际识别的Vision文字作为单页OCR结果fixture，直接调用DocumentParser与StudyArrangementService，未做领域准入/提交。历史ONNXTR正文块中文为0，新块保留642个中文字符及“时期性”“微粒”，但默认Study Unit摘要仍是通用页范围描述。新文字能进入正文块，不代表编排自动理解评论结构。
 
 探针区分本机OCR与模型转写来源，编译/diff通过；原文与页图仍只在临时目录。进一步排查发现初始segmentation_hints和runner仍将单个Study Unit无条件视为过粗，与轮次90修复过的估分器不是同一路径；下一步针对这个错误分类做一致性修复，保留真实稀疏细节信号。
+
+## 轮次 104：修复初始提示与工具循环的“单元少即过粗”判断
+
+轮次90只修复估分器；初始segmentation_hints与runner的工具细化判断仍对单个Study Unit无条件返回过粗，连已有两条子标题的单页材料也会因此建议修订。[复现/修复依据](evidence/minimax-scope-classification-review-v1.json)：移除两处单元数量单独触发的判断，对单个单元也要求原有80页跨度条件；子标题稀疏、覆盖薄弱等信号及工具/时间预算保留。不是把所有短源认定为结构完整。
+
+3项新增回归在旧实现失败；修复后18项定向和完整846项后端测试通过，覆盖充分细化单页、稀疏两页与79/80/736页边界，核对提示与runner结果。保留既有“至多两个单元、跨度≥80页”的范围判断，不把这个历史阈值宣称为通用最优标准。
+
+[真实M3核验](evidence/minimax-scope-classification-live-v1.jsonl)5次调用后提交，无工具拒绝；五次SDK观测都显示单页is_coarse_grained=false，同时保留subsections_too_sparse/subsection_coverage_thin及细节建议。本次使用相同中文页图与实验OCR补充，不将一次无拒绝结果当成调用量改善证明。
+
+成稿仍混称评论与译注、暴露内部字段名；章节阶段27分钟加3分钟复盘为30，但任务另外写2分钟通读，未明确包含关系。此次采用范围仅为修复错误分类，不认定完整规划质量通过，也不取消稀疏短源的必要取证。

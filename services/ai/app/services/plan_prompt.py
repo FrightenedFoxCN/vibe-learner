@@ -508,7 +508,7 @@ def _build_segmentation_hints(
     units_with_subsections = sum(1 for count in subsection_counts if count > 0)
     sparse_subsection_unit_count = sum(1 for count in subsection_counts if count <= 1)
     total_subsection_count = sum(subsection_counts)
-    coarse = len(plannable) <= 1 or (len(plannable) <= 2 and max_span >= 80)
+    coarse = len(plannable) <= 2 and max_span >= 80
     sparse = sparse_subsection_unit_count >= max(1, len(plannable) // 2)
     should_continue = coarse or sparse or total_subsection_count < len(plannable) * 2
     recommend_min_tool_rounds = 3 if should_continue else 2
