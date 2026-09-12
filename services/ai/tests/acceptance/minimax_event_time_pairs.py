@@ -63,7 +63,7 @@ def cases():
     ]
 
 
-def run(output, replay_source=None):
+def run(output, replay_source=None, instance_hint=False):
     sdk = ProviderSDK.load()
     key = os.environ['K3_API_KEY']
     endpoint = 'https://api.minimax.cn/v1'
@@ -77,10 +77,13 @@ def run(output, replay_source=None):
     with output.open('x') as stream:
         def call(messages, instruction, contract, case_id, variant, repetition, stage, expected):
             system = instruction + '\n只输出符合以下schema的JSON，不加围栏或说明：' + json.dumps(contract.model_json_schema(), ensure_ascii=False)
+            if instance_hint:
+                system += '\n返回填有答案值的数据实例，不要复述JSON Schema定义；不要输出properties、required或additionalProperties等schema字段。'
             row = {'scope': 'synthetic_event_time_pairs', 'git_revision': revision,
                    'case_id': case_id, 'variant': variant, 'repetition': repetition,
                    'stage': stage, 'max_tokens': 4096,
                    'replay_source': replay_source.name if replay_source else None,
+                   'instance_hint': instance_hint,
                    'limitation': 'Two synthetic fixtures; maintainer-designed comparison, not independent certification.'}
             start = time.perf_counter()
             decoded = None
@@ -147,5 +150,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--replay-source', type=Path)
+    parser.add_argument('--instance-hint', action='store_true')
     args = parser.parse_args()
-    run(args.output.resolve(), args.replay_source.resolve() if args.replay_source else None)
+    run(args.output.resolve(), args.replay_source.resolve() if args.replay_source else None, args.instance_hint)
