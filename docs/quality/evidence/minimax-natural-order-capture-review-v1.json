@@ -1,0 +1,276 @@
+{
+  "scope": "Maintainer bounded natural-failure capture attempt",
+  "manifest": {
+    "scope": "natural_planning_order_failure_capture",
+    "operations": [
+      {
+        "index": 0,
+        "boundary_success": true,
+        "harness_operation_id": "harness-operation-5ba86d7789ec4248b519a56263afc4f9",
+        "calls": 9,
+        "errors": [
+          "stage_evidence_failed",
+          "stage_evidence_failed",
+          "stage_evidence_failed"
+        ]
+      },
+      {
+        "index": 1,
+        "boundary_success": true,
+        "harness_operation_id": "harness-operation-272efcc0c0054ceba1717f53075bc5bb",
+        "calls": 6,
+        "errors": [
+          "stage_evidence_failed"
+        ]
+      },
+      {
+        "index": 2,
+        "boundary_success": true,
+        "harness_operation_id": "harness-operation-7986e465742e49289bc69cc2b2403ed7",
+        "calls": 11,
+        "errors": [
+          "stage_evidence_failed"
+        ]
+      },
+      {
+        "index": 3,
+        "boundary_success": true,
+        "harness_operation_id": "harness-operation-b19c8b397fea449db0977f2da2c615b9",
+        "calls": 7,
+        "errors": [
+          "stage_evidence_failed"
+        ]
+      }
+    ],
+    "replay_scope": "Direct provider repair diagnostic, no new domain admission or commit",
+    "capture_outcome": "target_not_observed_within_attempt_limit",
+    "annotation": "Outcome verified after process exit and absence of private capture/replay files; running script preceded explicit outcome-field addition."
+  },
+  "stats": [
+    {
+      "cell": "capture-0",
+      "calls": 9,
+      "tool_errors": [
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_round_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "tool_argument_schema_invalid",
+          "detail_code": null,
+          "provider_detail_sent": true
+        },
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "usage_by_request": [
+        {
+          "input_tokens": 4444,
+          "cached_tokens": 128
+        },
+        {
+          "input_tokens": 5860,
+          "cached_tokens": 4444
+        },
+        {
+          "input_tokens": 6162,
+          "cached_tokens": 5860
+        },
+        {
+          "input_tokens": 6615,
+          "cached_tokens": 6162
+        },
+        {
+          "input_tokens": 7333,
+          "cached_tokens": 6615
+        },
+        {
+          "input_tokens": 7919,
+          "cached_tokens": 7333
+        },
+        {
+          "input_tokens": 8196,
+          "cached_tokens": 7919
+        },
+        {
+          "input_tokens": 8535,
+          "cached_tokens": 8196
+        },
+        {
+          "input_tokens": 9035,
+          "cached_tokens": 8535
+        }
+      ]
+    },
+    {
+      "cell": "capture-1",
+      "calls": 6,
+      "tool_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "usage_by_request": [
+        {
+          "input_tokens": 4426,
+          "cached_tokens": 128
+        },
+        {
+          "input_tokens": 5760,
+          "cached_tokens": 4352
+        },
+        {
+          "input_tokens": 6062,
+          "cached_tokens": 5760
+        },
+        {
+          "input_tokens": 6821,
+          "cached_tokens": 6016
+        },
+        {
+          "input_tokens": 7599,
+          "cached_tokens": 6784
+        },
+        {
+          "input_tokens": 7885,
+          "cached_tokens": 7552
+        }
+      ]
+    },
+    {
+      "cell": "capture-2",
+      "calls": 11,
+      "tool_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "usage_by_request": [
+        {
+          "input_tokens": 4445,
+          "cached_tokens": 1792
+        },
+        {
+          "input_tokens": 5809,
+          "cached_tokens": 128
+        },
+        {
+          "input_tokens": 6614,
+          "cached_tokens": 5760
+        },
+        {
+          "input_tokens": 7254,
+          "cached_tokens": 6528
+        },
+        {
+          "input_tokens": 7546,
+          "cached_tokens": 4352
+        },
+        {
+          "input_tokens": 8608,
+          "cached_tokens": 7552
+        },
+        {
+          "input_tokens": 8904,
+          "cached_tokens": 8576
+        },
+        {
+          "input_tokens": 9174,
+          "cached_tokens": 8960
+        },
+        {
+          "input_tokens": 9812,
+          "cached_tokens": 9472
+        },
+        {
+          "input_tokens": 10068,
+          "cached_tokens": 9728
+        },
+        {
+          "input_tokens": 10769,
+          "cached_tokens": 128
+        }
+      ]
+    },
+    {
+      "cell": "capture-3",
+      "calls": 7,
+      "tool_errors": [
+        {
+          "tool_name": "revise_study_units",
+          "error": "invalid_study_unit_revision",
+          "detail_code": "study_unit_2_overlaps_previous",
+          "provider_detail_sent": true
+        }
+      ],
+      "usage_by_request": [
+        {
+          "input_tokens": 4445,
+          "cached_tokens": 128
+        },
+        {
+          "input_tokens": 5770,
+          "cached_tokens": 4445
+        },
+        {
+          "input_tokens": 6563,
+          "cached_tokens": 5770
+        },
+        {
+          "input_tokens": 7341,
+          "cached_tokens": 6563
+        },
+        {
+          "input_tokens": 7731,
+          "cached_tokens": 7341
+        },
+        {
+          "input_tokens": 8387,
+          "cached_tokens": 7731
+        },
+        {
+          "input_tokens": 9057,
+          "cached_tokens": 128
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "natural_operations": 4,
+    "committed": 4,
+    "provider_calls": 33,
+    "target_order_repairs_captured": 0,
+    "replay_calls": 0,
+    "tool_rejections": 6
+  },
+  "findings": [
+    "No not_ordered repair observed in four operations; does not erase earlier natural failure or validate proposed feedback.",
+    "Cell0 explicit task minutes2+3+3+3+4+5 total20, missing10 of requested30; also says sisters heard Macbeth name whereas narrator first hears it from sisters.",
+    "Cell1 tasks5+10+10+3+2 total30 and consistent with focus; method-specific comparison activities present.",
+    "Cell2 task schedule0–2,2–8,8–18,18–27,27–30 totals30; focus6+10+9+5 also30 but assigns recap5 instead of3 and omits distinct2-minute orientation. Internal stage mapping inconsistent.",
+    "Cell3 task minutes5+8+6+6+5 total30, focuses13+12 cover first25; final5-minute recap in tasks only. Initial non-strict JSON final followed by accepted final through existing repair; not target geometry.",
+    "Warm request cache counts often approximate previous request input size, e.g.cell0 subsequent4444,5860,6162,6615...; substantial prefix reuse observed, not controlled billing or latency benefit.",
+    "Tool refusals include round ceiling, argument schema, and overlapping Study Unit revision. Repeated estimate calls still cost requests even when prefixes cached."
+  ],
+  "limitations": [
+    "No naturally invalid order proposal captured, so replay branch remains unexercised live",
+    "Replay branch records direct-provider validation only, not domain commit",
+    "Private capture is restricted to temp directories with0600 file mode; no private source snapshot created this batch",
+    "Raw source pages, private request snapshots, image bytes, credentials and response reasoning are not added to repository evidence; generated plans may contain source quotations.",
+    "Compile and diff checks only; no production changes"
+  ],
+  "next_step": "Use a realistic page2-image-first then page1-text comparison objective, with the same bounded capture, rather than more identical sampling."
+}
