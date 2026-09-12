@@ -30,7 +30,17 @@ def invalid_geometry(unit, kind):
     return LearningPlanProposalV1.model_validate(proposal).model_dump_json()
 
 
-def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
+GEOMETRY_REPAIR_HINT = (
+    '页码顺序规则：每个schedule项的schedule_chapters按anchor_page_start非递减排列；'
+    '每章content_slices按page_start非递减排列，同一页可有多个章节或片段。'
+    '这是来源章节与片段的排列规则，不是活动发生顺序；跨页比较、回看或复习的活动顺序可写在focus与today_tasks中。'
+    '保留原有章节、片段、标题与合法页码，不得靠删除内容、虚构页码或改小范围来绕过校验。'
+)
+
+
+def compare(source, pdf, output, timing_pairs=False, duration_transfer=False, geometry_pairs=False):
+    if geometry_pairs and timing_pairs:
+        raise ValueError('Geometry and timing comparisons are separate experiments')
     if duration_transfer and not timing_pairs:
         raise ValueError("Duration transfer requires timing pairs")
     output.mkdir(parents=True, exist_ok=False)
@@ -39,7 +49,10 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
     rows = []
     cells = ([('slice_order', False), ('slice_order', True), ('slice_order', True), ('slice_order', False)]
              if timing_pairs else [('chapter_order', False), ('slice_order', False)])
+    if geometry_pairs:
+        cells = [(kind, candidate) for kind in ('chapter_order','slice_order') for candidate in (False,True,True,False)]
     baseline_proposal = None
+    geometry_baselines = {}
     for index, (kind, candidate) in enumerate(cells):
         minutes = (15 if index < 2 else 45) if duration_transfer else 30
         invocations = []
@@ -54,7 +67,9 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
                 content = invalid_geometry(units[0], kind)
                 if baseline_proposal is None:
                     baseline_proposal = content
-                injected_state['same_initial_proposal'] = content == baseline_proposal
+                if geometry_pairs:
+                    geometry_baselines.setdefault(kind,content)
+                injected_state['same_initial_proposal'] = content == (geometry_baselines[kind] if geometry_pairs else baseline_proposal)
                 return SimpleNamespace(content=content, tool_messages=[],
                     trace=PlanGenerationTraceRecord(document_id=kwargs['document_id'], model='synthetic-invalid-proposal',
                         created_at=datetime.now(timezone.utc).isoformat()))
@@ -70,6 +85,9 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
                 if candidate:
                     content = content.replace(old, replacement)
                 kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1], {**message, 'content': content}]}
+            if geometry_pairs and candidate:
+                message = kwargs['messages'][-1]
+                kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1], {**message, 'content': message['content'] + GEOMETRY_REPAIR_HINT}]}
             return original(provider, **kwargs)
         cell = output/f"{index}-{kind}"
         with patch.object(RemotePlanningProvider, '_run_plan_model', injected):
@@ -79,7 +97,9 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
                 controlled_page_evidence=True, prepared_source_root=source)
         row = json.loads((cell/'report.jsonl').read_text())
         row['fault_injection'] = {'kind':kind, 'synthetic_initial_proposal':True,
-                                 'timing_clarification_candidate':candidate, 'learning_budget_minutes':minutes, **injected_state,
+                                 'timing_clarification_candidate':candidate if timing_pairs else False,
+                                 'geometry_hint_candidate':candidate if geometry_pairs else False,
+                                 'geometry_hint':GEOMETRY_REPAIR_HINT if geometry_pairs and candidate else None, 'learning_budget_minutes':minutes, **injected_state,
                                  'runner_invocations':invocations, 'real_provider_calls':len(row['calls'])}
         row['trace_limitation'] = ('Fault-injected schema-valid initial proposal, not natural M3 generation. '
             'Only repair calls are real; production domain admission/validation/commit/readback remain exercised. '
@@ -94,5 +114,6 @@ if __name__ == '__main__':
     p.add_argument('--source',type=Path,required=True);p.add_argument('--pdf',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--timing-pairs',action='store_true')
-    p.add_argument('--duration-transfer',action='store_true');a=p.parse_args()
-    compare(a.source.resolve(),a.pdf.resolve(),a.output.resolve(),a.timing_pairs,a.duration_transfer)
+    p.add_argument('--duration-transfer',action='store_true')
+    p.add_argument('--geometry-pairs',action='store_true');a=p.parse_args()
+    compare(a.source.resolve(),a.pdf.resolve(),a.output.resolve(),a.timing_pairs,a.duration_transfer,a.geometry_pairs)

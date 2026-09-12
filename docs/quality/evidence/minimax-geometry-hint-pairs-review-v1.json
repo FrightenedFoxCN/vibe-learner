@@ -1,0 +1,216 @@
+{
+  "scope": "Maintainer fault-injected single-repair feedback comparison",
+  "rows": [
+    {
+      "cell": 0,
+      "kind": "chapter_order",
+      "candidate": false,
+      "committed": false,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": null,
+      "chapter_count": null,
+      "slice_ranges": null,
+      "terminal_error_codes": [
+        "plan_proposal_schema_invalid:$:duplicate_schedule_unit_ref"
+      ]
+    },
+    {
+      "cell": 1,
+      "kind": "chapter_order",
+      "candidate": true,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": [
+        5,
+        5,
+        8,
+        5,
+        4,
+        3
+      ],
+      "chapter_count": 2,
+      "slice_ranges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    },
+    {
+      "cell": 2,
+      "kind": "chapter_order",
+      "candidate": true,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": null,
+      "chapter_count": 2,
+      "slice_ranges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    },
+    {
+      "cell": 3,
+      "kind": "chapter_order",
+      "candidate": false,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": [
+        12,
+        15,
+        3
+      ],
+      "chapter_count": 2,
+      "slice_ranges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    },
+    {
+      "cell": 4,
+      "kind": "slice_order",
+      "candidate": false,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": [
+        3,
+        6,
+        8,
+        7,
+        3,
+        3
+      ],
+      "chapter_count": 2,
+      "slice_ranges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    },
+    {
+      "cell": 5,
+      "kind": "slice_order",
+      "candidate": true,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": [
+        5,
+        10,
+        8,
+        5,
+        2
+      ],
+      "chapter_count": 1,
+      "slice_ranges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    },
+    {
+      "cell": 6,
+      "kind": "slice_order",
+      "candidate": true,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": [
+        8,
+        10,
+        12
+      ],
+      "chapter_count": 2,
+      "slice_ranges": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    },
+    {
+      "cell": 7,
+      "kind": "slice_order",
+      "candidate": false,
+      "committed": true,
+      "real_calls": 1,
+      "same_initial_proposal_within_fault_kind": true,
+      "stage_minutes": null,
+      "chapter_count": 1,
+      "slice_ranges": [
+        [
+          1,
+          2
+        ]
+      ],
+      "terminal_error_codes": []
+    }
+  ],
+  "summary": {
+    "baseline_committed": 3,
+    "candidate_committed": 4,
+    "runs_per_group": 4,
+    "real_calls": 8,
+    "candidate_explicit_30min": 3,
+    "baseline_explicit_30min": 2
+  },
+  "findings": [
+    "Baseline first chapter-order repair fails duplicate_schedule_unit_ref; not repeated not_ordered.",
+    "All committed outputs pass existing geometry; candidate preserves two individual one-page slices in all four replies.",
+    "Baseline last slice-order repair merges two slices into a single1–2 range. It preserves page coverage; do not equate coalescing with lost source content.",
+    "Candidate last slice-order repair splits one chapter into two and rewrites titles; contrary to proposed preserve-chapter/title/range wording, although page coverage retained.",
+    "Candidate first chapter-order repair and first slice-order repair also rewrite titles. Only mechanical candidate cell2 retains original titles.",
+    "Candidate cell2 and baseline cell7 merely fix structure and retain generic no-duration activities.",
+    "Candidate cell5 retains AAV label and truncates glass scope quote; cell6 includes full glass qualification but calls the circular image spherical.",
+    "Baseline cell3 describes a spherical glass and cell4 assigns sisters abilities to p2 title, despite those abilities being on p1.",
+    "Candidate4/4 versus baseline3/4 is small synthetic evidence; not natural repair success rate or proof of exact failure cause."
+  ],
+  "decision": "Do not adopt this full candidate. Keep precise sorting-rule explanation as a followup candidate, remove overly restrictive title/chapter preservation directions and test separately.",
+  "validation": [
+    "Probe compile and diff check passed",
+    "Each operation injects one strict-schema-valid faulty initial proposal; only its one repair is real M3",
+    "Same initial proposal checked within each fault kind, not across different faults",
+    "No production prompt, validation or repair-count change"
+  ]
+}
