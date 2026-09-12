@@ -23,13 +23,25 @@ CONSTRAINT_CASES = {
 }
 
 
+USER_SCENARIOS = {
+    'uncertain_walk': '这是我们第一次讨论散步，我所在的城市、季节和出发时刻都还没告诉你。'
+        '我有90分钟和30元，想轻松走走，必须回到出发点并至少坐下休息15分钟。'
+        '请按你自己的兴趣和做事方式给出一份可调整的安排，解释一个具体取舍；不要只复述另一位的建议。'
+        '每位发言者恰好用三条Markdown无序列表：第一条安排活动并分配时间，第二条说明花费，第三条说清还需确认什么。'
+        '不要开场、结尾、嵌套列表，不编造城市地点、票价、共同经历，也不要替另一位说话。'
+        '数字可以是分配上限，但不能将它当作已经验证的路线耗时或真实报价。',
+}
+
+
 PROMPT_INTERVENTIONS = {
     'format_check': '输出前检查content里的用户格式要求：列表条数按实际Markdown列表项计数，不按话题组数计数；将相关说明合并到允许的条目内，不另加列表项、开场或结尾。',
     'feasibility_check': '提出调整建议时，区分已知条件、建议的预算上限和仍需核实的现实条件。不能仅把已知价格或耗时改成较小数字就声称方案可执行；说明可采取的调整及其适用条件，分别核对不同单位的限制。',
 }
 
 
-def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_mode=None, prompt_intervention=None):
+def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_mode=None, prompt_intervention=None, scenario=None, persona_offset=0):
+    if scenario and constraint_case:
+        raise ValueError('scenario and constraint_case are mutually exclusive')
     root.mkdir(parents=True, exist_ok=False)
     settings = Settings(storage_root=str(root / 'data'), database_url=f"sqlite:///{root / 'domain.db'}",
         plan_provider='litellm', ocr_engine='disabled', openai_api_key=os.environ['K3_API_KEY'],
@@ -113,17 +125,19 @@ def run(root, repetitions, constraint_case=None, chat_max_tokens=800, thinking_m
                         '请先判断这份安排是否可行，写清总时间与总费用；若超限，给出同时符合两项限制的调整，保留往返和休息。'
                         '每位发言者只用两条Markdown无序列表，不要开场或结尾。'
                         '根据你自己的判断回应，不要默认别人或前一位发言者算得对；不编造具体城市地点、价格或共同经历，不替另一位说话。')
-                targets = [personas[repetition % 2]['id']] if mode == 'direct' else [p['id'] for p in reversed(personas)]
+                if scenario:
+                    content = USER_SCENARIOS[scenario]
+                targets = [personas[(repetition + persona_offset) % 2]['id']] if mode == 'direct' else [p['id'] for p in reversed(personas)]
                 payload = {'input': {'kind': 'user_message', 'content': content}, 'mode': mode,
                     'target_persona_ids': targets, 'guidance': '', 'idempotency_key': f'quality-turn-{mode}-{repetition}',
                     'expected_room_revision': room.json()['room']['revision']}
                 calls.clear()
                 row = {'scope': 'live_tavern_admission_actor_commit_readback', 'model': 'MiniMax-M3',
-                    'git_revision': revision, 'prompt_intervention':prompt_intervention,
+                    'git_revision': revision, 'scenario':scenario, 'persona_offset':persona_offset, 'prompt_intervention':prompt_intervention,
                     'prompt_intervention_text':PROMPT_INTERVENTIONS.get(prompt_intervention),
                     'experimental_override_scope':'SDK payload after production preflight; not a registered production prompt contract', 'constraint_case': constraint_case, 'mode': mode,
                     'configured_chat_max_tokens':chat_max_tokens, 'thinking_mode':thinking_mode or 'provider_default', 'repetition': repetition, 'request': payload,
-                    'persona_inputs': [{'id': p['id'], 'name': p['name'], 'summary': p['summary']} for p in personas],
+                    'persona_inputs': [{key:p[key] for key in ('id','name','summary','relationship','learner_address','system_prompt','reference_hints','slots','available_emotions','available_actions','default_speech_style')} for p in personas],
                     'calls': calls, 'boundary_success': False}
                 response = client.post(f'/tavern/rooms/{room_id}/turns', json=payload)
                 row['http_status'] = response.status_code
@@ -162,7 +176,9 @@ if __name__ == '__main__':
     parser.add_argument('--chat-max-tokens', type=int, default=800)
     parser.add_argument('--thinking-mode', choices=('adaptive','disabled'))
     parser.add_argument('--prompt-intervention', choices=PROMPT_INTERVENTIONS)
+    parser.add_argument('--scenario', choices=USER_SCENARIOS)
+    parser.add_argument('--persona-offset', type=int, choices=(0,1), default=0)
     args = parser.parse_args()
     if not 1 <= args.repetitions <= 20:
         parser.error('repetitions must be between 1 and 20')
-    run(args.root.resolve(), args.repetitions, args.constraint_case, args.chat_max_tokens, args.thinking_mode, args.prompt_intervention)
+    run(args.root.resolve(), args.repetitions, args.constraint_case, args.chat_max_tokens, args.thinking_mode, args.prompt_intervention, args.scenario, args.persona_offset)

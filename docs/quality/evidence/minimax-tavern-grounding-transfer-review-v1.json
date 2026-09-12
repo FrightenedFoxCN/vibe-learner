@@ -1,0 +1,180 @@
+{
+  "scope": "Maintainer transfer review, not independent certification",
+  "summary": {
+    "baseline": {
+      "runs": 4,
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_three_flat_bullets": 3,
+      "requests_all_three_missing_context_fields": 5
+    },
+    "feasibility_check": {
+      "runs": 4,
+      "completed_runs": 4,
+      "actors": 6,
+      "exact_three_flat_bullets": 6,
+      "requests_all_three_missing_context_fields": 6
+    }
+  },
+  "rows": [
+    {
+      "cell": "0-baseline",
+      "mode": "direct",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 90 分钟里约 60–70 分钟沿出发点周围 2–3 公里的环线缓行（步速视地面与天气而定），剩余时间中至少 15 分钟坐下休息，留 5–10 分钟作缓冲。\n- 30 元按上限分配：一瓶水或小食约 5–10 元、交通备用金 5–10 元，其余作机动；不假设有门票或其他固定支出。\n- 还需确认：你所在城市与季节、附近是否有相对安全安静的环形路径、想偏向哪种路线类型（沿水/绿地/街巷）、出发时刻是否靠近饭点。\n\n取舍：选\"环线 + 固定休息\"而不是\"走远再折返\"，因为 15 分钟休息会压缩有效步行时间，环线能稳妥保证回到出发点、不靠估算折返耗时。",
+          "exact_three_flat_bullets_no_extra_prose": false,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "0-baseline",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 活动与时间分配（上限90分钟）：步行外出≤30分钟，找一处坐下休息≥15分钟，步行返回≤30分钟，剩余≤15分钟作缓冲；取舍在于把休息放在中段而非首尾，可减少折返疲劳，但会压缩步行半径\n- 花费（上限30元）：建议全程步行归零交通费；若改用公共交通，单程控制在≤10元以内，留出余地\n- 仍需确认：你所在的城市、季节与出发时刻、步行耐受度、是否接受搭车、休息场所偏好（公园/咖啡/商场）",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 活动与时间（90分钟以内）：先慢步出门，约25分钟，沿途留意光线落在墙面或树影上的样子；找一处坐着休息，至少20分钟，正好够看光影挪一挪、按两下快门；再慢慢走回出发点，约25分钟；剩余约20分钟留给路上想停就停的取景和来回的节奏差。取舍是把休息放在中段——这样前后两段路的光线角度不同，回来时能看到和去时不一样的画面，比把休息放在开头或结尾更值得一拍\n- 花费（30元以内）：全程步行，交通费按0计；休息时若点一杯喝的，按≤15元留余地，剩下的留给路上偶尔买水或小食；若改坐车兜底，单程控制在≤10元，留出缓冲\n- 仍需确认：你所在的城市与季节（决定光线时长和户外舒适度）、出发时刻（决定拍到的是晨光还是午后斜光）、步行耐受度（决定能否边走边停）、休息场所偏好（公园/咖啡馆/商场，三种拍出来调子很不一样）",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "1-feasibility_check",
+      "mode": "direct",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "林岚",
+          "reply": "- 在你告诉我城市前，时间我先这样分：步行约60分钟、坐下休息至少15分钟、剩15分钟作出发、折返和顺带拍照的缓冲；我倾向画一条小环线方便自然走回起点，方向等你确认环境后再具体定\n- 30元是分配上限不是已核实的报价——建议花10到15元在休息时买杯饮品，换一个能稳定坐15分钟的室内或半室内位置，剩余留给弹性支出或临时回程；具体取舍是用一点花费换\"确定能坐下\"，还是省下这笔找免费长椅但要赌天气和人流量\n- 还需要你告诉我：所在城市、季节、出发时间（影响光线时长和体感温度）、起点附近步行可达的环境类型（公园、河岸还是街区），以及你更想看自然光影还是街景细节",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "1-feasibility_check",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 先把90分钟拆成两块：休息至少占15分钟，往返步行总时长上限75分钟，单程步行时长上限约30–35分钟，并预留10–15分钟作为缓冲；这里的取舍在于——步行距离越长，留给路况、天气和疲劳的缓冲越少，休息时段也可能被进一步压缩，所以宁可把单程时长压到30分钟以内。\n- 30元当作分配上限处理：预留不超过10元用于休息时段的一杯饮品或一份小食，其余留作机动，不预设任何门票或交通支出，等确认城市后再填入实际单价。\n- 还需向小林确认五项：所在城市与季节、出发时刻、平常步行配速、出发点附近步行可达的开放空间或商圈，以及是否需要回避的坡道或施工路段——这些直接决定单程距离上限和休息点选择。",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 我把90分钟按光线和节奏分成三块：步行往返总计压到70分钟以内（单程步行上限约30分钟，给边走边拍的停顿留余地），中间连续坐下休息15分钟，前后各留2–3分钟作为集结、找角度和回程收尾的缓冲；取舍在于——我把单程控制在30分钟而不是更远，是因为摄影师在路上会被光线吸引停下来取景，实际步行耗时往往比地图预估多10–15分钟，所以宁可缩短半径也要保证能在光线最好的时段走到一个值得停留的位置，而不是被距离拖着错过。\n- 30元全部当作可调整的分配上限：留不超过15元给休息时段（视城市物价可以是一杯饮品或一份小食，也可以自带水省钱），其余15元留作机动金，不预设任何门票或交通支出，等确认城市和具体路线后再判断是否需要为回程留出一段替代交通的钱。\n- 还需确认：所在城市与季节（决定下午的光线角度和日落时间，影响我把哪段当作主拍摄段）、出发时刻（我倾向于把休息时段安排在光线最有戏的位置，比如河岸或桥边）、平常步行配速（含拍照停顿后的真实节奏）、出发点步行可达的有街区细节或水岸/桥体的方向（这类地方光影变化最丰富），以及需要回避的坡道、施工路段或人流密集区。",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "2-feasibility_check",
+      "mode": "direct",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 小林，先把限制摊开看：90分钟扣掉至少15分钟坐着休息，剩下约75分钟给步行和来回缓冲；按\"必须回到出发点\"我默认走往返——去程约25分钟，坐15分钟，回程约25分钟，前后各留5分钟作找座和走回起点的余量。取舍在这：环线走法确实更有变化，但同样总时长下步行段要各压到20分钟，留给走错路、找路口的余地会变小，所以默认走熟悉的往返更稳。\n- 30元我只当分配上限，不当成已验证的报价：水自带按0元算，路上临时买一瓶水或小食预留不超过10元，剩20元作机动——比如临时想坐下来喝点东西、或应急交通，但都不预先承诺具体票价或车费。\n- 需要你先确认几件事再细化：所在城市、季节和出发时刻（影响天黑时间、人流密度和能坐下来休息的地方）、\"轻松走\"对应的步行速度（约4 km/h算悠闲，约5 km/h算普通）、休息地点倾向户外座椅还是店内（后者会额外消耗预算和步行距离）、以及住处附近有没有必须避开的路段。",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "2-feasibility_check",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 时间分配：90 分钟拆成\"步行去程 + 步行返程 + 坐下休息 + 缓冲\"。步行合计压到约 60 分钟（去、返各约 25–30 分钟），坐下休息固定占 15–20 分钟，剩余 5–10 分钟留给找不到座位或节奏被打乱。取舍说在前面：宁可把休息定为\"刚好达标偏上\"，也不再把散步距离往上推——这样坐下休息这一条不会卡线。\n- 花费：30 元只作上限，不是已经核过的报价。给饮水留约 5–10 元，小食留约 10–15 元，剩下约 5–15 元作浮动；交通、门票暂不计入，等城市和季节确定后再补。\n- 还需你确认：所在城市与季节、出发时刻、个人步速与体能、路线上是否真有可坐的地点（公园长椅、咖啡店、路边石凳等），以及天气会不会改写上面的时长分配。",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 活动与时间：90 分钟拆成「步行去程 + 步行返程 + 坐下休息 + 留白」。步行合计约 50 分钟（去、返各 25 分钟左右），坐下休息固定 15 分钟，剩下 25 分钟左右留给停下来拍照、光线变了多等一会儿、或者拐进一条想看的巷子。我的取舍说在前面：与其把散步距离往上推，不如把这段时间明确留给光线和街景——站住看一会儿影子比多走两百步更值，所以步行这段不再加码，坐下休息这一条也不会卡线。\n- 花费：30 元只作上限。买饮约 5–10 元，小食约 10–15 元，剩下 5–15 元作浮动；交通、门票先不计入，等城市和季节定了再补。\n- 还需你确认：所在城市与季节、出发时刻（我会想挑光线舒服的时段）、步速与体能、路线上是否真有可坐的地方（公园椅、咖啡店门口、石阶都行），以及天气会不会让拍照停留变多或变少。",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "3-baseline",
+      "mode": "direct",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "林岚",
+          "reply": "- 先在出发点附近选一条你最熟悉的短路线慢慢走，步行加拍照大概60分钟，沿途找两三处光线有意思的地方停下来拍几张（每处5到10分钟）；然后找一家能看到街景或光线的店坐下来喝点东西，休息至少15分钟；最后留15分钟弹性时间，慢步走回出发点。\n- 30元主要花在休息那一杯饮品上，算作上限；如果超支就改成自带水在户外长椅上坐15分钟，全程步行和拍照不另花钱。\n- 还需确认你所在的城市、季节和出发时刻（光线角度和走向都跟这有关）、你愿意坐着休息的形式是室内还是户外，以及有没有需要避开的地段或路面。\n\n取舍上我更倾向把时间压在出发点附近的小范围里反复换角度拍光线，而不是硬走远路——这样光线观察更集中，但代价是你能看到的新景物会少一些，如果你想多看新东西也可以把步行范围拉大，把拍照点压到一两处。",
+          "exact_three_flat_bullets_no_extra_prose": false,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    },
+    {
+      "cell": "3-baseline",
+      "mode": "facilitated",
+      "boundary_success": true,
+      "actors": [
+        {
+          "persona": "顾言",
+          "reply": "- 90分钟拆分：步行约60分钟（去程与回程各25–30分钟，留5–10分钟弹性），坐下休息30分钟，其中至少15分钟连续不挪动，先守住\"回到出发点\"与\"坐够15分钟\"两条硬约束。\n- 30元预算：上限15元用于休息时的一杯饮品或一份小食，其余15元作为回程应急打车备用；若全程步行无实际支出，这15元可并入休息时长。\n- 还需你确认三件事：所在城市与季节（影响步行舒适度与天黑时间）、出发点步行20分钟内是否有可坐15分钟的开放空间或小店铺、以及你偏好的步行节奏。\n\n取舍说明：相比\"走得更远多看一点\"，我倾向把路线收短、多把时间交给坐着——15分钟连续休息是硬指标，回程一旦超时，最先被压缩的通常先是休息，而不是风景。",
+          "exact_three_flat_bullets_no_extra_prose": false,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": false
+        },
+        {
+          "persona": "林岚",
+          "reply": "- 步行约70分钟（去程30分钟含5分钟弹性，回程25分钟，留15分钟给光线好的地方慢走几步拍两张），坐下休息20分钟，其中至少15分钟连续不挪动；我的取舍是光线好时宁可把回程稍微加快一两分钟，也不压缩\"坐够15分钟\"这条底线——把\"多看一点\"让给光线，把\"回到出发点\"和\"连续坐15分钟\"当成硬约束。\n- 花费上限20元用于休息时的一杯饮品或一份小食，10元作为路上临时补给或回程备用；若全程步行无实际支出，30元可留作下次出行基金。\n- 还需确认所在城市与季节（影响光线角度和天黑时间，决定回程要不要赶路）、出发时刻（是否赶得上日出或日落前后的好光）、以及你希望这次是边走边拍，还是纯粹散步不想带任务。",
+          "exact_three_flat_bullets_no_extra_prose": true,
+          "return_and_seated_rest_present": true,
+          "missing_city_season_and_start_time_requested": true
+        }
+      ]
+    }
+  ],
+  "findings": [
+    "Baseline has three extra tradeoff paragraphs; feasibility reminder keeps all six replies within three bullets in this batch.",
+    "Baseline cell3 facilitated teacher converts 15 yuan into rest duration: dimensionally invalid sentence.",
+    "Candidate cell1 facilitated photographer claims photo stops typically add 10–15 minutes versus a map without supporting context.",
+    "Candidate cell1 facilitated photographer budgets up to70 walking +15 rest +2–3 at each end: upper combination91 exceeds90, although lower combinations fit; not an unavoidable overrun.",
+    "Candidate cell2 direct teacher asserts a loop requires20-minute legs compared with25-minute out-and-back legs without route evidence.",
+    "Candidate cell1 direct photographer assumes buying a drink secures a seated place; explicitly asking whether seating is available would be stronger.",
+    "Expense expressions using remaining money are correlated allocations, not independent intervals; do not sum all maxima to invent overspending.",
+    "All six photographer replies integrate photography/light or stopping choices into activities; teacher replies emphasize buffers/limits. This supports summary-sensitive behavior on this fixture, not complete persona fidelity.",
+    "User explicitly requests missing-context handling, so the reminder is partly redundant; do not extrapolate observed format improvement to unrelated requests."
+  ],
+  "limitations": [
+    "Four cells baseline-candidate-candidate-baseline, direct actor balanced by persona_offset, facilitated teacher then photographer.",
+    "Both personas share Socratic teaching slot, Stay grounded instruction and warm default style; only names/summaries differ.",
+    "No actual route, prices, season or departure time supplied; conditional plan quality is distinct from verified real-world feasibility.",
+    "Only probe/schema compile checked this turn; production unchanged.",
+    "Exact message counters are fixture-specific checks, not general Markdown or semantic graders."
+  ],
+  "next_step": "Test stronger persona-slot contrasts and dimensional constraint feedback without assuming current generic reminder solves factual invention."
+}
