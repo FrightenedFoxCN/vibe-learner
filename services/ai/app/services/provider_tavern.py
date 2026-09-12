@@ -110,6 +110,8 @@ class RemoteTavernProvider(TavernModelCapability):
             recovery_reason = str(exc)
             if should_continue is not None and not should_continue():
                 raise RuntimeError("tavern_actor_generation_canceled") from exc
+            if recovery_reason == "tavern_actor_transport_payload_invalid":
+                raise
             logger.warning("model.tavern.recovery reason=%s", recovery_reason)
             record_model_recovery(
                 category="semantic_retry",
@@ -143,6 +145,11 @@ class RemoteTavernProvider(TavernModelCapability):
 def _parse_tavern_actor_reply(raw_payload: dict[str, Any]) -> TavernActorReply:
     try:
         content = _extract_choice_content(raw_payload)
+    except Exception as exc:
+        if isinstance(exc, ModelRequestError):
+            raise
+        raise RuntimeError("tavern_actor_transport_payload_invalid") from exc
+    try:
         parsed = _extract_json_payload(
             content,
             invalid_json_code="tavern_actor_invalid_payload",
@@ -162,4 +169,3 @@ def _should_fallback_tavern_schema_transport(exc: ModelRequestError) -> bool:
         or exc.upstream_code == "unsupported_params"
         or str(exc) == "openai_chat_request_unsupported_params"
     )
-

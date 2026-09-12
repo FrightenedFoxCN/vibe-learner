@@ -45,7 +45,8 @@ class TavernProviderTests(unittest.TestCase):
     def test_schema_fallback_and_semantic_repair_have_three_call_ceiling(self):
         request = Mock(side_effect=[
             ModelRequestError("unsupported", status_code="422"),
-            ({"choices": []}, 1), ({"choices": []}, 1),
+            ({"choices": [{"message": {"content": "{}"}}]}, 1),
+            ({"choices": [{"message": {"content": "{}"}}]}, 1),
         ])
         with self.assertRaisesRegex(RuntimeError, "tavern_actor_invalid_payload"):
             self.generate(request)
@@ -54,6 +55,12 @@ class TavernProviderTests(unittest.TestCase):
         self.assertEqual(final_payload["response_format"], {"type": "json_object"})
         self.assertEqual(final_payload["temperature"], 0.2)
         self.assertEqual(final_payload["max_tokens"], 900)
+
+    def test_malformed_provider_envelope_is_infrastructure_and_not_semantically_retried(self):
+        request = Mock(return_value=({"choices": []}, 1))
+        with self.assertRaisesRegex(RuntimeError, "tavern_actor_transport_payload_invalid"):
+            self.generate(request)
+        self.assertEqual(request.call_count, 1)
 
     def test_cancellation_fences_initial_call_fallback_and_semantic_repair(self):
         cases = [([], [False], 0),

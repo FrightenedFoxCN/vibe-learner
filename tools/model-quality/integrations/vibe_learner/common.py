@@ -33,6 +33,7 @@ def settings(context):
         openai_base_url='https://api.minimax.cn/v1', openai_chat_model=c.model,
         openai_plan_model=c.model, openai_setting_model=c.model, openai_timeout_seconds=c.timeout_seconds,
         openai_chat_temperature=c.temperature, openai_chat_max_tokens=c.max_output_tokens,
+        openai_setting_temperature=c.temperature, openai_setting_max_tokens=min(c.max_output_tokens, 4096),
         openai_setting_web_search_enabled=False, openai_chat_model_multimodal=False,
         openai_plan_model_multimodal=False)
 
@@ -47,7 +48,7 @@ class Bridge:
 
     def request(self, adapter, payload, *, request_kind, model):
         started = time.monotonic()
-        if request_kind not in ('chat', 'tavern', 'study_chat', 'tavern_actor'):
+        if request_kind not in ('chat', 'setting', 'tavern', 'study_chat', 'tavern_actor'):
             raise GateClosed('unexpected_domain_provider_kind')
         self.calls += 1
         try:

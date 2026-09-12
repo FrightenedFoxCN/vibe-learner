@@ -35,4 +35,43 @@ class SceneProviderTests(unittest.TestCase):
         chat = Mock(return_value=setting_wire_reply(proposal))
         with self.assertRaisesRegex(RuntimeError, "extra_forbidden"):
             self.provider(request_chat=chat).generate_scene_tree_from_text(text="room", layer_count=1)
-        self.assertEqual(chat.call_count, 1)
+        self.assertEqual(chat.call_count, 2)
+
+    def test_strict_scene_payload_failure_is_repaired_before_projection(self):
+        invalid = scene_proposal_payload()
+        invalid["scene_layers"][0]["reuse_hint"] = None
+        repaired = scene_proposal_payload()
+        chat = Mock(side_effect=[setting_wire_reply(invalid), setting_wire_reply(repaired)])
+
+        result = self.provider(request_chat=chat).generate_scene_tree_from_text(
+            text="room", layer_count=1
+        )
+
+        self.assertEqual(chat.call_count, 2)
+        self.assertTrue(result["scene_layers"][0]["reuse_hint"])
+        retry_messages = chat.call_args_list[1].args[0]["messages"]
+        self.assertIn("严格只输出一个 JSON 对象", retry_messages[-1]["content"])
+
+    def test_projection_value_error_is_repaired_for_chat_and_responses(self):
+        invalid = scene_proposal_payload()
+        invalid["scene_layers"][0]["reusable_node_ref"] = "unresolved-node"
+        repaired = scene_proposal_payload()
+
+        with self.subTest(transport="chat"):
+            chat = Mock(side_effect=[setting_wire_reply(invalid), setting_wire_reply(repaired)])
+            result = self.provider(request_chat=chat).generate_scene_tree_from_text(
+                text="room", layer_count=1
+            )
+            self.assertEqual(chat.call_count, 2)
+            self.assertTrue(result["scene_layers"][0]["id"])
+
+        with self.subTest(transport="responses"):
+            responses = Mock(side_effect=[
+                setting_wire_reply(invalid, responses=True),
+                setting_wire_reply(repaired, responses=True),
+            ])
+            result = self.provider(request_response=responses).generate_scene_tree_from_keywords(
+                keywords="room", layer_count=1
+            )
+            self.assertEqual(responses.call_count, 2)
+            self.assertTrue(result["used_web_search"])

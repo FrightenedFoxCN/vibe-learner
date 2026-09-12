@@ -310,6 +310,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 parsed = self._request_setting_json_response(
                     payload,
                     retry_instruction="上一次输出没有形成完整 JSON。请保持结果简洁、中性、严格，只输出一个符合场景树 schema 的 JSON 对象。",
+                    validate_payload=_validate_scene_tree_payload,
                 )
                 used_web_search = True
             except RuntimeError as exc:
@@ -416,6 +417,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         return self._request_setting_json_chat(
             payload,
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 schema_name、schema_version、scene_name、scene_summary、selected_path、scene_layers 字段完整。",
+            validate_payload=_validate_scene_tree_payload,
         )
 
 
@@ -453,7 +455,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 "setting_model_invalid_payload",
                 "setting_model_content_filter",
                 "setting_model_empty_response",
-            }:
+            } and not recovery_reason.startswith("setting_scene_proposal_invalid:"):
                 raise
             logger.warning(
                 "model.setting.json_retry model=%s reason=%s",
@@ -535,7 +537,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
                 "setting_model_invalid_json",
                 "setting_model_invalid_payload",
                 "setting_model_empty_response",
-            }:
+            } and not recovery_reason.startswith("setting_scene_proposal_invalid:"):
                 raise
             retry_payload = dict(payload)
             retry_payload["temperature"] = min(float(payload.get("temperature") or self.setting_temperature), 0.2)
@@ -607,6 +609,7 @@ class RemoteSettingsProvider(PersonaModelCapability, SceneModelCapability):
         parsed = self._request_setting_json_chat(
             payload,
             retry_instruction="上一次输出没有形成合法 JSON。请严格只输出一个 JSON 对象，并确保 schema_name、schema_version、scene_name、scene_summary、selected_path、scene_layers 字段完整。",
+            validate_payload=_validate_scene_tree_payload,
         )
         return _normalize_generated_scene_result(
             parsed,
@@ -788,6 +791,17 @@ def _decode_persona_card_batch(parsed: dict[str, object]) -> dict[str, Any]:
 
 def _validate_persona_card_batch_payload(payload: dict[str, Any]) -> None:
     _decode_persona_card_batch(payload)
+
+
+def _validate_scene_tree_payload(payload: dict[str, Any]) -> None:
+    proposal = decode_scene_tree_proposal(payload)
+    try:
+        project_scene_tree_proposal(proposal)
+    except ValueError as exc:
+        reason = str(exc).strip().replace(" ", "_") or "projection_invalid"
+        raise RuntimeError(
+            f"setting_scene_proposal_invalid:$:{reason}"
+        ) from exc
 
 
 
