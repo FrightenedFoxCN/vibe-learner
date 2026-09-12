@@ -1,0 +1,102 @@
+{
+  "scope": "Maintainer review of two native tool availability trials; not independent certification",
+  "rows": [
+    {
+      "multimodal": false,
+      "committed": false,
+      "sdk_attempts": 4,
+      "responses_with_usage": 3,
+      "image_parts_per_attempt": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content"
+      ],
+      "tool_refusals": [
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_round_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_round_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        }
+      ],
+      "terminal_error": [
+        "harness_runtime_wall_time_budget_exceeded"
+      ]
+    },
+    {
+      "multimodal": true,
+      "committed": false,
+      "sdk_attempts": 7,
+      "responses_with_usage": 6,
+      "image_parts_per_attempt": [
+        0,
+        1,
+        1,
+        1,
+        4,
+        4,
+        4
+      ],
+      "offered_tools": [
+        "get_study_unit_detail",
+        "ask_planning_question",
+        "estimate_plan_completion",
+        "revise_study_units",
+        "read_page_range_content",
+        "read_page_range_images"
+      ],
+      "tool_refusals": [
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_round_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_round_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_operation_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        },
+        {
+          "tool_name": "read_page_range_content",
+          "error": "tool_operation_budget_exceeded",
+          "detail_code": null,
+          "provider_detail_sent": false
+        }
+      ],
+      "terminal_error": [
+        "harness_runtime_wall_time_budget_exceeded"
+      ]
+    }
+  ],
+  "findings": [
+    "Both runs failed wall-time budget; no final plan to grade for facts, time allocation or persona.",
+    "Image group actually offers six tools and requests image reading twice. Subsequent requests contain1 then4 image parts. Sum15 is repeated payload exposure including a failed attempt, not15 distinct pages or15 proven upstream images.",
+    "Text group offers five tools with0 image parts. Effective runtime flags match the requested flags after the probe correction.",
+    "Provider-response counts exclude attempts without usage; time-budget failures remain failures, not successful candidates.",
+    "Different tool catalogs, no repeated cells, no controlled cold/warm cache, and no completed outputs prevent causal quality or latency claims.",
+    "Added reusable ABBA native-modality probe records safe page read metadata; compiled but not yet run live as a four-cell module. Original two-cell script did not capture actual image page numbers.",
+    "Short three-page French diagnostic launched separately with a60-minute objective. It is not an equivalent control for the long-book two-week objective."
+  ]
+}
