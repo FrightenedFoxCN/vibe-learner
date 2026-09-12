@@ -30,31 +30,51 @@ def invalid_geometry(unit, kind):
     return LearningPlanProposalV1.model_validate(proposal).model_dump_json()
 
 
-def compare(source, pdf, output):
+def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
+    if duration_transfer and not timing_pairs:
+        raise ValueError("Duration transfer requires timing pairs")
     output.mkdir(parents=True, exist_ok=False)
     objective = json.loads((source/'report.jsonl').read_text().splitlines()[0])['objective']
     original = RemotePlanningProvider._run_plan_model
     rows = []
-    for kind in ('chapter_order', 'slice_order'):
+    cells = ([('slice_order', False), ('slice_order', True), ('slice_order', True), ('slice_order', False)]
+             if timing_pairs else [('chapter_order', False), ('slice_order', False)])
+    baseline_proposal = None
+    for index, (kind, candidate) in enumerate(cells):
+        minutes = (15 if index < 2 else 45) if duration_transfer else 30
         invocations = []
+        injected_state = {}
         def injected(provider, **kwargs):
+            nonlocal baseline_proposal
             invocations.append({'tools_enabled': kwargs['tool_runtime'].has_tools(),
                                 'repair_request': '上一次最终计划未通过' in str(kwargs['messages'][-1].get('content'))})
             if len(invocations) == 1:
                 units = kwargs['tool_runtime'].current_study_units()
                 assert len(units) == 1 and units[0].page_start == 1 and units[0].page_end == 2
-                return SimpleNamespace(content=invalid_geometry(units[0], kind), tool_messages=[],
+                content = invalid_geometry(units[0], kind)
+                if baseline_proposal is None:
+                    baseline_proposal = content
+                injected_state['same_initial_proposal'] = content == baseline_proposal
+                return SimpleNamespace(content=content, tool_messages=[],
                     trace=PlanGenerationTraceRecord(document_id=kwargs['document_id'], model='synthetic-invalid-proposal',
                         created_at=datetime.now(timezone.utc).isoformat()))
+            if candidate:
+                message = kwargs['messages'][-1]
+                old = '状态或时间'
+                replacement = '应用管理的状态或创建/更新时间戳；活动时长不属于时间戳，应按学习目标要求明确填写'
+                assert old in message['content']
+                kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1],
+                    {**message, 'content': message['content'].replace(old, replacement)}]}
             return original(provider, **kwargs)
-        cell = output/kind
+        cell = output/f"{index}-{kind}"
         with patch.object(RemotePlanningProvider, '_run_plan_model', injected):
-            run(cell, 1, selected_case='document', pdf_path=pdf, objective_override=objective,
+            run(cell, 1, selected_case='document', pdf_path=pdf, objective_override=objective.replace("30分钟", f"{minutes}分钟"),
                 multimodal=True, persona_variant='rigorous', persona_domain='text',
                 page_evidence='text_image', page_evidence_page=2, page_evidence_dpi=144,
                 controlled_page_evidence=True, prepared_source_root=source)
         row = json.loads((cell/'report.jsonl').read_text())
         row['fault_injection'] = {'kind':kind, 'synthetic_initial_proposal':True,
+                                 'timing_clarification_candidate':candidate, 'learning_budget_minutes':minutes, **injected_state,
                                  'runner_invocations':invocations, 'real_provider_calls':len(row['calls'])}
         row['trace_limitation'] = ('Fault-injected schema-valid initial proposal, not natural M3 generation. '
             'Only repair calls are real; production domain admission/validation/commit/readback remain exercised. '
@@ -67,5 +87,7 @@ def compare(source, pdf, output):
 if __name__ == '__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--source',type=Path,required=True);p.add_argument('--pdf',type=Path,required=True)
-    p.add_argument('--output',type=Path,required=True);a=p.parse_args()
-    compare(a.source.resolve(),a.pdf.resolve(),a.output.resolve())
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--timing-pairs',action='store_true')
+    p.add_argument('--duration-transfer',action='store_true');a=p.parse_args()
+    compare(a.source.resolve(),a.pdf.resolve(),a.output.resolve(),a.timing_pairs,a.duration_transfer)

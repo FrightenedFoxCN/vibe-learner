@@ -1,0 +1,47 @@
+{
+  "scope": "Maintainer fixed faulty-proposal recovery timing comparison",
+  "candidate_replacement": "应用管理的状态或创建/更新时间戳；活动时长不属于时间戳，应按学习目标要求明确填写",
+  "limitations": [
+    "Two samples per condition; one generic fault-injected initial proposal, not natural initial model generation.",
+    "Candidate both clarifies timestamp scope and reiterates activity duration requirement; no separate attribution.",
+    "Only timing, schema and geometry reviewed here; not full source/persona quality certification."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "candidate": false,
+      "same_initial_proposal": true,
+      "boundary_success": true,
+      "real_provider_calls": 1,
+      "minutes_allocated": 30,
+      "timing_evidence": "3+8+7+7+5"
+    },
+    {
+      "cell": 1,
+      "candidate": true,
+      "same_initial_proposal": true,
+      "boundary_success": true,
+      "real_provider_calls": 1,
+      "minutes_allocated": 30,
+      "timing_evidence": "2+5+4+5+8+6"
+    },
+    {
+      "cell": 2,
+      "candidate": true,
+      "same_initial_proposal": true,
+      "boundary_success": true,
+      "real_provider_calls": 1,
+      "minutes_allocated": 30,
+      "timing_evidence": "5+10+10+5"
+    },
+    {
+      "cell": 3,
+      "candidate": false,
+      "same_initial_proposal": true,
+      "boundary_success": true,
+      "real_provider_calls": 1,
+      "minutes_allocated": null,
+      "timing_evidence": "Only says three phases totaling 30; individual durations absent"
+    }
+  ]
+}
