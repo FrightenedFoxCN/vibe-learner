@@ -58,7 +58,9 @@ QUESTION = ('current_meeting_at写林舟与阿岚当前约定的见面时间；r
             'second_person_meeting_at写阿岚与小夏的见面时间。格式统一YYYY-MM-DD HH:MM，缺失写未知，不猜测。')
 
 
-def run(output):
+def run(output, max_tokens=2048):
+    if not 2048 <= max_tokens <= 8192:
+        raise ValueError('max_tokens must be 2048..8192')
     sdk = ProviderSDK.load()
     key = os.environ['K3_API_KEY']
     endpoint = 'https://api.minimax.cn/v1'
@@ -75,14 +77,14 @@ def run(output):
         def call(messages, contract, variant, repetition, stage):
             instruction = '只输出符合以下schema的JSON对象，不要Markdown围栏：' + json.dumps(contract.model_json_schema(), ensure_ascii=False)
             row = {'scope': 'synthetic_temporal_compression', 'git_revision': revision,
-                   'variant': variant, 'repetition': repetition, 'stage': stage,
+                   'variant': variant, 'repetition': repetition, 'stage': stage, 'max_tokens': max_tokens,
                    'limitation': 'One synthetic fixture, direct provider calls; not independent certification or production compression.'}
             start = time.perf_counter()
             decoded = None
             try:
                 raw, _ = adapter.request_chat_completion({'model': 'MiniMax-M3',
                     'messages': [{'role': 'system', 'content': instruction}] + messages,
-                    'temperature': 0.2, 'max_tokens': 2048, 'response_format': {'type': 'json_object'}},
+                    'temperature': 0.2, 'max_tokens': max_tokens, 'response_format': {'type': 'json_object'}},
                     request_kind='chat', model='MiniMax-M3')
                 row['usage'] = raw.get('usage')
                 row['finish_reason'] = raw['choices'][0].get('finish_reason')
@@ -116,4 +118,6 @@ def run(output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
-    run(parser.parse_args().output.resolve())
+    parser.add_argument('--max-tokens', type=int, default=2048)
+    args = parser.parse_args()
+    run(args.output.resolve(), args.max_tokens)
