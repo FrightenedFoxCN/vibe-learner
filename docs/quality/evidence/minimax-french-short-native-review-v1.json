@@ -1,0 +1,22 @@
+{
+  "scope": "Single short French native-image diagnostic, separate from paired trials",
+  "committed": true,
+  "sdk_calls": 5,
+  "image_parts_per_call": [
+    0,
+    3,
+    3,
+    3,
+    3
+  ],
+  "findings": [
+    "Correctly retains local stalk condition and says not all geometric spaces are affine.",
+    "today_tasks reverses sheaf morphism: generated f_*(O_X)→O_Y, while printed Definition1.4 gives O_Y→f_*(O_X).",
+    "Focus states two30-minute blocks but interposes a5-minute self-check and adds a5-minute closing review without clearly saying they are included. Ambiguous allocation, not proven70-minute total.",
+    "Concrete example comparison and boundary activities reflect persona method; method-name repetition alone is not the basis.",
+    "Generated Hom in Esg opposite from Spec A to X is equivalent to the printed X→Spec A theorem; do not falsely flag it as direction reversal.",
+    "Handwritten Spec adjoint note is present on source page3; not a hallucinated annotation.",
+    "No image causal benefit demonstrated by a single all-image run. Three-page60-minute diagnostic differs from whole-book two-week goal."
+  ],
+  "next": "ABBA same-source native modality trials running; use source rubric before reading their outputs."
+}

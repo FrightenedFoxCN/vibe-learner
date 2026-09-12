@@ -1,0 +1,32 @@
+{
+  "scope": "Maintainer source-based rubric for French three-page native modality trials, authored before inspecting paired outputs",
+  "source": {
+    "physical_pages_in_original_pdf": [
+      31,
+      32,
+      33
+    ],
+    "local_pdf_pages": [
+      1,
+      2,
+      3
+    ],
+    "book": "Demazure–Gabriel, Groupes algébriques Tome I"
+  },
+  "criteria": {
+    "definition": "Topological space plus sheaf of rings with local stalks at every point; not every such space is affine.",
+    "morphism": "Continuous X→Y, sheaf homomorphism O_Y→f_*O_X, inducing local stalk maps O_Y,f(x)→O_X,x. Reject reversed sheaf arrows.",
+    "examples": "Example1.2 uses continuous complex-valued functions; Example1.3 is restriction by inverse image sheaf, with open subspace as special case.",
+    "spectrum": "Printed theorem gives ring map A→O(X) corresponding uniquely to X→Spec A. Hom in Esg opposite from Spec A to X is equivalent, not a reversal error.",
+    "annotations": "Handwritten Spec left adjoint and Hom formula are marginal annotations, distinguish them from printed theorem.",
+    "time": "Total60 minutes, intermediate and closing checks clearly included rather than accidentally added. Separate today_tasks/focus inconsistency from clearly exceeded total.",
+    "persona": "Activities concretely compare examples, invite alternative explanations and check validity boundaries. Name or method slogan alone is insufficient.",
+    "format": "Strict proposal decode and domain commit separate from user-facing mathematical notation and content accuracy.",
+    "evidence": "Record actual successful text/image page reads, refusals, payload image exposure and cache tokens; offered tool is not proof of use."
+  },
+  "limitations": [
+    "No independent reviewer certification.",
+    "Availability groups have different catalogs; no image acquisition is forced.",
+    "One source and two repetitions per condition cannot establish general benefits."
+  ]
+}
