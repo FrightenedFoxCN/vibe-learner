@@ -1,0 +1,27 @@
+{
+  "scope": "Direct parser and heuristic study-unit diagnostic using a captured OCR result; no Harness admission/commit",
+  "rows": [
+    {
+      "variant": "historical_onnxtr",
+      "characters": 2024,
+      "chunks": 2,
+      "sections": 1,
+      "chinese_chunk_characters": 0,
+      "period_term_retained": false,
+      "footnote_term_retained": false,
+      "ocr_language": null
+    },
+    {
+      "variant": "native_vision_fixture",
+      "characters": 1796,
+      "chunks": 2,
+      "sections": 1,
+      "chinese_chunk_characters": 642,
+      "period_term_retained": true,
+      "footnote_term_retained": true,
+      "ocr_language": null
+    }
+  ],
+  "candidate_unit_count": 1,
+  "candidate_unit_includes_period": false
+}

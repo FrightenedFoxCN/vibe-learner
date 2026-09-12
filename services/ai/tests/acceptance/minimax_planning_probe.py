@@ -69,7 +69,10 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         page_evidence_page=8, persona_domain="math", controlled_page_evidence=False,
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
         tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None,
-        finalize_after_tool_rounds=None, finalization_tool_policy='omit'):
+        finalize_after_tool_rounds=None, finalization_tool_policy='omit',
+        transcription_source='experimental_model_transcription'):
+    if transcription_source not in {'experimental_model_transcription', 'experimental_native_vision_ocr'}:
+        raise ValueError('Unknown supplementary transcription source')
     if finalization_tool_policy not in {'omit', 'none'}:
         raise ValueError('Unknown finalization tool policy')
     if finalization_tool_policy != 'omit' and finalize_after_tool_rounds is None:
@@ -375,9 +378,9 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row["persona_domain"] = persona_domain
                     row["persona_method_only"] = persona_method
                     if transcription is not None:
-                        row["transcription_evidence"] = {"source": "experimental_model_transcription",
+                        row["transcription_evidence"] = {"source": transcription_source,
                             "local_file_name": transcription_file.name, "characters": len(transcription),
-                            "limitation": "Model-produced text injected beside native page image; not production OCR or protected artifact replay adoption."}
+                            "limitation": "Supplementary text injected beside native page image; not production OCR or protected artifact replay adoption."}
                     if controlled_page_evidence:
                         row["evidence_control"] = "page-image-tool-omitted-in-both-groups-v1"
                     row["persona_test_input"] = {k: persona_payload[k] for k in ("name", "summary", "relationship", "learner_address", "slots", "system_prompt", "default_speech_style")}

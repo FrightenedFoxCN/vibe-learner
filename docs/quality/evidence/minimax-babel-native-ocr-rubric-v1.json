@@ -1,0 +1,18 @@
+{
+  "scope": "Predefined source-based criteria for page image versus same image plus native OCR",
+  "source": "Babel After original physical21, local PDF1, printed20–21 spread",
+  "criteria": [
+    "Central commentary term 时期性, not 期待性 or invented replacement.",
+    "Chinese translation runs left-bottom to right-top, not two alternative translations.",
+    "Footnote1 explains particle/微粒; footnote2 explains dreadfully.",
+    "1930 is period evoked; 1992 concerns reader imagination, not edition date.",
+    "Concrete activities follow persona method, with complete consistent30-minute allocation.",
+    "Do not assign time to copying OCR noise or invent off-page works/chapters.",
+    "Recognize supplementary OCR has errors; image remains same for both groups."
+  ],
+  "limits": [
+    "Prepared unit summary focuses on dialogue and omits much commentary. Kept identical across groups.",
+    "Supplementary injection tests information utility, not production OCR pipeline replacement.",
+    "No new model-produced transcription or added reference answer."
+  ]
+}

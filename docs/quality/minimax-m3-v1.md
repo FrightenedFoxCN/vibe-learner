@@ -1067,3 +1067,15 @@ none输入token为213，auto为446；这说明改变tool_choice后服务端输�
 仍有“恶毒”识成“忍毒”、Elyot误成Elyor、passé丢重音、脚注1编号丢失/译注拆行及页脚噪声。支持语言与配置不是自动语言检测结论；单页两次识别不是通用准确率。原文、图片和坐标结果留在临时目录，仅提交诊断脚本与安全指标。
 
 此项未接入生产OCR、Document Harness或M3 Planning，不能声称中文OCR问题关闭。后续需验证新文字能否改善计划，同时解决macOS打包和系统框架权限；其他平台仍需独立方案。脚本实际运行与diff检查通过。
+
+## 轮次 103：补充中文OCR改善评论取证，仍未完整通过
+
+按[预设标准](evidence/minimax-babel-native-ocr-rubric-v1.json)运行[页图—页图加OCR—页图加OCR—页图四组](evidence/minimax-babel-native-ocr-pairs-v1.jsonl)：同一快照、探索方法槽、144DPI页图和五工具目录，候选只额外注入1797字符的本机Vision文字。20次SDK调用全部带一张图，4/4提交；调用5/4/5/6次，每组均有一次重叠Study Unit修订拒绝。没有替换生产OCR或重新解析来源。
+
+[审查](evidence/minimax-babel-native-ocr-review-v1.json)两份候选都使用正确“时期性”，且提出具体词语分析，第二份正确对应particle/微粒与dreadfully两个脚注；不过第二份未分配阶段分钟、将六类写成五类、无依据称右侧评论为译者评论，并泄漏内部ID。首候选8+7+10+5满足30分钟，但仍把正文评论叫页脚评论，并出现focus/review等实现解释。任务中3分钟列证据可以属于5分钟复盘，未误报为确定冲突。
+
+首页图组未分配阶段分钟，时代分析较泛；末页图组5+8+6+8+3满足30分钟且也能读出“时期性”，却虚构双译本及“干净雪白”这一译法。故不把关键词出现当成稳定图片/文字因果收益，也不把三十分钟算术正确当完整质量通过。本批未另捕获规范化初始请求相等性，只保证相同来源与构造配置。
+
+另做[直接解析诊断](evidence/minimax-babel-native-parse-diagnostic-v1.json)：用已实际识别的Vision文字作为单页OCR结果fixture，直接调用DocumentParser与StudyArrangementService，未做领域准入/提交。历史ONNXTR正文块中文为0，新块保留642个中文字符及“时期性”“微粒”，但默认Study Unit摘要仍是通用页范围描述。新文字能进入正文块，不代表编排自动理解评论结构。
+
+探针区分本机OCR与模型转写来源，编译/diff通过；原文与页图仍只在临时目录。进一步排查发现初始segmentation_hints和runner仍将单个Study Unit无条件视为过粗，与轮次90修复过的估分器不是同一路径；下一步针对这个错误分类做一致性修复，保留真实稀疏细节信号。

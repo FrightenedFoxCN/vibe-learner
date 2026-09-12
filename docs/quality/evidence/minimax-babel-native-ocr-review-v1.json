@@ -1,0 +1,56 @@
+{
+  "scope": "Maintainer review of image versus same image plus native OCR, exploratory ABBA",
+  "cells": [
+    {
+      "candidate": false,
+      "calls": 5,
+      "committed": true,
+      "time": "No phase minute allocation.",
+      "commentary": "Mentions era evidence generically; does not use 时期性.",
+      "persona": "Method stated; few concrete explanatory comparisons."
+    },
+    {
+      "candidate": true,
+      "calls": 4,
+      "committed": true,
+      "time": "8+7+10+5=30. Task3-minute evidence list can be part of5-minute review, not necessarily inconsistent.",
+      "benefit": "Uses 时期性 and concrete commentary signals.",
+      "errors": [
+        "Calls right-body commentary footer commentary.",
+        "Leaks focus, review and page-anchor implementation explanation."
+      ]
+    },
+    {
+      "candidate": true,
+      "calls": 5,
+      "committed": true,
+      "time": "No phase minute allocation.",
+      "benefit": "Uses 时期性; maps footnote1 to particle and2 to dreadfully correctly.",
+      "errors": [
+        "Calls commentary translator commentary without evidence.",
+        "Labels six listed categories as five.",
+        "Locates phrase translations in left-bottom area though relevant continuation is right-top.",
+        "Leaks unit_id and today_tasks."
+      ]
+    },
+    {
+      "candidate": false,
+      "calls": 6,
+      "committed": true,
+      "time": "5+8+6+8+3=30.",
+      "errors": [
+        "Invents two Chinese translation versions; source is one continuous translation.",
+        "Invents 干净雪白 as a source translation paired with 丹朱."
+      ],
+      "commentary": "Also uses 时期性 without supplementary OCR."
+    }
+  ],
+  "decision": "Native OCR improves access to Chinese commentary in this sample, but no full quality pass or production adoption.",
+  "limits": [
+    "Common snapshot contains dialogue-focused model revision; it is not pristine OCR state.",
+    "One source and two repetitions each, one persona method.",
+    "All20 SDK calls carry one image; supplement1797characters is local Vision output, not new M3 transcription.",
+    "No fixed serialized-context equality capture; same construction/source configuration only.",
+    "Separate parser diagnostic uses captured OCR fixture, no Harness admission/commit. Native chunks retain642Chinese characters but heuristic unit summary remains generic."
+  ]
+}
