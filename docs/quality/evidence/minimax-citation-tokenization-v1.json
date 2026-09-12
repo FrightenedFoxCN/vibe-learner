@@ -1,0 +1,132 @@
+{
+  "scope": "Synthetic lexical diagnostic only; no provider or domain commit",
+  "limitation": "Curated counterexamples, not representative precision/recall estimates.",
+  "rows": [
+    {
+      "case": "zh_relevant",
+      "variant": "current",
+      "query": "请解释一元一次方程。",
+      "source": "一元一次方程含有一个未知数，未知数的次数为一。",
+      "relevant": true,
+      "cited": false,
+      "matches_reviewed_relevance": false
+    },
+    {
+      "case": "zh_relevant",
+      "variant": "memory_tokenizer",
+      "query": "请解释一元一次方程。",
+      "source": "一元一次方程含有一个未知数，未知数的次数为一。",
+      "relevant": true,
+      "cited": true,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "zh_shared_polite_phrase",
+      "variant": "current",
+      "query": "请说明这个约定的取消时间。",
+      "source": "这个等式的两边同时减去三，结果不变。",
+      "relevant": false,
+      "cited": false,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "zh_shared_polite_phrase",
+      "variant": "memory_tokenizer",
+      "query": "请说明这个约定的取消时间。",
+      "source": "这个等式的两边同时减去三，结果不变。",
+      "relevant": false,
+      "cited": true,
+      "matches_reviewed_relevance": false
+    },
+    {
+      "case": "en_relevant",
+      "variant": "current",
+      "query": "Explain subtracting.",
+      "source": "Balance both sides when subtracting.",
+      "relevant": true,
+      "cited": true,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "en_relevant",
+      "variant": "memory_tokenizer",
+      "query": "Explain subtracting.",
+      "source": "Balance both sides when subtracting.",
+      "relevant": true,
+      "cited": true,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "en_shared_function_words",
+      "variant": "current",
+      "query": "What is the cancellation date?",
+      "source": "A linear equation is written with one variable.",
+      "relevant": false,
+      "cited": true,
+      "matches_reviewed_relevance": false
+    },
+    {
+      "case": "en_shared_function_words",
+      "variant": "memory_tokenizer",
+      "query": "What is the cancellation date?",
+      "source": "A linear equation is written with one variable.",
+      "relevant": false,
+      "cited": true,
+      "matches_reviewed_relevance": false
+    },
+    {
+      "case": "fr_relevant",
+      "variant": "current",
+      "query": "Expliquez la dérivée.",
+      "source": "La dérivée mesure le taux de variation.",
+      "relevant": true,
+      "cited": true,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "fr_relevant",
+      "variant": "memory_tokenizer",
+      "query": "Expliquez la dérivée.",
+      "source": "La dérivée mesure le taux de variation.",
+      "relevant": true,
+      "cited": true,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "fr_unrelated_substring",
+      "variant": "current",
+      "query": "Quand Camille a annulé le rendez-vous ?",
+      "source": "Une variable peut prendre plusieurs valeurs.",
+      "relevant": false,
+      "cited": true,
+      "matches_reviewed_relevance": false
+    },
+    {
+      "case": "fr_unrelated_substring",
+      "variant": "memory_tokenizer",
+      "query": "Quand Camille a annulé le rendez-vous ?",
+      "source": "Une variable peut prendre plusieurs valeurs.",
+      "relevant": false,
+      "cited": true,
+      "matches_reviewed_relevance": false
+    },
+    {
+      "case": "unrelated_memory",
+      "variant": "current",
+      "query": "请核对林舟与阿岚的取消发生时间和记录时间。",
+      "source": "A linear equation has one variable.",
+      "relevant": false,
+      "cited": false,
+      "matches_reviewed_relevance": true
+    },
+    {
+      "case": "unrelated_memory",
+      "variant": "memory_tokenizer",
+      "query": "请核对林舟与阿岚的取消发生时间和记录时间。",
+      "source": "A linear equation has one variable.",
+      "relevant": false,
+      "cited": false,
+      "matches_reviewed_relevance": true
+    }
+  ]
+}
