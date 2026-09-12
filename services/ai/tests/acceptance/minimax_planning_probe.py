@@ -68,7 +68,12 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
         initial_evidence_tool=None, page_evidence=None, grounding_candidate=False,
         page_evidence_page=8, persona_domain="math", controlled_page_evidence=False,
         prepared_source_root=None, transcription_file=None, redact_tool_error_evidence=False,
-        tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None):
+        tool_recovery_hint_candidate=False, page_evidence_dpi=100, persona_method=None, prepared_document_id=None,
+        finalize_after_tool_rounds=None):
+    if finalize_after_tool_rounds is not None and (
+        type(finalize_after_tool_rounds) is not int or not 1 <= finalize_after_tool_rounds <= 12
+    ):
+        raise ValueError('Finalization experiment requires 1–12 tool rounds')
     if prepared_document_id and not prepared_source_root:
         raise ValueError('Explicit prepared document requires source root')
     if not 72 <= page_evidence_dpi <= 240:
@@ -194,7 +199,21 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                 "content": message["content"] + PLANNING_BUDGET_CANDIDATE}
                 if message.get("role") == "system" else message
                 for message in payload.get("messages", [])]}
+        completed_tool_rounds = sum(bool(call.get('requested_tools')) for call in calls)
+        finalization_applied = bool(finalize_after_tool_rounds is not None
+            and completed_tool_rounds >= finalize_after_tool_rounds and payload.get('tools'))
+        if finalization_applied:
+            payload = {key: value for key, value in payload.items()
+                       if key not in {'tools', 'tool_choice', 'parallel_tool_calls'}}
+            payload = {**payload, 'response_format': {'type': 'json_object'},
+                'messages': [*payload.get('messages', []), {'role': 'user', 'content':
+                    '本轮请依据已取得的资料输出最终计划JSON。未核验的资料须明确标记需回查，'
+                    '不要为完成计划补造事实；继续满足原任务的来源、时间与教学方法要求。'}]}
         call = {"kind": request_kind, "model": model, "max_tokens": payload.get("max_tokens")}
+        if finalize_after_tool_rounds is not None:
+            call['finalization_experiment'] = {'after_tool_rounds': finalize_after_tool_rounds,
+                'completed_tool_rounds': completed_tool_rounds, 'applied': finalization_applied,
+                'response_format': payload.get('response_format')}
         call["tool_choice"] = payload.get("tool_choice")
         call["offered_tools"] = [tool.get("function", {}).get("name") for tool in payload.get("tools", [])]
         call["image_parts_sent"] = sum(part.get("type") == "image_url"
@@ -342,6 +361,8 @@ def run(root, repetitions, budget_candidate=False, selected_case=None, detail_pa
                     row["admitted_study_unit_count"] = admitted_unit_count
                     row["multimodal_enabled"] = effective_multimodal
                     row["requested_multimodal_enabled"] = multimodal
+                    if finalize_after_tool_rounds is not None:
+                        row['finalize_after_tool_rounds'] = finalize_after_tool_rounds
                     row["persona_variant"] = persona_variant
                     row["persona_domain"] = persona_domain
                     row["persona_method_only"] = persona_method

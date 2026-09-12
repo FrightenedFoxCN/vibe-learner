@@ -1,0 +1,110 @@
+{
+  "scope": "Maintainer review of SDK-only finalization after3 tool-response rounds",
+  "cells": {
+    "cell0": {
+      "committed": true,
+      "calls": 9,
+      "images": false,
+      "time": "No complete phase minute allocation; isolated5minute review and30second summary only.",
+      "source_error": "Reverses quotient stalk map as O_y→O_z; source map is O_z→O_y.",
+      "refusals": 2
+    },
+    "cell1": {
+      "committed": true,
+      "calls": 4,
+      "finalization_applied_call": 4,
+      "images": false,
+      "time": "Says60minutes and five phases without allocating minutes to phases.",
+      "source_errors": [
+        "m_x = zero-function germs conflates zero germ with germs vanishing at a point.",
+        "f_x inverse image of V_s mixes stalk morphism with underlying topological map."
+      ],
+      "persona": "Comparison/explanation/boundaries present but Method slot terminology leaks.",
+      "refusals": 2,
+      "cache_at_final": 947
+    },
+    "cell2": {
+      "committed": false,
+      "calls": 5,
+      "failure": "harness_runtime_wall_time_budget_exceeded",
+      "finalization_call4": {
+        "offered_tools": [],
+        "returned_tools": [
+          "estimate_plan_completion",
+          "estimate_plan_completion"
+        ],
+        "both_rejected": "tool_argument_schema_invalid"
+      },
+      "note": "SDK omission is not runtime disabling; runtime still receives returned tool calls. Threshold counts response rounds with tool requests, including rejected calls."
+    },
+    "cell3": {
+      "committed": true,
+      "calls": 9,
+      "time": "Four phases called60minutes but no individual phase allocation; only isolated5minute review.",
+      "source": "X_s definition continues onp2, but chapter anchor coversp1 only; morphism1.4 starts onp2 but anchor expanded top1–2.",
+      "presentation": "Mentions focus field in user-facing text.",
+      "refusals": 5
+    }
+  },
+  "statistics": {
+    "sdk_attempts": 27,
+    "responses_with_usage": 26,
+    "calls_per_cell": [
+      9,
+      4,
+      5,
+      9
+    ],
+    "committed_per_cell": [
+      true,
+      true,
+      false,
+      true
+    ],
+    "image_parts_per_cell": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ]
+    ]
+  },
+  "decision": "Do not adopt. Fewer calls did not yield reliable finalization or quality.",
+  "limits": [
+    "No runtime tool disabling; omission at SDK layer only.",
+    "Changing tools and appending a reminder are combined interventions.",
+    "No controlled cold/warm cache test. Candidate1 final cached947 versus previous8623 does not isolate cause.",
+    "Tool-response rounds count requests, not successful evidence collection.",
+    "Same prepared source/persona, but model trajectories diverge. No independent certification."
+  ]
+}

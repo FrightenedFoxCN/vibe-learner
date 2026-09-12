@@ -1039,3 +1039,13 @@ default首例最终JSON合法，但保存前因schedule_chapters.4.anchor_page_s
 none输入token为213，auto为446；这说明改变tool_choice后服务端输入计数也变化，不能只因HTTP仍带相同tools就假设模型前缀或缓存完全保留。四次cached_tokens为128/128/212/445，小请求且没有冷暖控制，不据此比较总体性能。只记录字段、usage、严格结果布尔值，不保存思考正文。
 
 重新核对[官方OpenAI兼容文档](https://platform.minimaxi.com/docs/api-reference/text-openai-api)和[M3工具调用指南](https://platform.minimaxi.com/docs/guides/text-m3-function-call.md)：所读说明未明确列出tool_choice=none，因此这里的接受结论仅限本次实测；其完整assistant回传建议此前已在轮次41做Study探索，未重复宣称新发现。探针编译/diff通过。下一步需要在实际多轮Planning上下文里比较策略，不能把最小请求的行为直接推广。
+
+## 轮次 100：三轮后省略SDK工具目录未实现可靠成稿
+
+[四组同源调度实测](evidence/minimax-french-finalization-pairs-v1.jsonl)顺序基线—候选—候选—基线，调用9/4/5/9，总27次尝试、26次带usage响应；基线2/2提交，候选1/2提交。候选在收到三轮含tool_calls的响应后省略SDK目录、设json_object并追加成稿提醒；拒绝的工具请求也计入轮数，不代表已经完成三轮有效取证。领域修复、校验与时间预算不变。
+
+[复核](evidence/minimax-french-finalization-pairs-review-v1.json)首个候选第4次请求如期无工具目录并成稿，但仍只说60分钟五阶段、未分配各阶段分钟，且把“在一点取零的函数芽”写成“零函数芽”，混淆零芽与极大理想；另有把层芽映射用于开集逆像的符号错误。人格比较/边界方法出现，但Method槽术语泄漏到用户说明。基线也没有完整阶段时长，第一基线写反投影诱导映射，第二基线仍有页码范围过宽或遗漏续页问题。
+
+第二候选第4次请求已无tools，却仍返回两次estimate_plan_completion调用，随后两次参数校验拒绝，最终时间预算失败。这一实验只在SDK省略目录，运行时仍保留可执行工具定义；不能把它称为严格禁用或可靠的三轮上限。更少调用不等于任务完成，暂不采用生产策略。
+
+首候选成稿cached_tokens为947，前一请求为8623；目录和消息都变化，缺少冷暖控制，不能单独归因或宣称缓存优化。后续应将显式tool_choice控制与目录省略分开对照，并另验证运行时边界。新增探针完整四组已实测、编译/diff检查通过，不改生产策略或公共契约。
