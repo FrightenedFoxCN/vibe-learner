@@ -58,13 +58,18 @@ def compare(source, pdf, output, timing_pairs=False, duration_transfer=False):
                 return SimpleNamespace(content=content, tool_messages=[],
                     trace=PlanGenerationTraceRecord(document_id=kwargs['document_id'], model='synthetic-invalid-proposal',
                         created_at=datetime.now(timezone.utc).isoformat()))
-            if candidate:
+            if timing_pairs:
                 message = kwargs['messages'][-1]
                 old = '状态或时间'
                 replacement = '应用管理的状态或创建/更新时间戳；活动时长不属于时间戳，应按学习目标要求明确填写'
-                assert old in message['content']
-                kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1],
-                    {**message, 'content': message['content'].replace(old, replacement)}]}
+                content = message['content']
+                # Keep the historical control reproducible after production adopts clarification.
+                if replacement in content:
+                    content = content.replace(replacement, old)
+                assert old in content
+                if candidate:
+                    content = content.replace(old, replacement)
+                kwargs = {**kwargs, 'messages': [*kwargs['messages'][:-1], {**message, 'content': content}]}
             return original(provider, **kwargs)
         cell = output/f"{index}-{kind}"
         with patch.object(RemotePlanningProvider, '_run_plan_model', injected):

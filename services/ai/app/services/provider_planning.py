@@ -200,7 +200,7 @@ class RemotePlanningProvider(PlanningModelCapability):
                     "content": (
                         "上一次最终计划未通过 learning-plan-proposal-v1 严格校验，"
                         f"首个错误路径为 {first_error.path or '$'}，错误类型为 {first_error.reason}。请只重新输出完整 JSON；"
-                        "不得输出 plan/schedule/chapter ID、revision、状态或时间，不得遗漏或丢弃章节。"
+                        "不得输出 plan/schedule/chapter ID、revision、应用管理的状态或创建/更新时间戳；活动时长不属于时间戳，应按学习目标要求明确填写，不得遗漏或丢弃章节。"
                     ),
                 },
             ]

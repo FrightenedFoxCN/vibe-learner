@@ -1,0 +1,34 @@
+{
+  "scope": "Production recovery wording review after removing timestamp/duration ambiguity",
+  "production_change": "Only replace generic 状态或时间 with application-managed state/timestamps and explicit goal-based activity duration guidance.",
+  "checks": {
+    "targeted_tests": 19,
+    "targeted_passed": true,
+    "full_backend_tests": 835,
+    "full_backend_passed": true,
+    "full_backend_seconds": 66.305
+  },
+  "rows": [
+    {
+      "fault": "chapter_order",
+      "boundary_success": true,
+      "real_provider_calls": 1,
+      "duration_minutes": 30,
+      "timing_evidence": "8+10+12",
+      "semantic_note": "Sisters described ambiguously as narrator/source; not a full factual pass."
+    },
+    {
+      "fault": "slice_order",
+      "boundary_success": true,
+      "real_provider_calls": 1,
+      "duration_minutes": 30,
+      "timing_evidence": "5+10+10+5",
+      "semantic_note": "Visual and text evidence separated; this timing-focused review is not comprehensive factual certification."
+    }
+  ],
+  "limitations": [
+    "Natural initial generation is replaced with a synthetic faulty proposal; only repair is a live provider call.",
+    "Earlier 45-minute candidate failure remains valid; this change is not a universal timing guarantee.",
+    "No schema, app-owned field permissions, or repair budget change."
+  ]
+}

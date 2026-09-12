@@ -1,0 +1,59 @@
+{
+  "scope": "Maintainer 15/45-minute transfer of recovery clarification",
+  "limitations": [
+    "One sample per duration/condition; combined prior 30-minute batch remains small.",
+    "Fault-injected generic proposal; natural initial output may behave differently.",
+    "Timing improvement does not imply source facts or full plan quality pass."
+  ],
+  "rows": [
+    {
+      "cell": 0,
+      "candidate": false,
+      "requested_minutes": 15,
+      "boundary_success": true,
+      "same_initial_proposal": true,
+      "timing_pass": false,
+      "timing_evidence": "Generic tasks/focus; no explicit stage allocation",
+      "semantic_issues": [
+        "Does not fully develop the requested learning activity."
+      ]
+    },
+    {
+      "cell": 1,
+      "candidate": true,
+      "requested_minutes": 15,
+      "boundary_success": true,
+      "same_initial_proposal": true,
+      "timing_pass": true,
+      "timing_evidence": "3+4+3+3+2=15",
+      "semantic_issues": [
+        "Mislabels PDF p.1 as Front Matter and attributes p.2 glass quotations to it.",
+        "Treats OCR noise snippets as visible text."
+      ]
+    },
+    {
+      "cell": 2,
+      "candidate": true,
+      "requested_minutes": 45,
+      "boundary_success": true,
+      "same_initial_proposal": true,
+      "timing_pass": false,
+      "timing_evidence": "Generic tasks/focus; no explicit stage allocation",
+      "semantic_issues": [
+        "Does not fully develop the requested learning activity."
+      ]
+    },
+    {
+      "cell": 3,
+      "candidate": false,
+      "requested_minutes": 45,
+      "boundary_success": true,
+      "same_initial_proposal": true,
+      "timing_pass": false,
+      "timing_evidence": "Generic tasks/focus; no explicit stage allocation",
+      "semantic_issues": [
+        "Does not fully develop the requested learning activity."
+      ]
+    }
+  ]
+}
