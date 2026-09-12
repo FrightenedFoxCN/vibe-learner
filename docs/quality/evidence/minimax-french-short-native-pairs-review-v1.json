@@ -1,0 +1,84 @@
+{
+  "scope": "Maintainer review, two native-image and two text-only operations on same prepared French source",
+  "cells": {
+    "cell0": {
+      "committed": false,
+      "sdk_calls": 7,
+      "terminal": "harness_runtime_wall_time_budget_exceeded",
+      "read_pages": [
+        1
+      ],
+      "refused_reads": 2,
+      "note": "Final stop response arrived but operation failed time budget; no committed plan."
+    },
+    "cell1": {
+      "committed": true,
+      "sdk_calls": 6,
+      "text_read_pages": [
+        1,
+        3
+      ],
+      "image_pages": [
+        1,
+        2,
+        3
+      ],
+      "sheaf_arrow": "correct O_Y→f_*O_X",
+      "time": "Tasks8+5+5+7+8+4+8+5=50, overview60; focus/schedule do not allocate missing10.",
+      "source_error": "P open iff X_s conflates general open subspaces and special opens defined by sections; source does not state equivalence.",
+      "persona": "Comparison and applicable-boundary activities present; source mistakes persist."
+    },
+    "cell2": {
+      "committed": true,
+      "sdk_calls": 7,
+      "text_read_pages": [
+        1,
+        3
+      ],
+      "image_pages": [
+        1,
+        2,
+        3
+      ],
+      "time": "Tasks10+5+5+10+10+8+4+8=60; page1/page2/page3 task groups15/25/20 conflict with schedule titles15/20/25. Additional3/3/5 checks inclusion unclear.",
+      "source_error": "germe/valeur equivalence wording conflates a germ with its residue value; source gives value as image in residue field, not general equivalence.",
+      "presentation": "Leaks unit_llm IDs into all today tasks and schedule terminology into overview.",
+      "persona": "Concrete comparisons and boundaries present, but these do not cure timing or source problems."
+    },
+    "cell3": {
+      "committed": true,
+      "sdk_calls": 9,
+      "text_read_pages": [
+        1,
+        3
+      ],
+      "image_pages": [],
+      "time": "Focus15+25+20=60; final3-minute review inclusion not explicit. No conflicting task minute values.",
+      "source_errors": [
+        "Example1.2 is on page1, but task and schedule place it on page2.",
+        "today_tasks writes p#:O_Y→O_Z; source quotient projection induces O_Z(W)→O_Y(V), with pushforward needed for sheaf formulation."
+      ],
+      "persona": "Comparisons and boundary discussion present; does not establish accuracy."
+    }
+  },
+  "statistics": {
+    "sdk_attempts": 29,
+    "responses_with_usage": 29,
+    "text_commits": 1,
+    "image_commits": 2,
+    "full_quality_passes": 0,
+    "tool_refusals_per_cell": [
+      3,
+      1,
+      2,
+      3
+    ]
+  },
+  "limitations": [
+    "Small sample; catalogs differ, not fixed-image-content-only treatment.",
+    "Common prepared snapshot includes a model-revised Study Unit summary, not pristine parse-only state.",
+    "Successful page reads/image payloads establish exposure, not that the model used every relevant fact correctly.",
+    "No cold/warm cache control or stable latency claim.",
+    "Failed cell0 returned a final response but exceeded domain wall time; not counted as committed."
+  ]
+}
