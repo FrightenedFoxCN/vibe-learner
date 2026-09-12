@@ -1173,3 +1173,11 @@ none输入token为213，auto为446；这说明改变tool_choice后服务端输�
 法文日期组仍把cancellation_recorded_at写成6月3日10:15，正确是6月4日18:15；该摘要将取消决定独立写一行，下一行只说记录新约，取消与记录的关联不够明确。事件分离法文摘要明确“取消决定…consignée…”，本次正确区分两者。不能仅因本批格式全过就认证压缩质量；下一步需验证新的对象、关系和领域任务，而非继续只调这五份已知摘要。
 
 探针新增可选实例提醒，编译/diff通过，未修改生产提示或采用压缩器。尝试重查官方兼容接口页面的可见文本，未找到response_format/json_schema条目；这不是“不支持”的证据，未据此改变生产请求协议。
+
+## 轮次 115：Study领域时间关系正确，但出现身份、引用与重复污染
+
+新增中文与法文第三方约定场景，通过真实Study聊天提交两条记忆，再在新会话请求retrieve_memory_context与恰好三条Markdown列表。[中文两例](evidence/minimax-study-event-time-zh-v1.jsonl)均提交且读回一致，时间关系正确；首例实际调用检索，后续请求中的工具结果包含所有关键日期/时刻片段。次例未调用工具，且memory_trace包含首例答案，因此不能称为独立重复或工具指令通过。
+
+[法文首例](evidence/minimax-study-event-time-fr-v1.jsonl)提交并实际检索，时间关系正确，但三条列表前多了“已核对…”，违反禁止开场。第二次在记忆种子阶段[失败](evidence/minimax-study-event-time-fr-failed-seeds-v1.json)：两次provider调用后返回uncertain/study_chat_uncertain_chat_model_invalid_payload，没有执行最终检索题，不丢弃这一失败。
+
+同时审查种子回复发现，明示第三方的林舟仍被叫作用户，出现“你与阿岚的见面”；最终时间回答没有复述这个身份错误，也不能据此忽略记忆中的污染。三个最终回复均附无关的一元一次方程教材引用，初查由Pedagogy的应用侧引用选择产生：零匹配也选chunk，无材料也造第1页默认引用。下一步先将样本放入独立数据库复核，另外针对无证据引用建立确定性反例。新增探针编译/diff通过，不修改生产行为或认定总体通过。

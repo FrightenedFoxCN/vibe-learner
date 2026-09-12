@@ -1,0 +1,101 @@
+[
+  {
+    "message": "Note des accords de tiers, pas mes expériences : [consigné 2026-06-04 18:15] Camille rapporte la décision prise avec Léa le 2026-06-03 à 10:15 : annulation du rendez-vous du 2026-06-08 à 14:30 et remplacement par le 2026-06-10 à 16:00, porte nord. Confirme seulement, sans exercice.",
+    "receipt": {
+      "operation_id": "study-chat-op-0dc2e64da7d74999",
+      "session_id": "session-ad551c73bb",
+      "client_request_id": "memory-seed-1-0",
+      "status": "uncertain",
+      "safe_to_retry": false,
+      "created_at": "2026-09-12T03:38:57.375000+00:00",
+      "updated_at": "2026-09-12T03:39:12.907000+00:00",
+      "completed_at": "2026-09-12T03:39:12.907000+00:00",
+      "admitted_session_revision": 0,
+      "committed_session_revision": null,
+      "committed_turn_id": null,
+      "committed_turn_sequence": null,
+      "error_code": "study_chat_uncertain_chat_model_invalid_payload",
+      "result": null
+    },
+    "calls": [
+      {
+        "kind": "chat",
+        "model": "MiniMax-M3",
+        "max_tokens": 4096,
+        "offered_tools": [
+          "ask_multiple_choice_question",
+          "ask_fill_blank_question",
+          "retrieve_memory_context",
+          "read_page_range_content",
+          "read_system_time",
+          "read_session_memory",
+          "write_session_memory",
+          "read_affinity_state",
+          "update_affinity_state",
+          "schedule_session_follow_up",
+          "project_uploaded_pdf",
+          "project_uploaded_image",
+          "read_projected_pdf_content",
+          "focus_projected_pdf_page",
+          "highlight_projected_pdf_text",
+          "annotate_projected_pdf_region",
+          "clear_projected_pdf_overlays",
+          "annotate_projected_image_region",
+          "clear_projected_image_overlays"
+        ],
+        "image_parts_sent": 0,
+        "event_time_tool_evidence": [],
+        "usage": {
+          "completion_tokens": 1028,
+          "prompt_tokens": 6116,
+          "total_tokens": 7144,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 0
+          },
+          "total_characters": 0
+        },
+        "finish_reason": "stop",
+        "requested_tools": [],
+        "production_decode": "rejected",
+        "raw_json_object_valid": false,
+        "elapsed_ms": 11642
+      },
+      {
+        "kind": "chat",
+        "model": "MiniMax-M3",
+        "max_tokens": 4096,
+        "offered_tools": [],
+        "image_parts_sent": 0,
+        "event_time_tool_evidence": [],
+        "usage": {
+          "completion_tokens": 279,
+          "prompt_tokens": 4275,
+          "total_tokens": 4554,
+          "completion_tokens_details": {
+            "accepted_prediction_tokens": null,
+            "audio_tokens": null,
+            "reasoning_tokens": 0,
+            "rejected_prediction_tokens": null
+          },
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 2432
+          },
+          "total_characters": 0
+        },
+        "finish_reason": "stop",
+        "requested_tools": [],
+        "production_decode": "rejected",
+        "raw_json_object_valid": false,
+        "elapsed_ms": 3654
+      }
+    ]
+  }
+]

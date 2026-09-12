@@ -41,6 +41,8 @@ Subtracting the same number from both sides preserves equality.
 Multiplying both sides by the same nonzero number preserves equality.
 """
 CASES = {
+    "cross_session_memory_event_time": "请调用 retrieve_memory_context 核对林舟与阿岚的约定。恰好用三条Markdown无序列表：第一条说明旧约取消发生时间与记录该取消的消息时间，第二条说明归档时间以及它和取消是否同一事件，第三条说明新见面时间及阿岚与小夏的取消时间。缺失时间明确写未知；不出题，不编造见面经历，不加开场、结尾或嵌套列表。",
+    "cross_session_memory_event_time_fr": "请调用 retrieve_memory_context 核对法文记录中Camille与Léa的约定，用中文保留法文人名。恰好用三条Markdown无序列表：第一条说明旧约取消发生时间与记录该取消的消息时间，第二条说明归档时间以及它和取消是否同一事件，第三条说明新见面时间及Léa与Noé的取消时间。缺失时间明确写未知；不出题，不编造见面经历，不加开场、结尾或嵌套列表。",
     "cross_session_memory_effective": "请调用 retrieve_memory_context 核对约定：2026年10月2日应该去哪个复习地点？区分记录写入时间和约定生效时间，不因后写入的历史补记覆盖未来安排。只用一句话说明地点与日期依据，不出题。",
     "cross_session_memory_effective_fr": "请调用 retrieve_memory_context 核对法文约定：2026年10月2日应该去哪个复习地点？用中文回答并保留地点法文名称，区分记录写入时间和约定生效时间，不因后写入的历史补记覆盖未来安排。只用一句话说明地点与日期依据，不出题。",
     "cross_session_memory_temporal": "请调用 retrieve_memory_context 查找我之前的复习地点约定。仅根据记录时间判断最新地点，若没有足够时间依据就明确说不能确定，不要根据检索排名猜测。只用一句话回答，不出题。",
@@ -218,6 +220,21 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
         call["image_parts_sent"] = sum(part.get("type") == "image_url"
             for message in payload.get("messages", []) if isinstance(message.get("content"), list)
             for part in message["content"] if isinstance(part, dict))
+        if selected_case in {"cross_session_memory_event_time", "cross_session_memory_event_time_fr"}:
+            call["event_time_tool_evidence"] = []
+            for item in payload.get("messages", []):
+                if item.get("role") != "tool" or not isinstance(item.get("content"), str):
+                    continue
+                try:
+                    result = json.loads(item["content"])
+                except ValueError:
+                    continue
+                if not isinstance(result, dict) or result.get("tool_name") != "retrieve_memory_context":
+                    continue
+                text = json.dumps(result, ensure_ascii=False)
+                call["event_time_tool_evidence"].append({"ok": result.get("ok"),
+                    "date_fragments": {stamp: stamp in text for stamp in
+                        ("2026-06-03", "10:15", "2026-06-04", "18:15", "2026-06-06", "20:45", "2026-06-10", "16:00")}})
         calls.append(call)
         started = time.perf_counter()
         try:
@@ -361,6 +378,16 @@ def run(root, repetitions, selected_case=None, question_contract_candidate=False
                                 seed_message = (
                                     "Note cet accord de révision : à partir du 1er octobre 2026, le lieu est la salle Bouleau. Confirme seulement la réception, sans exercice.",
                                     "Note rétrospective : le 1er septembre 2026, le lieu de révision était la salle Pierre-Verte. Confirme seulement la réception, sans exercice.",
+                                )[seed_index]
+                            if case_id == "cross_session_memory_event_time":
+                                seed_message = (
+                                    "保存第三方复习约定，不是我的个人经历：[记录2026-06-04 18:15] 林舟说明：他与阿岚在2026-06-03 10:15已取消原定2026-06-08 14:30的见面，并改约为2026-06-10 16:00，仍在北门。现在才补记此事。只确认收到，不出题。",
+                                    "保存补记：[记录2026-06-06 20:45] 林舟归档旧约2026-06-08 14:30，不恢复它；旧约此前已取消，新约6月10日不变。阿岚与小夏的另一约定也已取消，但取消发生日期和时刻都未知；这是另一组人的约定。只确认收到，不出题。",
+                                )[seed_index]
+                            if case_id == "cross_session_memory_event_time_fr":
+                                seed_message = (
+                                    "Note des accords de tiers, pas mes expériences : [consigné 2026-06-04 18:15] Camille rapporte la décision prise avec Léa le 2026-06-03 à 10:15 : annulation du rendez-vous du 2026-06-08 à 14:30 et remplacement par le 2026-06-10 à 16:00, porte nord. Confirme seulement, sans exercice.",
+                                    "Note : [2026-06-06 20:45] Camille archive l'ancien rendez-vous du 2026-06-08 à 14:30 sans le rétablir ; déjà annulé, remplacé par celui du 10 juin. L'autre rendez-vous de Léa avec Noé est aussi annulé, mais la date et l'heure de cette annulation sont inconnues. Confirme seulement, sans exercice.",
                                 )[seed_index]
                             if case_id == "cross_session_memory_long" and seed_index == 1:
                                 seed_message = "这条消息先整理学习材料，最后更新复习约定。" + "材料包括等式性质、移项、系数、验算、常见错误和课后练习。" * 16 + seed_message
