@@ -1089,3 +1089,11 @@ none输入token为213，auto为446；这说明改变tool_choice后服务端输�
 [真实M3核验](evidence/minimax-scope-classification-live-v1.jsonl)5次调用后提交，无工具拒绝；五次SDK观测都显示单页is_coarse_grained=false，同时保留subsections_too_sparse/subsection_coverage_thin及细节建议。本次使用相同中文页图与实验OCR补充，不将一次无拒绝结果当成调用量改善证明。
 
 成稿仍混称评论与译注、暴露内部字段名；章节阶段27分钟加3分钟复盘为30，但任务另外写2分钟通读，未明确包含关系。此次采用范围仅为修复错误分类，不认定完整规划质量通过，也不取消稀疏短源的必要取证。
+
+## 轮次 105：初始时间措辞对照改善一例，另一例修复后仍未提交
+
+[四组实测](evidence/minimax-babel-initial-timing-v1.jsonl)采用基线—候选—候选—基线，共22次SDK调用，3/4提交。候选同时把禁止输出的“时间”明确为创建/更新时间戳，并要求活动时长及复盘包含关系；不是单词替换。每次请求记录替换是否实际应用，图片、OCR补充、来源快照和探索方法构造保持相同。
+
+[审查](evidence/minimax-babel-initial-timing-review-v1.json)：首基线把28–30分钟称为5分钟，存在明确冲突；末基线10+12+8为30，已包含复盘，但泄漏focus/today_tasks。成功候选5+5+5+5+7+3为30，自测明确包含末段；却把is there/anywhere也归为反意疑问，不能判定完整质量合格。另一候选四次调用（含一次修复）后仍因duplicate_schedule_unit_ref未提交，失败保留在证据中。
+
+本批能够观察到探索方法进入评论比较与边界讨论，但没有切换人格，不证明人格选择的因果作用。所有请求均提供图片，亦不是图片消融。暂不采用整段候选，不从调用8/4/4/6或缓存计数宣称性能改善。探针编译和diff检查通过。

@@ -1,0 +1,37 @@
+{
+  "scope": "Maintainer review, one bilingual source and explorer method; no independent certification",
+  "cells": [
+    {
+      "cell": 0,
+      "committed": true,
+      "calls": 8,
+      "timing": "Contradiction: 28–30 minute interval described as 5 minutes; earlier intervals total 28.",
+      "source": "Correct period concept and footnotes; translation also starts bottom-left, not only right.",
+      "persona": "Comparison, alternative explanations and boundaries appear in focus."
+    },
+    {
+      "cell": 1,
+      "committed": false,
+      "calls": 4,
+      "failure": "plan_proposal_schema_invalid:$:duplicate_schedule_unit_ref after repair; no committed plan to grade"
+    },
+    {
+      "cell": 2,
+      "committed": true,
+      "calls": 4,
+      "timing": "5+5+5+5+7+3=30; review and self-check explicitly included in final 3 minutes.",
+      "source": "Correct period concept and footnote mapping, but misclassifies is there / anywhere as tag questions.",
+      "persona": "Method named and linked to period commentary; not a cross-persona comparison."
+    },
+    {
+      "cell": 3,
+      "committed": true,
+      "calls": 6,
+      "timing": "10+12+8=30 with embedded review.",
+      "source": "Translation placement still incomplete; period commentary addressed.",
+      "presentation": "Leaks focus and today_tasks in learner-facing description.",
+      "persona": "Comparison and boundaries linked to activities."
+    }
+  ],
+  "decision": "Do not adopt combined timing candidate from this four-cell experiment; one candidate fails commit and semantic/presentation issues remain. No causal latency or cache claim."
+}
